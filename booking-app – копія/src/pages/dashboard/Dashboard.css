@@ -1,0 +1,88 @@
+/* Layout */
+.dash {
+  display: flex;
+  gap: 32px;
+}
+
+/* Sidebar card */
+.dash-sidebar {
+  width: 256px;
+  flex-shrink: 0;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  background: #ffffff;
+
+  padding: 16px;
+}
+
+/* Sidebar title */
+.dash-title {
+  margin: 0 0 14px;
+  padding: 0 12px;
+
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6b7280;
+}
+
+/* Nav stack */
+.dash-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Link base */
+.dash-link {
+  display: flex;
+  align-items: center;
+
+  border-radius: 12px;
+  padding: 10px 12px;
+
+  font-size: 14px;
+  font-weight: 500;
+  color: #6b7280;
+
+  text-decoration: none;
+  border: 1px solid transparent;
+
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+/* Hover */
+.dash-link:hover {
+  background: #f9fafb;
+  border-color: #e5e7eb;
+  color: #111827;
+}
+
+/* Active */
+.dash-link--active {
+  background: #f3f4f6;
+  border-color: #e5e7eb;
+  color: #111827;
+  font-weight: 600;
+}
+
+/* Focus (keyboard accessibility) */
+.dash-link:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(156, 163, 175, 0.35);
+}
+
+/* Content card */
+.dash-content {
+  flex: 1;
+  max-width: 800px;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  background: #ffffff;
+
+  padding: 24px;
+}
+
+

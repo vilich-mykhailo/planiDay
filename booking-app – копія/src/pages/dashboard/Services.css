@@ -1,0 +1,74 @@
+/* ===== Base button ===== */
+.services-buttom {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  padding: 10px 16px;
+  border-radius: 12px;
+
+  font-size: 14px;
+  font-weight: 500;
+
+  border: 1px solid #e5e7eb;
+  background-color: #f9fafb; /* дуже світло-сірий */
+  color: #374151; /* темно-сірий текст */
+
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease,
+              color 0.15s ease;
+}
+
+.services-buttom:hover {
+  background-color: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+/* ===== Primary (додати / зберегти) ===== */
+.services-buttom-primary {
+  background-color: #eef2f7; /* холодний світло-сірий */
+  color: #111827; /* темно-сірий, не чорний */
+  border-color: #e5e7eb;
+}
+
+.services-buttom-primary:hover {
+  background-color: #e5eaf1;
+  border-color: #d1d5db;
+}
+
+/* ===== Secondary (редагувати) ===== */
+.services-buttom-secondary {
+  background-color: #f9fafb;
+  color: #374151;
+}
+
+.services-buttom-secondary:hover {
+  background-color: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+/* ===== Danger / Delete ===== */
+.services-buttom-danger {
+  background-color: transparent;
+  color: #dc2626; /* червоний текст */
+  border: 1px solid transparent;
+}
+
+.services-buttom-danger:hover {
+  background-color: #fff5f5; /* дуже легкий червоний */
+  border-color: #fca5a5; /* червона рамка */
+  color: #b91c1c;
+}
+
+/* ===== Focus (keyboard friendly) ===== */
+.services-buttom:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(156, 163, 175, 0.4);
+}
+
+/* ===== Disabled ===== */
+.services-buttom:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}

@@ -1,0 +1,74 @@
+/* wrapper */
+.calWrap {
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  border-radius: 16px;
+  padding: 12px;
+  width: fit-content;
+}
+
+/* base */
+.cal .rdp {
+  --rdp-cell-size: 40px;
+  --rdp-accent-color: #111827; /* майже чорний */
+  --rdp-background-color: #111827;
+  margin: 0;
+}
+
+/* header */
+.cal .rdp-caption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 4px 10px;
+}
+
+.cal .rdp-caption_label {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* nav buttons */
+.cal .rdp-nav {
+  display: flex;
+  gap: 8px;
+}
+
+.cal .rdp-nav_button {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+}
+
+.cal .rdp-nav_button:hover {
+  background: #f9fafb;
+}
+
+/* week header */
+.cal .rdp-head_cell {
+  font-size: 12px;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+/* day button */
+.cal .rdp-button {
+  border-radius: 999px; /* круг */
+}
+
+/* selected */
+.cal .rdp-day_selected .rdp-button {
+  background: #111827;
+  color: #fff;
+}
+
+.cal .rdp-day_selected .rdp-button:hover {
+  background: #111827;
+}
+
+/* disabled */
+.cal .rdp-day_disabled {
+  opacity: 0.35;
+}

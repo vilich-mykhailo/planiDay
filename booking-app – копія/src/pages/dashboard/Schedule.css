@@ -1,0 +1,74 @@
+/* ===== Day toggle ===== */
+.schedule-day {
+  width: 48px;
+  padding: 8px 0;
+
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+
+  background-color: #f9fafb;
+  color: #6b7280;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+/* Hover (неактивний) */
+.schedule-day:hover {
+  background-color: #f3f4f6;
+  border-color: #d1d5db;
+  color: #374151;
+}
+
+/* Active (вибраний день) */
+.schedule-day--active {
+  background-color: #ecfdf5;     /* дуже мʼякий зелений */
+  border-color: #a7f3d0;
+  color: #065f46;                /* темно-зелений */
+
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15);
+}
+
+/* Hover active */
+.schedule-day--active:hover {
+  background-color: #d1fae5;
+}
+
+/* Focus (keyboard) */
+.schedule-day:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.35);
+}
+
+.schedule-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  max-width: 100%;
+}
+
+.schedule-slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 6px 12px;
+  border-radius: 12px;
+
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #374151;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  white-space: nowrap; /* щоб 10:10 не ламалось */
+}
