@@ -1,0 +1,35 @@
+/* ===== Base card ===== */
+button.rounded-xl.border.bg-white {
+  border-color: #e5e7eb;       /* gray-200 */
+  background-color: #ffffff;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+/* ===== Hover (неактивна) ===== */
+button.rounded-xl.border.bg-white:hover {
+  border-color: #cbd5e1;       /* slate-300 */
+  background-color: #c7c7c7;  /* gray-50 */
+}
+
+/* ===== Active card ===== */
+button.border-black {
+  border-color: #fafafa;       /* slate-700 */
+  background-color: #acacac;  /* slate-700 */
+}
+
+/* ===== Active text ===== */
+button.border-black p {
+  color: #6d6d6d;
+}
+
+/* Secondary text inside active */
+button.border-black .text-gray-600 {
+  color: #8b8b8b;              /* slate-200 */
+}
+
+/* ===== Focus (keyboard accessibility) ===== */
+button.rounded-xl.border.bg-white:focus-visible {
+  outline: none;
+  background-color: aqua;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.4); /* slate-700 */
+}

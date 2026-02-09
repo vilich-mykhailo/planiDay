@@ -1,0 +1,115 @@
+/* ===== Trigger (кнопка з часом 10:00) ===== */
+.time-select-trigger {
+  min-width: 72px;
+  padding: 10px 12px;
+
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+
+  background: #ffffff;
+  color: #111827;
+
+  font-size: 14px;
+  font-weight: 500;
+
+  transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+
+.time-select-trigger:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.time-select-trigger:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(156, 163, 175, 0.35);
+}
+
+/* ===== Popover panel ===== */
+.time-select-panel {
+  position: absolute;
+  z-index: 50;
+
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+
+  padding: 16px;
+  box-shadow: 0 24px 60px rgba(0,0,0,.18);
+}
+
+.time-select-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(0, 0, 0, 0.30);
+}
+
+/* ===== Section label: "Години", "Хвилини" ===== */
+.time-select-title {
+  margin: 8px 0 10px;
+
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+
+  color: #6b7280;
+}
+
+
+/* ===== Grid ===== */
+.time-select-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 44px); /* ✅ фіксована ширина */
+  gap: 2px;
+  margin-bottom: 14px;
+  justify-content: start; /* або center якщо хочеш по центру */
+}
+
+
+/* ===== Cell button ===== */
+.time-select-cell {
+  min-width: 22px;     /* ✅ ширина комірки */
+  height: 35px;        /* ✅ однакова висота */
+  padding: 0;          /* щоб не "з’їдало" ширину */
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #374151;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  transition: all .15s ease;
+}
+
+
+.time-select-cell:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+
+/* ✅ Selected = зелений (як ти просив) */
+.time-select-cell--active {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #065f46;
+}
+
+.time-select-cell--active:hover {
+  background: #d1fae5;
+}
+
+/* Keyboard focus */
+.time-select-cell:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.35);
+}
+
