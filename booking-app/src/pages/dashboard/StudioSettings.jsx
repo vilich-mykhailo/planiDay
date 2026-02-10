@@ -1,36 +1,51 @@
-import { useState } from 'react'
-import { useStudio } from '../../context/studio/useStudio'
+import { useState } from "react";
+import { useStudio } from "../../context/studio/useStudio";
 
 export default function StudioSettings() {
-  const { studio, updateStudio } = useStudio()
+  const { studio, updateStudio } = useStudio();
 
   const [form, setForm] = useState({
-    name: studio?.name || '',
-    category: studio?.category || '',
-    city: studio?.city || '',
-    street: studio?.street || '',
-    building: studio?.building || '',
-    apartment: studio?.apartment || '',
+    name: studio?.name || "",
+    category: studio?.category || "",
+    city: studio?.city || "",
+    street: studio?.street || "",
+    building: studio?.building || "",
+    apartment: studio?.apartment || "",
 
     // ✅ нове (профі-секції)
-    description: studio?.description || '',
-    coverUrl: studio?.coverUrl || '', // обкладинка/банер
-    logoUrl: studio?.logoUrl || '', // лого/аватар
-    portfolioUrls: studio?.portfolioUrls || '', // рядок: URL через кому або з нового рядка
-    instagram: studio?.instagram || '',
-    website: studio?.website || '',
-    workingHours: studio?.workingHours || '',
-  })
+    description: studio?.description || "",
+    coverUrl: studio?.coverUrl || "", // обкладинка/банер
+    logoUrl: studio?.logoUrl || "", // лого/аватар
+    portfolioUrls: studio?.portfolioUrls || "", // рядок: URL через кому або з нового рядка
+    instagram: studio?.instagram || "",
+    website: studio?.website || "",
+    workingHours: studio?.workingHours || "",
+  });
 
-  const [saved, setSaved] = useState(false)
+  // Вікно з помилкою завелий розмір фото
+  const [errorModal, setErrorModal] = useState({
+    open: false,
+    title: "",
+    message: "",
+  });
+  //
+  const [saved, setSaved] = useState(false);
 
-  function handleChange(e) {
-    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
-    setSaved(false)
+function handleChange(e) {
+  const { name, value } = e.target;
+
+  // ✅ обмеження тільки для description
+  if (name === 'description' && value.length > 400) {
+    return;
   }
 
+  setForm(prev => ({ ...prev, [name]: value }));
+  setSaved(false);
+}
+
+
   function save(e) {
-    e.preventDefault()
+    e.preventDefault();
 
     updateStudio({
       name: form.name,
@@ -48,54 +63,87 @@ export default function StudioSettings() {
       instagram: form.instagram,
       website: form.website,
       workingHours: form.workingHours,
-    })
+    });
 
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
   }
 
-  const hasCover = Boolean(form.coverUrl?.trim())
-  const hasLogo = Boolean(form.logoUrl?.trim())
-function fileToDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(String(reader.result))
-    reader.onerror = reject
-    reader.readAsDataURL(file)
-  })
-}
-async function handlePickCover(e) {
-  const file = e.target.files?.[0]
-  if (!file) return
+  const hasCover = Boolean(form.coverUrl?.trim());
+  const hasLogo = Boolean(form.logoUrl?.trim());
+  function fileToDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+  async function handlePickCover(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-  const dataUrl = await fileToDataUrl(file)
-  setForm(prev => ({ ...prev, coverUrl: dataUrl }))
-  setSaved(false)
+    const MAX = 1024 * 1024; // 1MB
 
-  // щоб можна було вибрати той самий файл ще раз
-  e.target.value = ''
-}
-
-async function handlePickLogo(e) {
-  const file = e.target.files?.[0]
-  if (!file) return
-
-  const dataUrl = await fileToDataUrl(file)
-  setForm(prev => ({ ...prev, logoUrl: dataUrl }))
-  setSaved(false)
-
-  e.target.value = ''
+if (file.size > MAX) {
+  setErrorModal({
+    open: true,
+    title: "Файл завеликий",
+    message:
+      "Обери фото розміром до 1 MB. ",
+  });
+  e.target.value = "";
+  return;
 }
 
-function removeCover() {
-  setForm(prev => ({ ...prev, coverUrl: '' }))
-  setSaved(false)
-}
 
-function removeLogo() {
-  setForm(prev => ({ ...prev, logoUrl: '' }))
-  setSaved(false)
-}
+    try {
+      const dataUrl = await fileToDataUrl(file);
+
+      if (dataUrl.length > 1_500_000) {
+        setErrorModal({
+          open: true,
+          title: "Фото надто важке",
+          message: "Спробуй інше фото або стисни його перед завантаженням.",
+        });
+        e.target.value = "";
+        return;
+      }
+
+      setForm((prev) => ({ ...prev, coverUrl: dataUrl }));
+      setSaved(false);
+    } catch (err) {
+      console.error(err);
+      setErrorModal({
+        open: true,
+        title: "Помилка завантаження",
+        message: "Не вдалося обробити зображення. Спробуй інше фото.",
+      });
+    } finally {
+      e.target.value = "";
+    }
+  }
+
+  async function handlePickLogo(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const dataUrl = await fileToDataUrl(file);
+    setForm((prev) => ({ ...prev, logoUrl: dataUrl }));
+    setSaved(false);
+
+    e.target.value = "";
+  }
+
+  function removeCover() {
+    setForm((prev) => ({ ...prev, coverUrl: "" }));
+    setSaved(false);
+  }
+
+  function removeLogo() {
+    setForm((prev) => ({ ...prev, logoUrl: "" }));
+    setSaved(false);
+  }
 
   return (
     <div className="space-y-6">
@@ -103,7 +151,8 @@ function removeLogo() {
         <div>
           <h1 className="text-2xl font-bold">Налаштування студії</h1>
           <p className="mt-1 text-sm text-gray-600">
-            Заповни профіль — це відображатиметься на сторінці студії для клієнтів.
+            Заповни профіль — це відображатиметься на сторінці студії для
+            клієнтів.
           </p>
         </div>
 
@@ -123,8 +172,8 @@ function removeLogo() {
                 src={form.coverUrl}
                 alt="Обкладинка студії"
                 className="h-full w-full object-cover"
-                onError={e => {
-                  e.currentTarget.style.display = 'none'
+                onError={(e) => {
+                  e.currentTarget.style.display = "none";
                 }}
               />
             ) : (
@@ -140,8 +189,8 @@ function removeLogo() {
                     src={form.logoUrl}
                     alt="Лого студії"
                     className="h-full w-full object-cover"
-                    onError={e => {
-                      e.currentTarget.style.display = 'none'
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
                     }}
                   />
                 ) : (
@@ -154,80 +203,79 @@ function removeLogo() {
               <div className="pb-2">
                 <p className="text-sm text-gray-600">Профіль студії</p>
                 <p className="font-semibold">
-                  {form.name?.trim() ? form.name : 'Назва студії'}
+                  {form.name?.trim() ? form.name : "Назва студії"}
                 </p>
                 <p className="text-sm text-gray-600">
-                  {form.category?.trim() ? form.category : 'Категорія'} •{' '}
-                  {form.city?.trim() ? form.city : 'Місто'}
+                  {form.category?.trim() ? form.category : "Категорія"} •{" "}
+                  {form.city?.trim() ? form.city : "Місто"}
                 </p>
               </div>
             </div>
           </div>
 
           <div className="pt-14 p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-  {/* ✅ Обкладинка */}
-  <div>
-    <p className="block text-sm font-medium mb-2">Обкладинка</p>
+            {/* ✅ Обкладинка */}
+            <div>
+              <p className="block text-sm font-medium mb-2">Обкладинка</p>
 
-    <div className="flex items-center gap-2">
-      <label className="inline-flex cursor-pointer items-center justify-center rounded-xl border px-4 py-3 text-sm font-medium hover:bg-gray-50">
-        Додати фото
-        <input
-          type="file"
-          accept="image/*"
-          onChange={handlePickCover}
-          className="hidden"
-        />
-      </label>
+              <div className="flex items-center gap-2">
+                <label className="inline-flex cursor-pointer items-center justify-center rounded-xl border px-4 py-3 text-sm font-medium hover:bg-gray-50">
+                  Додати фото
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePickCover}
+                    className="hidden"
+                  />
+                </label>
 
-      {hasCover && (
-        <button
-          type="button"
-          onClick={removeCover}
-          className="rounded-xl border px-4 py-3 text-sm text-red-600 hover:bg-gray-50"
-        >
-          Видалити
-        </button>
-      )}
-    </div>
+                {hasCover && (
+                  <button
+                    type="button"
+                    onClick={removeCover}
+                    className="rounded-xl border px-4 py-3 text-sm text-red-600 hover:bg-gray-50"
+                  >
+                    Видалити
+                  </button>
+                )}
+              </div>
 
-    <p className="mt-2 text-xs text-gray-500">
-      PNG/JPG, бажано 1200×400+
-    </p>
-  </div>
+              <p className="mt-2 text-xs text-gray-500">
+                PNG/JPG, бажано 1200×400+
+              </p>
+            </div>
 
-  {/* ✅ Лого */}
-  <div>
-    <p className="block text-sm font-medium mb-2">Логотип</p>
+            {/* ✅ Лого */}
+            <div>
+              <p className="block text-sm font-medium mb-2">Логотип</p>
 
-    <div className="flex items-center gap-2">
-      <label className="inline-flex cursor-pointer items-center justify-center rounded-xl border px-4 py-3 text-sm font-medium hover:bg-gray-50">
-        Додати фото
-        <input
-          type="file"
-          accept="image/*"
-          onChange={handlePickLogo}
-          className="hidden"
-        />
-      </label>
+              <div className="flex items-center gap-2">
+                <label className="inline-flex cursor-pointer items-center justify-center rounded-xl border px-4 py-3 text-sm font-medium hover:bg-gray-50">
+                  Додати фото
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePickLogo}
+                    className="hidden"
+                  />
+                </label>
 
-      {hasLogo && (
-        <button
-          type="button"
-          onClick={removeLogo}
-          className="rounded-xl border px-4 py-3 text-sm text-red-600 hover:bg-gray-50"
-        >
-          Видалити
-        </button>
-      )}
-    </div>
+                {hasLogo && (
+                  <button
+                    type="button"
+                    onClick={removeLogo}
+                    className="rounded-xl border px-4 py-3 text-sm text-red-600 hover:bg-gray-50"
+                  >
+                    Видалити
+                  </button>
+                )}
+              </div>
 
-    <p className="mt-2 text-xs text-gray-500">
-      PNG/JPG, бажано 400×400+
-    </p>
-  </div>
-</div>
-
+              <p className="mt-2 text-xs text-gray-500">
+                PNG/JPG, бажано 400×400+
+              </p>
+            </div>
+          </div>
         </section>
 
         {/* ✅ Основна інформація */}
@@ -241,7 +289,9 @@ function removeLogo() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Назва студії</label>
+              <label className="block text-sm font-medium mb-1">
+                Назва студії
+              </label>
               <input
                 name="name"
                 placeholder="Напр. Creative Studio"
@@ -252,7 +302,9 @@ function removeLogo() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">Категорія</label>
+              <label className="block text-sm font-medium mb-1">
+                Категорія
+              </label>
               <input
                 name="category"
                 placeholder="Масаж, барбер, нігті..."
@@ -264,22 +316,26 @@ function removeLogo() {
 
             <div className="md:col-span-2">
               <label className="block text-sm font-medium mb-1">Опис</label>
-              <textarea
-                name="description"
-                placeholder="Коротко: ваш стиль, досвід, що отримує клієнт, чому вам довіряють..."
-                value={form.description}
-                onChange={handleChange}
-                rows={4}
-                className="w-full rounded-xl border p-3 resize-none"
-              />
+<textarea
+  name="description"
+  placeholder="Коротко: ваш стиль, досвід, що отримує клієнт, чому вам довіряють..."
+  value={form.description}
+  onChange={handleChange}
+  rows={4}
+  maxLength={400}
+  className="w-full rounded-xl border p-3 resize-none"
+/>
+
               <div className="mt-1 flex justify-between text-xs text-gray-500">
                 <span>Рекомендовано 2–4 речення.</span>
                 <span>{form.description.length}/400</span>
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">Години роботи</label>
+            {/* <div>
+              <label className="block text-sm font-medium mb-1">
+                Години роботи
+              </label>
               <input
                 name="workingHours"
                 placeholder="Напр. Пн–Пт 10:00–19:00"
@@ -287,7 +343,7 @@ function removeLogo() {
                 onChange={handleChange}
                 className="w-full rounded-xl border p-3"
               />
-            </div>
+            </div> */}
           </div>
         </section>
 
@@ -358,7 +414,9 @@ function removeLogo() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium mb-1">Портфоліо (URL)</label>
+              <label className="block text-sm font-medium mb-1">
+                Портфоліо (URL)
+              </label>
               <textarea
                 name="portfolioUrls"
                 placeholder="Встав URL через кому або кожен з нового рядка"
@@ -373,7 +431,9 @@ function removeLogo() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">Instagram</label>
+              <label className="block text-sm font-medium mb-1">
+                Instagram
+              </label>
               <input
                 name="instagram"
                 placeholder="https://instagram.com/..."
@@ -398,24 +458,43 @@ function removeLogo() {
 
         {/* ✅ Footer actions */}
         <div className="flex flex-wrap items-center gap-3">
-<button
-  type="submit"
-  disabled={saved}
-  className={`rounded-xl px-6 py-3 text-white transition
-    ${saved ? 'ui-button ui-button-saved ' : 'ui-button ui-button-primary-strong'}
+          <button
+            type="submit"
+            disabled={saved}
+            className={`rounded-xl px-6 py-3 text-white transition
+    ${saved ? "ui-button ui-button-saved " : "ui-button ui-button-primary-strong"}
   `}
->
-  {saved ? 'Збережено ✓' : 'Зберегти зміни'}
-</button>
-
-
-          {!saved && (
-            <span className="text-sm text-gray-600">
-              Після редагування натисни “Зберегти зміни”.
-            </span>
-          )}
+          >
+            {saved ? "Збережено ✓" : "Зберегти зміни"}
+          </button>
         </div>
       </form>
+      {errorModal.open && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+    <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl animate-fadeIn ">
+      <h3 className="text-lg font-semibold text-gray-900 ">
+        {errorModal.title}
+      </h3>
+
+      <p className="mt-2 text-sm text-gray-600">
+        {errorModal.message}
+      </p>
+
+      <div className="mt-5 flex justify-end">
+        <button
+          type="button"
+          onClick={() =>
+            setErrorModal({ open: false, title: '', message: '' })
+          }
+          className="rounded-xl bg-black px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800 transition cursor-pointer"
+        >
+          Зрозуміло
+        </button>
+      </div>
     </div>
-  )
+  </div>
+)}
+
+    </div>
+  );
 }

@@ -1,98 +1,99 @@
-import { useMemo, useState } from 'react'
-import { useBookings } from '../../context/bookings/useBookings'
+import { useMemo, useState } from "react";
+import { useBookings } from "../../context/bookings/useBookings";
 
 const DAY_LABEL = {
-  mon: 'Пн',
-  tue: 'Вт',
-  wed: 'Ср',
-  thu: 'Чт',
-  fri: 'Пт',
-  sat: 'Сб',
-  sun: 'Нд',
-}
+  mon: "Пн",
+  tue: "Вт",
+  wed: "Ср",
+  thu: "Чт",
+  fri: "Пт",
+  sat: "Сб",
+  sun: "Нд",
+};
 
 function formatDateUA(dateStr) {
-  const d = new Date(dateStr)
-  if (Number.isNaN(d.getTime())) return null
-  const dd = String(d.getDate()).padStart(2, '0')
-  const mm = String(d.getMonth() + 1).padStart(2, '0')
-  const yyyy = d.getFullYear()
-  return `${dd}.${mm}.${yyyy}`
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return null;
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  return `${dd}.${mm}.${yyyy}`;
 }
 
 function getDayKeyFromDate(dateStr) {
-  const d = new Date(dateStr)
-  if (Number.isNaN(d.getTime())) return null
-  const map = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
-  return map[d.getDay()]
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return null;
+  const map = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+  return map[d.getDay()];
 }
 
 export default function Bookings() {
-  const { bookings, confirmBooking, cancelBooking, deleteBooking } = useBookings()
+  const { bookings, confirmBooking, cancelBooking, deleteBooking } =
+    useBookings();
 
   // модалка видалення
-  const [confirmId, setConfirmId] = useState(null)
+  const [confirmId, setConfirmId] = useState(null);
 
   // ✅ модалка деталей
-  const [detailsId, setDetailsId] = useState(null)
+  const [detailsId, setDetailsId] = useState(null);
 
   const grouped = useMemo(() => {
-    const map = {}
+    const map = {};
 
     for (const b of bookings || []) {
-      const key = b.date || b.day || 'other'
-      if (!map[key]) map[key] = []
-      map[key].push(b)
+      const key = b.date || b.day || "other";
+      if (!map[key]) map[key] = [];
+      map[key].push(b);
     }
 
-    Object.keys(map).forEach(k => {
-      map[k].sort((a, c) => (a.time || '').localeCompare(c.time || ''))
-    })
+    Object.keys(map).forEach((k) => {
+      map[k].sort((a, c) => (a.time || "").localeCompare(c.time || ""));
+    });
 
     const keys = Object.keys(map).sort((a, b) => {
-      const da = new Date(a)
-      const db = new Date(b)
-      const aOk = !Number.isNaN(da.getTime())
-      const bOk = !Number.isNaN(db.getTime())
-      if (aOk && bOk) return da - db
-      return String(a).localeCompare(String(b))
-    })
+      const da = new Date(a);
+      const db = new Date(b);
+      const aOk = !Number.isNaN(da.getTime());
+      const bOk = !Number.isNaN(db.getTime());
+      if (aOk && bOk) return da - db;
+      return String(a).localeCompare(String(b));
+    });
 
-    return { map, keys }
-  }, [bookings])
+    return { map, keys };
+  }, [bookings]);
 
-  const keys = grouped.keys
+  const keys = grouped.keys;
 
   function renderGroupTitle(key) {
-    const formattedDate = formatDateUA(key)
-    const dayKey = getDayKeyFromDate(key)
+    const formattedDate = formatDateUA(key);
+    const dayKey = getDayKeyFromDate(key);
 
     if (formattedDate && dayKey) {
-      return `${formattedDate} ${DAY_LABEL[dayKey] || ''}`.trim()
+      return `${formattedDate} ${DAY_LABEL[dayKey] || ""}`.trim();
     }
 
-    return DAY_LABEL[key] || key
+    return DAY_LABEL[key] || key;
   }
 
   const selectedBooking = useMemo(() => {
-    if (detailsId == null) return null
-    return (bookings || []).find(b => b.id === detailsId) || null
-  }, [detailsId, bookings])
+    if (detailsId == null) return null;
+    return (bookings || []).find((b) => b.id === detailsId) || null;
+  }, [detailsId, bookings]);
 
   function renderBookingDate(b) {
-    const raw = b?.date || b?.day
-    if (!raw) return '—'
-    const formatted = formatDateUA(raw)
-    const dayKey = getDayKeyFromDate(raw)
+    const raw = b?.date || b?.day;
+    if (!raw) return "—";
+    const formatted = formatDateUA(raw);
+    const dayKey = getDayKeyFromDate(raw);
 
-    if (formatted && dayKey) return `${formatted} (${DAY_LABEL[dayKey]})`
-    return DAY_LABEL[raw] ? DAY_LABEL[raw] : raw
+    if (formatted && dayKey) return `${formatted} (${DAY_LABEL[dayKey]})`;
+    return DAY_LABEL[raw] ? DAY_LABEL[raw] : raw;
   }
 
   function renderStatusLabel(b) {
-    if (b?.status === 'confirmed') return 'Підтверджено'
-    if (b?.status === 'canceled') return 'Скасовано'
-    return 'Новий'
+    if (b?.status === "confirmed") return "Підтверджено";
+    if (b?.status === "canceled") return "Скасовано";
+    return "Новий";
   }
 
   return (
@@ -105,15 +106,15 @@ export default function Bookings() {
         </div>
       ) : (
         <div className="space-y-6">
-          {keys.map(key => (
+          {keys.map((key) => (
             <section key={key} className="space-y-3">
               <h2 className="text-lg font-semibold">{renderGroupTitle(key)}</h2>
 
               <div className="space-y-3">
-                {grouped.map[key].map(b => {
-                  const isCanceled = b.status === 'canceled'
-                  const isConfirmed = b.status === 'confirmed'
-                  const isNew = !b.status || b.status === 'new'
+                {grouped.map[key].map((b) => {
+                  const isCanceled = b.status === "canceled";
+                  const isConfirmed = b.status === "confirmed";
+                  const isNew = !b.status || b.status === "new";
 
                   return (
                     <div
@@ -132,12 +133,16 @@ export default function Bookings() {
 
                         <span
                           className={`text-sm rounded-full px-3 py-1 border w-fit
-                            ${isConfirmed ? 'border-green-500 text-green-700' : ''}
-                            ${isCanceled ? 'border-red-500 text-red-700' : ''}
-                            ${isNew ? 'border-gray-300 text-gray-700' : ''}
+                            ${isConfirmed ? "border-green-500 text-green-700" : ""}
+                            ${isCanceled ? "border-red-500 text-red-700" : ""}
+                            ${isNew ? "border-gray-300 text-gray-700" : ""}
                           `}
                         >
-                          {isConfirmed ? 'Підтверджено' : isCanceled ? 'Скасовано' : 'Новий'}
+                          {isConfirmed
+                            ? "Підтверджено"
+                            : isCanceled
+                              ? "Скасовано"
+                              : "Новий"}
                         </span>
                       </div>
 
@@ -180,7 +185,7 @@ export default function Bookings() {
                         )}
                       </div>
                     </div>
-                  )
+                  );
                 })}
               </div>
             </section>
@@ -201,8 +206,8 @@ export default function Bookings() {
               <button
                 type="button"
                 onClick={() => {
-                  deleteBooking(confirmId)
-                  setConfirmId(null)
+                  deleteBooking(confirmId);
+                  setConfirmId(null);
                 }}
                 className="rounded-lg bg-black px-4 py-2 text-white"
               >
@@ -228,48 +233,49 @@ export default function Bookings() {
         >
           <div
             className="w-full max-w-md rounded-2xl bg-white p-5 shadow"
-            onClick={e => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h3 className="text-lg font-semibold">Деталі запису</h3>
                 <p className="mt-1 text-sm text-gray-600">
-                  Статус: <span className="font-medium">{renderStatusLabel(selectedBooking)}</span>
+                  Статус:{" "}
+                  <span className="font-medium">
+                    {renderStatusLabel(selectedBooking)}
+                  </span>
                 </p>
               </div>
-
-
             </div>
 
             <div className="mt-4 space-y-3">
               <div className="rounded-xl border p-3">
                 <p className="text-xs text-gray-500">Клієнт</p>
-                <p className="font-medium">{selectedBooking.clientName || '—'}</p>
-                <p className="text-sm text-gray-600">{selectedBooking.clientPhone || '—'}</p>
+                <p className="font-medium">
+                  {selectedBooking.clientName || "—"}
+                </p>
+                <p className="text-sm text-gray-600">
+                  {selectedBooking.clientPhone || "—"}
+                </p>
               </div>
 
               <div className="rounded-xl border p-3">
                 <p className="text-xs text-gray-500">Послуга</p>
-                <p className="font-medium">{selectedBooking.serviceName || '—'}</p>
+                <p className="font-medium">
+                  {selectedBooking.serviceName || "—"}
+                </p>
               </div>
 
               <div className="rounded-xl border p-3">
                 <p className="text-xs text-gray-500">Дата і час</p>
                 <p className="font-medium">
-                  {renderBookingDate(selectedBooking)} • {selectedBooking.time || '—'}
+                  {renderBookingDate(selectedBooking)} •{" "}
+                  {selectedBooking.time || "—"}
                 </p>
               </div>
             </div>
 
             <div className="mt-4 flex justify-end gap-2">
-              {/* <button
-                type="button"
-                onClick={() => setDetailsId(null)}
-                className="rounded-lg bg-black px-4 py-2 text-white"
-              >
-                Готово
-              </button> */}
-                            <button
+              <button
                 type="button"
                 onClick={() => setDetailsId(null)}
                 className="ui-button ui-button-secondary"
@@ -281,5 +287,5 @@ export default function Bookings() {
         </div>
       )}
     </div>
-  )
+  );
 }

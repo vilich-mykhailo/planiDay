@@ -35,10 +35,13 @@ function buildSlots(start, end, stepMinutes) {
   return slots
 }
 
-function formatDate(date) {
-  // YYYY-MM-DD
-  return date.toISOString().split('T')[0]
+function formatDateLocal(date) {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
 }
+
 
 function getDayKeyFromDateObj(date) {
   // JS: 0..6 = sun..sat
@@ -65,9 +68,10 @@ export default function StudioDetails() {
     return d
   })
 
-  const selectedDateStr = useMemo(() => {
-    return selectedDate ? formatDate(selectedDate) : null
-  }, [selectedDate])
+const selectedDateStr = useMemo(() => {
+  return selectedDate ? formatDateLocal(selectedDate) : null
+}, [selectedDate])
+
 
   const dayKey = useMemo(() => {
     if (!selectedDate) return null
