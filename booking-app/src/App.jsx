@@ -14,6 +14,7 @@ import Schedule from "./pages/dashboard/Schedule";
 import Bookings from "./pages/dashboard/Bookings";
 import Golowna from "./components/Golowna";
 import Masters from "./pages/dashboard/Masters";
+import StudioPublicPage from "./pages/dashboard/StudioPublicPage";
 
 function StudioDetailsKeyed() {
   const { slug } = useParams();
@@ -28,7 +29,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/studios" element={<Studios />} />
-          <Route path="/studios/:slug" element={<StudioDetailsKeyed />} />
+          <Route path="/studios/:slug" element={<StudioPublicPage />} />
 
           <Route path="/booking/success" element={<BookingSuccess />} />
           <Route path="/auth" element={<Auth />} />

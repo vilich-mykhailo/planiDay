@@ -1,40 +1,286 @@
+/* ===== Header shell ===== */
 .header {
-  position: sticky; /* або fixed */
+  position: sticky;
   top: 0;
-  z-index: 50;
-  background: #fff;
+  z-index: 40;
+  background: rgba(255, 255, 255, 0.9);
   border-bottom: 1px solid #e5e7eb;
+  backdrop-filter: blur(10px);
 }
 
 .header__container {
-  max-width: 1200px;
+  max-width: 1120px;
   margin: 0 auto;
-  padding: 16px 20px;
+  padding: 14px 16px;
 
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
+}
+
+/* ===== Brand ===== */
+.header__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
 }
 
 .header__logo {
-  font-weight: 700;
-  font-size: 18px;
-  color: #111;
-  text-decoration: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  background: #111827;
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: -0.02em;
 }
 
+.header__name {
+  font-weight: 800;
+  color: #111827;
+  letter-spacing: -0.02em;
+}
+
+.header__name--accent {
+  color: #2563eb; /* синій */
+}
+
+
+/* ===== Desktop nav ===== */
 .header__nav {
-  display: flex;
-  gap: 24px;
+  display: none;
+  align-items: center;
+  gap: 10px;
 }
 
-.header__nav a {
-  color: #374151;
+.header__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 10px 12px;
+  border-radius: 12px;
+
+  font-size: 14px;
+  font-weight: 600;
+  color: #4b5563;
   text-decoration: none;
-  font-weight: 500;
-  transition: color 0.2s ease;
+
+  transition: background-color .15s ease, color .15s ease, border-color .15s ease;
 }
 
-.header__nav a:hover {
-  color: #111;
+.header__link:hover {
+  background: #f9fafb;
+  color: #111827;
+}
+
+.header__link--active {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+/* ===== CTA ===== */
+.header__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 10px 14px;
+  border-radius: 14px;
+
+  border: 1px solid #e5e7eb;
+  background: #111827;
+  color: #ffffff;
+
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+
+  transition: transform .15s ease, background-color .15s ease, box-shadow .15s ease;
+}
+
+.header__cta:hover {
+  background: #1f2937;
+  box-shadow: 0 10px 24px rgba(0,0,0,.12);
+  transform: translateY(-1px);
+}
+
+.header__cta:active {
+  transform: translateY(0);
+}
+
+.header__cta--full {
+  width: 100%;
+}
+
+/* ===== Burger ===== */
+.header__burger {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  cursor: pointer;
+
+  transition: background-color .15s ease, border-color .15s ease;
+}
+
+.header__burger:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.header__burgerLine {
+  width: 18px;
+  height: 2px;
+  border-radius: 999px;
+  background: #111827;
+  display: block;
+  transition: transform .18s ease, opacity .18s ease;
+}
+
+.header__burgerLine.is-open:nth-child(1) {
+  transform: translateY(4px) rotate(45deg);
+}
+
+.header__burgerLine.is-open:nth-child(2) {
+  transform: translateY(-4px) rotate(-45deg);
+}
+
+/* ===== Search (desktop) ===== */
+.header__search {
+  display: none;
+  align-items: center;
+  gap: 10px;
+
+  flex: 1;
+  justify-content: center;
+
+  max-width: 640px;
+}
+
+.header__input {
+  width: 100%;
+  min-width: 180px;
+
+  padding: 11px 12px;
+  border-radius: 14px;
+
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+
+  font-size: 14px;
+  font-weight: 500;
+  color: #111827;
+
+  transition: border-color .15s ease, background-color .15s ease, box-shadow .15s ease;
+}
+
+.header__input::placeholder {
+  color: #9ca3af;
+}
+
+.header__input:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.header__input:focus {
+  outline: none;
+  border-color: #d1d5db;
+  box-shadow: 0 0 0 3px rgba(156, 163, 175, 0.25);
+}
+
+.header__searchBtn {
+  flex: 0 0 auto;
+
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  color: #111827;
+
+  font-size: 14px;
+  font-weight: 700;
+
+  border-radius: 14px;
+  padding: 11px 14px;
+
+  cursor: pointer;
+  transition: background-color .15s ease, border-color .15s ease, transform .15s ease;
+}
+
+.header__searchBtn:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+  transform: translateY(-1px);
+}
+
+.header__searchBtn:active {
+  transform: translateY(0);
+}
+
+/* ===== Mobile search ===== */
+.header__mobileSearch {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  padding: 4px 0 10px;
+}
+
+.header__input--mobile {
+  min-width: 100%;
+}
+
+.header__searchBtn--mobile {
+  width: 100%;
+}
+
+/* Show desktop search */
+@media (min-width: 1024px) {
+  .header__search {
+    display: flex;
+  }
+}
+
+
+
+/* ===== Mobile menu ===== */
+.header__mobile {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 10px 16px 16px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  background: rgba(255, 255, 255, 0.95);
+  border-top: 1px solid #e5e7eb;
+  backdrop-filter: blur(10px);
+}
+
+/* ===== Breakpoints ===== */
+@media (min-width: 768px) {
+  .header__nav {
+    display: flex;
+  }
+
+  .header__burger,
+  .header__mobile {
+    display: none;
+  }
 }

@@ -1,0 +1,290 @@
+.ad {
+  position: relative;
+  width: 100%;
+}
+
+.ad--disabled {
+  opacity: .6;
+  pointer-events: none;
+}
+
+/* Control */
+.ad__control {
+  width: 100%;
+  height: 56px;
+
+  border-radius: 18px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+
+  padding: 20px 46px 10px 14px; /* right більше */
+
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+  text-align: left;
+
+  cursor: pointer;
+  transition: all .15s ease;
+  outline: none;
+}
+
+.ad__control:hover {
+  border-color: #d1d5db;
+  background: #fafafa;
+}
+
+.ad__control:focus,
+.ad__control--open {
+  border-color: #c4c4c4;
+  box-shadow: 0 0 0 3px rgba(173, 173, 173, 0.22);
+  background: #ffffff;
+}
+
+.ad__value{
+  display: block;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 10px; /* щоб не впиралось в стрілку */
+}
+
+.ad__overlay{
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+
+  /* затемнення */
+  background: rgba(17,24,39,.35);
+
+  /* ✅ легке розмиття фону */
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+
+  /* м’яка анімація */
+  animation: adOverlayIn .16s ease forwards;
+}
+
+@keyframes adOverlayIn{
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+
+
+.ad__value--muted {
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+/* Floating label */
+.ad__label {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+
+  font-size: 14px;
+  font-weight: 500;
+  color: #9ca3af;
+
+  pointer-events: none;
+  transition: all .14s ease;
+}
+
+.ad:hover .ad__label {
+   background: #fafafa
+}
+
+.ad__label--up {
+  top: 8px;
+  transform: translateY(0);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: #c7c7c7;
+  background: #fff;
+  padding: 0 6px;
+}
+
+/* Chevron */
+.ad__chev {
+  position: absolute;
+  right: 18px;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  transform: translateY(-50%) rotate(45deg);
+  border-right: 2px solid #9ca3af;
+  border-bottom: 2px solid #9ca3af;
+  transition: transform .15s ease;
+}
+
+.ad__chev--open {
+  transform: translateY(-50%) rotate(-135deg);
+}
+
+/* Dropdown */
+.ad__dropdown{
+  position: fixed;
+
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  width: 80vw;
+  max-width: 500px;
+
+  border-radius: 24px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+
+  box-shadow:
+    0 40px 80px rgba(17,24,39,.18),
+    0 10px 30px rgba(17,24,39,.12);
+
+  overflow: hidden;
+  z-index: 70;
+
+  display: flex;
+  flex-direction: column;
+
+  max-height: 85vh;
+
+  animation: adModalIn .18s ease forwards;
+}
+
+@keyframes adModalIn{
+  from{
+    opacity:0;
+    transform: translate(-50%, -46%) scale(.97);
+  }
+  to{
+    opacity:1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* Search */
+.ad__search {
+  padding: 10px;
+  border-bottom: 1px solid #f1f5f9;
+  background: #fcfcfd;
+}
+
+.ad__searchInput {
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  padding: 10px 12px;
+  font-size: 13px;
+  outline: none;
+}
+
+.ad__searchInput:focus {
+  border-color: #cbd5e1;
+  box-shadow: 0 0 0 3px rgba(168, 168, 168, 0.18);
+}
+
+/* List */
+.ad__list{
+  padding: 16px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+
+
+.ad__option {
+  width: 100%;
+  text-align: left;
+
+  padding: 10px 12px;
+  border-radius: 14px;
+
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+
+  transition: background .12s ease, color .12s ease;
+}
+
+.ad__option:hover {
+  background: #f3f4f6;
+}
+
+.ad__option--active {
+  background: #e7f9ef;
+  color: #047857;
+}
+
+/* Empty */
+.ad__empty {
+  padding: 14px 12px;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+/* Footer */
+.ad__footer {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+
+  padding: 10px;
+  border-top: 1px solid #f1f5f9;
+  background: #fcfcfd;
+}
+
+.ad__clear,
+.ad__close {
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  
+  color: #111827;
+  cursor: pointer;
+  transition: background .12s ease;
+}
+
+.ad__clear:hover,
+.ad__close:hover {
+  background: #f3f4f6;
+}
+
+.ad__clear {
+  color: #dc2626;
+}
+
+.ad__searchFake{
+  width: 100%;
+  text-align: left;
+
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #9ca3af;
+
+  cursor: text;
+  transition: background .12s ease, border-color .12s ease;
+}
+
+.ad__searchFake:hover{
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.ad__searchInput--inactive{
+  cursor: text;
+  color: #9ca3af;
+}
