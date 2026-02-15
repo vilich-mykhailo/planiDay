@@ -21,6 +21,105 @@ function toNumber(v) {
   return Number.isFinite(n) ? n : null;
 }
 
+function normalizeUa(text) {
+  return safeText(text)
+    .toLowerCase()
+    .replace(/['’`]/g, "")
+    .replace(/[^\p{L}\p{N}\s-]/gu, " ") // прибирає пунктуацію (unicode)
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function stemUa(word) {
+  // дуже простий стемінг під укр/рус закінчення, вистачить для "стрижк*"
+  return word.replace(
+    /(ами|ями|ові|еві|ого|ому|ими|іми|ий|ій|ої|ої|ая|яя|ого|ею|єю|ою|ю|а|я|і|и|у|ю|е|о)$/u,
+    "",
+  );
+}
+
+function tokenizeAndStem(text) {
+  const n = normalizeUa(text);
+  if (!n) return [];
+  return n
+    .split(" ")
+    .map(stemUa)
+    .filter(Boolean);
+}
+
+const STOP_WORDS = new Set([
+  "салон",
+  "студія",
+  "студия",
+  "послуги",
+  "процедури",
+  "service",
+  "beauty",
+  "hair",
+]);
+
+const QUERY_EXPAND = {
+  // Салон стрижок
+  стриж: ["перукар", "перукарня", "барбер", "уклад", "фарб", "haircut"],
+  перукар: ["стриж", "уклад", "фарб", "перукарня"],
+  барбер: ["стриж", "barber", "barbershop"],
+
+  // Манікюр
+  манік: ["нігт", "гель", "лак", "покрит", "shellac", "шелак", "френч"],
+  педик: ["нігт", "стоп", "покрит", "педикюр"],
+
+  // Масаж
+  масаж: ["спин", "шия", "комірц", "ноги", "стоп", "релакс", "massage"],
+  спин: ["масаж", "спина"],
+  шия: ["масаж", "комірц"],
+  стоп: ["масаж", "педик"],
+  ног: ["масаж", "педик"],
+
+  // Брови та вії
+  бров: ["корекц", "архітект", "ламін", "фарб", "brows"],
+  вії: ["нарощ", "ламін", "lash", "lashes"],
+
+  // Салон краси
+  косметолог: ["чистк", "пілінг", "догляд", "маск", "facial", "skincare"],
+  пілінг: ["косметолог", "догляд"],
+  чистк: ["косметолог", "догляд"],
+
+  // SPA
+  спа: ["spa", "wellness", "обгорт", "хамам", "сауна", "релакс"],
+  spa: ["спа", "wellness", "обгорт", "хамам", "сауна", "релакс"],
+};
+
+const STOP_TOKENS = new Set(["салон", "студ", "послуг", "процедур"]);
+
+function expandQueryTokens(rawQuery) {
+  const base = tokenizeAndStem(rawQuery).filter((t) => t.length >= 3);
+  const extras = [];
+
+  for (const t of base) {
+    if (STOP_TOKENS.has(t)) continue;
+    const arr = QUERY_EXPAND[t];
+    if (arr) extras.push(...arr.flatMap((x) => tokenizeAndStem(x)));
+  }
+
+  return Array.from(new Set([...base, ...extras])).filter(
+    (t) => t.length >= 3 && !STOP_TOKENS.has(t),
+  );
+}
+
+function tokensFrom(value) {
+  return tokenizeAndStem(safeText(value));
+}
+
+function countTokenHits(hayTokens, qTokens) {
+  // рахуємо унікальні токени запиту, які реально знайшлись у hay
+  let hits = 0;
+  for (const qt of qTokens) {
+    if (hayTokens.some((ht) => ht.includes(qt))) hits += 1;
+  }
+  return hits;
+}
+
+
 export default function Studios() {
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -81,6 +180,8 @@ export default function Studios() {
     [],
   );
 
+
+
   // ✅ Options
   const cities = useMemo(() => {
     const set = new Set(
@@ -97,30 +198,19 @@ export default function Studios() {
   }, []);
 
   // ✅ Filtered + Sorted
-  const filtered = useMemo(() => {
-    const query = normalize(applied.q);
-    const cityN = normalize(applied.city);
-    const catN = normalize(applied.category);
+const filtered = useMemo(() => {
+  const cityN = normalize(applied.city);
+  const catN = normalize(applied.category);
 
-    const min = toNumber(applied.minPrice);
-    const max = toNumber(applied.maxPrice);
+  const min = toNumber(applied.minPrice);
+  const max = toNumber(applied.maxPrice);
 
-    let list = (studios || []).filter((s) => {
-      const nameN = normalize(s.name);
+  const qTokens = expandQueryTokens(applied.q); // вже з синонімами
+
+  const scored = (studios || [])
+    .map((s) => {
       const catNItem = normalize(s.category);
       const cityNItem = normalize(s.city);
-      const descN = normalize(s.description);
-      const streetN = normalize(s.street);
-      const buildingN = normalize(s.building);
-
-      const matchQuery =
-        !query ||
-        nameN.includes(query) ||
-        catNItem.includes(query) ||
-        cityNItem.includes(query) ||
-        descN.includes(query) ||
-        streetN.includes(query) ||
-        buildingN.includes(query);
 
       const matchCity = !cityN || cityNItem === cityN;
       const matchCategory = !catN || catNItem === catN;
@@ -129,22 +219,81 @@ export default function Studios() {
       const matchMin = min == null || (priceFrom != null && priceFrom >= min);
       const matchMax = max == null || (priceFrom != null && priceFrom <= max);
 
-      return matchQuery && matchCity && matchCategory && matchMin && matchMax;
-    });
+      // якщо фільтри міста/категорії/ціни не пройшли — одразу відсікаємо
+      if (!matchCity || !matchCategory || !matchMin || !matchMax) {
+        return { s, score: -1, matchQuery: false };
+      }
 
-    list = [...list].sort((a, b) => {
-      const ap = toNumber(a.priceFrom) ?? Number.POSITIVE_INFINITY;
-      const bp = toNumber(b.priceFrom) ?? Number.POSITIVE_INFINITY;
+      // Розбиваємо текст студії по полях (щоб важити по-різному)
+      const nameTokens = tokensFrom(s.name);
+      const categoryTokens = tokensFrom(s.category);
+      const descTokens = tokensFrom(s.description);
+      const servicesTokens = tokenizeAndStem(
+        (Array.isArray(s.services) ? s.services.map((x) => x?.name) : []).join(" "),
+      );
 
-      if (applied.sort === "priceAsc") return ap - bp;
-      if (applied.sort === "priceDesc") return bp - ap;
-      if (applied.sort === "nameAsc")
-        return safeText(a.name).localeCompare(safeText(b.name));
-      return 0;
-    });
+      // Якщо запит пустий — матчимо все (score = 0, далі сортування)
+      if (qTokens.length === 0) {
+        return { s, score: 0, matchQuery: true };
+      }
 
-    return list;
-  }, [applied]);
+      // Хіти по полях
+      const nameHits = countTokenHits(nameTokens, qTokens);
+      const catHits = countTokenHits(categoryTokens, qTokens);
+      const descHits = countTokenHits(descTokens, qTokens);
+      const servicesHits = countTokenHits(servicesTokens, qTokens);
+
+      // Хоч один збіг — тоді студія релевантна
+      const matchQuery = nameHits + catHits + descHits + servicesHits > 0;
+
+      if (!matchQuery) {
+        return { s, score: -1, matchQuery: false };
+      }
+
+      // ✅ scoring (ваги “як у маркетплейсах”)
+      let score = 0;
+
+      score += nameHits * 6;       // назва — найважливіше
+      score += catHits * 5;        // категорія — дуже важливо
+      score += servicesHits * 4;   // послуги — майже як категорія
+      score += descHits * 2;       // опис — менш важливо
+
+      // бонуси
+      if (nameHits > 0) score += 4;       // якщо є збіг у назві
+      if (catHits > 0) score += 3;        // якщо є збіг у категорії
+      if (servicesHits > 0) score += 2;   // якщо є збіг у послугах
+      if (s.premium) score += 1;          // легкий бонус преміуму
+
+      return { s, score, matchQuery: true };
+    })
+    .filter((x) => x.matchQuery && x.score >= 0);
+
+  // Сортування
+  const sorted = scored.sort((a, b) => {
+  // ✅ Premium завжди зверху (у будь-якому sort)
+  const aPrem = a.s.premium ? 1 : 0;
+  const bPrem = b.s.premium ? 1 : 0;
+  if (bPrem !== aPrem) return bPrem - aPrem;
+
+  const ap = toNumber(a.s.priceFrom) ?? Number.POSITIVE_INFINITY;
+  const bp = toNumber(b.s.priceFrom) ?? Number.POSITIVE_INFINITY;
+
+  // далі — твій вибраний sort
+  if (applied.sort === "priceAsc") return ap - bp;
+  if (applied.sort === "priceDesc") return bp - ap;
+  if (applied.sort === "nameAsc")
+    return safeText(a.s.name).localeCompare(safeText(b.s.name));
+
+  // recommended: score -> ціна
+  if (b.score !== a.score) return b.score - a.score;
+  return ap - bp;
+});
+
+
+  return sorted.map((x) => x.s);
+}, [applied]);
+
+
 
   const activeChips = useMemo(() => {
     const chips = [];
@@ -394,23 +543,72 @@ function handleApply() {
 
       {/* Results */}
       {filtered.length === 0 ? (
-        <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center">
-          <p className="text-lg font-semibold text-gray-900">
-            Нічого не знайдено
-          </p>
-          <p className="mt-2 text-sm text-gray-600">
-            Спробуй інші фільтри або очисти все.
-          </p>
+  <div className="rounded-2xl border border-gray-200 bg-white p-8 sm:p-10">
+    <div className="mx-auto max-w-xl text-center">
+      {/* Icon */}
+      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-gray-200 bg-gray-50">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          className="h-7 w-7 text-gray-700"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M10 10a2 2 0 1 0 0.001-4.001A2 2 0 0 0 10 10Z"
+            stroke="currentColor"
+            strokeWidth="1.6"
+          />
+          <path
+            d="M21 21l-4.3-4.3m1.3-5.2a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
+        </svg>
+      </div>
 
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <button className="w-full ui-button ui-button-secondary">
-              Очистити
-            </button>
+      {/* Text */}
+      <h3 className="mt-4 text-xl font-semibold tracking-tight text-gray-900">
+        Немає результатів за цими фільтрами
+      </h3>
+      <p className="mt-2 text-sm text-gray-600">
+        Спробуй змінити місто або категорію, або прибери частину фільтрів — тоді
+        ми покажемо більше доступних студій.
+      </p>
 
-            <button className="w-full ui-button">Закрити</button>
-          </div>
-        </div>
-      ) : (
+      {/* Tips */}
+      
+
+      {/* Actions */}
+      <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
+        <button
+          type="button"
+          onClick={clearAll}
+          className="
+            ui-button ui-button-secondary
+            w-full sm:w-auto
+            rounded-xl
+            px-5 py-3
+            border border-gray-200
+            bg-white
+            text-gray-900
+            transition-all duration-200
+            hover:bg-gray-50 hover:shadow-sm
+            active:scale-[0.98]
+          "
+        >
+          Очистити фільтри
+        </button>
+      </div>
+
+      {/* Small footer */}
+      <p className="mt-4 text-xs text-gray-500">
+        Порада: якщо шукаєш конкретну послугу — введи загальніше слово (наприклад
+        “масаж”, “манікюр”, “стрижка”).
+      </p>
+    </div>
+  </div>
+) : (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.slice(0, visibleCount).map((studio) => {
             const name = safeText(studio.name) || "Студія";
@@ -427,124 +625,143 @@ function handleApply() {
             const hasInstagram = Boolean(safeText(studio.instagram));
             const hasWebsite = Boolean(safeText(studio.website));
 
-            return (
-              <Link
-                key={studio.slug}
-                to={`/studios/${studio.slug}`}
-className="
-  group
-  block
-  overflow-hidden
-  rounded-2xl
-  border border-gray-200
-  bg-white
-  transform-gpu isolate will-change-transform
-  transition-all duration-200
-  hover:bg-gray-50
-  hover:border-gray-300
-  hover:shadow-md
-  hover:-translate-y-[2px]
-  active:scale-[0.98]
-"
-              >
-                {/* Cover */}
-                <div className="relative h-28 bg-gray-100">
-                  {studio.premium && <PremiumBadge />}
+return (
+  <Link
+    key={studio.slug}
+    to={`/studios/${studio.slug}`}
+    className={`
+      group relative block overflow-visible
+      rounded-2xl border bg-white
+      transform-gpu will-change-transform
+      transition-all duration-300
+      active:scale-[0.98]
+      ${
+        studio.premium
+          ? `
+            border-yellow-200
+            hover:border-yellow-400
+            hover:-translate-y-[4px]
+            hover:shadow-[0_10px_30px_rgba(234,179,8,0.25)]
+          `
+          : `
+            border-gray-200
+            hover:border-gray-300
+            hover:-translate-y-[2px]
+            hover:shadow-md
+          `
+      }
+    `}
+  >
+    {/* ✅ PREMIUM badge (обов’язково ПЕРШИМ, і з високим z-index) */}
+    {studio.premium && (
+    <div
+      className="
+        absolute top-3 right-3
+        z-50
+        px-3 py-1
+        rounded-full
+        text-[11px] font-semibold tracking-wide
+        text-white
+        bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600
+        shadow-lg
+        border border-yellow-400/40
+        backdrop-blur-sm
+        pointer-events-none
+      "
+    >
+      ★ PREMIUM
+    </div>
+    )}
 
-                  {coverUrl ? (
-                    <img
-                      src={coverUrl}
-                      alt={`${name} cover`}
-                      className="h-full w-full object-cover"
-                      loading="lazy"
-                      onError={(e) => {
-                        e.currentTarget.style.display = "none";
-                      }}
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-xs text-gray-500">
-                      Без обкладинки
-                    </div>
-                  )}
+    {/* Cover (кути тільки зверху) */}
+    <div className="relative overflow-hidden rounded-t-2xl">
+      <div className="relative h-28 bg-gray-100">
+        {coverUrl ? (
+          <img
+            src={coverUrl}
+            alt={`${name} cover`}
+            className="h-full w-full object-cover"
+            loading="lazy"
+            onError={(e) => (e.currentTarget.style.display = "none")}
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-xs text-gray-500">
+            Без обкладинки
+          </div>
+        )}
+      </div>
+    </div>
 
-                  {/* Logo */}
-                  <div className="absolute -bottom-6 left-4 h-12 w-12 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-                    {logoUrl ? (
-                      <img
-                        src={logoUrl}
-                        alt={`${name} logo`}
-                        className="h-full w-full object-cover"
-                        loading="lazy"
-                        onError={(e) => {
-                          e.currentTarget.style.display = "none";
-                        }}
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center text-[10px] font-semibold text-gray-400">
-                        LOGO
-                      </div>
-                    )}
-                  </div>
-                </div>
+    {/* ✅ Logo НЕ обрізається (і над cover) */}
+    <div className="absolute left-4 top-[88px] z-40 h-12 w-12 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+      {logoUrl ? (
+        <img
+          src={logoUrl}
+          alt={`${name} logo`}
+          className="h-full w-full object-cover"
+          loading="lazy"
+          onError={(e) => (e.currentTarget.style.display = "none")}
+        />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center text-[10px] font-semibold text-gray-400">
+          LOGO
+        </div>
+      )}
+    </div>
 
-                {/* Content */}
-                <div className="px-4 pb-4 pt-8">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <h2 className="truncate text-base font-semibold text-gray-900">
-                        {name}
-                      </h2>
+    {/* Content */}
+    <div className="px-4 pb-4 pt-8">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="truncate text-base font-semibold text-gray-900">
+            {name}
+          </h2>
 
-                      <p className="mt-0.5 text-sm text-gray-600">
-                        {cat || "Категорія"}
-                        {cityLabel ? ` • ${cityLabel}` : ""}
-                      </p>
-                    </div>
+          <p className="mt-0.5 text-sm text-gray-600">
+            {cat || "Категорія"}
+            {cityLabel ? ` • ${cityLabel}` : ""}
+          </p>
+        </div>
 
-                    {studio.priceFrom != null && (
-                      <div className="shrink-0 rounded-xl border border-gray-200 bg-gray-50 px-3 py-1 text-sm font-semibold text-gray-900">
-                        від {studio.priceFrom} грн
-                      </div>
-                    )}
-                  </div>
+        {studio.priceFrom != null && (
+          <div className="shrink-0 rounded-xl border border-gray-200 bg-gray-50 px-3 py-1 text-sm font-semibold text-gray-900">
+            від {studio.priceFrom} грн
+          </div>
+        )}
+      </div>
 
-                  {description && (
-                    <p className="mt-3 line-clamp-2 text-sm text-gray-600">
-                      {description}
-                    </p>
-                  )}
+      {description && (
+        <p className="mt-3 line-clamp-2 text-sm text-gray-600">{description}</p>
+      )}
 
-                  {address && (
-                    <p className="mt-3 text-sm text-gray-500">📍 {address}</p>
-                  )}
+      {address && <p className="mt-3 text-sm text-gray-500">📍 {address}</p>}
 
-                  {(hasInstagram || hasWebsite) && (
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {hasInstagram && (
-                        <span className="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-700">
-                          Instagram
-                        </span>
-                      )}
-                      {hasWebsite && (
-                        <span className="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-700">
-                          Сайт
-                        </span>
-                      )}
-                    </div>
-                  )}
+      {(hasInstagram || hasWebsite) && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {hasInstagram && (
+            <span className="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-700">
+              Instagram
+            </span>
+          )}
+          {hasWebsite && (
+            <span className="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-700">
+              Сайт
+            </span>
+          )}
+        </div>
+      )}
 
-                  <div className="mt-4 flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-900 group-hover:underline">
-                      Переглянути →
-                    </span>
+      <div className="mt-4 flex items-center justify-between">
+        <span className="text-sm font-medium text-gray-900 group-hover:underline">
+          Переглянути →
+        </span>
 
-  <FavouriteButton />
+        <FavouriteButton />
+      </div>
+    </div>
+  </Link>
+);
 
-
-                  </div>
-                </div>
-              </Link>
-            );
           })}
         </div>
       )}
