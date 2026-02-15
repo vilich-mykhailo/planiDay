@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useBookings } from '../context/bookings/useBookings'
 import Calendar from '../components/Calendar'
+import BookingCustomerForm from '../components/BookingCustomerForm'
 import '../pages/StudioDetails.css'
 
 function timeToMinutes(t) {
@@ -59,6 +60,11 @@ export default function StudioBookingWidget({ studio }) {
     d.setHours(0, 0, 0, 0)
     return d
   })
+
+  // ✅ кроки UI (логіку бронювання не чіпаємо)
+  // pick => вибір (послуга/дата/час)
+  // details => форма "Ваші дані"
+  const [step, setStep] = useState('pick')
 
   const selectedDateStr = useMemo(() => {
     return selectedDate ? formatDateLocal(selectedDate) : null
@@ -138,6 +144,11 @@ export default function StudioBookingWidget({ studio }) {
     return services.find(s => s.id === selectedServiceId) || null
   }, [services, selectedServiceId])
 
+const studioAddress = [studio?.city, studio?.street, studio?.building]
+  .filter(Boolean)
+  .join(', ')
+
+
   function handleSubmit(e) {
     e.preventDefault()
 
@@ -163,8 +174,25 @@ export default function StudioBookingWidget({ studio }) {
       clientPhone: form.phone,
     })
 
-    navigate('/booking/success')
+navigate('/booking/success', {
+  state: {
+    studioName: studio.name,
+    serviceName: service?.name ?? 'Без назви',
+    date: selectedDateStr,
+    time: selectedTime,
+    address: studioAddress,
+    phone: form.phone,
+  },
+})
+
+
   }
+
+  const canGoNext =
+    Boolean(selectedServiceId) && Boolean(selectedDateStr) && isDayEnabled && Boolean(selectedTime)
+
+  const submitDisabled =
+    !selectedDateStr || !isDayEnabled || !selectedTime || !form.name || !form.phone
 
   return (
     <div className="space-y-6">
@@ -190,10 +218,13 @@ export default function StudioBookingWidget({ studio }) {
                   onClick={() => {
                     setSelectedServiceId(service.id)
                     setSelectedTime(null)
+                    setStep('pick')
                   }}
                   className={[
                     'text-left rounded-2xl border p-4 bg-white transition',
-                    active ? 'border-emerald-300 bg-emerald-50' : 'border-gray-200 hover:bg-gray-50',
+                    active
+                      ? 'border-emerald-300 bg-emerald-50'
+                      : 'border-gray-200 hover:bg-gray-50',
                   ].join(' ')}
                 >
                   <p className="font-medium text-gray-900">{service.name}</p>
@@ -211,7 +242,7 @@ export default function StudioBookingWidget({ studio }) {
       <section className="space-y-3">
         <div>
           <h2 className="text-base font-semibold text-gray-900">Дата</h2>
-          <p className="text-sm text-gray-600">Доступні тільки робочі дні.</p>
+          <p className="text-sm text-gray-600">Оберіть дату для запису</p>
         </div>
 
         <div className="rounded-2xl border bg-white p-4">
@@ -222,6 +253,7 @@ export default function StudioBookingWidget({ studio }) {
               d.setHours(0, 0, 0, 0)
               setSelectedDate(d)
               setSelectedTime(null)
+              setStep('pick')
             }}
             disabled={disabledDays}
           />
@@ -236,7 +268,7 @@ export default function StudioBookingWidget({ studio }) {
       <section className="space-y-3">
         <div>
           <h2 className="text-base font-semibold text-gray-900">Час</h2>
-          <p className="text-sm text-gray-600">Оберіть вільний слот.</p>
+          <p className="text-sm text-gray-600">Оберіть вільну годину</p>
         </div>
 
         {!isDayEnabled ? (
@@ -253,7 +285,11 @@ export default function StudioBookingWidget({ studio }) {
                 <button
                   key={time}
                   type="button"
-                  onClick={() => !busy && setSelectedTime(time)}
+                  onClick={() => {
+                    if (busy) return
+                    setSelectedTime(time)
+                    setStep('pick')
+                  }}
                   disabled={busy}
                   className={[
                     'rounded-xl border px-4 py-2 text-sm font-medium transition',
@@ -272,39 +308,28 @@ export default function StudioBookingWidget({ studio }) {
         )}
       </section>
 
-      {/* Booking form */}
-      <section className="space-y-3">
-        <div>
-          <h2 className="text-base font-semibold text-gray-900">Ваші дані</h2>
-          <p className="text-sm text-gray-600">Вкажіть імʼя та телефон для підтвердження.</p>
-        </div>
-
-        <form
-          onSubmit={handleSubmit}
-          className="rounded-2xl border bg-white p-4 space-y-4"
+      {/* Next button */}
+      {step === 'pick' && (
+        <button
+          type="button"
+          className="ui-button-one w-full"
+          disabled={!canGoNext}
+          onClick={() => setStep('details')}
         >
-          <input
-            placeholder="Імʼя"
-            value={form.name}
-            onChange={e => setForm({ ...form, name: e.target.value })}
-            className="w-full rounded-xl border border-gray-200 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
-          />
+          Далі
+        </button>
+      )}
 
-          <input
-            placeholder="Телефон"
-            value={form.phone}
-            onChange={e => setForm({ ...form, phone: e.target.value })}
-            className="w-full rounded-xl border border-gray-200 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
-          />
-
-          <button
-            className="ui-button ui-button-primary-strong"
-            disabled={!selectedDateStr || !isDayEnabled || !selectedTime || !form.name || !form.phone}
-          >
-            Записатись
-          </button>
-        </form>
-      </section>
+      {/* Booking form (separate file) */}
+      {step === 'details' && (
+        <BookingCustomerForm
+          form={form}
+          setForm={setForm}
+          onSubmit={handleSubmit}
+          submitDisabled={submitDisabled}
+          onBack={() => setStep('pick')}
+        />
+      )}
     </div>
   )
 }

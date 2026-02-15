@@ -383,17 +383,18 @@ function handleApply() {
     <div className="space-y-6">
       {/* Header */}
       <div className="space-y-3">
-        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900">
-          Обирай та <span className="text-blue-600">записуйся онлайн</span>
-        </h1>
+<h1 className="pt-2 sm:pt-3 text-3xl sm:text-4xl font-bold tracking-tight text-gray-900">
+  Обирай та <span className="text-blue-600">записуйся онлайн</span>
+</h1>
 
-        <p className="max-w-2xl text-base text-gray-600">
+
+        <p className="hidden sm:block max-w-2xl text-base text-gray-600 ">
           Обирай послуги поруч із тобою — швидко, зручно та без зайвих дзвінків.
         </p>
       </div>
 
       {/* Filters */}
-      <section className="rounded-2xl border border-gray-200 bg-white p-4">
+      <section className="rounded-2xl border border-gray-600 bg-white p-4">
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-[1.2fr_0.9fr_0.9fr_0.9fr]">
           <AnimatedField
             label="Пошук"

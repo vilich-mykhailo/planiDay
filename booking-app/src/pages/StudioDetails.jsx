@@ -178,7 +178,17 @@ const services = useMemo(() => {
       clientPhone: form.phone,
     })
 
-    navigate('/booking/success')
+    navigate('/booking/success', {
+  state: {
+    studioName: studio.name,
+    serviceName: service?.name ?? 'Без назви',
+    date: selectedDateStr,
+    time: selectedTime,
+    address: studio.address,
+    phone: form.phone,
+  },
+})
+
   }
 
   return (

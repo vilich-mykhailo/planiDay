@@ -15,6 +15,7 @@ import Bookings from "./pages/dashboard/Bookings";
 import Golowna from "./components/Golowna";
 import Masters from "./pages/dashboard/Masters";
 import StudioPublicPage from "./pages/dashboard/StudioPublicPage";
+import AppBackground from "./components/AppBackground";
 
 function StudioDetailsKeyed() {
   const { slug } = useParams();
@@ -22,10 +23,11 @@ function StudioDetailsKeyed() {
 }
 export default function App() {
   return (
-    <>
+     <AppBackground>
       <Header />
 
-      <main className="mx-auto max-w-6xl px-4 py-8">
+      <main className="mx-auto max-w-6xl px-4 pt-0 pb-8">
+
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/studios" element={<Studios />} />
@@ -44,6 +46,6 @@ export default function App() {
           </Route>
         </Routes>
       </main>
-    </>
+       </AppBackground>
   );
 }

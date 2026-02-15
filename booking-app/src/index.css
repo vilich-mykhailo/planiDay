@@ -33,6 +33,12 @@ h1 {
   line-height: 1.1;
 }
 
+button:not(:disabled),
+[role="button"]:not(:disabled),
+a,
+.clickable {
+  cursor: pointer;
+}
 
 
 @media (prefers-color-scheme: light) {

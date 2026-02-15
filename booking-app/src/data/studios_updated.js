@@ -1702,7 +1702,7 @@ export const studios = [
   },
   {
     "slug": "brow-lounge-житомир-15",
-    "name": "Bgrowj Lounge",
+    "name": "Brow Lounge",
     "category": "Брови та вії",
     "city": "Житомир",
     "description": "Професійні послуги: брови та вії. Комфортна атмосфера, чистота та зручний онлайн-запис.",

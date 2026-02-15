@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { useBookings } from "../../context/bookings/useBookings";
-import Modal from "../../components/ui/Modal";
 
 const DAY_LABEL = {
   mon: "Пн",
@@ -798,10 +797,6 @@ export default function Bookings() {
                     disabled={count === 0}
                     title={count > 0 ? `Записів: ${count}` : "Немає записів"}
                   >
-                    {newCount > 0 && (
-                      <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-amber-500 ring-2 ring-white" />
-                    )}
-
                     <div className="flex items-start justify-between gap-2">
                       <span
                         className={`text-sm font-semibold ${
@@ -842,71 +837,106 @@ export default function Bookings() {
 
       {/* ✅ Modal confirm delete */}
       {confirmId != null && (
-        <Modal open={confirmId != null} onClose={() => setConfirmId(null)}>
-          <h3 className="text-lg font-semibold text-gray-900">
-            Видалити запис?
-          </h3>
+        <div
+          className="
+            fixed inset-0 z-50
+            flex items-center justify-center
+            px-4
+            bg-black/40
+            backdrop-blur-[2px]
+            backdrop-saturate-150
+            transition-all duration-200
+"
+        >
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl border border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Видалити запис?
+            </h3>
+            <p className="mt-2 text-sm text-gray-600">
+              Цю дію неможливо буде повернути.
+            </p>
 
-          <p className="mt-2 text-sm text-gray-600">
-            Цю дію неможливо буде повернути.
-          </p>
-
-          <div className="mt-4 flex justify-end gap-2">
-            <button
-              onClick={() => {
-                handleDelete(confirmId);
-                setConfirmId(null);
-              }}
-              className="ui-button ui-button-danger"
-            >
-              Видалити
-            </button>
-            <button
-              onClick={() => setConfirmId(null)}
-              className="ui-button ui-button-secondary"
-            >
-              Скасувати
-            </button>
+            <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  handleDelete(confirmId);
+                  setConfirmId(null);
+                }}
+                className="ui-button ui-button-danger"
+              >
+                Так, видалити
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmId(null)}
+                className="ui-button ui-button-secondary"
+              >
+                Скасувати
+              </button>
+            </div>
           </div>
-        </Modal>
+        </div>
       )}
 
       {/* ✅ Modal confirm cancel */}
-      <Modal
-        open={cancelConfirmId != null}
-        onClose={() => setCancelConfirmId(null)}
-      >
-        <h3 className="text-lg font-semibold text-gray-900">
-          Скасувати запис?
-        </h3>
+      {cancelConfirmId != null && (
+        <div
+          className="
+  fixed inset-0 z-50
+  flex items-center justify-center
+  px-4
+  bg-black/40
+  backdrop-blur-[2px]
+  backdrop-saturate-150
+  transition-all duration-200
+"
+        >
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl border border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Скасувати запис?
+            </h3>
 
-        <p className="mt-2 text-sm text-gray-600">
-          Запис буде позначено як скасований.
-        </p>
+            <p className="mt-2 text-sm text-gray-600">
+              Запис буде позначено як скасований.
+            </p>
 
-        <div className="mt-4 flex justify-end gap-2">
-          <button
-            onClick={() => {
-              cancelBooking(cancelConfirmId);
-              setCancelConfirmId(null);
-            }}
-            className="ui-button ui-button-danger"
-          >
-            Так, скасувати
-          </button>
-          <button
-            onClick={() => setCancelConfirmId(null)}
-            className="ui-button ui-button-secondary"
-          >
-            Назад
-          </button>
+            <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  cancelBooking(cancelConfirmId);
+                  setCancelConfirmId(null);
+                }}
+                className="ui-button ui-button-danger"
+              >
+                Так, скасувати
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setCancelConfirmId(null)}
+                className="ui-button ui-button-secondary"
+              >
+                Назад
+              </button>
+            </div>
+          </div>
         </div>
-      </Modal>
+      )}
 
       {/* ✅ Modal details */}
       {detailsId != null && selectedBooking && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+          className="
+  fixed inset-0 z-50
+  flex items-center justify-center
+  px-4
+  bg-black/40
+  backdrop-blur-[2px]
+  backdrop-saturate-150
+  transition-all duration-200
+"
           onClick={() => setDetailsId(null)}
         >
           <div
@@ -989,7 +1019,9 @@ export default function Bookings() {
       {/* ✅ Modal: bookings for selected day from calendar */}
       {calendarDayKey && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+          className="
+          fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4
+          "
           onClick={() => setCalendarDayKey(null)}
         >
           <div
