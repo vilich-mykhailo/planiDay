@@ -28,6 +28,17 @@ body {
   min-height: 100vh;
 }
 
+/* Блокування scroll коли відкритий modal */
+body.modal-open {
+  overflow: hidden;
+  touch-action: none; /* важливо для мобільних */
+}
+
+/* optional — щоб уникнути стрибка layout */
+body.modal-open {
+  padding-right: var(--scrollbar-width, 0px);
+}
+
 h1 {
   font-size: 3.2em;
   line-height: 1.1;
