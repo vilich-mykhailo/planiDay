@@ -1,0 +1,14 @@
+.field-highlight {
+  background: linear-gradient(180deg, #ecfdf5 0%, #ffffff 100%);
+  border-color: #34d399;
+  animation: fieldGlow 1.8s ease forwards;
+}
+
+@keyframes fieldGlow {
+  0% {
+    background: #d1fae5;
+  }
+  100% {
+    background: #ffffff;
+  }
+}
