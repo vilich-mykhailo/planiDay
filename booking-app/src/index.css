@@ -1,41 +1,47 @@
 @import "tailwindcss";
 @import "./pages//dashboard/Services.css";
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-
+  /* не заявляй dark, якщо реально не робиш темну тему */
+  color-scheme: light;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
 }
 
 html {
+  height: 100%;
   scrollbar-gutter: stable;
+
+  /* ✅ ключове: фон саме HTML */
+  background: #f8fafc !important;
 }
 
 body {
-  background-color: #f8fafc;
+  margin: 0;
+  min-height: 100dvh;
+
+  /* ✅ ключове: фон BODY */
+  background: #f8fafc !important;
   color: #0f172a;
-  min-height: 100vh;
+}
+
+/* ✅ якщо у тебе інший root id — заміни #root на нього */
+#root {
+  min-height: 100dvh;
+  background: #f8fafc !important;
 }
 
 /* Блокування scroll коли відкритий modal */
 body.modal-open {
   overflow: hidden;
   touch-action: none; /* важливо для мобільних */
-}
-
-/* optional — щоб уникнути стрибка layout */
-body.modal-open {
   padding-right: var(--scrollbar-width, 0px);
 }
 
@@ -51,11 +57,11 @@ a,
   cursor: pointer;
 }
 
-
+/* ✅ ВАЖЛИВО: НЕ ПЕРЕБИВАЙ фони на білий */
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
-    background-color: #ffffff;
+    /* background-color: #ffffff;  <-- прибрали */
   }
   a:hover {
     color: #747bff;
@@ -68,8 +74,8 @@ a,
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus {
-  -webkit-text-fill-color: #111 !important; /* колір тексту */
-  -webkit-box-shadow: 0 0 0 1000px #fff inset !important; /* фон інпуту */
+  -webkit-text-fill-color: #111 !important;
+  -webkit-box-shadow: 0 0 0 1000px #fff inset !important;
   box-shadow: 0 0 0 1000px #fff inset !important;
   caret-color: #111;
 }

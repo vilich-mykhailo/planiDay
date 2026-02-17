@@ -199,7 +199,7 @@ const studio = useMemo(() => studios.find(s => s.slug === slug), [slug])
   const priceFrom = studio.priceFrom
 
   return (
-    <div className="min-h-screen ">
+    <div className="min-h-[100dvh]">
       <div className="mx-auto w-full max-w-6xl px-0 sm:px-5 lg:px-6 py-3 sm:py-6 space-y-4 sm:space-y-6">
 
         {/* Top nav */}

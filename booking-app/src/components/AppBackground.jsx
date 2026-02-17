@@ -1,6 +1,6 @@
 export default function AppBackground({ children }) {
   return (
-    <div className="relative min-h-screen bg-gray-50 overflow-hidden">
+    <div className="relative min-h-[100dvh] bg-gray-50 overflow-hidden">
       
       {/* blobs background */}
       <div className="pointer-events-none fixed inset-0 z-0">
