@@ -1,303 +1,24 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useStudio } from "../../context/studio/useStudio";
 
-export default function Services() {
-  const { studio, setServices } = useStudio();
-  const [editService] = useState(null);
+const UNCATEGORIZED_ID = "__uncategorized__";
 
-  const masters = studio.masters || [];
+function makeId(prefix = "id") {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
+  return `${prefix}_${Math.random().toString(16).slice(2)}_${Date.now()}`;
+}
 
-  const durationOptions = [
-    { value: 30, label: "30 хв" },
-    { value: 60, label: "60 хв" },
-    { value: 90, label: "90 хв" },
-  ];
-
-
-const [form, setForm] = useState({
-  name: "",
-  duration: 60,
-  price: "",
-  allMasters: true,   // ✅ нове
-  masters: [],        // ✅ масив майстрів
-});
-
-const [editId, setEditId] = useState(null);
-const [draft, setDraft] = useState(null);
-
-const services = useMemo(() => studio.services ?? [], [studio.services]);
-useEffect(() => {
-  if (!editId) {
-    setDraft(null);
-    return;
-  }
-
-  const original = services.find((s) => s.id === editId);
-
-  if (original) {
-    setDraft({
-      ...original,
-      masters: original.masters ? [...original.masters] : [],
-    });
-  }
-}, [editId, services]);
-useEffect(() => {
-  if (!editId) {
-    setDraft(null);
-    return;
-  }
-
-  const original = services.find((s) => s.id === editId);
-
-  if (original) {
-    setDraft({
-      ...original,
-      masters: original.masters ? [...original.masters] : [],
-    });
-  }
-}, [editId, services]);
-
-useEffect(() => {
-  if (editId) document.body.classList.add("modal-open");
-  else document.body.classList.remove("modal-open");
-
-  return () => document.body.classList.remove("modal-open");
-}, [editId]);
-
-  function handleChange(e) {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value,
-    });
-  }
-  function getMastersWord(count) {
+function getMastersWord(count) {
   const mod10 = count % 10;
   const mod100 = count % 100;
-
   if (mod10 === 1 && mod100 !== 11) return "майстер";
   if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return "майстри";
   return "майстрів";
 }
 
-  function addService(e) {
-    e.preventDefault();
-    if (!form.name || !form.price) return;
-if (!form.allMasters && form.masters.length === 0) return;
-
-    function makeId() {
-      if (typeof crypto !== "undefined" && crypto.randomUUID) {
-        return crypto.randomUUID();
-      }
-      return `id_${Math.random().toString(16).slice(2)}_${Math.random()
-        .toString(16)
-        .slice(2)}`;
-    }
-
-const id = makeId();
-
-const next = [
-  ...(studio.services || []),
-  {
-    id,
-    name: form.name,
-    duration: Number(form.duration),
-    price: Number(form.price),
-    allMasters: form.allMasters,
-    masters: form.allMasters ? [] : form.masters, // ✅
-  },
-];
-
-
-    setServices(next);
-    setForm({ name: "", duration: 60, price: "", allMasters: true, masters: [] });
-
-  }
-
-  function deleteService(id) {
-    setServices((studio.services || []).filter((s) => s.id !== id));
-  }
-
-  function AnimatedSelect({
-    label,
-    value,
-    onChange,
-    options,
-    placeholder = "Оберіть…",
-    name,
-  }) {
-    const [open, setOpen] = useState(false);
-    const [activeIndex, setActiveIndex] = useState(-1);
-    const ref = useRef(null);
-    const btnRef = useRef(null);
-
-    const selected = useMemo(
-      () => options.find((o) => String(o.value) === String(value)),
-      [options, value]
-    );
-
-    useEffect(() => {
-      const onDown = (e) => {
-        if (ref.current && !ref.current.contains(e.target)) setOpen(false);
-      };
-      document.addEventListener("mousedown", onDown);
-      return () => document.removeEventListener("mousedown", onDown);
-    }, []);
-
-useEffect(() => {
-  if (editService) document.body.classList.add("modal-open");
-  else document.body.classList.remove("modal-open");
-
-  return () => document.body.classList.remove("modal-open");
-}, []);
-
-
-
-    useEffect(() => {
-      if (!open) return;
-
-      const onKeyDown = (e) => {
-        if (e.key === "Escape") {
-          setOpen(false);
-          btnRef.current?.focus();
-        }
-        if (e.key === "ArrowDown") {
-          e.preventDefault();
-          setActiveIndex((i) => Math.min(i + 1, options.length - 1));
-        }
-        if (e.key === "ArrowUp") {
-          e.preventDefault();
-          setActiveIndex((i) => Math.max(i - 1, 0));
-        }
-        if (e.key === "Enter") {
-          if (activeIndex >= 0 && options[activeIndex]) {
-            onChange(options[activeIndex].value);
-            setOpen(false);
-            btnRef.current?.focus();
-          }
-        }
-      };
-
-      document.addEventListener("keydown", onKeyDown);
-      return () => document.removeEventListener("keydown", onKeyDown);
-    }, [open, activeIndex, options, onChange]);
-
-    useEffect(() => {
-      if (!open) return;
-      const idx = options.findIndex((o) => String(o.value) === String(value));
-      setActiveIndex(idx >= 0 ? idx : 0);
-    }, [open, options, value]);
-
-    return (
-      <div ref={ref} className="relative">
-        {label && (
-          <label className="block text-sm font-medium text-gray-900 mb-1">
-            {label}
-          </label>
-        )}
-
-        <button
-          ref={btnRef}
-          type="button"
-          name={name}
-          onClick={() => setOpen((v) => !v)}
-          className="
-            w-full rounded-xl border border-gray-200 bg-white px-3 py-3
-            flex items-center justify-between gap-3
-            text-sm
-            transition-all duration-200
-            focus:outline-none focus:ring-2 focus:ring-black/10
-          "
-          aria-haspopup="listbox"
-          aria-expanded={open}
-        >
-          <span className={selected ? "text-gray-900" : "text-gray-400"}>
-            {selected?.label ?? placeholder}
-          </span>
-
-          <svg
-            className={`h-4 w-4 text-gray-500 transition-transform duration-200 ${
-              open ? "rotate-180" : ""
-            }`}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-          >
-            <path
-              d="M6 9l6 6 6-6"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </button>
-
-        <div
-          className={`
-            absolute left-0 right-0 z-20 mt-2
-            rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden
-            origin-top transition-all duration-200
-            ${
-              open
-                ? "opacity-100 translate-y-0 scale-100"
-                : "opacity-0 -translate-y-1 scale-95 pointer-events-none"
-            }
-          `}
-          role="listbox"
-        >
-          {options.map((opt, idx) => {
-            const isSelected = String(opt.value) === String(value);
-            const isActive = idx === activeIndex;
-
-            return (
-              <button
-                key={`${opt.value}-${opt.label}`}
-                type="button"
-                onMouseEnter={() => setActiveIndex(idx)}
-                onClick={() => {
-                  onChange(opt.value);
-                  setOpen(false);
-                  btnRef.current?.focus();
-                }}
-                className={`
-                  w-full px-4 py-3 text-left flex items-center justify-between
-                  text-sm
-                  transition-colors
-                  ${isActive ? "bg-black/5" : "bg-white"}
-                  hover:bg-black/5
-                `}
-              >
-                <span className={isSelected ? "font-semibold" : ""}>
-                  {opt.label}
-                </span>
-                {isSelected && (
-                  <svg
-                    className="h-4 w-4 text-gray-900"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                  >
-                    <path
-                      d="M20 6L9 17l-5-5"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    );
-  }
-
-  const canSubmit = Boolean(form.name?.trim()) && Boolean(String(form.price).trim());
 function MasterChip({ master, checked }) {
   const id = master.id ?? master.name;
   const name = master.name ?? String(id);
-
-  // ✅ підстав правильне поле з твоїх даних:
   const avatar = master.photoUrl || master.avatarUrl || master.image || "";
 
   const initials = name
@@ -326,462 +47,640 @@ function MasterChip({ master, checked }) {
 
       <div className="min-w-0">
         <p className="text-sm font-semibold text-gray-900 truncate">{name}</p>
-        {checked ? (
-          <p className="text-xs text-emerald-700">Обрано</p>
-        ) : (
-          <p className="text-xs text-gray-500">Доступний</p>
-        )}
+        <p className={`text-xs ${checked ? "text-emerald-700" : "text-gray-500"}`}>
+          {checked ? "Обрано" : "Доступний"}
+        </p>
       </div>
     </div>
   );
 }
 
+function SectionCard({ title, subtitle, right, children }) {
+  return (
+    <section className="rounded-[24px] sm:rounded-[28px] border border-gray-200 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.06)] overflow-hidden">
+      <div className="px-4 sm:px-5 py-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="text-base font-extrabold text-gray-900">{title}</h2>
+          {subtitle && <p className="mt-1 text-sm text-gray-600">{subtitle}</p>}
+        </div>
+
+        {right && <div className="w-full sm:w-auto">{right}</div>}
+      </div>
+
+      <div className="px-4 sm:px-5 py-4 sm:py-5">{children}</div>
+    </section>
+  );
+}
+
+
+function Modal({ open, onClose, title, subtitle, children, footer }) {
+  if (!open) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[90] flex items-center justify-center px-4 bg-black/40 backdrop-blur-[2px]"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md overflow-hidden rounded-[28px] border border-gray-200 bg-white shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="border-b px-5 py-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">{title}</p>
+          {subtitle && <p className="mt-1 text-sm text-gray-600">{subtitle}</p>}
+        </div>
+
+        <div className="p-5 space-y-4">{children}</div>
+
+        {footer && <div className="border-t px-5 py-4">{footer}</div>}
+      </div>
+    </div>
+  );
+}
+
+function Button({ variant = "default", className = "", children, ...props }) {
+  const base =
+    "rounded-xl px-3 py-2 text-xs font-extrabold active:scale-[0.99] transition disabled:opacity-50 disabled:cursor-not-allowed";
+  const styles = {
+    default: "border border-gray-200 bg-white text-gray-900 hover:bg-gray-50",
+    primary: "bg-black text-white hover:bg-gray-900",
+    danger: "border border-red-200 bg-red-50 text-red-700 hover:bg-red-100",
+  };
+
+  return (
+    <button type="button" className={`${base} ${styles[variant]} ${className}`} {...props}>
+      {children}
+    </button>
+  );
+}
+
+export default function Services() {
+  const { studio, updateStudio } = useStudio();
+
+  const masters = useMemo(
+    () => (Array.isArray(studio?.masters) ? studio.masters : []),
+    [studio]
+  );
+
+  const categories = useMemo(
+    () => (Array.isArray(studio?.serviceCategories) ? studio.serviceCategories : []),
+    [studio]
+  );
+
+  const uncategorizedServices = useMemo(
+    () => (Array.isArray(studio?.uncategorizedServices) ? studio.uncategorizedServices : []),
+    [studio]
+  );
+
+  // -----------------------------
+  // MODALS
+  // -----------------------------
+  const [categoryModal, setCategoryModal] = useState({ open: false, catId: null }); // edit category name
+  const [categoryDraftName, setCategoryDraftName] = useState("");
+
+  const [serviceModal, setServiceModal] = useState({
+    open: false,
+    mode: "add", // add | edit
+    catId: UNCATEGORIZED_ID,
+    serviceId: null,
+  });
+
+  const [serviceDraft, setServiceDraft] = useState({
+    id: null,
+    categoryId: UNCATEGORIZED_ID, // allows move between categories
+    name: "",
+    duration: 60,
+    price: "",
+    allMasters: true,
+    masters: [],
+  });
+
+  const durationOptions = [
+    { value: 30, label: "30 хв" },
+    { value: 60, label: "60 хв" },
+    { value: 90, label: "90 хв" },
+  ];
+
+  // lock scroll when modal open
+  useEffect(() => {
+    const open = Boolean(categoryModal.open || serviceModal.open);
+    document.body.classList.toggle("modal-open", open);
+    return () => document.body.classList.remove("modal-open");
+  }, [categoryModal.open, serviceModal.open]);
+
+  // -----------------------------
+  // BLOCK 1: add category
+  // -----------------------------
+  const [newCategoryName, setNewCategoryName] = useState("");
+
+  async function addCategory() {
+    const name = newCategoryName.trim();
+    if (!name) return;
+
+    const next = [...categories, { id: makeId("cat"), name, services: [] }];
+    await updateStudio({ serviceCategories: next });
+    setNewCategoryName("");
+  }
+
+  // -----------------------------
+  // Helpers
+  // -----------------------------
+  function resolveServiceMastersText(service) {
+    if (service.allMasters) return "всі майстри";
+    const ids = Array.isArray(service.masters) ? service.masters : [];
+    if (!ids.length) return "";
+    if (ids.length === 1) {
+      const m = masters.find((x) => String(x.id ?? x.name) === String(ids[0]));
+      return m?.name || String(ids[0]);
+    }
+    return `${ids.length} ${getMastersWord(ids.length)}`;
+  }
+
+  function canSaveServiceDraft(d) {
+    const nameOk = Boolean(String(d?.name || "").trim());
+    const priceOk = Boolean(String(d?.price ?? "").trim());
+    const mastersOk = d?.allMasters || (Array.isArray(d?.masters) && d.masters.length > 0);
+    return nameOk && priceOk && mastersOk;
+  }
+
+  function getCategoryServices(catId) {
+    if (catId === UNCATEGORIZED_ID) return uncategorizedServices;
+    const cat = categories.find((c) => c.id === catId);
+    return Array.isArray(cat?.services) ? cat.services : [];
+  }
+
+  // -----------------------------
+  // Category edit/delete
+  // -----------------------------
+  function openEditCategory(catId) {
+    if (catId === UNCATEGORIZED_ID) return;
+    const cat = categories.find((c) => c.id === catId);
+    if (!cat) return;
+    setCategoryDraftName(cat.name || "");
+    setCategoryModal({ open: true, catId });
+  }
+
+  async function saveCategoryName() {
+    const name = categoryDraftName.trim();
+    if (!name || !categoryModal.catId) return;
+
+    const next = categories.map((c) => (c.id === categoryModal.catId ? { ...c, name } : c));
+    await updateStudio({ serviceCategories: next });
+    setCategoryModal({ open: false, catId: null });
+    setCategoryDraftName("");
+  }
+
+  async function deleteCategory(catId) {
+    if (catId === UNCATEGORIZED_ID) return;
+
+    const cat = categories.find((c) => c.id === catId);
+    if (!cat) return;
+
+    const catServices = Array.isArray(cat.services) ? cat.services : [];
+    const nextCategories = categories.filter((c) => c.id !== catId);
+    const nextUnc = [...uncategorizedServices, ...catServices];
+
+    await updateStudio({
+      serviceCategories: nextCategories,
+      uncategorizedServices: nextUnc,
+    });
+  }
+
+  // -----------------------------
+  // Service add/edit/delete
+  // -----------------------------
+  function openAddService(catId) {
+    setServiceModal({ open: true, mode: "add", catId, serviceId: null });
+    setServiceDraft({
+      id: null,
+      categoryId: catId,
+      name: "",
+      duration: 60,
+      price: "",
+      allMasters: true,
+      masters: [],
+    });
+  }
+
+  function openEditService(catId, serviceId) {
+    const list = getCategoryServices(catId);
+    const original = list.find((s) => s.id === serviceId);
+    if (!original) return;
+
+    setServiceModal({ open: true, mode: "edit", catId, serviceId });
+    setServiceDraft({
+      id: original.id,
+      categoryId: catId,
+      name: original.name || "",
+      duration: Number(original.duration || 60),
+      price: String(original.price ?? ""),
+      allMasters: Boolean(original.allMasters),
+      masters: Array.isArray(original.masters) ? [...original.masters] : [],
+    });
+  }
+
+  function closeServiceModal() {
+    setServiceModal({ open: false, mode: "add", catId: UNCATEGORIZED_ID, serviceId: null });
+    setServiceDraft({
+      id: null,
+      categoryId: UNCATEGORIZED_ID,
+      name: "",
+      duration: 60,
+      price: "",
+      allMasters: true,
+      masters: [],
+    });
+  }
+
+  async function deleteService(catId, serviceId) {
+    if (catId === UNCATEGORIZED_ID) {
+      await updateStudio({
+        uncategorizedServices: uncategorizedServices.filter((s) => s.id !== serviceId),
+      });
+      return;
+    }
+
+    const nextCategories = categories.map((c) => {
+      if (c.id !== catId) return c;
+      return { ...c, services: (c.services || []).filter((s) => s.id !== serviceId) };
+    });
+
+    await updateStudio({ serviceCategories: nextCategories });
+  }
+
+  async function saveService() {
+    if (!canSaveServiceDraft(serviceDraft)) return;
+
+    const fromCatId = serviceModal.catId;
+    const toCatId = serviceDraft.categoryId || UNCATEGORIZED_ID;
+
+    const cleaned = {
+      id: serviceDraft.id || makeId("srv"),
+      name: String(serviceDraft.name || "").trim(),
+      duration: Number(serviceDraft.duration || 60),
+      price: Number(serviceDraft.price),
+      allMasters: Boolean(serviceDraft.allMasters),
+      masters: serviceDraft.allMasters ? [] : (serviceDraft.masters || []),
+    };
+
+    // ADD: just add to target
+    if (serviceModal.mode === "add") {
+      if (toCatId === UNCATEGORIZED_ID) {
+        await updateStudio({ uncategorizedServices: [...uncategorizedServices, cleaned] });
+      } else {
+        const nextCategories = categories.map((c) => {
+          if (c.id !== toCatId) return c;
+          return { ...c, services: [...(c.services || []), cleaned] };
+        });
+        await updateStudio({ serviceCategories: nextCategories });
+      }
+
+      closeServiceModal();
+      return;
+    }
+
+    // EDIT: remove from source, add to target (supports moving)
+    let nextCategories = categories.map((c) => {
+      if (c.id !== fromCatId) return c;
+      return { ...c, services: (c.services || []).filter((s) => s.id !== cleaned.id) };
+    });
+
+    let nextUnc = uncategorizedServices.filter((s) => s.id !== cleaned.id);
+
+    if (toCatId === UNCATEGORIZED_ID) {
+      nextUnc = [...nextUnc, cleaned];
+    } else {
+      nextCategories = nextCategories.map((c) => {
+        if (c.id !== toCatId) return c;
+        return { ...c, services: [...(c.services || []), cleaned] };
+      });
+    }
+
+    await updateStudio({
+      serviceCategories: nextCategories,
+      uncategorizedServices: nextUnc,
+    });
+
+    closeServiceModal();
+  }
+
+  // -----------------------------
+  // UI blocks:
+  // 1) categories add
+  // 2) uncategorized block
+  // 3) each added category block
+  // -----------------------------
+  const blocks = useMemo(() => {
+    const unc = {
+      id: UNCATEGORIZED_ID,
+      name: "Послуги без категорії",
+      services: uncategorizedServices,
+      _virtual: true,
+    };
+
+    return [unc, ...categories.map((c) => ({ ...c, services: c.services || [] }))];
+  }, [categories, uncategorizedServices]);
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="rounded-[28px] border border-gray-200 bg-white p-5 sm:p-6 shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-              Послуги
-            </h1>
-            <p className="mt-2 text-sm text-gray-600 max-w-2xl">
-              Додайте послуги, щоб клієнти могли швидко обрати потрібний варіант і записатись онлайн.
-            </p>
-          </div>
-
-<div className="flex items-center gap-2">
-  <span className="
-    whitespace-nowrap
-    rounded-full border border-gray-200 bg-gray-50
-    px-3 py-1
-    text-xs font-semibold text-gray-700
-  ">
-    Всього: {services.length}
-  </span>
-
-  <span className="
-    whitespace-nowrap
-    rounded-full border border-emerald-200 bg-emerald-50
-    px-3 py-1
-    text-xs font-semibold text-emerald-800
-  ">
-    Майстрів: {masters.length}
-  </span>
-</div>
-
+      {/* BLOCK 1: add category */}
+      <SectionCard
+        title="Категорії"
+        subtitle="Додай категорію (наприклад: Вії, Нігті, Брови)."
+        right={
+          <span className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-700">
+            Всього: {categories.length}
+          </span>
+        }
+      >
+        <div className="flex flex-col sm:flex-row gap-2">
+          <input
+            value={newCategoryName}
+            onChange={(e) => setNewCategoryName(e.target.value)}
+            placeholder="Напр. Вії"
+            className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none transition focus:border-black focus:ring-2 focus:ring-black/15"
+          />
+          <button
+            type="button"
+            onClick={addCategory}
+            disabled={!newCategoryName.trim()}
+            className="rounded-2xl bg-black px-5 py-3 text-sm font-extrabold text-white hover:bg-gray-900 active:scale-[0.99] transition disabled:bg-gray-200 disabled:text-gray-500"
+          >
+            Додати категорію
+          </button>
         </div>
-      </div>
-      {/* Layout */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Add service card */}
-        <section className="rounded-[28px] border border-gray-200 bg-white p-5 sm:p-6 shadow-sm">
-          <div className="mb-5">
-            <h2 className="text-lg font-semibold text-gray-900">
-              Додати нову послугу
-            </h2>
-            <p className="mt-1 text-sm text-gray-600">
-              Вкажіть назву, тривалість, ціну та за потреби — майстра.
-            </p>
-          </div>
+      </SectionCard>
 
-          <form onSubmit={addService} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-900 mb-1">
-                Назва послуги
-              </label>
-              <input
-                name="name"
-                placeholder="Напр. Стрижка чоловіча"
-                value={form.name}
-                onChange={handleChange}
-                className="w-full rounded-xl border border-gray-200 bg-white p-3 text-sm focus:outline-none focus:ring-2 focus:ring-black/10"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-900 mb-1">
-                  Тривалість
-                </label>
-                <AnimatedSelect
-                  name="duration"
-                  value={form.duration}
-                  onChange={(val) =>
-                    setForm((prev) => ({ ...prev, duration: Number(val) }))
-                  }
-                  options={durationOptions}
-                  placeholder="Оберіть тривалість"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-900 mb-1">
-                  Ціна
-                </label>
-                <input
-                  name="price"
-                  type="number"
-                  placeholder="грн"
-                  value={form.price}
-                  onChange={handleChange}
-                  className="
-                    w-full rounded-xl border border-gray-200 bg-white p-3 text-sm
-                    appearance-none
-                    [&::-webkit-inner-spin-button]:appearance-none
-                    [&::-webkit-outer-spin-button]:appearance-none
-                    [appearance:textfield]
-                    focus:outline-none
-                    focus:ring-2 focus:ring-black/10
-                    transition-all
-                  "
-                />
-              </div>
-
-            </div>
-<div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-  <p className="text-sm font-semibold text-gray-900">Виконавці</p>
-  <p className="mt-1 text-xs text-gray-600">
-    За замовчуванням послуга доступна всім майстрам. <br />Якщо потрібно — оберіть конкретних.
-  </p>
-
-  <div className="mt-3 flex flex-wrap gap-2">
-    <button
-      type="button"
-      onClick={() =>
-        setForm((prev) => ({ ...prev, allMasters: true, masters: [] }))
-      }
-      className={`rounded-xl px-4 py-2 text-sm font-semibold border transition ${
-        form.allMasters
-          ? "bg-gray-900 text-white border-gray-900"
-          : "bg-white text-gray-900 border-gray-200 hover:bg-gray-50"
-      }`}
-    >
-      Для всіх майстрів
-    </button>
-
-    <button
-      type="button"
-      onClick={() => setForm((prev) => ({ ...prev, allMasters: false }))}
-      className={`rounded-xl px-4 py-2 text-sm font-semibold border transition ${
-        !form.allMasters
-          ? "bg-gray-900 text-white border-gray-900"
-          : "bg-white text-gray-900 border-gray-200 hover:bg-gray-50"
-      }`}
-    >
-      Обрати майстрів
-    </button>
-  </div>
-
-  {!form.allMasters && (
-    <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
-      {masters.length === 0 ? (
-        <div className="rounded-xl border bg-white p-3 text-sm text-gray-600">
-          Спочатку додайте майстрів.
-        </div>
-      ) : (
-        masters.map((m) => {
-          const id = m.id ?? m.name;
-          const checked = form.masters.includes(String(id));
+      {/* BLOCK 2 + 3: uncategorized + categories */}
+      <div className="space-y-4">
+        {blocks.map((cat) => {
+          const isUnc = cat.id === UNCATEGORIZED_ID;
 
           return (
-            <label
-              key={String(id)}
-              className={`flex items-center gap-3 rounded-xl border p-3 cursor-pointer transition
-  ${checked ? "border-emerald-300 bg-emerald-50" : "border-gray-200 bg-white hover:bg-gray-50"}`}
+            <SectionCard
+              key={cat.id}
+              title={cat.name}
+              subtitle={`${(cat.services?.length || 0)} послуг`}
+right={
+  <div className="grid grid-cols-2 sm:flex sm:items-center gap-2">
+    {!isUnc && (
+      <Button className="w-full sm:w-auto" onClick={() => openEditCategory(cat.id)}>
+        Редагувати
+      </Button>
+    )}
+
+    <Button className="w-full sm:w-auto" variant="primary" onClick={() => openAddService(cat.id)}>
+      Додати послугу
+    </Button>
+
+    {!isUnc && (
+      <Button
+        className="col-span-2 sm:col-auto w-full sm:w-auto"
+        variant="danger"
+        onClick={() => deleteCategory(cat.id)}
+        title="Категорія буде видалена, а послуги перенесуться в “Без категорії”"
+      >
+        Видалити
+      </Button>
+    )}
+  </div>
+}
 
             >
+              {(cat.services?.length || 0) === 0 ? (
+                <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
+                  Тут ще немає послуг. Натисни “Додати послугу”.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {cat.services.map((srv) => (
+                    <div
+                      key={srv.id}
+                      className="rounded-2xl border border-gray-200 bg-white p-4 hover:bg-gray-50/60 transition"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
 
+                        <div className="min-w-0">
+                          <p className="font-extrabold text-gray-900 truncate">{srv.name}</p>
+                          <p className="mt-1 text-sm text-gray-600">
+                            {srv.duration} хв • {srv.price} грн • {resolveServiceMastersText(srv)}
+                          </p>
+                        </div>
 
-              <span className="text-sm font-semibold text-gray-900">
-               <label
-  key={String(id)}
-  className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-3 cursor-pointer hover:bg-gray-50"
->
-  <input
-    type="checkbox"
-    checked={checked}
-    onChange={(e) => {
-      const next = e.target.checked
-        ? [...form.masters, String(id)]
-        : form.masters.filter((x) => x !== String(id));
-
-      setForm((prev) => ({ ...prev, masters: next }));
-    }}
-    className="h-4 w-4 accent-emerald-300 cursor-pointer"
-  />
-
-  <MasterChip master={m} checked={checked} />
-</label>
-
-              </span>
-            </label>
-          );
-        })
-      )}
-    </div>
-  )}
-
-  {!form.allMasters && (
-    <p className="mt-2 text-xs text-gray-500">
-      Обрано: <span className="font-semibold">{form.masters.length}</span>
-    </p>
-  )}
+<div className="grid grid-cols-2 sm:flex gap-2 sm:shrink-0">
+  <Button className="w-full sm:w-auto" onClick={() => openEditService(cat.id, srv.id)}>
+    Редагувати
+  </Button>
+  <Button className="w-full sm:w-auto" variant="danger" onClick={() => deleteService(cat.id, srv.id)}>
+    Видалити
+  </Button>
 </div>
 
-            <div className="flex items-center gap-3 pt-1">
-              <button
-                type="submit"
-                disabled={!canSubmit}
-                className={`
-                  inline-flex items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold
-                  transition active:scale-[0.99]
-                  ${
-                    canSubmit
-                      ? "ui-button-one"
-                      : "ui-button-one"
-                  }
-                `}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </SectionCard>
+          );
+        })}
+      </div>
+
+      {/* EDIT CATEGORY MODAL */}
+      <Modal
+        open={categoryModal.open}
+        onClose={() => setCategoryModal({ open: false, catId: null })}
+        title="Редагування категорії"
+        subtitle="Зміни назву та збережи."
+        footer={
+          <div className="flex items-center justify-end gap-2">
+                        <Button variant="primary" onClick={saveCategoryName} disabled={!categoryDraftName.trim()}>
+              Зберегти
+            </Button>
+            <Button
+              onClick={() => setCategoryModal({ open: false, catId: null })}
+            >
+              Скасувати
+            </Button>
+
+          </div>
+        }
+      >
+        <div>
+          <label className="block text-sm font-semibold text-gray-900 mb-1">Назва категорії</label>
+          <input
+            value={categoryDraftName}
+            onChange={(e) => setCategoryDraftName(e.target.value)}
+            className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none transition focus:border-black focus:ring-2 focus:ring-black/15"
+            placeholder="Напр. Вії"
+          />
+        </div>
+      </Modal>
+
+      {/* ADD/EDIT SERVICE MODAL */}
+      <Modal
+        open={serviceModal.open}
+        onClose={closeServiceModal}
+        title={serviceModal.mode === "add" ? "Додати послугу" : "Редагувати послугу"}
+        subtitle="За потреби можна перенести послугу в іншу категорію."
+        footer={
+          <div className="flex items-center justify-end gap-2">
+                        <Button variant="primary" onClick={saveService} disabled={!canSaveServiceDraft(serviceDraft)}>
+              Зберегти
+            </Button>
+            <Button onClick={closeServiceModal}>Скасувати</Button>
+
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          {/* category */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-900 mb-1">Категорія</label>
+            <select
+              value={serviceDraft.categoryId || UNCATEGORIZED_ID}
+              onChange={(e) => setServiceDraft((p) => ({ ...p, categoryId: e.target.value }))}
+              className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none transition focus:border-black focus:ring-2 focus:ring-black/15"
+            >
+              <option value={UNCATEGORIZED_ID}>Послуги без категорії</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-gray-500">
+              Якщо хочеш — можна перенести послугу в іншу категорію.
+            </p>
+          </div>
+
+          {/* name */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-900 mb-1">Назва послуги</label>
+            <input
+              value={serviceDraft.name}
+              onChange={(e) => setServiceDraft((p) => ({ ...p, name: e.target.value }))}
+              placeholder="Напр. Нарощування"
+              className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none transition focus:border-black focus:ring-2 focus:ring-black/15"
+            />
+          </div>
+
+          {/* duration + price */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-1">Тривалість</label>
+              <select
+                value={serviceDraft.duration}
+                onChange={(e) =>
+                  setServiceDraft((p) => ({ ...p, duration: Number(e.target.value) }))
+                }
+                className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none transition focus:border-black focus:ring-2 focus:ring-black/15"
               >
-                Додати послугу
+                {durationOptions.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-1">Ціна</label>
+              <input
+                type="number"
+                value={serviceDraft.price}
+                onChange={(e) => setServiceDraft((p) => ({ ...p, price: e.target.value }))}
+                placeholder="грн"
+                className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none transition focus:border-black focus:ring-2 focus:ring-black/15"
+              />
+            </div>
+          </div>
+
+          {/* masters */}
+          <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+            <p className="text-sm font-extrabold text-gray-900">Виконавці</p>
+            <p className="mt-1 text-xs text-gray-600">
+              За замовчуванням — всі майстри. Якщо потрібно — обери конкретних.
+            </p>
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setServiceDraft((p) => ({ ...p, allMasters: true, masters: [] }))}
+                className={[
+                  "rounded-xl px-4 py-2 text-sm font-extrabold border transition",
+                  serviceDraft.allMasters
+                    ? "bg-black text-white border-black"
+                    : "bg-white text-gray-900 border-gray-200 hover:bg-gray-50",
+                ].join(" ")}
+              >
+                Для всіх майстрів
               </button>
 
+              <button
+                type="button"
+                onClick={() => setServiceDraft((p) => ({ ...p, allMasters: false }))}
+                className={[
+                  "rounded-xl px-4 py-2 text-sm font-extrabold border transition",
+                  !serviceDraft.allMasters
+                    ? "bg-black text-white border-black"
+                    : "bg-white text-gray-900 border-gray-200 hover:bg-gray-50",
+                ].join(" ")}
+              >
+                Обрати майстрів
+              </button>
             </div>
-          </form>
-        </section>
 
-        {/* Services list */}
-        <section className="rounded-[28px] border border-gray-200 bg-white p-5 sm:p-6 shadow-sm">
-          <div className="mb-5 flex items-start justify-between gap-4">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">
-                Список послуг
-              </h2>
-              <p className="mt-1 text-sm text-gray-600">
-                Усі послуги, доступні клієнтам під час запису.
-              </p>
-            </div>
-          </div>
-
-          {services.length === 0 ? (
-            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5 text-sm text-gray-600">
-              Поки що немає послуг. Додайте першу послугу зліва.
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {services.map((service) => (
-                <div
-                  key={service.id}
-                  className="rounded-2xl border border-gray-200 bg-white p-4 hover:bg-gray-50/60 transition"
-                >
-                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="font-semibold text-gray-900 truncate">
-                        {service.name}
-                      </p>
-
-<p className="mt-1 text-sm text-gray-600">
-  {service.duration} хв • {service.price} грн
-{service.allMasters
-  ? " • всі майстри"
-  : service.masters?.length === 1
-    ? ` • ${
-        masters.find(
-          m => String(m.id ?? m.name) === String(service.masters[0])
-        )?.name || service.masters[0]
-      }`
-    : service.masters?.length > 1
-      ? ` • ${service.masters.length} ${getMastersWord(service.masters.length)}`
-      : ""}
-
-
-
-</p>
-
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setEditId(service.id)}
-
-                        className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-50 active:scale-[0.99] transition"
-                      >
-                        Редагувати
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => deleteService(service.id)}
-                        className="rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100 active:scale-[0.99] transition"
-                      >
-                        Видалити
-                      </button>
-                    </div>
+            {!serviceDraft.allMasters && (
+              <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {masters.length === 0 ? (
+                  <div className="rounded-xl border bg-white p-3 text-sm text-gray-600">
+                    Спочатку додайте майстрів.
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-      </div>
+                ) : (
+                  masters.map((m) => {
+                    const id = String(m.id ?? m.name);
+                    const checked = (serviceDraft.masters || []).includes(id);
 
-      {/* Edit modal (ONE instance) */}
-{editId && draft && (
-  <div
-    className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/40 backdrop-blur-[2px] backdrop-saturate-150"
-    onClick={() => setEditId(null)}
-  >
-    <div
-      className="w-full max-w-md overflow-hidden rounded-[28px] border border-gray-200 bg-white shadow-xl"
-      onClick={(e) => e.stopPropagation()}
-    >
-      <div className="border-b px-5 py-4">
-        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-          Редагування
-        </p>
-        <h3 className="mt-1 text-lg font-semibold text-gray-900">
-          {draft.name}
-        </h3>
-        <p className="mt-1 text-sm text-gray-600">
-          Оновіть дані та збережіть зміни.
-        </p>
-      </div>
+                    return (
+                      <label
+                        key={id}
+                        className={[
+                          "flex items-center gap-3 rounded-2xl border p-3 cursor-pointer transition",
+                          checked
+                            ? "border-emerald-200 bg-emerald-50"
+                            : "border-gray-200 bg-white hover:bg-gray-50",
+                        ].join(" ")}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(e) => {
+                            const current = serviceDraft.masters || [];
+                            const next = e.target.checked
+                              ? [...current, id]
+                              : current.filter((x) => x !== id);
+                            setServiceDraft((p) => ({ ...p, masters: next }));
+                          }}
+                          className="h-4 w-4 accent-emerald-300 cursor-pointer"
+                        />
+                        <MasterChip master={m} checked={checked} />
+                      </label>
+                    );
+                  })
+                )}
+              </div>
+            )}
 
-      <div className="p-5 space-y-4">
-        {/* Назва */}
-        <div>
-          <label className="block text-sm font-medium text-gray-900 mb-1">
-            Назва
-          </label>
-          <input
-            value={draft.name}
-            onChange={(e) =>
-              setDraft((prev) => ({ ...prev, name: e.target.value }))
-            }
-            className="w-full rounded-xl border border-gray-200 bg-white p-3 text-sm focus:outline-none focus:ring-2 focus:ring-black/10"
-          />
-        </div>
-
-        {/* Виконавці */}
-        <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-          <p className="text-sm font-semibold text-gray-900">Виконавці</p>
-
-          <div className="mt-3 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() =>
-                setDraft((prev) => ({ ...prev, allMasters: true, masters: [] }))
-              }
-              className={`rounded-xl px-4 py-2 text-sm font-semibold border transition ${
-                draft.allMasters
-                  ? "bg-gray-900 text-white border-gray-900"
-                  : "bg-white text-gray-900 border-gray-200 hover:bg-gray-50"
-              }`}
-            >
-              Для всіх майстрів
-            </button>
-
-            <button
-              type="button"
-              onClick={() =>
-                setDraft((prev) => ({
-                  ...prev,
-                  allMasters: false,
-                  masters: prev.masters || [],
-                }))
-              }
-              className={`rounded-xl px-4 py-2 text-sm font-semibold border transition ${
-                !draft.allMasters
-                  ? "bg-gray-900 text-white border-gray-900"
-                  : "bg-white text-gray-900 border-gray-200 hover:bg-gray-50"
-              }`}
-            >
-              Обрати майстрів
-            </button>
+            {!serviceDraft.allMasters && (
+              <p className="mt-2 text-xs text-gray-500">
+                Обрано:{" "}
+                <span className="font-extrabold">{(serviceDraft.masters || []).length}</span>
+              </p>
+            )}
           </div>
-
-          {!draft.allMasters && (
-            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {masters.map((m) => {
-                const id = m.id ?? m.name;
-                const label = m.name ?? String(id);
-                const selected = (draft.masters || []).includes(String(id));
-
-                return (
-                  <label
-                    key={String(id)}
-                    className={`flex items-center gap-3 rounded-xl border p-3 cursor-pointer transition ${
-                      selected
-                        ? "border-emerald-200 bg-emerald-50"
-                        : "border-gray-200 bg-white hover:bg-gray-50"
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selected}
-                      onChange={(e) => {
-                        const current = draft.masters || [];
-                        const next = e.target.checked
-                          ? [...current, String(id)]
-                          : current.filter((x) => x !== String(id));
-
-                        setDraft((prev) => ({ ...prev, masters: next }));
-                      }}
-                      className="h-4 w-4 accent-emerald-300 cursor-pointer"
-                    />
-
-                    <span className="text-sm font-semibold text-gray-900 truncate">
-                      {label}
-                    </span>
-                  </label>
-                );
-              })}
-            </div>
-          )}
         </div>
-
-        {/* Ціна */}
-        <div>
-          <label className="block text-sm font-medium text-gray-900 mb-1">
-            Ціна
-          </label>
-          <input
-            type="number"
-            value={draft.price}
-            onChange={(e) =>
-              setDraft((prev) => ({ ...prev, price: Number(e.target.value) }))
-            }
-            className="w-full rounded-xl border border-gray-200 bg-white p-3 text-sm focus:outline-none focus:ring-2 focus:ring-black/10"
-          />
-        </div>
-      </div>
-
-      <div className="flex items-center justify-end gap-2 border-t px-5 py-4">
-        <button
-          type="button"
-          onClick={() => {
-            setServices(services.map((s) => (s.id === editId ? draft : s)));
-            setEditId(null);
-          }}
-          className="rounded-xl bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-black active:scale-[0.99] transition"
-        >
-          Зберегти
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setEditId(null)}
-          className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-50 active:scale-[0.99] transition"
-        >
-          Скасувати
-        </button>
-      </div>
-    </div>
-  </div>
-)}
-
-
+      </Modal>
     </div>
   );
 }

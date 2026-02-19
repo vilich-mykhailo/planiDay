@@ -52,6 +52,12 @@ function completeness(form) {
       ok: Boolean(form.category?.trim()),
     },
     {
+  key: "phone",
+  label: "Номер телефону",
+  ok: Boolean(form.phone?.trim()),
+},
+
+    {
       key: "description",
       label: "Опис",
       ok: Boolean(form.description?.trim()),
@@ -148,36 +154,22 @@ export default function StudioSettings() {
   const { studio, updateStudio } = useStudio();
   const [checklistOpen, setChecklistOpen] = useState(false); // ✅ по дефолту сховано
 
-  const [tab, setTab] = useState("profile"); // profile | location | links
-  const [form, setForm] = useState({
-    name: "",
-    category: "",
-    description: "",
-    city: "",
-    street: "",
-    building: "",
-    apartment: "",
-    coverUrl: "",
-    logoUrl: "",
-    portfolioUrls: [],
-  });
 
-  useEffect(() => {
-    setForm({
-      name: studio?.name || "",
-      category: studio?.category || "",
-      description: studio?.description || "",
-      city: studio?.city || "",
-      street: studio?.street || "",
-      building: studio?.building || "",
-      apartment: studio?.apartment || "",
-      coverUrl: studio?.coverUrl || "",
-      logoUrl: studio?.logoUrl || "",
-      portfolioUrls: Array.isArray(studio?.portfolioUrls)
-        ? studio.portfolioUrls
-        : [],
-    });
-  }, [studio]);
+  const [tab, setTab] = useState("profile"); // profile | location | links
+const [form, setForm] = useState({
+  name: "",
+  category: "",
+  phone: "",
+  description: "",
+  city: "",
+  street: "",
+  building: "",
+  apartment: "",
+  coverUrl: "",
+  logoUrl: "",
+  portfolioUrls: [],
+});
+
 
   const baseFieldClass =
     "w-full rounded-xl border border-gray-200 bg-white p-3 text-sm font-medium text-gray-900 outline-none transition-all " +
@@ -242,29 +234,33 @@ export default function StudioSettings() {
       document.body.classList.remove("modal-open");
     };
   }, [portfolioPreview.open]);
+const [hydrated, setHydrated] = useState(false);
 
-  const dirty = useMemo(() => {
-    const currentPortfolio = Array.isArray(studio?.portfolioUrls)
-      ? studio.portfolioUrls
-      : [];
+useEffect(() => {
+  if (!studio) return;
 
-    return (
-      (studio?.name || "") !== form.name ||
-      (studio?.category || "") !== form.category ||
-      (studio?.description || "") !== form.description ||
-      (studio?.city || "") !== form.city ||
-      (studio?.street || "") !== form.street ||
-      (studio?.building || "") !== form.building ||
-      (studio?.apartment || "") !== form.apartment ||
-      (studio?.coverUrl || "") !== form.coverUrl ||
-      (studio?.logoUrl || "") !== form.logoUrl ||
-      JSON.stringify(currentPortfolio) !==
-        JSON.stringify(form.portfolioUrls || [])
-    );
-  }, [studio, form]);
+  setForm({
+    name: studio?.name || "",
+    category: studio?.category || "",
+    phone: studio?.phone || "",
+    description: studio?.description || "",
+    city: studio?.city || "",
+    street: studio?.street || "",
+    building: studio?.building || "",
+    apartment: studio?.apartment || "",
+    coverUrl: studio?.coverUrl || "",
+    logoUrl: studio?.logoUrl || "",
+    portfolioUrls: Array.isArray(studio?.portfolioUrls) ? studio.portfolioUrls : [],
+  });
+
+  setHydrated(true);
+}, [studio]);
 
   const errors = useMemo(() => {
     const e = {};
+if (form.phone && !/^\+?\d[\d\s()-]{8,}$/.test(form.phone.trim())) {
+  e.phone = "Вкажи коректний номер телефону.";
+}
 
     if (!form.name.trim()) e.name = "Вкажи назву студії.";
     if (!form.category.trim()) e.category = "Вкажи категорію.";
@@ -276,8 +272,53 @@ export default function StudioSettings() {
 
     return e;
   }, [form]);
+  
+const rawDirty = useMemo(() => {
+  const currentPortfolio = Array.isArray(studio?.portfolioUrls)
+    ? studio.portfolioUrls
+    : [];
 
-  const canSave = dirty && Object.keys(errors).length === 0 && !saving;
+  return (
+    (studio?.name || "") !== form.name ||
+    (studio?.category || "") !== form.category ||
+    (studio?.phone || "") !== form.phone ||
+
+    (studio?.description || "") !== form.description ||
+    (studio?.city || "") !== form.city ||
+    (studio?.street || "") !== form.street ||
+    (studio?.building || "") !== form.building ||
+    (studio?.apartment || "") !== form.apartment ||
+    (studio?.coverUrl || "") !== form.coverUrl ||
+    (studio?.logoUrl || "") !== form.logoUrl ||
+    JSON.stringify(currentPortfolio) !== JSON.stringify(form.portfolioUrls || [])
+  );
+}, [studio, form]);
+
+
+function resetChanges() {
+  if (!studio) return;
+
+  setForm({
+    name: studio?.name || "",
+    category: studio?.category || "",
+    phone: studio?.phone || "",
+    description: studio?.description || "",
+    city: studio?.city || "",
+    street: studio?.street || "",
+    building: studio?.building || "",
+    apartment: studio?.apartment || "",
+    coverUrl: studio?.coverUrl || "",
+    logoUrl: studio?.logoUrl || "",
+    portfolioUrls: Array.isArray(studio?.portfolioUrls) ? studio.portfolioUrls : [],
+  });
+}
+
+
+const dirty = hydrated ? rawDirty : false;
+const hasPendingChanges = dirty;
+const canSave = dirty && Object.keys(errors).length === 0 && !saving;
+
+
 
   function setField(name, value) {
     if (name === "description" && value.length > MAX_DESC) return;
@@ -415,6 +456,8 @@ export default function StudioSettings() {
       await updateStudio({
         name: form.name.trim(),
         category: form.category.trim(),
+        phone: form.phone.trim(),
+
         description: form.description.trim(),
         city: form.city.trim(),
         street: form.street.trim(),
@@ -444,26 +487,56 @@ export default function StudioSettings() {
 
   const headerTriggerRef = useRef(null);
   const [showTopSave, setShowTopSave] = useState(false);
+const floatingVisible = showTopSave || hasPendingChanges;
+useEffect(() => {
+  const el = headerTriggerRef.current;
+  if (!el) return;
 
-  useEffect(() => {
-    const el = headerTriggerRef.current;
-    if (!el) return;
+  function getRootMargin() {
+    const w = window.innerWidth;
 
-    const io = new IntersectionObserver(
+    if (w < 640) return "-620px 0px 0px 0px"; 
+    if (w < 768) return "-400px 0px 0px"; 
+    return "-50px 0px 0px 0px"; 
+  }
+
+  let observer = new IntersectionObserver(
+    ([entry]) => {
+      setShowTopSave(!entry.isIntersecting);
+    },
+    {
+      threshold: 0,
+      rootMargin: getRootMargin(),
+    }
+  );
+
+  observer.observe(el);
+
+  // recreate observer on resize
+  function handleResize() {
+    observer.disconnect();
+
+    observer = new IntersectionObserver(
       ([entry]) => {
-        // ✅ показуємо коли заголовок ВЖЕ НЕ ВИДНО (ти проскролив нижче)
         setShowTopSave(!entry.isIntersecting);
       },
       {
         threshold: 0,
-        // (опційно) зробити появу трохи раніше/пізніше:
-        // rootMargin: "-8px 0px 0px 0px",
-      },
+        rootMargin: getRootMargin(),
+      }
     );
 
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
+    observer.observe(el);
+  }
+
+  window.addEventListener("resize", handleResize);
+
+  return () => {
+    observer.disconnect();
+    window.removeEventListener("resize", handleResize);
+  };
+}, []);
+
 
   const AddressLine = useMemo(() => {
     const parts = [
@@ -479,6 +552,8 @@ export default function StudioSettings() {
   const FIELD_ID = {
     name: "studio-field-name",
     category: "studio-field-category",
+    phone: "studio-field-phone",
+
     description: "studio-field-description",
     portfolio: "studio-field-portfolio-add",
     coverUrl: "studio-field-coverUrl",
@@ -626,7 +701,11 @@ export default function StudioSettings() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl min-h-[100dvh] pb-32 md:pb-0">
+<div className="mx-auto max-w-6xl min-h-[100svh] pb-10 md:pb-0">
+
+
+
+
       <input
         ref={coverInputRef}
         type="file"
@@ -654,17 +733,6 @@ export default function StudioSettings() {
               Оформлення як у топових сервісах: превʼю + вкладки + швидке
               збереження.
             </p>
-          </div>
-
-          <div className="hidden items-center gap-2 md:flex">
-            <button
-              type="button"
-              onClick={save}
-              disabled={!canSave}
-              className="rounded-xl bg-black px-5 py-2 text-sm font-semibold text-white hover:bg-gray-900 disabled:opacity-40"
-            >
-              {saving ? "Збереження..." : "Зберегти"}
-            </button>
           </div>
         </div>
 
@@ -697,6 +765,7 @@ export default function StudioSettings() {
         {/* Left column: Preview + Media */}
         <div className="lg:col-span-5 space-y-6">
           {/* Live preview */}
+          <div className={tab === "profile" ? "block" : "hidden md:block"}>
           <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.06)]">
             <div
               id="studio-field-coverUrl"
@@ -764,16 +833,16 @@ grid h-6 w-6 place-items-center rounded-md
                 </button>
               )}
 
-              <div className="absolute -bottom-10 left-5 flex items-end gap-3">
-                <div
-                  id="studio-field-logoUrl"
-                  className={[
-                    "relative h-20 w-20 overflow-hidden rounded-2xl border border-gray-200 bg-white",
-                    highlightId === "studio-field-logoUrl"
-                      ? "field-highlight"
-                      : "",
-                  ].join(" ")}
-                >
+<div className="absolute -bottom-10 left-3 right-3 flex items-end gap-2 min-w-0">
+
+<div
+  id="studio-field-logoUrl"
+  className={[
+    "relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-gray-200 bg-white",
+    highlightId === "studio-field-logoUrl" ? "field-highlight" : "",
+  ].join(" ")}
+>
+
                   <button
                     type="button"
                     onClick={pickLogoFromPreview}
@@ -832,30 +901,44 @@ grid h-5 w-5 place-items-center rounded-md
                   )}
                 </div>
 
-                <div className="rounded-xl border border-white/70 bg-white/95 backdrop-blur-md shadow-lg px-3 py-2 flex flex-col justify-end min-h-[44px]">
-                  <p
-                    className="text-base font-extrabold text-gray-900 leading-5 truncate max-w-[220px]"
-                    title={form.name.trim() ? form.name : "Назва студії"}
-                  >
-                    {form.name.trim() ? form.name : "Назва студії"}
-                  </p>
+<div className="min-w-0 rounded-xl border border-white/70 bg-white/95 backdrop-blur-md shadow-lg px-3 py-2 flex flex-col justify-end min-h-[44px]">
 
-                  <p className="text-sm text-gray-600">
-                    {(form.category.trim() ? form.category : "Категорія") +
-                      " • " +
-                      (form.city.trim() ? form.city : "Місто")}
-                  </p>
-                </div>
+  {/* Назва студії — максимум 2 рядки */}
+  <p
+    className="w-full min-w-0 text-sm sm:text-base font-extrabold text-gray-900 leading-5 line-clamp-2 break-words"
+    title={form.name.trim() ? form.name : "Назва студії"}
+  >
+    {form.name.trim() ? form.name : "Назва студії"}
+  </p>
+
+  {/* Категорія + місто — максимум 2 рядки */}
+  <p
+    className="w-full min-w-0 text-xs sm:text-sm text-gray-600 line-clamp-2 break-words"
+    title={`${form.category.trim() ? form.category : "Категорія"} • ${
+      form.city.trim() ? form.city : "Місто"
+    }`}
+  >
+    {(form.category.trim() ? form.category : "Категорія") +
+      " • " +
+      (form.city.trim() ? form.city : "Місто")}
+  </p>
+
+</div>
+
                 
               </div>
             </div>
 
-            <div className="px-5 pb-5 pt-14">
+            <div className="px-3 pb-3 pt-14">
               <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
                 <p className="text-xs font-semibold text-gray-500">Адреса</p>
-                <p className="mt-1 text-sm font-semibold text-gray-900">
-                  {AddressLine}
-                </p>
+<p
+  className="mt-1 text-sm font-semibold text-gray-900 line-clamp-2 break-words"
+  title={AddressLine}
+>
+  {AddressLine}
+</p>
+
 
                 <p className="mt-3 text-xs font-semibold text-gray-500">Опис</p>
                 <p className="mt-1 text-sm text-gray-700">
@@ -866,6 +949,7 @@ grid h-5 w-5 place-items-center rounded-md
               </div>
             </div>
           </section>
+          </div>
           <section className="rounded-2xl border border-gray-200 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.06)]">
             <div className="px-5 py-4 border-b border-gray-100">
               <div className="flex items-center justify-between gap-3">
@@ -888,6 +972,7 @@ grid h-5 w-5 place-items-center rounded-md
                   {profile.percent}%
                 </div>
               </div>
+              
             </div>
 
             <div className="px-5 py-5 space-y-4">
@@ -1061,6 +1146,18 @@ grid h-5 w-5 place-items-center rounded-md
                       className={fieldClass("studio-field-category")}
                     />
                   </Field>
+  <div className="sm:col-span-2">
+    <Field label="Номер телефону" error={errors.phone}>
+      <input
+        id="studio-field-phone"
+        value={form.phone}
+        onChange={(e) => setField("phone", e.target.value)}
+        placeholder="+380 67 123 45 67"
+        inputMode="tel"
+        className={fieldClass("studio-field-phone")}
+      />
+    </Field>
+  </div>
 
                   <div className="sm:col-span-2">
                     <Field
@@ -1079,16 +1176,44 @@ grid h-5 w-5 place-items-center rounded-md
                         className={fieldClass("studio-field-description")}
                       />
                     </Field>
-                    <div className="mt-3 rounded-xl border border-gray-200 bg-gray-50 p-4">
-                      <p className="text-xs font-semibold text-gray-500">
-                        Рекомендація
-                      </p>
-                      <p className="mt-1 text-sm text-gray-700">
-                        Детальний опис допомагає клієнтам краще зрозуміти ваш
-                        досвід і підвищує ймовірність запису. Опишіть свою
-                        спеціалізацію, підхід до роботи та ключові переваги.
-                      </p>
-                    </div>
+<div className="mt-3 rounded-xl border border-gray-200 bg-gray-50 p-4 space-y-3">
+  <div>
+    <p className="text-xs font-semibold text-gray-500">
+      Рекомендація
+    </p>
+    <p className="mt-1 text-sm text-gray-700">
+      Детальний опис допомагає клієнтам краще зрозуміти ваш досвід і підвищує
+      ймовірність запису. Опишіть свою спеціалізацію, підхід до роботи та ключові
+      переваги.
+    </p>
+  </div>
+
+  {/* divider */}
+  <div className="h-px bg-gray-200" />
+
+  {/* additional tips */}
+  <div>
+    <p className="text-xs font-semibold text-gray-500">
+      Що варто вказати:
+    </p>
+
+    <ul className="mt-1 space-y-1 text-sm text-gray-700">
+      <li>• Скільки років досвіду має студія</li>
+      <li>• Які послуги або техніки ви використовуєте</li>
+      <li>• Які бренди матеріалів застосовуєте</li>
+      <li>• Чим ви відрізняєтесь від інших</li>
+      <li>• Гарантії, стерильність або сертифікацію</li>
+    </ul>
+  </div>
+
+  {/* extra highlight */}
+  <div className="rounded-lg bg-white border border-gray-200 px-3 py-2">
+    <p className="text-xs text-gray-600">
+      💡 Студії з повним описом отримують більше переглядів і записів.
+    </p>
+  </div>
+</div>
+
                   </div>
                 </div>
               </Card>
@@ -1140,14 +1265,20 @@ grid h-5 w-5 place-items-center rounded-md
                     />
                   </Field>
 
-                  <div className="sm:col-span-2 rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                    <p className="text-xs font-semibold text-gray-500">
-                      Перевірка
-                    </p>
-                    <p className="mt-1 text-sm font-semibold text-gray-900">
-                      {AddressLine}
-                    </p>
-                  </div>
+<div className="sm:col-span-2 rounded-2xl border border-gray-200 bg-gray-50 p-4">
+  <p className="text-xs font-semibold text-gray-500">
+    Перевірка
+  </p>
+
+  <p
+    className="mt-1 text-sm font-semibold text-gray-900 line-clamp-2 break-words"
+    title={AddressLine}
+  >
+    {AddressLine}
+  </p>
+</div>
+
+
                 </div>
               </Card>
             )}
@@ -1403,121 +1534,105 @@ grid h-5 w-5 place-items-center rounded-md
         </div>
       </div> */}
 
-      {/* Professional Toast */}
+{/* Professional Toast */}
+<div
+  className={[
+    // ✅ Mobile: top-center
+    "fixed z-[90] left-1/2 top-[calc(12px+env(safe-area-inset-top))] -translate-x-1/2 md:left-4 md:bottom-6 md:top-auto md:translate-x-0",
+    "w-[calc(100%-2rem)] max-w-[420px] md:w-auto md:min-w-[260px] md:max-w-[340px]",
+    "transition-all duration-300",
+    toast.open
+      ? "opacity-100 translate-y-0"
+      : "pointer-events-none opacity-0 -translate-y-3",
+  ].join(" ")}
+  role="status"
+  aria-live="polite"
+>
+  <div
+    className={[
+      "relative overflow-hidden rounded-2xl border bg-white",
+      "shadow-[0_12px_30px_rgba(0,0,0,0.16)]",
+      toast.type === "success" ? "border-emerald-300" : "border-red-300",
+    ].join(" ")}
+  >
+    {/* Glow */}
+    <div
+      className={[
+        "pointer-events-none absolute -inset-10 blur-2xl opacity-30",
+        toast.type === "success" ? "bg-emerald-300" : "bg-red-300",
+      ].join(" ")}
+    />
 
+    {/* Left accent */}
+    <div
+      className={[
+        "absolute left-0 top-0 h-full w-1.5",
+        toast.type === "success" ? "bg-emerald-500" : "bg-red-500",
+      ].join(" ")}
+    />
+
+    <div className="relative flex items-start gap-3 p-4 pl-5">
+      {/* Icon bubble */}
       <div
         className={[
-          "fixed z-[90] left-4 bottom-6",
-          "w-auto min-w-[260px] max-w-[340px]",
-          "transition-all duration-300",
-          toast.open
-            ? "opacity-100 translate-x-0 translate-y-0"
-            : "pointer-events-none opacity-0 -translate-x-5 translate-y-4",
+          "flex h-10 w-10 items-center justify-center rounded-xl",
+          "shadow-[0_6px_14px_rgba(0,0,0,0.12)]",
+          "animate-[toastPop_260ms_ease-out]",
+          toast.type === "success"
+            ? "bg-emerald-600 text-white"
+            : "bg-red-600 text-white",
         ].join(" ")}
-        role="status"
-        aria-live="polite"
+        aria-hidden="true"
       >
-        <div
-          className={[
-            "relative overflow-hidden rounded-2xl border bg-white",
-            "shadow-[0_12px_30px_rgba(0,0,0,0.16)]",
-            toast.type === "success" ? "border-emerald-300" : "border-red-300",
-          ].join(" ")}
-        >
-          {/* Glow */}
-          <div
-            className={[
-              "pointer-events-none absolute -inset-10 blur-2xl opacity-30",
-              toast.type === "success" ? "bg-emerald-300" : "bg-red-300",
-            ].join(" ")}
-          />
-
-          {/* Left accent */}
-          <div
-            className={[
-              "absolute left-0 top-0 h-full w-1.5",
-              toast.type === "success" ? "bg-emerald-500" : "bg-red-500",
-            ].join(" ")}
-          />
-
-          <div className="relative flex items-start gap-3 p-4 pl-5">
-            {/* Icon bubble */}
-            <div
-              className={[
-                "flex h-10 w-10 items-center justify-center rounded-xl",
-                "shadow-[0_6px_14px_rgba(0,0,0,0.12)]",
-                "animate-[toastPop_260ms_ease-out]",
-                toast.type === "success"
-                  ? "bg-emerald-600 text-white"
-                  : "bg-red-600 text-white",
-              ].join(" ")}
-              aria-hidden="true"
-            >
-              {toast.type === "success" ? (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M20 6L9 17l-5-5"
-                    stroke="#ffffff"
-                    strokeWidth="2.6"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              ) : (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M12 9v5"
-                    stroke="currentColor"
-                    strokeWidth="2.6"
-                    strokeLinecap="round"
-                  />
-                  <path
-                    d="M12 17h.01"
-                    stroke="currentColor"
-                    strokeWidth="3.6"
-                    strokeLinecap="round"
-                  />
-                </svg>
-              )}
-            </div>
-
-            {/* Text */}
-            <div className="min-w-0">
-              <p className="text-sm font-extrabold text-gray-900 leading-5">
-                {toast.title ||
-                  (toast.type === "success" ? "Збережено" : "Помилка")}
-              </p>
-              <p className="mt-1 text-sm text-gray-700 leading-5">
-                {toast.text}
-              </p>
-            </div>
-          </div>
-
-          {/* Progress bar */}
-          <div className="h-[4px] w-full bg-gray-100">
-            <div
-              className={[
-                "h-full w-full origin-left animate-[toastbar_3.2s_linear_forwards]",
-                toast.type === "success" ? "bg-emerald-500" : "bg-red-500",
-              ].join(" ")}
+        {toast.type === "success" ? (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M20 6L9 17l-5-5"
+              stroke="#ffffff"
+              strokeWidth="2.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             />
-          </div>
-        </div>
-
-        <style>{`
-@keyframes fieldHighlightFade {
-  0%   { background-color: rgba(16,185,129,0.22); }
-  40%  { background-color: rgba(16,185,129,0.16); }
-  70%  { background-color: rgba(16,185,129,0.08); }
-  100% { background-color: transparent; }
-}
-
-.field-highlight {
-  animation: fieldHighlightFade 2.8s ease-out forwards;
-}
-
-`}</style>
+          </svg>
+        ) : (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M12 9v5"
+              stroke="currentColor"
+              strokeWidth="2.6"
+              strokeLinecap="round"
+            />
+            <path
+              d="M12 17h.01"
+              stroke="currentColor"
+              strokeWidth="3.6"
+              strokeLinecap="round"
+            />
+          </svg>
+        )}
       </div>
+
+      {/* Text */}
+      <div className="min-w-0">
+        <p className="text-sm font-extrabold text-gray-900 leading-5">
+          {toast.title || (toast.type === "success" ? "Збережено" : "Помилка")}
+        </p>
+        <p className="mt-1 text-sm text-gray-700 leading-5">{toast.text}</p>
+      </div>
+    </div>
+
+    {/* Progress bar */}
+    <div className="h-[4px] w-full bg-gray-100">
+      <div
+        className={[
+          "h-full w-full origin-left animate-[toastbar_3.2s_linear_forwards]",
+          toast.type === "success" ? "bg-emerald-500" : "bg-red-500",
+        ].join(" ")}
+      />
+    </div>
+  </div>
+</div>
+
 
       {portfolioPreview.open && (
         <div
@@ -1567,31 +1682,106 @@ grid h-5 w-5 place-items-center rounded-md
         </div>
       )}
       {/* Top-right Save (appears only when header is visible) */}
-      <div
+<div
+  className={[
+    "fixed right-4 z-[9999] transition-all duration-300",
+    checklistOpen ? "top-20" : "top-4",
+    floatingVisible
+      ? "opacity-100 translate-y-0 pointer-events-auto"
+      : "opacity-0 -translate-y-2 pointer-events-none",
+  ].join(" ")}
+>
+
+
+
+
+</div>
+
+{/* Mobile bottom actions */}
+<div className="fixed inset-x-0 bottom-0 md:hidden z-[60]">
+  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-white via-white/95 to-transparent" />
+
+  <div className="relative mx-auto max-w-5xl px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+    <div className="flex gap-2">
+      
+      {/* Save */}
+      <button
+        type="button"
+        onClick={save}
+        disabled={!canSave}
         className={[
-          "fixed right-4 top-4 z-[9999]",
-          "transition-all duration-300",
-          showTopSave
-            ? "opacity-100 translate-y-0 pointer-events-auto"
-            : "opacity-0 -translate-y-2 pointer-events-none",
+          "w-1/2 rounded-2xl px-4 py-3 text-sm font-extrabold transition active:scale-[0.99]",
+          canSave
+            ? "bg-black text-white hover:bg-gray-900"
+            : "bg-gray-100 text-gray-400 cursor-not-allowed",
         ].join(" ")}
       >
-        <button
-          type="button"
-          onClick={save}
-          disabled={!canSave}
-          className="
-      rounded-2xl bg-black px-5 py-3
-      text-sm font-extrabold text-white
-      shadow-[0_12px_30px_rgba(0,0,0,0.22)]
-      hover:bg-gray-900 active:scale-[0.99]
-      disabled:opacity-40 disabled:shadow-none
-      transition
-    "
-        >
-          {saving ? "Збереження..." : "Зберегти"}
-        </button>
-      </div>
+        {saving ? "Збереження..." : "Зберегти"}
+      </button>
+      {/* Cancel */}
+      <button
+        type="button"
+        onClick={resetChanges}
+        disabled={!dirty || saving}
+        className={[
+          "w-1/2 rounded-2xl px-4 py-3 text-sm font-extrabold transition active:scale-[0.99]",
+          dirty && !saving
+            ? "bg-white text-gray-900 border border-gray-200 hover:bg-gray-50"
+            : "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed",
+        ].join(" ")}
+      >
+        Скасувати
+      </button>
+
+    </div>
+  </div>
+</div>
+
+
+{/* Tablet + Desktop bottom-right actions */}
+<div className="hidden md:block fixed right-6 bottom-6 z-[80]">
+    <div className="flex items-center gap-3">
+    
+
+  {hasPendingChanges && (
+    <span className="mr-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700 pill-enter">
+      Збережи зміни
+    </span>
+  )}
+    {/* Save */}
+    <button
+      type="button"
+      onClick={save}
+      disabled={!canSave}
+      className={[
+        "rounded-2xl px-6 py-3 text-sm font-extrabold shadow-sm",
+        "transition active:scale-[0.98]",
+        canSave
+          ? "bg-black text-white hover:bg-gray-900 hover:shadow-md"
+          : "bg-gray-100 text-gray-400 cursor-not-allowed shadow-none",
+      ].join(" ")}
+    >
+      {saving ? "Збереження..." : "Зберегти"}
+    </button>
+    {/* Cancel */}
+    <button
+      type="button"
+      onClick={resetChanges}
+      disabled={!dirty || saving}
+      className={[
+        "rounded-2xl px-5 py-3 text-sm font-extrabold shadow-sm",
+        "transition active:scale-[0.98]",
+        dirty && !saving
+          ? "bg-white text-gray-900 border border-gray-200 hover:bg-gray-50 hover:shadow-md"
+          : "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed shadow-none",
+      ].join(" ")}
+    >
+      Скасувати
+    </button>
+  </div>
+</div>
+
+
     </div>
   );
 }

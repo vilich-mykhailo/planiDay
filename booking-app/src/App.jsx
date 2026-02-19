@@ -17,6 +17,13 @@ import Masters from "./pages/dashboard/Masters";
 import StudioPublicPage from "./pages/dashboard/StudioPublicPage";
 import AppBackground from "./components/AppBackground";
 import StaffSchedule from "./pages/dashboard/StaffSchedule";
+import LoginClient from "./pages/dashboard/LoginClient";
+import RegisterClient from "./pages/dashboard/RegisterClient";
+import ForgotPassword from "./pages/dashboard/ForgotPassword";
+import Terms from "./pages/dashboard/Terms";
+import Privacy from "./pages/dashboard/Privacy";
+import LoginOwner from "./components/LoginOwner";
+import RegisterOwner from "./components/RegisterOwner";
 
 function StudioDetailsKeyed() {
   const { slug } = useParams();
@@ -33,9 +40,17 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/studios" element={<Studios />} />
           <Route path="/studios/:slug" element={<StudioPublicPage />} />
-
+<Route path="/terms" element={<Terms />} />
+<Route path="/privacy" element={<Privacy />} />
           <Route path="/booking/success" element={<BookingSuccess />} />
           <Route path="/auth" element={<Auth />} />
+<Route path="/login" element={<LoginClient />} />
+<Route path="/register" element={<RegisterClient />} />
+<Route path="/forgot-password" element={<ForgotPassword />} />
+
+<Route path="/login-owner" element={<LoginOwner />} />
+<Route path="/register-owner" element={<RegisterOwner />} />
+
 
           <Route path="/dashboard" element={<Dashboard />}>
             <Route index element={<Golowna></Golowna>} />

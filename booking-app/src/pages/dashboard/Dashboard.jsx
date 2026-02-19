@@ -11,7 +11,7 @@ export default function Dashboard() {
       <aside className="dash-sidebar">
         <div className="dash-head">
           <div className="dash-badge">Кабінет</div>
-          <h2 className="dash-title">Панель керування</h2>
+          <h2 className="dash-title dash-topbar">Панель керування</h2>
         </div>
 
         <nav className="dash-nav">
