@@ -170,10 +170,21 @@ const [form, setForm] = useState({
   portfolioUrls: [],
 });
 
+const [highlightId, setHighlightId] = useState("");
+const [highlightAddress, setHighlightAddress] = useState(false);
 
-  const baseFieldClass =
-    "w-full rounded-xl border border-gray-200 bg-white p-3 text-sm font-medium text-gray-900 outline-none transition-all " +
-    "focus:border-black focus:ring-2 focus:ring-black/40";
+// ✅ нове
+const [highlightTone, setHighlightTone] = useState("green"); // "green" | "default"
+
+// ✅ один клас на всі кейси
+const highlightClass =
+  highlightTone === "green"
+    ? "ring-2 ring-emerald-400/70 bg-emerald-50 border-emerald-300"
+    : "ring-2 ring-black/25 bg-gray-50 border-gray-300";
+const baseFieldClass =
+  "w-full rounded-xl border border-gray-200 bg-white p-3 text-sm font-medium text-gray-900 outline-none " +
+  "transition-[box-shadow,border-color,background-color] " +
+  "focus:border-black";
 
   function fieldClass(id) {
     const isAddressField =
@@ -185,7 +196,7 @@ const [form, setForm] = useState({
     const shouldHighlight =
       highlightId === id || (highlightAddress && isAddressField);
 
-    return [baseFieldClass, shouldHighlight ? "field-highlight" : ""].join(" ");
+    return [baseFieldClass, shouldHighlight ? highlightClass : ""].join(" ");
   }
 
   const [saving, setSaving] = useState(false);
@@ -547,8 +558,6 @@ useEffect(() => {
     return parts.length ? parts.join(", ") : "Адреса не заповнена";
   }, [form]);
   const profile = useMemo(() => completeness(form), [form]);
-  const [highlightId, setHighlightId] = useState("");
-  const [highlightAddress, setHighlightAddress] = useState(false);
   const FIELD_ID = {
     name: "studio-field-name",
     category: "studio-field-category",
@@ -561,10 +570,11 @@ useEffect(() => {
     address: "studio-field-city",
   };
 
-  function highlightAddressFields() {
-    setHighlightAddress(true);
-    window.setTimeout(() => setHighlightAddress(false), 2800);
-  }
+function highlightAddressFields() {
+  setHighlightTone("green");
+  setHighlightAddress(true);
+  window.setTimeout(() => setHighlightAddress(false), 2800);
+}
 
   function resolveTabByKey(key) {
     if (["city", "street", "building", "apartment", "address"].includes(key)) {
@@ -576,16 +586,17 @@ useEffect(() => {
 
     return "profile";
   }
-  function goToNextIncomplete() {
-    if (!profile?.next?.key) return;
+function goToNextIncomplete() {
+  if (!profile?.next?.key) return;
+  goToField(profile.next.key, { tone: "green" });
+}
 
-    // ✅ просто використовуємо ту саму логіку, що і в чеклісті
-    goToField(profile.next.key);
-  }
+function goToField(key, opts = {}) {
+  const tone = opts.tone || "green";
+  setHighlightTone(tone);
 
-  function goToField(key) {
-    const nextTab = resolveTabByKey(key);
-    setTab(nextTab);
+  const nextTab = resolveTabByKey(key);
+  setTab(nextTab);
 
     // ✅ address = підсвітити всі 4 поля, без highlightId
     if (key === "portfolio") {
@@ -771,9 +782,7 @@ useEffect(() => {
               id="studio-field-coverUrl"
               className={[
                 "relative h-44 bg-gray-100",
-                highlightId === "studio-field-coverUrl"
-                  ? "field-highlight"
-                  : "",
+highlightId === "studio-field-coverUrl" ? highlightClass : ""
               ].join(" ")}
             >
               {hasCover ? (
@@ -839,7 +848,7 @@ grid h-6 w-6 place-items-center rounded-md
   id="studio-field-logoUrl"
   className={[
     "relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-gray-200 bg-white",
-    highlightId === "studio-field-logoUrl" ? "field-highlight" : "",
+    highlightId === "studio-field-logoUrl" ? highlightClass : ""
   ].join(" ")}
 >
 
@@ -1009,7 +1018,7 @@ grid h-5 w-5 place-items-center rounded-md
                     <button
                       type="button"
                       onClick={goToNextIncomplete}
-                      className="rounded-xl bg-black px-4 py-2.5 text-sm font-bold text-white hover:bg-gray-900"
+                      className="rounded-xl bg-black px-4 py-2.5 ui-button-one"
                     >
                       Перейти
                     </button>
@@ -1053,7 +1062,7 @@ grid h-5 w-5 place-items-center rounded-md
                             <button
                               key={i.key}
                               type="button"
-                              onClick={() => goToField(i.key)}
+                              onClick={() => goToField(i.key, { tone: "green" })}
                               className="
     group w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-left
     hover:bg-gray-50 active:scale-[0.99] transition
@@ -1301,9 +1310,7 @@ grid h-5 w-5 place-items-center rounded-md
                           id="studio-field-portfolio-add"
                           className={[
                             "inline-flex cursor-pointer items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-900 hover:bg-gray-50 active:scale-[0.99] transition",
-                            highlightId === "studio-field-portfolio-add"
-                              ? "field-highlight"
-                              : "",
+                           highlightId === "studio-field-portfolio-add" ? highlightClass : ""
                           ].join(" ")}
                         >
                           Додати фото
@@ -1757,8 +1764,8 @@ grid h-5 w-5 place-items-center rounded-md
         "rounded-2xl px-6 py-3 text-sm font-extrabold shadow-sm",
         "transition active:scale-[0.98]",
         canSave
-          ? "bg-black text-white hover:bg-gray-900 hover:shadow-md"
-          : "bg-gray-100 text-gray-400 cursor-not-allowed shadow-none",
+          ? "ui-button-one"
+          : "ui-button-one",
       ].join(" ")}
     >
       {saving ? "Збереження..." : "Зберегти"}
@@ -1772,8 +1779,8 @@ grid h-5 w-5 place-items-center rounded-md
         "rounded-2xl px-5 py-3 text-sm font-extrabold shadow-sm",
         "transition active:scale-[0.98]",
         dirty && !saving
-          ? "bg-white text-gray-900 border border-gray-200 hover:bg-gray-50 hover:shadow-md"
-          : "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed shadow-none",
+          ? "ui-button"
+          : "ui-button",
       ].join(" ")}
     >
       Скасувати

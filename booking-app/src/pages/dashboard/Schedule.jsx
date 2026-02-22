@@ -496,7 +496,7 @@ function cancelChanges() {
           <button
             type="button"
             onClick={generateSlots}
-            className="rounded-2xl border border-gray-200 bg-white px-5 py-3 text-sm font-extrabold text-gray-900 hover:bg-gray-50 transition"
+            className="ui-button-one"
           >
             Згенерувати слоти
           </button>
@@ -561,8 +561,8 @@ function cancelChanges() {
     "rounded-2xl px-6 py-3 text-sm font-extrabold shadow-sm",
     "transition active:scale-[0.98]",
     dirty && !saving
-      ? "bg-black text-white hover:bg-gray-900 hover:shadow-md"
-      : "bg-gray-100 text-gray-400 cursor-not-allowed shadow-none",
+      ? "ui-button-one"
+      : "ui-button-one",
   ].join(" ")}
 >
   {saving ? "Збереження..." : "Зберегти"}
@@ -576,8 +576,8 @@ function cancelChanges() {
     "rounded-2xl px-5 py-3 text-sm font-extrabold shadow-sm",
     "transition active:scale-[0.98]",
     dirty && !saving
-      ? "bg-white text-gray-900 border border-gray-200 hover:bg-gray-50 hover:shadow-md"
-      : "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed shadow-none",
+      ? "ui-button"
+      : "ui-button",
   ].join(" ")}
 >
   Скасувати

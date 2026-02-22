@@ -10319,7 +10319,7 @@ export const studios = [
       "sun": {
         "enabled": false,
         "start": "11:00",
-        "end": "20:00"
+        "end": "21:00"
       }
     },
     "serviceCategories": [

@@ -116,6 +116,9 @@
   background-color: #eef2f7;
   border-color: #e5e7eb;
   color: #111827;
+      font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
 }
 
 .ui-button-primary:hover {
@@ -148,6 +151,9 @@
   background-color: transparent;
   border-color: transparent;
   color: #dc2626;
+    font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
 }
 
 .ui-button-danger:hover {

@@ -16,7 +16,6 @@ import Golowna from "./components/Golowna";
 import Masters from "./pages/dashboard/Masters";
 import StudioPublicPage from "./pages/dashboard/StudioPublicPage";
 import AppBackground from "./components/AppBackground";
-import StaffSchedule from "./pages/dashboard/StaffSchedule";
 import LoginClient from "./pages/dashboard/LoginClient";
 import RegisterClient from "./pages/dashboard/RegisterClient";
 import ForgotPassword from "./pages/dashboard/ForgotPassword";
@@ -56,7 +55,6 @@ export default function App() {
             <Route index element={<Golowna></Golowna>} />
             <Route path="studio" element={<StudioSettings />} />
             <Route path="services" element={<Services />} />
-            <Route path="/dashboard/staff-schedule" element={<StaffSchedule />} />
             <Route path="schedule" element={<Schedule />} />
             <Route path="bookings" element={<Bookings />} />
             <Route path="masters" element={<Masters />} />

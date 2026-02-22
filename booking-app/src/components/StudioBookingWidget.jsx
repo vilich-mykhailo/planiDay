@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/rules-of-hooks */
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useBookings } from '../context/bookings/useBookings'
@@ -17,7 +16,6 @@ function minutesToTime(total) {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
 }
 
-// ✅ ЛОГІКА СЛОТІВ НЕ ЗМІНЕНА
 function buildSlots(start, end, stepMinutes) {
   const startM = timeToMinutes(start)
   const endM = timeToMinutes(end)
@@ -44,27 +42,62 @@ function getDayKeyFromDateObj(date) {
   return map[date.getDay()]
 }
 
-export default function StudioBookingWidget({ studio }) {
+/** ✅ OUTER: рахує key для remount */
+export default function StudioBookingWidget({ studio, preselectedService }) {
+  const services = useMemo(() => {
+    return Array.isArray(studio?.services) ? studio.services : []
+  }, [studio])
+
+  // ✅ ключ змінюється коли змінюється студія / preselected / набір послуг
+  const remountKey = useMemo(() => {
+    const studioKey = studio?.slug ?? 'no-studio'
+    const preKey = preselectedService?.serviceId ?? 'no-pre'
+    const servicesKey = services.map(s => s.id).join('|')
+    return `${studioKey}::${preKey}::${servicesKey}`
+  }, [studio?.slug, preselectedService?.serviceId, services])
+
+  if (!studio) {
+    return <p className="text-sm text-gray-600">Студію не знайдено</p>
+  }
+
+  return (
+    <StudioBookingWidgetInner
+      key={remountKey}
+      studio={studio}
+      preselectedService={preselectedService}
+    />
+  )
+}
+
+/** ✅ INNER: всі стейти ініціалізуються один раз, без useEffect */
+function StudioBookingWidgetInner({ studio, preselectedService }) {
   const navigate = useNavigate()
   const { addBooking, bookings } = useBookings()
 
-  if (!studio) return <p className="text-sm text-gray-600">Студію не знайдено</p>
+  const services = useMemo(() => {
+    return Array.isArray(studio?.services) ? studio.services : []
+  }, [studio])
 
-  // крок слотів
   const slotDuration =
     typeof studio?.slotDuration === 'number' ? studio.slotDuration : 15
 
-  // ✅ дата (реальний Date обʼєкт)
+  const defaultServiceId = useMemo(() => {
+    if (!services.length) return null
+    const wantedId = preselectedService?.serviceId
+    const exists = wantedId && services.some(s => s.id === wantedId)
+    return exists ? wantedId : (services[0]?.id ?? null)
+  }, [services, preselectedService?.serviceId])
+
   const [selectedDate, setSelectedDate] = useState(() => {
     const d = new Date()
     d.setHours(0, 0, 0, 0)
     return d
   })
 
-  // ✅ кроки UI (логіку бронювання не чіпаємо)
-  // pick => вибір (послуга/дата/час)
-  // details => форма "Ваші дані"
   const [step, setStep] = useState('pick')
+  const [selectedServiceId, setSelectedServiceId] = useState(() => defaultServiceId)
+  const [selectedTime, setSelectedTime] = useState(null)
+  const [form, setForm] = useState({ name: '', phone: '' })
 
   const selectedDateStr = useMemo(() => {
     return selectedDate ? formatDateLocal(selectedDate) : null
@@ -90,7 +123,6 @@ export default function StudioBookingWidget({ studio }) {
     return buildSlots(dayConfig.start, dayConfig.end, slotDuration)
   }, [dayConfig, slotDuration])
 
-  // ✅ зайняті слоти ПО КОНКРЕТНІЙ ДАТІ
   const busyTimes = useMemo(() => {
     if (!studio || !selectedDateStr) return new Set()
 
@@ -106,7 +138,6 @@ export default function StudioBookingWidget({ studio }) {
     return new Set(used)
   }, [bookings, studio, selectedDateStr])
 
-  // ✅ disabled для календаря: минулі дні + дні, коли студія не працює
   const disabledDays = useMemo(() => {
     const schedule = studio?.schedule || {}
     const enabledKeys = new Set(
@@ -128,26 +159,13 @@ export default function StudioBookingWidget({ studio }) {
     }
   }, [studio])
 
-  // сервіси
-  const services = useMemo(() => {
-    return Array.isArray(studio?.services) ? studio.services : []
-  }, [studio?.services])
-
-  const [selectedServiceId, setSelectedServiceId] = useState(() => {
-    return services?.[0]?.id ?? null
-  })
-
-  const [selectedTime, setSelectedTime] = useState(null)
-  const [form, setForm] = useState({ name: '', phone: '' })
-
   const selectedService = useMemo(() => {
     return services.find(s => s.id === selectedServiceId) || null
   }, [services, selectedServiceId])
 
-const studioAddress = [studio?.city, studio?.street, studio?.building]
-  .filter(Boolean)
-  .join(', ')
-
+  const studioAddress = [studio?.city, studio?.street, studio?.building]
+    .filter(Boolean)
+    .join(', ')
 
   function handleSubmit(e) {
     e.preventDefault()
@@ -174,22 +192,23 @@ const studioAddress = [studio?.city, studio?.street, studio?.building]
       clientPhone: form.phone,
     })
 
-navigate('/booking/success', {
-  state: {
-    studioName: studio.name,
-    serviceName: service?.name ?? 'Без назви',
-    date: selectedDateStr,
-    time: selectedTime,
-    address: studioAddress,
-    phone: form.phone,
-  },
-})
-
-
+    navigate('/booking/success', {
+      state: {
+        studioName: studio.name,
+        serviceName: service?.name ?? 'Без назви',
+        date: selectedDateStr,
+        time: selectedTime,
+        address: studioAddress,
+        phone: form.phone,
+      },
+    })
   }
 
   const canGoNext =
-    Boolean(selectedServiceId) && Boolean(selectedDateStr) && isDayEnabled && Boolean(selectedTime)
+    Boolean(selectedServiceId) &&
+    Boolean(selectedDateStr) &&
+    isDayEnabled &&
+    Boolean(selectedTime)
 
   const submitDisabled =
     !selectedDateStr || !isDayEnabled || !selectedTime || !form.name || !form.phone
@@ -296,7 +315,9 @@ navigate('/booking/success', {
                     active
                       ? 'border-emerald-300 bg-emerald-50 text-emerald-900'
                       : 'border-gray-200 bg-white text-gray-900 hover:bg-gray-50',
-                    busy ? 'opacity-40 cursor-not-allowed line-through hover:bg-white' : '',
+                    busy
+                      ? 'opacity-40 cursor-not-allowed line-through hover:bg-white'
+                      : '',
                   ].join(' ')}
                   title={busy ? 'Цей час уже зайнятий' : ''}
                 >
@@ -320,7 +341,7 @@ navigate('/booking/success', {
         </button>
       )}
 
-      {/* Booking form (separate file) */}
+      {/* Booking form */}
       {step === 'details' && (
         <BookingCustomerForm
           form={form}

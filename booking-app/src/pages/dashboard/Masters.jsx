@@ -287,7 +287,7 @@ export default function Masters() {
 
               <div className="flex flex-wrap items-center gap-2">
                 <label className="cursor-pointer">
-                  <span className="inline-flex items-center justify-center rounded-2xl px-4 py-2.5 text-sm font-extrabold border border-gray-200 bg-white text-gray-900 hover:bg-gray-50 transition">
+                  <span className="ui-button-one">
                     Додати фото
                   </span>
                   <input
@@ -361,7 +361,7 @@ export default function Masters() {
             <button
               type="submit"
               disabled={!String(form.name || "").trim()}
-              className="w-full sm:w-auto rounded-2xl bg-black px-5 py-3 text-sm font-extrabold text-white hover:bg-gray-900 active:scale-[0.99] transition disabled:bg-gray-200 disabled:text-gray-500"
+              className="ui-button-one"
             >
               Додати майстра
             </button>
@@ -383,9 +383,9 @@ export default function Masters() {
             : "Додай першого майстра вище."
         }
         right={
-          <div className="grid grid-cols-2 sm:flex gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
             <Button
-              className="w-full sm:w-auto"
+              className="ui-button-one"
               variant="primary"
               onClick={() => window?.scrollTo?.({ top: 0, behavior: "smooth" })}
             >
@@ -429,13 +429,13 @@ export default function Masters() {
 
                   <div className="grid grid-cols-2 sm:flex gap-2 sm:shrink-0">
                     <Button
-                      className="w-full sm:w-auto"
+                      className="ui-button-primary"
                       onClick={() => openEdit(m)}
                     >
                       Редагувати
                     </Button>
                     <Button
-                      className="w-full sm:w-auto"
+                      className="ui-button-danger"
                       variant="danger"
                       onClick={() => deleteMaster(m.id)}
                     >

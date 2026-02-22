@@ -21,7 +21,6 @@ function Modal({ open, title, onClose, children }) {
 
   return (
     <div className="fixed inset-0 z-50">
-      {/* overlay */}
       <button
         type="button"
         aria-label="Close modal"
@@ -29,10 +28,8 @@ function Modal({ open, title, onClose, children }) {
         className="absolute inset-0 bg-black/55 backdrop-blur-[2px]"
       />
 
-      {/* dialog */}
       <div className="relative mx-auto flex min-h-full items-center justify-center p-4">
         <div className="w-full max-w-4xl overflow-hidden rounded-[28px] border bg-white shadow-[0_40px_120px_-60px_rgba(0,0,0,0.65)]">
-          {/* top bar */}
           <div className="flex items-start justify-between gap-4 border-b px-6 py-5">
             <div className="min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
@@ -56,7 +53,6 @@ function Modal({ open, title, onClose, children }) {
             </button>
           </div>
 
-          {/* body */}
           <div className="max-h-[calc(100vh-160px)] overflow-y-auto p-6">
             {children}
           </div>
@@ -154,7 +150,7 @@ function IconMoneyMini() {
 export default function StudioPublicPage() {
   const { slug } = useParams()
   const [openBooking, setOpenBooking] = useState(false)
-
+const [preselectedService, setPreselectedService] = useState(null)
   useEffect(() => {
     if (openBooking) document.body.style.overflow = 'hidden'
     else document.body.style.overflow = ''
@@ -188,8 +184,6 @@ const studio = useMemo(() => studios.find(s => s.slug === slug), [slug])
   const description = safe(studio.description)
   const coverUrl = safe(studio.coverUrl)
   const logoUrl = safe(studio.logoUrl)
-  const instagram = safe(studio.instagram)
-  const website = safe(studio.website)
   const street = safe(studio.street)
   const building = safe(studio.building)
   const apartment = safe(studio.apartment)
@@ -341,32 +335,7 @@ const studio = useMemo(() => studios.find(s => s.slug === slug), [slug])
       <p className="mt-4 text-sm text-gray-600">Опис ще не додано.</p>
     )}
 
-    {/* Links */}
-    <div className="mt-5 flex flex-wrap gap-2">
-      {instagram && (
-        <a
-          href={instagram}
-          target="_blank"
-          rel="noreferrer"
-          className="rounded-full border bg-white px-3 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50"
-        >
-          Instagram
-        </a>
-      )}
-      {website && (
-        <a
-          href={website}
-          target="_blank"
-          rel="noreferrer"
-          className="rounded-full border bg-white px-3 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50"
-        >
-          Сайт
-        </a>
-      )}
-      {(!instagram && !website) && (
-        <span className="text-sm text-gray-600">Посилання не додані.</span>
-      )}
-    </div>
+
 
 
     {/* CTA (mobile) */}
@@ -448,13 +417,19 @@ const studio = useMemo(() => studios.find(s => s.slug === slug), [slug])
                       </p>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => setOpenBooking(true)}
-                      className="rounded-xl ui-button-one"
-                    >
-                      Записатись
-                    </button>
+<button
+  type="button"
+  onClick={() => {
+    setPreselectedService({
+      categoryId: cat.id,
+      serviceId: s.id,
+    })
+    setOpenBooking(true)
+  }}
+  className="rounded-xl ui-button-one"
+>
+  Записатись
+</button>
                   </div>
                 ))}
               </div>
@@ -465,14 +440,6 @@ const studio = useMemo(() => studios.find(s => s.slug === slug), [slug])
     </div>
   )}
 
-  <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-    <div className="flex items-center gap-2">
-      <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-      <p className="text-xs font-medium text-emerald-800">
-        Підтвердження запису буде надіслано на ваш номер телефону.
-      </p>
-    </div>
-  </div>
 </section>
         {/* Portfolio section redesigned */}
         <section className="rounded-[28px] border bg-white p-6 sm:p-7 shadow-sm">
@@ -482,10 +449,6 @@ const studio = useMemo(() => studios.find(s => s.slug === slug), [slug])
               <p className="mt-1 text-sm text-gray-600">
                 Приклади робіт та атмосфера студії
               </p>
-            </div>
-
-            <div className="rounded-full border bg-gray-50 px-4 py-2 text-xs font-semibold text-gray-700">
-              {portfolio.length ? `${portfolio.length} фото` : 'немає фото'}
             </div>
           </div>
 
@@ -515,21 +478,16 @@ const studio = useMemo(() => studios.find(s => s.slug === slug), [slug])
           )}
         </section>
 
-        {/* Mobile bottom CTA bar */}
-        {/* <div className="sm:hidden fixed inset-x-0 bottom-0 z-40 px-2 py-0">
-          <button
-            type="button"
-            onClick={() => setOpenBooking(true)}
-            className="w-full rounded-2xl bg-gray-900 py-3 text-sm font-semibold text-white hover:bg-black active:scale-[0.99] transition"
-          >
-            Записатись онлайн
-          </button>
-        </div> */}
-
-        {/* Booking modal */}
-        <Modal open={openBooking} title={name} onClose={() => setOpenBooking(false)}>
-          <StudioBookingWidget studio={studio} />
-        </Modal>
+<Modal
+  open={openBooking}
+  title={name}
+  onClose={() => {
+    setOpenBooking(false)
+    setPreselectedService(null)
+  }}
+>
+  <StudioBookingWidget studio={studio} preselectedService={preselectedService} />
+</Modal>
 
         {/* Spacer for mobile fixed bar */}
         <div className="sm:hidden h-16" />

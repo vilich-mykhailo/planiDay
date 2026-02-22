@@ -30,9 +30,6 @@ export default function Dashboard() {
           <NavLink to="/dashboard/schedule" className={linkClass}>
             Графік роботи
           </NavLink>
-          <NavLink to="/dashboard/staff-schedule" className={linkClass}>
-            Графік персоналу
-          </NavLink>
 
           <NavLink to="/dashboard/bookings" className={linkClass}>
             Записи
