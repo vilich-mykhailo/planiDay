@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model OwnerAccount {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  phone        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  studios Studio[]
+}
+
+model ClientAccount {
+  id           String @id @default(cuid())
+  email        String @unique
+  passwordHash String
+
+  // базові дані
+  name  String?
+  phone String?
+
+  // profile (те, що у твоєму Profile.jsx)
+  firstName String?
+  lastName  String?
+  birthDate DateTime?
+  gender    String? // "male" | "female" | "other" | "unknown"
+  photoUrl  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bookings Booking[]
+}
+
+model Studio {
+  id        String   @id @default(cuid())
+  ownerId   String
+  name      String
+  address   String?
+  city      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner    OwnerAccount @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  bookings Booking[]
+}
+
+model Booking {
+  id        String        @id @default(cuid())
+  studioId  String
+  clientId  String
+  startAt   DateTime
+  endAt     DateTime
+  status    BookingStatus @default(PENDING)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  studio Studio        @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  client ClientAccount @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([studioId, startAt])
+  @@index([clientId, startAt])
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELED
+}

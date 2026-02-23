@@ -1,0 +1,17 @@
+version: "3.9"
+services:
+  db:
+    image: postgres:16
+    container_name: booking_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: booking
+      POSTGRES_PASSWORD: bookingpass
+      POSTGRES_DB: bookingapp
+    ports:
+      - "5433:5432"
+    volumes:
+      - booking_db_data:/var/lib/postgresql/data
+
+volumes:
+  booking_db_data:
