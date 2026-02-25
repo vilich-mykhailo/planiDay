@@ -7,7 +7,8 @@ function getMastersWord(count) {
   const mod10 = count % 10;
   const mod100 = count % 100;
   if (mod10 === 1 && mod100 !== 11) return "майстер";
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return "майстри";
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20))
+    return "майстри";
   return "майстрів";
 }
 
@@ -42,7 +43,9 @@ function MasterChip({ master, checked }) {
 
       <div className="min-w-0">
         <p className="text-sm font-semibold text-gray-900 truncate">{name}</p>
-        <p className={`text-xs ${checked ? "text-emerald-700" : "text-gray-500"}`}>
+        <p
+          className={`text-xs ${checked ? "text-emerald-700" : "text-gray-500"}`}
+        >
           {checked ? "Обрано" : "Доступний"}
         </p>
       </div>
@@ -67,7 +70,15 @@ function SectionCard({ title, subtitle, right, children }) {
   );
 }
 
-function Modal({ open, onClose, title, subtitle, children, footer, center = false }) {
+function Modal({
+  open,
+  onClose,
+  title,
+  subtitle,
+  children,
+  footer,
+  center = false,
+}) {
   const mouseDownOnBackdropRef = useRef(false);
   if (!open) return null;
 
@@ -86,7 +97,12 @@ function Modal({ open, onClose, title, subtitle, children, footer, center = fals
         mouseDownOnBackdropRef.current = false;
       }}
     >
-      <div className={["min-h-full px-4 py-6 flex justify-center", center ? "items-center" : "items-start"].join(" ")}>
+      <div
+        className={[
+          "min-h-full px-4 py-6 flex justify-center",
+          center ? "items-center" : "items-start",
+        ].join(" ")}
+      >
         <div
           className="w-full max-w-2xl overflow-hidden rounded-[28px] border border-gray-200 bg-white shadow-xl"
           onMouseDown={(e) => e.stopPropagation()}
@@ -94,8 +110,12 @@ function Modal({ open, onClose, title, subtitle, children, footer, center = fals
           onClick={(e) => e.stopPropagation()}
         >
           <div className="border-b px-5 py-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">{title}</p>
-            {subtitle && <p className="mt-1 text-sm text-gray-600">{subtitle}</p>}
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              {title}
+            </p>
+            {subtitle && (
+              <p className="mt-1 text-sm text-gray-600">{subtitle}</p>
+            )}
           </div>
 
           {center ? (
@@ -123,7 +143,11 @@ function Button({ variant = "default", className = "", children, ...props }) {
   };
 
   return (
-    <button type="button" className={`${base} ${styles[variant]} ${className}`} {...props}>
+    <button
+      type="button"
+      className={`${base} ${styles[variant]} ${className}`}
+      {...props}
+    >
       {children}
     </button>
   );
@@ -142,7 +166,8 @@ async function api(path, { method = "GET", body, token } = {}) {
   });
 
   const data = await res.json().catch(() => null);
-  if (!res.ok) throw new Error(data?.message || `Request failed (${res.status})`);
+  if (!res.ok)
+    throw new Error(data?.message || `Request failed (${res.status})`);
   return data;
 }
 
@@ -155,7 +180,10 @@ export default function Services() {
 
   const [loading, setLoading] = useState(false);
 
-  const masters = useMemo(() => (Array.isArray(studio?.masters) ? studio.masters : []), [studio]);
+  const masters = useMemo(
+    () => (Array.isArray(studio?.masters) ? studio.masters : []),
+    [studio],
+  );
 
   // -----------------------------
   // LOAD from API
@@ -167,8 +195,14 @@ export default function Services() {
       const token = localStorage.getItem("token");
       const data = await api(`/studio/${studio.id}/services`, { token });
 
-      setServiceCategories(Array.isArray(data?.serviceCategories) ? data.serviceCategories : []);
-      setUncategorizedServices(Array.isArray(data?.uncategorizedServices) ? data.uncategorizedServices : []);
+      setServiceCategories(
+        Array.isArray(data?.serviceCategories) ? data.serviceCategories : [],
+      );
+      setUncategorizedServices(
+        Array.isArray(data?.uncategorizedServices)
+          ? data.uncategorizedServices
+          : [],
+      );
     } finally {
       setLoading(false);
     }
@@ -182,7 +216,10 @@ export default function Services() {
   // -----------------------------
   // MODALS
   // -----------------------------
-  const [categoryModal, setCategoryModal] = useState({ open: false, catId: null });
+  const [categoryModal, setCategoryModal] = useState({
+    open: false,
+    catId: null,
+  });
   const [categoryDraftName, setCategoryDraftName] = useState("");
 
   const [serviceModal, setServiceModal] = useState({
@@ -231,7 +268,8 @@ export default function Services() {
       const r = el.getBoundingClientRect();
       const elCenter = r.top + r.height / 2;
       const dist = Math.abs(elCenter - centerY);
-      if (dist < best.dist) best = { dist, value: el.getAttribute("data-value") };
+      if (dist < best.dist)
+        best = { dist, value: el.getAttribute("data-value") };
     }
     return best.value != null ? Number(best.value) : null;
   }
@@ -255,7 +293,9 @@ export default function Services() {
       const merged = { ...prev, ...nextPartial };
       const n = normalizeHM(merged);
 
-      setServiceDraft((p) => (p.duration === n.total ? p : { ...p, duration: n.total }));
+      setServiceDraft((p) =>
+        p.duration === n.total ? p : { ...p, duration: n.total },
+      );
       return { h: n.h, m: n.m };
     });
   }
@@ -277,7 +317,8 @@ export default function Services() {
   function canSaveServiceDraft(d) {
     const nameOk = Boolean(String(d?.name || "").trim());
     const priceOk = Boolean(String(d?.price ?? "").trim());
-    const mastersOk = d?.allMasters || (Array.isArray(d?.masters) && d.masters.length > 0);
+    const mastersOk =
+      d?.allMasters || (Array.isArray(d?.masters) && d.masters.length > 0);
     return nameOk && priceOk && mastersOk;
   }
 
@@ -297,7 +338,11 @@ export default function Services() {
     if (!name || !studio?.id) return;
 
     const token = localStorage.getItem("token");
-    await api(`/studio/${studio.id}/categories`, { method: "POST", token, body: { name } });
+    await api(`/studio/${studio.id}/categories`, {
+      method: "POST",
+      token,
+      body: { name },
+    });
 
     setNewCategoryName("");
     refresh();
@@ -327,14 +372,18 @@ export default function Services() {
     refresh();
   }
 
-  async function deleteCategory(catId) {
-    if (catId === UNCATEGORIZED_ID) return;
+async function deleteCategory(catId) {
+  if (catId === UNCATEGORIZED_ID) return;
+  if (!studio?.id) return;
 
-    const token = localStorage.getItem("token");
-    // ✅ сервер має перенести всі services цього catId в categoryId=null і потім видалити категорію
-    await api(`/categories/${catId}`, { method: "DELETE", token });
-    refresh();
-  }
+  const token = localStorage.getItem("token");
+  await api(`/media/studio/${studio.id}/categories/${catId}`, {
+    method: "DELETE",
+    token,
+  });
+
+  refresh();
+}
 
   // -----------------------------
   // Service CRUD (API)
@@ -376,7 +425,12 @@ export default function Services() {
   }
 
   function closeServiceModal() {
-    setServiceModal({ open: false, mode: "add", catId: UNCATEGORIZED_ID, serviceId: null });
+    setServiceModal({
+      open: false,
+      mode: "add",
+      catId: UNCATEGORIZED_ID,
+      serviceId: null,
+    });
     setServiceDraft({
       id: null,
       categoryId: UNCATEGORIZED_ID,
@@ -388,53 +442,53 @@ export default function Services() {
     });
   }
 
-async function deleteService(catId, serviceId) {
-  try {
+  async function deleteService(catId, serviceId) {
+    try {
+      const token = localStorage.getItem("token");
+      await api(`/studio/services/${serviceId}`, { method: "DELETE", token });
+      refresh();
+    } catch (e) {
+      console.error(e);
+      alert(e.message);
+    }
+  }
+
+  async function saveService() {
+    if (!canSaveServiceDraft(serviceDraft) || !studio?.id) return;
+
     const token = localStorage.getItem("token");
-    await api(`/studio/services/${serviceId}`, { method: "DELETE", token });
+    const toCatId = serviceDraft.categoryId || UNCATEGORIZED_ID;
+
+    const payload = {
+      name: String(serviceDraft.name || "").trim(),
+      duration: Number(serviceDraft.duration || 60),
+      price: Number(serviceDraft.price),
+      allMasters: Boolean(serviceDraft.allMasters),
+      categoryId: toCatId === UNCATEGORIZED_ID ? null : toCatId,
+      masters: serviceDraft.allMasters
+        ? []
+        : (serviceDraft.masters || []).map(String),
+    };
+
+    if (serviceModal.mode === "add") {
+      // ✅ CREATE
+      await api(`/studio/${studio.id}/services`, {
+        method: "POST",
+        token,
+        body: { service: payload },
+      });
+    } else {
+      // ✅ UPDATE
+      await api(`/services/${serviceDraft.id}`, {
+        method: "PATCH",
+        token,
+        body: { service: payload },
+      });
+    }
+
+    closeServiceModal();
     refresh();
-  } catch (e) {
-    console.error(e);
-    alert(e.message);
   }
-}
-
-async function saveService() {
-  if (!canSaveServiceDraft(serviceDraft) || !studio?.id) return;
-
-  const token = localStorage.getItem("token");
-  const toCatId = serviceDraft.categoryId || UNCATEGORIZED_ID;
-
-  const payload = {
-    name: String(serviceDraft.name || "").trim(),
-    duration: Number(serviceDraft.duration || 60),
-    price: Number(serviceDraft.price),
-    allMasters: Boolean(serviceDraft.allMasters),
-    categoryId: toCatId === UNCATEGORIZED_ID ? null : toCatId,
-    masters: serviceDraft.allMasters
-      ? []
-      : (serviceDraft.masters || []).map(String),
-  };
-
-  if (serviceModal.mode === "add") {
-    // ✅ CREATE
-    await api(`/studio/${studio.id}/services`, {
-      method: "POST",
-      token,
-      body: { service: payload },
-    });
-  } else {
-    // ✅ UPDATE
-    await api(`/services/${serviceDraft.id}`, {
-      method: "PATCH",
-      token,
-      body: { service: payload },
-    });
-  }
-
-  closeServiceModal();
-  refresh();
-}
   // -----------------------------
   // Derived blocks for UI
   // -----------------------------
@@ -445,11 +499,15 @@ async function saveService() {
       services: uncategorizedServices,
       _virtual: true,
     };
-    return [unc, ...serviceCategories.map((c) => ({ ...c, services: c.services || [] }))];
+    return [
+      unc,
+      ...serviceCategories.map((c) => ({ ...c, services: c.services || [] })),
+    ];
   }, [serviceCategories, uncategorizedServices]);
 
   const showTips =
-    serviceCategories.length === 0 && (uncategorizedServices?.length || 0) === 0;
+    serviceCategories.length === 0 &&
+    (uncategorizedServices?.length || 0) === 0;
 
   return (
     <div className="space-y-6">
@@ -457,8 +515,9 @@ async function saveService() {
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-[#0F172A] tracking-tight leading-[1.05]">
           Послуги
         </h1>
-        <p className="mt-2 text-sm sm:text-base text-gray-600">
-          Налаштуйте категорії та послуги. Клієнти бачитимуть їх у записі онлайн.
+        <p className="mt-1 text-sm text-gray-600">
+          Налаштуйте категорії та послуги. Клієнти бачитимуть їх у записі
+          онлайн.
         </p>
         {loading && (
           <p className="mt-2 text-xs text-gray-500">Завантаження...</p>
@@ -506,12 +565,19 @@ async function saveService() {
               right={
                 <div className="flex flex-col sm:flex-row gap-2">
                   {!isUnc && (
-                    <Button className="w-full sm:w-auto ui-button-primary" onClick={() => openEditCategory(cat.id)}>
+                    <Button
+                      className="w-full sm:w-auto ui-button-primary"
+                      onClick={() => openEditCategory(cat.id)}
+                    >
                       Редагувати
                     </Button>
                   )}
 
-                  <Button className="w-full sm:w-auto ui-button-one" variant="primary" onClick={() => openAddService(cat.id)}>
+                  <Button
+                    className="w-full sm:w-auto ui-button-one"
+                    variant="primary"
+                    onClick={() => openAddService(cat.id)}
+                  >
                     Додати послугу
                   </Button>
 
@@ -541,17 +607,27 @@ async function saveService() {
                     >
                       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="font-extrabold text-gray-900 truncate">{srv.name}</p>
+                          <p className="font-extrabold text-gray-900 truncate">
+                            {srv.name}
+                          </p>
                           <p className="mt-1 text-sm text-gray-600">
-                            {srv.duration} хв • {srv.price} грн • {resolveServiceMastersText(srv)}
+                            {srv.duration} хв • {srv.price} грн •{" "}
+                            {resolveServiceMastersText(srv)}
                           </p>
                         </div>
 
                         <div className="grid grid-cols-2 sm:flex gap-2 sm:shrink-0">
-                          <Button className="w-full sm:w-auto ui-button-primary" onClick={() => openEditService(cat.id, srv.id)}>
+                          <Button
+                            className="w-full sm:w-auto ui-button-primary"
+                            onClick={() => openEditService(cat.id, srv.id)}
+                          >
                             Редагувати
                           </Button>
-                          <Button className="w-full sm:w-auto ui-button-danger" variant="danger" onClick={() => deleteService(cat.id, srv.id)}>
+                          <Button
+                            className="w-full sm:w-auto ui-button-danger"
+                            variant="danger"
+                            onClick={() => deleteService(cat.id, srv.id)}
+                          >
                             Видалити
                           </Button>
                         </div>
@@ -574,17 +650,27 @@ async function saveService() {
         center
         footer={
           <div className="flex items-center justify-end gap-2">
-            <Button variant="primary" onClick={saveCategoryName} disabled={!categoryDraftName.trim()} className="ui-button-one">
+            <Button
+              variant="primary"
+              onClick={saveCategoryName}
+              disabled={!categoryDraftName.trim()}
+              className="ui-button-one"
+            >
               Зберегти
             </Button>
-            <Button onClick={() => setCategoryModal({ open: false, catId: null })} className="ui-button">
+            <Button
+              onClick={() => setCategoryModal({ open: false, catId: null })}
+              className="ui-button"
+            >
               Скасувати
             </Button>
           </div>
         }
       >
         <div>
-          <label className="block text-sm font-semibold text-gray-900 mb-1">Назва категорії</label>
+          <label className="block text-sm font-semibold text-gray-900 mb-1">
+            Назва категорії
+          </label>
           <input
             value={categoryDraftName}
             onChange={(e) => setCategoryDraftName(e.target.value)}
@@ -598,11 +684,18 @@ async function saveService() {
       <Modal
         open={serviceModal.open}
         onClose={closeServiceModal}
-        title={serviceModal.mode === "add" ? "Додати послугу" : "Редагувати послугу"}
+        title={
+          serviceModal.mode === "add" ? "Додати послугу" : "Редагувати послугу"
+        }
         subtitle="За потреби можна перенести послугу в іншу категорію."
         footer={
           <div className="flex items-center justify-end gap-2">
-            <Button variant="primary" onClick={saveService} disabled={!canSaveServiceDraft(serviceDraft)} className="ui-button-one">
+            <Button
+              variant="primary"
+              onClick={saveService}
+              disabled={!canSaveServiceDraft(serviceDraft)}
+              className="ui-button-one"
+            >
               Зберегти
             </Button>
             <Button onClick={closeServiceModal} className="ui-button">
@@ -614,10 +707,14 @@ async function saveService() {
         <div className="space-y-4">
           {/* category */}
           <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-1">Категорія</label>
+            <label className="block text-sm font-semibold text-gray-900 mb-1">
+              Категорія
+            </label>
             <select
               value={serviceDraft.categoryId || UNCATEGORIZED_ID}
-              onChange={(e) => setServiceDraft((p) => ({ ...p, categoryId: e.target.value }))}
+              onChange={(e) =>
+                setServiceDraft((p) => ({ ...p, categoryId: e.target.value }))
+              }
               className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none transition focus:border-black focus:ring-2 focus:ring-black/15"
             >
               <option value={UNCATEGORIZED_ID}>Послуги без категорії</option>
@@ -627,15 +724,21 @@ async function saveService() {
                 </option>
               ))}
             </select>
-            <p className="mt-1 text-xs text-gray-500">Якщо хочеш — можна перенести послугу в іншу категорію.</p>
+            <p className="mt-1 text-xs text-gray-500">
+              Якщо хочеш — можна перенести послугу в іншу категорію.
+            </p>
           </div>
 
           {/* name */}
           <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-1">Назва послуги</label>
+            <label className="block text-sm font-semibold text-gray-900 mb-1">
+              Назва послуги
+            </label>
             <input
               value={serviceDraft.name}
-              onChange={(e) => setServiceDraft((p) => ({ ...p, name: e.target.value }))}
+              onChange={(e) =>
+                setServiceDraft((p) => ({ ...p, name: e.target.value }))
+              }
               placeholder="Напр. Нарощування"
               className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none transition focus:border-black focus:ring-2 focus:ring-black/15"
             />
@@ -643,11 +746,15 @@ async function saveService() {
 
           {/* price */}
           <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-1">Ціна</label>
+            <label className="block text-sm font-semibold text-gray-900 mb-1">
+              Ціна
+            </label>
             <input
               type="number"
               value={serviceDraft.price}
-              onChange={(e) => setServiceDraft((p) => ({ ...p, price: e.target.value }))}
+              onChange={(e) =>
+                setServiceDraft((p) => ({ ...p, price: e.target.value }))
+              }
               placeholder="грн"
               className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none transition focus:border-black focus:ring-2 focus:ring-black/15"
             />
@@ -671,7 +778,8 @@ async function saveService() {
                     <div
                       ref={hoursRef}
                       onScroll={() => {
-                        if (hoursTimerRef.current) clearTimeout(hoursTimerRef.current);
+                        if (hoursTimerRef.current)
+                          clearTimeout(hoursTimerRef.current);
                         hoursTimerRef.current = setTimeout(() => {
                           const v = pickCenteredValue(hoursRef.current);
                           if (v == null) return;
@@ -689,7 +797,9 @@ async function saveService() {
                             className={[
                               "w-full snap-center h-10 grid place-items-center rounded-xl font-extrabold select-none",
                               "transition-all duration-200",
-                              active ? "text-gray-900 scale-[1.15]" : "text-gray-400 scale-[0.92] opacity-70",
+                              active
+                                ? "text-gray-900 scale-[1.15]"
+                                : "text-gray-400 scale-[0.92] opacity-70",
                             ].join(" ")}
                           >
                             {h}
@@ -710,7 +820,8 @@ async function saveService() {
                     <div
                       ref={minutesRef}
                       onScroll={() => {
-                        if (minutesTimerRef.current) clearTimeout(minutesTimerRef.current);
+                        if (minutesTimerRef.current)
+                          clearTimeout(minutesTimerRef.current);
                         minutesTimerRef.current = setTimeout(() => {
                           const v = pickCenteredValue(minutesRef.current);
                           if (v == null) return;
@@ -728,7 +839,9 @@ async function saveService() {
                             className={[
                               "w-full snap-center h-10 grid place-items-center rounded-xl font-extrabold select-none",
                               "transition-all duration-200",
-                              active ? "text-gray-900 scale-[1.15]" : "text-gray-400 scale-[0.92] opacity-70",
+                              active
+                                ? "text-gray-900 scale-[1.15]"
+                                : "text-gray-400 scale-[0.92] opacity-70",
                             ].join(" ")}
                           >
                             {String(m).padStart(2, "0")}
@@ -743,7 +856,10 @@ async function saveService() {
               {/* summary */}
               <div className="mt-3 flex items-center justify-between">
                 <p className="text-xs text-gray-500">
-                  Підсумок: <span className="font-extrabold text-gray-900">{serviceDraft.duration} хв</span>
+                  Підсумок:{" "}
+                  <span className="font-extrabold text-gray-900">
+                    {serviceDraft.duration} хв
+                  </span>
                 </p>
                 <button
                   type="button"
@@ -766,16 +882,30 @@ async function saveService() {
             <div className="mt-3 flex flex-wrap gap-2">
               <button
                 type="button"
-                onClick={() => setServiceDraft((p) => ({ ...p, allMasters: true, masters: [] }))}
-                className={["rounded-xl px-4 py-2 text-sm font-extrabold border transition", serviceDraft.allMasters ? "ui-button-one" : "ui-button-one"].join(" ")}
+                onClick={() =>
+                  setServiceDraft((p) => ({
+                    ...p,
+                    allMasters: true,
+                    masters: [],
+                  }))
+                }
+                className={[
+                  "rounded-xl px-4 py-2 text-sm font-extrabold border transition",
+                  serviceDraft.allMasters ? "ui-button-one" : "ui-button-one",
+                ].join(" ")}
               >
                 Для всіх майстрів
               </button>
 
               <button
                 type="button"
-                onClick={() => setServiceDraft((p) => ({ ...p, allMasters: false }))}
-                className={["rounded-xl px-4 py-2 text-sm font-extrabold border transition", !serviceDraft.allMasters ? "ui-button" : "ui-button"].join(" ")}
+                onClick={() =>
+                  setServiceDraft((p) => ({ ...p, allMasters: false }))
+                }
+                className={[
+                  "rounded-xl px-4 py-2 text-sm font-extrabold border transition",
+                  !serviceDraft.allMasters ? "ui-button" : "ui-button",
+                ].join(" ")}
               >
                 Обрати майстрів
               </button>
@@ -797,7 +927,9 @@ async function saveService() {
                         key={id}
                         className={[
                           "flex items-center gap-3 rounded-2xl border p-3 cursor-pointer transition",
-                          checked ? "border-emerald-200 bg-emerald-50" : "border-gray-200 bg-white hover:bg-gray-50",
+                          checked
+                            ? "border-emerald-200 bg-emerald-50"
+                            : "border-gray-200 bg-white hover:bg-gray-50",
                         ].join(" ")}
                       >
                         <input
@@ -805,7 +937,9 @@ async function saveService() {
                           checked={checked}
                           onChange={(e) => {
                             const current = serviceDraft.masters || [];
-                            const next = e.target.checked ? [...current, id] : current.filter((x) => x !== id);
+                            const next = e.target.checked
+                              ? [...current, id]
+                              : current.filter((x) => x !== id);
                             setServiceDraft((p) => ({ ...p, masters: next }));
                           }}
                           className="h-4 w-4 accent-emerald-300 cursor-pointer"
@@ -820,12 +954,15 @@ async function saveService() {
 
             {!serviceDraft.allMasters && (
               <p className="mt-2 text-xs text-gray-500">
-                Обрано: <span className="font-extrabold">{(serviceDraft.masters || []).length}</span>
+                Обрано:{" "}
+                <span className="font-extrabold">
+                  {(serviceDraft.masters || []).length}
+                </span>
               </p>
             )}
           </div>
         </div>
-</Modal>
+      </Modal>
       {showTips && (
         <div className="rounded-[24px] sm:rounded-[28px] border border-gray-200 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.06)] px-4 sm:px-6 py-5">
           <h2 className="text-lg sm:text-xl font-extrabold text-gray-900 text-center">

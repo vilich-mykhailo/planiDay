@@ -49,7 +49,9 @@ export default function LoginOwner() {
 
       // ✅ зберігаємо токен + роль
       localStorage.setItem("token", data.token);
-      localStorage.setItem("role", "owner"); // або data.kind, якщо хочеш: localStorage.setItem("role", data.kind);
+      localStorage.setItem("role", "owner");
+
+      window.dispatchEvent(new Event("auth-changed")); // 👈 ОСЬ СЮДИ
 
       navigate("/dashboard");
     } catch (err) {

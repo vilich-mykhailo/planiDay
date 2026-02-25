@@ -4,6 +4,8 @@ import crypto from "crypto";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { r2 } from "../lib/r2.js";
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { requireAuth, requireOwner } from "../middleware/auth.js";
+import {prisma} from "../lib/prisma.js";
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -47,6 +49,38 @@ router.delete("/delete", async (req, res) => {
     res.status(500).json({ message: "Delete failed" });
   }
 });
+
+// наприклад routes/studio.js
+router.delete(
+  "/studio/:studioId/categories/:categoryId",
+  requireAuth,
+  requireOwner,
+  async (req, res) => {
+    try {
+      const { studioId, categoryId } = req.params;
+
+      // якщо studioId в БД Int — розкоментуй:
+      // const studioIdNum = Number(studioId);
+
+      await prisma.service.updateMany({
+        where: {
+          studioId,       // або studioId: studioIdNum
+          categoryId,
+        },
+        data: { categoryId: null },
+      });
+
+      await prisma.serviceCategory.delete({
+        where: { id: categoryId },
+      });
+
+      res.json({ ok: true });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ message: e?.message || "Delete category failed" });
+    }
+  }
+);
 
 router.post("/studio-logo/:studioId", upload.single("file"), async (req, res) => {
   try {
