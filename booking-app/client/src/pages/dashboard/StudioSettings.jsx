@@ -1,17 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useStudio } from "../../context/studio/useStudio";
 
-const MAX_IMAGE_SIZE = 1024 * 1024; // 1MB
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 const MAX_DESC = 400;
 const MAX_PORTFOLIO = 12;
+const PUBLIC = import.meta.env.VITE_R2_PUBLIC_BASE_URL;
 
-function fileToDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
+function toPublicUrl(v) {
+  const s = String(v || "").trim();
+  if (!s) return "";
+  if (/^https?:\/\//i.test(s)) return s; // вже повний URL
+  return PUBLIC ? `${PUBLIC}/${s}` : s; // це key -> робимо URL
 }
 
 function Field({ label, hint, error, children }) {
@@ -52,10 +51,10 @@ function completeness(form) {
       ok: Boolean(form.category?.trim()),
     },
     {
-  key: "phone",
-  label: "Номер телефону",
-  ok: Boolean(form.phone?.trim()),
-},
+      key: "phone",
+      label: "Номер телефону",
+      ok: Boolean(form.phone?.trim()),
+    },
 
     {
       key: "description",
@@ -153,38 +152,36 @@ function CollapsibleCard({
 export default function StudioSettings() {
   const { studio, updateStudio } = useStudio();
   const [checklistOpen, setChecklistOpen] = useState(false); // ✅ по дефолту сховано
-
-
   const [tab, setTab] = useState("profile"); // profile | location | links
-const [form, setForm] = useState({
-  name: "",
-  category: "",
-  phone: "",
-  description: "",
-  city: "",
-  street: "",
-  building: "",
-  apartment: "",
-  coverUrl: "",
-  logoUrl: "",
-  portfolioUrls: [],
-});
+  const [form, setForm] = useState({
+    name: "",
+    category: "",
+    phone: "",
+    description: "",
+    city: "",
+    street: "",
+    building: "",
+    apartment: "",
+    coverUrl: "",
+    logoUrl: "",
+    portfolioUrls: [],
+  });
 
-const [highlightId, setHighlightId] = useState("");
-const [highlightAddress, setHighlightAddress] = useState(false);
+  const [highlightId, setHighlightId] = useState("");
+  const [highlightAddress, setHighlightAddress] = useState(false);
 
-// ✅ нове
-const [highlightTone, setHighlightTone] = useState("green"); // "green" | "default"
+  // ✅ нове
+  const [highlightTone, setHighlightTone] = useState("green"); // "green" | "default"
 
-// ✅ один клас на всі кейси
-const highlightClass =
-  highlightTone === "green"
-    ? "ring-2 ring-emerald-400/70 bg-emerald-50 border-emerald-300"
-    : "ring-2 ring-black/25 bg-gray-50 border-gray-300";
-const baseFieldClass =
-  "w-full rounded-xl border border-gray-200 bg-white p-3 text-sm font-medium text-gray-900 outline-none " +
-  "transition-[box-shadow,border-color,background-color] " +
-  "focus:border-black";
+  // ✅ один клас на всі кейси
+  const highlightClass =
+    highlightTone === "green"
+      ? "ring-2 ring-emerald-400/70 bg-emerald-50 border-emerald-300"
+      : "ring-2 ring-black/25 bg-gray-50 border-gray-300";
+  const baseFieldClass =
+    "w-full rounded-xl border border-gray-200 bg-white p-3 text-sm font-medium text-gray-900 outline-none " +
+    "transition-[box-shadow,border-color,background-color] " +
+    "focus:border-black";
 
   function fieldClass(id) {
     const isAddressField =
@@ -245,33 +242,35 @@ const baseFieldClass =
       document.body.classList.remove("modal-open");
     };
   }, [portfolioPreview.open]);
-const [hydrated, setHydrated] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
 
-useEffect(() => {
-  if (!studio) return;
+  useEffect(() => {
+    if (!studio) return;
 
-  setForm({
-    name: studio?.name || "",
-    category: studio?.category || "",
-    phone: studio?.phone || "",
-    description: studio?.description || "",
-    city: studio?.city || "",
-    street: studio?.street || "",
-    building: studio?.building || "",
-    apartment: studio?.apartment || "",
-    coverUrl: studio?.coverUrl || "",
-    logoUrl: studio?.logoUrl || "",
-    portfolioUrls: Array.isArray(studio?.portfolioUrls) ? studio.portfolioUrls : [],
-  });
+    setForm({
+      name: studio?.name || "",
+      category: studio?.category || "",
+      phone: studio?.phone || "",
+      description: studio?.description || "",
+      city: studio?.city || "",
+      street: studio?.street || "",
+      building: studio?.building || "",
+      apartment: studio?.apartment || "",
+      coverUrl: studio?.coverUrl || "",
+      logoUrl: studio?.logoUrl || "",
+      portfolioUrls: Array.isArray(studio?.portfolioUrls)
+        ? studio.portfolioUrls
+        : [],
+    });
 
-  setHydrated(true);
-}, [studio]);
+    setHydrated(true);
+  }, [studio]);
 
   const errors = useMemo(() => {
     const e = {};
-if (form.phone && !/^\+?\d[\d\s()-]{8,}$/.test(form.phone.trim())) {
-  e.phone = "Вкажи коректний номер телефону.";
-}
+    if (form.phone && !/^\+?\d[\d\s()-]{8,}$/.test(form.phone.trim())) {
+      e.phone = "Вкажи коректний номер телефону.";
+    }
 
     if (!form.name.trim()) e.name = "Вкажи назву студії.";
     if (!form.category.trim()) e.category = "Вкажи категорію.";
@@ -283,94 +282,119 @@ if (form.phone && !/^\+?\d[\d\s()-]{8,}$/.test(form.phone.trim())) {
 
     return e;
   }, [form]);
-  
-const rawDirty = useMemo(() => {
-  const currentPortfolio = Array.isArray(studio?.portfolioUrls)
-    ? studio.portfolioUrls
-    : [];
 
-  return (
-    (studio?.name || "") !== form.name ||
-    (studio?.category || "") !== form.category ||
-    (studio?.phone || "") !== form.phone ||
+  const rawDirty = useMemo(() => {
+    const currentPortfolio = Array.isArray(studio?.portfolioUrls)
+      ? studio.portfolioUrls
+      : [];
 
-    (studio?.description || "") !== form.description ||
-    (studio?.city || "") !== form.city ||
-    (studio?.street || "") !== form.street ||
-    (studio?.building || "") !== form.building ||
-    (studio?.apartment || "") !== form.apartment ||
-    (studio?.coverUrl || "") !== form.coverUrl ||
-    (studio?.logoUrl || "") !== form.logoUrl ||
-    JSON.stringify(currentPortfolio) !== JSON.stringify(form.portfolioUrls || [])
-  );
-}, [studio, form]);
+    return (
+      (studio?.name || "") !== form.name ||
+      (studio?.category || "") !== form.category ||
+      (studio?.phone || "") !== form.phone ||
+      (studio?.description || "") !== form.description ||
+      (studio?.city || "") !== form.city ||
+      (studio?.street || "") !== form.street ||
+      (studio?.building || "") !== form.building ||
+      (studio?.apartment || "") !== form.apartment ||
+      (studio?.coverUrl || "") !== form.coverUrl ||
+      (studio?.logoUrl || "") !== form.logoUrl ||
+      JSON.stringify(currentPortfolio) !==
+        JSON.stringify(form.portfolioUrls || [])
+    );
+  }, [studio, form]);
 
+  function resetChanges() {
+    if (!studio) return;
 
-function resetChanges() {
-  if (!studio) return;
+    setForm({
+      name: studio?.name || "",
+      category: studio?.category || "",
+      phone: studio?.phone || "",
+      description: studio?.description || "",
+      city: studio?.city || "",
+      street: studio?.street || "",
+      building: studio?.building || "",
+      apartment: studio?.apartment || "",
+      coverUrl: studio?.coverUrl || "",
+      logoUrl: studio?.logoUrl || "",
+      portfolioUrls: Array.isArray(studio?.portfolioUrls)
+        ? studio.portfolioUrls
+        : [],
+    });
+  }
 
-  setForm({
-    name: studio?.name || "",
-    category: studio?.category || "",
-    phone: studio?.phone || "",
-    description: studio?.description || "",
-    city: studio?.city || "",
-    street: studio?.street || "",
-    building: studio?.building || "",
-    apartment: studio?.apartment || "",
-    coverUrl: studio?.coverUrl || "",
-    logoUrl: studio?.logoUrl || "",
-    portfolioUrls: Array.isArray(studio?.portfolioUrls) ? studio.portfolioUrls : [],
-  });
-}
-
-
-const dirty = hydrated ? rawDirty : false;
-const hasPendingChanges = dirty;
-const canSave = dirty && Object.keys(errors).length === 0 && !saving;
-
-
+  const dirty = hydrated ? rawDirty : false;
+  const hasPendingChanges = dirty;
+  const canSave = dirty && Object.keys(errors).length === 0 && !saving;
 
   function setField(name, value) {
     if (name === "description" && value.length > MAX_DESC) return;
     setForm((prev) => ({ ...prev, [name]: value }));
   }
+  
+  async function uploadOne(studioId, file, kind, token) {
+    const fd = new FormData();
+    fd.append("file", file);
+
+    const res = await fetch(
+      `${import.meta.env.VITE_API_URL}/media/studio-${kind}/${studioId}`,
+      {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: fd,
+      },
+    );
+
+    const data = await res.json().catch(() => null);
+    if (!res.ok) throw new Error(data?.message || "Upload failed");
+    return data; // { key, url }
+  }
+
+  async function uploadMany(studioId, files, token) {
+    const fd = new FormData();
+    for (const f of files) fd.append("files", f);
+
+    const res = await fetch(
+      `${import.meta.env.VITE_API_URL}/media/studio-portfolio/${studioId}`,
+      {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: fd,
+      },
+    );
+
+    const data = await res.json().catch(() => null);
+    if (!res.ok) throw new Error(data?.message || "Upload failed");
+    return data; // { keys, urls }
+  }
 
   async function pickImage(e, key) {
     const file = e.target.files?.[0];
     if (!file) return;
-
+    if (!studio?.id) return;
     if (file.size > MAX_IMAGE_SIZE) {
       setErrorModal({
         open: true,
         title: "Файл завеликий",
-        message: "Обери фото розміром до 1 MB.",
+        message: "До 5 MB.",
       });
       e.target.value = "";
       return;
     }
 
     try {
-      const dataUrl = await fileToDataUrl(file);
+      const token = localStorage.getItem("token"); // якщо треба
+      const kind = key === "coverUrl" ? "cover" : "logo";
 
-      // страховка від “важких” base64
-      if (dataUrl.length > 1_500_000) {
-        setErrorModal({
-          open: true,
-          title: "Фото надто важке",
-          message: "Стисни фото або обери інше зображення.",
-        });
-        e.target.value = "";
-        return;
-      }
-
-      setForm((prev) => ({ ...prev, [key]: dataUrl }));
+      const out = await uploadOne(studio.id, file, kind, token);
+      setForm((prev) => ({ ...prev, [key]: out.key })); // зберігаємо key
     } catch (err) {
       console.error(err);
       setErrorModal({
         open: true,
-        title: "Помилка завантаження",
-        message: "Не вдалося обробити зображення. Спробуй інше фото.",
+        title: "Помилка",
+        message: err.message || "Upload failed",
       });
     } finally {
       e.target.value = "";
@@ -379,43 +403,40 @@ const canSave = dirty && Object.keys(errors).length === 0 && !saving;
 
   async function pickPortfolioImages(e) {
     const files = Array.from(e.target.files || []);
+    e.target.value = "";
     if (!files.length) return;
 
     const left = MAX_PORTFOLIO - (form.portfolioUrls?.length || 0);
     const take = files.slice(0, Math.max(0, left));
 
+    const okFiles = [];
     let skipped = 0;
 
+    for (const f of take) {
+      if (!f.type?.startsWith("image/") || f.size > MAX_IMAGE_SIZE) {
+        skipped++;
+        continue;
+      }
+      okFiles.push(f);
+    }
+
+    if (!okFiles.length) {
+      setErrorModal({
+        open: true,
+        title: "Не вдалося додати фото",
+        message: "Фото завеликі або не підтримуються. Обери інші (до 5MB).",
+      });
+      return;
+    }
+
     try {
-      const dataUrls = [];
+      const token = localStorage.getItem("token");
+      const out = await uploadMany(studio.id, okFiles, token);
 
-      for (const file of take) {
-        if (file.size > MAX_IMAGE_SIZE) {
-          skipped++;
-          continue;
-        }
-
-        const dataUrl = await fileToDataUrl(file);
-        if (dataUrl.length > 1_500_000) {
-          skipped++;
-          continue;
-        }
-
-        dataUrls.push(dataUrl);
-      }
-
-      if (!dataUrls.length) {
-        setErrorModal({
-          open: true,
-          title: "Не вдалося додати фото",
-          message: "Фото завеликі або не підтримуються. Обери інші (до 1MB).",
-        });
-        return;
-      }
-
+      const keys = out.keys || [];
       setForm((prev) => ({
         ...prev,
-        portfolioUrls: [...(prev.portfolioUrls || []), ...dataUrls].slice(
+        portfolioUrls: [...(prev.portfolioUrls || []), ...keys].slice(
           0,
           MAX_PORTFOLIO,
         ),
@@ -428,17 +449,54 @@ const canSave = dirty && Object.keys(errors).length === 0 && !saving;
           text: `Пропущено ${skipped} файл(и) — завеликі або не підходять.`,
         });
       }
-    } finally {
-      e.target.value = "";
+    } catch (err) {
+      console.error(err);
+      setErrorModal({
+        open: true,
+        title: "Помилка",
+        message: err.message || "Upload failed",
+      });
     }
   }
 
-  function removePortfolio(index) {
+  async function deleteFromR2(key) {
+  const token = localStorage.getItem("token");
+
+  const res = await fetch(
+    `${import.meta.env.VITE_API_URL}/media/delete`,
+    {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ key }),
+    }
+  );
+
+  if (!res.ok) throw new Error("Delete failed");
+}
+
+async function removePortfolio(index) {
+  const key = form.portfolioUrls[index];
+  if (!key) return;
+
+  try {
+    await deleteFromR2(key);
+
     setForm((prev) => ({
       ...prev,
       portfolioUrls: prev.portfolioUrls.filter((_, i) => i !== index),
     }));
+  } catch (err) {
+    console.error(err);
+    showToast({
+      type: "error",
+      title: "Помилка",
+      text: "Не вдалося видалити фото.",
+    });
   }
+}
 
   function movePortfolio(from, to) {
     setForm((prev) => {
@@ -451,12 +509,32 @@ const canSave = dirty && Object.keys(errors).length === 0 && !saving;
   }
 
   // 👉 ВСТАВИТИ ОДРАЗУ ТУТ
-  function removeImage(key) {
+async function removeImage(fieldKey) {
+  const key = form[fieldKey];
+  if (!key) return;
+
+  try {
+    await deleteFromR2(key);
+
     setForm((prev) => ({
       ...prev,
-      [key]: "",
+      [fieldKey]: "",
     }));
+
+    showToast({
+      type: "success",
+      title: "Фото видалено",
+      text: "Файл успішно видалено з сервера.",
+    });
+  } catch (err) {
+    console.error(err);
+    showToast({
+      type: "error",
+      title: "Помилка",
+      text: "Не вдалося видалити фото.",
+    });
   }
+}
 
   async function save(e) {
     e?.preventDefault?.();
@@ -468,14 +546,13 @@ const canSave = dirty && Object.keys(errors).length === 0 && !saving;
         name: form.name.trim(),
         category: form.category.trim(),
         phone: form.phone.trim(),
-
         description: form.description.trim(),
         city: form.city.trim(),
         street: form.street.trim(),
         building: form.building.trim(),
         apartment: form.apartment.trim(),
-        coverUrl: form.coverUrl,
-        logoUrl: form.logoUrl,
+        coverUrl: form.coverUrl || "",
+        logoUrl: form.logoUrl || "",
         portfolioUrls: form.portfolioUrls || [],
       });
 
@@ -495,59 +572,57 @@ const canSave = dirty && Object.keys(errors).length === 0 && !saving;
       setSaving(false);
     }
   }
-
   const headerTriggerRef = useRef(null);
   const [showTopSave, setShowTopSave] = useState(false);
-const floatingVisible = showTopSave || hasPendingChanges;
-useEffect(() => {
-  const el = headerTriggerRef.current;
-  if (!el) return;
+  const floatingVisible = showTopSave || hasPendingChanges;
+  useEffect(() => {
+    const el = headerTriggerRef.current;
+    if (!el) return;
 
-  function getRootMargin() {
-    const w = window.innerWidth;
+    function getRootMargin() {
+      const w = window.innerWidth;
 
-    if (w < 640) return "-620px 0px 0px 0px"; 
-    if (w < 768) return "-400px 0px 0px"; 
-    return "-50px 0px 0px 0px"; 
-  }
-
-  let observer = new IntersectionObserver(
-    ([entry]) => {
-      setShowTopSave(!entry.isIntersecting);
-    },
-    {
-      threshold: 0,
-      rootMargin: getRootMargin(),
+      if (w < 640) return "-620px 0px 0px 0px";
+      if (w < 768) return "-400px 0px 0px";
+      return "-50px 0px 0px 0px";
     }
-  );
 
-  observer.observe(el);
-
-  // recreate observer on resize
-  function handleResize() {
-    observer.disconnect();
-
-    observer = new IntersectionObserver(
+    let observer = new IntersectionObserver(
       ([entry]) => {
         setShowTopSave(!entry.isIntersecting);
       },
       {
         threshold: 0,
         rootMargin: getRootMargin(),
-      }
+      },
     );
 
     observer.observe(el);
-  }
 
-  window.addEventListener("resize", handleResize);
+    // recreate observer on resize
+    function handleResize() {
+      observer.disconnect();
 
-  return () => {
-    observer.disconnect();
-    window.removeEventListener("resize", handleResize);
-  };
-}, []);
+      observer = new IntersectionObserver(
+        ([entry]) => {
+          setShowTopSave(!entry.isIntersecting);
+        },
+        {
+          threshold: 0,
+          rootMargin: getRootMargin(),
+        },
+      );
 
+      observer.observe(el);
+    }
+
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
 
   const AddressLine = useMemo(() => {
     const parts = [
@@ -570,11 +645,11 @@ useEffect(() => {
     address: "studio-field-city",
   };
 
-function highlightAddressFields() {
-  setHighlightTone("green");
-  setHighlightAddress(true);
-  window.setTimeout(() => setHighlightAddress(false), 2800);
-}
+  function highlightAddressFields() {
+    setHighlightTone("green");
+    setHighlightAddress(true);
+    window.setTimeout(() => setHighlightAddress(false), 2800);
+  }
 
   function resolveTabByKey(key) {
     if (["city", "street", "building", "apartment", "address"].includes(key)) {
@@ -586,17 +661,17 @@ function highlightAddressFields() {
 
     return "profile";
   }
-function goToNextIncomplete() {
-  if (!profile?.next?.key) return;
-  goToField(profile.next.key, { tone: "green" });
-}
+  function goToNextIncomplete() {
+    if (!profile?.next?.key) return;
+    goToField(profile.next.key, { tone: "green" });
+  }
 
-function goToField(key, opts = {}) {
-  const tone = opts.tone || "green";
-  setHighlightTone(tone);
+  function goToField(key, opts = {}) {
+    const tone = opts.tone || "green";
+    setHighlightTone(tone);
 
-  const nextTab = resolveTabByKey(key);
-  setTab(nextTab);
+    const nextTab = resolveTabByKey(key);
+    setTab(nextTab);
 
     // ✅ address = підсвітити всі 4 поля, без highlightId
     if (key === "portfolio") {
@@ -712,11 +787,7 @@ function goToField(key, opts = {}) {
   }
 
   return (
-<div className="mx-auto max-w-6xl min-h-[100svh] pb-10 md:pb-0">
-
-
-
-
+    <div className="mx-auto max-w-6xl min-h-[100svh] pb-10 md:pb-0">
       <input
         ref={coverInputRef}
         type="file"
@@ -777,187 +848,184 @@ function goToField(key, opts = {}) {
         <div className="lg:col-span-5 space-y-6">
           {/* Live preview */}
           <div className={tab === "profile" ? "block" : "hidden md:block"}>
-          <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.06)]">
-            <div
-              id="studio-field-coverUrl"
-              className={[
-                "relative h-44 bg-gray-100",
-highlightId === "studio-field-coverUrl" ? highlightClass : ""
-              ].join(" ")}
-            >
-              {hasCover ? (
-                <button
-                  type="button"
-                  onClick={pickCoverFromPreview}
-                  className="h-full w-full"
-                >
-                  <img
-                    src={form.coverUrl}
-                    alt="Обкладинка"
-                    className="h-full w-full object-cover"
-                    onError={(e) => (e.currentTarget.style.display = "none")}
-                  />
-                </button>
-              ) : (
-                <div className="flex h-full items-center justify-center px-6 text-center text-sm text-gray-500">
+            <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.06)]">
+              <div
+                id="studio-field-coverUrl"
+                className={[
+                  "relative h-44 bg-gray-100",
+                  highlightId === "studio-field-coverUrl" ? highlightClass : "",
+                ].join(" ")}
+              >
+                {hasCover ? (
                   <button
                     type="button"
                     onClick={pickCoverFromPreview}
-                    onKeyDown={onKeyboardPick(pickCoverFromPreview)}
-                    className="flex h-full w-full items-center justify-center px-6 text-center text-sm text-gray-500 hover:text-gray-700 transition"
-                    title="Завантажити обкладинку"
+                    className="h-full w-full"
                   >
-                    + Додати обкладинку
+                    <img
+                      src={toPublicUrl(form.coverUrl)}
+                      alt="Обкладинка"
+                      className="h-full w-full object-cover"
+                      onError={(e) => (e.currentTarget.style.display = "none")}
+                    />
                   </button>
-                </div>
-              )}
-              {/* ✅ readability overlay */}
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/60 via-black/25 to-transparent" />
-              {/* ❌ DELETE COVER */}
-              {hasCover && (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    removeImage("coverUrl");
-                  }}
-                  className="
+                ) : (
+                  <div className="flex h-full items-center justify-center px-6 text-center text-sm text-gray-500">
+                    <button
+                      type="button"
+                      onClick={pickCoverFromPreview}
+                      onKeyDown={onKeyboardPick(pickCoverFromPreview)}
+                      className="flex h-full w-full items-center justify-center px-6 text-center text-sm text-gray-500 hover:text-gray-700 transition"
+                      title="Завантажити обкладинку"
+                    >
+                      + Додати обкладинку
+                    </button>
+                  </div>
+                )}
+                {/* ✅ readability overlay */}
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/60 via-black/25 to-transparent" />
+                {/* ❌ DELETE COVER */}
+                {hasCover && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeImage("coverUrl");
+                    }}
+                    className="
         absolute right-2 top-2 z-10
 grid h-6 w-6 place-items-center rounded-md
         bg-white/90 backdrop-blur border border-gray-200
         text-gray-900 hover:bg-red-50 hover:text-red-600 hover:border-red-200
         shadow-sm transition
       "
-                  title="Видалити обкладинку"
-                  aria-label="Remove cover"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                    <path
-                      d="M6 6l12 12M18 6l-12 12"
-                      stroke="currentColor"
-                      strokeWidth="2.4"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                </button>
-              )}
-
-<div className="absolute -bottom-10 left-3 right-3 flex items-end gap-2 min-w-0">
-
-<div
-  id="studio-field-logoUrl"
-  className={[
-    "relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-gray-200 bg-white",
-    highlightId === "studio-field-logoUrl" ? highlightClass : ""
-  ].join(" ")}
->
-
-                  <button
-                    type="button"
-                    onClick={pickLogoFromPreview}
-                    onKeyDown={onKeyboardPick(pickLogoFromPreview)}
-                    className="h-full w-full"
-                    title="Завантажити логотип"
+                    title="Видалити обкладинку"
+                    aria-label="Remove cover"
                   >
-                    {hasLogo ? (
-                      <img
-                        src={form.logoUrl}
-                        alt="Лого"
-                        className="h-full w-full object-cover"
-                        onError={(e) =>
-                          (e.currentTarget.style.display = "none")
-                        }
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                      <path
+                        d="M6 6l12 12M18 6l-12 12"
+                        stroke="currentColor"
+                        strokeWidth="2.4"
+                        strokeLinecap="round"
                       />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-gray-500">
-                        + Додати лого
-                      </div>
-                    )}
+                    </svg>
                   </button>
+                )}
 
-                  {/* ❌ DELETE LOGO */}
-                  {hasLogo && (
+                <div className="absolute -bottom-10 left-3 right-3 flex items-end gap-2 min-w-0">
+                  <div
+                    id="studio-field-logoUrl"
+                    className={[
+                      "relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-gray-200 bg-white",
+                      highlightId === "studio-field-logoUrl"
+                        ? highlightClass
+                        : "",
+                    ].join(" ")}
+                  >
                     <button
                       type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeImage("logoUrl");
-                      }}
-                      className="
+                      onClick={pickLogoFromPreview}
+                      onKeyDown={onKeyboardPick(pickLogoFromPreview)}
+                      className="h-full w-full"
+                      title="Завантажити логотип"
+                    >
+                      {hasLogo ? (
+                        <img
+                          src={toPublicUrl(form.logoUrl)}
+                          alt="Лого"
+                          className="h-full w-full object-cover"
+                          onError={(e) =>
+                            (e.currentTarget.style.display = "none")
+                          }
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-gray-500">
+                          + Додати лого
+                        </div>
+                      )}
+                    </button>
+
+                    {/* ❌ DELETE LOGO */}
+                    {hasLogo && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeImage("logoUrl");
+                        }}
+                        className="
             absolute right-1 top-1 z-10
 grid h-5 w-5 place-items-center rounded-md
             bg-white/90 backdrop-blur border border-gray-200
             text-gray-900 hover:bg-red-50 hover:text-red-600 hover:border-red-200
             shadow-sm transition
           "
-                      title="Видалити логотип"
-                      aria-label="Remove logo"
-                    >
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
+                        title="Видалити логотип"
+                        aria-label="Remove logo"
                       >
-                        <path
-                          d="M6 6l12 12M18 6l-12 12"
-                          stroke="currentColor"
-                          strokeWidth="2.4"
-                          strokeLinecap="round"
-                        />
-                      </svg>
-                    </button>
-                  )}
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                        >
+                          <path
+                            d="M6 6l12 12M18 6l-12 12"
+                            stroke="currentColor"
+                            strokeWidth="2.4"
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="min-w-0 rounded-xl border border-white/70 bg-white/95 backdrop-blur-md shadow-lg px-3 py-2 flex flex-col justify-end min-h-[44px]">
+                    {/* Назва студії — максимум 2 рядки */}
+                    <p
+                      className="w-full min-w-0 text-sm sm:text-base font-extrabold text-gray-900 leading-5 line-clamp-2 break-words"
+                      title={form.name.trim() ? form.name : "Назва студії"}
+                    >
+                      {form.name.trim() ? form.name : "Назва студії"}
+                    </p>
+
+                    {/* Категорія + місто — максимум 2 рядки */}
+                    <p
+                      className="w-full min-w-0 text-xs sm:text-sm text-gray-600 line-clamp-2 break-words"
+                      title={`${form.category.trim() ? form.category : "Категорія"} • ${
+                        form.city.trim() ? form.city : "Місто"
+                      }`}
+                    >
+                      {(form.category.trim() ? form.category : "Категорія") +
+                        " • " +
+                        (form.city.trim() ? form.city : "Місто")}
+                    </p>
+                  </div>
                 </div>
-
-<div className="min-w-0 rounded-xl border border-white/70 bg-white/95 backdrop-blur-md shadow-lg px-3 py-2 flex flex-col justify-end min-h-[44px]">
-
-  {/* Назва студії — максимум 2 рядки */}
-  <p
-    className="w-full min-w-0 text-sm sm:text-base font-extrabold text-gray-900 leading-5 line-clamp-2 break-words"
-    title={form.name.trim() ? form.name : "Назва студії"}
-  >
-    {form.name.trim() ? form.name : "Назва студії"}
-  </p>
-
-  {/* Категорія + місто — максимум 2 рядки */}
-  <p
-    className="w-full min-w-0 text-xs sm:text-sm text-gray-600 line-clamp-2 break-words"
-    title={`${form.category.trim() ? form.category : "Категорія"} • ${
-      form.city.trim() ? form.city : "Місто"
-    }`}
-  >
-    {(form.category.trim() ? form.category : "Категорія") +
-      " • " +
-      (form.city.trim() ? form.city : "Місто")}
-  </p>
-
-</div>
-
-                
               </div>
-            </div>
 
-            <div className="px-3 pb-3 pt-14">
-              <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                <p className="text-xs font-semibold text-gray-500">Адреса</p>
-<p
-  className="mt-1 text-sm font-semibold text-gray-900 line-clamp-2 break-words"
-  title={AddressLine}
->
-  {AddressLine}
-</p>
+              <div className="px-3 pb-3 pt-14">
+                <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                  <p className="text-xs font-semibold text-gray-500">Адреса</p>
+                  <p
+                    className="mt-1 text-sm font-semibold text-gray-900 line-clamp-2 break-words"
+                    title={AddressLine}
+                  >
+                    {AddressLine}
+                  </p>
 
-
-                <p className="mt-3 text-xs font-semibold text-gray-500">Опис</p>
-                <p className="mt-1 text-sm text-gray-700">
-                  {form.description.trim()
-                    ? form.description.trim()
-                    : "Додай короткий опис: досвід, стиль, стерильність, бренди, гарантії."}
-                </p>
+                  <p className="mt-3 text-xs font-semibold text-gray-500">
+                    Опис
+                  </p>
+                  <p className="mt-1 text-sm text-gray-700">
+                    {form.description.trim()
+                      ? form.description.trim()
+                      : "Додай короткий опис: досвід, стиль, стерильність, бренди, гарантії."}
+                  </p>
+                </div>
               </div>
-            </div>
-          </section>
+            </section>
           </div>
           <section className="rounded-2xl border border-gray-200 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.06)]">
             <div className="px-5 py-4 border-b border-gray-100">
@@ -981,7 +1049,6 @@ grid h-5 w-5 place-items-center rounded-md
                   {profile.percent}%
                 </div>
               </div>
-              
             </div>
 
             <div className="px-5 py-5 space-y-4">
@@ -1062,7 +1129,9 @@ grid h-5 w-5 place-items-center rounded-md
                             <button
                               key={i.key}
                               type="button"
-                              onClick={() => goToField(i.key, { tone: "green" })}
+                              onClick={() =>
+                                goToField(i.key, { tone: "green" })
+                              }
                               className="
     group w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-left
     hover:bg-gray-50 active:scale-[0.99] transition
@@ -1155,18 +1224,18 @@ grid h-5 w-5 place-items-center rounded-md
                       className={fieldClass("studio-field-category")}
                     />
                   </Field>
-  <div className="sm:col-span-2">
-    <Field label="Номер телефону" error={errors.phone}>
-      <input
-        id="studio-field-phone"
-        value={form.phone}
-        onChange={(e) => setField("phone", e.target.value)}
-        placeholder="+380 67 123 45 67"
-        inputMode="tel"
-        className={fieldClass("studio-field-phone")}
-      />
-    </Field>
-  </div>
+                  <div className="sm:col-span-2">
+                    <Field label="Номер телефону" error={errors.phone}>
+                      <input
+                        id="studio-field-phone"
+                        value={form.phone}
+                        onChange={(e) => setField("phone", e.target.value)}
+                        placeholder="+380 67 123 45 67"
+                        inputMode="tel"
+                        className={fieldClass("studio-field-phone")}
+                      />
+                    </Field>
+                  </div>
 
                   <div className="sm:col-span-2">
                     <Field
@@ -1185,44 +1254,44 @@ grid h-5 w-5 place-items-center rounded-md
                         className={fieldClass("studio-field-description")}
                       />
                     </Field>
-<div className="mt-3 rounded-xl border border-gray-200 bg-gray-50 p-4 space-y-3">
-  <div>
-    <p className="text-xs font-semibold text-gray-500">
-      Рекомендація
-    </p>
-    <p className="mt-1 text-sm text-gray-700">
-      Детальний опис допомагає клієнтам краще зрозуміти ваш досвід і підвищує
-      ймовірність запису. Опишіть свою спеціалізацію, підхід до роботи та ключові
-      переваги.
-    </p>
-  </div>
+                    <div className="mt-3 rounded-xl border border-gray-200 bg-gray-50 p-4 space-y-3">
+                      <div>
+                        <p className="text-xs font-semibold text-gray-500">
+                          Рекомендація
+                        </p>
+                        <p className="mt-1 text-sm text-gray-700">
+                          Детальний опис допомагає клієнтам краще зрозуміти ваш
+                          досвід і підвищує ймовірність запису. Опишіть свою
+                          спеціалізацію, підхід до роботи та ключові переваги.
+                        </p>
+                      </div>
 
-  {/* divider */}
-  <div className="h-px bg-gray-200" />
+                      {/* divider */}
+                      <div className="h-px bg-gray-200" />
 
-  {/* additional tips */}
-  <div>
-    <p className="text-xs font-semibold text-gray-500">
-      Що варто вказати:
-    </p>
+                      {/* additional tips */}
+                      <div>
+                        <p className="text-xs font-semibold text-gray-500">
+                          Що варто вказати:
+                        </p>
 
-    <ul className="mt-1 space-y-1 text-sm text-gray-700">
-      <li>• Скільки років досвіду має студія</li>
-      <li>• Які послуги або техніки ви використовуєте</li>
-      <li>• Які бренди матеріалів застосовуєте</li>
-      <li>• Чим ви відрізняєтесь від інших</li>
-      <li>• Гарантії, стерильність або сертифікацію</li>
-    </ul>
-  </div>
+                        <ul className="mt-1 space-y-1 text-sm text-gray-700">
+                          <li>• Скільки років досвіду має студія</li>
+                          <li>• Які послуги або техніки ви використовуєте</li>
+                          <li>• Які бренди матеріалів застосовуєте</li>
+                          <li>• Чим ви відрізняєтесь від інших</li>
+                          <li>• Гарантії, стерильність або сертифікацію</li>
+                        </ul>
+                      </div>
 
-  {/* extra highlight */}
-  <div className="rounded-lg bg-white border border-gray-200 px-3 py-2">
-    <p className="text-xs text-gray-600">
-      💡 Студії з повним описом отримують більше переглядів і записів.
-    </p>
-  </div>
-</div>
-
+                      {/* extra highlight */}
+                      <div className="rounded-lg bg-white border border-gray-200 px-3 py-2">
+                        <p className="text-xs text-gray-600">
+                          💡 Студії з повним описом отримують більше переглядів
+                          і записів.
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </Card>
@@ -1274,20 +1343,18 @@ grid h-5 w-5 place-items-center rounded-md
                     />
                   </Field>
 
-<div className="sm:col-span-2 rounded-2xl border border-gray-200 bg-gray-50 p-4">
-  <p className="text-xs font-semibold text-gray-500">
-    Перевірка
-  </p>
+                  <div className="sm:col-span-2 rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                    <p className="text-xs font-semibold text-gray-500">
+                      Перевірка
+                    </p>
 
-  <p
-    className="mt-1 text-sm font-semibold text-gray-900 line-clamp-2 break-words"
-    title={AddressLine}
-  >
-    {AddressLine}
-  </p>
-</div>
-
-
+                    <p
+                      className="mt-1 text-sm font-semibold text-gray-900 line-clamp-2 break-words"
+                      title={AddressLine}
+                    >
+                      {AddressLine}
+                    </p>
+                  </div>
                 </div>
               </Card>
             )}
@@ -1310,7 +1377,9 @@ grid h-5 w-5 place-items-center rounded-md
                           id="studio-field-portfolio-add"
                           className={[
                             "inline-flex cursor-pointer items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-900 hover:bg-gray-50 active:scale-[0.99] transition",
-                           highlightId === "studio-field-portfolio-add" ? highlightClass : ""
+                            highlightId === "studio-field-portfolio-add"
+                              ? highlightClass
+                              : "",
                           ].join(" ")}
                         >
                           Додати фото
@@ -1335,10 +1404,6 @@ grid h-5 w-5 place-items-center rounded-md
                           </button>
                         )}
                       </div>
-
-                      <p className="mt-2 text-xs text-gray-500">
-                        Додавай 4–12 фото. JPG/PNG до 1MB. перегляду.
-                      </p>
 
                       {/* Grid preview */}
                       <div className="mt-4">
@@ -1376,7 +1441,7 @@ grid h-5 w-5 place-items-center rounded-md
                                     style={{ aspectRatio: "1 / 1" }}
                                   >
                                     <img
-                                      src={src}
+                                      src={toPublicUrl(src)}
                                       alt={`work ${idx + 1}`}
                                       className="h-full w-full object-cover"
                                     />
@@ -1504,9 +1569,7 @@ grid h-5 w-5 place-items-center rounded-md
                             })}
                           </div>
                         )}
-                        
                       </div>
-                      
                     </Field>
                   </div>
                 </div>
@@ -1541,105 +1604,107 @@ grid h-5 w-5 place-items-center rounded-md
         </div>
       </div> */}
 
-{/* Professional Toast */}
-<div
-  className={[
-    // ✅ Mobile: top-center
-    "fixed z-[90] left-1/2 top-[calc(12px+env(safe-area-inset-top))] -translate-x-1/2 md:left-4 md:bottom-6 md:top-auto md:translate-x-0",
-    "w-[calc(100%-2rem)] max-w-[420px] md:w-auto md:min-w-[260px] md:max-w-[340px]",
-    "transition-all duration-300",
-    toast.open
-      ? "opacity-100 translate-y-0"
-      : "pointer-events-none opacity-0 -translate-y-3",
-  ].join(" ")}
-  role="status"
-  aria-live="polite"
->
-  <div
-    className={[
-      "relative overflow-hidden rounded-2xl border bg-white",
-      "shadow-[0_12px_30px_rgba(0,0,0,0.16)]",
-      toast.type === "success" ? "border-emerald-300" : "border-red-300",
-    ].join(" ")}
-  >
-    {/* Glow */}
-    <div
-      className={[
-        "pointer-events-none absolute -inset-10 blur-2xl opacity-30",
-        toast.type === "success" ? "bg-emerald-300" : "bg-red-300",
-      ].join(" ")}
-    />
-
-    {/* Left accent */}
-    <div
-      className={[
-        "absolute left-0 top-0 h-full w-1.5",
-        toast.type === "success" ? "bg-emerald-500" : "bg-red-500",
-      ].join(" ")}
-    />
-
-    <div className="relative flex items-start gap-3 p-4 pl-5">
-      {/* Icon bubble */}
+      {/* Professional Toast */}
       <div
         className={[
-          "flex h-10 w-10 items-center justify-center rounded-xl",
-          "shadow-[0_6px_14px_rgba(0,0,0,0.12)]",
-          "animate-[toastPop_260ms_ease-out]",
-          toast.type === "success"
-            ? "bg-emerald-600 text-white"
-            : "bg-red-600 text-white",
+          // ✅ Mobile: top-center
+          "fixed z-[90] left-1/2 top-[calc(12px+env(safe-area-inset-top))] -translate-x-1/2 md:left-4 md:bottom-6 md:top-auto md:translate-x-0",
+          "w-[calc(100%-2rem)] max-w-[420px] md:w-auto md:min-w-[260px] md:max-w-[340px]",
+          "transition-all duration-300",
+          toast.open
+            ? "opacity-100 translate-y-0"
+            : "pointer-events-none opacity-0 -translate-y-3",
         ].join(" ")}
-        aria-hidden="true"
+        role="status"
+        aria-live="polite"
       >
-        {toast.type === "success" ? (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M20 6L9 17l-5-5"
-              stroke="#ffffff"
-              strokeWidth="2.6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+        <div
+          className={[
+            "relative overflow-hidden rounded-2xl border bg-white",
+            "shadow-[0_12px_30px_rgba(0,0,0,0.16)]",
+            toast.type === "success" ? "border-emerald-300" : "border-red-300",
+          ].join(" ")}
+        >
+          {/* Glow */}
+          <div
+            className={[
+              "pointer-events-none absolute -inset-10 blur-2xl opacity-30",
+              toast.type === "success" ? "bg-emerald-300" : "bg-red-300",
+            ].join(" ")}
+          />
+
+          {/* Left accent */}
+          <div
+            className={[
+              "absolute left-0 top-0 h-full w-1.5",
+              toast.type === "success" ? "bg-emerald-500" : "bg-red-500",
+            ].join(" ")}
+          />
+
+          <div className="relative flex items-start gap-3 p-4 pl-5">
+            {/* Icon bubble */}
+            <div
+              className={[
+                "flex h-10 w-10 items-center justify-center rounded-xl",
+                "shadow-[0_6px_14px_rgba(0,0,0,0.12)]",
+                "animate-[toastPop_260ms_ease-out]",
+                toast.type === "success"
+                  ? "bg-emerald-600 text-white"
+                  : "bg-red-600 text-white",
+              ].join(" ")}
+              aria-hidden="true"
+            >
+              {toast.type === "success" ? (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M20 6L9 17l-5-5"
+                    stroke="#ffffff"
+                    strokeWidth="2.6"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M12 9v5"
+                    stroke="currentColor"
+                    strokeWidth="2.6"
+                    strokeLinecap="round"
+                  />
+                  <path
+                    d="M12 17h.01"
+                    stroke="currentColor"
+                    strokeWidth="3.6"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              )}
+            </div>
+
+            {/* Text */}
+            <div className="min-w-0">
+              <p className="text-sm font-extrabold text-gray-900 leading-5">
+                {toast.title ||
+                  (toast.type === "success" ? "Збережено" : "Помилка")}
+              </p>
+              <p className="mt-1 text-sm text-gray-700 leading-5">
+                {toast.text}
+              </p>
+            </div>
+          </div>
+
+          {/* Progress bar */}
+          <div className="h-[4px] w-full bg-gray-100">
+            <div
+              className={[
+                "h-full w-full origin-left animate-[toastbar_3.2s_linear_forwards]",
+                toast.type === "success" ? "bg-emerald-500" : "bg-red-500",
+              ].join(" ")}
             />
-          </svg>
-        ) : (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M12 9v5"
-              stroke="currentColor"
-              strokeWidth="2.6"
-              strokeLinecap="round"
-            />
-            <path
-              d="M12 17h.01"
-              stroke="currentColor"
-              strokeWidth="3.6"
-              strokeLinecap="round"
-            />
-          </svg>
-        )}
+          </div>
+        </div>
       </div>
-
-      {/* Text */}
-      <div className="min-w-0">
-        <p className="text-sm font-extrabold text-gray-900 leading-5">
-          {toast.title || (toast.type === "success" ? "Збережено" : "Помилка")}
-        </p>
-        <p className="mt-1 text-sm text-gray-700 leading-5">{toast.text}</p>
-      </div>
-    </div>
-
-    {/* Progress bar */}
-    <div className="h-[4px] w-full bg-gray-100">
-      <div
-        className={[
-          "h-full w-full origin-left animate-[toastbar_3.2s_linear_forwards]",
-          toast.type === "success" ? "bg-emerald-500" : "bg-red-500",
-        ].join(" ")}
-      />
-    </div>
-  </div>
-</div>
-
 
       {portfolioPreview.open && (
         <div
@@ -1648,7 +1713,7 @@ grid h-5 w-5 place-items-center rounded-md
         >
           <div className="max-w-3xl w-full">
             <img
-              src={portfolioPreview.src}
+              src={toPublicUrl(portfolioPreview.src)}
               alt="Portfolio preview"
               className="w-full max-h-[80dvh] object-contain rounded-2xl bg-black"
               onClick={(e) => e.stopPropagation()}
@@ -1668,7 +1733,7 @@ grid h-5 w-5 place-items-center rounded-md
 
       {/* Error modal */}
       {errorModal.open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 z-[9999]">
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
             <h3 className="text-lg font-extrabold text-gray-900">
               {errorModal.title}
@@ -1689,106 +1754,90 @@ grid h-5 w-5 place-items-center rounded-md
         </div>
       )}
       {/* Top-right Save (appears only when header is visible) */}
-<div
-  className={[
-    "fixed right-4 z-[9999] transition-all duration-300",
-    checklistOpen ? "top-20" : "top-4",
-    floatingVisible
-      ? "opacity-100 translate-y-0 pointer-events-auto"
-      : "opacity-0 -translate-y-2 pointer-events-none",
-  ].join(" ")}
->
-
-
-
-
-</div>
-
-{/* Mobile bottom actions */}
-<div className="fixed inset-x-0 bottom-0 md:hidden z-[60]">
-  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-white via-white/95 to-transparent" />
-
-  <div className="relative mx-auto max-w-5xl px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-    <div className="flex gap-2">
-      
-      {/* Save */}
-      <button
-        type="button"
-        onClick={save}
-        disabled={!canSave}
+      <div
         className={[
-          "w-1/2 rounded-2xl px-4 py-3 text-sm font-extrabold transition active:scale-[0.99]",
-          canSave
-            ? "bg-black text-white hover:bg-gray-900"
-            : "bg-gray-100 text-gray-400 cursor-not-allowed",
+          "fixed right-4 z-[9999] transition-all duration-300",
+          checklistOpen ? "top-20" : "top-4",
+          floatingVisible
+            ? "opacity-100 translate-y-0 pointer-events-auto"
+            : "opacity-0 -translate-y-2 pointer-events-none",
         ].join(" ")}
-      >
-        {saving ? "Збереження..." : "Зберегти"}
-      </button>
-      {/* Cancel */}
-      <button
-        type="button"
-        onClick={resetChanges}
-        disabled={!dirty || saving}
-        className={[
-          "w-1/2 rounded-2xl px-4 py-3 text-sm font-extrabold transition active:scale-[0.99]",
-          dirty && !saving
-            ? "bg-white text-gray-900 border border-gray-200 hover:bg-gray-50"
-            : "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed",
-        ].join(" ")}
-      >
-        Скасувати
-      </button>
+      ></div>
 
-    </div>
-  </div>
-</div>
+      {/* Mobile bottom actions */}
+      <div className="fixed inset-x-0 bottom-0 md:hidden z-[60]">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-white via-white/95 to-transparent" />
 
+        <div className="relative mx-auto max-w-5xl px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+          <div className="flex gap-2">
+            {/* Save */}
+            <button
+              type="button"
+              onClick={save}
+              disabled={!canSave}
+              className={[
+                "w-1/2 rounded-2xl px-4 py-3 text-sm font-extrabold transition active:scale-[0.99]",
+                canSave
+                  ? "bg-black text-white hover:bg-gray-900"
+                  : "bg-gray-100 text-gray-400 cursor-not-allowed",
+              ].join(" ")}
+            >
+              {saving ? "Збереження..." : "Зберегти"}
+            </button>
+            {/* Cancel */}
+            <button
+              type="button"
+              onClick={resetChanges}
+              disabled={!dirty || saving}
+              className={[
+                "w-1/2 rounded-2xl px-4 py-3 text-sm font-extrabold transition active:scale-[0.99]",
+                dirty && !saving
+                  ? "bg-white text-gray-900 border border-gray-200 hover:bg-gray-50"
+                  : "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed",
+              ].join(" ")}
+            >
+              Скасувати
+            </button>
+          </div>
+        </div>
+      </div>
 
-{/* Tablet + Desktop bottom-right actions */}
-<div className="hidden md:block fixed right-6 bottom-6 z-[80]">
-    <div className="flex items-center gap-3">
-    
-
-  {hasPendingChanges && (
-    <span className="mr-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700 pill-enter">
-      Збережи зміни
-    </span>
-  )}
-    {/* Save */}
-    <button
-      type="button"
-      onClick={save}
-      disabled={!canSave}
-      className={[
-        "rounded-2xl px-6 py-3 text-sm font-extrabold shadow-sm",
-        "transition active:scale-[0.98]",
-        canSave
-          ? "ui-button-one"
-          : "ui-button-one",
-      ].join(" ")}
-    >
-      {saving ? "Збереження..." : "Зберегти"}
-    </button>
-    {/* Cancel */}
-    <button
-      type="button"
-      onClick={resetChanges}
-      disabled={!dirty || saving}
-      className={[
-        "rounded-2xl px-5 py-3 text-sm font-extrabold shadow-sm",
-        "transition active:scale-[0.98]",
-        dirty && !saving
-          ? "ui-button"
-          : "ui-button",
-      ].join(" ")}
-    >
-      Скасувати
-    </button>
-  </div>
-</div>
-
-
+      {/* Tablet + Desktop bottom-right actions */}
+      <div className="hidden md:block fixed right-6 bottom-6 z-[80]">
+        <div className="flex items-center gap-3">
+          {hasPendingChanges && (
+            <span className="mr-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700 pill-enter">
+              Збережи зміни
+            </span>
+          )}
+          {/* Save */}
+          <button
+            type="button"
+            onClick={save}
+            disabled={!canSave}
+            className={[
+              "rounded-2xl px-6 py-3 text-sm font-extrabold shadow-sm",
+              "transition active:scale-[0.98]",
+              canSave ? "ui-button-one" : "ui-button-one",
+            ].join(" ")}
+          >
+            {saving ? "Збереження..." : "Зберегти"}
+          </button>
+          {/* Cancel */}
+          <button
+            type="button"
+            onClick={resetChanges}
+            disabled={!dirty || saving}
+            className={[
+              "rounded-2xl px-5 py-3 text-sm font-extrabold shadow-sm",
+              "transition active:scale-[0.98]",
+              dirty && !saving ? "ui-button" : "ui-button",
+            ].join(" ")}
+          >
+            Скасувати
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

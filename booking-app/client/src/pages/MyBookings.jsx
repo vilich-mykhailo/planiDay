@@ -216,7 +216,7 @@ export default function MyBookings() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-5xl">
+    <div className="pt-6 px-4 sm:pt-8 sm:px-6 lg:pt-6 lg:px-8 space-y-6">
       <div className="rounded-[28px] border border-gray-200 bg-white shadow-sm overflow-hidden">
         {/* Header */}
         <div className="px-6 sm:px-7 py-6 border-b bg-gradient-to-b from-gray-50 to-white">

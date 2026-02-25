@@ -128,7 +128,7 @@ async function handleSubmit(e) {
 
             <div className="mt-6 border-t border-gray-200 pt-5 text-center">
               <p className="text-sm text-gray-600">
-                У мене нема акаунта{" "}
+                Немає акаунта?{" "}
                 <Link to="/register" className="font-extrabold text-gray-900 hover:underline">
                   Зареєструватися
                 </Link>

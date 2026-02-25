@@ -32,19 +32,86 @@ function Input(props) {
 }
 
 function Select(props) {
+  const [open, setOpen] = React.useState(false);
+
   return (
-    <select
-      {...props}
-      className={cx(
-        "w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm",
-        "outline-none transition",
-        "focus:border-gray-300 focus:ring-4 focus:ring-gray-100",
-        props.className,
-      )}
-    />
+    <div className="relative">
+      <select
+        {...props}
+        onFocus={(e) => {
+          setOpen(true);
+          props.onFocus?.(e);
+        }}
+        onBlur={(e) => {
+          setOpen(false);
+          props.onBlur?.(e);
+        }}
+        onChange={(e) => {
+          props.onChange?.(e);
+          // після вибору часто хочеться зразу "закрити" анімацію
+          setOpen(false);
+        }}
+        className={cx(
+          "w-full appearance-none rounded-2xl border border-gray-200 bg-white",
+          "px-4 pr-12 py-3 text-sm",
+          "outline-none transition",
+          "focus:border-gray-300 focus:ring-4 focus:ring-gray-100",
+          props.className,
+        )}
+      >
+        {props.children}
+      </select>
+
+      {/* Custom arrow (animated) */}
+      <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center">
+        <svg
+          className={cx(
+            "h-4 w-4 text-gray-500",
+            "transition-transform duration-200 ease-out",
+            open ? "rotate-180" : "rotate-0",
+          )}
+          viewBox="0 0 20 20"
+          fill="none"
+        >
+          <path
+            d="M6 8l4 4 4-4"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </div>
+    </div>
   );
 }
 
+function Segmented({ value, onChange, options }) {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 rounded-2xl bg-gray-50 p-2 border border-gray-200">
+      {options.map((opt) => {
+        const active = value === opt.value;
+
+        return (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => onChange(opt.value)}
+            className={cx(
+              "rounded-xl px-3 py-2 text-sm font-extrabold transition",
+              "focus:outline-none focus:ring-4 focus:ring-gray-100",
+              active
+                ? "bg-black text-white shadow-sm"
+                : "bg-white text-gray-900 border border-gray-200 hover:bg-gray-50",
+            )}
+          >
+            {opt.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 function Card({ title, subtitle, right, children }) {
   return (
     <section className="rounded-[28px] border border-gray-200 bg-white shadow-sm">
@@ -287,7 +354,7 @@ function onPickPhoto(file) {
   }
 
   return (
-    <div className="mx-auto w-full max-w-4xl pt-1 space-y-5">
+    <div className="pt-6 px-4 sm:pt-8 sm:px-6 lg:pt-6 lg:px-8 space-y-6">
       {/* Main profile */}
       <Card
         title="Профіль"

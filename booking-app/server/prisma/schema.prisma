@@ -42,16 +42,31 @@ model ClientAccount {
 }
 
 model Studio {
-  id        String   @id @default(cuid())
-  ownerId   String
-  name      String
-  address   String?
-  city      String?
+  id      String       @id @default(cuid())
+  ownerId String       @unique
+  owner   OwnerAccount @relation(fields: [ownerId], references: [id])
+
+  name          String @default("")
+  category      String @default("")
+  phone         String @default("")
+  description   String @default("")
+  city          String @default("")
+  street        String @default("")
+  building      String @default("")
+  apartment     String @default("")
+  coverUrl      String @default("")
+  logoUrl       String @default("")
+  portfolioUrls Json   @default("[]")
+
+  published Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  owner    OwnerAccount @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   bookings Booking[]
+
+  serviceCategories ServiceCategory[]
+  services          Service[]
+  masters           Master[]
 }
 
 model Booking {
@@ -75,4 +90,63 @@ enum BookingStatus {
   PENDING
   CONFIRMED
   CANCELED
+}
+
+model ServiceCategory {
+  id       String @id @default(uuid())
+  name     String
+  studioId String
+  studio   Studio @relation(fields: [studioId], references: [id], onDelete: Cascade)
+
+  services Service[]
+
+  sort      Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+model Service {
+  id         String  @id @default(uuid())
+  name       String
+  duration   Int
+  price      Int
+  allMasters Boolean @default(true)
+
+  studioId String
+  studio   Studio @relation(fields: [studioId], references: [id], onDelete: Cascade)
+
+  categoryId String?
+  category   ServiceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  masters ServiceMaster[]
+
+  sort      Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+model ServiceMaster {
+  serviceId String
+  masterId  String
+
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  master  Master  @relation(fields: [masterId], references: [id], onDelete: Cascade)
+
+  @@id([serviceId, masterId])
+}
+
+model Master {
+  id       String @id @default(uuid())
+  studioId String
+  studio   Studio @relation(fields: [studioId], references: [id], onDelete: Cascade)
+
+  name     String
+  phone    String? // якщо треба
+  photoUrl String? // якщо треба
+  active   Boolean @default(true)
+
+  services ServiceMaster[]
+
+  sort      Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([studioId])
 }

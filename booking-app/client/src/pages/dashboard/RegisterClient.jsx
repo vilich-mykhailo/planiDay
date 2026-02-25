@@ -69,7 +69,7 @@ export default function RegisterClient() {
       localStorage.setItem("token", data.token);
       localStorage.setItem("role", data.kind); // "client"
 
-      navigate("/"); // або /client/dashboard якщо буде
+      navigate("/studios"); // або /client/dashboard якщо буде
     } catch (err) {
       setError(err?.message || "Не вдалося створити акаунт. Спробуй ще раз.");
     } finally {

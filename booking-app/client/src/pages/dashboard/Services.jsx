@@ -3,18 +3,11 @@ import { useStudio } from "../../context/studio/useStudio";
 
 const UNCATEGORIZED_ID = "__uncategorized__";
 
-function makeId(prefix = "id") {
-  if (typeof crypto !== "undefined" && crypto.randomUUID)
-    return crypto.randomUUID();
-  return `${prefix}_${Math.random().toString(16).slice(2)}_${Date.now()}`;
-}
-
 function getMastersWord(count) {
   const mod10 = count % 10;
   const mod100 = count % 100;
   if (mod10 === 1 && mod100 !== 11) return "майстер";
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20))
-    return "майстри";
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return "майстри";
   return "майстрів";
 }
 
@@ -49,9 +42,7 @@ function MasterChip({ master, checked }) {
 
       <div className="min-w-0">
         <p className="text-sm font-semibold text-gray-900 truncate">{name}</p>
-        <p
-          className={`text-xs ${checked ? "text-emerald-700" : "text-gray-500"}`}
-        >
+        <p className={`text-xs ${checked ? "text-emerald-700" : "text-gray-500"}`}>
           {checked ? "Обрано" : "Доступний"}
         </p>
       </div>
@@ -95,12 +86,7 @@ function Modal({ open, onClose, title, subtitle, children, footer, center = fals
         mouseDownOnBackdropRef.current = false;
       }}
     >
-      <div
-        className={[
-          "min-h-full px-4 py-6 flex justify-center",
-          center ? "items-center" : "items-start",
-        ].join(" ")}
-      >
+      <div className={["min-h-full px-4 py-6 flex justify-center", center ? "items-center" : "items-start"].join(" ")}>
         <div
           className="w-full max-w-2xl overflow-hidden rounded-[28px] border border-gray-200 bg-white shadow-xl"
           onMouseDown={(e) => e.stopPropagation()}
@@ -108,13 +94,10 @@ function Modal({ open, onClose, title, subtitle, children, footer, center = fals
           onClick={(e) => e.stopPropagation()}
         >
           <div className="border-b px-5 py-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-              {title}
-            </p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">{title}</p>
             {subtitle && <p className="mt-1 text-sm text-gray-600">{subtitle}</p>}
           </div>
 
-          {/* якщо center=true — контент НЕ скролиться всередині */}
           {center ? (
             <div className="p-5 space-y-4">{children}</div>
           ) : (
@@ -140,49 +123,66 @@ function Button({ variant = "default", className = "", children, ...props }) {
   };
 
   return (
-    <button
-      type="button"
-      className={`${base} ${styles[variant]} ${className}`}
-      {...props}
-    >
+    <button type="button" className={`${base} ${styles[variant]} ${className}`} {...props}>
       {children}
     </button>
   );
 }
 
+/** ---- API helper ---- */
+async function api(path, { method = "GET", body, token } = {}) {
+  const base = import.meta.env.VITE_API_URL;
+  const res = await fetch(`${base}${path}`, {
+    method,
+    headers: {
+      ...(body ? { "Content-Type": "application/json" } : {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
+  const data = await res.json().catch(() => null);
+  if (!res.ok) throw new Error(data?.message || `Request failed (${res.status})`);
+  return data;
+}
+
 export default function Services() {
-  const { studio, updateStudio } = useStudio();
-  const [durationHM, setDurationHM] = useState({ h: 1, m: 0 });
-  const masters = useMemo(
-    () => (Array.isArray(studio?.masters) ? studio.masters : []),
-    [studio],
-  );
+  const { studio } = useStudio();
 
-  const categories = useMemo(
-    () =>
-      Array.isArray(studio?.serviceCategories) ? studio.serviceCategories : [],
-    [studio],
-  );
+  // ✅ UI state for services from API (not from studio)
+  const [serviceCategories, setServiceCategories] = useState([]);
+  const [uncategorizedServices, setUncategorizedServices] = useState([]);
 
-  const uncategorizedServices = useMemo(
-    () =>
-      Array.isArray(studio?.uncategorizedServices)
-        ? studio.uncategorizedServices
-        : [],
-    [studio],
-  );
-  const hoursRef = useRef(null);
-  const minutesRef = useRef(null);
+  const [loading, setLoading] = useState(false);
 
-  const hoursTimerRef = useRef(null);
-  const minutesTimerRef = useRef(null);
+  const masters = useMemo(() => (Array.isArray(studio?.masters) ? studio.masters : []), [studio]);
+
+  // -----------------------------
+  // LOAD from API
+  // -----------------------------
+  async function refresh() {
+    if (!studio?.id) return;
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const data = await api(`/studio/${studio.id}/services`, { token });
+
+      setServiceCategories(Array.isArray(data?.serviceCategories) ? data.serviceCategories : []);
+      setUncategorizedServices(Array.isArray(data?.uncategorizedServices) ? data.uncategorizedServices : []);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studio?.id]);
+
   // -----------------------------
   // MODALS
   // -----------------------------
-  const [categoryModal, setCategoryModal] = useState({
-    open: false,
-    catId: null,
-  }); // edit category name
+  const [categoryModal, setCategoryModal] = useState({ open: false, catId: null });
   const [categoryDraftName, setCategoryDraftName] = useState("");
 
   const [serviceModal, setServiceModal] = useState({
@@ -194,7 +194,7 @@ export default function Services() {
 
   const [serviceDraft, setServiceDraft] = useState({
     id: null,
-    categoryId: UNCATEGORIZED_ID, // allows move between categories
+    categoryId: UNCATEGORIZED_ID,
     name: "",
     duration: 60,
     price: "",
@@ -210,17 +210,54 @@ export default function Services() {
   }, [categoryModal.open, serviceModal.open]);
 
   // -----------------------------
-  // BLOCK 1: add category
+  // DURATION PICKER (your logic)
   // -----------------------------
-  const [newCategoryName, setNewCategoryName] = useState("");
+  const [durationHM, setDurationHM] = useState({ h: 1, m: 0 });
+  const hoursRef = useRef(null);
+  const minutesRef = useRef(null);
+  const hoursTimerRef = useRef(null);
+  const minutesTimerRef = useRef(null);
 
-  async function addCategory() {
-    const name = newCategoryName.trim();
-    if (!name) return;
+  function pickCenteredValue(containerEl) {
+    if (!containerEl) return null;
+    const items = Array.from(containerEl.querySelectorAll("[data-value]"));
+    if (!items.length) return null;
 
-    const next = [...categories, { id: makeId("cat"), name, services: [] }];
-    await updateStudio({ serviceCategories: next });
-    setNewCategoryName("");
+    const rect = containerEl.getBoundingClientRect();
+    const centerY = rect.top + rect.height / 2;
+
+    let best = { dist: Infinity, value: null };
+    for (const el of items) {
+      const r = el.getBoundingClientRect();
+      const elCenter = r.top + r.height / 2;
+      const dist = Math.abs(elCenter - centerY);
+      if (dist < best.dist) best = { dist, value: el.getAttribute("data-value") };
+    }
+    return best.value != null ? Number(best.value) : null;
+  }
+
+  function normalizeHM(next) {
+    let h = Number(next.h ?? 0);
+    let m = Number(next.m ?? 0);
+    if (h < 0) h = 0;
+
+    if (m < 0) m = 0;
+    if (m > 59) m = 55;
+    m = Math.round(m / 5) * 5;
+    if (m === 60) m = 55;
+
+    const total = h * 60 + m;
+    return { h, m, total: total || 5 };
+  }
+
+  function setDuration(nextPartial) {
+    setDurationHM((prev) => {
+      const merged = { ...prev, ...nextPartial };
+      const n = normalizeHM(merged);
+
+      setServiceDraft((p) => (p.duration === n.total ? p : { ...p, duration: n.total }));
+      return { h: n.h, m: n.m };
+    });
   }
 
   // -----------------------------
@@ -240,44 +277,35 @@ export default function Services() {
   function canSaveServiceDraft(d) {
     const nameOk = Boolean(String(d?.name || "").trim());
     const priceOk = Boolean(String(d?.price ?? "").trim());
-    const mastersOk =
-      d?.allMasters || (Array.isArray(d?.masters) && d.masters.length > 0);
+    const mastersOk = d?.allMasters || (Array.isArray(d?.masters) && d.masters.length > 0);
     return nameOk && priceOk && mastersOk;
   }
 
   function getCategoryServices(catId) {
     if (catId === UNCATEGORIZED_ID) return uncategorizedServices;
-    const cat = categories.find((c) => c.id === catId);
+    const cat = serviceCategories.find((c) => c.id === catId);
     return Array.isArray(cat?.services) ? cat.services : [];
   }
-  function pickCenteredValue(containerEl) {
-    if (!containerEl) return null;
 
-    const items = Array.from(containerEl.querySelectorAll("[data-value]"));
-    if (!items.length) return null;
+  // -----------------------------
+  // Category CRUD (API)
+  // -----------------------------
+  const [newCategoryName, setNewCategoryName] = useState("");
 
-    const rect = containerEl.getBoundingClientRect();
-    const centerY = rect.top + rect.height / 2;
+  async function addCategory() {
+    const name = newCategoryName.trim();
+    if (!name || !studio?.id) return;
 
-    let best = { el: null, dist: Infinity, value: null };
+    const token = localStorage.getItem("token");
+    await api(`/studio/${studio.id}/categories`, { method: "POST", token, body: { name } });
 
-    for (const el of items) {
-      const r = el.getBoundingClientRect();
-      const elCenter = r.top + r.height / 2;
-      const dist = Math.abs(elCenter - centerY);
-      if (dist < best.dist) {
-        best = { el, dist, value: el.getAttribute("data-value") };
-      }
-    }
-
-    return best.value != null ? Number(best.value) : null;
+    setNewCategoryName("");
+    refresh();
   }
-  // -----------------------------
-  // Category edit/delete
-  // -----------------------------
+
   function openEditCategory(catId) {
     if (catId === UNCATEGORIZED_ID) return;
-    const cat = categories.find((c) => c.id === catId);
+    const cat = serviceCategories.find((c) => c.id === catId);
     if (!cat) return;
     setCategoryDraftName(cat.name || "");
     setCategoryModal({ open: true, catId });
@@ -287,36 +315,33 @@ export default function Services() {
     const name = categoryDraftName.trim();
     if (!name || !categoryModal.catId) return;
 
-    const next = categories.map((c) =>
-      c.id === categoryModal.catId ? { ...c, name } : c,
-    );
-    await updateStudio({ serviceCategories: next });
+    const token = localStorage.getItem("token");
+    await api(`/categories/${categoryModal.catId}`, {
+      method: "PATCH",
+      token,
+      body: { name },
+    });
+
     setCategoryModal({ open: false, catId: null });
     setCategoryDraftName("");
+    refresh();
   }
 
   async function deleteCategory(catId) {
     if (catId === UNCATEGORIZED_ID) return;
 
-    const cat = categories.find((c) => c.id === catId);
-    if (!cat) return;
-
-    const catServices = Array.isArray(cat.services) ? cat.services : [];
-    const nextCategories = categories.filter((c) => c.id !== catId);
-    const nextUnc = [...uncategorizedServices, ...catServices];
-
-    await updateStudio({
-      serviceCategories: nextCategories,
-      uncategorizedServices: nextUnc,
-    });
+    const token = localStorage.getItem("token");
+    // ✅ сервер має перенести всі services цього catId в categoryId=null і потім видалити категорію
+    await api(`/categories/${catId}`, { method: "DELETE", token });
+    refresh();
   }
 
   // -----------------------------
-  // Service add/edit/delete
+  // Service CRUD (API)
   // -----------------------------
   function openAddService(catId) {
     setServiceModal({ open: true, mode: "add", catId, serviceId: null });
-    setDuration({ h: 1, m: 0 }); // 60 хв за замовчуванням
+    setDuration({ h: 1, m: 0 });
     setServiceDraft({
       id: null,
       categoryId: catId,
@@ -328,35 +353,30 @@ export default function Services() {
     });
   }
 
-function openEditService(catId, serviceId) {
-  const list = getCategoryServices(catId);
-  const original = list.find((s) => s.id === serviceId);
-  if (!original) return;
+  function openEditService(catId, serviceId) {
+    const list = getCategoryServices(catId);
+    const original = list.find((s) => s.id === serviceId);
+    if (!original) return;
 
-  const total = Number(original.duration || 60);
+    const total = Number(original.duration || 60);
 
-  setServiceModal({ open: true, mode: "edit", catId, serviceId });
+    setServiceModal({ open: true, mode: "edit", catId, serviceId });
 
-  setServiceDraft({
-    id: original.id,
-    categoryId: catId,
-    name: original.name || "",
-    duration: total,
-    price: String(original.price ?? ""),
-    allMasters: Boolean(original.allMasters),
-    masters: Array.isArray(original.masters) ? [...original.masters] : [],
-  });
+    setServiceDraft({
+      id: original.id,
+      categoryId: catId, // source category for UI; user can change select
+      name: original.name || "",
+      duration: total,
+      price: String(original.price ?? ""),
+      allMasters: Boolean(original.allMasters),
+      masters: Array.isArray(original.masters) ? [...original.masters] : [],
+    });
 
-  setDurationHM({ h: Math.floor(total / 60), m: total % 60 });
-}
+    setDurationHM({ h: Math.floor(total / 60), m: total % 60 });
+  }
 
   function closeServiceModal() {
-    setServiceModal({
-      open: false,
-      mode: "add",
-      catId: UNCATEGORIZED_ID,
-      serviceId: null,
-    });
+    setServiceModal({ open: false, mode: "add", catId: UNCATEGORIZED_ID, serviceId: null });
     setServiceDraft({
       id: null,
       categoryId: UNCATEGORIZED_ID,
@@ -368,119 +388,56 @@ function openEditService(catId, serviceId) {
     });
   }
 
-  async function deleteService(catId, serviceId) {
-    if (catId === UNCATEGORIZED_ID) {
-      await updateStudio({
-        uncategorizedServices: uncategorizedServices.filter(
-          (s) => s.id !== serviceId,
-        ),
-      });
-      return;
-    }
-
-    const nextCategories = categories.map((c) => {
-      if (c.id !== catId) return c;
-      return {
-        ...c,
-        services: (c.services || []).filter((s) => s.id !== serviceId),
-      };
-    });
-
-    await updateStudio({ serviceCategories: nextCategories });
+async function deleteService(catId, serviceId) {
+  try {
+    const token = localStorage.getItem("token");
+    await api(`/studio/services/${serviceId}`, { method: "DELETE", token });
+    refresh();
+  } catch (e) {
+    console.error(e);
+    alert(e.message);
   }
-
-  async function saveService() {
-    if (!canSaveServiceDraft(serviceDraft)) return;
-
-    const fromCatId = serviceModal.catId;
-    const toCatId = serviceDraft.categoryId || UNCATEGORIZED_ID;
-
-    const cleaned = {
-      id: serviceDraft.id || makeId("srv"),
-      name: String(serviceDraft.name || "").trim(),
-      duration: Number(serviceDraft.duration || 60),
-      price: Number(serviceDraft.price),
-      allMasters: Boolean(serviceDraft.allMasters),
-      masters: serviceDraft.allMasters ? [] : serviceDraft.masters || [],
-    };
-
-    // ADD: just add to target
-    if (serviceModal.mode === "add") {
-      if (toCatId === UNCATEGORIZED_ID) {
-        await updateStudio({
-          uncategorizedServices: [...uncategorizedServices, cleaned],
-        });
-      } else {
-        const nextCategories = categories.map((c) => {
-          if (c.id !== toCatId) return c;
-          return { ...c, services: [...(c.services || []), cleaned] };
-        });
-        await updateStudio({ serviceCategories: nextCategories });
-      }
-
-      closeServiceModal();
-      return;
-    }
-
-    // EDIT: remove from source, add to target (supports moving)
-    let nextCategories = categories.map((c) => {
-      if (c.id !== fromCatId) return c;
-      return {
-        ...c,
-        services: (c.services || []).filter((s) => s.id !== cleaned.id),
-      };
-    });
-
-    let nextUnc = uncategorizedServices.filter((s) => s.id !== cleaned.id);
-
-    if (toCatId === UNCATEGORIZED_ID) {
-      nextUnc = [...nextUnc, cleaned];
-    } else {
-      nextCategories = nextCategories.map((c) => {
-        if (c.id !== toCatId) return c;
-        return { ...c, services: [...(c.services || []), cleaned] };
-      });
-    }
-
-    await updateStudio({
-      serviceCategories: nextCategories,
-      uncategorizedServices: nextUnc,
-    });
-
-    closeServiceModal();
-  }
-
-  function normalizeHM(next) {
-  let h = Number(next.h ?? 0);
-  let m = Number(next.m ?? 0);
-
-  if (h < 0) h = 0;
-
-  // хвилини 0..55 крок 5
-  if (m < 0) m = 0;
-  if (m > 59) m = 55;
-  m = Math.round(m / 5) * 5;
-  if (m === 60) m = 55;
-
-  const total = h * 60 + m;
-
-  return { h, m, total: total || 5 };
 }
 
-function setDuration(nextPartial) {
-  setDurationHM((prev) => {
-    const merged = { ...prev, ...nextPartial };
-    const n = normalizeHM(merged);
+async function saveService() {
+  if (!canSaveServiceDraft(serviceDraft) || !studio?.id) return;
 
-    // оновлюємо durationHM (як UI-стан)
-    // і draft.duration (як дані)
-    setServiceDraft((p) =>
-      p.duration === n.total ? p : { ...p, duration: n.total },
-    );
+  const token = localStorage.getItem("token");
+  const toCatId = serviceDraft.categoryId || UNCATEGORIZED_ID;
 
-    return { h: n.h, m: n.m };
-  });
+  const payload = {
+    name: String(serviceDraft.name || "").trim(),
+    duration: Number(serviceDraft.duration || 60),
+    price: Number(serviceDraft.price),
+    allMasters: Boolean(serviceDraft.allMasters),
+    categoryId: toCatId === UNCATEGORIZED_ID ? null : toCatId,
+    masters: serviceDraft.allMasters
+      ? []
+      : (serviceDraft.masters || []).map(String),
+  };
+
+  if (serviceModal.mode === "add") {
+    // ✅ CREATE
+    await api(`/studio/${studio.id}/services`, {
+      method: "POST",
+      token,
+      body: { service: payload },
+    });
+  } else {
+    // ✅ UPDATE
+    await api(`/services/${serviceDraft.id}`, {
+      method: "PATCH",
+      token,
+      body: { service: payload },
+    });
+  }
+
+  closeServiceModal();
+  refresh();
 }
+  // -----------------------------
+  // Derived blocks for UI
+  // -----------------------------
   const blocks = useMemo(() => {
     const unc = {
       id: UNCATEGORIZED_ID,
@@ -488,15 +445,12 @@ function setDuration(nextPartial) {
       services: uncategorizedServices,
       _virtual: true,
     };
-
-    return [
-      unc,
-      ...categories.map((c) => ({ ...c, services: c.services || [] })),
-    ];
-  }, [categories, uncategorizedServices]);
+    return [unc, ...serviceCategories.map((c) => ({ ...c, services: c.services || [] }))];
+  }, [serviceCategories, uncategorizedServices]);
 
   const showTips =
-    categories.length === 0 && (uncategorizedServices?.length || 0) === 0;
+    serviceCategories.length === 0 && (uncategorizedServices?.length || 0) === 0;
+
   return (
     <div className="space-y-6">
       <div className="mb-6">
@@ -504,17 +458,20 @@ function setDuration(nextPartial) {
           Послуги
         </h1>
         <p className="mt-2 text-sm sm:text-base text-gray-600">
-          Налаштуйте категорії та послуги. Клієнти бачитимуть їх у записі
-          онлайн.
+          Налаштуйте категорії та послуги. Клієнти бачитимуть їх у записі онлайн.
         </p>
+        {loading && (
+          <p className="mt-2 text-xs text-gray-500">Завантаження...</p>
+        )}
       </div>
+
       {/* BLOCK 1: add category */}
       <SectionCard
         title="Категорії"
         subtitle="Додай категорію (наприклад: Вії, Нігті, Брови)."
         right={
           <span className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-700">
-            Всього: {categories.length}
+            Всього: {serviceCategories.length}
           </span>
         }
       >
@@ -528,7 +485,7 @@ function setDuration(nextPartial) {
           <button
             type="button"
             onClick={addCategory}
-            disabled={!newCategoryName.trim()}
+            disabled={!newCategoryName.trim() || !studio?.id}
             className="ui-button-one"
           >
             Додати категорію
@@ -549,19 +506,12 @@ function setDuration(nextPartial) {
               right={
                 <div className="flex flex-col sm:flex-row gap-2">
                   {!isUnc && (
-                    <Button
-                      className="w-full sm:w-auto ui-button-primary"
-                      onClick={() => openEditCategory(cat.id)}
-                    >
+                    <Button className="w-full sm:w-auto ui-button-primary" onClick={() => openEditCategory(cat.id)}>
                       Редагувати
                     </Button>
                   )}
 
-                  <Button
-                    className="w-full sm:w-auto ui-button-one"
-                    variant="primary"
-                    onClick={() => openAddService(cat.id)}
-                  >
+                  <Button className="w-full sm:w-auto ui-button-one" variant="primary" onClick={() => openAddService(cat.id)}>
                     Додати послугу
                   </Button>
 
@@ -591,27 +541,17 @@ function setDuration(nextPartial) {
                     >
                       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="font-extrabold text-gray-900 truncate">
-                            {srv.name}
-                          </p>
+                          <p className="font-extrabold text-gray-900 truncate">{srv.name}</p>
                           <p className="mt-1 text-sm text-gray-600">
-                            {srv.duration} хв • {srv.price} грн •{" "}
-                            {resolveServiceMastersText(srv)}
+                            {srv.duration} хв • {srv.price} грн • {resolveServiceMastersText(srv)}
                           </p>
                         </div>
 
                         <div className="grid grid-cols-2 sm:flex gap-2 sm:shrink-0">
-                          <Button
-                            className="w-full sm:w-auto ui-button-primary"
-                            onClick={() => openEditService(cat.id, srv.id)}
-                          >
+                          <Button className="w-full sm:w-auto ui-button-primary" onClick={() => openEditService(cat.id, srv.id)}>
                             Редагувати
                           </Button>
-                          <Button
-                            className="w-full sm:w-auto ui-button-danger"
-                            variant="danger"
-                            onClick={() => deleteService(cat.id, srv.id)}
-                          >
+                          <Button className="w-full sm:w-auto ui-button-danger" variant="danger" onClick={() => deleteService(cat.id, srv.id)}>
                             Видалити
                           </Button>
                         </div>
@@ -626,35 +566,25 @@ function setDuration(nextPartial) {
       </div>
 
       {/* EDIT CATEGORY MODAL */}
-<Modal
-  open={categoryModal.open}
-  onClose={() => setCategoryModal({ open: false, catId: null })}
-  title="Редагування категорії"
-  subtitle="Зміни назву та збережи."
-  center
-  footer={
+      <Modal
+        open={categoryModal.open}
+        onClose={() => setCategoryModal({ open: false, catId: null })}
+        title="Редагування категорії"
+        subtitle="Зміни назву та збережи."
+        center
+        footer={
           <div className="flex items-center justify-end gap-2">
-            <Button
-              variant="primary"
-              onClick={saveCategoryName}
-              disabled={!categoryDraftName.trim()}
-              className="ui-button-one"
-            >
+            <Button variant="primary" onClick={saveCategoryName} disabled={!categoryDraftName.trim()} className="ui-button-one">
               Зберегти
             </Button>
-            <Button
-              onClick={() => setCategoryModal({ open: false, catId: null })}
-              className="ui-button"
-            >
+            <Button onClick={() => setCategoryModal({ open: false, catId: null })} className="ui-button">
               Скасувати
             </Button>
           </div>
         }
       >
         <div>
-          <label className="block text-sm font-semibold text-gray-900 mb-1">
-            Назва категорії
-          </label>
+          <label className="block text-sm font-semibold text-gray-900 mb-1">Назва категорії</label>
           <input
             value={categoryDraftName}
             onChange={(e) => setCategoryDraftName(e.target.value)}
@@ -668,18 +598,11 @@ function setDuration(nextPartial) {
       <Modal
         open={serviceModal.open}
         onClose={closeServiceModal}
-        title={
-          serviceModal.mode === "add" ? "Додати послугу" : "Редагувати послугу"
-        }
+        title={serviceModal.mode === "add" ? "Додати послугу" : "Редагувати послугу"}
         subtitle="За потреби можна перенести послугу в іншу категорію."
         footer={
           <div className="flex items-center justify-end gap-2">
-            <Button
-              variant="primary"
-              onClick={saveService}
-              disabled={!canSaveServiceDraft(serviceDraft)}
-              className="ui-button-one"
-            >
+            <Button variant="primary" onClick={saveService} disabled={!canSaveServiceDraft(serviceDraft)} className="ui-button-one">
               Зберегти
             </Button>
             <Button onClick={closeServiceModal} className="ui-button">
@@ -691,171 +614,147 @@ function setDuration(nextPartial) {
         <div className="space-y-4">
           {/* category */}
           <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-1">
-              Категорія
-            </label>
+            <label className="block text-sm font-semibold text-gray-900 mb-1">Категорія</label>
             <select
               value={serviceDraft.categoryId || UNCATEGORIZED_ID}
-              onChange={(e) =>
-                setServiceDraft((p) => ({ ...p, categoryId: e.target.value }))
-              }
+              onChange={(e) => setServiceDraft((p) => ({ ...p, categoryId: e.target.value }))}
               className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none transition focus:border-black focus:ring-2 focus:ring-black/15"
             >
               <option value={UNCATEGORIZED_ID}>Послуги без категорії</option>
-              {categories.map((c) => (
+              {serviceCategories.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
                 </option>
               ))}
             </select>
-            <p className="mt-1 text-xs text-gray-500">
-              Якщо хочеш — можна перенести послугу в іншу категорію.
-            </p>
+            <p className="mt-1 text-xs text-gray-500">Якщо хочеш — можна перенести послугу в іншу категорію.</p>
           </div>
 
           {/* name */}
           <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-1">
-              Назва послуги
-            </label>
+            <label className="block text-sm font-semibold text-gray-900 mb-1">Назва послуги</label>
             <input
               value={serviceDraft.name}
-              onChange={(e) =>
-                setServiceDraft((p) => ({ ...p, name: e.target.value }))
-              }
+              onChange={(e) => setServiceDraft((p) => ({ ...p, name: e.target.value }))}
               placeholder="Напр. Нарощування"
               className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none transition focus:border-black focus:ring-2 focus:ring-black/15"
             />
           </div>
+
+          {/* price */}
           <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-1">
-              Ціна
-            </label>
+            <label className="block text-sm font-semibold text-gray-900 mb-1">Ціна</label>
             <input
               type="number"
               value={serviceDraft.price}
-              onChange={(e) =>
-                setServiceDraft((p) => ({ ...p, price: e.target.value }))
-              }
+              onChange={(e) => setServiceDraft((p) => ({ ...p, price: e.target.value }))}
               placeholder="грн"
               className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none transition focus:border-black focus:ring-2 focus:ring-black/15"
             />
           </div>
 
           {/* duration */}
-{/* duration */}
-<div className="flex justify-center">
-  {/* контейнер блоку тривалості */}
-  <div className="w-full max-w-[420px]">
-    <label className="block text-sm font-semibold text-gray-900 mb-3 text-center">
-      Тривалість
-    </label>
+          <div className="flex justify-center">
+            <div className="w-full max-w-[420px]">
+              <label className="block text-sm font-semibold text-gray-900 mb-3 text-center">
+                Тривалість
+              </label>
 
-    <div className="grid grid-cols-2 gap-3">
-      {/* ГОДИНИ */}
-      <div className="rounded-2xl border border-gray-200 bg-white px-3 py-3">
-        <p className="text-[11px] font-bold uppercase tracking-wide text-gray-500 mb-2 text-center">
-          Години
-        </p>
-
-        <div className="relative overflow-x-hidden">
-          <div className="pointer-events-none absolute left-0 right-0 top-1/2 -translate-y-1/2 h-10 rounded-xl border border-gray-200 bg-gray-50/70" />
-          <div
-            ref={hoursRef}
-            onScroll={() => {
-              if (hoursTimerRef.current) clearTimeout(hoursTimerRef.current);
-              hoursTimerRef.current = setTimeout(() => {
-                const v = pickCenteredValue(hoursRef.current);
-                if (v == null) return;
-                setDuration({ h: v });
-              }, 80);
-            }}
-            className="h-40 overflow-y-auto overflow-x-hidden snap-y snap-mandatory scroll-smooth no-scrollbar py-16 touch-pan-y"
-          >
-            {Array.from({ length: 13 }, (_, i) => i).map((h) => {
-              const active = Number(durationHM.h) === h;
-              return (
-                <div
-                  key={h}
-                  data-value={h}
-                  className={[
-                    "w-full snap-center h-10 grid place-items-center rounded-xl font-extrabold select-none",
-                    "transition-all duration-200",
-                    active
-                      ? "text-gray-900 scale-[1.15]"
-                      : "text-gray-400 scale-[0.92] opacity-70",
-                  ].join(" ")}
-                >
-                  {h}
+              <div className="grid grid-cols-2 gap-3">
+                {/* hours */}
+                <div className="rounded-2xl border border-gray-200 bg-white px-3 py-3">
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-gray-500 mb-2 text-center">
+                    Години
+                  </p>
+                  <div className="relative overflow-x-hidden">
+                    <div className="pointer-events-none absolute left-0 right-0 top-1/2 -translate-y-1/2 h-10 rounded-xl border border-gray-200 bg-gray-50/70" />
+                    <div
+                      ref={hoursRef}
+                      onScroll={() => {
+                        if (hoursTimerRef.current) clearTimeout(hoursTimerRef.current);
+                        hoursTimerRef.current = setTimeout(() => {
+                          const v = pickCenteredValue(hoursRef.current);
+                          if (v == null) return;
+                          setDuration({ h: v });
+                        }, 80);
+                      }}
+                      className="h-40 overflow-y-auto overflow-x-hidden snap-y snap-mandatory scroll-smooth no-scrollbar py-16 touch-pan-y"
+                    >
+                      {Array.from({ length: 13 }, (_, i) => i).map((h) => {
+                        const active = Number(durationHM.h) === h;
+                        return (
+                          <div
+                            key={h}
+                            data-value={h}
+                            className={[
+                              "w-full snap-center h-10 grid place-items-center rounded-xl font-extrabold select-none",
+                              "transition-all duration-200",
+                              active ? "text-gray-900 scale-[1.15]" : "text-gray-400 scale-[0.92] opacity-70",
+                            ].join(" ")}
+                          >
+                            {h}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
 
-      {/* ХВИЛИНИ */}
-      <div className="rounded-2xl border border-gray-200 bg-white px-3 py-3">
-        <p className="text-[11px] font-bold uppercase tracking-wide text-gray-500 mb-2 text-center">
-          Хвилини
-        </p>
-
-        <div className="relative overflow-x-hidden">
-          <div className="pointer-events-none absolute left-0 right-0 top-1/2 -translate-y-1/2 h-10 rounded-xl border border-gray-200 bg-gray-50/70" />
-          <div
-            ref={minutesRef}
-            onScroll={() => {
-              if (minutesTimerRef.current) clearTimeout(minutesTimerRef.current);
-              minutesTimerRef.current = setTimeout(() => {
-                const v = pickCenteredValue(minutesRef.current);
-                if (v == null) return;
-                setDuration({ m: v });
-              }, 80);
-            }}
-            className="h-40 overflow-y-auto overflow-x-hidden snap-y snap-mandatory scroll-smooth no-scrollbar py-16 touch-pan-y"
-          >
-            {Array.from({ length: 12 }, (_, i) => i * 5).map((m) => {
-              const active = Number(durationHM.m) === m;
-              return (
-                <div
-                  key={m}
-                  data-value={m}
-                  className={[
-                    "w-full snap-center h-10 grid place-items-center rounded-xl font-extrabold select-none",
-                    "transition-all duration-200",
-                    active
-                      ? "text-gray-900 scale-[1.15]"
-                      : "text-gray-400 scale-[0.92] opacity-70",
-                  ].join(" ")}
-                >
-                  {String(m).padStart(2, "0")}
+                {/* minutes */}
+                <div className="rounded-2xl border border-gray-200 bg-white px-3 py-3">
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-gray-500 mb-2 text-center">
+                    Хвилини
+                  </p>
+                  <div className="relative overflow-x-hidden">
+                    <div className="pointer-events-none absolute left-0 right-0 top-1/2 -translate-y-1/2 h-10 rounded-xl border border-gray-200 bg-gray-50/70" />
+                    <div
+                      ref={minutesRef}
+                      onScroll={() => {
+                        if (minutesTimerRef.current) clearTimeout(minutesTimerRef.current);
+                        minutesTimerRef.current = setTimeout(() => {
+                          const v = pickCenteredValue(minutesRef.current);
+                          if (v == null) return;
+                          setDuration({ m: v });
+                        }, 80);
+                      }}
+                      className="h-40 overflow-y-auto overflow-x-hidden snap-y snap-mandatory scroll-smooth no-scrollbar py-16 touch-pan-y"
+                    >
+                      {Array.from({ length: 12 }, (_, i) => i * 5).map((m) => {
+                        const active = Number(durationHM.m) === m;
+                        return (
+                          <div
+                            key={m}
+                            data-value={m}
+                            className={[
+                              "w-full snap-center h-10 grid place-items-center rounded-xl font-extrabold select-none",
+                              "transition-all duration-200",
+                              active ? "text-gray-900 scale-[1.15]" : "text-gray-400 scale-[0.92] opacity-70",
+                            ].join(" ")}
+                          >
+                            {String(m).padStart(2, "0")}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
-              );
-            })}
+              </div>
+
+              {/* summary */}
+              <div className="mt-3 flex items-center justify-between">
+                <p className="text-xs text-gray-500">
+                  Підсумок: <span className="font-extrabold text-gray-900">{serviceDraft.duration} хв</span>
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setDuration({ h: 1, m: 0 })}
+                  className="text-xs font-extrabold text-gray-900 hover:underline"
+                >
+                  Скинути
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-    </div>
-
-    {/* підсумок */}
-    <div className="mt-3 flex items-center justify-between">
-      <p className="text-xs text-gray-500">
-        Підсумок:{" "}
-        <span className="font-extrabold text-gray-900">
-          {serviceDraft.duration} хв
-        </span>
-      </p>
-
-      <button
-        type="button"
-        onClick={() => setDuration({ h: 1, m: 0 })}
-        className="text-xs font-extrabold text-gray-900 hover:underline"
-      >
-        Скинути
-      </button>
-    </div>
-  </div>
-</div>
 
           {/* masters */}
           <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
@@ -867,30 +766,16 @@ function setDuration(nextPartial) {
             <div className="mt-3 flex flex-wrap gap-2">
               <button
                 type="button"
-                onClick={() =>
-                  setServiceDraft((p) => ({
-                    ...p,
-                    allMasters: true,
-                    masters: [],
-                  }))
-                }
-                className={[
-                  "rounded-xl px-4 py-2 text-sm font-extrabold border transition",
-                  serviceDraft.allMasters ? "ui-button-one" : "ui-button-one",
-                ].join(" ")}
+                onClick={() => setServiceDraft((p) => ({ ...p, allMasters: true, masters: [] }))}
+                className={["rounded-xl px-4 py-2 text-sm font-extrabold border transition", serviceDraft.allMasters ? "ui-button-one" : "ui-button-one"].join(" ")}
               >
                 Для всіх майстрів
               </button>
 
               <button
                 type="button"
-                onClick={() =>
-                  setServiceDraft((p) => ({ ...p, allMasters: false }))
-                }
-                className={[
-                  "rounded-xl px-4 py-2 text-sm font-extrabold border transition",
-                  !serviceDraft.allMasters ? "ui-button" : "ui-button",
-                ].join(" ")}
+                onClick={() => setServiceDraft((p) => ({ ...p, allMasters: false }))}
+                className={["rounded-xl px-4 py-2 text-sm font-extrabold border transition", !serviceDraft.allMasters ? "ui-button" : "ui-button"].join(" ")}
               >
                 Обрати майстрів
               </button>
@@ -912,9 +797,7 @@ function setDuration(nextPartial) {
                         key={id}
                         className={[
                           "flex items-center gap-3 rounded-2xl border p-3 cursor-pointer transition",
-                          checked
-                            ? "border-emerald-200 bg-emerald-50"
-                            : "border-gray-200 bg-white hover:bg-gray-50",
+                          checked ? "border-emerald-200 bg-emerald-50" : "border-gray-200 bg-white hover:bg-gray-50",
                         ].join(" ")}
                       >
                         <input
@@ -922,9 +805,7 @@ function setDuration(nextPartial) {
                           checked={checked}
                           onChange={(e) => {
                             const current = serviceDraft.masters || [];
-                            const next = e.target.checked
-                              ? [...current, id]
-                              : current.filter((x) => x !== id);
+                            const next = e.target.checked ? [...current, id] : current.filter((x) => x !== id);
                             setServiceDraft((p) => ({ ...p, masters: next }));
                           }}
                           className="h-4 w-4 accent-emerald-300 cursor-pointer"
@@ -939,15 +820,12 @@ function setDuration(nextPartial) {
 
             {!serviceDraft.allMasters && (
               <p className="mt-2 text-xs text-gray-500">
-                Обрано:{" "}
-                <span className="font-extrabold">
-                  {(serviceDraft.masters || []).length}
-                </span>
+                Обрано: <span className="font-extrabold">{(serviceDraft.masters || []).length}</span>
               </p>
             )}
           </div>
         </div>
-      </Modal>
+</Modal>
       {showTips && (
         <div className="rounded-[24px] sm:rounded-[28px] border border-gray-200 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.06)] px-4 sm:px-6 py-5">
           <h2 className="text-lg sm:text-xl font-extrabold text-gray-900 text-center">

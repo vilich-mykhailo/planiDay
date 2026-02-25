@@ -55,7 +55,7 @@ export default function RegisterOwner() {
       localStorage.setItem("token", data.token);
       localStorage.setItem("role", data.kind); // "owner"
 
-      navigate("/studio/settings");
+      navigate("/dashboard/studio");
     } catch (err) {
       setError(err?.message || "Помилка реєстрації");
     } finally {

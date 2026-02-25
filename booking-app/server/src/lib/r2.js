@@ -1,0 +1,14 @@
+// server/lib/r2.js
+import { S3Client } from "@aws-sdk/client-s3";
+
+const endpoint = process.env.R2_ENDPOINT; // https://...r2.cloudflarestorage.com
+
+export const r2 = new S3Client({
+  region: "auto", // для Cloudflare R2 має бути auto
+  endpoint,
+  credentials: {
+    accessKeyId: process.env.R2_ACCESS_KEY_ID,
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
+  },
+  forcePathStyle: true, // важливо для R2
+});
