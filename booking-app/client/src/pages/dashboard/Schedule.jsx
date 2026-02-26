@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState,  useEffect } from "react";
 import TimeSelect from "../../components/TimeSelect";
 import { useStudio } from "../../context/studio/useStudio";
+import { api } from "../../api/http"; // або твій шлях
 
 const DAYS = [
   { key: "mon", label: "Пн", full: "Понеділок" },
@@ -14,7 +15,7 @@ const DAYS = [
 
 const defaultDay = (enabled = true) => ({
   enabled,
-  start: "10:00",
+  start: "08:00",
   end: "18:00",
 });
 
@@ -97,7 +98,7 @@ function Chip({ children }) {
 }
 
 export default function Schedule() {
-  const { studio, setSchedule, updateStudio } = useStudio();
+  const { studio } = useStudio();
 
   const storedSchedule = useMemo(
     () => normalizeSchedule(studio?.schedule),
@@ -109,37 +110,41 @@ export default function Schedule() {
     return typeof v === "number" ? v : 15;
   }, [studio?.slotDuration]);
 
+  // draft (те що редагуєш)
   const [schedule, setScheduleDraft] = useState(storedSchedule);
   const [slotDuration, setSlotDuration] = useState(storedSlotDuration);
 
+  // baseline (останнє завантажене/збережене)
+  const [savedSchedule, setSavedSchedule] = useState(storedSchedule);
+  const [savedSlotDuration, setSavedSlotDuration] = useState(storedSlotDuration);
+
   const [preview, setPreview] = useState({});
-const [saving, setSaving] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-const [toast, setToast] = useState({
-  open: false,
-  type: "success", // success | error
-  title: "",
-  text: "",
-});
+  const [toast, setToast] = useState({
+    open: false,
+    type: "success",
+    title: "",
+    text: "",
+  });
 
-function showToast({ type = "success", title, text }) {
-  setToast({ open: true, type, title, text });
+  function showToast({ type = "success", title, text }) {
+    setToast({ open: true, type, title, text });
 
-  clearTimeout(showToast._t);
-  const ms = type === "error" ? 4500 : 3200;
+    clearTimeout(showToast._t);
+    const ms = type === "error" ? 4500 : 3200;
 
-  showToast._t = setTimeout(() => {
-    setToast((prev) => ({ ...prev, open: false }));
-  }, ms);
-}
-
+    showToast._t = setTimeout(() => {
+      setToast((prev) => ({ ...prev, open: false }));
+    }, ms);
+  }
 
   const dirty = useMemo(() => {
     return (
-      JSON.stringify(storedSchedule) !== JSON.stringify(schedule) ||
-      storedSlotDuration !== slotDuration
+      JSON.stringify(savedSchedule) !== JSON.stringify(schedule) ||
+      savedSlotDuration !== slotDuration
     );
-  }, [storedSchedule, schedule, storedSlotDuration, slotDuration]);
+  }, [savedSchedule, schedule, savedSlotDuration, slotDuration]);
 
   function toggleDay(day) {
     setScheduleDraft((prev) => ({
@@ -181,46 +186,78 @@ function showToast({ type = "success", title, text }) {
   }
 
 async function saveAll() {
-  if (!dirty || saving) return;
+  if (!dirty || saving || !studio?.id) return;
 
   setSaving(true);
   try {
-    if (typeof setSchedule !== "function") {
-      throw new Error("setSchedule is not a function");
-    }
-    if (typeof updateStudio !== "function") {
-      throw new Error("updateStudio is not a function");
-    }
+    const token = localStorage.getItem("token");
 
-    // ✅ зберігаємо графік
-    setSchedule(schedule);
-
-    // ✅ зберігаємо тривалість слота
-    await updateStudio({ slotDuration });
-
-    showToast({
-      type: "success",
-      title: "Збережено",
-      text: "Зміни успішно оновлено.",
+    // 1) зберегли
+    await api(`/studio/${studio.id}/schedule`, {
+      method: "PATCH",
+      token,
+      body: { schedule, slotDuration },
     });
+
+    // 2) одразу прочитали (джерело правди)
+    const fresh = await api(`/studio/${studio.id}/schedule`, {
+      method: "GET",
+      token,
+    });
+
+    const nextSchedule = normalizeSchedule(fresh.schedule ?? schedule);
+    const nextDuration =
+      typeof fresh.slotDuration === "number" ? fresh.slotDuration : 15;
+
+    setScheduleDraft(nextSchedule);
+    setSlotDuration(nextDuration);
+
+    setSavedSchedule(nextSchedule);
+    setSavedSlotDuration(nextDuration);
+
+    setPreview({});
+    showToast({ type: "success", title: "Збережено", text: "Зміни успішно оновлено." });
   } catch (err) {
     console.error(err);
-    showToast({
-      type: "error",
-      title: "Не збережено",
-      text: err?.message || "Сталася помилка. Спробуй ще раз.",
-    });
+    showToast({ type: "error", title: "Не збережено", text: err?.message || "Помилка." });
   } finally {
     setSaving(false);
   }
-}
-function cancelChanges() {
-  if (saving) return;
-  setScheduleDraft(storedSchedule);
-  setSlotDuration(storedSlotDuration);
-  setPreview({});
+  
 }
 
+  function cancelChanges() {
+    if (saving) return;
+    setScheduleDraft(savedSchedule);
+    setSlotDuration(savedSlotDuration);
+    setPreview({});
+  }
+
+  useEffect(() => {
+    (async () => {
+      if (!studio?.id) return;
+
+      const token = localStorage.getItem("token");
+
+      const data = await api(`/studio/${studio.id}/schedule`, {
+        method: "GET",
+        token,
+      });
+
+      const nextSchedule = normalizeSchedule(data.schedule);
+      const nextDuration =
+        typeof data.slotDuration === "number" ? data.slotDuration : 15;
+
+      setScheduleDraft(nextSchedule);
+      setSlotDuration(nextDuration);
+
+      // ✅ baseline
+      setSavedSchedule(nextSchedule);
+      setSavedSlotDuration(nextDuration);
+
+      setPreview({});
+    })().catch(console.error);
+  }, [studio?.id]);
 
   return (
 <div className="mx-auto max-w-5xl space-y-6 pb-20 md:pb-0">

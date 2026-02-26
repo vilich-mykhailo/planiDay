@@ -1,3 +1,4 @@
+// studio.js //
 import { Router } from "express";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth, requireOwner } from "../middleware/auth.js";
@@ -6,7 +7,7 @@ const router = Router();
 
 router.get("/me", requireAuth, requireOwner, async (req, res) => {
   try {
-    const ownerId = req.auth.sub; // ✅
+    const ownerId = req.auth.sub; 
 
     let studio = await prisma.studio.findUnique({ where: { ownerId } });
 
@@ -23,7 +24,7 @@ router.get("/me", requireAuth, requireOwner, async (req, res) => {
 
 router.patch("/me", requireAuth, requireOwner, async (req, res) => {
   try {
-    const ownerId = req.auth.sub; // ✅
+    const ownerId = req.auth.sub;
     const payload = req.body || {};
 
     const portfolioUrls = Array.isArray(payload.portfolioUrls)
@@ -187,7 +188,7 @@ router.patch("/services/:serviceId", async (req, res) => {
 router.delete("/services/:id", requireAuth, requireOwner, async (req, res) => {
   const id = req.params.id;
 
-  await prisma.serviceMaster.deleteMany({ where: { serviceId: id } }); // назва моделі як у тебе
+  await prisma.serviceMaster.deleteMany({ where: { serviceId: id } });
   await prisma.service.delete({ where: { id } });
 
   res.json({ ok: true });
@@ -208,13 +209,12 @@ router.patch("/categories/:id", requireAuth, requireOwner, async (req, res) => {
 router.delete("/categories/:id", requireAuth, requireOwner, async (req, res) => {
   const { id } = req.params;
 
-  // 1) всі послуги цієї категорії -> в без категорії (categoryId=null)
   await prisma.service.updateMany({
     where: { categoryId: id },
     data: { categoryId: null },
   });
 
-  // 2) видаляємо категорію
+
   await prisma.serviceCategory.delete({
     where: { id },
   });
@@ -222,4 +222,166 @@ router.delete("/categories/:id", requireAuth, requireOwner, async (req, res) => 
   res.json({ ok: true });
 });
 
+router.patch("/:studioId/schedule",
+  requireAuth,
+  requireOwner,
+  async (req, res) => {
+    try {
+      const { studioId } = req.params;
+      const schedule = req.body?.schedule ?? null;
+      const slotDuration = Number(req.body?.slotDuration);
+
+      if (!Number.isFinite(slotDuration) || slotDuration < 5 || slotDuration > 240) {
+        return res.status(400).json({ message: "slotDuration is invalid" });
+      }
+
+      if (schedule && typeof schedule !== "object") {
+        return res.status(400).json({ message: "schedule must be an object" });
+      }
+
+      const studio = await prisma.studio.update({
+        where: { id: studioId },
+        data: {
+          schedule,
+          slotDuration,
+        },
+        select: { id: true, schedule: true, slotDuration: true },
+      });
+
+      res.json({ studio });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ message: e?.message || "Update schedule failed" });
+    }
+  }
+);
+
+router.get("/:studioId/schedule",
+  requireAuth,
+  requireOwner,
+  async (req, res) => {
+    try {
+      const { studioId } = req.params;
+
+      const studio = await prisma.studio.findUnique({
+        where: { id: studioId },
+        select: { schedule: true, slotDuration: true },
+      });
+
+      if (!studio) return res.status(404).json({ message: "Studio not found" });
+
+      res.json(studio);
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ message: e?.message || "Load schedule failed" });
+    }
+  }
+);
+
+// POST /studio/:studioId/masters
+router.post("/:studioId/masters",
+  requireAuth,
+  requireOwner,
+  async (req, res) => {
+    console.log("POST masters", req.params.studioId, req.body, req.auth);
+    try {
+      const { studioId } = req.params;
+      const { name, role, bio, photoUrl, photoKey } = req.body;
+
+      if (!name?.trim()) {
+        return res.status(400).json({ message: "Name is required" });
+      }
+
+      const master = await prisma.master.create({
+        data: {
+          studioId,
+          name: name.trim(),
+          role: role || "",
+          bio: bio || "",
+          photoUrl: photoUrl || "",
+          photoKey: photoKey || null,
+        },
+      });
+
+      res.json({ master });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ message: "Create master failed" });
+    }
+  }
+);
+
+// PATCH /studio/masters/:id
+router.patch(
+  "/masters/:id",
+  requireAuth,
+  requireOwner,
+  async (req, res) => {
+    try {
+      const id = req.params.id;
+      const { name, role, bio, photoUrl, photoKey } = req.body;
+
+      if (!String(name || "").trim()) {
+        return res.status(400).json({ message: "Name is required" });
+      }
+
+      const updated = await prisma.master.update({
+        where: { id },
+        data: {
+          name: String(name).trim(),
+          role: role ?? "",
+          bio: bio ?? "",
+          photoUrl: photoUrl ?? "",
+          photoKey: photoKey ?? null,
+        },
+      });
+
+      res.json({ master: updated });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ message: e?.message || "Update master failed" });
+    }
+  }
+);
+
+// GET /studio/:studioId/masters
+router.get("/:studioId/masters",
+  requireAuth,
+  requireOwner,
+  async (req, res) => {
+    try {
+      const { studioId } = req.params;
+
+      const masters = await prisma.master.findMany({
+        where: { studioId },
+        orderBy: { createdAt: "asc" },
+      });
+
+      res.json({ masters });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ message: "Load masters failed" });
+    }
+  }
+);
+
+// DELETE /studio/masters/:id
+router.delete("/masters/:id",
+  requireAuth,
+  requireOwner,
+  async (req, res) => {
+    try {
+      const id = req.params.id;
+
+      await prisma.master.delete({
+        where: { id },
+      });
+
+      res.json({ ok: true });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ message: "Delete master failed" });
+    }
+  }
+);
 export default router;

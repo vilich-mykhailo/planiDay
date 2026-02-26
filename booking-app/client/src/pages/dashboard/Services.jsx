@@ -361,7 +361,7 @@ export default function Services() {
     if (!name || !categoryModal.catId) return;
 
     const token = localStorage.getItem("token");
-    await api(`/categories/${categoryModal.catId}`, {
+    await api(`/media/categories/${categoryModal.catId}`, {
       method: "PATCH",
       token,
       body: { name },
@@ -377,10 +377,10 @@ async function deleteCategory(catId) {
   if (!studio?.id) return;
 
   const token = localStorage.getItem("token");
-  await api(`/media/studio/${studio.id}/categories/${catId}`, {
-    method: "DELETE",
-    token,
-  });
+await api(`/media/studio/${studio.id}/categories/${catId}`, {
+  method: "DELETE",
+  token,
+});
 
   refresh();
 }
@@ -411,15 +411,18 @@ async function deleteCategory(catId) {
 
     setServiceModal({ open: true, mode: "edit", catId, serviceId });
 
-    setServiceDraft({
-      id: original.id,
-      categoryId: catId, // source category for UI; user can change select
-      name: original.name || "",
-      duration: total,
-      price: String(original.price ?? ""),
-      allMasters: Boolean(original.allMasters),
-      masters: Array.isArray(original.masters) ? [...original.masters] : [],
-    });
+const masterIds = Array.isArray(original.masters) ? original.masters.map(String) : [];
+const allMastersFixed = Boolean(original.allMasters) || masterIds.length === 0;
+
+setServiceDraft({
+  id: original.id,
+  categoryId: catId,
+  name: original.name || "",
+  duration: total,
+  price: String(original.price ?? ""),
+  allMasters: allMastersFixed,
+  masters: allMastersFixed ? [] : masterIds,
+});
 
     setDurationHM({ h: Math.floor(total / 60), m: total % 60 });
   }
@@ -453,42 +456,23 @@ async function deleteCategory(catId) {
     }
   }
 
-  async function saveService() {
-    if (!canSaveServiceDraft(serviceDraft) || !studio?.id) return;
+async function saveSchedule({ schedule, slotDuration }) {
+  const token = localStorage.getItem("token");
+  const studioId = studio.id;
 
-    const token = localStorage.getItem("token");
-    const toCatId = serviceDraft.categoryId || UNCATEGORIZED_ID;
+  const body = { schedule, slotDuration };
 
-    const payload = {
-      name: String(serviceDraft.name || "").trim(),
-      duration: Number(serviceDraft.duration || 60),
-      price: Number(serviceDraft.price),
-      allMasters: Boolean(serviceDraft.allMasters),
-      categoryId: toCatId === UNCATEGORIZED_ID ? null : toCatId,
-      masters: serviceDraft.allMasters
-        ? []
-        : (serviceDraft.masters || []).map(String),
-    };
+  console.log("PATCH schedule ->", import.meta.env.VITE_API_URL + `/studio/${studioId}/schedule`, body);
 
-    if (serviceModal.mode === "add") {
-      // ✅ CREATE
-      await api(`/studio/${studio.id}/services`, {
-        method: "POST",
-        token,
-        body: { service: payload },
-      });
-    } else {
-      // ✅ UPDATE
-      await api(`/services/${serviceDraft.id}`, {
-        method: "PATCH",
-        token,
-        body: { service: payload },
-      });
-    }
+  const res = await api(`/studio/${studioId}/schedule`, {
+    method: "PATCH",
+    token,
+    body,
+  });
 
-    closeServiceModal();
-    refresh();
-  }
+  console.log("schedule saved:", res);
+  return res;
+}
   // -----------------------------
   // Derived blocks for UI
   // -----------------------------
@@ -692,7 +676,7 @@ async function deleteCategory(catId) {
           <div className="flex items-center justify-end gap-2">
             <Button
               variant="primary"
-              onClick={saveService}
+              onClick={saveSchedule}
               disabled={!canSaveServiceDraft(serviceDraft)}
               className="ui-button-one"
             >
@@ -897,12 +881,18 @@ async function deleteCategory(catId) {
                 Для всіх майстрів
               </button>
 
-              <button
-                type="button"
-                onClick={() =>
-                  setServiceDraft((p) => ({ ...p, allMasters: false }))
-                }
-                className={[
+<button
+  type="button"
+  onClick={() =>
+    setServiceDraft((p) => {
+      const next = { ...p, allMasters: false };
+      if ((next.masters || []).length === 0 && masters.length > 0) {
+        next.masters = [String(masters[0].id ?? masters[0].name)];
+      }
+      return next;
+    })
+  }
+  className={[
                   "rounded-xl px-4 py-2 text-sm font-extrabold border transition",
                   !serviceDraft.allMasters ? "ui-button" : "ui-button",
                 ].join(" ")}

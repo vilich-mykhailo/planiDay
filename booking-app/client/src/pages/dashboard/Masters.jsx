@@ -1,20 +1,24 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useStudio } from "../../context/studio/useStudio";
 
-// ✅ helper: file -> dataURL (preview + save as base64)
-function fileToDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
+async function uploadMasterPhoto(studioId, file) {
+  const token = localStorage.getItem("token");
+  const fd = new FormData();
+  fd.append("file", file);
 
-function makeId(prefix = "id") {
-  if (typeof crypto !== "undefined" && crypto.randomUUID)
-    return crypto.randomUUID();
-  return `${prefix}_${Math.random().toString(16).slice(2)}_${Date.now()}`;
+  const res = await fetch(
+    `${import.meta.env.VITE_API_URL}/media/studio/${studioId}/master-photo`,
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: fd,
+    },
+  );
+
+  const data = await res.json().catch(() => null);
+  if (!res.ok)
+    throw new Error(data?.message || `Upload failed (${res.status})`);
+  return data; // { key, url }
 }
 
 function initialsFromName(name) {
@@ -121,13 +125,63 @@ function Avatar({ name, photoUrl }) {
   );
 }
 
-export default function Masters() {
-  const { studio, setMasters, updateStudio } = useStudio();
+function MasterSkeletonRow() {
+  return (
+    <div className="rounded-2xl border border-gray-200 bg-white p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start gap-3 min-w-0">
+          <div className="h-12 w-12 rounded-2xl bg-gray-200 animate-pulse" />
+          <div className="min-w-0 w-full">
+            <div className="h-4 w-40 bg-gray-200 rounded animate-pulse" />
+            <div className="mt-2 h-3 w-52 bg-gray-200 rounded animate-pulse" />
+            <div className="mt-2 h-3 w-64 bg-gray-200 rounded animate-pulse" />
+          </div>
+        </div>
 
-  const masters = useMemo(
-    () => (Array.isArray(studio?.masters) ? studio.masters : []),
-    [studio],
+        <div className="grid grid-cols-2 sm:flex gap-2">
+          <div className="h-10 w-28 rounded-2xl bg-gray-200 animate-pulse" />
+          <div className="h-10 w-28 rounded-2xl bg-gray-200 animate-pulse" />
+        </div>
+      </div>
+    </div>
   );
+}
+
+export default function Masters() {
+  const { studio } = useStudio();
+
+  const [mastersLocal, setMastersLocal] = useState([]);
+  const [loading, setLoading] = useState(false);
+const [adding, setAdding] = useState(false);
+
+  async function refreshMasters() {
+    if (!studio?.id) return;
+
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/studio/${studio.id}/masters`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+
+      const data = await res.json().catch(() => null);
+      if (!res.ok)
+        throw new Error(data?.message || `Load masters failed (${res.status})`);
+
+      setMastersLocal(Array.isArray(data?.masters) ? data.masters : []);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    refreshMasters();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studio?.id]);
+
+  const masters = mastersLocal;
 
   // add form
   const [form, setForm] = useState({
@@ -135,6 +189,7 @@ export default function Masters() {
     role: "",
     bio: "",
     photoUrl: "",
+    photoKey: null,
   });
 
   // edit modal
@@ -145,19 +200,8 @@ export default function Masters() {
     role: "",
     bio: "",
     photoUrl: "",
+    photoKey: null,
   });
-
-  function persistMasters(next) {
-    if (typeof setMasters === "function") {
-      setMasters(next);
-      return;
-    }
-    if (typeof updateStudio === "function") {
-      updateStudio({ masters: next });
-      return;
-    }
-    console.warn("Немає setMasters або updateStudio в useStudio()");
-  }
 
   function handleChange(e) {
     setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
@@ -166,77 +210,136 @@ export default function Masters() {
   async function handlePickPhoto(e) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const dataUrl = await fileToDataUrl(file);
-    setForm((p) => ({ ...p, photoUrl: dataUrl }));
+    const { key, url } = await uploadMasterPhoto(studio.id, file);
+    setPhotoBroken(false);
+
+    setForm((p) => ({ ...p, photoUrl: url, photoKey: key }));
     e.target.value = "";
   }
 
-  function removePhoto() {
-    setForm((p) => ({ ...p, photoUrl: "" }));
-  }
+function removePhoto() {
+  setPhotoBroken(false);
+  setForm((p) => ({ ...p, photoUrl: "", photoKey: null }));
+}
 
-  function addMaster(e) {
-    e.preventDefault();
-    const name = String(form.name || "").trim();
-    if (!name) return;
+async function addMaster(e) {
+  e.preventDefault();
+  const name = String(form.name || "").trim();
+  if (!name || !studio?.id || adding) return;
 
-    const next = [
-      ...masters,
-      {
-        id: makeId("m"),
-        name,
-        role: String(form.role || "").trim(),
-        bio: String(form.bio || "").trim(),
-        photoUrl: form.photoUrl,
+  setAdding(true);
+  try {
+    const token = localStorage.getItem("token");
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/studio/${studio.id}/masters`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
       },
-    ];
-
-    persistMasters(next);
-    setForm({ name: "", role: "", bio: "", photoUrl: "" });
-  }
-
-  function deleteMaster(id) {
-    persistMasters(masters.filter((m) => m.id !== id));
-  }
-
-  function openEdit(master) {
-    setEditMaster(master);
-    setEditDraft({
-      id: master.id,
-      name: master.name || "",
-      role: master.role || "",
-      bio: master.bio || "",
-      photoUrl: master.photoUrl || "",
+      body: JSON.stringify({
+        name,
+        role: form.role,
+        bio: form.bio,
+        photoUrl: form.photoUrl,
+        photoKey: form.photoKey,
+      }),
     });
+
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      console.error("Add master failed:", res.status, data);
+      alert(data?.message || `Add master failed (${res.status})`);
+      return;
+    }
+
+    if (data?.master) setMastersLocal((prev) => [data.master, ...prev]);
+    else await refreshMasters();
+
+    setForm({ name: "", role: "", bio: "", photoUrl: "", photoKey: null });
+    setPhotoBroken(false);
+  } finally {
+    setAdding(false);
   }
+}
+
+  async function deleteMaster(id) {
+    const token = localStorage.getItem("token");
+
+    await fetch(`${import.meta.env.VITE_API_URL}/studio/masters/${id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    refreshMasters();
+  }
+
+function openEdit(master) {
+  setEditMaster(master);
+  setEditDraft({
+    id: master.id,
+    name: master.name || "",
+    role: master.role || "",
+    bio: master.bio || "",
+    photoUrl: master.photoUrl || "",
+    photoKey: master.photoKey ?? null,
+  });
+}
 
   function closeEdit() {
     setEditMaster(null);
     setEditDraft({ id: "", name: "", role: "", bio: "", photoUrl: "" });
-
   }
 
   async function editPickPhoto(e) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const dataUrl = await fileToDataUrl(file);
-    setEditDraft((p) => ({ ...p, photoUrl: dataUrl }));
+
+    const { key, url } = await uploadMasterPhoto(studio.id, file);
+
+    setEditDraft((p) => ({ ...p, photoUrl: url, photoKey: key }));
     e.target.value = "";
   }
 
-  function saveEdit() {
+  async function saveEdit() {
     const name = String(editDraft.name || "").trim();
     if (!name) return;
 
-    const next = masters.map((m) =>
-      m.id === editDraft.id ? { ...m, ...editDraft, name } : m,
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(
+      `${import.meta.env.VITE_API_URL}/studio/masters/${editDraft.id}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name,
+          role: editDraft.role,
+          bio: editDraft.bio,
+          photoUrl: editDraft.photoUrl,
+          photoKey: editDraft.photoKey,
+        }),
+      },
     );
-    persistMasters(next);
+
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      alert(data?.message || `Update failed (${res.status})`);
+      return;
+    }
+
     closeEdit();
+    await refreshMasters();
   }
 
   const total = masters.length;
 
+  const [photoBroken, setPhotoBroken] = useState(false);
   return (
     <div className="space-y-6">
       {/* header */}
@@ -272,11 +375,12 @@ export default function Masters() {
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <div className="flex items-center gap-4">
               <div className="h-20 w-20 rounded-[22px] border border-gray-200 bg-gray-50 overflow-hidden flex items-center justify-center">
-                {form.photoUrl ? (
+                {form.photoUrl && !photoBroken ? (
                   <img
                     src={form.photoUrl}
                     alt="Фото майстра"
                     className="h-full w-full object-cover"
+                    onError={() => setPhotoBroken(true)}
                   />
                 ) : (
                   <span className="text-xs font-semibold text-gray-500">
@@ -287,9 +391,7 @@ export default function Masters() {
 
               <div className="flex flex-wrap items-center gap-2">
                 <label className="cursor-pointer">
-                  <span className="ui-button-one">
-                    Додати фото
-                  </span>
+                  <span className="ui-button-one">Додати фото</span>
                   <input
                     type="file"
                     accept="image/*"
@@ -319,25 +421,23 @@ export default function Masters() {
               onChange={handleChange}
               className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none transition focus:border-black focus:ring-2 focus:ring-black/15"
             />
-            
           </div>
-{/* role */}
-<div>
-  <label className="block text-sm font-semibold text-gray-900 mb-1">
-    Посада / Спеціалізація
-  </label>
-  <input
-    value={editDraft.role}
-    onChange={(e) => setEditDraft((p) => ({ ...p, role: e.target.value }))}
-    className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none transition focus:border-black focus:ring-2 focus:ring-black/15"
-    placeholder="Напр. Майстер манікюру / Brow artist / Lash maker"
-  />
-  <p className="mt-1 text-xs text-gray-500">
-    Коротко: роль + напрям (манікюр, брови, вії…).
-  </p>
-</div>
-
-
+          {/* role */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-900 mb-1">
+              Посада / Спеціалізація
+            </label>
+            <input
+              name="role"
+              value={form.role}
+              onChange={handleChange}
+              className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none transition focus:border-black focus:ring-2 focus:ring-black/15"
+              placeholder="Напр. Майстер манікюру / Brow artist"
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              Коротко: роль + напрям (манікюр, брови, вії…).
+            </p>
+          </div>
 
           {/* bio */}
           <div>
@@ -358,13 +458,13 @@ export default function Masters() {
           </div>
 
           <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-            <button
-              type="submit"
-              disabled={!String(form.name || "").trim()}
-              className="ui-button-one"
-            >
-              Додати майстра
-            </button>
+<button
+  type="submit"
+  disabled={adding || !String(form.name || "").trim()}
+  className="ui-button-one"
+>
+  {adding ? "Додаємо..." : "Додати майстра"}
+</button>
 
             <p className="text-sm text-gray-600">
               Усього:{" "}
@@ -382,19 +482,14 @@ export default function Masters() {
             ? "Клікни “Редагувати”, щоб оновити профіль."
             : "Додай першого майстра вище."
         }
-        right={
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-            <Button
-              className="ui-button-one"
-              variant="primary"
-              onClick={() => window?.scrollTo?.({ top: 0, behavior: "smooth" })}
-            >
-              Додати
-            </Button>
-          </div>
-        }
       >
-        {total === 0 ? (
+        {loading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <MasterSkeletonRow key={i} />
+            ))}
+          </div>
+        ) : total === 0 ? (
           <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
             Поки що немає майстрів. Додай першого майстра зверху.
           </div>
@@ -409,22 +504,29 @@ export default function Masters() {
                   <div className="flex items-start gap-3 min-w-0">
                     <Avatar name={m.name} photoUrl={m.photoUrl} />
 
-<div className="min-w-0">
-  <p className="font-extrabold text-gray-900 truncate">{m.name}</p>
+                    <div className="min-w-0">
+                      <p className="font-extrabold text-gray-900 truncate">
+                        {m.name}
+                      </p>
 
-  {m.role ? (
-    <p className="mt-1 text-sm font-semibold text-gray-700 truncate">{m.role}</p>
-  ) : (
-    <p className="mt-1 text-sm text-gray-400">Спеціалізація не вказана</p>
-  )}
+                      {m.role ? (
+                        <p className="mt-1 text-sm font-semibold text-gray-700 truncate">
+                          {m.role}
+                        </p>
+                      ) : (
+                        <p className="mt-1 text-sm text-gray-400">
+                          Спеціалізація не вказана
+                        </p>
+                      )}
 
-  {m.bio ? (
-    <p className="mt-1 text-sm text-gray-600 line-clamp-2">{m.bio}</p>
-  ) : (
-    <p className="mt-1 text-sm text-gray-400">Без опису</p>
-  )}
-</div>
-
+                      {m.bio ? (
+                        <p className="mt-1 text-sm text-gray-600 line-clamp-2">
+                          {m.bio}
+                        </p>
+                      ) : (
+                        <p className="mt-1 text-sm text-gray-400">Без опису</p>
+                      )}
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 sm:flex gap-2 sm:shrink-0">

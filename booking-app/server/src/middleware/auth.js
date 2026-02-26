@@ -1,3 +1,4 @@
+// auth.js //
 import { verifyToken } from "../lib/jwt.js";
 
 export function requireAuth(req, res, next) {
