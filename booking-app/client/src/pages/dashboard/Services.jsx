@@ -136,16 +136,19 @@ function Modal({
 function Button({ variant = "default", className = "", children, ...props }) {
   const base =
     "rounded-xl px-3 py-2 text-xs font-extrabold active:scale-[0.99] transition disabled:opacity-50 disabled:cursor-not-allowed";
+
   const styles = {
     default: "border border-gray-200 bg-white text-gray-900 hover:bg-gray-50",
     primary: "bg-black text-white hover:bg-gray-900",
     danger: "border border-red-200 bg-red-50 text-red-700 hover:bg-red-100",
   };
 
+  const variantClass = className ? "" : styles[variant] || styles.default;
+
   return (
     <button
       type="button"
-      className={`${base} ${styles[variant]} ${className}`}
+      className={`${base} ${variantClass} ${className}`}
       {...props}
     >
       {children}
@@ -372,18 +375,18 @@ export default function Services() {
     refresh();
   }
 
-async function deleteCategory(catId) {
-  if (catId === UNCATEGORIZED_ID) return;
-  if (!studio?.id) return;
+  async function deleteCategory(catId) {
+    if (catId === UNCATEGORIZED_ID) return;
+    if (!studio?.id) return;
 
-  const token = localStorage.getItem("token");
-await api(`/media/studio/${studio.id}/categories/${catId}`, {
-  method: "DELETE",
-  token,
-});
+    const token = localStorage.getItem("token");
+    await api(`/media/studio/${studio.id}/categories/${catId}`, {
+      method: "DELETE",
+      token,
+    });
 
-  refresh();
-}
+    refresh();
+  }
 
   // -----------------------------
   // Service CRUD (API)
@@ -411,18 +414,21 @@ await api(`/media/studio/${studio.id}/categories/${catId}`, {
 
     setServiceModal({ open: true, mode: "edit", catId, serviceId });
 
-const masterIds = Array.isArray(original.masters) ? original.masters.map(String) : [];
-const allMastersFixed = Boolean(original.allMasters) || masterIds.length === 0;
+    const masterIds = Array.isArray(original.masters)
+      ? original.masters.map(String)
+      : [];
+    const allMastersFixed =
+      Boolean(original.allMasters) || masterIds.length === 0;
 
-setServiceDraft({
-  id: original.id,
-  categoryId: catId,
-  name: original.name || "",
-  duration: total,
-  price: String(original.price ?? ""),
-  allMasters: allMastersFixed,
-  masters: allMastersFixed ? [] : masterIds,
-});
+    setServiceDraft({
+      id: original.id,
+      categoryId: catId,
+      name: original.name || "",
+      duration: total,
+      price: String(original.price ?? ""),
+      allMasters: allMastersFixed,
+      masters: allMastersFixed ? [] : masterIds,
+    });
 
     setDurationHM({ h: Math.floor(total / 60), m: total % 60 });
   }
@@ -456,23 +462,27 @@ setServiceDraft({
     }
   }
 
-async function saveSchedule({ schedule, slotDuration }) {
-  const token = localStorage.getItem("token");
-  const studioId = studio.id;
+  async function saveSchedule({ schedule, slotDuration }) {
+    const token = localStorage.getItem("token");
+    const studioId = studio.id;
 
-  const body = { schedule, slotDuration };
+    const body = { schedule, slotDuration };
 
-  console.log("PATCH schedule ->", import.meta.env.VITE_API_URL + `/studio/${studioId}/schedule`, body);
+    console.log(
+      "PATCH schedule ->",
+      import.meta.env.VITE_API_URL + `/studio/${studioId}/schedule`,
+      body,
+    );
 
-  const res = await api(`/studio/${studioId}/schedule`, {
-    method: "PATCH",
-    token,
-    body,
-  });
+    const res = await api(`/studio/${studioId}/schedule`, {
+      method: "PATCH",
+      token,
+      body,
+    });
 
-  console.log("schedule saved:", res);
-  return res;
-}
+    console.log("schedule saved:", res);
+    return res;
+  }
   // -----------------------------
   // Derived blocks for UI
   // -----------------------------
@@ -525,14 +535,27 @@ async function saveSchedule({ schedule, slotDuration }) {
             placeholder="Напр. Вії"
             className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none transition focus:border-black focus:ring-2 focus:ring-black/15"
           />
-          <button
-            type="button"
-            onClick={addCategory}
-            disabled={!newCategoryName.trim() || !studio?.id}
-            className="ui-button-one"
-          >
-            Додати категорію
-          </button>
+<button
+  type="button"
+  onClick={addCategory}
+  disabled={!newCategoryName.trim() || !studio?.id}
+  className="ui-button-primary flex items-center justify-center gap-2"
+>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="h-4 w-4"
+  >
+    <path d="M12 5v14" />
+    <path d="M5 12h14" />
+  </svg>
+  Додати категорію
+</button>
         </div>
       </SectionCard>
 
@@ -548,31 +571,71 @@ async function saveSchedule({ schedule, slotDuration }) {
               subtitle={`Кількість послуг: ${cat.services?.length || 0}`}
               right={
                 <div className="flex flex-col sm:flex-row gap-2">
+                  <Button
+                    className="ui-button-primary flex items-center gap-2"
+                    onClick={() => openAddService(cat.id)}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="h-4 w-4"
+                    >
+                      <path d="M12 5v14" />
+                      <path d="M5 12h14" />
+                    </svg>
+                    Додати послугу
+                  </Button>
                   {!isUnc && (
                     <Button
-                      className="w-full sm:w-auto ui-button-primary"
+                      className="w-full sm:w-auto ui-button-secondary flex items-center justify-center"
                       onClick={() => openEditCategory(cat.id)}
+                      title="Редагувати"
+                      aria-label="Редагувати"
                     >
-                      Редагувати
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="h-4 w-4"
+                      >
+                        <path d="M12 20h9" />
+                        <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4 11.5-11.5z" />
+                      </svg>
                     </Button>
                   )}
 
-                  <Button
-                    className="w-full sm:w-auto ui-button-one"
-                    variant="primary"
-                    onClick={() => openAddService(cat.id)}
-                  >
-                    Додати послугу
-                  </Button>
-
                   {!isUnc && (
                     <Button
-                      className="col-span-2 sm:col-auto w-full sm:w-auto ui-button-danger"
-                      variant="danger"
+                      className="col-span-2 sm:col-auto w-full sm:w-auto ui-button-danger flex items-center justify-center"
                       onClick={() => deleteCategory(cat.id)}
                       title="Категорія буде видалена, а послуги перенесуться в “Без категорії”"
+                      aria-label="Видалити категорію"
                     >
-                      Видалити
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="h-4 w-4"
+                      >
+                        <polyline points="3 6 5 6 21 6" />
+                        <path d="M19 6l-1 14H6L5 6" />
+                        <path d="M10 11v6" />
+                        <path d="M14 11v6" />
+                        <path d="M9 6V4h6v2" />
+                      </svg>
                     </Button>
                   )}
                 </div>
@@ -602,17 +665,47 @@ async function saveSchedule({ schedule, slotDuration }) {
 
                         <div className="grid grid-cols-2 sm:flex gap-2 sm:shrink-0">
                           <Button
-                            className="w-full sm:w-auto ui-button-primary"
+                            className="w-full sm:w-auto ui-button-secondary flex items-center justify-center"
                             onClick={() => openEditService(cat.id, srv.id)}
+                            title="Редагувати"
+                            aria-label="Редагувати"
                           >
-                            Редагувати
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className="h-4 w-4"
+                            >
+                              <path d="M12 20h9" />
+                              <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4 11.5-11.5z" />
+                            </svg>
                           </Button>
                           <Button
-                            className="w-full sm:w-auto ui-button-danger"
-                            variant="danger"
+                            className="w-full sm:w-auto ui-button-danger flex items-center justify-center"
                             onClick={() => deleteService(cat.id, srv.id)}
+                            title="Видалити"
+                            aria-label="Видалити"
                           >
-                            Видалити
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className="h-4 w-4"
+                            >
+                              <polyline points="3 6 5 6 21 6" />
+                              <path d="M19 6l-1 14H6L5 6" />
+                              <path d="M10 11v6" />
+                              <path d="M14 11v6" />
+                              <path d="M9 6V4h6v2" />
+                            </svg>
                           </Button>
                         </div>
                       </div>
@@ -635,16 +728,15 @@ async function saveSchedule({ schedule, slotDuration }) {
         footer={
           <div className="flex items-center justify-end gap-2">
             <Button
-              variant="primary"
               onClick={saveCategoryName}
               disabled={!categoryDraftName.trim()}
-              className="ui-button-one"
+              className="ui-button-primary"
             >
               Зберегти
             </Button>
             <Button
               onClick={() => setCategoryModal({ open: false, catId: null })}
-              className="ui-button"
+              className="ui-button-cancel"
             >
               Скасувати
             </Button>
@@ -678,11 +770,11 @@ async function saveSchedule({ schedule, slotDuration }) {
               variant="primary"
               onClick={saveSchedule}
               disabled={!canSaveServiceDraft(serviceDraft)}
-              className="ui-button-one"
+              className="ui-button-primary"
             >
               Зберегти
             </Button>
-            <Button onClick={closeServiceModal} className="ui-button">
+            <Button onClick={closeServiceModal} className="ui-button-cancel">
               Скасувати
             </Button>
           </div>
@@ -881,18 +973,21 @@ async function saveSchedule({ schedule, slotDuration }) {
                 Для всіх майстрів
               </button>
 
-<button
-  type="button"
-  onClick={() =>
-    setServiceDraft((p) => {
-      const next = { ...p, allMasters: false };
-      if ((next.masters || []).length === 0 && masters.length > 0) {
-        next.masters = [String(masters[0].id ?? masters[0].name)];
-      }
-      return next;
-    })
-  }
-  className={[
+              <button
+                type="button"
+                onClick={() =>
+                  setServiceDraft((p) => {
+                    const next = { ...p, allMasters: false };
+                    if (
+                      (next.masters || []).length === 0 &&
+                      masters.length > 0
+                    ) {
+                      next.masters = [String(masters[0].id ?? masters[0].name)];
+                    }
+                    return next;
+                  })
+                }
+                className={[
                   "rounded-xl px-4 py-2 text-sm font-extrabold border transition",
                   !serviceDraft.allMasters ? "ui-button" : "ui-button",
                 ].join(" ")}

@@ -222,63 +222,7 @@ router.delete("/categories/:id", requireAuth, requireOwner, async (req, res) => 
   res.json({ ok: true });
 });
 
-router.patch("/:studioId/schedule",
-  requireAuth,
-  requireOwner,
-  async (req, res) => {
-    try {
-      const { studioId } = req.params;
-      const schedule = req.body?.schedule ?? null;
-      const slotDuration = Number(req.body?.slotDuration);
 
-      if (!Number.isFinite(slotDuration) || slotDuration < 5 || slotDuration > 240) {
-        return res.status(400).json({ message: "slotDuration is invalid" });
-      }
-
-      if (schedule && typeof schedule !== "object") {
-        return res.status(400).json({ message: "schedule must be an object" });
-      }
-
-      const studio = await prisma.studio.update({
-        where: { id: studioId },
-        data: {
-          schedule,
-          slotDuration,
-        },
-        select: { id: true, schedule: true, slotDuration: true },
-      });
-
-      res.json({ studio });
-    } catch (e) {
-      console.error(e);
-      res.status(500).json({ message: e?.message || "Update schedule failed" });
-    }
-  }
-);
-
-router.get("/:studioId/schedule",
-  requireAuth,
-  requireOwner,
-  async (req, res) => {
-    try {
-      const { studioId } = req.params;
-
-      const studio = await prisma.studio.findUnique({
-        where: { id: studioId },
-        select: { schedule: true, slotDuration: true },
-      });
-
-      if (!studio) return res.status(404).json({ message: "Studio not found" });
-
-      res.json(studio);
-    } catch (e) {
-      console.error(e);
-      res.status(500).json({ message: e?.message || "Load schedule failed" });
-    }
-  }
-);
-
-// POST /studio/:studioId/masters
 router.post("/:studioId/masters",
   requireAuth,
   requireOwner,

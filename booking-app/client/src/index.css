@@ -1,12 +1,12 @@
 @import "tailwindcss";
 @import "./pages//dashboard/Services.css";
 
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
-  /* не заявляй dark, якщо реально не робиш темну тему */
   color-scheme: light;
 
   font-synthesis: none;
@@ -18,8 +18,6 @@
 html {
   height: 100%;
   scrollbar-gutter: stable;
-
-  /* ✅ ключове: фон саме HTML */
   background: #f8fafc !important;
 }
 

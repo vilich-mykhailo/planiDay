@@ -1,12 +1,12 @@
 // media.js //
 import express from "express";
 import multer from "multer";
-import crypto from "crypto";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { r2 } from "../lib/r2.js";
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { requireAuth, requireOwner } from "../middleware/auth.js";
 import {prisma} from "../lib/prisma.js";
+import { makeStudioKey } from "../lib/r2Keys.js";
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -283,9 +283,12 @@ router.post("/studio-logo/:studioId", upload.single("file"), async (req, res) =>
       return res.status(400).json({ message: "Only images allowed" });
     }
 
-    const id = crypto.randomUUID();
-    const ext = extFromMime(file.mimetype);
-    const key = `studios/${studioId}/logo_${id}.${ext}`;
+    const key = makeStudioKey({
+      studioId,
+      kind: "logo",
+      originalName: file.originalname,
+      mime: file.mimetype,
+    });
 
     await putImage({
       bucket: process.env.R2_BUCKET,
@@ -314,9 +317,12 @@ router.post("/studio-cover/:studioId", upload.single("file"), async (req, res) =
       return res.status(400).json({ message: "Only images allowed" });
     }
 
-    const id = crypto.randomUUID();
-    const ext = extFromMime(file.mimetype);
-    const key = `studios/${studioId}/cover_${id}.${ext}`; // ✅ id, не uuid
+const key = makeStudioKey({
+  studioId,
+  kind: "cover",
+  originalName: file.originalname,
+  mime: file.mimetype,
+});
 
     await putImage({
       bucket: process.env.R2_BUCKET,
@@ -354,21 +360,25 @@ router.post(
         }
       }
 
-      const keys = [];
+const keys = [];
 
-      // ✅ завантажуємо кожен файл
-      for (const f of files) {
-        const id = crypto.randomUUID();
-        const ext = extFromMime(f.mimetype);
-        const key = `studios/${studioId}/portfolio_${id}.${ext}`;
-        await putImage({
-          bucket: process.env.R2_BUCKET,
-          key,
-          buffer: f.buffer,
-          mimetype: f.mimetype,
-        });
-        keys.push(key);
-      }
+for (const f of files) {
+  const key = makeStudioKey({
+    studioId,
+    kind: "portfolio",
+    originalName: f.originalname,
+    mime: f.mimetype,
+  });
+
+  await putImage({
+    bucket: process.env.R2_BUCKET,
+    key,
+    buffer: f.buffer,
+    mimetype: f.mimetype,
+  });
+
+  keys.push(key);
+}
 
       const base = process.env.R2_PUBLIC_BASE_URL;
       const urls = base ? keys.map((k) => `${base}/${k}`) : null;
@@ -427,11 +437,12 @@ router.post(
         return res.status(400).json({ message: "Only images allowed" });
       }
 
-      const id = crypto.randomUUID();
-      const ext = extFromMime(file.mimetype);
-
-      // ключ під студію + masters
-      const key = `studios/${studioId}/masters/master_${id}.${ext}`;
+const key = makeStudioKey({
+  studioId,
+  kind: "masters",
+  originalName: file.originalname,
+  mime: file.mimetype,
+});
 
       await putImage({
         bucket: process.env.R2_BUCKET,

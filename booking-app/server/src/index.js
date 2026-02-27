@@ -17,11 +17,10 @@ const allowedOrigins = new Set([
   "http://127.0.0.1:5173",
 ]);
 
-// ✅ 1) CORS один раз
 app.use(
   cors({
     origin(origin, cb) {
-      if (!origin) return cb(null, true); // Postman/curl
+      if (!origin) return cb(null, true);
       if (allowedOrigins.has(origin)) return cb(null, true);
       return cb(new Error(`CORS blocked for origin: ${origin}`));
     },
@@ -29,13 +28,9 @@ app.use(
   })
 );
 
-// ✅ 2) preflight
 app.options("*", cors());
-
-// ✅ 3) body parser один раз
 app.use(express.json({ limit: "10mb" }));
 
-// ✅ 4) routes з префіксами
 app.get("/health", (req, res) => res.json({ ok: true }));
 
 app.use("/auth", authRouter);
@@ -45,8 +40,18 @@ app.use("/client", clientRouter);
 app.use("/studio", studioRoutes);
 app.use("/media", mediaRoutes);
 
-// ⚠️ дуже важливо: schedule або всередині studioRoutes, або з /studio префіксом
-app.use("/studio", scheduleRoutes); // ✅ щоб було /studio/:id/schedule
+/**
+ * ВАЖЛИВО:
+ * ✅ Якщо в schedule.routes.js шляхи "/:studioId/schedule"
+ * тоді підключай так:
+ */
+app.use("/studio", scheduleRoutes);
+
+/**
+ * ❗ Якщо лишиш у schedule.routes.js "/studio/:studioId/schedule",
+ * тоді має бути:
+ * app.use(scheduleRoutes);
+ */
 
 app.post("/logout", (req, res) => {
   res.clearCookie("token");

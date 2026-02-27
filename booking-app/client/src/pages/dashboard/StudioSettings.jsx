@@ -244,27 +244,29 @@ export default function StudioSettings() {
   }, [portfolioPreview.open]);
   const [hydrated, setHydrated] = useState(false);
 
-  useEffect(() => {
-    if (!studio) return;
+useEffect(() => {
+  // ✅ важливо: дозволяємо редагування навіть якщо studio ще не прийшов
+  if (!studio) {
+    setHydrated(true); // тепер dirty може рахуватись від пустого стану
+    return;
+  }
 
-    setForm({
-      name: studio?.name || "",
-      category: studio?.category || "",
-      phone: studio?.phone || "",
-      description: studio?.description || "",
-      city: studio?.city || "",
-      street: studio?.street || "",
-      building: studio?.building || "",
-      apartment: studio?.apartment || "",
-      coverUrl: studio?.coverUrl || "",
-      logoUrl: studio?.logoUrl || "",
-      portfolioUrls: Array.isArray(studio?.portfolioUrls)
-        ? studio.portfolioUrls
-        : [],
-    });
+  setForm({
+    name: studio?.name || "",
+    category: studio?.category || "",
+    phone: studio?.phone || "",
+    description: studio?.description || "",
+    city: studio?.city || "",
+    street: studio?.street || "",
+    building: studio?.building || "",
+    apartment: studio?.apartment || "",
+    coverUrl: studio?.coverUrl || "",
+    logoUrl: studio?.logoUrl || "",
+    portfolioUrls: Array.isArray(studio?.portfolioUrls) ? studio.portfolioUrls : [],
+  });
 
-    setHydrated(true);
-  }, [studio]);
+  setHydrated(true);
+}, [studio]);
 
   const errors = useMemo(() => {
     const e = {};
@@ -327,12 +329,12 @@ export default function StudioSettings() {
   const dirty = hydrated ? rawDirty : false;
   const hasPendingChanges = dirty;
   const canSave = dirty && Object.keys(errors).length === 0 && !saving;
-
+  const [clearingPortfolio, setClearingPortfolio] = useState(false);
   function setField(name, value) {
     if (name === "description" && value.length > MAX_DESC) return;
     setForm((prev) => ({ ...prev, [name]: value }));
   }
-  
+
   async function uploadOne(studioId, file, kind, token) {
     const fd = new FormData();
     fd.append("file", file);
@@ -369,10 +371,11 @@ export default function StudioSettings() {
     return data; // { keys, urls }
   }
 
-  async function pickImage(e, key) {
+  async function pickImage(e, fieldKey) {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!studio?.id) return;
+
     if (file.size > MAX_IMAGE_SIZE) {
       setErrorModal({
         open: true,
@@ -383,12 +386,23 @@ export default function StudioSettings() {
       return;
     }
 
-    try {
-      const token = localStorage.getItem("token"); // якщо треба
-      const kind = key === "coverUrl" ? "cover" : "logo";
+    const prevKey = String(form[fieldKey] || "").trim(); // старе фото (key)
 
-      const out = await uploadOne(studio.id, file, kind, token);
-      setForm((prev) => ({ ...prev, [key]: out.key })); // зберігаємо key
+    try {
+      const token = localStorage.getItem("token");
+      const kind = fieldKey === "coverUrl" ? "cover" : "logo";
+
+      // 1) upload нового
+      const out = await uploadOne(studio.id, file, kind, token); // { key }
+
+      // 2) якщо аплоад успішний — видаляємо старе (якщо було)
+      //    важливо: не видаляємо, якщо старе == нове
+      if (prevKey && prevKey !== out.key) {
+        await deleteIfExists(prevKey);
+      }
+
+      // 3) записуємо новий key
+      setForm((prev) => ({ ...prev, [fieldKey]: out.key }));
     } catch (err) {
       console.error(err);
       setErrorModal({
@@ -460,43 +474,90 @@ export default function StudioSettings() {
   }
 
   async function deleteFromR2(key) {
-  const token = localStorage.getItem("token");
+    const token = localStorage.getItem("token");
 
-  const res = await fetch(
-    `${import.meta.env.VITE_API_URL}/media/delete`,
-    {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/media/delete`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: JSON.stringify({ key }),
-    }
-  );
-
-  if (!res.ok) throw new Error("Delete failed");
-}
-
-async function removePortfolio(index) {
-  const key = form.portfolioUrls[index];
-  if (!key) return;
-
-  try {
-    await deleteFromR2(key);
-
-    setForm((prev) => ({
-      ...prev,
-      portfolioUrls: prev.portfolioUrls.filter((_, i) => i !== index),
-    }));
-  } catch (err) {
-    console.error(err);
-    showToast({
-      type: "error",
-      title: "Помилка",
-      text: "Не вдалося видалити фото.",
     });
+
+    if (!res.ok) throw new Error("Delete failed");
   }
-}
+  async function deleteManyFromR2(keys) {
+    const list = (keys || [])
+      .map((k) => String(k || "").trim())
+      .filter(Boolean)
+      .filter((k) => !/^https?:\/\//i.test(k)); // на всяк випадок
+
+    if (!list.length) return;
+
+    // паралельно (обмежимо батчами, щоб не “задушити” сервер)
+    const BATCH = 5;
+    for (let i = 0; i < list.length; i += BATCH) {
+      const chunk = list.slice(i, i + BATCH);
+      await Promise.allSettled(chunk.map((k) => deleteFromR2(k)));
+    }
+  }
+
+  async function deleteIfExists(key) {
+    const k = String(key || "").trim();
+    if (!k) return;
+    // якщо раптом в form колись буде full url — не видаляємо
+    if (/^https?:\/\//i.test(k)) return;
+    await deleteFromR2(k);
+  }
+
+  async function removePortfolio(index) {
+    const key = form.portfolioUrls[index];
+    if (!key) return;
+
+    try {
+      await deleteFromR2(key);
+
+      setForm((prev) => ({
+        ...prev,
+        portfolioUrls: prev.portfolioUrls.filter((_, i) => i !== index),
+      }));
+    } catch (err) {
+      console.error(err);
+      showToast({
+        type: "error",
+        title: "Помилка",
+        text: "Не вдалося видалити фото.",
+      });
+    }
+  }
+
+  async function clearPortfolio() {
+    const keys = form.portfolioUrls || [];
+    if (!keys.length) return;
+
+    setClearingPortfolio(true);
+    try {
+      await deleteManyFromR2(keys);
+
+      setForm((p) => ({ ...p, portfolioUrls: [] }));
+
+      showToast({
+        type: "success",
+        title: "Портфоліо очищено",
+        text: "Усі фото видалені.",
+      });
+    } catch (err) {
+      console.error(err);
+      setErrorModal({
+        open: true,
+        title: "Помилка",
+        message: "Не вдалося видалити всі фото. Спробуй ще раз.",
+      });
+    } finally {
+      setClearingPortfolio(false);
+    }
+  }
 
   function movePortfolio(from, to) {
     setForm((prev) => {
@@ -509,32 +570,32 @@ async function removePortfolio(index) {
   }
 
   // 👉 ВСТАВИТИ ОДРАЗУ ТУТ
-async function removeImage(fieldKey) {
-  const key = form[fieldKey];
-  if (!key) return;
+  async function removeImage(fieldKey) {
+    const key = form[fieldKey];
+    if (!key) return;
 
-  try {
-    await deleteFromR2(key);
+    try {
+      await deleteFromR2(key);
 
-    setForm((prev) => ({
-      ...prev,
-      [fieldKey]: "",
-    }));
+      setForm((prev) => ({
+        ...prev,
+        [fieldKey]: "",
+      }));
 
-    showToast({
-      type: "success",
-      title: "Фото видалено",
-      text: "Файл успішно видалено з сервера.",
-    });
-  } catch (err) {
-    console.error(err);
-    showToast({
-      type: "error",
-      title: "Помилка",
-      text: "Не вдалося видалити фото.",
-    });
+      showToast({
+        type: "success",
+        title: "Фото видалено",
+        text: "Файл успішно видалено.",
+      });
+    } catch (err) {
+      console.error(err);
+      showToast({
+        type: "error",
+        title: "Помилка",
+        text: "Не вдалося видалити фото.",
+      });
+    }
   }
-}
 
   async function save(e) {
     e?.preventDefault?.();
@@ -846,7 +907,7 @@ async function removeImage(fieldKey) {
         {/* Left column: Preview + Media */}
         <div className="lg:col-span-5 space-y-6">
           {/* Live preview */}
-          <div className={tab === "profile" ? "block" : "hidden md:block"}>
+          <div className={tab === "profile" ? "block" : "hidden"}>
             <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.06)]">
               <div
                 id="studio-field-coverUrl"
@@ -892,12 +953,12 @@ async function removeImage(fieldKey) {
                       removeImage("coverUrl");
                     }}
                     className="
-        absolute right-2 top-2 z-10
-grid h-6 w-6 place-items-center rounded-md
-        bg-white/90 backdrop-blur border border-gray-200
-        text-gray-900 hover:bg-red-50 hover:text-red-600 hover:border-red-200
-        shadow-sm transition
-      "
+                            absolute right-2 top-2 z-10
+                            grid h-6 w-6 place-items-center rounded-md
+                            bg-white/90 backdrop-blur border border-gray-200
+                            text-gray-900 hover:bg-red-50 hover:text-red-600 hover:border-red-200
+                            shadow-sm transition
+                          "
                     title="Видалити обкладинку"
                     aria-label="Remove cover"
                   >
@@ -954,12 +1015,12 @@ grid h-6 w-6 place-items-center rounded-md
                           removeImage("logoUrl");
                         }}
                         className="
-            absolute right-1 top-1 z-10
-grid h-5 w-5 place-items-center rounded-md
-            bg-white/90 backdrop-blur border border-gray-200
-            text-gray-900 hover:bg-red-50 hover:text-red-600 hover:border-red-200
-            shadow-sm transition
-          "
+                              absolute right-1 top-1 z-10
+                              grid h-5 w-5 place-items-center rounded-md
+                              bg-white/90 backdrop-blur border border-gray-200
+                              text-gray-900 hover:bg-red-50 hover:text-red-600 hover:border-red-200
+                              shadow-sm transition
+                            "
                         title="Видалити логотип"
                         aria-label="Remove logo"
                       >
@@ -980,8 +1041,7 @@ grid h-5 w-5 place-items-center rounded-md
                     )}
                   </div>
 
-                  <div className="min-w-0 rounded-xl border border-white/70 bg-white/95 backdrop-blur-md shadow-lg px-3 py-2 flex flex-col justify-end min-h-[44px]">
-                    {/* Назва студії — максимум 2 рядки */}
+<div className="min-w-0 rounded-xl border border-gray-200 bg-white px-3 py-2 flex flex-col justify-end min-h-[44px]">                    {/* Назва студії — максимум 2 рядки */}
                     <p
                       className="w-full min-w-0 text-sm sm:text-base font-extrabold text-gray-900 leading-5 line-clamp-2 break-words"
                       title={form.name.trim() ? form.name : "Назва студії"}
@@ -1104,15 +1164,30 @@ grid h-5 w-5 place-items-center rounded-md
                   <div className="space-y-3">
                     {/* Toggle row */}
                     <div className="flex items-center justify-center">
-                      <button
-                        type="button"
-                        onClick={() => setChecklistOpen((v) => !v)}
-                        className="ui-button-one"
-                      >
-                        {checklistOpen
-                          ? "Сховати кроки заповнення"
-                          : "Показати кроки заповнення"}
-                      </button>
+<button
+  type="button"
+  onClick={() => setChecklistOpen((v) => !v)}
+  className="ui-button-one flex items-center gap-2"
+>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={`h-4 w-4 transition-transform duration-300 ${
+      checklistOpen ? "rotate-180" : ""
+    }`}
+  >
+    <polyline points="6 9 12 15 18 9" />
+  </svg>
+
+  {checklistOpen
+    ? "Сховати кроки заповнення"
+    : "Показати кроки заповнення"}
+</button>
                     </div>
 
                     {/* Animated container */}
@@ -1375,7 +1450,7 @@ grid h-5 w-5 place-items-center rounded-md
                         <label
                           id="studio-field-portfolio-add"
                           className={[
-                            "inline-flex cursor-pointer items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-900 hover:bg-gray-50 active:scale-[0.99] transition",
+                            "ui-button-primary",
                             highlightId === "studio-field-portfolio-add"
                               ? highlightClass
                               : "",
@@ -1394,12 +1469,20 @@ grid h-5 w-5 place-items-center rounded-md
                         {Boolean(form.portfolioUrls?.length) && (
                           <button
                             type="button"
-                            onClick={() =>
-                              setForm((p) => ({ ...p, portfolioUrls: [] }))
+                            onClick={clearPortfolio}
+                            disabled={
+                              !form.portfolioUrls?.length ||
+                              clearingPortfolio ||
+                              saving
                             }
-                            className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50 active:scale-[0.99] transition"
+                            className={[
+                              "ui-button-danger",
+                              clearingPortfolio || saving
+                                ? "opacity-60 cursor-not-allowed"
+                                : "",
+                            ].join(" ")}
                           >
-                            Очистити
+                            {clearingPortfolio ? "Очищення..." : "Очистити"}
                           </button>
                         )}
                       </div>
@@ -1580,30 +1663,7 @@ grid h-5 w-5 place-items-center rounded-md
         </div>
       </div>
 
-      {/* Mobile Save Button — iOS safe */}
-      {/* <div className="fixed inset-x-0 bottom-0 md:hidden isolate">
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 -z-10 bg-gradient-to-t from-white via-white/95 to-transparent" />
-
-        <div className="relative z-10 mx-auto max-w-6xl px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-          <button
-            type="button"
-            onClick={save}
-            disabled={!canSave}
-            className="
-        w-full rounded-2xl bg-black px-5 py-4
-        text-sm font-bold text-white
-        shadow-[0_10px_30px_rgba(0,0,0,0.25)]
-        active:scale-[0.99]
-        disabled:opacity-40 disabled:shadow-none
-        transition-all
-      "
-          >
-            {saving ? "Збереження..." : "Зберегти"}
-          </button>
-        </div>
-      </div> */}
-
-      {/* Professional Toast */}
+       {/* Professional Toast */}
       <div
         className={[
           // ✅ Mobile: top-center
@@ -1777,8 +1837,8 @@ grid h-5 w-5 place-items-center rounded-md
               className={[
                 "w-1/2 rounded-2xl px-4 py-3 text-sm font-extrabold transition active:scale-[0.99]",
                 canSave
-                  ? "bg-black text-white hover:bg-gray-900"
-                  : "bg-gray-100 text-gray-400 cursor-not-allowed",
+                  ? "ui-button-primary"
+                  : "ui-button-primary",
               ].join(" ")}
             >
               {saving ? "Збереження..." : "Зберегти"}
@@ -1817,7 +1877,7 @@ grid h-5 w-5 place-items-center rounded-md
             className={[
               "rounded-2xl px-6 py-3 text-sm font-extrabold shadow-sm",
               "transition active:scale-[0.98]",
-              canSave ? "ui-button-one" : "ui-button-one",
+              canSave ? "ui-button-primary" : "ui-button-primary",
             ].join(" ")}
           >
             {saving ? "Збереження..." : "Зберегти"}
@@ -1830,7 +1890,7 @@ grid h-5 w-5 place-items-center rounded-md
             className={[
               "rounded-2xl px-5 py-3 text-sm font-extrabold shadow-sm",
               "transition active:scale-[0.98]",
-              dirty && !saving ? "ui-button" : "ui-button",
+              dirty && !saving ? "ui-button-cancel" : "ui-button-cancel",
             ].join(" ")}
           >
             Скасувати

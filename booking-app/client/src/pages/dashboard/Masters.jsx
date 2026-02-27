@@ -207,15 +207,30 @@ const [adding, setAdding] = useState(false);
     setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
   }
 
-  async function handlePickPhoto(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const { key, url } = await uploadMasterPhoto(studio.id, file);
-    setPhotoBroken(false);
+async function handlePickPhoto(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
 
+  // 1) instant preview
+  const localUrl = URL.createObjectURL(file);
+  setForm((p) => ({ ...p, photoUrl: localUrl, photoKey: null }));
+  setPhotoBroken(false);
+
+  try {
+    // 2) upload in background
+    const { key, url } = await uploadMasterPhoto(studio.id, file);
+
+    // 3) swap to real url
     setForm((p) => ({ ...p, photoUrl: url, photoKey: key }));
+  } catch (err) {
+    // rollback / show error
+    setForm((p) => ({ ...p, photoUrl: "", photoKey: null }));
+    alert(err?.message || "Upload failed");
+  } finally {
     e.target.value = "";
+    // optional: URL.revokeObjectURL(localUrl) after swap
   }
+}
 
 function removePhoto() {
   setPhotoBroken(false);
@@ -391,7 +406,7 @@ function openEdit(master) {
 
               <div className="flex flex-wrap items-center gap-2">
                 <label className="cursor-pointer">
-                  <span className="ui-button-one">Додати фото</span>
+                  <span className="ui-button-primary">Додати фото</span>
                   <input
                     type="file"
                     accept="image/*"
@@ -401,7 +416,9 @@ function openEdit(master) {
                 </label>
 
                 {form.photoUrl && (
-                  <Button variant="danger" onClick={removePhoto}>
+                  <Button 
+                  className="ui-button-danger"
+                  onClick={removePhoto}>
                     Видалити
                   </Button>
                 )}
@@ -461,7 +478,7 @@ function openEdit(master) {
 <button
   type="submit"
   disabled={adding || !String(form.name || "").trim()}
-  className="ui-button-one"
+  className="ui-button-primary"
 >
   {adding ? "Додаємо..." : "Додати майстра"}
 </button>
@@ -500,7 +517,7 @@ function openEdit(master) {
                 key={m.id}
                 className="rounded-2xl border border-gray-200 bg-white p-4 hover:bg-gray-50/60 transition"
               >
-                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div className="flex items-start gap-3 min-w-0">
                     <Avatar name={m.name} photoUrl={m.photoUrl} />
 
@@ -531,7 +548,7 @@ function openEdit(master) {
 
                   <div className="grid grid-cols-2 sm:flex gap-2 sm:shrink-0">
                     <Button
-                      className="ui-button-primary"
+                      className="ui-button-secondary"
                       onClick={() => openEdit(m)}
                     >
                       Редагувати
@@ -559,13 +576,18 @@ function openEdit(master) {
         subtitle="Онови фото, імʼя або опис і збережи зміни."
         footer={
           <div className="flex items-center justify-end gap-2">
-            <Button onClick={closeEdit}>Скасувати</Button>
             <Button
-              variant="primary"
+              className="ui-button-primary"
               onClick={saveEdit}
               disabled={!String(editDraft.name || "").trim()}
             >
               Зберегти
+            </Button>
+            <Button 
+            onClick={closeEdit}
+            className="ui-button-cancel"
+            >
+              Скасувати
             </Button>
           </div>
         }
@@ -588,7 +610,7 @@ function openEdit(master) {
 
           <div className="flex flex-wrap items-center gap-2">
             <label className="cursor-pointer">
-              <span className="inline-flex items-center justify-center rounded-2xl px-4 py-2.5 text-sm font-extrabold border border-gray-200 bg-white text-gray-900 hover:bg-gray-50 transition">
+              <span className="ui-button-secondary">
                 Змінити фото
               </span>
               <input
@@ -601,7 +623,7 @@ function openEdit(master) {
 
             {editDraft.photoUrl && (
               <Button
-                variant="danger"
+                className="ui-button-danger"
                 onClick={() => setEditDraft((p) => ({ ...p, photoUrl: "" }))}
               >
                 Прибрати
@@ -639,9 +661,6 @@ function openEdit(master) {
             className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none transition focus:border-black focus:ring-2 focus:ring-black/15 resize-none"
             placeholder="Коротко про досвід та спеціалізацію…"
           />
-          <p className="mt-1 text-xs text-gray-500">
-            Порада: 2–4 речення, конкретно (досвід, напрям, фішка).
-          </p>
         </div>
       </Modal>
     </div>

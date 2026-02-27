@@ -271,18 +271,17 @@ function Modal({
               <button
                 type="button"
                 onClick={onClose}
-                className="
-                  inline-flex items-center justify-center
-                  h-9 w-9
-                  rounded-xl
-                  border border-gray-200
-                  bg-white
-                  text-gray-600
-                  hover:bg-gray-50
-                  hover:text-gray-900
-                  transition
-                  active:scale-[0.95]
-                "
+className="
+  inline-flex items-center justify-center
+  h-9 w-9
+  rounded-xl
+
+  text-gray-500
+  hover:bg-gray-200
+  hover:text-gray-900
+  transition
+  active:scale-[0.95]
+"
                 aria-label="Закрити"
               >
                 <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
@@ -727,17 +726,30 @@ export default function Bookings() {
                         </div>
 
                         <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
-                          <GhostButton
-                            onClick={() => setDetailsId(b.id)}
-                            className="w-full sm:w-auto"
-                          >
-                            Переглянути
-                          </GhostButton>
+<GhostButton
+  onClick={() => setDetailsId(b.id)}
+  className="w-full sm:w-auto ui-button-secondary flex items-center justify-center gap-2"
+>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="h-4 w-4"
+  >
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+  Переглянути
+</GhostButton>
 
                           <PrimaryButton
                             onClick={() => confirmBooking(b.id)}
                             disabled={isConfirmed || isCanceled || isArchived || isDeleted}
-                            className="w-full sm:w-auto"
+                            className="w-full sm:w-auto ui-button-primary"
                           >
                             Підтвердити
                           </PrimaryButton>
@@ -746,18 +758,35 @@ export default function Bookings() {
                             <GhostButton
                               onClick={() => setCancelConfirmId(b.id)}
                               disabled={isCanceled || isArchived || isDeleted}
-                              className="w-full sm:w-auto"
+                              className="w-full sm:w-auto ui-button-cancel"
                             >
                               Скасувати
                             </GhostButton>
                           ) : (
-                            <DangerButton
-                              onClick={() => setConfirmId(b.id)}
-                              disabled={isArchived || isDeleted}
-                              className="w-full sm:w-auto"
-                            >
-                              Видалити
-                            </DangerButton>
+<DangerButton
+  onClick={() => setConfirmId(b.id)}
+  disabled={isArchived || isDeleted}
+  className="w-full sm:w-auto ui-button-danger flex items-center justify-center"
+  title="Видалити"
+  aria-label="Видалити"
+>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="h-4 w-4"
+  >
+    <polyline points="3 6 5 6 21 6" />
+    <path d="M19 6l-1 14H6L5 6" />
+    <path d="M10 11v6" />
+    <path d="M14 11v6" />
+    <path d="M9 6V4h6v2" />
+  </svg>
+</DangerButton>
                           )}
                         </div>
                       </Card>
@@ -1009,7 +1038,11 @@ export default function Bookings() {
   center
   footer={
     <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-      <GhostButton onClick={() => setDetailsId(null)}>Закрити</GhostButton>
+      <GhostButton 
+      className="ui-button-cancel"
+      onClick={() => setDetailsId(null)}
+      >
+        Закрити</GhostButton>
     </div>
   }
 >
@@ -1185,17 +1218,17 @@ export default function Bookings() {
                   </div>
 
                   <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
-                    <GhostButton
+                    {/* <GhostButton
                       onClick={() => setDetailsId(b.id)}
-                      className="w-full sm:w-auto"
+                      className="w-full sm:w-auto ui-button-secondary"
                     >
                       Деталі
-                    </GhostButton>
+                    </GhostButton> */}
 
                     <PrimaryButton
                       onClick={() => confirmBooking(b.id)}
                       disabled={isConfirmed || isCanceled || isArchived}
-                      className="w-full sm:w-auto"
+                      className="w-full sm:w-auto ui-button-primary"
                     >
                       Підтвердити
                     </PrimaryButton>
@@ -1204,7 +1237,7 @@ export default function Bookings() {
                       <GhostButton
                         onClick={() => cancelBooking(b.id)}
                         disabled={isCanceled || isArchived}
-                        className="w-full sm:w-auto"
+                        className="w-full sm:w-auto ui-button-cancel"
                       >
                         Скасувати
                       </GhostButton>

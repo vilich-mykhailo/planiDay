@@ -63,7 +63,7 @@ export default function TimeSelect({ value, onChange }) {
       {/* ===== Overlay (затемнення фону) ===== */}
       {open && (
         <div
-          className="time-select-overlay"
+          className="time-select-overlay "
           // Клік по overlay закриває панель
           onClick={() => setOpen(false)}
         />
@@ -71,7 +71,7 @@ export default function TimeSelect({ value, onChange }) {
 
       {/* ===== Панель вибору часу ===== */}
       {open && (
-        <div className="time-select-panel">
+        <div className="time-select-panel ">
           {/* ===== Блок вибору годин ===== */}
           <div>
             <p className="time-select-title">Години</p>

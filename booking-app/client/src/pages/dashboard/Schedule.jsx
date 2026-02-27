@@ -1,3 +1,4 @@
+// Schedule.jsx
 import { useMemo, useState,  useEffect } from "react";
 import TimeSelect from "../../components/TimeSelect";
 import { useStudio } from "../../context/studio/useStudio";
@@ -100,15 +101,8 @@ function Chip({ children }) {
 export default function Schedule() {
   const { studio } = useStudio();
 
-  const storedSchedule = useMemo(
-    () => normalizeSchedule(studio?.schedule),
-    [studio?.schedule]
-  );
-
-  const storedSlotDuration = useMemo(() => {
-    const v = studio?.slotDuration;
-    return typeof v === "number" ? v : 15;
-  }, [studio?.slotDuration]);
+const storedSchedule = useMemo(() => getDefaultSchedule(), []);
+const storedSlotDuration = 15;
 
   // draft (те що редагуєш)
   const [schedule, setScheduleDraft] = useState(storedSchedule);
@@ -233,10 +227,13 @@ async function saveAll() {
     setPreview({});
   }
 
-  useEffect(() => {
-    (async () => {
-      if (!studio?.id) return;
+useEffect(() => {
+  let alive = true;
 
+  (async () => {
+    if (!studio?.id) return;
+
+    try {
       const token = localStorage.getItem("token");
 
       const data = await api(`/studio/${studio.id}/schedule`, {
@@ -244,20 +241,34 @@ async function saveAll() {
         token,
       });
 
-      const nextSchedule = normalizeSchedule(data.schedule);
+      const nextSchedule = normalizeSchedule(data?.schedule);
       const nextDuration =
-        typeof data.slotDuration === "number" ? data.slotDuration : 15;
+        typeof data?.slotDuration === "number" ? data.slotDuration : 15;
+
+      if (!alive) return;
 
       setScheduleDraft(nextSchedule);
       setSlotDuration(nextDuration);
 
-      // ✅ baseline
       setSavedSchedule(nextSchedule);
       setSavedSlotDuration(nextDuration);
 
       setPreview({});
-    })().catch(console.error);
-  }, [studio?.id]);
+    } catch (e) {
+      console.error(e);
+      showToast({
+        type: "error",
+        title: "Не вдалося завантажити",
+        text: e?.message || "Помилка завантаження графіка.",
+      });
+    }
+  })();
+
+  return () => {
+    alive = false;
+  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [studio?.id]);
 
   return (
 <div className="mx-auto max-w-5xl space-y-6 pb-20 md:pb-0">
@@ -598,8 +609,8 @@ async function saveAll() {
     "rounded-2xl px-6 py-3 text-sm font-extrabold shadow-sm",
     "transition active:scale-[0.98]",
     dirty && !saving
-      ? "ui-button-one"
-      : "ui-button-one",
+      ? "ui-button-primary"
+      : "ui-button-primary",
   ].join(" ")}
 >
   {saving ? "Збереження..." : "Зберегти"}
@@ -613,8 +624,8 @@ async function saveAll() {
     "rounded-2xl px-5 py-3 text-sm font-extrabold shadow-sm",
     "transition active:scale-[0.98]",
     dirty && !saving
-      ? "ui-button"
-      : "ui-button",
+      ? "ui-button-cancel"
+      : "ui-button-cancel",
   ].join(" ")}
 >
   Скасувати

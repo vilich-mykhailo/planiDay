@@ -1,3 +1,4 @@
+// schedule.routes.js
 import express from "express";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth, requireOwner } from "../middleware/auth.js";
@@ -81,12 +82,9 @@ async function ensureDefaultDays(studioId) {
   });
 }
 
-/**
- * GET /studio/:studioId/schedule
- * -> { slotDuration, schedule, workingHoursText }
- */
+
 router.get(
-  "/studio/:studioId/schedule",
+  "/:studioId/schedule",
   requireAuth,
   requireOwner,
   async (req, res) => {
@@ -128,7 +126,7 @@ router.get(
  * body: { slotDuration, schedule }
  */
 router.patch(
-  "/studio/:studioId/schedule",
+  "/:studioId/schedule",
   requireAuth,
   requireOwner,
   async (req, res) => {
