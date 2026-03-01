@@ -29,6 +29,7 @@ import Favourites from "./pages/Favourites";
 import { FavouritesProvider } from "./context/FavouritesContext";
 import ScrollToTop from "./components/ScrollToTop";
 import Profile from "./pages/dashboard/Profile";
+import ScrollRestoration from "./components/ScrollRestoration";
 function StudioDetailsKeyed() {
   const { slug } = useParams();
   return <StudioDetails key={slug} />;
@@ -36,6 +37,7 @@ function StudioDetailsKeyed() {
 export default function App() {
   return (
     <>
+    <ScrollRestoration />
   <ScrollToTop />
     <FavouritesProvider>
     <AppBackground>

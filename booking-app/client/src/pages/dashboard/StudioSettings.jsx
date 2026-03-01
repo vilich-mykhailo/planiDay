@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useStudio } from "../../context/studio/useStudio";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -6,9 +7,13 @@ const MAX_DESC = 400;
 const MAX_PORTFOLIO = 12;
 const PUBLIC = import.meta.env.VITE_R2_PUBLIC_BASE_URL;
 
+function fileToPreviewUrl(file) {
+  return file ? URL.createObjectURL(file) : "";
+}
+
 function toPublicUrl(v) {
   const s = String(v || "").trim();
-  if (!s) return "";
+  if (!s) return null;
   if (/^https?:\/\//i.test(s)) return s; // вже повний URL
   return PUBLIC ? `${PUBLIC}/${s}` : s; // це key -> робимо URL
 }
@@ -151,8 +156,25 @@ function CollapsibleCard({
 
 export default function StudioSettings() {
   const { studio, updateStudio } = useStudio();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+const tabFromUrl = searchParams.get("tab");
+const initialTab = ["profile", "location", "links"].includes(tabFromUrl)
+  ? tabFromUrl
+  : "profile";
+
+const [tab, setTab] = useState(initialTab);
+
+function setTabUrl(nextTab) {
+  setTab(nextTab);
+
+  setSearchParams((prev) => {
+    const p = new URLSearchParams(prev);
+    p.set("tab", nextTab);
+    return p;
+  }, { replace: true });
+}
   const [checklistOpen, setChecklistOpen] = useState(false); // ✅ по дефолту сховано
-  const [tab, setTab] = useState("profile"); // profile | location | links
   const [form, setForm] = useState({
     name: "",
     category: "",
@@ -165,15 +187,19 @@ export default function StudioSettings() {
     coverUrl: "",
     logoUrl: "",
     portfolioUrls: [],
+    coverFile: null,
+    portfolioFiles: [],
   });
 
   const [highlightId, setHighlightId] = useState("");
   const [highlightAddress, setHighlightAddress] = useState(false);
+  const [coverPreviewUrl, setCoverPreviewUrl] = useState("");
 
-  // ✅ нове
-  const [highlightTone, setHighlightTone] = useState("green"); // "green" | "default"
+  const [logoPreviewUrl, setLogoPreviewUrl] = useState("");
+  const [portfolioPreviewUrls, setPortfolioPreviewUrls] = useState([]);
 
-  // ✅ один клас на всі кейси
+  const [highlightTone, setHighlightTone] = useState("green");
+
   const highlightClass =
     highlightTone === "green"
       ? "ring-2 ring-emerald-400/70 bg-emerald-50 border-emerald-300"
@@ -182,6 +208,15 @@ export default function StudioSettings() {
     "w-full rounded-xl border border-gray-200 bg-white p-3 text-sm font-medium text-gray-900 outline-none " +
     "transition-[box-shadow,border-color,background-color] " +
     "focus:border-black";
+
+  const [pendingDeletes, setPendingDeletes] = useState([]); // keys які треба видалити після Save
+
+  function stageDelete(key) {
+    const k = String(key || "").trim();
+    if (!k) return;
+    if (/^https?:\/\//i.test(k)) return; // якщо раптом url — не чіпаємо
+    setPendingDeletes((prev) => (prev.includes(k) ? prev : [...prev, k]));
+  }
 
   function fieldClass(id) {
     const isAddressField =
@@ -199,7 +234,7 @@ export default function StudioSettings() {
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState({
     open: false,
-    type: "success", // success | error
+    type: "success",
     title: "",
     text: "",
   });
@@ -221,12 +256,54 @@ export default function StudioSettings() {
     message: "",
   });
 
-  const hasCover = Boolean(form.coverUrl?.trim());
-  const hasLogo = Boolean(form.logoUrl?.trim());
+  const hasCover = Boolean(form.coverFile || form.coverUrl?.trim());
+  const hasLogo = Boolean(form.logoFile || form.logoUrl?.trim());
+  const coverSrc = coverPreviewUrl || toPublicUrl(form.coverUrl);
+  const logoSrc = logoPreviewUrl || toPublicUrl(form.logoUrl);
   const [portfolioPreview, setPortfolioPreview] = useState({
     open: false,
     src: "",
   });
+  useEffect(() => {
+    if (!form.coverFile) {
+      setCoverPreviewUrl("");
+      return;
+    }
+
+    const url = URL.createObjectURL(form.coverFile);
+    setCoverPreviewUrl(url);
+
+    return () => URL.revokeObjectURL(url);
+  }, [form.coverFile]);
+
+  useEffect(() => {
+    if (!form.logoFile) {
+      setLogoPreviewUrl("");
+      return;
+    }
+
+    const url = URL.createObjectURL(form.logoFile);
+    setLogoPreviewUrl(url);
+
+    return () => URL.revokeObjectURL(url);
+  }, [form.logoFile]);
+
+  const hasAnyPortfolio =
+    (form.portfolioUrls?.length || 0) + (form.portfolioFiles?.length || 0) > 0;
+
+  useEffect(() => {
+    const files = form.portfolioFiles || [];
+    if (!files.length) {
+      setPortfolioPreviewUrls([]);
+      return;
+    }
+
+    const urls = files.map((f) => URL.createObjectURL(f));
+    setPortfolioPreviewUrls(urls);
+
+    return () => urls.forEach((u) => URL.revokeObjectURL(u));
+  }, [form.portfolioFiles]);
+
   useEffect(() => {
     if (!portfolioPreview.open) return;
 
@@ -244,29 +321,44 @@ export default function StudioSettings() {
   }, [portfolioPreview.open]);
   const [hydrated, setHydrated] = useState(false);
 
-useEffect(() => {
-  // ✅ важливо: дозволяємо редагування навіть якщо studio ще не прийшов
-  if (!studio) {
-    setHydrated(true); // тепер dirty може рахуватись від пустого стану
-    return;
-  }
+  useEffect(() => {
+    // ✅ важливо: дозволяємо редагування навіть якщо studio ще не прийшов
+    if (!studio) {
+      setHydrated(true); // тепер dirty може рахуватись від пустого стану
+      return;
+    }
 
-  setForm({
-    name: studio?.name || "",
-    category: studio?.category || "",
-    phone: studio?.phone || "",
-    description: studio?.description || "",
-    city: studio?.city || "",
-    street: studio?.street || "",
-    building: studio?.building || "",
-    apartment: studio?.apartment || "",
-    coverUrl: studio?.coverUrl || "",
-    logoUrl: studio?.logoUrl || "",
-    portfolioUrls: Array.isArray(studio?.portfolioUrls) ? studio.portfolioUrls : [],
-  });
+    setForm({
+      name: studio?.name || "",
+      category: studio?.category || "",
+      phone: studio?.phone || "",
+      description: studio?.description || "",
+      city: studio?.city || "",
+      street: studio?.street || "",
+      building: studio?.building || "",
+      apartment: studio?.apartment || "",
+      coverUrl: studio?.coverUrl || "",
+      logoUrl: studio?.logoUrl || "",
+      portfolioUrls: Array.isArray(studio?.portfolioUrls)
+        ? studio.portfolioUrls
+        : [],
 
-  setHydrated(true);
-}, [studio]);
+      coverFile: null,
+      logoFile: null,
+      portfolioFiles: [],
+    });
+
+    setHydrated(true);
+  }, [studio]);
+
+  useEffect(() => {
+    const urls = [];
+    if (form.coverFile) urls.push(fileToPreviewUrl(form.coverFile));
+    if (form.logoFile) urls.push(fileToPreviewUrl(form.logoFile));
+    form.portfolioFiles?.forEach((f) => urls.push(fileToPreviewUrl(f)));
+
+    return () => urls.forEach((u) => URL.revokeObjectURL(u));
+  }, [form.coverFile, form.logoFile, form.portfolioFiles]);
 
   const errors = useMemo(() => {
     const e = {};
@@ -302,13 +394,17 @@ useEffect(() => {
       (studio?.coverUrl || "") !== form.coverUrl ||
       (studio?.logoUrl || "") !== form.logoUrl ||
       JSON.stringify(currentPortfolio) !==
-        JSON.stringify(form.portfolioUrls || [])
+        JSON.stringify(form.portfolioUrls || []) ||
+      Boolean(form.coverFile) ||
+      Boolean(form.logoFile) ||
+      (form.portfolioFiles?.length || 0) > 0
     );
   }, [studio, form]);
 
   function resetChanges() {
     if (!studio) return;
 
+    setPendingDeletes([]); // ✅
     setForm({
       name: studio?.name || "",
       category: studio?.category || "",
@@ -323,6 +419,9 @@ useEffect(() => {
       portfolioUrls: Array.isArray(studio?.portfolioUrls)
         ? studio.portfolioUrls
         : [],
+      coverFile: null,
+      logoFile: null,
+      portfolioFiles: [],
     });
   }
 
@@ -371,10 +470,10 @@ useEffect(() => {
     return data; // { keys, urls }
   }
 
-  async function pickImage(e, fieldKey) {
+  function pickImage(e, fieldKey) {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
-    if (!studio?.id) return;
 
     if (file.size > MAX_IMAGE_SIZE) {
       setErrorModal({
@@ -382,45 +481,35 @@ useEffect(() => {
         title: "Файл завеликий",
         message: "До 5 MB.",
       });
-      e.target.value = "";
       return;
     }
 
-    const prevKey = String(form[fieldKey] || "").trim(); // старе фото (key)
-
-    try {
-      const token = localStorage.getItem("token");
-      const kind = fieldKey === "coverUrl" ? "cover" : "logo";
-
-      // 1) upload нового
-      const out = await uploadOne(studio.id, file, kind, token); // { key }
-
-      // 2) якщо аплоад успішний — видаляємо старе (якщо було)
-      //    важливо: не видаляємо, якщо старе == нове
-      if (prevKey && prevKey !== out.key) {
-        await deleteIfExists(prevKey);
-      }
-
-      // 3) записуємо новий key
-      setForm((prev) => ({ ...prev, [fieldKey]: out.key }));
-    } catch (err) {
-      console.error(err);
+    if (!file.type?.startsWith("image/")) {
       setErrorModal({
         open: true,
-        title: "Помилка",
-        message: err.message || "Upload failed",
+        title: "Невірний формат",
+        message: "Обери зображення.",
       });
-    } finally {
-      e.target.value = "";
+      return;
+    }
+
+    // ✅ зберігаємо ЛИШЕ локально, в Cloudflare піде лише після Save
+    if (fieldKey === "coverUrl") {
+      setForm((p) => ({ ...p, coverFile: file }));
+    } else {
+      setForm((p) => ({ ...p, logoFile: file }));
     }
   }
 
-  async function pickPortfolioImages(e) {
+  function pickPortfolioImages(e) {
     const files = Array.from(e.target.files || []);
     e.target.value = "";
     if (!files.length) return;
 
-    const left = MAX_PORTFOLIO - (form.portfolioUrls?.length || 0);
+    const left =
+      MAX_PORTFOLIO -
+      ((form.portfolioUrls?.length || 0) + (form.portfolioFiles?.length || 0));
+
     const take = files.slice(0, Math.max(0, left));
 
     const okFiles = [];
@@ -443,32 +532,19 @@ useEffect(() => {
       return;
     }
 
-    try {
-      const token = localStorage.getItem("token");
-      const out = await uploadMany(studio.id, okFiles, token);
+    setForm((prev) => ({
+      ...prev,
+      portfolioFiles: [...(prev.portfolioFiles || []), ...okFiles].slice(
+        0,
+        MAX_PORTFOLIO,
+      ),
+    }));
 
-      const keys = out.keys || [];
-      setForm((prev) => ({
-        ...prev,
-        portfolioUrls: [...(prev.portfolioUrls || []), ...keys].slice(
-          0,
-          MAX_PORTFOLIO,
-        ),
-      }));
-
-      if (skipped) {
-        showToast({
-          type: "error",
-          title: "Деякі фото пропущено",
-          text: `Пропущено ${skipped} файл(и) — завеликі або не підходять.`,
-        });
-      }
-    } catch (err) {
-      console.error(err);
-      setErrorModal({
-        open: true,
-        title: "Помилка",
-        message: err.message || "Upload failed",
+    if (skipped) {
+      showToast({
+        type: "error",
+        title: "Деякі фото пропущено",
+        text: `Пропущено ${skipped} файл(и) — завеликі або не підходять.`,
       });
     }
   }
@@ -503,106 +579,200 @@ useEffect(() => {
     }
   }
 
-  async function deleteIfExists(key) {
-    const k = String(key || "").trim();
-    if (!k) return;
-    // якщо раптом в form колись буде full url — не видаляємо
-    if (/^https?:\/\//i.test(k)) return;
-    await deleteFromR2(k);
-  }
+  function movePortfolioMixed(from, to) {
+    const remoteCount = form.portfolioUrls?.length || 0;
+    const localCount = form.portfolioFiles?.length || 0;
+    const total = remoteCount + localCount;
 
-  async function removePortfolio(index) {
-    const key = form.portfolioUrls[index];
-    if (!key) return;
+    if (to < 0 || to >= total) return;
 
-    try {
-      await deleteFromR2(key);
+    // будуємо combined як індекси, а не об’єкти
+    const combined = [
+      ...(form.portfolioUrls || []).map((_, i) => ({ type: "remote", i })),
+      ...(form.portfolioFiles || []).map((_, i) => ({ type: "local", i })),
+    ];
 
-      setForm((prev) => ({
-        ...prev,
-        portfolioUrls: prev.portfolioUrls.filter((_, i) => i !== index),
-      }));
-    } catch (err) {
-      console.error(err);
-      showToast({
-        type: "error",
-        title: "Помилка",
-        text: "Не вдалося видалити фото.",
-      });
+    const arr = [...combined];
+    const [moved] = arr.splice(from, 1);
+    arr.splice(to, 0, moved);
+
+    const nextUrls = [];
+    const nextFiles = [];
+
+    for (const x of arr) {
+      if (x.type === "remote") nextUrls.push(form.portfolioUrls[x.i]);
+      else nextFiles.push(form.portfolioFiles[x.i]);
     }
+
+    setForm((p) => ({
+      ...p,
+      portfolioUrls: nextUrls.slice(0, MAX_PORTFOLIO),
+      portfolioFiles: nextFiles.slice(0, MAX_PORTFOLIO),
+    }));
   }
+
+  function removePortfolioMixed(idx) {
+    const remoteCount = form.portfolioUrls?.length || 0;
+
+    // ✅ REMOTE
+    if (idx < remoteCount) {
+      const key = form.portfolioUrls[idx];
+      if (!key) return;
+
+      stageDelete(key);
+
+      setForm((p) => ({
+        ...p,
+        portfolioUrls: (p.portfolioUrls || []).filter((_, i) => i !== idx),
+      }));
+
+      showToast({
+        type: "warning",
+        title: "Зміна підготовлена",
+        text: "Фото буде видалено після “Зберегти”.",
+      });
+
+      return;
+    }
+
+    // ✅ LOCAL
+    const localIndex = idx - remoteCount;
+
+    setForm((p) => ({
+      ...p,
+      portfolioFiles: (p.portfolioFiles || []).filter(
+        (_, i) => i !== localIndex,
+      ),
+    }));
+  }
+
+  const portfolioCount =
+    (form.portfolioUrls?.length || 0) + (form.portfolioFiles?.length || 0);
 
   async function clearPortfolio() {
-    const keys = form.portfolioUrls || [];
-    if (!keys.length) return;
+    const remoteKeys = form.portfolioUrls || [];
+    const localCount = form.portfolioFiles?.length || 0;
+
+    if (!remoteKeys.length && !localCount) return;
+
+    const hadRemote = remoteKeys.length > 0;
+    const hadLocal = localCount > 0;
 
     setClearingPortfolio(true);
+
     try {
-      await deleteManyFromR2(keys);
+      // ✅ remote ставимо в чергу на delete після Save
+      if (hadRemote) remoteKeys.forEach(stageDelete);
 
-      setForm((p) => ({ ...p, portfolioUrls: [] }));
+      // ✅ чистимо UI: і remote, і local
+      setForm((p) => ({
+        ...p,
+        portfolioUrls: [],
+        portfolioFiles: [],
+      }));
 
-      showToast({
-        type: "success",
-        title: "Портфоліо очищено",
-        text: "Усі фото видалені.",
-      });
-    } catch (err) {
-      console.error(err);
-      setErrorModal({
-        open: true,
-        title: "Помилка",
-        message: "Не вдалося видалити всі фото. Спробуй ще раз.",
-      });
+      // (опціонально) маленька пауза для “Очищення...”
+      await new Promise((r) => setTimeout(r, 350));
+
+      // ✅ правильне повідомлення
+      if (hadRemote && hadLocal) {
+        showToast({
+          type: "success",
+          title: "Портфоліо очищено",
+          text: "Нові фото прибрано. Старі фото будуть видалені після “Зберегти”.",
+        });
+      } else if (hadRemote) {
+        showToast({
+          type: "warning",
+          title: "Портфоліо очищено",
+          text: "Фото будуть видалені після “Зберегти”.",
+        });
+      } else {
+        showToast({
+          type: "success",
+          title: "Портфоліо очищено",
+          text: "Додані фото видалені.",
+        });
+      }
     } finally {
       setClearingPortfolio(false);
     }
   }
 
-  function movePortfolio(from, to) {
-    setForm((prev) => {
-      const arr = [...(prev.portfolioUrls || [])];
-      if (to < 0 || to >= arr.length) return prev;
-      const [item] = arr.splice(from, 1);
-      arr.splice(to, 0, item);
-      return { ...prev, portfolioUrls: arr };
-    });
-  }
-
-  // 👉 ВСТАВИТИ ОДРАЗУ ТУТ
   async function removeImage(fieldKey) {
     const key = form[fieldKey];
     if (!key) return;
 
-    try {
-      await deleteFromR2(key);
+    // ✅ ставимо в чергу на видалення
+    stageDelete(key);
 
-      setForm((prev) => ({
-        ...prev,
-        [fieldKey]: "",
-      }));
+    // ✅ прибираємо з форми одразу (UI)
+    setForm((prev) => ({
+      ...prev,
+      [fieldKey]: "",
+      ...(fieldKey === "coverUrl" ? { coverFile: null } : {}),
+      ...(fieldKey === "logoUrl" ? { logoFile: null } : {}),
+    }));
 
-      showToast({
-        type: "success",
-        title: "Фото видалено",
-        text: "Файл успішно видалено.",
-      });
-    } catch (err) {
-      console.error(err);
-      showToast({
-        type: "error",
-        title: "Помилка",
-        text: "Не вдалося видалити фото.",
-      });
-    }
+    // (опціонально) якщо хочеш — тост “буде видалено після збереження”
+    showToast({
+      type: "success",
+      title: "Зміна підготовлена",
+      text: "Файл буде видалено після натискання “Зберегти”.",
+    });
   }
 
   async function save(e) {
     e?.preventDefault?.();
     if (!canSave) return;
+    if (!studio?.id) return;
 
     setSaving(true);
+
     try {
+      const token = localStorage.getItem("token");
+
+      let nextCoverKey = form.coverUrl || "";
+      let nextLogoKey = form.logoUrl || "";
+      let nextPortfolioKeys = Array.isArray(form.portfolioUrls)
+        ? [...form.portfolioUrls]
+        : [];
+
+      // ✅ зберемо все, що треба видалити після збереження
+      const deletesAfterSave = [...pendingDeletes];
+
+      // cover upload (якщо міняємо)
+      if (form.coverFile) {
+        const out = await uploadOne(studio.id, form.coverFile, "cover", token);
+        nextCoverKey = out.key;
+
+        // ✅ старий cover в чергу (а не видаляти зараз)
+        if (form.coverUrl && form.coverUrl !== out.key) {
+          deletesAfterSave.push(form.coverUrl);
+        }
+      }
+
+      // logo upload
+      if (form.logoFile) {
+        const out = await uploadOne(studio.id, form.logoFile, "logo", token);
+        nextLogoKey = out.key;
+
+        if (form.logoUrl && form.logoUrl !== out.key) {
+          deletesAfterSave.push(form.logoUrl);
+        }
+      }
+
+      // portfolio upload
+      if ((form.portfolioFiles?.length || 0) > 0) {
+        const out = await uploadMany(studio.id, form.portfolioFiles, token);
+        const newKeys = out.keys || [];
+        nextPortfolioKeys = [...nextPortfolioKeys, ...newKeys].slice(
+          0,
+          MAX_PORTFOLIO,
+        );
+      }
+
+      // ✅ 1) спочатку оновлюємо БД
       await updateStudio({
         name: form.name.trim(),
         category: form.category.trim(),
@@ -612,10 +782,39 @@ useEffect(() => {
         street: form.street.trim(),
         building: form.building.trim(),
         apartment: form.apartment.trim(),
-        coverUrl: form.coverUrl || "",
-        logoUrl: form.logoUrl || "",
-        portfolioUrls: form.portfolioUrls || [],
+        coverUrl: nextCoverKey,
+        logoUrl: nextLogoKey,
+        portfolioUrls: nextPortfolioKeys,
       });
+
+      // ✅ 2) чистимо локальні файли і pendingDeletes
+      setForm((p) => ({
+        ...p,
+        coverUrl: nextCoverKey,
+        logoUrl: nextLogoKey,
+        portfolioUrls: nextPortfolioKeys,
+        coverFile: null,
+        logoFile: null,
+        portfolioFiles: [],
+      }));
+
+      setPendingDeletes([]); // важливо!
+
+      // ✅ 3) і ТІЛЬКИ ТЕПЕР видаляємо з R2 (якщо щось є)
+      const uniq = Array.from(new Set(deletesAfterSave)).filter(Boolean);
+      if (uniq.length) {
+        // якщо хочеш без падіння save при delete-помилці:
+        try {
+          await deleteManyFromR2(uniq);
+        } catch (err) {
+          console.error(err);
+          showToast({
+            type: "error",
+            title: "Збережено, але…",
+            text: "Не всі старі файли вдалося видалити з Cloudflare.",
+          });
+        }
+      }
 
       showToast({
         type: "success",
@@ -633,7 +832,8 @@ useEffect(() => {
       setSaving(false);
     }
   }
-  const headerTriggerRef = useRef(null);
+
+    const headerTriggerRef = useRef(null);
   const [showTopSave, setShowTopSave] = useState(false);
   const floatingVisible = showTopSave || hasPendingChanges;
   useEffect(() => {
@@ -732,11 +932,11 @@ useEffect(() => {
     setHighlightTone(tone);
 
     const nextTab = resolveTabByKey(key);
-    setTab(nextTab);
+setTabUrl(nextTab);
 
     // ✅ address = підсвітити всі 4 поля, без highlightId
     if (key === "portfolio") {
-      setTab("links");
+      setTabUrl("links");
 
       requestAnimationFrame(() => {
         setTimeout(() => {
@@ -755,7 +955,7 @@ useEffect(() => {
       return;
     }
     if (key === "coverUrl") {
-      setTab("profile");
+      setTabUrl("profile");
       requestAnimationFrame(() => {
         document.getElementById("studio-field-coverUrl")?.scrollIntoView({
           behavior: "smooth",
@@ -768,7 +968,7 @@ useEffect(() => {
     }
 
     if (key === "logoUrl") {
-      setTab("profile");
+  setTabUrl("profile");
       requestAnimationFrame(() => {
         document.getElementById("studio-field-logoUrl")?.scrollIntoView({
           behavior: "smooth",
@@ -847,6 +1047,24 @@ useEffect(() => {
     openLogoPicker();
   }
 
+  const portfolioItems = useMemo(() => {
+    const remote = (form.portfolioUrls || []).map((k) => ({
+      type: "remote",
+      src: toPublicUrl(k),
+      key: k,
+      value: k,
+    }));
+
+    const local = (portfolioPreviewUrls || []).map((url, i) => ({
+      type: "local",
+      src: url,
+      key: `local-${i}`,
+      value: form.portfolioFiles?.[i], // File
+    }));
+
+    return [...remote, ...local].slice(0, MAX_PORTFOLIO);
+  }, [form.portfolioUrls, form.portfolioFiles, portfolioPreviewUrls]);
+
   return (
     <div className="mx-auto max-w-6xl min-h-[100svh] pb-10 md:pb-0">
       <input
@@ -888,7 +1106,7 @@ useEffect(() => {
             <button
               key={t.id}
               type="button"
-              onClick={() => setTab(t.id)}
+              onClick={() => setTabUrl(t.id)}
               className={[
                 "whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold transition",
                 tab === t.id
@@ -923,10 +1141,13 @@ useEffect(() => {
                     className="h-full w-full"
                   >
                     <img
-                      src={toPublicUrl(form.coverUrl)}
+                      src={coverSrc}
                       alt="Обкладинка"
                       className="h-full w-full object-cover"
-                      onError={(e) => (e.currentTarget.style.display = "none")}
+                      onError={(e) => {
+                        if (!coverPreviewUrl)
+                          e.currentTarget.style.display = "none";
+                      }}
                     />
                   </button>
                 ) : (
@@ -945,6 +1166,7 @@ useEffect(() => {
                 {/* ✅ readability overlay */}
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/60 via-black/25 to-transparent" />
                 {/* ❌ DELETE COVER */}
+
                 {hasCover && (
                   <button
                     type="button"
@@ -992,7 +1214,7 @@ useEffect(() => {
                     >
                       {hasLogo ? (
                         <img
-                          src={toPublicUrl(form.logoUrl)}
+                          src={logoSrc}
                           alt="Лого"
                           className="h-full w-full object-cover"
                           onError={(e) =>
@@ -1041,14 +1263,15 @@ useEffect(() => {
                     )}
                   </div>
 
-<div className="min-w-0 rounded-xl border border-gray-200 bg-white px-3 py-2 flex flex-col justify-end min-h-[44px]">                    {/* Назва студії — максимум 2 рядки */}
+                  <div className="min-w-0 rounded-xl border border-gray-200 bg-white px-3 py-2 flex flex-col justify-end min-h-[44px]">
+                    {" "}
+                    {/* Назва студії — максимум 2 рядки */}
                     <p
                       className="w-full min-w-0 text-sm sm:text-base font-extrabold text-gray-900 leading-5 line-clamp-2 break-words"
                       title={form.name.trim() ? form.name : "Назва студії"}
                     >
                       {form.name.trim() ? form.name : "Назва студії"}
                     </p>
-
                     {/* Категорія + місто — максимум 2 рядки */}
                     <p
                       className="w-full min-w-0 text-xs sm:text-sm text-gray-600 line-clamp-2 break-words"
@@ -1164,30 +1387,30 @@ useEffect(() => {
                   <div className="space-y-3">
                     {/* Toggle row */}
                     <div className="flex items-center justify-center">
-<button
-  type="button"
-  onClick={() => setChecklistOpen((v) => !v)}
-  className="ui-button-one flex items-center gap-2"
->
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={`h-4 w-4 transition-transform duration-300 ${
-      checklistOpen ? "rotate-180" : ""
-    }`}
-  >
-    <polyline points="6 9 12 15 18 9" />
-  </svg>
+                      <button
+                        type="button"
+                        onClick={() => setChecklistOpen((v) => !v)}
+                        className="ui-button-one flex items-center gap-2"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className={`h-4 w-4 transition-transform duration-300 ${
+                            checklistOpen ? "rotate-180" : ""
+                          }`}
+                        >
+                          <polyline points="6 9 12 15 18 9" />
+                        </svg>
 
-  {checklistOpen
-    ? "Сховати кроки заповнення"
-    : "Показати кроки заповнення"}
-</button>
+                        {checklistOpen
+                          ? "Сховати кроки заповнення"
+                          : "Показати кроки заповнення"}
+                      </button>
                     </div>
 
                     {/* Animated container */}
@@ -1443,7 +1666,7 @@ useEffect(() => {
                     <Field
                       label="Портфоліо (фото робіт)"
                       error={errors.portfolioUrls}
-                      hint={`${form.portfolioUrls?.length || 0}/${MAX_PORTFOLIO}`}
+                      hint={`${portfolioCount}/${MAX_PORTFOLIO}`}
                     >
                       {/* actions */}
                       <div className="flex flex-wrap items-center gap-2">
@@ -1466,14 +1689,12 @@ useEffect(() => {
                           />
                         </label>
 
-                        {Boolean(form.portfolioUrls?.length) && (
+                        {portfolioCount > 0 && (
                           <button
                             type="button"
                             onClick={clearPortfolio}
                             disabled={
-                              !form.portfolioUrls?.length ||
-                              clearingPortfolio ||
-                              saving
+                              !portfolioCount || clearingPortfolio || saving
                             }
                             className={[
                               "ui-button-danger",
@@ -1489,58 +1710,55 @@ useEffect(() => {
 
                       {/* Grid preview */}
                       <div className="mt-4">
-                        {!form.portfolioUrls?.length ? (
+                        {!hasAnyPortfolio ? (
                           <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
                             Додай фото робіт — це найсильніший доказ якості.
                           </div>
                         ) : (
                           <div
                             className="
-          grid gap-4
-          grid-cols-2
-          sm:grid-cols-3
-          lg:grid-cols-[repeat(auto-fill,minmax(180px,1fr))]
-        "
+                                      grid gap-4
+                                      grid-cols-2
+                                      sm:grid-cols-3
+                                      lg:grid-cols-[repeat(auto-fill,minmax(180px,1fr))]
+                                    "
                           >
-                            {form.portfolioUrls.map((src, idx) => {
+                            {portfolioItems.map((item, idx) => {
+                              const src = item.src;
                               const isFirst = idx === 0;
-                              const isLast =
-                                idx === form.portfolioUrls.length - 1;
+                              const isLast = idx === portfolioItems.length - 1;
 
                               return (
-                                <div key={`${src}-${idx}`} className="relative">
-                                  {/* image */}
+                                <div key={item.key} className="relative">
                                   <button
                                     type="button"
                                     onClick={() =>
                                       setPortfolioPreview({ open: true, src })
                                     }
                                     className="
-                  group block w-full overflow-hidden rounded-2xl
-                  border border-gray-200 bg-gray-100
-                  hover:shadow-md transition
-                "
+          group block w-full overflow-hidden rounded-2xl
+          border border-gray-200 bg-gray-100
+          hover:shadow-md transition
+        "
                                     style={{ aspectRatio: "1 / 1" }}
                                   >
                                     <img
-                                      src={toPublicUrl(src)}
+                                      src={src}
                                       alt={`work ${idx + 1}`}
                                       className="h-full w-full object-cover"
                                     />
 
                                     {/* bottom toolbar */}
                                     <div className="pointer-events-none absolute inset-x-0 bottom-0 p-2">
-                                      {/* gradient overlay */}
                                       <div className="absolute inset-x-0 bottom-0 h-16 rounded-b-2xl bg-gradient-to-t from-black/60 via-black/25 to-transparent" />
 
                                       <div className="pointer-events-auto relative flex items-center justify-between">
-                                        {/* left/right */}
                                         <div className="flex items-center gap-2">
                                           <button
                                             type="button"
                                             onClick={(e) => {
                                               e.stopPropagation();
-                                              movePortfolio(idx, idx - 1);
+                                              movePortfolioMixed(idx, idx - 1);
                                             }}
                                             disabled={isFirst}
                                             className="
@@ -1575,7 +1793,7 @@ useEffect(() => {
                                             type="button"
                                             onClick={(e) => {
                                               e.stopPropagation();
-                                              movePortfolio(idx, idx + 1);
+                                              movePortfolioMixed(idx, idx + 1);
                                             }}
                                             disabled={isLast}
                                             className="
@@ -1612,16 +1830,16 @@ useEffect(() => {
                                           type="button"
                                           onClick={(e) => {
                                             e.stopPropagation();
-                                            removePortfolio(idx);
+                                            removePortfolioMixed(idx);
                                           }}
                                           className="
-                        flex h-9 w-9 items-center justify-center rounded-full
-                        bg-white/90 text-gray-900
-                        backdrop-blur-md
-                        shadow-sm ring-1 ring-black/5
-                        hover:bg-red-50 hover:text-red-600 hover:ring-red-200 hover:shadow-md
-                        active:scale-95 transition-all
-                      "
+                                              flex h-9 w-9 items-center justify-center rounded-full
+                                              bg-white/90 text-gray-900
+                                              backdrop-blur-md
+                                              shadow-sm ring-1 ring-black/5
+                                              hover:bg-red-50 hover:text-red-600 hover:ring-red-200 hover:shadow-md
+                                              active:scale-95 transition-all
+                                            "
                                           title="Видалити"
                                           aria-label="Remove"
                                         >
@@ -1663,107 +1881,136 @@ useEffect(() => {
         </div>
       </div>
 
-       {/* Professional Toast */}
+      {/* Professional Toast */}
+<div
+  className={[
+    "fixed z-[90] left-1/2 top-[calc(12px+env(safe-area-inset-top))] -translate-x-1/2 md:left-4 md:bottom-6 md:top-auto md:translate-x-0",
+    "w-[calc(100%-2rem)] max-w-[420px] md:w-auto md:min-w-[260px] md:max-w-[340px]",
+    "transition-all duration-300",
+    toast.open
+      ? "opacity-100 translate-y-0"
+      : "pointer-events-none opacity-0 -translate-y-3",
+  ].join(" ")}
+  role="status"
+  aria-live="polite"
+>
+  <div
+    className={[
+      "relative overflow-hidden rounded-2xl border bg-white",
+      "shadow-[0_12px_30px_rgba(0,0,0,0.16)]",
+      toast.type === "success"
+        ? "border-emerald-300"
+        : toast.type === "warning"
+        ? "border-amber-300"
+        : "border-red-300",
+    ].join(" ")}
+  >
+    {/* Glow */}
+    <div
+      className={[
+        "pointer-events-none absolute -inset-10 blur-2xl opacity-30",
+        toast.type === "success"
+          ? "bg-emerald-300"
+          : toast.type === "warning"
+          ? "bg-amber-300"
+          : "bg-red-300",
+      ].join(" ")}
+    />
+
+    {/* Left accent */}
+    <div
+      className={[
+        "absolute left-0 top-0 h-full w-1.5",
+        toast.type === "success"
+          ? "bg-emerald-500"
+          : toast.type === "warning"
+          ? "bg-amber-500"
+          : "bg-red-500",
+      ].join(" ")}
+    />
+
+    <div className="relative flex items-start gap-3 p-4 pl-5">
+      {/* Icon bubble */}
       <div
         className={[
-          // ✅ Mobile: top-center
-          "fixed z-[90] left-1/2 top-[calc(12px+env(safe-area-inset-top))] -translate-x-1/2 md:left-4 md:bottom-6 md:top-auto md:translate-x-0",
-          "w-[calc(100%-2rem)] max-w-[420px] md:w-auto md:min-w-[260px] md:max-w-[340px]",
-          "transition-all duration-300",
-          toast.open
-            ? "opacity-100 translate-y-0"
-            : "pointer-events-none opacity-0 -translate-y-3",
+          "flex h-10 w-10 items-center justify-center rounded-xl",
+          "shadow-[0_6px_14px_rgba(0,0,0,0.12)]",
+          "animate-[toastPop_260ms_ease-out]",
+          toast.type === "success"
+            ? "bg-emerald-600 text-white"
+            : toast.type === "warning"
+            ? "bg-amber-500 text-white"
+            : "bg-red-600 text-white",
         ].join(" ")}
-        role="status"
-        aria-live="polite"
+        aria-hidden="true"
       >
-        <div
-          className={[
-            "relative overflow-hidden rounded-2xl border bg-white",
-            "shadow-[0_12px_30px_rgba(0,0,0,0.16)]",
-            toast.type === "success" ? "border-emerald-300" : "border-red-300",
-          ].join(" ")}
-        >
-          {/* Glow */}
-          <div
-            className={[
-              "pointer-events-none absolute -inset-10 blur-2xl opacity-30",
-              toast.type === "success" ? "bg-emerald-300" : "bg-red-300",
-            ].join(" ")}
-          />
-
-          {/* Left accent */}
-          <div
-            className={[
-              "absolute left-0 top-0 h-full w-1.5",
-              toast.type === "success" ? "bg-emerald-500" : "bg-red-500",
-            ].join(" ")}
-          />
-
-          <div className="relative flex items-start gap-3 p-4 pl-5">
-            {/* Icon bubble */}
-            <div
-              className={[
-                "flex h-10 w-10 items-center justify-center rounded-xl",
-                "shadow-[0_6px_14px_rgba(0,0,0,0.12)]",
-                "animate-[toastPop_260ms_ease-out]",
-                toast.type === "success"
-                  ? "bg-emerald-600 text-white"
-                  : "bg-red-600 text-white",
-              ].join(" ")}
-              aria-hidden="true"
-            >
-              {toast.type === "success" ? (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M20 6L9 17l-5-5"
-                    stroke="#ffffff"
-                    strokeWidth="2.6"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              ) : (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M12 9v5"
-                    stroke="currentColor"
-                    strokeWidth="2.6"
-                    strokeLinecap="round"
-                  />
-                  <path
-                    d="M12 17h.01"
-                    stroke="currentColor"
-                    strokeWidth="3.6"
-                    strokeLinecap="round"
-                  />
-                </svg>
-              )}
-            </div>
-
-            {/* Text */}
-            <div className="min-w-0">
-              <p className="text-sm font-extrabold text-gray-900 leading-5">
-                {toast.title ||
-                  (toast.type === "success" ? "Збережено" : "Помилка")}
-              </p>
-              <p className="mt-1 text-sm text-gray-700 leading-5">
-                {toast.text}
-              </p>
-            </div>
-          </div>
-
-          {/* Progress bar */}
-          <div className="h-[4px] w-full bg-gray-100">
-            <div
-              className={[
-                "h-full w-full origin-left animate-[toastbar_3.2s_linear_forwards]",
-                toast.type === "success" ? "bg-emerald-500" : "bg-red-500",
-              ].join(" ")}
+        {toast.type === "success" && (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M20 6L9 17l-5-5"
+              stroke="#ffffff"
+              strokeWidth="2.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             />
-          </div>
-        </div>
+          </svg>
+        )}
+
+        {toast.type === "warning" && (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M12 9v4"
+              stroke="currentColor"
+              strokeWidth="2.6"
+              strokeLinecap="round"
+            />
+            <path
+              d="M12 16h.01"
+              stroke="currentColor"
+              strokeWidth="3.6"
+              strokeLinecap="round"
+            />
+          </svg>
+        )}
+
+        {toast.type === "error" && (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M6 6l12 12M18 6l-12 12"
+              stroke="currentColor"
+              strokeWidth="2.6"
+              strokeLinecap="round"
+            />
+          </svg>
+        )}
       </div>
+
+      {/* Text */}
+      <div className="min-w-0">
+        <p className="text-sm font-extrabold text-gray-900 leading-5">
+          {toast.title}
+        </p>
+        <p className="mt-1 text-sm text-gray-700 leading-5">
+          {toast.text}
+        </p>
+      </div>
+    </div>
+
+    {/* Progress bar */}
+    <div className="h-[4px] w-full bg-gray-100">
+      <div
+        className={[
+          "h-full w-full origin-left animate-[toastbar_3.2s_linear_forwards]",
+          toast.type === "success"
+            ? "bg-emerald-500"
+            : toast.type === "warning"
+            ? "bg-amber-500"
+            : "bg-red-500",
+        ].join(" ")}
+      />
+    </div>
+  </div>
+</div>
 
       {portfolioPreview.open && (
         <div
@@ -1772,7 +2019,7 @@ useEffect(() => {
         >
           <div className="max-w-3xl w-full">
             <img
-              src={toPublicUrl(portfolioPreview.src)}
+              src={portfolioPreview.src}
               alt="Portfolio preview"
               className="w-full max-h-[80dvh] object-contain rounded-2xl bg-black"
               onClick={(e) => e.stopPropagation()}
@@ -1836,9 +2083,7 @@ useEffect(() => {
               disabled={!canSave}
               className={[
                 "w-1/2 rounded-2xl px-4 py-3 text-sm font-extrabold transition active:scale-[0.99]",
-                canSave
-                  ? "ui-button-primary"
-                  : "ui-button-primary",
+                canSave ? "ui-button-primary" : "ui-button-primary",
               ].join(" ")}
             >
               {saving ? "Збереження..." : "Зберегти"}

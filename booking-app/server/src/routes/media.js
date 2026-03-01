@@ -77,6 +77,41 @@ router.delete(
   }
 );
 
+// ✅ DELETE /media/studio/:studioId/master-photo
+router.delete(
+  "/studio/:studioId/master-photo",
+  requireAuth,
+  requireOwner,
+  async (req, res) => {
+    try {
+      const { studioId } = req.params;
+      const { key } = req.body || {};
+
+      if (!key) return res.status(400).json({ message: "Key is required" });
+
+      // 🔒 Захист: видаляємо тільки файли цієї студії (важливо!)
+      // Підлаштуй під свій формат makeStudioKey
+      // Напр. якщо ключі виглядають як: studios/<studioId>/masters/...
+      const mustStart = `studios/${studioId}/masters/`;
+      if (!String(key).startsWith(mustStart)) {
+        return res.status(403).json({ message: "Forbidden key" });
+      }
+
+      await r2.send(
+        new DeleteObjectCommand({
+          Bucket: process.env.R2_BUCKET,
+          Key: key,
+        })
+      );
+
+      res.json({ ok: true });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ message: e?.message || "Delete failed" });
+    }
+  }
+);
+
 router.post(
   "/studio/:studioId/services",
   requireAuth,
