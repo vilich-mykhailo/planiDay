@@ -1,3 +1,4 @@
+// index.js //
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
@@ -9,7 +10,7 @@ import { clientRouter } from "./routes/client.routes.js";
 import studioRoutes from "./routes/studio.js";
 import mediaRoutes from "./routes/media.js";
 import scheduleRoutes from "./routes/schedule.routes.js";
-
+import bookingsRoutes from "./routes/bookings.js";
 const app = express();
 
 const allowedOrigins = new Set([
@@ -32,6 +33,8 @@ app.options("*", cors());
 app.use(express.json({ limit: "10mb" }));
 
 app.get("/health", (req, res) => res.json({ ok: true }));
+
+app.use("/bookings", bookingsRoutes);
 
 app.use("/auth", authRouter);
 app.use("/owner", ownerRouter);

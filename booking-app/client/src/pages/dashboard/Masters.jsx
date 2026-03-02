@@ -1,3 +1,4 @@
+// Masters.jsx //
 import { useEffect, useState } from "react";
 import { useStudio } from "../../context/studio/useStudio";
 
@@ -152,7 +153,7 @@ export default function Masters() {
 
   const [mastersLocal, setMastersLocal] = useState([]);
   const [loading, setLoading] = useState(false);
-const [adding, setAdding] = useState(false);
+  const [adding, setAdding] = useState(false);
 
   async function refreshMasters() {
     if (!studio?.id) return;
@@ -175,33 +176,33 @@ const [adding, setAdding] = useState(false);
       setLoading(false);
     }
   }
-async function deleteMasterPhoto(studioId, key) {
-  if (!key) return;
-  const token = localStorage.getItem("token");
+  async function deleteMasterPhoto(studioId, key) {
+    if (!key) return;
+    const token = localStorage.getItem("token");
 
-  const res = await fetch(
-    `${import.meta.env.VITE_API_URL}/media/studio/${studioId}/master-photo`,
-    {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
+    const res = await fetch(
+      `${import.meta.env.VITE_API_URL}/media/studio/${studioId}/master-photo`,
+      {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ key }),
       },
-      body: JSON.stringify({ key }),
+    );
+
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      throw new Error(data?.message || `Delete failed (${res.status})`);
     }
-  );
-
-  const data = await res.json().catch(() => null);
-  if (!res.ok) {
-    throw new Error(data?.message || `Delete failed (${res.status})`);
+    return data;
   }
-  return data;
-}
 
-const [editOriginal, setEditOriginal] = useState({
-  photoKey: null,
-  photoUrl: "",
-});
+  const [editOriginal, setEditOriginal] = useState({
+    photoKey: null,
+    photoUrl: "",
+  });
 
   useEffect(() => {
     refreshMasters();
@@ -211,190 +212,261 @@ const [editOriginal, setEditOriginal] = useState({
   const masters = mastersLocal;
 
   // add form
-const [form, setForm] = useState({
-  name: "",
-  role: "",
-  bio: "",
-  photoUrl: "",
-  photoKey: null,
-  photoFile: null, // ✅ нове
-});
-
-  // edit modal
-  const [editMaster, setEditMaster] = useState(null); // master object
-  const [editDraft, setEditDraft] = useState({
-    id: "",
+  const [form, setForm] = useState({
     name: "",
     role: "",
     bio: "",
     photoUrl: "",
     photoKey: null,
+    photoFile: null, // ✅ нове
   });
+
+  // edit modal
+  const [editMaster, setEditMaster] = useState(null); // master object
+const [editDraft, setEditDraft] = useState({
+  id: "",
+  name: "",
+  role: "",
+  bio: "",
+  photoUrl: "",
+  photoKey: null,
+  photoFile: null, // ✅ додали
+});
 
   function handleChange(e) {
     setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
   }
 
-async function handlePickPhoto(e) {
-  const file = e.target.files?.[0];
-  if (!file) return;
+  async function handlePickPhoto(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-  // локальне превʼю
-  const localUrl = URL.createObjectURL(file);
+    // локальне превʼю
+    const localUrl = URL.createObjectURL(file);
 
-  setForm((p) => ({
-    ...p,
-    photoUrl: localUrl,  // ✅ показуємо картинку в UI
-    photoFile: file,     // ✅ зберігаємо сам файл для аплоаду пізніше
-    photoKey: null,      // ще нема
-  }));
+    setForm((p) => ({
+      ...p,
+      photoUrl: localUrl, // ✅ показуємо картинку в UI
+      photoFile: file, // ✅ зберігаємо сам файл для аплоаду пізніше
+      photoKey: null, // ще нема
+    }));
 
-  setPhotoBroken(false);
-  e.target.value = "";
-}
-
-function removePhoto() {
-  setPhotoBroken(false);
-
-  setForm((p) => {
-    if (p.photoUrl?.startsWith("blob:")) {
-      URL.revokeObjectURL(p.photoUrl);
-    }
-    return { ...p, photoUrl: "", photoKey: null, photoFile: null };
-  });
-}
-
-async function addMaster(e) {
-  e.preventDefault();
-  const name = String(form.name || "").trim();
-  if (!name || !studio?.id || adding) return;
-
-  setAdding(true);
-  try {
-    let photoKey = null;
-    let photoUrl = "";
-
-    // ✅ аплоад тільки тут
-    if (form.photoFile) {
-      const uploaded = await uploadMasterPhoto(studio.id, form.photoFile);
-      photoKey = uploaded.key;
-      photoUrl = uploaded.url;
-    }
-
-    const token = localStorage.getItem("token");
-    const res = await fetch(
-      `${import.meta.env.VITE_API_URL}/studio/${studio.id}/masters`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          name,
-          role: form.role,
-          bio: form.bio,
-          photoUrl,   // ✅ вже з Cloudflare
-          photoKey,   // ✅ key з R2
-        }),
-      }
-    );
-
-    const data = await res.json().catch(() => null);
-
-    if (!res.ok) {
-      console.error("Add master failed:", res.status, data);
-
-      // ⚠️ якщо майстер НЕ створився, а фото вже залилось в R2 — треба прибрати
-      if (photoKey) {
-        try {
-          await deleteMasterPhoto(studio.id, photoKey);
-        } catch (e) {
-          console.warn("Rollback delete failed:", e);
-        }
-      }
-
-      alert(data?.message || `Add master failed (${res.status})`);
-      return;
-    }
-
-    if (data?.master) setMastersLocal((prev) => [data.master, ...prev]);
-    else await refreshMasters();
-
-    // ✅ скидаємо форму (і ревокнемо blob)
-    if (form.photoUrl?.startsWith("blob:")) URL.revokeObjectURL(form.photoUrl);
-
-    setForm({
-      name: "",
-      role: "",
-      bio: "",
-      photoUrl: "",
-      photoKey: null,
-      photoFile: null,
-    });
     setPhotoBroken(false);
-  } finally {
-    setAdding(false);
+    e.target.value = "";
   }
-}
 
-  async function deleteMaster(id) {
+  function removePhoto() {
+    setPhotoBroken(false);
+
+    setForm((p) => {
+      if (p.photoUrl?.startsWith("blob:")) {
+        URL.revokeObjectURL(p.photoUrl);
+      }
+      return { ...p, photoUrl: "", photoKey: null, photoFile: null };
+    });
+  }
+
+  async function addMaster(e) {
+    e.preventDefault();
+    const name = String(form.name || "").trim();
+    if (!name || !studio?.id || adding) return;
+
+    setAdding(true);
+    try {
+      let photoKey = null;
+      let photoUrl = "";
+
+      // ✅ аплоад тільки тут
+      if (form.photoFile) {
+        const uploaded = await uploadMasterPhoto(studio.id, form.photoFile);
+        photoKey = uploaded.key;
+        photoUrl = uploaded.url;
+      }
+
+      const token = localStorage.getItem("token");
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/studio/${studio.id}/masters`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            name,
+            role: form.role,
+            bio: form.bio,
+            photoUrl, // ✅ вже з Cloudflare
+            photoKey, // ✅ key з R2
+          }),
+        },
+      );
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        console.error("Add master failed:", res.status, data);
+
+        // ⚠️ якщо майстер НЕ створився, а фото вже залилось в R2 — треба прибрати
+        if (photoKey) {
+          try {
+            await deleteMasterPhoto(studio.id, photoKey);
+          } catch (e) {
+            console.warn("Rollback delete failed:", e);
+          }
+        }
+
+        alert(data?.message || `Add master failed (${res.status})`);
+        return;
+      }
+
+      if (data?.master) setMastersLocal((prev) => [data.master, ...prev]);
+      else await refreshMasters();
+
+      // ✅ скидаємо форму (і ревокнемо blob)
+      if (form.photoUrl?.startsWith("blob:"))
+        URL.revokeObjectURL(form.photoUrl);
+
+      setForm({
+        name: "",
+        role: "",
+        bio: "",
+        photoUrl: "",
+        photoKey: null,
+        photoFile: null,
+      });
+      setPhotoBroken(false);
+    } finally {
+      setAdding(false);
+    }
+  }
+
+  async function deleteMaster(master) {
+    if (!studio?.id) return;
+
     const token = localStorage.getItem("token");
+    const id = master?.id;
+    const key = master?.photoKey;
 
-    await fetch(`${import.meta.env.VITE_API_URL}/studio/masters/${id}`, {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+    try {
+      // 1) спочатку видаляємо майстра з БД
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/studio/masters/${id}`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        alert(data?.message || `Delete master failed (${res.status})`);
+        return;
+      }
+
+      // 2) після успіху — видаляємо фото з Cloudflare (якщо є key)
+      if (key) {
+        try {
+          await deleteMasterPhoto(studio.id, key);
+        } catch (e) {
+          console.warn("Photo delete from R2 failed:", e);
+          // можна показати toast, але майстра вже видалено — не блокуємо
+        }
+        
+      }
+
+      // локально прибираємо майстра (або refreshMasters)
+      setMastersLocal((prev) => prev.filter((m) => m.id !== id));
+    } catch (e) {
+      console.error(e);
+      alert("Помилка при видаленні майстра");
+    }
+  }
+
+  function openEdit(master) {
+    setEditMaster(master);
+
+    setEditOriginal({
+      photoKey: master.photoKey ?? null,
+      photoUrl: master.photoUrl || "",
     });
 
-    refreshMasters();
+setEditDraft({
+  id: master.id,
+  name: master.name || "",
+  role: master.role || "",
+  bio: master.bio || "",
+  photoUrl: master.photoUrl || "",
+  photoKey: master.photoKey ?? null,
+  photoFile: null, // ✅
+});
   }
 
-function openEdit(master) {
-  setEditMaster(master);
+async function closeEdit() {
+  // якщо в цьому редагуванні ми встигли залити НОВЕ фото — прибираємо його при Cancel
+  const prevKey = editOriginal.photoKey;
+  const draftKey = editDraft.photoKey;
 
-  setEditOriginal({
-    photoKey: master.photoKey ?? null,
-    photoUrl: master.photoUrl || "",
-  });
+  const uploadedNewButCancelled =
+    Boolean(draftKey) && draftKey !== prevKey;
 
-  setEditDraft({
-    id: master.id,
-    name: master.name || "",
-    role: master.role || "",
-    bio: master.bio || "",
-    photoUrl: master.photoUrl || "",
-    photoKey: master.photoKey ?? null,
-  });
-}
+  if (uploadedNewButCancelled) {
+    try {
+      await deleteMasterPhoto(studio.id, draftKey);
+    } catch (e) {
+      console.warn("Cancel cleanup delete failed:", e);
+    }
+  }
 
-function closeEdit() {
   setEditMaster(null);
   setEditDraft({ id: "", name: "", role: "", bio: "", photoUrl: "", photoKey: null });
   setEditOriginal({ photoKey: null, photoUrl: "" });
 }
 
-  async function editPickPhoto(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+async function editPickPhoto(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
 
-    const { key, url } = await uploadMasterPhoto(studio.id, file);
+  const localUrl = URL.createObjectURL(file);
 
-    setEditDraft((p) => ({ ...p, photoUrl: url, photoKey: key }));
-    e.target.value = "";
-  }
+  setEditDraft((p) => {
+    // прибираємо попередній blob, якщо був
+    if (p.photoUrl?.startsWith("blob:")) URL.revokeObjectURL(p.photoUrl);
+
+    return {
+      ...p,
+      photoUrl: localUrl, // ✅ показуємо в UI
+      photoFile: file,    // ✅ файл для аплоаду на Save
+      // photoKey поки не чіпаємо — він оновиться після upload на Save
+    };
+  });
+
+  e.target.value = "";
+}
 
 async function saveEdit() {
   const name = String(editDraft.name || "").trim();
-  if (!name) return;
+  if (!name || !studio?.id) return;
 
   const token = localStorage.getItem("token");
 
-  const prevKey = editOriginal.photoKey;
-  const nextKey = editDraft.photoKey;
+  const prevKey = editOriginal.photoKey; // що було ДО редагування
 
-  const photoChanged = Boolean(prevKey) && prevKey !== nextKey;
+  let nextKey = editDraft.photoKey ?? null;
+  let nextUrl = editDraft.photoUrl || "";
+
+  // ✅ якщо користувач вибрав новий файл — аплоадимо в R2 зараз
+  if (editDraft.photoFile) {
+    const uploaded = await uploadMasterPhoto(studio.id, editDraft.photoFile);
+    nextKey = uploaded.key;
+    nextUrl = uploaded.url;
+  }
+
+  // якщо фото прибрали -> nextKey буде null, nextUrl ""
+  if (!nextUrl) nextUrl = "";
+  if (!nextKey) nextKey = null;
+
+  const shouldDeletePrev = Boolean(prevKey) && prevKey !== nextKey;
 
   const res = await fetch(
     `${import.meta.env.VITE_API_URL}/studio/masters/${editDraft.id}`,
@@ -408,28 +480,38 @@ async function saveEdit() {
         name,
         role: editDraft.role,
         bio: editDraft.bio,
-        photoUrl: editDraft.photoUrl,
-        photoKey: editDraft.photoKey,
+        photoUrl: nextUrl,
+        photoKey: nextKey,
       }),
     }
   );
 
   const data = await res.json().catch(() => null);
+
+  // ❌ якщо PATCH не вдався — видаляємо щойно залите фото (ролбек)
   if (!res.ok) {
+    if (editDraft.photoFile && nextKey) {
+      try {
+        await deleteMasterPhoto(studio.id, nextKey);
+      } catch (e) {
+        console.warn("Rollback delete failed:", e);
+      }
+    }
     alert(data?.message || `Update failed (${res.status})`);
     return;
   }
 
-  // ✅ видаляємо старий файл лише після успішного збереження в БД
-  if (photoChanged) {
+  // ✅ після успішного PATCH — видаляємо старе фото
+  if (shouldDeletePrev) {
     try {
       await deleteMasterPhoto(studio.id, prevKey);
     } catch (e) {
-      // не блокуємо користувача, але логнемо/покажемо
       console.warn("Old photo delete failed:", e);
-      // optional: toast "не вдалося видалити старе фото"
     }
   }
+
+  // прибираємо blob якщо був
+  if (editDraft.photoUrl?.startsWith("blob:")) URL.revokeObjectURL(editDraft.photoUrl);
 
   closeEdit();
   await refreshMasters();
@@ -499,9 +581,7 @@ async function saveEdit() {
                 </label>
 
                 {form.photoUrl && (
-                  <Button 
-                  className="ui-button-danger"
-                  onClick={removePhoto}>
+                  <Button className="ui-button-danger" onClick={removePhoto}>
                     Видалити
                   </Button>
                 )}
@@ -558,13 +638,13 @@ async function saveEdit() {
           </div>
 
           <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-<button
-  type="submit"
-  disabled={adding || !String(form.name || "").trim()}
-  className="ui-button-primary"
->
-  {adding ? "Додаємо..." : "Додати майстра"}
-</button>
+            <button
+              type="submit"
+              disabled={adding || !String(form.name || "").trim()}
+              className="ui-button-primary"
+            >
+              {adding ? "Додаємо..." : "Додати майстра"}
+            </button>
 
             <p className="text-sm text-gray-600">
               Усього:{" "}
@@ -639,7 +719,7 @@ async function saveEdit() {
                     <Button
                       className="ui-button-danger"
                       variant="danger"
-                      onClick={() => deleteMaster(m.id)}
+                      onClick={() => deleteMaster(m)}
                     >
                       Видалити
                     </Button>
@@ -666,10 +746,7 @@ async function saveEdit() {
             >
               Зберегти
             </Button>
-            <Button 
-            onClick={closeEdit}
-            className="ui-button-cancel"
-            >
+            <Button onClick={closeEdit} className="ui-button-cancel">
               Скасувати
             </Button>
           </div>
@@ -693,9 +770,7 @@ async function saveEdit() {
 
           <div className="flex flex-wrap items-center gap-2">
             <label className="cursor-pointer">
-              <span className="ui-button-secondary">
-                Змінити фото
-              </span>
+              <span className="ui-button-secondary">Змінити фото</span>
               <input
                 type="file"
                 accept="image/*"
@@ -704,14 +779,19 @@ async function saveEdit() {
               />
             </label>
 
-            {editDraft.photoUrl && (
-              <Button
-                className="ui-button-danger"
-                onClick={() => setEditDraft((p) => ({ ...p, photoUrl: "" }))}
-              >
-                Прибрати
-              </Button>
-            )}
+{editDraft.photoUrl && (
+  <Button
+    className="ui-button-danger"
+onClick={() =>
+  setEditDraft((p) => {
+    if (p.photoUrl?.startsWith("blob:")) URL.revokeObjectURL(p.photoUrl);
+    return { ...p, photoUrl: "", photoKey: null, photoFile: null };
+  })
+}
+  >
+    Прибрати
+  </Button>
+)}
           </div>
         </div>
 
@@ -727,6 +807,21 @@ async function saveEdit() {
             }
             className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none transition focus:border-black focus:ring-2 focus:ring-black/15"
             placeholder="Напр. Олена Коваль"
+          />
+        </div>
+
+        {/* role */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-900 mb-1">
+            Посада / Спеціалізація
+          </label>
+          <input
+            value={editDraft.role || ""}
+            onChange={(e) =>
+              setEditDraft((p) => ({ ...p, role: e.target.value }))
+            }
+            className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none transition focus:border-black focus:ring-2 focus:ring-black/15"
+            placeholder="Напр. Майстер манікюру / Brow artist"
           />
         </div>
 

@@ -1,6 +1,5 @@
 import { Link, useSearchParams } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
-import { studios } from "../data/studios";
 import AnimatedField from "../components/AnimatedField";
 import AnimatedDropdown from "../components/AnimatedDropdown";
 import FavouriteButton from "../components/FavouriteButton";
@@ -8,6 +7,15 @@ import PremiumBadge from "../components/PremiumBadge";
 
 function safeText(v) {
   return String(v ?? "").trim();
+}
+
+const R2_PUBLIC = import.meta.env.VITE_R2_PUBLIC_BASE_URL;
+
+function toPublicUrl(v) {
+  const s = String(v || "").trim();
+  if (!s) return "";
+  if (/^https?:\/\//i.test(s)) return s; // вже повний
+  return R2_PUBLIC ? `${R2_PUBLIC}/${s}` : s; // key -> url
 }
 
 function normalize(v) {
@@ -118,8 +126,9 @@ function countTokenHits(hayTokens, qTokens) {
 
 export default function Studios() {
   const [searchParams, setSearchParams] = useSearchParams();
-
   // ✅ initial values з URL (тільки 1 раз)
+  const [studios, setStudios] = useState([]);
+const [loading, setLoading] = useState(false);
   const [q, setQ] = useState(() => searchParams.get("q") || "");
   const [city, setCity] = useState(() => searchParams.get("city") || "");
   const [category, setCategory] = useState(
@@ -143,6 +152,40 @@ export default function Studios() {
     sort,
   }));
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  useEffect(() => {
+  let alive = true;
+
+  async function loadStudios() {
+    setLoading(true);
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/client/studios`);
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) throw new Error(data?.message || `Load failed (${res.status})`);
+
+      const list = Array.isArray(data?.studios) ? data.studios : [];
+
+      // ✅ нормалізація під твій UI
+      const normalized = list.map((s) => ({
+        ...s,
+        slug: s.slug || s.id,               // щоб Link працював
+        coverUrl: toPublicUrl(s.coverUrl),  // key -> url
+        logoUrl: toPublicUrl(s.logoUrl),    // key -> url
+      }));
+
+      if (alive) setStudios(normalized);
+    } catch (e) {
+      console.error(e);
+      if (alive) setStudios([]);
+    } finally {
+      if (alive) setLoading(false);
+    }
+  }
+
+  loadStudios();
+  return () => { alive = false; };
+}, []);
 
   // ✅ синхронізація state -> URL
   useEffect(() => {
@@ -177,19 +220,15 @@ export default function Studios() {
   );
 
   // ✅ Options
-  const cities = useMemo(() => {
-    const set = new Set(
-      (studios || []).map((s) => safeText(s.city)).filter(Boolean),
-    );
-    return Array.from(set).sort((a, b) => a.localeCompare(b));
-  }, []);
+const cities = useMemo(() => {
+  const set = new Set((studios || []).map((s) => safeText(s.city)).filter(Boolean));
+  return Array.from(set).sort((a, b) => a.localeCompare(b));
+}, [studios]);
 
-  const categories = useMemo(() => {
-    const set = new Set(
-      (studios || []).map((s) => safeText(s.category)).filter(Boolean),
-    );
-    return Array.from(set).sort((a, b) => a.localeCompare(b));
-  }, []);
+const categories = useMemo(() => {
+  const set = new Set((studios || []).map((s) => safeText(s.category)).filter(Boolean));
+  return Array.from(set).sort((a, b) => a.localeCompare(b));
+}, [studios]);
 
   // ✅ Filtered + Sorted
   const filtered = useMemo(() => {
@@ -287,7 +326,7 @@ export default function Studios() {
     });
 
     return sorted.map((x) => x.s);
-  }, [applied]);
+  }, [applied, studios]);
 
   const activeChips = useMemo(() => {
     const chips = [];
@@ -520,10 +559,16 @@ export default function Studios() {
         </div>
       </section>
       <div className="flex items-center gap-2 text-sm text-gray-600">
-        <span>
-          Знайдено:{" "}
-          <span className="font-semibold text-gray-900">{filtered.length}</span>
-        </span>
+  <span>
+    Знайдено:{" "}
+    <span className="font-semibold text-gray-900">{filtered.length}</span>
+  </span>
+
+  {loading && (
+    <span className="rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-xs">
+      Завантаження...
+    </span>
+  )}
 
         {hasPendingChanges && (
           <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">

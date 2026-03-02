@@ -1,3 +1,4 @@
+// Services.jsx //
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useStudio } from "../../context/studio/useStudio";
 
@@ -174,23 +175,49 @@ async function api(path, { method = "GET", body, token } = {}) {
   return data;
 }
 
+function normalizeService(s) {
+  const mastersArr = Array.isArray(s?.masters) ? s.masters.map(String) : [];
+  const allMasters =
+    s?.allMasters === true || mastersArr.length === 0; // якщо нема списку — вважаємо "всі"
+
+  return {
+    id: s?.id ?? crypto.randomUUID(),
+    name: String(s?.name || "").trim(),
+    duration: Number(s?.duration || 0) || 60,
+    price: Number(s?.price ?? 0) || 0,
+    allMasters,
+    masters: allMasters ? [] : mastersArr,
+  };
+}
+
 export default function Services() {
   const { studio } = useStudio();
 
   // ✅ UI state for services from API (not from studio)
   const [serviceCategories, setServiceCategories] = useState([]);
   const [uncategorizedServices, setUncategorizedServices] = useState([]);
-
+  const [mastersLocal, setMastersLocal] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const masters = useMemo(
-    () => (Array.isArray(studio?.masters) ? studio.masters : []),
-    [studio],
-  );
+const masters = mastersLocal;
 
-  // -----------------------------
-  // LOAD from API
-  // -----------------------------
+async function refreshMasters() {
+  if (!studio?.id) return;
+
+  const token = localStorage.getItem("token");
+  const data = await api(`/studio/${studio.id}/masters`, { token });
+
+  setMastersLocal(Array.isArray(data?.masters) ? data.masters : []);
+}
+
+useEffect(() => {
+  if (!studio?.id) return;
+
+  refresh();
+  refreshMasters();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [studio?.id]);
+
   async function refresh() {
     if (!studio?.id) return;
     setLoading(true);
@@ -331,6 +358,43 @@ export default function Services() {
     return Array.isArray(cat?.services) ? cat.services : [];
   }
 
+async function saveService() {
+  if (!studio?.id) return;
+
+  const token = localStorage.getItem("token");
+
+  const payload = {
+    categoryId:
+      serviceDraft.categoryId === UNCATEGORIZED_ID ? null : serviceDraft.categoryId,
+    name: String(serviceDraft.name || "").trim(),
+    duration: Number(serviceDraft.duration || 60),
+    price: Number(serviceDraft.price || 0),
+    allMasters: Boolean(serviceDraft.allMasters),
+    masters: serviceDraft.allMasters ? [] : (serviceDraft.masters || []).map(String),
+  };
+
+  try {
+    if (serviceModal.mode === "add") {
+      await api(`/studio/${studio.id}/services`, {
+        method: "POST",
+        token,
+        body: { service: payload }, // ✅ ВАЖЛИВО
+      });
+    } else {
+      await api(`/studio/services/${serviceDraft.id}`, {
+        method: "PATCH",
+        token,
+        body: { service: payload }, // ✅ ВАЖЛИВО
+      });
+    }
+
+    closeServiceModal();
+    await refresh();
+  } catch (e) {
+    console.error(e);
+    alert(e.message || "Не вдалося зберегти послугу");
+  }
+}
   // -----------------------------
   // Category CRUD (API)
   // -----------------------------
@@ -462,42 +526,21 @@ export default function Services() {
     }
   }
 
-  async function saveSchedule({ schedule, slotDuration }) {
-    const token = localStorage.getItem("token");
-    const studioId = studio.id;
+const blocks = useMemo(() => {
+  const unc = {
+    id: UNCATEGORIZED_ID,
+    name: "Послуги без категорії",
+    services: (uncategorizedServices || []).map(normalizeService),
+    _virtual: true,
+  };
 
-    const body = { schedule, slotDuration };
+  const cats = (serviceCategories || []).map((c) => ({
+    ...c,
+    services: (c.services || []).map(normalizeService),
+  }));
 
-    console.log(
-      "PATCH schedule ->",
-      import.meta.env.VITE_API_URL + `/studio/${studioId}/schedule`,
-      body,
-    );
-
-    const res = await api(`/studio/${studioId}/schedule`, {
-      method: "PATCH",
-      token,
-      body,
-    });
-
-    console.log("schedule saved:", res);
-    return res;
-  }
-  // -----------------------------
-  // Derived blocks for UI
-  // -----------------------------
-  const blocks = useMemo(() => {
-    const unc = {
-      id: UNCATEGORIZED_ID,
-      name: "Послуги без категорії",
-      services: uncategorizedServices,
-      _virtual: true,
-    };
-    return [
-      unc,
-      ...serviceCategories.map((c) => ({ ...c, services: c.services || [] })),
-    ];
-  }, [serviceCategories, uncategorizedServices]);
+  return [unc, ...cats];
+}, [serviceCategories, uncategorizedServices]);
 
   const showTips =
     serviceCategories.length === 0 &&
@@ -535,27 +578,27 @@ export default function Services() {
             placeholder="Напр. Вії"
             className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none transition focus:border-black focus:ring-2 focus:ring-black/15"
           />
-<button
-  type="button"
-  onClick={addCategory}
-  disabled={!newCategoryName.trim() || !studio?.id}
-  className="ui-button-primary flex items-center justify-center gap-2"
->
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className="h-4 w-4"
-  >
-    <path d="M12 5v14" />
-    <path d="M5 12h14" />
-  </svg>
-  Додати категорію
-</button>
+          <button
+            type="button"
+            onClick={addCategory}
+            disabled={!newCategoryName.trim() || !studio?.id}
+            className="ui-button-primary flex items-center justify-center gap-2"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-4 w-4"
+            >
+              <path d="M12 5v14" />
+              <path d="M5 12h14" />
+            </svg>
+            Додати категорію
+          </button>
         </div>
       </SectionCard>
 
@@ -768,7 +811,7 @@ export default function Services() {
           <div className="flex items-center justify-end gap-2">
             <Button
               variant="primary"
-              onClick={saveSchedule}
+              onClick={saveService}
               disabled={!canSaveServiceDraft(serviceDraft)}
               className="ui-button-primary"
             >

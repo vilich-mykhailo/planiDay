@@ -1,15 +1,29 @@
-import { useMemo, useState, useEffect } from "react";
+// StudioPublicPage.jsx //
+import { useState, useEffect } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { studios } from "../../data/studios";
 import StudioBookingWidget from "../../components/StudioBookingWidget";
 
-function parsePortfolioUrls(value) {
+const R2_PUBLIC = import.meta.env.VITE_R2_PUBLIC_BASE_URL;
+
+function toPublicUrl(v) {
+  const s = String(v || "").trim();
+  if (!s) return "";
+  if (/^https?:\/\//i.test(s)) return s;
+  return R2_PUBLIC ? `${R2_PUBLIC}/${s}` : s;
+}
+
+function parsePortfolio(value) {
+  // якщо в БД portfolioUrls це ARRAY -> вертаємо як є
+  if (Array.isArray(value)) return value.map(toPublicUrl).filter(Boolean);
+
+  // якщо STRING (як у тебе раніше) -> split
   const raw = String(value || "").trim();
   if (!raw) return [];
   return raw
     .split(/[\n,]/g)
     .map((s) => s.trim())
-    .filter(Boolean);
+    .filter(Boolean)
+    .map(toPublicUrl);
 }
 
 function safe(v) {
@@ -164,6 +178,7 @@ function IconMoneyMini() {
   );
 }
 
+
 export default function StudioPublicPage() {
   const { slug } = useParams();
 
@@ -180,38 +195,137 @@ export default function StudioPublicPage() {
     };
   }, [openBooking]);
 
-  const studio = useMemo(() => studios.find((s) => s.slug === slug), [slug]);
+  const [studio, setStudio] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
+  useEffect(() => {
+    let alive = true;
+
+    async function load() {
+      setLoading(true);
+      setError("");
+      try {
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL}/client/studios/${slug}`,
+        );
+        const data = await res.json().catch(() => null);
+        if (!res.ok)
+          throw new Error(data?.message || `Load failed (${res.status})`);
+
+        const s = data?.studio || null;
+        if (!s) throw new Error("Studio missing in response");
+
+        const normalized = {
+          ...s,
+          slug: s.slug || s.id,
+          coverUrl: toPublicUrl(s.coverUrl),
+          logoUrl: toPublicUrl(s.logoUrl),
+          portfolioUrls: s.portfolioUrls ?? s.portfolioUrls ?? s.portfolioUrls,
+        };
+
+        if (alive) setStudio(normalized);
+      } catch (e) {
+        console.error(e);
+        if (alive) {
+          setStudio(null);
+          setError(String(e?.message || "Load failed"));
+        }
+      } finally {
+        if (alive) setLoading(false);
+      }
+    }
+
+    if (slug) load();
+    return () => {
+      alive = false;
+    };
+  }, [slug]);
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center px-4">
+        <div className="rounded-2xl border border-gray-200 bg-white px-6 py-4 text-sm text-gray-600">
+          Завантаження студії...
+        </div>
+      </div>
+    );
+  }
+
+  //   if (!studio) {
+  //     return (
+
+  // <div className="min-h-[60vh] flex items-center justify-center px-4">
+  // <div className="w-full max-w-2xl text-center rounded-[28px] border border-gray-200 bg-white p-12 shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
+  //     {/* 404 badge */}
+  //     <div className="mb-6">
+  //       <span className="inline-flex items-center justify-center rounded-full border border-gray-200 bg-white px-4 py-1 text-xs font-semibold tracking-wide text-gray-500">
+  //         404 • Not Found
+  //       </span>
+  //     </div>
+
+  //     <h1 className="text-xl font-extrabold text-gray-900">
+  //       Студію не знайдено
+  //     </h1>
+
+  //     <p className="mt-2 text-sm text-gray-600 leading-relaxed">
+  //       Можливо, студію було видалено або посилання є некоректним.
+
+  //     </p>
+
+  //     <div className="mt-6">
+  //       <Link
+  //         to="/studios"
+  //         className="inline-flex items-center justify-center rounded-2xl bg-black px-5 py-3 text-sm font-extrabold text-white transition hover:bg-gray-900 active:scale-[0.98]"
+  //       >
+  //         Повернутись до списку
+  //       </Link>
+  //     </div>
+  //   </div>
+  // </div>
+  //     );
+  //   }
   if (!studio) {
     return (
-      <div className="mx-auto max-w-6xl px-4 py-10">
-        <div className="rounded-[28px] border bg-white p-7 shadow-sm ">
-          <h1 className="text-2xl font-bold text-gray-900 ">
-            Студію не знайдено
+      <div className="min-h-[60vh] flex items-center justify-center px-4">
+        <div className="w-full max-w-2xl text-center rounded-[28px] border border-gray-200 bg-white p-12 shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
+          <div className="mb-6">
+            <span className="inline-flex items-center justify-center rounded-full border border-gray-200 bg-white px-4 py-1 text-xs font-semibold tracking-wide text-gray-500">
+              {error ? "Помилка" : "404 • Not Found"}
+            </span>
+          </div>
+
+          <h1 className="text-xl font-extrabold text-gray-900">
+            {error ? "Не вдалося завантажити студію" : "Студію не знайдено"}
           </h1>
-          <Link
-            to="/studios"
-            className="mt-2 inline-flex text-sm font-semibold text-gray-700 underline underline-offset-4 hover:text-gray-900"
-          >
-            ← Повернутись до списку
-          </Link>
+
+          {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+
+          <div className="mt-6">
+            <Link
+              to="/studios"
+              className="inline-flex items-center justify-center rounded-2xl bg-black px-5 py-3 text-sm font-extrabold text-white transition hover:bg-gray-900 active:scale-[0.98]"
+            >
+              Повернутись до списку
+            </Link>
+          </div>
         </div>
       </div>
     );
   }
   const serviceCategories = studio.serviceCategories || [];
+const uncategorizedServices = studio.uncategorizedServices || [];
   const name = safe(studio.name) || "Студія";
   const category = safe(studio.category) || "Категорія";
   const city = safe(studio.city);
   const description = safe(studio.description);
-  const coverUrl = safe(studio.coverUrl);
-  const logoUrl = safe(studio.logoUrl);
+  const coverUrl = studio.coverUrl || "";
+  const logoUrl = studio.logoUrl || "";
   const street = safe(studio.street);
   const building = safe(studio.building);
   const apartment = safe(studio.apartment);
   const address = [street, building, apartment].filter(Boolean).join(", ");
 
-  const portfolio = parsePortfolioUrls(studio.portfolioUrls);
+  const portfolio = parsePortfolio(studio.portfolioUrls);
   const priceFrom = studio.priceFrom;
 
   return (
@@ -453,90 +567,132 @@ export default function StudioPublicPage() {
             </div>
           </div>
 
-          {serviceCategories.length === 0 ? (
-            <div className="mt-5 rounded-2xl border bg-gray-50 p-5 text-sm text-gray-600">
-              Послуги ще не додані.
+{serviceCategories.length === 0 && uncategorizedServices.length === 0 ? (
+  <div className="mt-5 rounded-2xl border bg-gray-50 p-5 text-sm text-gray-600">
+    Послуги ще не додані.
+  </div>
+) : (
+  <div className="mt-5 space-y-3">
+    {/* ✅ послуги без категорії (кожна окремим пунктом) */}
+    {uncategorizedServices.length > 0 && (
+      <div className="space-y-2">
+        {uncategorizedServices.map((s) => (
+          <div
+            key={s.id}
+            className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border bg-white p-4 shadow-[0_10px_35px_-28px_rgba(0,0,0,0.30)]"
+          >
+            <div className="min-w-0">
+              <p className="font-bold text-gray-900">{s.name}</p>
+
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                {s.duration ? (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-semibold text-gray-700">
+                    <IconClockMini />
+                    {s.duration} хв
+                  </span>
+                ) : null}
+
+                {s.price != null ? (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-semibold text-gray-700">
+                    <IconMoneyMini />
+                    {s.price} грн
+                  </span>
+                ) : null}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setPreselectedService({ categoryId: null, serviceId: s.id });
+                setOpenBooking(true);
+              }}
+              className="rounded-2xl ui-button-one"
+            >
+              Записатись
+            </button>
+          </div>
+        ))}
+      </div>
+    )}
+
+    {/* ✅ далі як було: категорії */}
+    {serviceCategories.map((cat) => (
+      <details
+        key={cat.id}
+        className="group overflow-hidden rounded-3xl border bg-white"
+      >
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 sm:p-5 hover:bg-gray-50">
+          <div className="min-w-0">
+            <p className="text-sm sm:text-base font-bold text-gray-900">
+              {cat.name}
+            </p>
+            <p className="mt-0.5 text-xs text-gray-500">
+              {(cat.services || []).length} послуг
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="grid h-9 w-9 place-items-center rounded-2xl border border-gray-200 bg-white text-gray-500 group-open:rotate-180 transition">
+              ▼
+            </span>
+          </div>
+        </summary>
+
+        <div className="border-t bg-gradient-to-b from-white to-gray-50 p-4 sm:p-5">
+          {(cat.services || []).length === 0 ? (
+            <div className="rounded-2xl border bg-gray-50 p-4 text-sm text-gray-600">
+              У цій категорії поки немає послуг.
             </div>
           ) : (
-            <div className="mt-5 space-y-3">
-              {serviceCategories.map((cat) => (
-                <details
-                  key={cat.id}
-                  className="group overflow-hidden rounded-3xl border bg-white"
+            <div className="space-y-2">
+              {(cat.services || []).map((s) => (
+                <div
+                  key={s.id}
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border bg-white p-4 shadow-[0_10px_35px_-28px_rgba(0,0,0,0.30)]"
                 >
-                  <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 sm:p-5 hover:bg-gray-50">
-                    <div className="min-w-0">
-                      <p className="text-sm sm:text-base font-bold text-gray-900">
-                        {cat.name}
-                      </p>
-                      <p className="mt-0.5 text-xs text-gray-500">
-                        {(cat.services || []).length} послуг
-                      </p>
+                  <div className="min-w-0">
+                    <p className="font-bold text-gray-900">{s.name}</p>
+
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      {s.duration ? (
+                        <span className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-semibold text-gray-700">
+                          <IconClockMini />
+                          {s.duration} хв
+                        </span>
+                      ) : null}
+
+                      {s.price != null ? (
+                        <span className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-semibold text-gray-700">
+                          <IconMoneyMini />
+                          {s.price} грн
+                        </span>
+                      ) : null}
                     </div>
-
-                    <div className="flex items-center gap-3">
-                      <span className="grid h-9 w-9 place-items-center rounded-2xl border border-gray-200 bg-white text-gray-500 group-open:rotate-180 transition">
-                        ▼
-                      </span>
-                    </div>
-                  </summary>
-
-                  <div className="border-t bg-gradient-to-b from-white to-gray-50 p-4 sm:p-5">
-                    {(cat.services || []).length === 0 ? (
-                      <div className="rounded-2xl border bg-gray-50 p-4 text-sm text-gray-600">
-                        У цій категорії поки немає послуг.
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        {(cat.services || []).map((s) => (
-                          <div
-                            key={s.id}
-                            className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border bg-white p-4 shadow-[0_10px_35px_-28px_rgba(0,0,0,0.30)]"
-                          >
-                            <div className="min-w-0">
-                              <p className="font-bold text-gray-900">
-                                {s.name}
-                              </p>
-
-                              <div className="mt-2 flex flex-wrap items-center gap-2">
-                                {s.duration ? (
-                                  <span className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-semibold text-gray-700">
-                                    <IconClockMini />
-                                    {s.duration} хв
-                                  </span>
-                                ) : null}
-
-                                {s.price ? (
-                                  <span className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-semibold text-gray-700">
-                                    <IconMoneyMini />
-                                    {s.price} грн
-                                  </span>
-                                ) : null}
-                              </div>
-                            </div>
-
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setPreselectedService({
-                                  categoryId: cat.id,
-                                  serviceId: s.id,
-                                });
-                                setOpenBooking(true);
-                              }}
-                              className="rounded-2xl ui-button-one"
-                            >
-                              Записатись
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
                   </div>
-                </details>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPreselectedService({
+                        categoryId: cat.id,
+                        serviceId: s.id,
+                      });
+                      setOpenBooking(true);
+                    }}
+                    className="rounded-2xl ui-button-one"
+                  >
+                    Записатись
+                  </button>
+                </div>
               ))}
             </div>
           )}
+        </div>
+      </details>
+    ))}
+  </div>
+)}
         </section>
 
         {/* PORTFOLIO */}

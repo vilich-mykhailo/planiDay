@@ -132,9 +132,13 @@ router.post("/:id/categories", async (req, res) => {
   res.json(category);
 });
 
-router.post("/:id/services", async (req, res) => {
+router.post("/:id/services", requireAuth, requireOwner, async (req, res) => {
   const { id } = req.params;
-  const { service } = req.body;
+  const service = req.body?.service; // ✅ краще так
+
+  if (!service) {
+    return res.status(400).json({ message: "service is required" });
+  }
 
   const created = await prisma.service.create({
     data: {
@@ -157,7 +161,7 @@ router.post("/:id/services", async (req, res) => {
   res.json(created);
 });
 
-router.patch("/services/:serviceId", async (req, res) => {
+router.patch("/services/:serviceId", requireAuth, requireOwner, async (req, res) => {
   const { serviceId } = req.params;
   const { service } = req.body;
 
