@@ -1,3 +1,4 @@
+// auth.routes.js //
 import { Router } from "express";
 import { prisma } from "../lib/prisma.js";
 import { hashPassword, verifyPassword } from "../lib/password.js";
@@ -46,9 +47,9 @@ authRouter.post("/owner/login", async (req, res) => {
   res.json({ token, kind: "owner" });
 });
 
-// CLIENT register
 authRouter.post("/client/register", async (req, res) => {
   const { email, password, name, phone } = req.body;
+
   const err = validateEmailPassword(email, password);
   if (err) return res.status(400).json({ message: err });
 
@@ -56,8 +57,21 @@ authRouter.post("/client/register", async (req, res) => {
   if (exists) return res.status(409).json({ message: "Email already used" });
 
   const passwordHash = await hashPassword(password);
+
+  const full = String(name || "").trim();
+  const parts = full.split(/\s+/).filter(Boolean);
+  const firstName = parts[0] || "";
+  const lastName = parts.slice(1).join(" ") || "";
+
   const client = await prisma.clientAccount.create({
-    data: { email, passwordHash, name, phone }
+    data: {
+      email,
+      passwordHash,
+      name: full,
+      phone,
+      firstName,
+      lastName,
+    },
   });
 
   const token = signToken({ sub: client.id, kind: "client" });

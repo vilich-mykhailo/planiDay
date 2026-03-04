@@ -128,7 +128,7 @@ export default function Studios() {
   const [searchParams, setSearchParams] = useSearchParams();
   // ✅ initial values з URL (тільки 1 раз)
   const [studios, setStudios] = useState([]);
-const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [q, setQ] = useState(() => searchParams.get("q") || "");
   const [city, setCity] = useState(() => searchParams.get("city") || "");
   const [category, setCategory] = useState(
@@ -154,38 +154,43 @@ const [loading, setLoading] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   useEffect(() => {
-  let alive = true;
+    let alive = true;
 
-  async function loadStudios() {
-    setLoading(true);
-    try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/client/studios`);
-      const data = await res.json().catch(() => null);
+    async function loadStudios() {
+      setLoading(true);
+      try {
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL}/client/studios`,
+        );
+        const data = await res.json().catch(() => null);
 
-      if (!res.ok) throw new Error(data?.message || `Load failed (${res.status})`);
+        if (!res.ok)
+          throw new Error(data?.message || `Load failed (${res.status})`);
 
-      const list = Array.isArray(data?.studios) ? data.studios : [];
+        const list = Array.isArray(data?.studios) ? data.studios : [];
 
-      // ✅ нормалізація під твій UI
-      const normalized = list.map((s) => ({
-        ...s,
-        slug: s.slug || s.id,               // щоб Link працював
-        coverUrl: toPublicUrl(s.coverUrl),  // key -> url
-        logoUrl: toPublicUrl(s.logoUrl),    // key -> url
-      }));
+        // ✅ нормалізація під твій UI
+        const normalized = list.map((s) => ({
+          ...s,
+          slug: s.slug || s.id, // щоб Link працював
+          coverUrl: toPublicUrl(s.coverUrl), // key -> url
+          logoUrl: toPublicUrl(s.logoUrl), // key -> url
+        }));
 
-      if (alive) setStudios(normalized);
-    } catch (e) {
-      console.error(e);
-      if (alive) setStudios([]);
-    } finally {
-      if (alive) setLoading(false);
+        if (alive) setStudios(normalized);
+      } catch (e) {
+        console.error(e);
+        if (alive) setStudios([]);
+      } finally {
+        if (alive) setLoading(false);
+      }
     }
-  }
 
-  loadStudios();
-  return () => { alive = false; };
-}, []);
+    loadStudios();
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   // ✅ синхронізація state -> URL
   useEffect(() => {
@@ -220,15 +225,19 @@ const [loading, setLoading] = useState(false);
   );
 
   // ✅ Options
-const cities = useMemo(() => {
-  const set = new Set((studios || []).map((s) => safeText(s.city)).filter(Boolean));
-  return Array.from(set).sort((a, b) => a.localeCompare(b));
-}, [studios]);
+  const cities = useMemo(() => {
+    const set = new Set(
+      (studios || []).map((s) => safeText(s.city)).filter(Boolean),
+    );
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [studios]);
 
-const categories = useMemo(() => {
-  const set = new Set((studios || []).map((s) => safeText(s.category)).filter(Boolean));
-  return Array.from(set).sort((a, b) => a.localeCompare(b));
-}, [studios]);
+  const categories = useMemo(() => {
+    const set = new Set(
+      (studios || []).map((s) => safeText(s.category)).filter(Boolean),
+    );
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [studios]);
 
   // ✅ Filtered + Sorted
   const filtered = useMemo(() => {
@@ -559,16 +568,16 @@ const categories = useMemo(() => {
         </div>
       </section>
       <div className="flex items-center gap-2 text-sm text-gray-600">
-  <span>
-    Знайдено:{" "}
-    <span className="font-semibold text-gray-900">{filtered.length}</span>
-  </span>
+        <span>
+          Знайдено:{" "}
+          <span className="font-semibold text-gray-900">{filtered.length}</span>
+        </span>
 
-  {loading && (
-    <span className="rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-xs">
-      Завантаження...
-    </span>
-  )}
+        {loading && (
+          <span className="rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-xs">
+            Завантаження...
+          </span>
+        )}
 
         {hasPendingChanges && (
           <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
@@ -665,11 +674,12 @@ const categories = useMemo(() => {
                 key={studio.slug}
                 to={`/studios/${studio.slug}`}
                 className={`
-      group relative block overflow-visible
-      rounded-2xl border bg-white
-      transform-gpu will-change-transform
-      transition-all duration-300
-      active:scale-[0.98]
+group relative flex flex-col h-full
+overflow-visible
+rounded-2xl border bg-white
+transform-gpu will-change-transform
+transition-all duration-300
+active:scale-[0.98]
       ${
         studio.premium
           ? `
@@ -709,7 +719,7 @@ const categories = useMemo(() => {
                 )}
 
                 {/* Cover (кути тільки зверху) */}
-                <div className="relative overflow-hidden rounded-t-2xl">
+                <div className="relative overflow-hidden rounded-t-2xl shrink-0">
                   <div className="relative h-28 bg-gray-100">
                     {coverUrl ? (
                       <img
@@ -747,7 +757,7 @@ const categories = useMemo(() => {
                 </div>
 
                 {/* Content */}
-                <div className="px-4 pb-4 pt-8">
+                <div className="px-4 pb-4 pt-8 flex flex-col flex-1">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <h2 className="truncate text-base font-semibold text-gray-900">
@@ -792,11 +802,10 @@ const categories = useMemo(() => {
                     </div>
                   )}
 
-                  <div className="mt-4 flex items-center justify-between">
+                  <div className="mt-auto pt-4 flex items-center justify-between">
                     <span className="text-sm font-medium text-gray-900 group-hover:underline">
                       Переглянути →
                     </span>
-
                     <FavouriteButton studio={studio} />
                   </div>
                 </div>

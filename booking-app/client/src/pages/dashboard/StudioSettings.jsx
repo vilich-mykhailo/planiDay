@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useStudio } from "../../context/studio/useStudio";
+import { api } from "../../api/http";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 const MAX_DESC = 400;
@@ -44,6 +45,12 @@ function Card({ title, subtitle, children }) {
 }
 
 function completeness(form) {
+  const hasCover = Boolean(form.coverFile || form.coverUrl?.trim());
+  const hasLogo = Boolean(form.logoFile || form.logoUrl?.trim());
+
+  const portfolioCount =
+    (form.portfolioUrls?.length || 0) + (form.portfolioFiles?.length || 0);
+
   const items = [
     {
       key: "name",
@@ -60,7 +67,11 @@ function completeness(form) {
       label: "Номер телефону",
       ok: Boolean(form.phone?.trim()),
     },
-
+    {
+      key: "email",
+      label: "Пошта",
+      ok: Boolean(form.email?.trim()),
+    },
     {
       key: "description",
       label: "Опис",
@@ -69,30 +80,29 @@ function completeness(form) {
     {
       key: "coverUrl",
       label: "Обкладинка",
-      ok: Boolean(form.coverUrl?.trim()),
+      ok: hasCover,
     },
     {
       key: "logoUrl",
       label: "Логотип",
-      ok: Boolean(form.logoUrl?.trim()),
+      ok: hasLogo,
     },
     {
       key: "address",
       label: "Адреса",
-      ok: Boolean(form.street?.trim() && form.building?.trim()),
+      ok: Boolean(form.street?.trim() && form.building?.trim()), // залишив як у тебе
+      // якщо хочеш щоб city теж рахувалось — скажи, зміню на city+street+building
     },
     {
       key: "portfolio",
       label: "Портфоліо",
-      ok: Array.isArray(form.portfolioUrls) && form.portfolioUrls.length >= 1,
+      ok: portfolioCount >= 1,
     },
   ];
 
   const done = items.filter((i) => i.ok).length;
   const total = items.length;
   const percent = Math.round((done / total) * 100);
-
-  // Найперший незаповнений пункт для “що зробити далі”
   const next = items.find((i) => !i.ok);
 
   return { items, done, total, percent, next };
@@ -158,27 +168,31 @@ export default function StudioSettings() {
   const { studio, updateStudio } = useStudio();
   const [searchParams, setSearchParams] = useSearchParams();
 
-const tabFromUrl = searchParams.get("tab");
-const initialTab = ["profile", "location", "links"].includes(tabFromUrl)
-  ? tabFromUrl
-  : "profile";
+  const tabFromUrl = searchParams.get("tab");
+  const initialTab = ["profile", "location", "links"].includes(tabFromUrl)
+    ? tabFromUrl
+    : "profile";
 
-const [tab, setTab] = useState(initialTab);
+  const [tab, setTab] = useState(initialTab);
 
-function setTabUrl(nextTab) {
-  setTab(nextTab);
+  function setTabUrl(nextTab) {
+    setTab(nextTab);
 
-  setSearchParams((prev) => {
-    const p = new URLSearchParams(prev);
-    p.set("tab", nextTab);
-    return p;
-  }, { replace: true });
-}
-  const [checklistOpen, setChecklistOpen] = useState(false); // ✅ по дефолту сховано
+    setSearchParams(
+      (prev) => {
+        const p = new URLSearchParams(prev);
+        p.set("tab", nextTab);
+        return p;
+      },
+      { replace: true },
+    );
+  }
+  const [checklistOpen, setChecklistOpen] = useState(false); 
   const [form, setForm] = useState({
     name: "",
     category: "",
     phone: "",
+    email: "", 
     description: "",
     city: "",
     street: "",
@@ -332,6 +346,7 @@ function setTabUrl(nextTab) {
       name: studio?.name || "",
       category: studio?.category || "",
       phone: studio?.phone || "",
+      email: studio?.email || "",
       description: studio?.description || "",
       city: studio?.city || "",
       street: studio?.street || "",
@@ -342,7 +357,6 @@ function setTabUrl(nextTab) {
       portfolioUrls: Array.isArray(studio?.portfolioUrls)
         ? studio.portfolioUrls
         : [],
-
       coverFile: null,
       logoFile: null,
       portfolioFiles: [],
@@ -350,6 +364,60 @@ function setTabUrl(nextTab) {
 
     setHydrated(true);
   }, [studio]);
+
+  useEffect(() => {
+    let alive = true;
+
+    (async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        const me = await api("/auth/me", { token });
+        const email = me?.account?.email || "";
+
+        if (!alive) return;
+
+        setForm((p) => ({
+          ...p,
+          email: p.email || email,
+        }));
+      } catch {
+        // ignore
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  useEffect(() => {
+  let alive = true;
+
+  (async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const me = await api("/auth/me", { token });
+      const email = me?.account?.email || "";
+
+      if (!alive) return;
+
+      setForm((p) => ({
+        ...p,
+        email: p.email || email, // не перетирає, якщо юзер вже ввів
+      }));
+    } catch {
+      // ignore
+    }
+  })();
+
+  return () => {
+    alive = false;
+  };
+}, []);
 
   useEffect(() => {
     const urls = [];
@@ -366,8 +434,10 @@ function setTabUrl(nextTab) {
       e.phone = "Вкажи коректний номер телефону.";
     }
 
-    if (!form.name.trim()) e.name = "Вкажи назву студії.";
-    if (!form.category.trim()) e.category = "Вкажи категорію.";
+    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+  e.email = "Вкажи коректну пошту.";
+}
+
     if (form.description.length > MAX_DESC) e.description = "Опис завеликий.";
 
     if ((form.portfolioUrls?.length || 0) > MAX_PORTFOLIO) {
@@ -386,6 +456,7 @@ function setTabUrl(nextTab) {
       (studio?.name || "") !== form.name ||
       (studio?.category || "") !== form.category ||
       (studio?.phone || "") !== form.phone ||
+      (studio?.email || "") !== form.email || 
       (studio?.description || "") !== form.description ||
       (studio?.city || "") !== form.city ||
       (studio?.street || "") !== form.street ||
@@ -409,6 +480,7 @@ function setTabUrl(nextTab) {
       name: studio?.name || "",
       category: studio?.category || "",
       phone: studio?.phone || "",
+      email: studio?.email || "",
       description: studio?.description || "",
       city: studio?.city || "",
       street: studio?.street || "",
@@ -777,6 +849,7 @@ function setTabUrl(nextTab) {
         name: form.name.trim(),
         category: form.category.trim(),
         phone: form.phone.trim(),
+        email: form.email.trim(), 
         description: form.description.trim(),
         city: form.city.trim(),
         street: form.street.trim(),
@@ -833,7 +906,7 @@ function setTabUrl(nextTab) {
     }
   }
 
-    const headerTriggerRef = useRef(null);
+  const headerTriggerRef = useRef(null);
   const [showTopSave, setShowTopSave] = useState(false);
   const floatingVisible = showTopSave || hasPendingChanges;
   useEffect(() => {
@@ -894,17 +967,17 @@ function setTabUrl(nextTab) {
     return parts.length ? parts.join(", ") : "Адреса не заповнена";
   }, [form]);
   const profile = useMemo(() => completeness(form), [form]);
-  const FIELD_ID = {
-    name: "studio-field-name",
-    category: "studio-field-category",
-    phone: "studio-field-phone",
-
-    description: "studio-field-description",
-    portfolio: "studio-field-portfolio-add",
-    coverUrl: "studio-field-coverUrl",
-    logoUrl: "studio-field-logoUrl",
-    address: "studio-field-city",
-  };
+const FIELD_ID = {
+  name: "studio-field-name",
+  category: "studio-field-category",
+  phone: "studio-field-phone",
+  email: "studio-field-email", 
+  description: "studio-field-description",
+  portfolio: "studio-field-portfolio-add",
+  coverUrl: "studio-field-coverUrl",
+  logoUrl: "studio-field-logoUrl",
+  address: "studio-field-city",
+};
 
   function highlightAddressFields() {
     setHighlightTone("green");
@@ -932,7 +1005,7 @@ function setTabUrl(nextTab) {
     setHighlightTone(tone);
 
     const nextTab = resolveTabByKey(key);
-setTabUrl(nextTab);
+    setTabUrl(nextTab);
 
     // ✅ address = підсвітити всі 4 поля, без highlightId
     if (key === "portfolio") {
@@ -968,7 +1041,7 @@ setTabUrl(nextTab);
     }
 
     if (key === "logoUrl") {
-  setTabUrl("profile");
+      setTabUrl("profile");
       requestAnimationFrame(() => {
         document.getElementById("studio-field-logoUrl")?.scrollIntoView({
           behavior: "smooth",
@@ -1521,18 +1594,29 @@ setTabUrl(nextTab);
                       className={fieldClass("studio-field-category")}
                     />
                   </Field>
-                  <div className="sm:col-span-2">
-                    <Field label="Номер телефону" error={errors.phone}>
-                      <input
-                        id="studio-field-phone"
-                        value={form.phone}
-                        onChange={(e) => setField("phone", e.target.value)}
-                        placeholder="+380 67 123 45 67"
-                        inputMode="tel"
-                        className={fieldClass("studio-field-phone")}
-                      />
-                    </Field>
-                  </div>
+
+                  <Field label="Номер телефону" error={errors.phone}>
+                    <input
+                      id="studio-field-phone"
+                      value={form.phone}
+                      onChange={(e) => setField("phone", e.target.value)}
+                      placeholder="+380 67 123 45 67"
+                      inputMode="tel"
+                      className={fieldClass("studio-field-phone")}
+                    />
+                  </Field>
+
+                  <Field label="Пошта" error={errors.email}>
+                    <input
+                      id="studio-field-email"
+                      type="email"
+                      autoComplete="email"
+                      value={form.email || ""}
+                      onChange={(e) => setField("email", e.target.value)}
+                      placeholder="name@email.com"
+                      className={fieldClass("studio-field-email")}
+                    />
+                  </Field>
 
                   <div className="sm:col-span-2">
                     <Field
@@ -1882,135 +1966,135 @@ setTabUrl(nextTab);
       </div>
 
       {/* Professional Toast */}
-<div
-  className={[
-    "fixed z-[90] left-1/2 top-[calc(12px+env(safe-area-inset-top))] -translate-x-1/2 md:left-4 md:bottom-6 md:top-auto md:translate-x-0",
-    "w-[calc(100%-2rem)] max-w-[420px] md:w-auto md:min-w-[260px] md:max-w-[340px]",
-    "transition-all duration-300",
-    toast.open
-      ? "opacity-100 translate-y-0"
-      : "pointer-events-none opacity-0 -translate-y-3",
-  ].join(" ")}
-  role="status"
-  aria-live="polite"
->
-  <div
-    className={[
-      "relative overflow-hidden rounded-2xl border bg-white",
-      "shadow-[0_12px_30px_rgba(0,0,0,0.16)]",
-      toast.type === "success"
-        ? "border-emerald-300"
-        : toast.type === "warning"
-        ? "border-amber-300"
-        : "border-red-300",
-    ].join(" ")}
-  >
-    {/* Glow */}
-    <div
-      className={[
-        "pointer-events-none absolute -inset-10 blur-2xl opacity-30",
-        toast.type === "success"
-          ? "bg-emerald-300"
-          : toast.type === "warning"
-          ? "bg-amber-300"
-          : "bg-red-300",
-      ].join(" ")}
-    />
-
-    {/* Left accent */}
-    <div
-      className={[
-        "absolute left-0 top-0 h-full w-1.5",
-        toast.type === "success"
-          ? "bg-emerald-500"
-          : toast.type === "warning"
-          ? "bg-amber-500"
-          : "bg-red-500",
-      ].join(" ")}
-    />
-
-    <div className="relative flex items-start gap-3 p-4 pl-5">
-      {/* Icon bubble */}
       <div
         className={[
-          "flex h-10 w-10 items-center justify-center rounded-xl",
-          "shadow-[0_6px_14px_rgba(0,0,0,0.12)]",
-          "animate-[toastPop_260ms_ease-out]",
-          toast.type === "success"
-            ? "bg-emerald-600 text-white"
-            : toast.type === "warning"
-            ? "bg-amber-500 text-white"
-            : "bg-red-600 text-white",
+          "fixed z-[90] left-1/2 top-[calc(12px+env(safe-area-inset-top))] -translate-x-1/2 md:left-4 md:bottom-6 md:top-auto md:translate-x-0",
+          "w-[calc(100%-2rem)] max-w-[420px] md:w-auto md:min-w-[260px] md:max-w-[340px]",
+          "transition-all duration-300",
+          toast.open
+            ? "opacity-100 translate-y-0"
+            : "pointer-events-none opacity-0 -translate-y-3",
         ].join(" ")}
-        aria-hidden="true"
+        role="status"
+        aria-live="polite"
       >
-        {toast.type === "success" && (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M20 6L9 17l-5-5"
-              stroke="#ffffff"
-              strokeWidth="2.6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        )}
+        <div
+          className={[
+            "relative overflow-hidden rounded-2xl border bg-white",
+            "shadow-[0_12px_30px_rgba(0,0,0,0.16)]",
+            toast.type === "success"
+              ? "border-emerald-300"
+              : toast.type === "warning"
+                ? "border-amber-300"
+                : "border-red-300",
+          ].join(" ")}
+        >
+          {/* Glow */}
+          <div
+            className={[
+              "pointer-events-none absolute -inset-10 blur-2xl opacity-30",
+              toast.type === "success"
+                ? "bg-emerald-300"
+                : toast.type === "warning"
+                  ? "bg-amber-300"
+                  : "bg-red-300",
+            ].join(" ")}
+          />
 
-        {toast.type === "warning" && (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M12 9v4"
-              stroke="currentColor"
-              strokeWidth="2.6"
-              strokeLinecap="round"
-            />
-            <path
-              d="M12 16h.01"
-              stroke="currentColor"
-              strokeWidth="3.6"
-              strokeLinecap="round"
-            />
-          </svg>
-        )}
+          {/* Left accent */}
+          <div
+            className={[
+              "absolute left-0 top-0 h-full w-1.5",
+              toast.type === "success"
+                ? "bg-emerald-500"
+                : toast.type === "warning"
+                  ? "bg-amber-500"
+                  : "bg-red-500",
+            ].join(" ")}
+          />
 
-        {toast.type === "error" && (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M6 6l12 12M18 6l-12 12"
-              stroke="currentColor"
-              strokeWidth="2.6"
-              strokeLinecap="round"
+          <div className="relative flex items-start gap-3 p-4 pl-5">
+            {/* Icon bubble */}
+            <div
+              className={[
+                "flex h-10 w-10 items-center justify-center rounded-xl",
+                "shadow-[0_6px_14px_rgba(0,0,0,0.12)]",
+                "animate-[toastPop_260ms_ease-out]",
+                toast.type === "success"
+                  ? "bg-emerald-600 text-white"
+                  : toast.type === "warning"
+                    ? "bg-amber-500 text-white"
+                    : "bg-red-600 text-white",
+              ].join(" ")}
+              aria-hidden="true"
+            >
+              {toast.type === "success" && (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M20 6L9 17l-5-5"
+                    stroke="#ffffff"
+                    strokeWidth="2.6"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              )}
+
+              {toast.type === "warning" && (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M12 9v4"
+                    stroke="currentColor"
+                    strokeWidth="2.6"
+                    strokeLinecap="round"
+                  />
+                  <path
+                    d="M12 16h.01"
+                    stroke="currentColor"
+                    strokeWidth="3.6"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              )}
+
+              {toast.type === "error" && (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M6 6l12 12M18 6l-12 12"
+                    stroke="currentColor"
+                    strokeWidth="2.6"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              )}
+            </div>
+
+            {/* Text */}
+            <div className="min-w-0">
+              <p className="text-sm font-extrabold text-gray-900 leading-5">
+                {toast.title}
+              </p>
+              <p className="mt-1 text-sm text-gray-700 leading-5">
+                {toast.text}
+              </p>
+            </div>
+          </div>
+
+          {/* Progress bar */}
+          <div className="h-[4px] w-full bg-gray-100">
+            <div
+              className={[
+                "h-full w-full origin-left animate-[toastbar_3.2s_linear_forwards]",
+                toast.type === "success"
+                  ? "bg-emerald-500"
+                  : toast.type === "warning"
+                    ? "bg-amber-500"
+                    : "bg-red-500",
+              ].join(" ")}
             />
-          </svg>
-        )}
+          </div>
+        </div>
       </div>
-
-      {/* Text */}
-      <div className="min-w-0">
-        <p className="text-sm font-extrabold text-gray-900 leading-5">
-          {toast.title}
-        </p>
-        <p className="mt-1 text-sm text-gray-700 leading-5">
-          {toast.text}
-        </p>
-      </div>
-    </div>
-
-    {/* Progress bar */}
-    <div className="h-[4px] w-full bg-gray-100">
-      <div
-        className={[
-          "h-full w-full origin-left animate-[toastbar_3.2s_linear_forwards]",
-          toast.type === "success"
-            ? "bg-emerald-500"
-            : toast.type === "warning"
-            ? "bg-amber-500"
-            : "bg-red-500",
-        ].join(" ")}
-      />
-    </div>
-  </div>
-</div>
 
       {portfolioPreview.open && (
         <div

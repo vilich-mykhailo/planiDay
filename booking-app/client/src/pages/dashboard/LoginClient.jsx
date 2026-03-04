@@ -20,39 +20,38 @@ export default function LoginClient() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
 
-async function handleSubmit(e) {
-  e.preventDefault();
-  setError("");
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setError("");
 
-  if (!form.email.trim() || !form.password.trim()) {
-    setError("Вкажи email та пароль.");
-    return;
+    if (!form.email.trim() || !form.password.trim()) {
+      setError("Вкажи email та пароль.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const data = await api("/auth/client/login", {
+        method: "POST",
+        body: {
+          email: form.email.trim(),
+          password: form.password,
+        },
+      });
+
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("role", data.kind);
+
+      window.dispatchEvent(new Event("auth-changed")); 
+
+      navigate("/studios");
+    } catch (err) {
+      setError(err?.message || "Невірний email або пароль.");
+    } finally {
+      setLoading(false);
+    }
   }
-
-  try {
-    setLoading(true);
-
-    const data = await api("/auth/client/login", {
-      method: "POST",
-      body: {
-        email: form.email.trim(),
-        password: form.password,
-      },
-    });
-
-    // ✅ зберігаємо токен + роль
-    localStorage.setItem("token", data.token);
-    localStorage.setItem("role", data.kind || "client");
-
-    console.log("LOGIN RESPONSE:", data);
-
-    navigate("/studios");
-  } catch (err) {
-    setError(err?.message || "Невірний email або пароль.");
-  } finally {
-    setLoading(false);
-  }
-}
 
   return (
     <main className="min-h-[100dvh]">
@@ -80,7 +79,9 @@ async function handleSubmit(e) {
                 autoComplete="email"
                 placeholder="name@email.com"
                 value={form.email}
-                onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, email: e.target.value }))
+                }
               />
 
               <Input
@@ -129,7 +130,10 @@ async function handleSubmit(e) {
             <div className="mt-6 border-t border-gray-200 pt-5 text-center">
               <p className="text-sm text-gray-600">
                 Немає акаунта?{" "}
-                <Link to="/register" className="font-extrabold text-gray-900 hover:underline">
+                <Link
+                  to="/register"
+                  className="font-extrabold text-gray-900 hover:underline"
+                >
                   Зареєструватися
                 </Link>
               </p>
@@ -137,7 +141,8 @@ async function handleSubmit(e) {
           </div>
 
           <p className="mt-6 text-center text-xs text-gray-500">
-            Продовжуючи, ти погоджуєшся з умовами сервісу та політикою конфіденційності.
+            Продовжуючи, ти погоджуєшся з умовами сервісу та політикою
+            конфіденційності.
           </p>
         </div>
       </div>

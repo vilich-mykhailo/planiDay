@@ -59,6 +59,7 @@ model Studio {
   name          String @default("")
   category      String @default("")
   phone         String @default("")
+  email       String @default("")
   description   String @default("")
   city          String @default("")
   street        String @default("")
@@ -69,6 +70,8 @@ model Studio {
   portfolioUrls Json   @default("[]")
 
   published Boolean  @default(false)
+  premium   Boolean @default(false)
+  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

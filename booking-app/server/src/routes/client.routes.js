@@ -42,6 +42,7 @@ clientRouter.get("/studios", async (req, res) => {
         building: true,
         coverUrl: true,
         logoUrl: true,
+        premium: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -65,7 +66,7 @@ clientRouter.get("/studios", async (req, res) => {
         ...s,
         slug: s.id,
         priceFrom: minMap.get(s.id) ?? null,
-        premium: false,
+        premium: Boolean(s.premium),
       })),
     });
   } catch (e) {
@@ -79,41 +80,41 @@ clientRouter.get("/studios/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
-    const studio = await prisma.studio.findFirst({
-      where: { id, published: true },
+const studio = await prisma.studio.findFirst({
+  where: { id, published: true },
+  select: {
+    id: true,
+    name: true,
+    category: true,
+    description: true,
+    city: true,
+    street: true,
+    building: true,
+    apartment: true,
+    coverUrl: true,
+    logoUrl: true,
+    portfolioUrls: true,
+    slotDuration: true,
+    premium: true, // ✅ ОК
+
+    scheduleDays: {
+      select: { day: true, enabled: true, startMin: true, endMin: true },
+      orderBy: { day: "asc" },
+    },
+
+    serviceCategories: {
       select: {
         id: true,
         name: true,
-        category: true,
-        description: true,
-        city: true,
-        street: true,
-        building: true,
-        apartment: true,
-        coverUrl: true,
-        logoUrl: true,
-        portfolioUrls: true,
-        slotDuration: true,
-
-        // ✅ ВАЖЛИВО: day, а не weekday
-        scheduleDays: {
-          select: { day: true, enabled: true, startMin: true, endMin: true },
-          orderBy: { day: "asc" },
-        },
-
-        serviceCategories: {
-          select: {
-            id: true,
-            name: true,
-            services: {
-              select: { id: true, name: true, price: true, duration: true },
-              orderBy: { createdAt: "asc" },
-            },
-          },
+        services: {
+          select: { id: true, name: true, price: true, duration: true },
           orderBy: { createdAt: "asc" },
         },
       },
-    });
+      orderBy: { createdAt: "asc" },
+    },
+  },
+});
 
     if (!studio) return res.status(404).json({ message: "Studio not found" });
 
@@ -173,11 +174,10 @@ clientRouter.get("/studios/:id", async (req, res) => {
         ...studio,
         slug: studio.id,
         priceFrom: min?._min?.price ?? null,
-        premium: false,
-
-        schedule, // ✅ для календаря/слотів
-        services, // ✅ для StudioBookingWidget
-        uncategorizedServices, // ✅ для StudioPublicPage (окремим блоком)
+        premium: Boolean(studio.premium),
+        schedule, 
+        services, 
+        uncategorizedServices,
       },
     });
   } catch (e) {

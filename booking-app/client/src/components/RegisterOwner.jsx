@@ -1,3 +1,4 @@
+// RegisterOwner.jsx //
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { api } from "../api/http"; // ✅ підкоригуй шлях якщо треба
@@ -51,9 +52,12 @@ export default function RegisterOwner() {
         },
       });
 
-      // ✅ Зберігаємо токен + роль
       localStorage.setItem("token", data.token);
-      localStorage.setItem("role", data.kind); // "owner"
+      localStorage.setItem("role", data.kind);
+
+      window.dispatchEvent(new Event("auth-changed"));
+
+      navigate("/dashboard/studio");
 
       navigate("/dashboard/studio");
     } catch (err) {
@@ -94,7 +98,9 @@ export default function RegisterOwner() {
               type="email"
               placeholder="studio@email.com"
               value={form.email}
-              onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, email: e.target.value }))
+              }
             />
 
             <Input
@@ -102,7 +108,9 @@ export default function RegisterOwner() {
               type="tel"
               placeholder="+380..."
               value={form.phone}
-              onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, phone: e.target.value }))
+              }
             />
 
             <Input

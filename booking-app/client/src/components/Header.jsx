@@ -299,7 +299,7 @@ if (role === "client") {
       {/* Mobile sheet (premium) */}
       <div
         className={cx(
-          "md:hidden fixed inset-0 z-[70]",
+          "md:hidden fixed inset-0 z-[70] pointer-events-none",
           open ? "pointer-events-auto" : "pointer-events-none",
         )}
         aria-hidden={!open}
