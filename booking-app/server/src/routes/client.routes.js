@@ -28,7 +28,7 @@ clientRouter.get("/me", requireAuth, requireClient, async (req, res) => {
 });
 
 // ✅ PUBLIC: list published studios for клиентский каталог
-clientRouter.get("/studios", async (req, res) => {
+clientRouter.get("/", async (req, res) => {
   try {
     const studios = await prisma.studio.findMany({
       where: { published: true },
@@ -76,7 +76,7 @@ clientRouter.get("/studios", async (req, res) => {
 });
 
 // ✅ PUBLIC: studio details for public page
-clientRouter.get("/studios/:id", async (req, res) => {
+clientRouter.get("/:id", async (req, res) => {
   try {
     const { id } = req.params;
 

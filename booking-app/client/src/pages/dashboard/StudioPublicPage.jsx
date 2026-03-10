@@ -1,6 +1,19 @@
-// StudioPublicPage.jsx //
-import { useState, useEffect } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { useState, useEffect, useMemo } from "react";
+import { useParams } from "react-router-dom";
+/* eslint-disable no-unused-vars */
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  MapPin,
+  Clock,
+  Banknote,
+  ChevronDown,
+  Copy,
+  CheckCheck,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Sparkles,
+} from "lucide-react";
 import StudioBookingWidget from "../../components/StudioBookingWidget";
 
 const R2_PUBLIC = import.meta.env.VITE_R2_PUBLIC_BASE_URL;
@@ -12,13 +25,16 @@ function toPublicUrl(v) {
   return R2_PUBLIC ? `${R2_PUBLIC}/${s}` : s;
 }
 
+function safe(v) {
+  return String(v || "").trim();
+}
+
 function parsePortfolio(value) {
-  // якщо в БД portfolioUrls це ARRAY -> вертаємо як є
   if (Array.isArray(value)) return value.map(toPublicUrl).filter(Boolean);
 
-  // якщо STRING (як у тебе раніше) -> split
   const raw = String(value || "").trim();
   if (!raw) return [];
+
   return raw
     .split(/[\n,]/g)
     .map((s) => s.trim())
@@ -26,192 +42,286 @@ function parsePortfolio(value) {
     .map(toPublicUrl);
 }
 
-function safe(v) {
-  return String(v || "").trim();
-}
-
-function Modal({ open, title, onClose, children }) {
+// ─── Modal ────────────────────────────────────────────────────
+function BookingModal({ open, title, onClose, children }) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex">
-      {/* Backdrop */}
-      <button
+    <div className="fixed inset-0 z-[100] flex" data-testid="booking-modal">
+      <motion.button
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
         type="button"
-        aria-label="Close modal"
+        aria-label="Закрити"
         onClick={onClose}
-        className="absolute inset-0 bg-black/55 backdrop-blur-[3px]"
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        data-testid="booking-modal-backdrop"
       />
-
-      {/* Modal wrapper */}
-      <div className="relative z-10 m-auto w-full max-w-4xl px-3 sm:px-6">
-        <div
-          className="
-        flex flex-col
-        max-h-[95vh]
-        overflow-hidden
-        rounded-[28px]
-        border border-gray-200
-        bg-white
-        shadow-[0_40px_140px_-60px_rgba(0,0,0,0.75)]
-      "
+      <div className="relative z-10 m-auto w-full max-w-2xl px-3 sm:px-6">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.96, y: 20 }}
+          transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+          className="flex max-h-[92vh] flex-col overflow-hidden rounded-3xl bg-white shadow-[0_40px_120px_-30px_rgba(0,0,0,0.2)]"
           role="dialog"
           aria-modal="true"
+          data-testid="booking-modal-content"
         >
-          {/* 🔝 TOP (fixed) */}
-          <div className="flex-shrink-0 border-b bg-white px-5 sm:px-6 py-5">
+          <div className="flex-shrink-0 border-b border-[#E0DCD8] bg-white px-5 py-5 sm:px-6">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#C8A278]">
                   Онлайн бронювання
                 </p>
-                <h3 className="mt-1 truncate text-lg sm:text-xl font-extrabold text-gray-900">
+                <h3
+                  className="mt-1 truncate text-lg font-semibold text-[#2A2A2A] sm:text-xl"
+                  style={{ fontFamily: "var(--font-heading)" }}
+                  data-testid="booking-modal-title"
+                >
                   {title}
                 </h3>
-                <p className="hidden sm:block mt-1 text-sm text-gray-600">
-                  Заповніть дані та оберіть час — підтвердження миттєво
-                </p>
               </div>
-
               <button
                 type="button"
                 onClick={onClose}
-                className="h-10 w-10 flex items-center justify-center rounded-2xl border border-gray-200 bg-white hover:bg-gray-50 transition"
+                data-testid="booking-modal-close-btn"
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#E0DCD8] bg-[#F8F5F2] text-[#7A7A7A] transition-colors duration-200 hover:bg-[#F0EEEA] hover:text-[#2A2A2A]"
               >
-                ✕
+                <X className="h-4 w-4" />
               </button>
             </div>
           </div>
 
-          {/* 🔄 MIDDLE (scroll only here) */}
-          <div className="flex-1 overflow-y-auto px-5 sm:px-6 pt-6 pb-0">
+          <div className="flex-1 overflow-y-auto px-5 pb-0 pt-6 sm:px-6">
             {children}
           </div>
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Image Lightbox ───────────────────────────────────────────
+function ImageLightbox({ open, images = [], startIndex = 0, onClose }) {
+  const [idx, setIdx] = useState(startIndex);
+
+  useEffect(() => {
+    setIdx(startIndex);
+  }, [startIndex]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    function onKey(e) {
+      if (e.key === "Escape") onClose();
+      if (e.key === "ArrowRight") setIdx((p) => (p + 1) % images.length);
+      if (e.key === "ArrowLeft") setIdx((p) => (p - 1 + images.length) % images.length);
+    }
+
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, images.length, onClose]);
+
+  if (!open || !images.length) return null;
+
+  const hasMany = images.length > 1;
+
+  return (
+    <div className="fixed inset-0 z-[120] bg-black/95" data-testid="image-lightbox">
+      <button type="button" onClick={onClose} className="absolute inset-0" aria-label="Закрити" />
+
+      <div className="absolute inset-x-0 top-0 z-[130] flex items-center justify-between px-4 py-4">
+        <span className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-white/80 backdrop-blur-md">
+          {idx + 1} / {images.length}
+        </span>
+        <button
+          type="button"
+          onClick={onClose}
+          data-testid="lightbox-close-btn"
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-[#2A2A2A] shadow-lg transition-transform duration-200 hover:scale-105 active:scale-95"
+        >
+          <X className="h-5 w-5" />
+        </button>
+      </div>
+
+      {hasMany && (
+        <>
+          <button
+            type="button"
+            onClick={() => setIdx((p) => (p - 1 + images.length) % images.length)}
+            data-testid="lightbox-prev-btn"
+            className="absolute left-4 top-1/2 z-[130] flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#2A2A2A] shadow-xl transition-transform duration-200 hover:scale-105 active:scale-95"
+          >
+            <ChevronLeft className="h-6 w-6" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIdx((p) => (p + 1) % images.length)}
+            data-testid="lightbox-next-btn"
+            className="absolute right-4 top-1/2 z-[130] flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#2A2A2A] shadow-xl transition-transform duration-200 hover:scale-105 active:scale-95"
+          >
+            <ChevronRight className="h-6 w-6" />
+          </button>
+        </>
+      )}
+
+      <div className="relative z-[121] flex h-full w-full items-center justify-center px-12 py-20">
+        <AnimatePresence mode="wait">
+          <motion.img
+            key={idx}
+            initial={{ opacity: 0, scale: 0.97 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.97 }}
+            transition={{ duration: 0.2 }}
+            src={images[idx]}
+            alt={`Фото ${idx + 1}`}
+            className="max-h-[80vh] max-w-full select-none rounded-2xl object-contain shadow-2xl"
+            draggable="false"
+          />
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
+
+// ─── Service Row ──────────────────────────────────────────────
+function ServiceRow({ service, onBook }) {
+  return (
+    <div
+      className="group flex flex-col justify-between gap-3 border-b border-[#E0DCD8] py-5 sm:flex-row sm:items-center"
+      data-testid={`service-row-${service.id}`}
+    >
+      <div className="min-w-0 flex-1">
+        <p className="text-base font-semibold text-[#2A2A2A] transition-colors duration-200 group-hover:text-[#4A5D4E]">
+          {service.name}
+        </p>
+        <div className="mt-1.5 flex items-center gap-4">
+          {service.duration && (
+            <span className="flex items-center gap-1.5 text-xs text-[#7A7A7A]">
+              <Clock className="h-3 w-3 text-[#C8A278]" />
+              {service.duration} хв
+            </span>
+          )}
+          {service.price != null && (
+            <span className="flex items-center gap-1.5 text-xs text-[#7A7A7A]">
+              <Banknote className="h-3 w-3 text-[#C8A278]" />
+              {service.price} грн
+            </span>
+          )}
         </div>
       </div>
+      <button
+        type="button"
+        onClick={() => onBook(service)}
+        data-testid={`book-service-${service.id}`}
+        className="self-start rounded-xl bg-[#4A5D4E] px-5 py-2.5 text-xs font-bold text-white transition-colors duration-200 hover:bg-[#3A4A3E] active:scale-[0.97] sm:self-center"
+      >
+        Записатись
+      </button>
     </div>
   );
 }
 
-function StatPill({ children }) {
-  return (
-    <span className="inline-flex items-center rounded-full border border-gray-200 bg-white/70 px-3 py-1 text-xs font-semibold text-gray-800 backdrop-blur">
-      {children}
-    </span>
-  );
-}
+// ─── Category Accordion ───────────────────────────────────────
+function CategoryAccordion({ category, onBook }) {
+  const [open, setOpen] = useState(false);
+  const services = category.services || [];
 
-function InfoRow({ icon, label, value }) {
-  if (!value) return null;
   return (
-    <div className="flex gap-3 rounded-2xl border border-gray-200 bg-gray-50/70 p-4">
-      <div className="mt-0.5 grid h-9 w-9 place-items-center rounded-xl border border-gray-200 bg-white text-gray-900">
-        {icon}
-      </div>
-      <div className="min-w-0">
-        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-          {label}
-        </p>
-        <p className="mt-1 break-words text-sm font-semibold text-gray-900">
-          {value}
-        </p>
-      </div>
+    <div
+      className="overflow-hidden rounded-3xl border border-[#E0DCD8] bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
+      data-testid={`category-${category.id}`}
+    >
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        data-testid={`category-toggle-${category.id}`}
+        className="flex w-full items-center justify-between gap-3 p-5 text-left transition-colors duration-200 hover:bg-[#F8F5F2]/50 sm:p-7"
+      >
+        <div className="min-w-0">
+          <p className="text-base font-semibold text-[#2A2A2A] sm:text-lg">{category.name}</p>
+          <p className="mt-0.5 text-xs text-[#7A7A7A]">
+            {services.length} {services.length === 1 ? "послуга" : "послуг"}
+          </p>
+        </div>
+
+        <div
+          className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl border border-[#E0DCD8] bg-[#F8F5F2] text-[#7A7A7A] transition-transform duration-300 ${
+            open ? "rotate-180" : ""
+          }`}
+        >
+          <ChevronDown className="h-4 w-4" />
+        </div>
+      </button>
+
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            className="overflow-hidden"
+          >
+            <div className="border-t border-[#E0DCD8] px-5 py-2 sm:px-7">
+              {services.length === 0 ? (
+                <p className="py-4 text-sm text-[#7A7A7A]">Послуги не додані.</p>
+              ) : (
+                <div className="divide-y divide-[#E0DCD8]">
+                  {services.map((s) => (
+                    <ServiceRow key={s.id} service={s} onBook={onBook} />
+                  ))}
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
-function IconClockMini() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
-      <path
-        d="M12 8v5l3 2"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-        stroke="currentColor"
-        strokeWidth="2"
-      />
-    </svg>
-  );
-}
-
-function IconPinMini() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
-      <path
-        d="M12 21s-7-5.5-7-11a7 7 0 1 1 14 0c0 5.5-7 11-7 11Z"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <circle cx="12" cy="10" r="2.5" stroke="currentColor" strokeWidth="2" />
-    </svg>
-  );
-}
-
-function IconMoneyMini() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
-      <path
-        d="M4 7h16v10H4V7Z"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M7 10h0M17 14h0"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-      <path
-        d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"
-        stroke="currentColor"
-        strokeWidth="2"
-      />
-    </svg>
-  );
-}
-
-
+// ─── Main Page ────────────────────────────────────────────────
 export default function StudioPublicPage() {
   const { slug } = useParams();
-
-  const navigate = useNavigate();
-  const [openBooking, setOpenBooking] = useState(false);
-  const onClose = () => setOpenBooking(false);
-  const [copied, setCopied] = useState(false);
-  const [preselectedService, setPreselectedService] = useState(null);
-  useEffect(() => {
-    if (openBooking) document.body.style.overflow = "hidden";
-    else document.body.style.overflow = "";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [openBooking]);
 
   const [studio, setStudio] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const [openBooking, setOpenBooking] = useState(false);
+  const [preselectedService, setPreselectedService] = useState(null);
+  const [previewIndex, setPreviewIndex] = useState(null);
+  const [copied, setCopied] = useState(false);
+  const [successData, setSuccessData] = useState(null);
+
+  useEffect(() => {
+    const locked = openBooking || previewIndex !== null;
+    document.body.style.overflow = locked ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [openBooking, previewIndex]);
+
   useEffect(() => {
     let alive = true;
 
-    async function load() {
+    async function loadStudio() {
+      if (!slug) return;
+
       setLoading(true);
       setError("");
+
       try {
-        const res = await fetch(
-          `${import.meta.env.VITE_API_URL}/client/studios/${slug}`,
-        );
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/client/${slug}`);
         const data = await res.json().catch(() => null);
-        if (!res.ok)
+
+        if (!res.ok) {
           throw new Error(data?.message || `Load failed (${res.status})`);
+        }
 
         const s = data?.studio || null;
         if (!s) throw new Error("Studio missing in response");
@@ -221,7 +331,7 @@ export default function StudioPublicPage() {
           slug: s.slug || s.id,
           coverUrl: toPublicUrl(s.coverUrl),
           logoUrl: toPublicUrl(s.logoUrl),
-          portfolioUrls: s.portfolioUrls ?? s.portfolioUrls ?? s.portfolioUrls,
+          portfolioUrls: s.portfolioUrls ?? [],
         };
 
         if (alive) setStudio(normalized);
@@ -236,522 +346,398 @@ export default function StudioPublicPage() {
       }
     }
 
-    if (slug) load();
+    loadStudio();
+
     return () => {
       alive = false;
     };
   }, [slug]);
+
+  const name = safe(studio?.name) || "Студія";
+  const category = safe(studio?.category);
+  const city = safe(studio?.city);
+  const description = safe(studio?.description);
+  const coverUrl = studio?.coverUrl || "";
+  const logoUrl = studio?.logoUrl || "";
+  const address = [studio?.street, studio?.building, studio?.apartment].filter(Boolean).join(", ");
+  const fullAddress = [city, address].filter(Boolean).join(", ");
+  const portfolio = useMemo(() => parsePortfolio(studio?.portfolioUrls), [studio]);
+  const serviceCategories = studio?.serviceCategories || [];
+  const uncategorizedServices = studio?.uncategorizedServices || [];
+
+  function handleCopyAddress() {
+    if (!fullAddress) return;
+    navigator.clipboard?.writeText(fullAddress).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }
+
+  function openBookingForService(service) {
+    setPreselectedService({ categoryId: null, serviceId: service.id });
+    setOpenBooking(true);
+  }
+
   if (loading) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center px-4">
-        <div className="rounded-2xl border border-gray-200 bg-white px-6 py-4 text-sm text-gray-600">
+      <div className="flex min-h-[60vh] items-center justify-center px-4">
+        <div className="rounded-2xl border border-[#E0DCD8] bg-white px-6 py-4 text-sm text-[#7A7A7A]">
           Завантаження студії...
         </div>
       </div>
     );
   }
 
-  //   if (!studio) {
-  //     return (
-
-  // <div className="min-h-[60vh] flex items-center justify-center px-4">
-  // <div className="w-full max-w-2xl text-center rounded-[28px] border border-gray-200 bg-white p-12 shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
-  //     {/* 404 badge */}
-  //     <div className="mb-6">
-  //       <span className="inline-flex items-center justify-center rounded-full border border-gray-200 bg-white px-4 py-1 text-xs font-semibold tracking-wide text-gray-500">
-  //         404 • Not Found
-  //       </span>
-  //     </div>
-
-  //     <h1 className="text-xl font-extrabold text-gray-900">
-  //       Студію не знайдено
-  //     </h1>
-
-  //     <p className="mt-2 text-sm text-gray-600 leading-relaxed">
-  //       Можливо, студію було видалено або посилання є некоректним.
-
-  //     </p>
-
-  //     <div className="mt-6">
-  //       <Link
-  //         to="/studios"
-  //         className="inline-flex items-center justify-center rounded-2xl bg-black px-5 py-3 text-sm font-extrabold text-white transition hover:bg-gray-900 active:scale-[0.98]"
-  //       >
-  //         Повернутись до списку
-  //       </Link>
-  //     </div>
-  //   </div>
-  // </div>
-  //     );
-  //   }
   if (!studio) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center px-4">
-        <div className="w-full max-w-2xl text-center rounded-[28px] border border-gray-200 bg-white p-12 shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
-          <div className="mb-6">
-            <span className="inline-flex items-center justify-center rounded-full border border-gray-200 bg-white px-4 py-1 text-xs font-semibold tracking-wide text-gray-500">
-              {error ? "Помилка" : "404 • Not Found"}
-            </span>
-          </div>
-
-          <h1 className="text-xl font-extrabold text-gray-900">
+      <div className="flex min-h-[60vh] items-center justify-center px-4">
+        <div className="w-full max-w-2xl rounded-[28px] border border-[#E0DCD8] bg-white p-12 text-center shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
+          <h1 className="text-xl font-bold text-[#2A2A2A]">
             {error ? "Не вдалося завантажити студію" : "Студію не знайдено"}
           </h1>
 
-          {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-
-          <div className="mt-6">
-            <Link
-              to="/studios"
-              className="inline-flex items-center justify-center rounded-2xl bg-black px-5 py-3 text-sm font-extrabold text-white transition hover:bg-gray-900 active:scale-[0.98]"
-            >
-              Повернутись до списку
-            </Link>
-          </div>
+          {error ? <p className="mt-2 text-sm text-red-600">{error}</p> : null}
         </div>
       </div>
     );
   }
-  const serviceCategories = studio.serviceCategories || [];
-const uncategorizedServices = studio.uncategorizedServices || [];
-  const name = safe(studio.name) || "Студія";
-  const category = safe(studio.category) || "Категорія";
-  const city = safe(studio.city);
-  const description = safe(studio.description);
-  const coverUrl = studio.coverUrl || "";
-  const logoUrl = studio.logoUrl || "";
-  const street = safe(studio.street);
-  const building = safe(studio.building);
-  const apartment = safe(studio.apartment);
-  const address = [street, building, apartment].filter(Boolean).join(", ");
-
-  const portfolio = parsePortfolio(studio.portfolioUrls);
-  const priceFrom = studio.priceFrom;
 
   return (
-    <div className="min-h-[100dvh]">
-      <div className="mx-auto w-full max-w-6xl px-0 sm:px-5 lg:px-6 py-3 sm:py-6 space-y-4 sm:space-y-6">
-        {/* Top nav */}
-        {/* <div className="flex items-center justify-between gap-3">
-          <button
-            type="button"
-            onClick={() => setOpenBooking(true)}
-            className="hidden sm:inline-flex rounded-2xl bg-gray-900 px-5 py-3 text-sm font-semibold text-white hover:bg-black active:scale-[0.99] transition"
-          >
-            Записатись онлайн
-          </button>
-        </div> */}
+    <div className="grain-overlay min-h-screen bg-[#F8F5F2]" data-testid="studio-public-page">
+      <section className="relative" data-testid="hero-section">
+        <div className="relative h-[55vh] overflow-hidden sm:h-[65vh] lg:h-[70vh]">
+          {coverUrl ? (
+            <img
+              src={coverUrl}
+              alt={name}
+              className="absolute inset-0 h-full w-full object-cover"
+              data-testid="hero-cover-image"
+            />
+          ) : (
+            <div className="absolute inset-0 bg-[#E6E2DE]" />
+          )}
 
-        {/* HERO: cover + info under photo */}
-        <section className="rounded-[28px] border bg-white shadow-sm overflow-hidden">
-          {/* Cover */}
-          <div className="relative h-44 sm:h-52 md:h-64 lg:h-72 bg-gray-100 overflow-hidden">
-            <button
-              onClick={() => navigate(-1)}
-              className="
-    absolute top-3 left-3 z-10
-    inline-flex items-center gap-1.5
-    rounded-lg sm:rounded-xl
-    bg-white/50 backdrop-blur-md
-    px-2.5 py-2
-    text-xs sm:text-sm font-semibold text-gray-900
-    shadow-sm
-    hover:bg-white
-    active:scale-[0.97]
-    transition
-  "
+          <div className="absolute inset-0 bg-gradient-to-t from-[#F8F5F2] via-transparent to-black/10" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/20 to-transparent" />
+        </div>
+
+        <div className="relative z-10 mx-auto -mt-36 max-w-[1400px] px-4 sm:-mt-44 md:px-8">
+          <div className="flex flex-col items-start gap-5 sm:flex-row sm:gap-7">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1, duration: 0.5 }}
+              className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-2xl border-4 border-[#F8F5F2] bg-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] sm:h-28 sm:w-28"
+              data-testid="studio-logo"
             >
-              <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
-                <path
-                  d="M15 18l-6-6 6-6"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              Назад
-            </button>
-
-            {coverUrl ? (
-              <img
-                src={coverUrl}
-                alt={`${name} cover`}
-                className="h-full w-full object-cover"
-                onError={(e) => (e.currentTarget.style.display = "none")}
-              />
-            ) : (
-              <div className="flex h-full items-center justify-center text-sm text-gray-500">
-                Обкладинка не додана
-              </div>
-            )}
-
-            {/* soft overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-black/10 to-transparent" />
-
-            {/* category/city on photo */}
-            <div className="absolute bottom-4 left-4 right-4 flex flex-wrap items-center gap-2">
-              <span className="rounded-full bg-white/60 backdrop-blur-md border border-white/40 px-3 py-1 text-xs font-semibold text-gray-900 shadow-sm">
-                {category}
-              </span>
-
-              {city && (
-                <span className="rounded-full bg-white/60 backdrop-blur-md border border-white/40 px-3 py-1 text-xs font-semibold text-gray-900 shadow-sm">
-                  {city}
-                </span>
+              {logoUrl ? (
+                <img src={logoUrl} alt={`${name} logo`} className="h-full w-full object-cover" />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-xs font-bold tracking-widest text-[#C8A278]">
+                  LOGO
+                </div>
               )}
+            </motion.div>
 
-              {priceFrom != null && (
-                <span className="rounded-full bg-white/60 backdrop-blur-md border border-white/40 px-3 py-1 text-xs font-semibold text-gray-900 shadow-sm">
-                  від {priceFrom} грн
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.5 }}
+              className="min-w-0 flex-1"
+            >
+              <div className="mb-3 flex flex-wrap gap-2">
+                <span className="inline-flex items-center rounded-full border border-white/50 bg-white/80 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.15em] text-[#4A5D4E] shadow-sm backdrop-blur-md">
+                  {category}
                 </span>
-              )}
-            </div>
-          </div>
 
-          {/* Under photo: logo + name + address */}
-          <div className="p-5 sm:p-7">
-            <div className="flex items-start gap-4">
-              {/* Logo */}
-              <div className="h-14 w-14 sm:h-16 sm:w-16 overflow-hidden rounded-2xl border bg-gray-50 flex-shrink-0">
-                {logoUrl ? (
-                  <img
-                    src={logoUrl}
-                    alt={`${name} logo`}
-                    className="h-full w-full object-cover"
-                    onError={(e) => (e.currentTarget.style.display = "none")}
-                  />
-                ) : (
-                  <div className="grid h-full w-full place-items-center text-xs font-semibold text-gray-400">
-                    LOGO
-                  </div>
+                {city && (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-white/50 bg-white/80 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.15em] text-[#7A7A7A] shadow-sm backdrop-blur-md">
+                    <MapPin className="h-3 w-3" />
+                    {city}
+                  </span>
+                )}
+
+                {studio?.priceFrom != null && (
+                  <span className="inline-flex items-center rounded-full border border-[#C8A278]/20 bg-[#C8A278]/15 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.15em] text-[#C8A278] backdrop-blur-md">
+                    від {studio?.priceFrom} грн
+                  </span>
                 )}
               </div>
 
-              {/* Title + address */}
-              <div className="min-w-0 flex-1">
-                <h1 className="text-xl sm:text-3xl font-bold text-gray-900 pb-1 sm:pb-1">
-                  {name}
-                </h1>
+              <h1
+                className="text-3xl font-light leading-[1.1] tracking-tight text-[#2A2A2A] sm:text-5xl lg:text-6xl"
+                style={{ fontFamily: "var(--font-heading)" }}
+                data-testid="studio-name"
+              >
+                {name}
+              </h1>
 
-                <div className="mt-1 flex items-center gap-2">
-                  <p className="text-sm text-gray-600">
-                    {[city, address].filter(Boolean).join(", ")}
+              {fullAddress && (
+                <div className="mt-3 flex items-center gap-2">
+                  <p className="text-sm text-[#7A7A7A]" data-testid="studio-address">
+                    {fullAddress}
                   </p>
-
                   <button
                     type="button"
-                    onClick={async () => {
-                      const text = [city, address].filter(Boolean).join(", ");
-                      if (!text) return;
-
-                      try {
-                        await navigator.clipboard.writeText(text);
-                      } catch {
-                        // fallback для старих браузерів / http
-                        const el = document.createElement("textarea");
-                        el.value = text;
-                        el.setAttribute("readonly", "");
-                        el.style.position = "fixed";
-                        el.style.top = "-9999px";
-                        document.body.appendChild(el);
-                        el.select();
-                        document.execCommand("copy");
-                        document.body.removeChild(el);
-                      }
-
-                      setCopied(true);
-                      window.clearTimeout(window.__copyAddrTimer);
-                      window.__copyAddrTimer = window.setTimeout(
-                        () => setCopied(false),
-                        1400,
-                      );
-                    }}
-                    className="group relative inline-flex h-8 w-8 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-700 shadow-sm hover:bg-gray-50 active:scale-[0.98] transition"
-                    aria-label="Скопіювати адресу"
-                    title={copied ? "Скопійовано!" : "Скопіювати адресу"}
+                    onClick={handleCopyAddress}
+                    data-testid="copy-address-btn"
+                    className="group relative flex h-7 w-7 items-center justify-center rounded-lg border border-[#E0DCD8] bg-white text-[#7A7A7A] transition-colors duration-200 hover:bg-[#F0EEEA] hover:text-[#2A2A2A] active:scale-95"
+                    title={copied ? "Скопійовано!" : "Копіювати адресу"}
                   >
-                    {/* Copy icon */}
-                    <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
-                      <path
-                        d="M9 9h10v10H9V9Z"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinejoin="round"
-                      />
-                      <path
-                        d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                      />
-                    </svg>
-
-                    {/* Tooltip */}
-                    <span
-                      className={`
-        pointer-events-none absolute -top-9 left-1/2 -translate-x-1/2
-        whitespace-nowrap rounded-lg border border-gray-200 bg-white px-2 py-1
-        text-[11px] font-semibold text-gray-800 shadow-sm
-        opacity-0 translate-y-1 transition
-        group-hover:opacity-100 group-hover:translate-y-0
-        ${copied ? "opacity-100 translate-y-0" : ""}
-      `}
-                    >
-                      {copied ? "Скопійовано!" : "Копіювати"}
-                    </span>
+                    {copied ? (
+                      <CheckCheck className="h-3.5 w-3.5 text-[#4A5D4E]" />
+                    ) : (
+                      <Copy className="h-3.5 w-3.5" />
+                    )}
                   </button>
+                </div>
+              )}
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.5 }}
+              className="flex-shrink-0 self-end pb-2"
+            >
+              <button
+                type="button"
+                onClick={() => setOpenBooking(true)}
+                data-testid="hero-book-btn"
+                className="group rounded-2xl bg-[#4A5D4E] px-7 py-4 text-sm font-bold text-white shadow-[0_8px_30px_rgba(74,93,78,0.25)] transition-colors duration-200 hover:bg-[#3A4A3E] active:scale-[0.97]"
+              >
+                <span className="flex items-center gap-2">
+                  Записатись онлайн
+                  <Sparkles className="h-4 w-4 opacity-60" />
+                </span>
+              </button>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      <div className="mx-auto mt-10 max-w-[1400px] space-y-16 px-4 pb-16 sm:mt-14 sm:space-y-24 md:px-8">
+        <motion.section
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-50px" }}
+          transition={{ duration: 0.5 }}
+          data-testid="about-section"
+        >
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-12 md:gap-16">
+            <div className="md:col-span-4">
+              <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.25em] text-[#C8A278]">
+                Про нас
+              </p>
+              <h2
+                className="text-2xl font-medium tracking-tight text-[#2A2A2A] md:text-3xl"
+                style={{ fontFamily: "var(--font-heading)" }}
+              >
+                Ваш простір краси
+              </h2>
+            </div>
+
+            <div className="md:col-span-8">
+              <p className="text-base leading-relaxed text-[#7A7A7A] md:text-lg" data-testid="studio-description">
+                {description || "Опис ще не додано."}
+              </p>
+
+              <div className="mt-6 flex flex-wrap gap-3">
+                {fullAddress && (
+                  <div className="flex items-center gap-2 rounded-xl border border-[#E0DCD8] bg-white px-4 py-2.5 text-sm text-[#2A2A2A]">
+                    <MapPin className="h-4 w-4 text-[#C8A278]" />
+                    {fullAddress}
+                  </div>
+                )}
+                <div className="flex items-center gap-2 rounded-xl border border-[#E0DCD8] bg-white px-4 py-2.5 text-sm text-[#2A2A2A]">
+                  <Clock className="h-4 w-4 text-[#C8A278]" />
+                  Пн-Пт: 09:00 — 20:00
                 </div>
               </div>
 
-              {/* CTA (desktop) */}
-              <div className="hidden sm:flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setOpenBooking(true)}
-                  className="rounded-2xl bg-gray-900 px-5 py-3 text-sm font-semibold text-white hover:bg-black active:scale-[0.99] transition"
-                >
-                  Записатись онлайн
-                </button>
-              </div>
-            </div>
-
-            {/* Description */}
-            {description ? (
-              <p className="mt-4 text-sm leading-6 text-gray-600">
-                {description}
-              </p>
-            ) : (
-              <p className="mt-4 text-sm text-gray-600">Опис ще не додано.</p>
-            )}
-
-            {/* CTA (mobile) */}
-            <button
-              type="button"
-              onClick={() => setOpenBooking(true)}
-              className="mt-5 sm:hidden w-full rounded-2xl bg-gray-900 py-3 text-sm font-semibold text-white hover:bg-black active:scale-[0.99] transition"
-            >
-              Записатись онлайн
-            </button>
-
-            {/* Helper */}
-            <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-              <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                <p className="text-xs font-medium text-emerald-800">
-                  Підтвердження запису буде надіслано на ваш номер телефону.
+              <div className="mt-6 flex items-center gap-3 rounded-2xl border border-[#4A5D4E]/10 bg-[#4A5D4E]/5 px-4 py-3">
+                <span className="h-2 w-2 flex-shrink-0 animate-pulse rounded-full bg-[#4A5D4E]" />
+                <p className="text-xs font-medium text-[#4A5D4E]">
+                  Миттєве підтвердження запису на ваш телефон
                 </p>
               </div>
             </div>
           </div>
-        </section>
+        </motion.section>
 
-        {/* SERVICES */}
-        <section className="rounded-[28px] border bg-white p-6 sm:p-7 shadow-sm">
-          <div className="flex flex-wrap items-end justify-between gap-3">
+        <motion.section
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-50px" }}
+          transition={{ duration: 0.5 }}
+          data-testid="services-section"
+        >
+          <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
             <div>
-              <h2 className="text-xl font-extrabold text-gray-900">Послуги</h2>
-              <p className="mt-1 text-sm text-gray-600">
-                Оберіть категорію та запишіться на конкретну послугу
+              <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.25em] text-[#C8A278]">
+                Меню послуг
               </p>
-            </div>
-
-            <div className="hidden sm:flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setOpenBooking(true)}
-                className="rounded-2xl bg-gray-900 px-5 py-3 text-sm font-semibold text-white hover:bg-black active:scale-[0.99] transition"
+              <h2
+                className="text-2xl font-medium tracking-tight text-[#2A2A2A] md:text-4xl"
+                style={{ fontFamily: "var(--font-heading)" }}
               >
-                Відкрити форму запису
-              </button>
-            </div>
-          </div>
-
-{serviceCategories.length === 0 && uncategorizedServices.length === 0 ? (
-  <div className="mt-5 rounded-2xl border bg-gray-50 p-5 text-sm text-gray-600">
-    Послуги ще не додані.
-  </div>
-) : (
-  <div className="mt-5 space-y-3">
-    {/* ✅ послуги без категорії (кожна окремим пунктом) */}
-    {uncategorizedServices.length > 0 && (
-      <div className="space-y-2">
-        {uncategorizedServices.map((s) => (
-          <div
-            key={s.id}
-            className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border bg-white p-4 shadow-[0_10px_35px_-28px_rgba(0,0,0,0.30)]"
-          >
-            <div className="min-w-0">
-              <p className="font-bold text-gray-900">{s.name}</p>
-
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                {s.duration ? (
-                  <span className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-semibold text-gray-700">
-                    <IconClockMini />
-                    {s.duration} хв
-                  </span>
-                ) : null}
-
-                {s.price != null ? (
-                  <span className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-semibold text-gray-700">
-                    <IconMoneyMini />
-                    {s.price} грн
-                  </span>
-                ) : null}
-              </div>
+                Послуги
+              </h2>
             </div>
 
             <button
               type="button"
-              onClick={() => {
-                setPreselectedService({ categoryId: null, serviceId: s.id });
-                setOpenBooking(true);
-              }}
-              className="rounded-2xl ui-button-one"
+              onClick={() => setOpenBooking(true)}
+              data-testid="services-book-btn"
+              className="flex items-center gap-2 rounded-xl bg-[#4A5D4E] px-5 py-3 text-sm font-bold text-white transition-colors duration-200 hover:bg-[#3A4A3E] active:scale-[0.97]"
             >
-              Записатись
+              Форма запису
             </button>
           </div>
-        ))}
-      </div>
-    )}
 
-    {/* ✅ далі як було: категорії */}
-    {serviceCategories.map((cat) => (
-      <details
-        key={cat.id}
-        className="group overflow-hidden rounded-3xl border bg-white"
-      >
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 sm:p-5 hover:bg-gray-50">
-          <div className="min-w-0">
-            <p className="text-sm sm:text-base font-bold text-gray-900">
-              {cat.name}
-            </p>
-            <p className="mt-0.5 text-xs text-gray-500">
-              {(cat.services || []).length} послуг
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <span className="grid h-9 w-9 place-items-center rounded-2xl border border-gray-200 bg-white text-gray-500 group-open:rotate-180 transition">
-              ▼
-            </span>
-          </div>
-        </summary>
-
-        <div className="border-t bg-gradient-to-b from-white to-gray-50 p-4 sm:p-5">
-          {(cat.services || []).length === 0 ? (
-            <div className="rounded-2xl border bg-gray-50 p-4 text-sm text-gray-600">
-              У цій категорії поки немає послуг.
+          {serviceCategories.length === 0 && uncategorizedServices.length === 0 ? (
+            <div className="rounded-2xl bg-[#F0EEEA] p-8 text-center text-sm text-[#7A7A7A]">
+              Послуги ще не додані.
             </div>
           ) : (
-            <div className="space-y-2">
-              {(cat.services || []).map((s) => (
-                <div
-                  key={s.id}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border bg-white p-4 shadow-[0_10px_35px_-28px_rgba(0,0,0,0.30)]"
-                >
-                  <div className="min-w-0">
-                    <p className="font-bold text-gray-900">{s.name}</p>
-
-                    <div className="mt-2 flex flex-wrap items-center gap-2">
-                      {s.duration ? (
-                        <span className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-semibold text-gray-700">
-                          <IconClockMini />
-                          {s.duration} хв
-                        </span>
-                      ) : null}
-
-                      {s.price != null ? (
-                        <span className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-semibold text-gray-700">
-                          <IconMoneyMini />
-                          {s.price} грн
-                        </span>
-                      ) : null}
-                    </div>
+            <div className="space-y-6">
+              {uncategorizedServices.length > 0 && (
+                <div className="rounded-3xl border border-[#E0DCD8] bg-white p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] sm:p-7">
+                  <div className="divide-y divide-[#E0DCD8]">
+                    {uncategorizedServices.map((s) => (
+                      <ServiceRow key={s.id} service={s} onBook={openBookingForService} />
+                    ))}
                   </div>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPreselectedService({
-                        categoryId: cat.id,
-                        serviceId: s.id,
-                      });
-                      setOpenBooking(true);
-                    }}
-                    className="rounded-2xl ui-button-one"
-                  >
-                    Записатись
-                  </button>
                 </div>
+              )}
+
+              {serviceCategories.map((cat) => (
+                <CategoryAccordion key={cat.id} category={cat} onBook={openBookingForService} />
               ))}
             </div>
           )}
-        </div>
-      </details>
-    ))}
-  </div>
-)}
-        </section>
+        </motion.section>
 
-        {/* PORTFOLIO */}
-        <section className="rounded-[28px] border bg-white p-6 sm:p-7 shadow-sm">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <h2 className="text-xl font-extrabold text-gray-900">
+        {portfolio.length > 0 && (
+          <motion.section
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-50px" }}
+            transition={{ duration: 0.5 }}
+            data-testid="portfolio-section"
+          >
+            <div className="mb-10">
+              <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.25em] text-[#C8A278]">
+                Наші роботи
+              </p>
+              <h2
+                className="text-2xl font-medium tracking-tight text-[#2A2A2A] md:text-4xl"
+                style={{ fontFamily: "var(--font-heading)" }}
+              >
                 Портфоліо
               </h2>
-              <p className="mt-1 text-sm text-gray-600">
-                Приклади робіт та атмосфера студії
-              </p>
             </div>
-          </div>
 
-          {portfolio.length === 0 ? (
-            <div className="mt-5 rounded-2xl border bg-gray-50 p-5 text-sm text-gray-600">
-              Поки що немає прикладів робіт.
-            </div>
-          ) : (
-            <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            <div className="columns-2 gap-3 sm:columns-3 sm:gap-4 lg:columns-4">
               {portfolio.slice(0, 12).map((url, idx) => (
-                <div
+                <motion.button
                   key={url + idx}
-                  className="group overflow-hidden rounded-3xl border bg-gray-100 shadow-[0_12px_45px_-40px_rgba(0,0,0,0.55)]"
+                  type="button"
+                  onClick={() => setPreviewIndex(idx)}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: idx * 0.05, duration: 0.4 }}
+                  data-testid={`portfolio-image-${idx}`}
+                  className="group relative mb-3 block w-full cursor-zoom-in overflow-hidden rounded-2xl bg-[#E6E2DE] sm:mb-4"
                 >
-                  <div className="aspect-[4/3]">
-                    <img
-                      src={url}
-                      alt={`portfolio ${idx + 1}`}
-                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.05]"
-                      loading="lazy"
-                      onError={(e) => (e.currentTarget.style.display = "none")}
-                    />
-                  </div>
-                </div>
+                  <img
+                    src={url}
+                    alt={`Портфоліо ${idx + 1}`}
+                    className={`w-full object-cover transition-transform duration-500 group-hover:scale-105 ${
+                      idx % 3 === 0 ? "aspect-[3/4]" : idx % 3 === 1 ? "aspect-square" : "aspect-[4/5]"
+                    }`}
+                    loading="lazy"
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/10" />
+                </motion.button>
               ))}
             </div>
-          )}
-        </section>
-
-        <Modal
-          open={openBooking}
-          title={name}
-          onClose={() => {
-            setOpenBooking(false);
-            setPreselectedService(null);
-          }}
-        >
-          <StudioBookingWidget
-            studio={studio}
-            preselectedService={preselectedService}
-            onCancel={onClose}
-          />
-        </Modal>
-
-        {/* Spacer for mobile fixed bar */}
-        <div className="sm:hidden h-16" />
+          </motion.section>
+        )}
       </div>
+
+      <AnimatePresence>
+        {openBooking && (
+          <BookingModal
+            open={openBooking}
+            title={name}
+            onClose={() => {
+              setOpenBooking(false);
+              setPreselectedService(null);
+            }}
+          >
+            <StudioBookingWidget
+              studio={studio}
+              preselectedService={preselectedService}
+              onCancel={() => {
+                setOpenBooking(false);
+                setPreselectedService(null);
+              }}
+              onSuccess={(data) => {
+                setSuccessData(data);
+                setOpenBooking(false);
+              }}
+            />
+          </BookingModal>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {previewIndex !== null && (
+          <ImageLightbox
+            open={previewIndex !== null}
+            images={portfolio.slice(0, 12)}
+            startIndex={previewIndex}
+            onClose={() => setPreviewIndex(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {successData && (
+          <motion.div
+            initial={{ opacity: 0, y: 40, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 40, scale: 0.95 }}
+            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+            className="fixed bottom-8 right-8 z-[200] w-96 rounded-2xl border border-[#E0DCD8] bg-white p-5 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.15)]"
+            data-testid="booking-success-toast"
+          >
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-[#4A5D4E]/10">
+                <CheckCheck className="h-5 w-5 text-[#4A5D4E]" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-[#2A2A2A]">Запис створено!</p>
+                <p className="mt-1 text-xs text-[#7A7A7A]">
+                  {successData.serviceName} &middot; {successData.date} о {successData.time}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSuccessData(null)}
+                data-testid="success-toast-close"
+                className="flex h-7 w-7 items-center justify-center rounded-lg text-[#7A7A7A] transition-colors duration-200 hover:bg-[#F0EEEA]"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -160,7 +160,7 @@ export default function Studios() {
       setLoading(true);
       try {
         const res = await fetch(
-          `${import.meta.env.VITE_API_URL}/client/studios`,
+          `${import.meta.env.VITE_API_URL}/client/`,
         );
         const data = await res.json().catch(() => null);
 
@@ -672,7 +672,7 @@ export default function Studios() {
             return (
               <Link
                 key={studio.slug}
-                to={`/studios/${studio.slug}`}
+                to={`/${studio.slug}`}
                 className={`
 group relative flex flex-col h-full
 overflow-visible

@@ -1,7 +1,6 @@
 import { Routes, Route, useParams } from "react-router-dom";
 import Header from "./components/Header";
 
-import Home from "./pages/Home";
 import Studios from "./pages/Studios";
 import StudioDetails from "./pages/StudioDetails";
 import BookingSuccess from "./pages/BookingSuccess";
@@ -37,51 +36,49 @@ function StudioDetailsKeyed() {
 export default function App() {
   return (
     <>
-    <ScrollRestoration />
-  <ScrollToTop />
-    <FavouritesProvider>
-    <AppBackground>
-      <Header />
+      <ScrollRestoration />
+      <ScrollToTop />
+      <FavouritesProvider>
+        <AppBackground>
+          <Header />
 
-      <main className="mx-auto max-w-6xl px-4 pt-20 pb-8">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/studios" element={<Studios />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/bookings" element={<MyBookings />} />
-<Route path="/favourites" element={<Favourites />} />
-          <Route path="/studios/:slug" element={<StudioPublicPage />} />
-          <Route path="/terms" element={<Terms />} />
-          <Route path="/privacy" element={<Privacy />} />
-          <Route path="/booking/success" element={<BookingSuccess />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/login" element={<LoginClient />} />
-          <Route path="/register" element={<RegisterClient />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <main className="mx-auto max-w-6xl px-4 pt-20 pb-8">
+            <Routes>
+              <Route path="/" element={<Studios />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/bookings" element={<MyBookings />} />
+              <Route path="/favourites" element={<Favourites />} />
+              <Route path="/:slug" element={<StudioPublicPage />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/booking/success" element={<BookingSuccess />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/login" element={<LoginClient />} />
+              <Route path="/register" element={<RegisterClient />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
 
-          <Route path="/login-owner" element={<LoginOwner />} />
-          <Route path="/register-owner" element={<RegisterOwner />} />
+              <Route path="/login-owner" element={<LoginOwner />} />
+              <Route path="/register-owner" element={<RegisterOwner />} />
 
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          >
-
-            <Route index element={<Golowna></Golowna>} />
-            <Route path="studio" element={<StudioSettings />} />
-            <Route path="services" element={<Services />} />
-            <Route path="schedule" element={<Schedule />} />
-            <Route path="bookings" element={<Bookings />} />
-            <Route path="masters" element={<Masters />} />
-          </Route>
-        </Routes>
-      </main>
-    </AppBackground>
-    </FavouritesProvider>
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<Golowna></Golowna>} />
+                <Route path="studio" element={<StudioSettings />} />
+                <Route path="services" element={<Services />} />
+                <Route path="schedule" element={<Schedule />} />
+                <Route path="bookings" element={<Bookings />} />
+                <Route path="masters" element={<Masters />} />
+              </Route>
+            </Routes>
+          </main>
+        </AppBackground>
+      </FavouritesProvider>
     </>
   );
 }

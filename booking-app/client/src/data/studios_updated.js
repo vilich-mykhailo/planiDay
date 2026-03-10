@@ -1,4 +1,4 @@
-// src/data/studios.js
+// src/data/.js
 export const studios = [
   {
     "slug": "polish-room-шепетівка-1",

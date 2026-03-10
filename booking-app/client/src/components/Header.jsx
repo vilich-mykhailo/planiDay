@@ -109,14 +109,14 @@ const handleLogout = () => {
 if (role === "client") {
   return {
     links: [
-      { to: "/studios", label: "Головна" },    
+      { to: "/", label: "Головна" },    
       { to: "/profile", label: "Мої дані" }, 
       { to: "/bookings", label: "Мої записи" },
       { to: "/favourites", label: "Улюблені" },
     ],
     actions: (
       <div className="hidden md:flex items-center gap-2">
-        <ButtonLink to="/studios" variant="secondary" onClick={handleLogout}>
+        <ButtonLink to="/" variant="secondary" onClick={handleLogout}>
           Вийти
         </ButtonLink>
       </div>
@@ -205,11 +205,11 @@ if (role === "client") {
 if (role === "client") {
   return {
     links: [
-      { to: "/studios", label: "Головна" },      // ✅ нове
+      { to: "/", label: "Головна" },      // ✅ нове
       { to: "/profile", label: "Мої дані" },      // ✅ нове
       { to: "/bookings", label: "Мої записи" },
       { to: "/favourites", label: "Улюблені" },
-      { to: "/studios", label: "Вийти", onClick: handleLogout },
+      { to: "/", label: "Вийти", onClick: handleLogout },
     ],
   };
 }
@@ -254,7 +254,7 @@ if (role === "client") {
         <div className="flex h-16 items-center justify-between gap-3 px-3 sm:px-4">
           {/* Brand */}
           <Link
-            to="/studios"
+            to="/"
             className="flex items-center gap-2 rounded-2xl px-2 py-1.5 hover:bg-gray-50 transition"
             aria-label="Planiday"
           >
@@ -410,7 +410,7 @@ if (role === "client") {
             <div className="px-4 py-4">
               {role === "client" ? (
                 <ButtonLink
-                  to="/studios"
+                  to="/"
                   variant="primary"
                   onClick={() => setOpen(false)}
                 >

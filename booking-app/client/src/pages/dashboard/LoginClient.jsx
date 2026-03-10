@@ -45,7 +45,7 @@ export default function LoginClient() {
 
       window.dispatchEvent(new Event("auth-changed")); 
 
-      navigate("/studios");
+      navigate("/");
     } catch (err) {
       setError(err?.message || "Невірний email або пароль.");
     } finally {

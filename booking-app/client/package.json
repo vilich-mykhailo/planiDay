@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-  "start": "vite --host",
+    "start": "vite --host",
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
@@ -13,6 +13,8 @@
   },
   "dependencies": {
     "date-fns": "^4.1.0",
+    "framer-motion": "^12.35.2",
+    "lucide-react": "^0.577.0",
     "react": "^19.2.0",
     "react-day-picker": "^9.13.1",
     "react-dom": "^19.2.0",

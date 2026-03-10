@@ -31,7 +31,7 @@ export default function Favourites() {
           </p>
 
           <Link
-            to="/studios"
+            to="/"
             className="mt-6 inline-flex items-center justify-center rounded-2xl bg-black px-5 py-3 text-sm font-extrabold text-white hover:bg-gray-900 transition"
           >
             Перейти до салонів →
@@ -55,7 +55,7 @@ export default function Favourites() {
 </div>
 
           <Link
-            to="/studios"
+            to="/"
             className="inline-flex items-center justify-center rounded-2xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-extrabold text-gray-900 hover:bg-gray-50 transition"
           >
             Додати ще салони
@@ -77,7 +77,7 @@ export default function Favourites() {
           return (
             <Link
               key={s.slug}
-              to={`/studios/${s.slug}`}
+              to={`//${s.slug}`}
               className="
                 group relative overflow-hidden
                 rounded-2xl border border-gray-200 bg-white

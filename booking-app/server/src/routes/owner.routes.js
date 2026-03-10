@@ -6,7 +6,7 @@ import { requireAuth, requireOwner } from "../middleware/auth.js";
 export const ownerRouter = Router();
 
 // CREATE studio
-ownerRouter.post("/studios", requireAuth, requireOwner, async (req, res) => {
+ownerRouter.post("/", requireAuth, requireOwner, async (req, res) => {
   const { name, address, city } = req.body;
   if (!name) return res.status(400).json({ message: "Studio name is required" });
 
@@ -23,7 +23,7 @@ ownerRouter.post("/studios", requireAuth, requireOwner, async (req, res) => {
 });
 
 // ✅ LIST my studios
-ownerRouter.get("/studios", requireAuth, requireOwner, async (req, res) => {
+ownerRouter.get("/", requireAuth, requireOwner, async (req, res) => {
   const studios = await prisma.studio.findMany({
     where: { ownerId: req.auth.sub },
     orderBy: { createdAt: "desc" },
@@ -33,7 +33,7 @@ ownerRouter.get("/studios", requireAuth, requireOwner, async (req, res) => {
 });
 
 // ✅ UPDATE my studio
-ownerRouter.patch("/studios/:id", requireAuth, requireOwner, async (req, res) => {
+ownerRouter.patch("/:id", requireAuth, requireOwner, async (req, res) => {
   const { id } = req.params;
   const { name, address, city } = req.body;
 

@@ -82,7 +82,7 @@ function OptionCard({
         </Link>
 
         <Link
-          to="/studios"
+          to="/"
           className={[
             "rounded-xl border px-5 py-3 text-sm font-bold text-center transition",
             dark
@@ -115,7 +115,7 @@ export default function Home() {
 
           <div className="mt-6 flex flex-col sm:flex-row gap-2 justify-center">
             <Link
-              to="/studios"
+              to="/"
               className="rounded-xl bg-black px-6 py-3.5 text-sm font-bold text-white hover:bg-gray-900 transition"
             >
               Знайти майстра

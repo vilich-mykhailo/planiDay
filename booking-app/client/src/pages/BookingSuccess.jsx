@@ -140,7 +140,7 @@ export default function BookingSuccess() {
             <div className="flex flex-col sm:flex-row gap-3 pt-1 sm:justify-end">
               <button
                 type="button"
-                onClick={() => navigate("/studios")}
+                onClick={() => navigate("/")}
                 className="w-full rounded-2xl bg-gray-900 text-white py-3 px-5 font-semibold hover:bg-black active:scale-[0.99] transition"
               >
                 На головну

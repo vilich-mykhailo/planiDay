@@ -193,12 +193,12 @@ const stats = useMemo(() => {
     }
   }
 
-  return [
-    { title: "Активні записи на сьогодні", value: todayActive },
-    { title: "Нові записи (не підтверджені)", value: todayNew }, // ✅ новий пункт
-    { title: "Активні записи на тижні", value: weekActive },
-    { title: "Активні записи на місяць", value: monthActive },
-  ];
+return [
+  { title: <>Активні записи<br />на сьогодні</>, value: todayActive },
+  { title: <>Нові записи<br />(не підтверджені)</>, value: todayNew },
+  { title: <>Активні записи<br />на тижні</>, value: weekActive },
+  { title: <>Активні записи<br />на місяць</>, value: monthActive },
+];
 }, [bookings, nowTs]);
 
   const upcomingAppointments = useMemo(() => {
@@ -293,11 +293,6 @@ const stats = useMemo(() => {
           </ul>
         )}
       </Card>
-
-      {/* Tip */}
-      <div className="rounded-3xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">
-        💡 <strong>Порада дня:</strong> Заповнений графік на 2 тижні вперед підвищує довіру клієнтів.
-      </div>
     </div>
   );
 }
