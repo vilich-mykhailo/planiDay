@@ -87,6 +87,8 @@ function ButtonLink({ to, variant = "primary", children, onClick, disabled }) {
 export default function Header() {
   const [open, setOpen] = useState(false);
   const location = useLocation();
+
+  
   const isLogin = location.pathname === "/login";
   const isRegister = location.pathname === "/register";
   const isOwnerLogin = location.pathname === "/login-owner";
@@ -239,7 +241,22 @@ if (role === "client") {
     };
   }, [role]);
 
+const staticRoutes = [
+  "/",
+  "/login",
+  "/register",
+  "/login-owner",
+  "/register-owner",
+  "/profile",
+  "/bookings",
+  "/favourites",
+  "/dashboard/studio",
+];
+
+const isStudioPublicPage = !staticRoutes.includes(location.pathname);
+if (isStudioPublicPage) return null;
   return (
+    
   <header className="fixed top-3 left-0 right-0 z-[60]">
     <div className="mx-auto max-w-6xl px-4">
       <div

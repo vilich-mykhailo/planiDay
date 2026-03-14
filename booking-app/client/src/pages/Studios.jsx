@@ -1,4 +1,5 @@
-import { Link, useSearchParams } from "react-router-dom";
+// Studios.jsx
+import { Link, useSearchParams, useNavigate  } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import AnimatedField from "../components/AnimatedField";
 import AnimatedDropdown from "../components/AnimatedDropdown";
@@ -153,6 +154,8 @@ export default function Studios() {
   }));
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
+const navigate = useNavigate();
+
   useEffect(() => {
     let alive = true;
 
@@ -191,6 +194,26 @@ export default function Studios() {
       alive = false;
     };
   }, []);
+
+  useEffect(() => {
+  const saved = sessionStorage.getItem("studios-scroll");
+  if (!saved) return;
+
+  const y = Number(saved);
+
+  const restore = () => {
+    window.scrollTo(0, Number.isFinite(y) ? y : 0);
+  };
+
+  requestAnimationFrame(() => {
+    restore();
+    setTimeout(restore, 0);
+    setTimeout(restore, 80);
+    setTimeout(restore, 200);
+  });
+}, []);
+
+
 
   // ✅ синхронізація state -> URL
   useEffect(() => {
@@ -420,6 +443,7 @@ export default function Studios() {
   }
 
   return (
+    <div className="mx-auto max-w-6xl px-4 pt-20 pb-8">
     <div className="pt-6 px-4 sm:pt-8 sm:px-6 lg:pt-6 lg:px-8 space-y-6">
       {/* Filters */}
       <section className="rounded-2xl border border-gray-600 bg-white p-4 px-4 sm:px-6 lg:px-8 pt-2 sm:pt-4 lg:pt-6">
@@ -670,33 +694,53 @@ export default function Studios() {
             const hasWebsite = Boolean(safeText(studio.website));
 
             return (
-              <Link
-                key={studio.slug}
-                to={`/${studio.slug}`}
-                className={`
-group relative flex flex-col h-full
-overflow-visible
-rounded-2xl border bg-white
-transform-gpu will-change-transform
-transition-all duration-300
-active:scale-[0.98]
-      ${
-        studio.premium
-          ? `
-            border-yellow-200
-            hover:border-yellow-400
-            hover:-translate-y-[4px]
-            hover:shadow-[0_10px_30px_rgba(234,179,8,0.25)]
-          `
-          : `
-            border-gray-200
-            hover:border-gray-300
-            hover:-translate-y-[2px]
-            hover:shadow-md
-          `
-      }
-    `}
-              >
+<div
+  key={studio.slug}
+  role="button"
+  tabIndex={0}
+  onClick={() => {
+    sessionStorage.setItem(
+      "studios-scroll",
+      String(window.scrollY || 0),
+    );
+
+    navigate(`/${studio.slug}`);
+  }}
+  onKeyDown={(e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+
+      sessionStorage.setItem(
+        "studios-scroll",
+        String(window.scrollY || 0),
+      );
+
+      navigate(`/${studio.slug}`);
+    }
+  }}
+  className={`
+    group relative flex flex-col h-full
+    overflow-visible rounded-2xl border bg-white
+    transform-gpu will-change-transform
+    transition-all duration-300 cursor-pointer
+    active:scale-[0.98]
+    ${
+      studio.premium
+        ? `
+          border-yellow-200
+          hover:border-yellow-400
+          hover:-translate-y-[4px]
+          hover:shadow-[0_10px_30px_rgba(234,179,8,0.25)]
+        `
+        : `
+          border-gray-200
+          hover:border-gray-300
+          hover:-translate-y-[2px]
+          hover:shadow-md
+        `
+    }
+  `}
+>
                 {/* ✅ PREMIUM badge (обов’язково ПЕРШИМ, і з високим z-index) */}
                 {studio.premium && (
                   <div
@@ -809,7 +853,7 @@ active:scale-[0.98]
                     <FavouriteButton studio={studio} />
                   </div>
                 </div>
-              </Link>
+              </div>
             );
           })}
         </div>
@@ -840,6 +884,7 @@ active:scale-[0.98]
           </button>
         </div>
       )}
+    </div>
     </div>
   );
 }

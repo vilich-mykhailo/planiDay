@@ -37,12 +37,11 @@ export default function App() {
   return (
     <>
       <ScrollRestoration />
-      <ScrollToTop />
+      {/* <ScrollToTop /> */}
       <FavouritesProvider>
         <AppBackground>
           <Header />
 
-          <main className="mx-auto max-w-6xl px-4 pt-20 pb-8">
             <Routes>
               <Route path="/" element={<Studios />} />
               <Route path="/profile" element={<Profile />} />
@@ -76,7 +75,6 @@ export default function App() {
                 <Route path="masters" element={<Masters />} />
               </Route>
             </Routes>
-          </main>
         </AppBackground>
       </FavouritesProvider>
     </>

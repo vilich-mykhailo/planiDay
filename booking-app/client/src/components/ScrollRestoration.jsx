@@ -2,40 +2,56 @@ import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 
 export default function ScrollRestoration() {
-  const { key, pathname, search, hash } = useLocation();
+  const location = useLocation();
+  const { pathname, search, hash, key, state } = location;
 
   const storageKey = `scroll:${pathname}${search}${hash}`;
 
-  // один раз: вимикаємо native restoration
   useEffect(() => {
     if ("scrollRestoration" in window.history) {
       window.history.scrollRestoration = "manual";
     }
   }, []);
 
-  // restore on route change
+  // зберігаємо скрол поточної сторінки
   useEffect(() => {
-    const raw = sessionStorage.getItem(storageKey);
-    const y = raw ? Number(raw) : 0;
-
-    requestAnimationFrame(() => {
-      window.scrollTo({
-        top: Number.isFinite(y) ? y : 0,
-        left: 0,
-        behavior: "auto",
-      });
-    });
-  }, [key, storageKey]);
-
-  // save on scroll (rebind on route change)
-  useEffect(() => {
-    const onScroll = () => {
+    const saveScroll = () => {
       sessionStorage.setItem(storageKey, String(window.scrollY || 0));
     };
 
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, [key, storageKey]);
+    saveScroll();
+
+    window.addEventListener("scroll", saveScroll, { passive: true });
+    window.addEventListener("beforeunload", saveScroll);
+
+    return () => {
+      saveScroll();
+      window.removeEventListener("scroll", saveScroll);
+      window.removeEventListener("beforeunload", saveScroll);
+    };
+  }, [storageKey]);
+
+  // відновлюємо скрол після переходу
+  useEffect(() => {
+    const explicitRestore = state?.restoreScroll;
+    const explicitY = Number(state?.scrollY ?? 0);
+
+    const savedY = Number(sessionStorage.getItem(storageKey) ?? 0);
+
+    const y =
+      explicitRestore && Number.isFinite(explicitY) ? explicitY : savedY;
+
+    const restore = () => {
+      window.scrollTo(0, Number.isFinite(y) ? y : 0);
+    };
+
+    requestAnimationFrame(() => {
+      restore();
+      setTimeout(restore, 0);
+      setTimeout(restore, 80);
+      setTimeout(restore, 180);
+    });
+  }, [key, storageKey, state]);
 
   return null;
 }
