@@ -67,13 +67,29 @@ export default function StudioBookingWidget({
   onSuccess,
 }) {
   const services = useMemo(() => {
-    if (Array.isArray(studio?.services)) return studio.services;
+    if (Array.isArray(studio?.services) && studio.services.length) {
+      return studio.services;
+    }
+
+    const uncategorized = Array.isArray(studio?.uncategorizedServices)
+      ? studio.uncategorizedServices
+      : [];
 
     const cats = Array.isArray(studio?.serviceCategories)
       ? studio.serviceCategories
       : [];
 
-    return cats.flatMap((c) => (Array.isArray(c?.services) ? c.services : []));
+    const categorized = cats.flatMap((c) =>
+      Array.isArray(c?.services)
+        ? c.services.map((service) => ({
+            ...service,
+            categoryId: c.id ?? null,
+            categoryName: c.name ?? "",
+          }))
+        : [],
+    );
+
+    return [...uncategorized, ...categorized];
   }, [studio]);
 
   const remountKey = useMemo(() => {
@@ -132,14 +148,22 @@ function StudioBookingWidgetInner({
     return out;
   }, [studio]);
 
+  const visibleServices = useMemo(() => {
+    const wantedId = preselectedService?.serviceId;
+
+    if (!wantedId) return services;
+
+    return services.filter((s) => String(s.id) === String(wantedId));
+  }, [services, preselectedService?.serviceId]);
+
   const defaultServiceId = useMemo(() => {
-    if (!services.length) return null;
+    if (!visibleServices.length) return null;
 
     const wantedId = preselectedService?.serviceId;
-    const exists = wantedId && services.some((s) => s.id === wantedId);
+    const exists = wantedId && visibleServices.some((s) => String(s.id) === String(wantedId));
 
-    return exists ? wantedId : (services[0]?.id ?? null);
-  }, [services, preselectedService?.serviceId]);
+    return exists ? wantedId : (visibleServices[0]?.id ?? null);
+  }, [visibleServices, preselectedService?.serviceId]);
 
   const [selectedDate, setSelectedDate] = useState(() => {
     const d = new Date();
@@ -248,12 +272,13 @@ function StudioBookingWidgetInner({
   }, [schedule]);
 
   const selectedService = useMemo(
-    () => services.find((s) => s.id === selectedServiceId) || null,
+    () => services.find((s) => String(s.id) === String(selectedServiceId)) || null,
     [services, selectedServiceId]
   );
 
   useEffect(() => {
     setSelectedServiceId(defaultServiceId);
+    setSelectedTime(null);
   }, [defaultServiceId]);
 
   async function handleSubmit(e) {
@@ -263,7 +288,7 @@ function StudioBookingWidgetInner({
     if (!selectedTime) return;
     if (!form.name || !form.phone) return;
 
-    const service = selectedService || services?.[0] || null;
+    const service = selectedService || visibleServices?.[0] || null;
     if (!service?.id) return;
 
     try {
@@ -282,6 +307,8 @@ function StudioBookingWidgetInner({
             date: selectedDateStr,
             time: selectedTime,
             duration: Number(service?.duration || studio?.slotDuration || 60),
+            name: form.name,
+            phone: form.phone,
           }),
         }
       );
@@ -324,6 +351,8 @@ function StudioBookingWidgetInner({
         month: "long",
       })
     : "";
+
+  const isSinglePreselected = Boolean(preselectedService?.serviceId);
 
   return (
     <div className="flex h-full flex-col" data-testid="booking-widget">
@@ -379,14 +408,14 @@ function StudioBookingWidgetInner({
             </h2>
           </div>
 
-          {services.length === 0 ? (
+          {visibleServices.length === 0 ? (
             <div className="rounded-2xl bg-[#F0EEEA] p-5 text-sm text-[#7A7A7A]">
               Послуги ще не додані.
             </div>
           ) : (
             <div className="space-y-2">
-              {services.map((service) => {
-                const active = service.id === selectedServiceId;
+              {visibleServices.map((service) => {
+                const active = String(service.id) === String(selectedServiceId);
 
                 return (
                   <motion.button
@@ -394,6 +423,7 @@ function StudioBookingWidgetInner({
                     type="button"
                     layout
                     onClick={() => {
+                      if (isSinglePreselected) return;
                       setSelectedServiceId(service.id);
                       setSelectedTime(null);
                     }}
@@ -405,6 +435,7 @@ function StudioBookingWidgetInner({
                           ? "border-[#4A5D4E] bg-[#4A5D4E] shadow-lg shadow-[#4A5D4E]/10"
                           : "border-[#E0DCD8] bg-white hover:border-[#C8A278]/40 hover:bg-[#F8F5F2]"
                       }
+                      ${isSinglePreselected ? "cursor-default" : ""}
                     `}
                   >
                     <div className="flex items-center justify-between">
@@ -541,7 +572,7 @@ function StudioBookingWidgetInner({
         )}
       </div>
 
-      <div className="sticky bottom-0 z-20 -mx-5 sm:-mx-6 mt-6 border-t border-[#E0DCD8] bg-white px-5 py-4 sm:px-6">
+      <div className="sticky bottom-0 z-20 -mx-5 mt-6 border-t border-[#E0DCD8] bg-white px-5 py-4 sm:-mx-6 sm:px-6">
         {selectedService && selectedTime && (
           <div className="mb-3 flex items-center justify-between text-xs text-[#7A7A7A]">
             <span>{selectedService.name}</span>

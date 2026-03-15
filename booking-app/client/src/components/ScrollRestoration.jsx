@@ -1,11 +1,10 @@
-import { useEffect } from "react";
+// ScrollRestoration.jsx
+import { useEffect, useLayoutEffect } from "react";
 import { useLocation } from "react-router-dom";
 
 export default function ScrollRestoration() {
   const location = useLocation();
-  const { pathname, search, hash, key, state } = location;
-
-  const storageKey = `scroll:${pathname}${search}${hash}`;
+  const { pathname } = location;
 
   useEffect(() => {
     if ("scrollRestoration" in window.history) {
@@ -13,45 +12,18 @@ export default function ScrollRestoration() {
     }
   }, []);
 
-  // зберігаємо скрол поточної сторінки
-  useEffect(() => {
-    const saveScroll = () => {
-      sessionStorage.setItem(storageKey, String(window.scrollY || 0));
-    };
+  useLayoutEffect(() => {
+    if (pathname !== "/") return;
 
-    saveScroll();
+    const skipOnce = sessionStorage.getItem("skip-home-scroll-once") === "1";
 
-    window.addEventListener("scroll", saveScroll, { passive: true });
-    window.addEventListener("beforeunload", saveScroll);
+    if (skipOnce) {
+      sessionStorage.removeItem("skip-home-scroll-once");
+      return;
+    }
 
-    return () => {
-      saveScroll();
-      window.removeEventListener("scroll", saveScroll);
-      window.removeEventListener("beforeunload", saveScroll);
-    };
-  }, [storageKey]);
-
-  // відновлюємо скрол після переходу
-  useEffect(() => {
-    const explicitRestore = state?.restoreScroll;
-    const explicitY = Number(state?.scrollY ?? 0);
-
-    const savedY = Number(sessionStorage.getItem(storageKey) ?? 0);
-
-    const y =
-      explicitRestore && Number.isFinite(explicitY) ? explicitY : savedY;
-
-    const restore = () => {
-      window.scrollTo(0, Number.isFinite(y) ? y : 0);
-    };
-
-    requestAnimationFrame(() => {
-      restore();
-      setTimeout(restore, 0);
-      setTimeout(restore, 80);
-      setTimeout(restore, 180);
-    });
-  }, [key, storageKey, state]);
+    window.scrollTo(0, 0);
+  }, [pathname]);
 
   return null;
 }

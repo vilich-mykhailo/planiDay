@@ -37,33 +37,40 @@ function initialsFromName(name) {
 
 function SectionCard({ title, subtitle, right, children }) {
   return (
-    <section className="rounded-[24px] sm:rounded-[28px] border border-gray-200 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.06)] overflow-hidden">
-      <div className="px-4 sm:px-5 py-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+    <section className="overflow-hidden rounded-[26px] border border-[#E9DED2] bg-[#FFFCF8] shadow-[0_10px_30px_rgba(93,64,55,0.06)] sm:rounded-[30px]">
+      <div className="flex flex-col gap-3 border-b border-[#F1E7DE] px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
         <div className="min-w-0">
-          <h2 className="text-base font-extrabold text-gray-900">{title}</h2>
-          {subtitle && <p className="mt-1 text-sm text-gray-600">{subtitle}</p>}
+          <h2 className="text-[18px] font-extrabold tracking-[-0.02em] text-[#1F2A22]">
+            {title}
+          </h2>
+          {subtitle && <p className="mt-1 text-sm text-[#857A70]">{subtitle}</p>}
         </div>
         {right && <div className="w-full sm:w-auto">{right}</div>}
       </div>
-      <div className="px-4 sm:px-5 py-4 sm:py-5">{children}</div>
+      <div className="px-4 py-4 sm:px-5 sm:py-5">{children}</div>
     </section>
   );
 }
 
 function Button({ variant = "default", className = "", children, ...props }) {
   const base =
-    "inline-flex items-center justify-center rounded-2xl px-4 py-2.5 text-sm font-extrabold transition active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed";
+    "inline-flex items-center justify-center rounded-[16px] px-4 py-2.5 text-sm font-extrabold transition active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed";
+
   const styles = {
-    default: "border border-gray-200 bg-white text-gray-900 hover:bg-gray-50",
-    primary: "bg-black text-white hover:bg-gray-900",
-    danger: "border border-red-200 bg-red-50 text-red-700 hover:bg-red-100",
-    ghost: "bg-transparent text-gray-900 hover:bg-gray-100",
+    default:
+      "border border-[#E7DED6] bg-white text-[#6B625A] hover:bg-[#FAF7F4] hover:text-[#1F2A22]",
+    primary:
+      "bg-[#4A5D4E] text-white shadow-[0_10px_24px_rgba(74,93,78,0.22)] hover:bg-[#3F5143]",
+    danger:
+      "border border-[#F0D6D1] bg-[#FFF3F1] text-[#B2504A] hover:bg-[#FDE8E4]",
+    ghost:
+      "bg-transparent text-[#6B625A] hover:bg-[#FAF7F4] hover:text-[#1F2A22]",
   };
 
   return (
     <button
       type="button"
-      className={`${base} ${styles[variant]} ${className}`}
+      className={`${base} ${styles[variant] || styles.default} ${className}`}
       {...props}
     >
       {children}
@@ -82,24 +89,24 @@ function Modal({ open, onClose, title, subtitle, children, footer }) {
 
   return (
     <div
-      className="fixed inset-0 z-[90] flex items-end sm:items-center justify-center p-0 sm:px-4 bg-black/40 backdrop-blur-[2px]"
+      className="fixed inset-0 z-[90] flex items-end justify-center bg-[rgba(32,24,18,0.38)] p-0 backdrop-blur-[3px] sm:items-center sm:px-4"
       onClick={onClose}
     >
       <div
-        className="w-full sm:max-w-md overflow-hidden rounded-t-[28px] sm:rounded-[28px] border border-gray-200 bg-white shadow-xl max-h-[92vh] sm:max-h-[85vh] flex flex-col"
+        className="flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-[28px] border border-[#E9DED2] bg-[#FFFCF8] shadow-[0_24px_80px_rgba(93,64,55,0.18)] sm:max-h-[85vh] sm:max-w-md sm:rounded-[30px]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="border-b px-4 sm:px-5 py-4 flex-shrink-0">
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+        <div className="flex-shrink-0 border-b border-[#F1E7DE] px-4 py-4 sm:px-5">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#C89D72]">
             {title}
           </p>
-          {subtitle && <p className="mt-1 text-sm text-gray-600">{subtitle}</p>}
+          {subtitle && <p className="mt-1 text-sm text-[#857A70]">{subtitle}</p>}
         </div>
 
-        <div className="p-4 sm:p-5 space-y-4 overflow-auto">{children}</div>
+        <div className="space-y-4 overflow-auto p-4 sm:p-5">{children}</div>
 
         {footer && (
-          <div className="border-t px-4 sm:px-5 py-4 flex-shrink-0">
+          <div className="flex-shrink-0 border-t border-[#F1E7DE] px-4 py-4 sm:px-5">
             {footer}
           </div>
         )}
@@ -111,7 +118,7 @@ function Modal({ open, onClose, title, subtitle, children, footer }) {
 function Avatar({ name, photoUrl }) {
   const initials = initialsFromName(name);
   return (
-    <div className="h-12 w-12 rounded-2xl overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center flex-shrink-0">
+    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-[18px] border border-[#E9DED2] bg-[#F8F4EF]">
       {photoUrl ? (
         <img
           src={photoUrl}
@@ -120,9 +127,18 @@ function Avatar({ name, photoUrl }) {
           onError={(e) => (e.currentTarget.style.display = "none")}
         />
       ) : (
-        <span className="text-xs font-extrabold text-gray-600">{initials}</span>
+        <span className="text-xs font-extrabold text-[#7B6D61]">{initials}</span>
       )}
     </div>
+  );
+}
+
+function SkeletonBlock({ className = "" }) {
+  return (
+    <div
+      className={`animate-pulse rounded-xl bg-[#EFE6DD] ${className}`}
+      aria-hidden="true"
+    />
   );
 }
 
@@ -148,11 +164,88 @@ function MasterSkeletonRow() {
   );
 }
 
+function MastersSkeleton() {
+  return (
+    <div className="space-y-6">
+      {/* header */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 space-y-2">
+          <SkeletonBlock className="h-9 w-40 rounded-2xl sm:h-10 sm:w-48" />
+          <SkeletonBlock className="h-4 w-80 max-w-full" />
+        </div>
+
+        <SkeletonBlock className="h-8 w-20 rounded-full" />
+      </div>
+
+      {/* add master */}
+      <section className="overflow-hidden rounded-[24px] border border-gray-200 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.06)] sm:rounded-[28px]">
+        <div className="flex flex-col gap-3 border-b border-gray-100 px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
+          <div className="space-y-2">
+            <SkeletonBlock className="h-5 w-32" />
+            <SkeletonBlock className="h-4 w-72 max-w-full" />
+          </div>
+
+          <SkeletonBlock className="hidden sm:block h-8 w-32 rounded-full" />
+        </div>
+
+        <div className="space-y-4 px-4 py-4 sm:px-5 sm:py-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+            <div className="flex items-center gap-4">
+              <SkeletonBlock className="h-20 w-20 rounded-[22px]" />
+              <div className="flex flex-wrap items-center gap-2">
+                <SkeletonBlock className="h-11 w-32 rounded-2xl" />
+                <SkeletonBlock className="h-11 w-28 rounded-2xl" />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <SkeletonBlock className="h-4 w-12" />
+            <SkeletonBlock className="h-12 w-full rounded-2xl" />
+          </div>
+
+          <div className="space-y-2">
+            <SkeletonBlock className="h-4 w-40" />
+            <SkeletonBlock className="h-12 w-full rounded-2xl" />
+            <SkeletonBlock className="h-3 w-44" />
+          </div>
+
+          <div className="space-y-2">
+            <SkeletonBlock className="h-4 w-12" />
+            <SkeletonBlock className="h-28 w-full rounded-2xl" />
+            <SkeletonBlock className="h-3 w-36" />
+          </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <SkeletonBlock className="h-11 w-40 rounded-2xl" />
+            <SkeletonBlock className="h-4 w-20" />
+          </div>
+        </div>
+      </section>
+
+      {/* list */}
+      <section className="overflow-hidden rounded-[24px] border border-gray-200 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.06)] sm:rounded-[28px]">
+        <div className="border-b border-gray-100 px-4 py-4 sm:px-5">
+          <SkeletonBlock className="h-5 w-36" />
+          <SkeletonBlock className="mt-2 h-4 w-64 max-w-full" />
+        </div>
+
+        <div className="space-y-3 px-4 py-4 sm:px-5 sm:py-5">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <MasterSkeletonRow key={i} />
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
 export default function Masters() {
   const { studio } = useStudio();
 
   const [mastersLocal, setMastersLocal] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+
   const [adding, setAdding] = useState(false);
 
   async function refreshMasters() {
@@ -419,7 +512,15 @@ async function closeEdit() {
   }
 
   setEditMaster(null);
-  setEditDraft({ id: "", name: "", role: "", bio: "", photoUrl: "", photoKey: null });
+  setEditDraft({
+  id: "",
+  name: "",
+  role: "",
+  bio: "",
+  photoUrl: "",
+  photoKey: null,
+  photoFile: null,
+});
   setEditOriginal({ photoKey: null, photoUrl: "" });
 }
 
@@ -520,42 +621,38 @@ async function saveEdit() {
   const total = masters.length;
 
   const [photoBroken, setPhotoBroken] = useState(false);
+
+if (loading) {
+  return <MastersSkeleton />;
+}
+  
   return (
     <div className="space-y-6">
       {/* header */}
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900">
-            Майстри
-          </h1>
-          <p className="mt-1 text-sm text-gray-600">
-            Додай майстрів, щоб привʼязувати їх до послуг і записів.
-          </p>
-        </div>
-
-        <span className="flex-shrink-0 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-700">
-          Всього: {total}
-        </span>
-      </div>
+<div className="flex items-start justify-between gap-3">
+  <div className="min-w-0">
+    <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-[#C89D72]">
+      команда студії
+    </p>
+    <h1 className="mt-2 text-3xl font-black tracking-[-0.03em] text-[#1F2A22] sm:text-4xl">
+      Майстри
+    </h1>
+    <p className="mt-2 text-sm leading-6 text-[#857A70]">
+      Додай майстрів, щоб привʼязувати їх до послуг, графіка та записів клієнтів.
+    </p>
+  </div>
+</div>
 
       {/* add master */}
       <SectionCard
         title="Новий майстер"
         subtitle="Фото, імʼя та короткий опис — як у професійних профілях."
-        right={
-          <div className="flex gap-2">
-            <span className="hidden sm:inline-flex rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-gray-700">
-              Порада: 2–4 речення
-            </span>
-          </div>
-        }
       >
         <form onSubmit={addMaster} className="space-y-4">
           {/* photo row */}
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <div className="flex items-center gap-4">
-              <div className="h-20 w-20 rounded-[22px] border border-gray-200 bg-gray-50 overflow-hidden flex items-center justify-center">
-                {form.photoUrl && !photoBroken ? (
+<div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-[22px] border border-[#E9DED2] bg-[#F8F4EF]">                {form.photoUrl && !photoBroken ? (
                   <img
                     src={form.photoUrl}
                     alt="Фото майстра"
@@ -563,7 +660,7 @@ async function saveEdit() {
                     onError={() => setPhotoBroken(true)}
                   />
                 ) : (
-                  <span className="text-xs font-semibold text-gray-500">
+                  <span className="text-xs font-semibold text-[#8B7F73]">
                     Фото
                   </span>
                 )}
@@ -571,7 +668,9 @@ async function saveEdit() {
 
               <div className="flex flex-wrap items-center gap-2">
                 <label className="cursor-pointer">
-                  <span className="ui-button-primary">Додати фото</span>
+                 <span className="inline-flex items-center justify-center rounded-[16px] bg-[#4A5D4E] px-4 py-2.5 text-sm font-extrabold text-white shadow-[0_10px_24px_rgba(74,93,78,0.22)] transition hover:bg-[#3F5143]">
+  Додати фото
+</span>
                   <input
                     type="file"
                     accept="image/*"
@@ -581,7 +680,7 @@ async function saveEdit() {
                 </label>
 
                 {form.photoUrl && (
-                  <Button className="ui-button-danger" onClick={removePhoto}>
+                  <Button variant="danger" onClick={removePhoto}>
                     Видалити
                   </Button>
                 )}
@@ -591,7 +690,7 @@ async function saveEdit() {
 
           {/* name */}
           <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-1">
+            <label className="block text-sm font-semibold text-[#1F2A22] mb-1">
               Імʼя
             </label>
             <input
@@ -599,29 +698,29 @@ async function saveEdit() {
               placeholder="Напр. Олена Коваль"
               value={form.name}
               onChange={handleChange}
-              className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none transition focus:border-black focus:ring-2 focus:ring-black/15"
+              className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-[#1F2A22] outline-none transition focus:border-black focus:ring-2 focus:ring-black/15"
             />
           </div>
           {/* role */}
           <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-1">
+            <label className="block text-sm font-semibold text-[#1F2A22] mb-1">
               Посада / Спеціалізація
             </label>
             <input
               name="role"
               value={form.role}
               onChange={handleChange}
-              className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none transition focus:border-black focus:ring-2 focus:ring-black/15"
+              className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-[#1F2A22] outline-none transition focus:border-black focus:ring-2 focus:ring-black/15"
               placeholder="Напр. Майстер манікюру / Brow artist"
             />
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-[#8B7F73]">
               Коротко: роль + напрям (манікюр, брови, вії…).
             </p>
           </div>
 
           {/* bio */}
           <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-1">
+            <label className="block text-sm font-semibold text-[#1F2A22] mb-1">
               Опис
             </label>
             <textarea
@@ -630,9 +729,9 @@ async function saveEdit() {
               value={form.bio}
               onChange={handleChange}
               rows={4}
-              className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none transition focus:border-black focus:ring-2 focus:ring-black/15 resize-none"
+              className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-[#1F2A22] outline-none transition focus:border-black focus:ring-2 focus:ring-black/15 resize-none"
             />
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-[#8B7F73]">
               Коротко і по суті (2–4 речення).
             </p>
           </div>
@@ -641,14 +740,14 @@ async function saveEdit() {
             <button
               type="submit"
               disabled={adding || !String(form.name || "").trim()}
-              className="ui-button-primary"
+              className="inline-flex items-center justify-center rounded-[18px] bg-[#4A5D4E] px-5 py-3 text-sm font-extrabold text-white shadow-[0_10px_24px_rgba(74,93,78,0.22)] transition hover:bg-[#3F5143] disabled:cursor-not-allowed disabled:bg-[#BFC8C0]"
             >
               {adding ? "Додаємо..." : "Додати майстра"}
             </button>
 
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-[#857A70]">
               Усього:{" "}
-              <span className="font-extrabold text-gray-900">{total}</span>
+              <span className="font-extrabold text-[#1F2A22]">{total}</span>
             </p>
           </div>
         </form>
@@ -663,64 +762,55 @@ async function saveEdit() {
             : "Додай першого майстра вище."
         }
       >
-        {loading ? (
-          <div className="space-y-3">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <MasterSkeletonRow key={i} />
-            ))}
-          </div>
-        ) : total === 0 ? (
-          <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
-            Поки що немає майстрів. Додай першого майстра зверху.
-          </div>
-        ) : (
+{total === 0 ? (
+  <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 text-sm text-[#857A70]">
+    Поки що немає майстрів. Додай першого майстра зверху.
+  </div>
+) : (
           <div className="space-y-3">
             {masters.map((m) => (
               <div
                 key={m.id}
-                className="rounded-2xl border border-gray-200 bg-white p-4 hover:bg-gray-50/60 transition"
-              >
+className="rounded-[24px] border border-[#E9DED2] bg-white p-4 transition "              >
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div className="flex items-start gap-3 min-w-0">
                     <Avatar name={m.name} photoUrl={m.photoUrl} />
 
                     <div className="min-w-0">
-                      <p className="font-extrabold text-gray-900 truncate">
+                      <p className="font-extrabold text-[#1F2A22] truncate">
                         {m.name}
                       </p>
 
                       {m.role ? (
-                        <p className="mt-1 text-sm font-semibold text-gray-700 truncate">
+                        <p className="mt-1 text-sm font-semibold text-[#6F655C] truncate">
                           {m.role}
                         </p>
                       ) : (
-                        <p className="mt-1 text-sm text-gray-400">
+                        <p className="mt-1 text-sm text-[#B1A59A]">
                           Спеціалізація не вказана
                         </p>
                       )}
 
                       {m.bio ? (
-                        <p className="mt-1 text-sm text-gray-600 line-clamp-2">
+                        <p className="mt-1 text-sm text-[#857A70] line-clamp-2">
                           {m.bio}
                         </p>
                       ) : (
-                        <p className="mt-1 text-sm text-gray-400">Без опису</p>
+                        <p className="mt-1 text-sm text-[#B1A59A]">Без опису</p>
                       )}
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 sm:flex gap-2 sm:shrink-0">
-                    <Button
-                      className="ui-button-secondary"
-                      onClick={() => openEdit(m)}
-                    >
+<Button
+  onClick={() => openEdit(m)}
+>
                       Редагувати
                     </Button>
-                    <Button
-                      className="ui-button-danger"
-                      variant="danger"
-                      onClick={() => deleteMaster(m)}
-                    >
+<Button
+  variant="danger"
+  onClick={() => deleteMaster(m)}
+>
                       Видалити
                     </Button>
                   </div>
@@ -739,14 +829,14 @@ async function saveEdit() {
         subtitle="Онови фото, імʼя або опис і збережи зміни."
         footer={
           <div className="flex items-center justify-end gap-2">
-            <Button
-              className="ui-button-primary"
-              onClick={saveEdit}
-              disabled={!String(editDraft.name || "").trim()}
-            >
+<Button
+  variant="primary"
+  onClick={saveEdit}
+  disabled={!String(editDraft.name || "").trim()}
+>
               Зберегти
             </Button>
-            <Button onClick={closeEdit} className="ui-button-cancel">
+            <Button onClick={closeEdit}>
               Скасувати
             </Button>
           </div>
@@ -754,15 +844,14 @@ async function saveEdit() {
       >
         {/* photo */}
         <div className="flex items-center gap-4">
-          <div className="h-20 w-20 rounded-[22px] border border-gray-200 bg-gray-50 overflow-hidden flex items-center justify-center">
-            {editDraft.photoUrl ? (
+<div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-[22px] border border-[#E9DED2] bg-[#F8F4EF]">            {editDraft.photoUrl ? (
               <img
                 src={editDraft.photoUrl}
                 alt="Фото майстра"
                 className="h-full w-full object-cover"
               />
             ) : (
-              <span className="text-xs font-semibold text-gray-500">
+              <span className="text-xs font-semibold text-[#8B7F73]">
                 {initialsFromName(editDraft.name)}
               </span>
             )}
@@ -770,7 +859,9 @@ async function saveEdit() {
 
           <div className="flex flex-wrap items-center gap-2">
             <label className="cursor-pointer">
-              <span className="ui-button-secondary">Змінити фото</span>
+              <span className="inline-flex items-center justify-center rounded-[16px] border border-[#E7DED6] bg-white px-4 py-2.5 text-sm font-extrabold text-[#6B625A] transition hover:bg-[#FAF7F4] hover:text-[#1F2A22]">
+  Змінити фото
+</span>
               <input
                 type="file"
                 accept="image/*"
@@ -780,8 +871,8 @@ async function saveEdit() {
             </label>
 
 {editDraft.photoUrl && (
-  <Button
-    className="ui-button-danger"
+<Button
+  variant="danger"
 onClick={() =>
   setEditDraft((p) => {
     if (p.photoUrl?.startsWith("blob:")) URL.revokeObjectURL(p.photoUrl);
@@ -797,7 +888,7 @@ onClick={() =>
 
         {/* name */}
         <div>
-          <label className="block text-sm font-semibold text-gray-900 mb-1">
+          <label className="block text-sm font-semibold text-[#1F2A22] mb-1">
             Імʼя
           </label>
           <input
@@ -805,14 +896,14 @@ onClick={() =>
             onChange={(e) =>
               setEditDraft((p) => ({ ...p, name: e.target.value }))
             }
-            className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none transition focus:border-black focus:ring-2 focus:ring-black/15"
+            className="w-full rounded-2xl border border-[#E9DED2] bg-white px-4 py-3 text-sm font-semibold text-[#1F2A22] outline-none transition focus:border-black focus:ring-2 focus:ring-black/15"
             placeholder="Напр. Олена Коваль"
           />
         </div>
 
         {/* role */}
         <div>
-          <label className="block text-sm font-semibold text-gray-900 mb-1">
+          <label className="block text-sm font-semibold text-[#1F2A22] mb-1">
             Посада / Спеціалізація
           </label>
           <input
@@ -820,14 +911,14 @@ onClick={() =>
             onChange={(e) =>
               setEditDraft((p) => ({ ...p, role: e.target.value }))
             }
-            className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none transition focus:border-black focus:ring-2 focus:ring-black/15"
+            className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-[#1F2A22] outline-none transition focus:border-black focus:ring-2 focus:ring-black/15"
             placeholder="Напр. Майстер манікюру / Brow artist"
           />
         </div>
 
         {/* bio */}
         <div>
-          <label className="block text-sm font-semibold text-gray-900 mb-1">
+          <label className="block text-sm font-semibold text-[#1F2A22] mb-1">
             Опис
           </label>
           <textarea
@@ -836,7 +927,7 @@ onClick={() =>
               setEditDraft((p) => ({ ...p, bio: e.target.value }))
             }
             rows={4}
-            className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none transition focus:border-black focus:ring-2 focus:ring-black/15 resize-none"
+            className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-[#1F2A22] outline-none transition focus:border-black focus:ring-2 focus:ring-black/15 resize-none"
             placeholder="Коротко про досвід та спеціалізацію…"
           />
         </div>

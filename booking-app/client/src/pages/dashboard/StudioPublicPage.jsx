@@ -1,4 +1,3 @@
-
 // StudioPublicPage.jsx
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
@@ -377,8 +376,8 @@ export default function StudioPublicPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-const [isFavourite, setIsFavourite] = useState(false);
-const [shareCopied, setShareCopied] = useState(false);
+  const [isFavourite, setIsFavourite] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
   useEffect(() => {
     const locked = openBooking || previewIndex !== null;
     document.body.style.overflow = locked ? "hidden" : "";
@@ -599,33 +598,34 @@ const [shareCopied, setShareCopied] = useState(false);
   }, [studio]);
 
 function handleGoBack() {
+  sessionStorage.setItem("skip-home-scroll-once", "1");
   navigate(-1);
 }
 
-async function handleShare() {
-  const shareData = {
-    title: name,
-    text: `Переглянь студію ${name}`,
-    url: window.location.href,
-  };
+  async function handleShare() {
+    const shareData = {
+      title: name,
+      text: `Переглянь студію ${name}`,
+      url: window.location.href,
+    };
 
-  try {
-    if (navigator.share) {
-      await navigator.share(shareData);
-      return;
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+        return;
+      }
+
+      await navigator.clipboard.writeText(window.location.href);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 1600);
+    } catch {
+      // нічого критичного
     }
-
-    await navigator.clipboard.writeText(window.location.href);
-    setShareCopied(true);
-    setTimeout(() => setShareCopied(false), 1600);
-  } catch {
-    // нічого критичного
   }
-}
 
-function handleToggleFavourite() {
-  setIsFavourite((prev) => !prev);
-}
+  function handleToggleFavourite() {
+    setIsFavourite((prev) => !prev);
+  }
 
   if (loading) {
     return (
@@ -652,7 +652,7 @@ function handleToggleFavourite() {
 
   return (
     <div
-      className="min-h-screen bg-[#F8F5F2] text-[#2A2A2A]"
+      className="fixed inset-0 z-[120] overflow-y-auto bg-[#F8F5F2] text-[#2A2A2A]"
       data-testid="studio-public-page"
     >
       <section className="relative">
@@ -670,39 +670,39 @@ function handleToggleFavourite() {
           <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/10 to-black/20" />
 
           <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-4 pb-4 pt-4 sm:px-6">
-<button
-  type="button"
-  onClick={handleGoBack}
-  aria-label="Назад"
-  className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/90 text-[#2A2A2A] shadow-lg backdrop-blur-md transition hover:scale-105 active:scale-95"
->
-  <ChevronLeft className="h-5 w-5" />
-</button>
+            <button
+              type="button"
+              onClick={handleGoBack}
+              aria-label="Назад"
+              className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/90 text-[#2A2A2A] shadow-lg backdrop-blur-md transition hover:scale-105 active:scale-95"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
 
             <div className="flex items-center gap-2">
-<button
-  type="button"
-  onClick={handleShare}
-  aria-label="Поділитися"
-  title={shareCopied ? "Посилання скопійовано" : "Поділитися"}
-  className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/90 text-[#2A2A2A] shadow-lg backdrop-blur-md transition hover:scale-105 active:scale-95"
->
-  <Share2 className="h-4.5 w-4.5" />
-</button>
-<button
-  type="button"
-  onClick={handleToggleFavourite}
-  aria-label="В обране"
-  className={`flex h-11 w-11 items-center justify-center rounded-2xl shadow-lg backdrop-blur-md transition hover:scale-105 active:scale-95 ${
-    isFavourite
-      ? "bg-[#FFE8EE] text-[#E25577]"
-      : "bg-white/90 text-[#2A2A2A]"
-  }`}
->
-  <Heart
-    className={`h-4.5 w-4.5 ${isFavourite ? "fill-current" : ""}`}
-  />
-</button>
+              <button
+                type="button"
+                onClick={handleShare}
+                aria-label="Поділитися"
+                title={shareCopied ? "Посилання скопійовано" : "Поділитися"}
+                className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/90 text-[#2A2A2A] shadow-lg backdrop-blur-md transition hover:scale-105 active:scale-95"
+              >
+                <Share2 className="h-4.5 w-4.5" />
+              </button>
+              <button
+                type="button"
+                onClick={handleToggleFavourite}
+                aria-label="В обране"
+                className={`flex h-11 w-11 items-center justify-center rounded-2xl shadow-lg backdrop-blur-md transition hover:scale-105 active:scale-95 ${
+                  isFavourite
+                    ? "bg-[#FFE8EE] text-[#E25577]"
+                    : "bg-white/90 text-[#2A2A2A]"
+                }`}
+              >
+                <Heart
+                  className={`h-4.5 w-4.5 ${isFavourite ? "fill-current" : ""}`}
+                />
+              </button>
             </div>
           </div>
         </div>
@@ -778,16 +778,19 @@ function handleToggleFavourite() {
 
                 {/* КНОПКА */}
                 <div className="hidden lg:block mt-4">
-                  <button
-                    type="button"
-                    onClick={() => setOpenBooking(true)}
-                    className="rounded-2xl bg-[#4A5D4E] px-7 py-4 text-sm font-bold text-white shadow-[0_10px_25px_rgba(74,93,78,0.22)] transition-all duration-200 hover:bg-[#3A4A3E]"
-                  >
-                    <span className="flex items-center gap-2 whitespace-nowrap">
-                      Забронювати онлайн
-                      <Sparkles className="h-4 w-4 opacity-75" />
-                    </span>
-                  </button>
+<button
+  type="button"
+  onClick={() => {
+    setPreselectedService(null);
+    setOpenBooking(true);
+  }}
+  className="rounded-2xl bg-[#4A5D4E] px-7 py-4 text-sm font-bold text-white shadow-[0_10px_25px_rgba(74,93,78,0.22)] transition-all duration-200 hover:bg-[#3A4A3E]"
+>
+  <span className="flex items-center gap-2 whitespace-nowrap">
+    Забронювати онлайн
+    <Sparkles className="h-4 w-4 opacity-75" />
+  </span>
+</button>
                 </div>
               </div>
             </div>

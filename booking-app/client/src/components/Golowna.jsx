@@ -68,7 +68,7 @@ function Card({ className = "", children }) {
   return (
     <section
       className={cx(
-        "rounded-3xl border border-gray-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]",
+        "rounded-[28px] border border-[#E9DED2] bg-[#FFFCF8] shadow-[0_10px_30px_rgba(93,64,55,0.06)]",
         className,
       )}
     >
@@ -95,9 +95,9 @@ function ButtonBase({ className = "", ...props }) {
     <button
       type="button"
       className={cx(
-        "inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-2 text-sm font-semibold",
+        "inline-flex items-center justify-center gap-2 rounded-[16px] px-4 py-2.5 text-sm font-semibold",
         "transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50",
-        "focus:outline-none focus:ring-2 focus:ring-black/10",
+        "focus:outline-none focus:ring-2 focus:ring-[#4A5D4E]/15",
         className,
       )}
       {...props}
@@ -109,7 +109,7 @@ function PrimaryButton({ className = "", ...props }) {
   return (
     <ButtonBase
       className={cx(
-        "bg-black text-white hover:bg-gray-900 shadow-[0_8px_18px_rgba(0,0,0,0.12)]",
+        "bg-[#4A5D4E] text-white shadow-[0_10px_24px_rgba(74,93,78,0.22)] hover:bg-[#3F5143]",
         className,
       )}
       {...props}
@@ -121,7 +121,7 @@ function GhostButton({ className = "", ...props }) {
   return (
     <ButtonBase
       className={cx(
-        "border border-gray-200 bg-white text-gray-900 hover:bg-gray-50",
+        "border border-[#E7DED6] bg-white text-[#6B625A] hover:bg-[#FAF7F4] hover:text-[#1F2A22]",
         className,
       )}
       {...props}
@@ -229,15 +229,19 @@ return [
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       {/* Welcome */}
-      <Card className="p-6 sm:p-7">
-        <h2 className="text-2xl sm:text-3xl text-center font-black tracking-tight text-gray-900">
-          Вітаємо в кабінеті майстра 👋
-        </h2>
-        <p className="mt-2 text-center text-sm sm:text-base text-gray-600">
-          Керуйте студією, послугами та записами в одному місці.
-        </p>
-      </Card>
+<Card className="p-6 sm:p-7">
+  <p className="text-center text-[11px] font-extrabold uppercase tracking-[0.22em] text-[#C89D72]">
+    dashboard студії
+  </p>
 
+  <h2 className="mt-3 text-center text-2xl font-black tracking-[-0.03em] text-[#1F2A22] sm:text-3xl">
+    Вітаємо в кабінеті майстра 👋
+  </h2>
+
+  <p className="mt-3 text-center text-sm leading-6 text-[#857A70] sm:text-base">
+    Керуйте студією, послугами та записами в одному теплому, зручному просторі.
+  </p>
+</Card>
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
         {stats.map((item) => (
@@ -247,15 +251,15 @@ return [
 
 
       {/* Upcoming */}
-      <Card className="p-5 sm:p-6">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h3 className="text-lg font-bold text-gray-900">Найближчі записи</h3>
-            <p className="mt-1 text-sm text-gray-600">
-              Тільки майбутні записи (відсортовано за датою та часом).
-            </p>
-          </div>
-        </div>
+<Card className="p-5 sm:p-6">
+  <div className="flex items-start justify-between gap-3">
+    <div>
+      <h3 className="text-lg font-bold text-[#1F2A22]">Найближчі записи</h3>
+      <p className="mt-1 text-sm text-[#857A70]">
+        Тільки майбутні записи, відсортовані за датою та часом.
+      </p>
+    </div>
+  </div>
 
         {upcomingAppointments.length === 0 ? (
           <div className="mt-4 rounded-2xl border border-gray-200 bg-gray-50 p-6 text-sm text-gray-600">
@@ -269,22 +273,22 @@ return [
               const showDate = key && key !== todayKey;
 
               return (
-                <li
-                  key={x.id}
-                  className="flex flex-col gap-1 rounded-2xl border border-gray-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between"
-                >
+<li
+  key={x.id}
+  className="flex flex-col gap-1 rounded-[22px] border border-[#E9DED2] bg-white p-4 transition hover:bg-[#FCF8F3] sm:flex-row sm:items-center sm:justify-between"
+>
                   <div className="min-w-0">
-                    <p className="text-base font-bold text-gray-900">
+                    <p className="text-base font-bold text-[#1F2A22]">
                       {x.time}{" "}
-                      <span className="text-gray-300 font-medium">•</span>{" "}
+                      <span className="font-medium text-[#D8C8B8]">•</span>{" "}
                       {x.service}
                     </p>
-                    <p className="mt-1 truncate text-sm text-gray-600">
-                      Клієнт: <span className="font-semibold text-gray-900">{x.client}</span>
-                    </p>
+<p className="mt-1 truncate text-sm text-[#857A70]">
+  Клієнт: <span className="font-semibold text-[#1F2A22]">{x.client}</span>
+</p>
                   </div>
 
-                  <div className="text-sm font-semibold text-gray-600 sm:text-right">
+                  <div className="text-sm font-semibold text-[#857A70] sm:text-right">
                     {showDate ? dateLabel : "Сьогодні"}
                   </div>
                 </li>

@@ -1,10 +1,14 @@
 // Studios.jsx
-import { Link, useSearchParams, useNavigate  } from "react-router-dom";
+import {
+  Link,
+  useSearchParams,
+  useNavigate,
+  useLocation,
+} from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import AnimatedField from "../components/AnimatedField";
 import AnimatedDropdown from "../components/AnimatedDropdown";
 import FavouriteButton from "../components/FavouriteButton";
-import PremiumBadge from "../components/PremiumBadge";
 
 function safeText(v) {
   return String(v ?? "").trim();
@@ -154,7 +158,8 @@ export default function Studios() {
   }));
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-const navigate = useNavigate();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     let alive = true;
@@ -162,9 +167,7 @@ const navigate = useNavigate();
     async function loadStudios() {
       setLoading(true);
       try {
-        const res = await fetch(
-          `${import.meta.env.VITE_API_URL}/client/`,
-        );
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/client/`);
         const data = await res.json().catch(() => null);
 
         if (!res.ok)
@@ -194,26 +197,6 @@ const navigate = useNavigate();
       alive = false;
     };
   }, []);
-
-  useEffect(() => {
-  const saved = sessionStorage.getItem("studios-scroll");
-  if (!saved) return;
-
-  const y = Number(saved);
-
-  const restore = () => {
-    window.scrollTo(0, Number.isFinite(y) ? y : 0);
-  };
-
-  requestAnimationFrame(() => {
-    restore();
-    setTimeout(restore, 0);
-    setTimeout(restore, 80);
-    setTimeout(restore, 200);
-  });
-}, []);
-
-
 
   // ✅ синхронізація state -> URL
   useEffect(() => {
@@ -443,308 +426,294 @@ const navigate = useNavigate();
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 pt-20 pb-8">
-    <div className="pt-6 px-4 sm:pt-8 sm:px-6 lg:pt-6 lg:px-8 space-y-6">
-      {/* Filters */}
-      <section className="rounded-2xl border border-gray-600 bg-white p-4 px-4 sm:px-6 lg:px-8 pt-2 sm:pt-4 lg:pt-6">
-        {/* Header */}
-        <div className="space-y-3 mb-6 sm:mb-8 lg:mb-10">
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-gray-900">
-            Обирай та <span className="text-blue-600">записуйся онлайн</span>
-          </h1>
+    <div className="mx-auto max-w-6xl  px-4 pb-0 pt-20">
+      <div className="space-y-3 px-4 pt-6 sm:px-6 sm:pt-8 lg:px-8 lg:pt-6 ">
+        {/* Filters */}
+        <section className="rounded-[28px] border border-[#E9DED2] bg-[#FFFCF8] px-4 pb-5 pt-3 shadow-[0_10px_30px_rgba(93,64,55,0.06)] sm:px-6 sm:pt-5 lg:px-8 lg:pt-6">
+          {" "}
+          {/* Header */}
+          <div className="mb-6 space-y-3 sm:mb-8 lg:mb-10">
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-[#C89D72]">
+              пошук студій
+            </p>
 
-          <p className="hidden sm:block max-w-2xl text-base text-gray-600">
-            Обирай послуги поруч із тобою — швидко, зручно та без зайвих
-            дзвінків.
-          </p>
-        </div>
+            <h1 className="text-3xl font-black tracking-[-0.03em] text-[#1F2A22] sm:text-4xl lg:text-5xl">
+              Обирай та <span className="text-[#C89D72]">записуйся онлайн</span>
+            </h1>
 
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-[1.2fr_0.9fr_0.9fr_0.9fr]">
-          <AnimatedField
-            label="Пошук"
-            value={q}
-            onChange={setQ}
-            placeholder="Напр. тату, брови, манікюр…"
-          />
+            <p className="hidden max-w-2xl text-base leading-7 text-[#857A70] sm:block">
+              Обирай послуги поруч із тобою — швидко, зручно та без зайвих
+              дзвінків.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-[1.2fr_0.9fr_0.9fr_0.9fr]">
+            <AnimatedField
+              label="Пошук"
+              value={q}
+              onChange={setQ}
+              placeholder="Напр. тату, брови, манікюр…"
+            />
 
-          <AnimatedDropdown
-            label="Місто"
-            value={city}
-            onChange={setCity}
-            placeholder=""
-            options={cities.map((c) => ({ value: c, label: c }))}
-            searchable
-          />
+            <AnimatedDropdown
+              label="Місто"
+              value={city}
+              onChange={setCity}
+              placeholder=""
+              options={cities.map((c) => ({ value: c, label: c }))}
+              searchable
+            />
 
-          <AnimatedDropdown
-            label="Категорія"
-            value={category}
-            onChange={setCategory}
-            placeholder=""
-            options={categories.map((c) => ({ value: c, label: c }))}
-            searchable
-          />
+            <AnimatedDropdown
+              label="Категорія"
+              value={category}
+              onChange={setCategory}
+              placeholder=""
+              options={categories.map((c) => ({ value: c, label: c }))}
+              searchable
+            />
 
-          {/* Якщо хочеш — увімкни сортування */}
-          <AnimatedDropdown
-            label="Сортування"
-            value={sort}
-            onChange={setSort}
-            placeholder=""
-            options={sortOptions}
-          />
-        </div>
-
-        {/* Active chips + actions */}
-        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-wrap gap-2">
-            {activeChips.length === 0 ? (
-              <span className="text-sm text-gray-500">Фільтри не вибрані</span>
-            ) : (
-              activeChips.map((ch) => (
-                <button
-                  key={ch.key}
-                  type="button"
-                  onClick={() => removeChip(ch.key)}
-                  className="
-                            group
-                            rounded-full
-                            border border-gray-200
-                            bg-gray-50
-                            px-3 py-1
-                            text-xs font-medium
-                            text-gray-700
-                            transition-all duration-200
-                            hover:bg-red-50
-                            hover:border-red-200
-                            hover:text-red-600
-                            hover:shadow-sm
-                            hover:-translate-y-[1px]
-                            active:scale-95
-                            cursor-pointer
-                          "
-                  title="Прибрати фільтр"
-                >
-                  {ch.label}
-                  <span
+            {/* Якщо хочеш — увімкни сортування */}
+            <AnimatedDropdown
+              label="Сортування"
+              value={sort}
+              onChange={setSort}
+              placeholder=""
+              options={sortOptions}
+            />
+          </div>
+          {/* Active chips + actions */}
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap gap-2">
+              {activeChips.length === 0 ? (
+                <span className="text-sm text-[#8B7F73]">
+                  Фільтри не вибрані
+                </span>
+              ) : (
+                activeChips.map((ch) => (
+                  <button
+                    key={ch.key}
+                    type="button"
+                    onClick={() => removeChip(ch.key)}
                     className="
+  group
+  cursor-pointer
+  rounded-full
+  border border-[#E9DED2]
+  bg-[#F8F4EF]
+  px-3 py-1
+  text-xs font-medium
+  text-[#6F655C]
+  transition-all duration-200
+  hover:-translate-y-[1px]
+  hover:border-[#F0D6D1]
+  hover:bg-[#FFF3F1]
+  hover:text-[#B2504A]
+  hover:shadow-sm
+  active:scale-95
+"
+                    title="Прибрати фільтр"
+                  >
+                    {ch.label}
+                    <span
+                      className="
         ml-1
         inline-block
-        text-gray-400
+        text-[#B1A59A]
         transition-all duration-200
         group-hover:text-red-700
         group-hover:scale-125
       "
-                  >
-                    ×
-                  </span>
-                </button>
-              ))
-            )}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handleApply}
-              disabled={!hasPendingChanges || isApplying || isLoadingMore}
-              className={`
-    ui-button-one
-    flex-1
-    transition-all duration-200
-    active:scale-95
-    flex items-center justify-center gap-2
-    ${
-      !hasPendingChanges || isApplying
-        ? "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed shadow-none"
-        : "bg-black text-white hover:bg-gray-900 shadow-sm hover:shadow-md"
-    }
-  `}
-            >
-              {isApplying ? (
-                <>
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-gray-400 border-t-transparent" />
-                  Пошук...
-                </>
-              ) : (
-                "Знайти"
+                    >
+                      ×
+                    </span>
+                  </button>
+                ))
               )}
-            </button>
-
-            <button
-              type="button"
-              onClick={clearAll}
-              disabled={activeChips.length === 0}
-              className="
-    ui-button ui-button-secondary
-    shrink-0
-    whitespace-nowrap
-    transition-all duration-200
-    hover:bg-red-50 hover:border-red-200 hover:text-red-600 hover:shadow-sm
-    active:scale-95
-    disabled:opacity-50 
-    disabled:cursor-not-allowed
-  "
-            >
-              Очистити все
-            </button>
-          </div>
-        </div>
-      </section>
-      <div className="flex items-center gap-2 text-sm text-gray-600">
-        <span>
-          Знайдено:{" "}
-          <span className="font-semibold text-gray-900">{filtered.length}</span>
-        </span>
-
-        {loading && (
-          <span className="rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-xs">
-            Завантаження...
-          </span>
-        )}
-
-        {hasPendingChanges && (
-          <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
-            Натисніть “Знайти”
-          </span>
-        )}
-      </div>
-
-      {/* Results */}
-      {filtered.length === 0 ? (
-        <div className="rounded-2xl border border-gray-200 bg-white p-8 sm:p-10">
-          <div className="mx-auto max-w-xl text-center">
-            {/* Icon */}
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-gray-200 bg-gray-50">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                className="h-7 w-7 text-gray-700"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M10 10a2 2 0 1 0 0.001-4.001A2 2 0 0 0 10 10Z"
-                  stroke="currentColor"
-                  strokeWidth="1.6"
-                />
-                <path
-                  d="M21 21l-4.3-4.3m1.3-5.2a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"
-                  stroke="currentColor"
-                  strokeWidth="1.6"
-                  strokeLinecap="round"
-                />
-              </svg>
             </div>
 
-            {/* Text */}
-            <h3 className="mt-4 text-xl font-semibold tracking-tight text-gray-900">
-              Немає результатів за цими фільтрами
-            </h3>
-            <p className="mt-2 text-sm text-gray-600">
-              Спробуй змінити місто або категорію, або прибери частину фільтрів
-              — тоді ми покажемо більше доступних студій.
-            </p>
+            <div className="flex items-center gap-2">
+              <span className="text-xs">
+                Знайдено:{" "}
+                <span className="font-semibold text-[#1F2A22]">
+                  {filtered.length}
+                </span>
+              </span>
+              <button
+                type="button"
+                onClick={handleApply}
+                disabled={!hasPendingChanges || isApplying || isLoadingMore}
+                className={`
+  flex flex-1 items-center justify-center gap-2 rounded-[16px] px-5 py-3 text-sm font-extrabold transition-all duration-200 active:scale-95
+  ${
+    !hasPendingChanges || isApplying
+      ? "cursor-not-allowed border border-[#E9DED2] bg-[#F3ECE4] text-[#B1A59A] shadow-none"
+      : "bg-[#4A5D4E] text-white shadow-[0_10px_24px_rgba(74,93,78,0.22)] hover:bg-[#3F5143] hover:shadow-md"
+  }
+`}
+              >
+                {isApplying ? (
+                  <>
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-gray-400 border-t-transparent" />
+                    Пошук...
+                  </>
+                ) : (
+                  "Знайти"
+                )}
+              </button>
 
-            {/* Tips */}
-
-            {/* Actions */}
-            <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
               <button
                 type="button"
                 onClick={clearAll}
+                disabled={activeChips.length === 0}
                 className="
-            ui-button ui-button-secondary
-            w-full sm:w-auto
-            rounded-xl
-            px-5 py-3
-            border border-gray-200
-            bg-white
-            text-gray-900
-            transition-all duration-200
-            hover:bg-gray-50 hover:shadow-sm
-            active:scale-[0.98]
-          "
+  shrink-0 whitespace-nowrap rounded-[16px] border border-[#E7DED6] bg-white px-4 py-3 text-sm font-extrabold text-[#6B625A]
+  transition-all duration-200
+  hover:border-[#F0D6D1] hover:bg-[#FFF3F1] hover:text-[#B2504A] hover:shadow-sm
+  active:scale-95
+  disabled:cursor-not-allowed disabled:opacity-50
+"
               >
-                Очистити фільтри
+                Очистити все
               </button>
             </div>
-
-            {/* Small footer */}
-            <p className="mt-4 text-xs text-gray-500">
-              Порада: якщо шукаєш конкретну послугу — введи загальніше слово
-              (наприклад “масаж”, “манікюр”, “стрижка”).
-            </p>
           </div>
+        </section>
+        <div className="flex items-center gap-2 text-sm text-[#857A70]">
+          {loading && (
+            <span className="rounded-full border border-[#E9DED2] bg-[#F8F4EF] px-2 py-0.5 text-xs text-[#7B6D61]">
+              Завантаження...
+            </span>
+          )}
+
+          {hasPendingChanges && (
+            <span className="rounded-full border border-[#F2DEC2] bg-[#FFF6E8] px-2 py-0.5 text-xs font-medium text-[#B07A2A]">
+              Натисніть “Знайти”
+            </span>
+          )}
         </div>
-      ) : (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.slice(0, visibleCount).map((studio) => {
-            const name = safeText(studio.name) || "Студія";
-            const cat = safeText(studio.category);
-            const cityLabel = safeText(studio.city);
-            const description = safeText(studio.description);
-            const coverUrl = safeText(studio.coverUrl);
-            const logoUrl = safeText(studio.logoUrl);
 
-            const street = safeText(studio.street);
-            const building = safeText(studio.building);
-            const address = [street, building].filter(Boolean).join(", ");
+        {/* Results */}
+        {filtered.length === 0 ? (
+          <div className="rounded-[28px] border border-[#E9DED2] bg-[#FFFCF8] p-8 shadow-[0_10px_30px_rgba(93,64,55,0.06)] sm:p-10">
+            <div className="mx-auto max-w-xl text-center">
+              {/* Icon */}
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-[20px] border border-[#E9DED2] bg-[#F8F4EF]">
+                {" "}
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  className="h-7 w-7 text-[#7B6D61]"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M10 10a2 2 0 1 0 0.001-4.001A2 2 0 0 0 10 10Z"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                  />
+                  <path
+                    d="M21 21l-4.3-4.3m1.3-5.2a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </div>
 
-            const hasInstagram = Boolean(safeText(studio.instagram));
-            const hasWebsite = Boolean(safeText(studio.website));
+              {/* Text */}
+              <h3 className="mt-4 text-xl font-semibold tracking-tight text-[#1F2A22]">
+                Немає результатів за цими фільтрами
+              </h3>
+              <p className="mt-2 text-sm text-[#857A70]">
+                Спробуй змінити місто або категорію, або прибери частину
+                фільтрів — тоді ми покажемо більше доступних студій.
+              </p>
 
-            return (
-<div
-  key={studio.slug}
-  role="button"
-  tabIndex={0}
-  onClick={() => {
-    sessionStorage.setItem(
-      "studios-scroll",
-      String(window.scrollY || 0),
-    );
+              {/* Tips */}
 
-    navigate(`/${studio.slug}`);
-  }}
-  onKeyDown={(e) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
+              {/* Actions */}
+              <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
+                <button
+                  type="button"
+                  onClick={clearAll}
+                  className="
+  w-full rounded-[16px] border border-[#E7DED6] bg-white px-5 py-3 text-[#6B625A]
+  transition-all duration-200 hover:bg-[#FAF7F4] hover:shadow-sm active:scale-[0.98]
+  sm:w-auto
+"
+                >
+                  Очистити фільтри
+                </button>
+              </div>
 
-      sessionStorage.setItem(
-        "studios-scroll",
-        String(window.scrollY || 0),
-      );
+              {/* Small footer */}
+              <p className="mt-4 text-xs text-[#8B7F73]">
+                Порада: якщо шукаєш конкретну послугу — введи загальніше слово
+                (наприклад “масаж”, “манікюр”, “стрижка”).
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {filtered.slice(0, visibleCount).map((studio) => {
+              const name = safeText(studio.name) || "Студія";
+              const cat = safeText(studio.category);
+              const cityLabel = safeText(studio.city);
+              const description = safeText(studio.description);
+              const coverUrl = safeText(studio.coverUrl);
+              const logoUrl = safeText(studio.logoUrl);
 
-      navigate(`/${studio.slug}`);
-    }
-  }}
-  className={`
-    group relative flex flex-col h-full
-    overflow-visible rounded-2xl border bg-white
-    transform-gpu will-change-transform
-    transition-all duration-300 cursor-pointer
-    active:scale-[0.98]
-    ${
-      studio.premium
-        ? `
-          border-yellow-200
-          hover:border-yellow-400
-          hover:-translate-y-[4px]
-          hover:shadow-[0_10px_30px_rgba(234,179,8,0.25)]
-        `
-        : `
-          border-gray-200
-          hover:border-gray-300
-          hover:-translate-y-[2px]
-          hover:shadow-md
-        `
-    }
-  `}
->
-                {/* ✅ PREMIUM badge (обов’язково ПЕРШИМ, і з високим z-index) */}
-                {studio.premium && (
-                  <div
-                    className="
+              const street = safeText(studio.street);
+              const building = safeText(studio.building);
+              const address = [street, building].filter(Boolean).join(", ");
+
+              return (
+                <div
+                  key={studio.slug}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => {
+                    navigate(`/${studio.slug}`, {
+                      state: {
+                        backgroundLocation: location,
+                      },
+                    });
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+
+                      navigate(`/${studio.slug}`, {
+                        state: {
+                          backgroundLocation: location,
+                        },
+                      });
+                    }
+                  }}
+                  className={`
+  group relative flex h-full flex-col overflow-visible rounded-[26px] border bg-[#FFFCF8]
+  transform-gpu cursor-pointer transition-all duration-300 will-change-transform
+  active:scale-[0.98]
+  ${
+    studio.premium
+      ? `
+        border-[#E9C98F]
+        hover:-translate-y-[4px]
+        hover:border-[#DDB56C]
+        hover:shadow-[0_14px_34px_rgba(221,181,108,0.24)]
+      `
+      : `
+        border-[#E9DED2]
+        hover:-translate-y-[2px]
+        hover:border-[#DDCFC1]
+        hover:shadow-[0_12px_28px_rgba(93,64,55,0.08)]
+      `
+  }
+`}
+                >
+                  {/* ✅ PREMIUM badge (обов’язково ПЕРШИМ, і з високим z-index) */}
+                  {studio.premium && (
+                    <div
+                      className="
         absolute top-3 right-3
         z-50
         px-3 py-1
@@ -757,18 +726,39 @@ const navigate = useNavigate();
         backdrop-blur-sm
         pointer-events-none
       "
-                  >
-                    ★ PREMIUM
-                  </div>
-                )}
+                    >
+                      ★ PREMIUM
+                    </div>
+                  )}
 
-                {/* Cover (кути тільки зверху) */}
-                <div className="relative overflow-hidden rounded-t-2xl shrink-0">
-                  <div className="relative h-28 bg-gray-100">
-                    {coverUrl ? (
+                  {/* Cover (кути тільки зверху) */}
+                  <div className="relative shrink-0 overflow-hidden rounded-t-[26px]">
+                    <div className="relative h-28 bg-[#F3ECE4]">
+                      {coverUrl ? (
+                        <img
+                          src={coverUrl}
+                          alt={`${name} cover`}
+                          className="h-full w-full object-cover"
+                          loading="lazy"
+                          onError={(e) =>
+                            (e.currentTarget.style.display = "none")
+                          }
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-xs text-[#8B7F73]">
+                          Без обкладинки
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* ✅ Logo НЕ обрізається (і над cover) */}
+                  <div className="absolute left-4 top-[88px] z-40 h-12 w-12 overflow-hidden rounded-[18px] border border-[#E9DED2] bg-white shadow-[0_8px_18px_rgba(93,64,55,0.10)]">
+                    {" "}
+                    {logoUrl ? (
                       <img
-                        src={coverUrl}
-                        alt={`${name} cover`}
+                        src={logoUrl}
+                        alt={`${name} logo`}
                         className="h-full w-full object-cover"
                         loading="lazy"
                         onError={(e) =>
@@ -776,115 +766,82 @@ const navigate = useNavigate();
                         }
                       />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center text-xs text-gray-500">
-                        Без обкладинки
+                      <div className="flex h-full w-full items-center justify-center text-[10px] font-semibold text-[#B1A59A]">
+                        LOGO
                       </div>
                     )}
                   </div>
-                </div>
 
-                {/* ✅ Logo НЕ обрізається (і над cover) */}
-                <div className="absolute left-4 top-[88px] z-40 h-12 w-12 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-                  {logoUrl ? (
-                    <img
-                      src={logoUrl}
-                      alt={`${name} logo`}
-                      className="h-full w-full object-cover"
-                      loading="lazy"
-                      onError={(e) => (e.currentTarget.style.display = "none")}
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-[10px] font-semibold text-gray-400">
-                      LOGO
+                  {/* Content */}
+                  <div className="px-4 pb-4 pt-8 flex flex-col flex-1">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h2 className="truncate text-base font-semibold text-[#1F2A22]">
+                          {name}
+                        </h2>
+
+                        <p className="mt-0.5 text-sm text-[#857A70]">
+                          {cat || "Категорія"}
+                          {cityLabel ? ` • ${cityLabel}` : ""}
+                        </p>
+                      </div>
+
+                      {studio.priceFrom != null && (
+                        <div className="shrink-0 rounded-xl border border-gray-200 bg-gray-50 px-3 py-1 text-sm font-semibold text-[#1F2A22]">
+                          від {studio.priceFrom} грн
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
 
-                {/* Content */}
-                <div className="px-4 pb-4 pt-8 flex flex-col flex-1">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <h2 className="truncate text-base font-semibold text-gray-900">
-                        {name}
-                      </h2>
-
-                      <p className="mt-0.5 text-sm text-gray-600">
-                        {cat || "Категорія"}
-                        {cityLabel ? ` • ${cityLabel}` : ""}
+                    {description && (
+                      <p className="mt-3 line-clamp-2 text-sm text-gray-600">
+                        {description}
                       </p>
-                    </div>
-
-                    {studio.priceFrom != null && (
-                      <div className="shrink-0 rounded-xl border border-gray-200 bg-gray-50 px-3 py-1 text-sm font-semibold text-gray-900">
-                        від {studio.priceFrom} грн
-                      </div>
                     )}
-                  </div>
 
-                  {description && (
-                    <p className="mt-3 line-clamp-2 text-sm text-gray-600">
-                      {description}
-                    </p>
-                  )}
+                    {address && (
+                      <p className="mt-3 text-sm text-gray-500">📍 {address}</p>
+                    )}
 
-                  {address && (
-                    <p className="mt-3 text-sm text-gray-500">📍 {address}</p>
-                  )}
-
-                  {(hasInstagram || hasWebsite) && (
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {hasInstagram && (
-                        <span className="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-700">
-                          Instagram
-                        </span>
-                      )}
-                      {hasWebsite && (
-                        <span className="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-700">
-                          Сайт
-                        </span>
-                      )}
+                    <div className="mt-auto pt-4 flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-900 group-hover:underline">
+                        Переглянути →
+                      </span>
+                      <FavouriteButton studio={studio} />
                     </div>
-                  )}
-
-                  <div className="mt-auto pt-4 flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-900 group-hover:underline">
-                      Переглянути →
-                    </span>
-                    <FavouriteButton studio={studio} />
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-      {visibleCount < filtered.length && (
-        <div className="mt-8 flex justify-center">
-          <button
-            type="button"
-            onClick={handleLoadMore}
-            disabled={isLoadingMore}
-            className={`
-        ui-button-one
-        px-6 py-3
-        flex items-center gap-2
-        transition-all duration-200
-        active:scale-95
-        ${isLoadingMore ? "opacity-70 cursor-not-allowed" : "hover:shadow-md"}
-      `}
-          >
-            {isLoadingMore ? (
-              <>
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                Завантаження...
-              </>
-            ) : (
-              <>Показати ще</>
-            )}
-          </button>
-        </div>
-      )}
-    </div>
+              );
+            })}
+          </div>
+        )}
+        {visibleCount < filtered.length && (
+          <div className="mt-8 flex justify-center">
+            <button
+              type="button"
+              onClick={handleLoadMore}
+              disabled={isLoadingMore}
+              className={`
+  flex items-center gap-2 rounded-[18px] px-6 py-3 text-sm font-extrabold transition-all duration-200 active:scale-95
+  ${
+    isLoadingMore
+      ? "cursor-not-allowed bg-[#BFC8C0] text-white/80"
+      : "bg-[#4A5D4E] text-white shadow-[0_10px_24px_rgba(74,93,78,0.22)] hover:bg-[#3F5143] hover:shadow-md"
+  }
+`}
+            >
+              {isLoadingMore ? (
+                <>
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  Завантаження...
+                </>
+              ) : (
+                <>Показати ще</>
+              )}
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

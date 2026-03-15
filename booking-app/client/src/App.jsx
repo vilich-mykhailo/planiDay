@@ -1,4 +1,4 @@
-import { Routes, Route, useParams } from "react-router-dom";
+import { Routes, Route, useLocation, useParams } from "react-router-dom";
 import Header from "./components/Header";
 
 import Studios from "./pages/Studios";
@@ -26,55 +26,67 @@ import ProtectedRoute from "./routes/ProtectedRoute";
 import MyBookings from "./pages/MyBookings";
 import Favourites from "./pages/Favourites";
 import { FavouritesProvider } from "./context/FavouritesContext";
-import ScrollToTop from "./components/ScrollToTop";
 import Profile from "./pages/dashboard/Profile";
 import ScrollRestoration from "./components/ScrollRestoration";
+
 function StudioDetailsKeyed() {
   const { slug } = useParams();
   return <StudioDetails key={slug} />;
 }
+
 export default function App() {
+  const location = useLocation();
+  const backgroundLocation = location.state?.backgroundLocation;
+
   return (
     <>
       <ScrollRestoration />
-      {/* <ScrollToTop /> */}
+
       <FavouritesProvider>
         <AppBackground>
           <Header />
 
-            <Routes>
-              <Route path="/" element={<Studios />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/bookings" element={<MyBookings />} />
-              <Route path="/favourites" element={<Favourites />} />
+          <Routes location={backgroundLocation || location}>
+            <Route path="/" element={<Studios />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/bookings" element={<MyBookings />} />
+            <Route path="/favourites" element={<Favourites />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/booking/success" element={<BookingSuccess />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/login" element={<LoginClient />} />
+            <Route path="/register" element={<RegisterClient />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/login-owner" element={<LoginOwner />} />
+            <Route path="/register-owner" element={<RegisterOwner />} />
+
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<Golowna />} />
+              <Route path="studio" element={<StudioSettings />} />
+              <Route path="services" element={<Services />} />
+              <Route path="schedule" element={<Schedule />} />
+              <Route path="bookings" element={<Bookings />} />
+              <Route path="masters" element={<Masters />} />
+            </Route>
+
+            {!backgroundLocation && (
               <Route path="/:slug" element={<StudioPublicPage />} />
-              <Route path="/terms" element={<Terms />} />
-              <Route path="/privacy" element={<Privacy />} />
-              <Route path="/booking/success" element={<BookingSuccess />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/login" element={<LoginClient />} />
-              <Route path="/register" element={<RegisterClient />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
+            )}
+          </Routes>
 
-              <Route path="/login-owner" element={<LoginOwner />} />
-              <Route path="/register-owner" element={<RegisterOwner />} />
-
-              <Route
-                path="/dashboard"
-                element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                }
-              >
-                <Route index element={<Golowna></Golowna>} />
-                <Route path="studio" element={<StudioSettings />} />
-                <Route path="services" element={<Services />} />
-                <Route path="schedule" element={<Schedule />} />
-                <Route path="bookings" element={<Bookings />} />
-                <Route path="masters" element={<Masters />} />
-              </Route>
+          {backgroundLocation && (
+            <Routes>
+              <Route path="/:slug" element={<StudioPublicPage />} />
             </Routes>
+          )}
         </AppBackground>
       </FavouritesProvider>
     </>
