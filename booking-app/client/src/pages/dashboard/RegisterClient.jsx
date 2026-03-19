@@ -84,10 +84,7 @@ export default function RegisterClient() {
         <div className="mx-auto max-w-md">
           {/* header */}
           <div className="text-center">
-            <div className="hidden sm:grid mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-black text-white font-extrabold">
-              P
-            </div>
-            <h1 className="mt-4 text-2xl sm:text-3xl font-extrabold text-gray-900">
+            <h1 className="mt-8 text-2xl sm:text-3xl font-extrabold text-gray-900">
               Реєстрація клієнта
             </h1>
             <p className="mt-2 text-sm text-gray-600">
@@ -96,7 +93,7 @@ export default function RegisterClient() {
           </div>
 
           {/* card */}
-          <div className="mt-8 rounded-3xl border border-gray-200 bg-white p-6 sm:p-7 shadow-[0_10px_30px_rgba(0,0,0,0.05)]">
+          <div className="mt-4 rounded-3xl border border-gray-200 bg-white p-6 sm:p-7 shadow-[0_10px_30px_rgba(0,0,0,0.05)]">
             <form onSubmit={handleSubmit} className="space-y-4">
               <Input
                 label="Ім’я"
@@ -182,7 +179,7 @@ export default function RegisterClient() {
               </button>
             </form>
 
-            <div className="mt-6 border-t border-gray-200 pt-5 text-center">
+            <div className="mt-2 border-t border-gray-200 pt-2 text-center">
               <p className="text-sm text-gray-600">
                 Вже є акаунт?{" "}
                 <Link
@@ -195,7 +192,7 @@ export default function RegisterClient() {
             </div>
           </div>
 
-          <p className="mt-6 text-center text-xs text-gray-500">
+          <p className="mt-2 text-center text-xs text-gray-500">
             Дані захищені. Ми не публікуємо твій email.
           </p>
         </div>

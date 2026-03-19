@@ -7,7 +7,7 @@ const linkClass = ({ isActive }) =>
     "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#4A5D4E]/15",
     isActive
       ? "border-[#4A5D4E] bg-[#4A5D4E] text-white shadow-[0_10px_22px_rgba(74,93,78,0.18)] before:absolute before:-left-2 before:top-1/2 before:h-[22px] before:w-1 before:-translate-y-1/2 before:rounded-full before:bg-[#4A5D4E]"
-      : "border-transparent bg-transparent text-[#6B625A] hover:-translate-y-[1px] hover:border-[#E9DED2] hover:bg-[#FAF7F4] hover:text-[#1F2A22] hover:shadow-[0_1px_0_rgba(93,64,55,0.05)]",
+      : "border-transparent bg-transparent text-[#6B625A] hover:-translate-y-[1px] hover:border-[#EEEEEE] hover:bg-[#FAF7F4] hover:text-[#1F2A22] hover:shadow-[0_1px_0_rgba(93,64,55,0.05)]",
   ].join(" ");
 
 function SkeletonBlock({ className = "" }) {
@@ -102,7 +102,7 @@ export default function Dashboard() {
   "
 >
 <div className="mb-3 border-b border-[#F1E7DE] px-2 pb-[14px] pt-[10px] text-center">
-  <div className="inline-flex items-center rounded-full border border-[#E9DED2] bg-[#F8F4EF] px-[10px] py-[6px] text-xs font-extrabold uppercase tracking-[0.12em] text-[#7B6D61]">
+  <div className="inline-flex items-center rounded-full border border-[#EEEEEE] bg-[#F8F4EF] px-[10px] py-[6px] text-xs font-extrabold uppercase tracking-[0.12em] text-[#7B6D61]">
     Кабінет
   </div>
 
@@ -136,7 +136,7 @@ export default function Dashboard() {
               Майстри
             </NavLink>
 
-<div className="mt-3 border-t border-[#E9DED2] pt-3">
+<div className="mt-3 border-t border-[#EEEEEE] pt-3">
   <button
     type="button"
     onClick={handleLogout}
@@ -156,7 +156,7 @@ export default function Dashboard() {
 
         <section
           className="
-            min-h-[200px] rounded-[18px] border border-gray-200 bg-white p-6
+            min-h-[200px] rounded-[18px] border border-gray-200 bg-white p-6 mb-6
             shadow-[0_1px_2px_rgba(16,24,40,0.06),0_12px_28px_rgba(16,24,40,0.08)]
           "
         >

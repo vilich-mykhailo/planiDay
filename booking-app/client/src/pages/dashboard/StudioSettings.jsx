@@ -34,7 +34,7 @@ function Field({ label, hint, error, children }) {
 
 function Card({ title, subtitle, children }) {
   return (
-    <section className="rounded-[16px] border border-[#E9DED2]  shadow-[0_10px_30px_rgba(93,64,55,0.06)]">
+    <section className="rounded-[16px] border border-[#EEEEEE]  shadow-[0_10px_30px_rgba(93,64,55,0.06)]">
       <div className="border-b border-[#F1E7DE] px-5 py-4">
         <h2 className="text-[18px] font-extrabold tracking-[-0.02em] text-[#1F2A22]">
           {title}
@@ -120,7 +120,7 @@ function CollapsibleCard({
   const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <section className="overflow-hidden rounded-[28px] border border-[#E9DED2]  shadow-[0_10px_30px_rgba(93,64,55,0.06)]">
+    <section className="overflow-hidden rounded-[28px] border border-[#EEEEEE]  shadow-[0_10px_30px_rgba(93,64,55,0.06)]">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -131,14 +131,16 @@ function CollapsibleCard({
           <h2 className="text-[18px] font-extrabold tracking-[-0.02em] text-[#1F2A22]">
             {title}
           </h2>
-          {subtitle && <p className="mt-1 text-sm text-[#857A70]">{subtitle}</p>}
+          {subtitle && (
+            <p className="mt-1 text-sm text-[#857A70]">{subtitle}</p>
+          )}
         </div>
 
         <div className="flex shrink-0 items-center gap-3">
           {rightSlot}
           <span
             className={[
-              "grid h-9 w-9 place-items-center rounded-xl border border-[#E9DED2] bg-white text-[#8B7F73] transition",
+              "grid h-9 w-9 place-items-center rounded-xl border border-[#EEEEEE] bg-white text-[#8B7F73] transition",
               open ? "rotate-180" : "rotate-0",
             ].join(" ")}
             aria-hidden="true"
@@ -186,8 +188,8 @@ function StudioSettingsSkeleton() {
           <SkeletonBlock className="h-4 w-80 max-w-full" />
         </div>
 
-<div className="mt-4 flex gap-2 overflow-x-auto rounded-[22px] border border-[#E9DED2]  p-2">
-            <SkeletonBlock className="h-10 w-24 shrink-0" />
+        <div className="mt-4 flex gap-2 overflow-x-auto rounded-[22px] border border-[#EEEEEE]  p-2">
+          <SkeletonBlock className="h-10 w-24 shrink-0" />
           <SkeletonBlock className="h-10 w-24 shrink-0" />
           <SkeletonBlock className="h-10 w-28 shrink-0" />
         </div>
@@ -196,7 +198,7 @@ function StudioSettingsSkeleton() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         <div className="space-y-6 lg:col-span-5">
           <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.06)]">
-            <div className="relative h-44 bg-[#F3ECE4]">
+            <div className="relative h-44 bg-gray-50">
               <SkeletonBlock className="h-full w-full rounded-none" />
               <div className="absolute -bottom-10 left-3 right-3 flex items-end gap-2">
                 <SkeletonBlock className="h-20 w-20 shrink-0 rounded-2xl" />
@@ -221,7 +223,7 @@ function StudioSettingsSkeleton() {
             </div>
           </section>
 
-          <section className="rounded-[16px] border border-[#E9DED2]  shadow-[0_10px_30px_rgba(93,64,55,0.06)]">
+          <section className="rounded-[16px] border border-[#EEEEEE]  shadow-[0_10px_30px_rgba(93,64,55,0.06)]">
             <div className="border-b border-gray-100 px-5 py-4">
               <div className="flex items-center justify-between gap-3">
                 <div className="space-y-2">
@@ -260,7 +262,7 @@ function StudioSettingsSkeleton() {
         </div>
 
         <div className="space-y-6 lg:col-span-7">
-          <section className="rounded-[16px] border border-[#E9DED2]  shadow-[0_10px_30px_rgba(93,64,55,0.06)]">
+          <section className="rounded-[16px] border border-[#EEEEEE]  shadow-[0_10px_30px_rgba(93,64,55,0.06)]">
             <div className="border-b border-gray-100 px-5 py-4">
               <SkeletonBlock className="h-5 w-24" />
               <SkeletonBlock className="mt-2 h-4 w-80 max-w-full" />
@@ -333,24 +335,24 @@ export default function StudioSettings() {
       { replace: true },
     );
   }
-  const [checklistOpen, setChecklistOpen] = useState(false); 
-const [form, setForm] = useState({
-  name: "",
-  category: "",
-  phone: "",
-  email: "",
-  description: "",
-  city: "",
-  street: "",
-  building: "",
-  apartment: "",
-  coverUrl: "",
-  logoUrl: "",
-  portfolioUrls: [],
-  coverFile: null,
-  logoFile: null,
-  portfolioFiles: [],
-});
+  const [checklistOpen, setChecklistOpen] = useState(false);
+  const [form, setForm] = useState({
+    name: "",
+    category: "",
+    phone: "",
+    email: "",
+    description: "",
+    city: "",
+    street: "",
+    building: "",
+    apartment: "",
+    coverUrl: "",
+    logoUrl: "",
+    portfolioUrls: [],
+    coverFile: null,
+    logoFile: null,
+    portfolioFiles: [],
+  });
 
   const [highlightId, setHighlightId] = useState("");
   const [highlightAddress, setHighlightAddress] = useState(false);
@@ -361,15 +363,20 @@ const [form, setForm] = useState({
 
   const [highlightTone, setHighlightTone] = useState("green");
 
-const highlightClass =
-  highlightTone === "green"
-    ? "ring-2 ring-[#86C991]/60 bg-[#F3FBF4] border-[#B8DDBE]"
-    : "ring-2 ring-[#4A5D4E]/20 bg-[#FCF8F3] border-[#D8C8B8]";
+  const highlightClass =
+    highlightTone === "green"
+      ? "ring-2 ring-[#86C991]/60 bg-[#F3FBF4] border-[#B8DDBE]"
+      : "ring-2 ring-[#4A5D4E]/20 bg-[#FCF8F3] border-[#D8C8B8]";
 
-const baseFieldClass =
-  "w-full rounded-[18px] border border-[#E9DED2]  p-3 text-sm font-medium text-[#1F2A22] outline-none " +
-  "transition-[box-shadow,border-color,background-color] placeholder:text-[#B1A59A] " +
-  "hover:bg-[#FCF8F3] hover:border-[#DDCFC1] focus:border-[#4A5D4E] focus:ring-2 focus:ring-[#4A5D4E]/15";
+  const baseFieldClass =
+    "w-full rounded-[18px] border border-[#EEEEEE] p-3 text-sm font-medium text-gray outline-none " +
+    "transition-all duration-200 " +
+    "placeholder:text-black !important " + // ← основний сірий колір
+    "placeholder:opacity-100 !important " +
+    "focus:placeholder:text-[#8B7F73] !important " + // темніший при фокусі
+    "hover:placeholder:text-[#A89F94] !important " + // при наведенні
+    "hover:bg-[#FCF8F3] hover:border-[#DDCFC1] " +
+    "focus:border-[#4A5D4E] focus:ring-2 focus:ring-[#4A5D4E]/15 focus:bg-white";
 
   const [pendingDeletes, setPendingDeletes] = useState([]); // keys які треба видалити після Save
 
@@ -395,21 +402,30 @@ const baseFieldClass =
 
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState({
+    id: 0,
     open: false,
     type: "success",
     title: "",
     text: "",
+    duration: 3000,
   });
 
   function showToast({ type = "success", title, text }) {
-    setToast({ open: true, type, title, text });
+    const duration = type === "error" ? 3000 : type === "warning" ? 3000 : 3000;
+
+    setToast({
+      id: Date.now(),
+      open: true,
+      type,
+      title,
+      text,
+      duration,
+    });
 
     clearTimeout(showToast._t);
-    const ms = type === "error" ? 4500 : 3200;
-
     showToast._t = setTimeout(() => {
       setToast((prev) => ({ ...prev, open: false }));
-    }, ms);
+    }, duration);
   }
 
   const [errorModal, setErrorModal] = useState({
@@ -483,68 +499,68 @@ const baseFieldClass =
   }, [portfolioPreview.open]);
   const [hydrated, setHydrated] = useState(false);
 
-useEffect(() => {
-  if (studio === undefined) {
-    setInitialLoading(true);
-    return;
-  }
+  useEffect(() => {
+    if (studio === undefined) {
+      setInitialLoading(true);
+      return;
+    }
 
-  if (!studio) {
-    setInitialLoading(false);
+    if (!studio) {
+      setInitialLoading(false);
+      setHydrated(true);
+      return;
+    }
+
+    setForm({
+      name: studio?.name || "",
+      category: studio?.category || "",
+      phone: studio?.phone || "",
+      email: studio?.email || "",
+      description: studio?.description || "",
+      city: studio?.city || "",
+      street: studio?.street || "",
+      building: studio?.building || "",
+      apartment: studio?.apartment || "",
+      coverUrl: studio?.coverUrl || "",
+      logoUrl: studio?.logoUrl || "",
+      portfolioUrls: Array.isArray(studio?.portfolioUrls)
+        ? studio.portfolioUrls
+        : [],
+      coverFile: null,
+      logoFile: null,
+      portfolioFiles: [],
+    });
+
     setHydrated(true);
-    return;
-  }
-
-  setForm({
-    name: studio?.name || "",
-    category: studio?.category || "",
-    phone: studio?.phone || "",
-    email: studio?.email || "",
-    description: studio?.description || "",
-    city: studio?.city || "",
-    street: studio?.street || "",
-    building: studio?.building || "",
-    apartment: studio?.apartment || "",
-    coverUrl: studio?.coverUrl || "",
-    logoUrl: studio?.logoUrl || "",
-    portfolioUrls: Array.isArray(studio?.portfolioUrls)
-      ? studio.portfolioUrls
-      : [],
-    coverFile: null,
-    logoFile: null,
-    portfolioFiles: [],
-  });
-
-  setHydrated(true);
-  setInitialLoading(false);
-}, [studio]);
+    setInitialLoading(false);
+  }, [studio]);
 
   useEffect(() => {
-  let alive = true;
+    let alive = true;
 
-  (async () => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
+    (async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
 
-      const me = await api("/auth/me", { token });
-      const email = me?.account?.email || "";
+        const me = await api("/auth/me", { token });
+        const email = me?.account?.email || "";
 
-      if (!alive) return;
+        if (!alive) return;
 
-      setForm((p) => ({
-        ...p,
-        email: p.email || email, // не перетирає, якщо юзер вже ввів
-      }));
-    } catch {
-      // ignore
-    }
-  })();
+        setForm((p) => ({
+          ...p,
+          email: p.email || email, // не перетирає, якщо юзер вже ввів
+        }));
+      } catch {
+        // ignore
+      }
+    })();
 
-  return () => {
-    alive = false;
-  };
-}, []);
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   useEffect(() => {
     const urls = [];
@@ -562,8 +578,8 @@ useEffect(() => {
     }
 
     if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
-  e.email = "Вкажи коректну пошту.";
-}
+      e.email = "Вкажи коректну пошту.";
+    }
 
     if (form.description.length > MAX_DESC) e.description = "Опис завеликий.";
 
@@ -583,7 +599,7 @@ useEffect(() => {
       (studio?.name || "") !== form.name ||
       (studio?.category || "") !== form.category ||
       (studio?.phone || "") !== form.phone ||
-      (studio?.email || "") !== form.email || 
+      (studio?.email || "") !== form.email ||
       (studio?.description || "") !== form.description ||
       (studio?.city || "") !== form.city ||
       (studio?.street || "") !== form.street ||
@@ -877,8 +893,8 @@ useEffect(() => {
       if (hadRemote && hadLocal) {
         showToast({
           type: "success",
-          title: "Портфоліо очищено",
-          text: "Нові фото прибрано. Старі фото будуть видалені після “Зберегти”.",
+          title: "Профіль оновлено",
+          text: "Зміни збережено.",
         });
       } else if (hadRemote) {
         showToast({
@@ -937,21 +953,17 @@ useEffect(() => {
         ? [...form.portfolioUrls]
         : [];
 
-      // ✅ зберемо все, що треба видалити після збереження
       const deletesAfterSave = [...pendingDeletes];
 
-      // cover upload (якщо міняємо)
       if (form.coverFile) {
         const out = await uploadOne(studio.id, form.coverFile, "cover", token);
         nextCoverKey = out.key;
 
-        // ✅ старий cover в чергу (а не видаляти зараз)
         if (form.coverUrl && form.coverUrl !== out.key) {
           deletesAfterSave.push(form.coverUrl);
         }
       }
 
-      // logo upload
       if (form.logoFile) {
         const out = await uploadOne(studio.id, form.logoFile, "logo", token);
         nextLogoKey = out.key;
@@ -961,7 +973,6 @@ useEffect(() => {
         }
       }
 
-      // portfolio upload
       if ((form.portfolioFiles?.length || 0) > 0) {
         const out = await uploadMany(studio.id, form.portfolioFiles, token);
         const newKeys = out.keys || [];
@@ -971,12 +982,11 @@ useEffect(() => {
         );
       }
 
-      // ✅ 1) спочатку оновлюємо БД
       await updateStudio({
         name: form.name.trim(),
         category: form.category.trim(),
         phone: form.phone.trim(),
-        email: form.email.trim(), 
+        email: form.email.trim(),
         description: form.description.trim(),
         city: form.city.trim(),
         street: form.street.trim(),
@@ -987,7 +997,6 @@ useEffect(() => {
         portfolioUrls: nextPortfolioKeys,
       });
 
-      // ✅ 2) чистимо локальні файли і pendingDeletes
       setForm((p) => ({
         ...p,
         coverUrl: nextCoverKey,
@@ -998,35 +1007,44 @@ useEffect(() => {
         portfolioFiles: [],
       }));
 
-      setPendingDeletes([]); // важливо!
+      setPendingDeletes([]);
 
-      // ✅ 3) і ТІЛЬКИ ТЕПЕР видаляємо з R2 (якщо щось є)
       const uniq = Array.from(new Set(deletesAfterSave)).filter(Boolean);
       if (uniq.length) {
-        // якщо хочеш без падіння save при delete-помилці:
         try {
           await deleteManyFromR2(uniq);
         } catch (err) {
           console.error(err);
           showToast({
-            type: "error",
+            type: "warning",
             title: "Збережено, але…",
-            text: "Не всі старі файли вдалося видалити з Cloudflare.",
+            text: "Не всі файли видалено.",
           });
         }
       }
 
       showToast({
         type: "success",
-        title: "Збережено",
-        text: "Зміни успішно оновлено.",
+        title: "Профіль оновлено",
+        text: "Зміни збережено.",
       });
     } catch (error) {
       console.error(error);
+
+      const rawMessage = String(error?.message || "").toLowerCase();
+
+      const isOffline =
+        !navigator.onLine ||
+        rawMessage.includes("failed to fetch") ||
+        rawMessage.includes("networkerror") ||
+        rawMessage.includes("network error") ||
+        rawMessage.includes("load failed") ||
+        rawMessage.includes("fetch");
+
       showToast({
         type: "error",
-        title: "Не збережено",
-        text: "Сталася помилка. Спробуй ще раз.",
+        title: isOffline ? "Немає інтернету" : "Не вдалося зберегти",
+        text: isOffline ? "Перевірте підключення." : "Спробуйте ще раз.",
       });
     } finally {
       setSaving(false);
@@ -1094,17 +1112,17 @@ useEffect(() => {
     return parts.length ? parts.join(", ") : "Адреса не заповнена";
   }, [form]);
   const profile = useMemo(() => completeness(form), [form]);
-const FIELD_ID = {
-  name: "studio-field-name",
-  category: "studio-field-category",
-  phone: "studio-field-phone",
-  email: "studio-field-email", 
-  description: "studio-field-description",
-  portfolio: "studio-field-portfolio-add",
-  coverUrl: "studio-field-coverUrl",
-  logoUrl: "studio-field-logoUrl",
-  address: "studio-field-city",
-};
+  const FIELD_ID = {
+    name: "studio-field-name",
+    category: "studio-field-category",
+    phone: "studio-field-phone",
+    email: "studio-field-email",
+    description: "studio-field-description",
+    portfolio: "studio-field-portfolio-add",
+    coverUrl: "studio-field-coverUrl",
+    logoUrl: "studio-field-logoUrl",
+    address: "studio-field-city",
+  };
 
   function highlightAddressFields() {
     setHighlightTone("green");
@@ -1267,25 +1285,25 @@ const FIELD_ID = {
 
   const [menuOpen, setMenuOpen] = useState(false);
 
-useEffect(() => {
-  const syncMenuState = () => {
-    setMenuOpen(document.body.classList.contains("menu-open"));
-  };
+  useEffect(() => {
+    const syncMenuState = () => {
+      setMenuOpen(document.body.classList.contains("menu-open"));
+    };
 
-  syncMenuState();
+    syncMenuState();
 
-  const observer = new MutationObserver(syncMenuState);
-  observer.observe(document.body, {
-    attributes: true,
-    attributeFilter: ["class"],
-  });
+    const observer = new MutationObserver(syncMenuState);
+    observer.observe(document.body, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
 
-  return () => observer.disconnect();
-}, []);
+    return () => observer.disconnect();
+  }, []);
 
-if (initialLoading) {
-  return <StudioSettingsSkeleton />;
-}
+  if (initialLoading) {
+    return <StudioSettingsSkeleton />;
+  }
   return (
     <div className="mx-auto max-w-6xl min-h-[100svh]  pb-10 md:pb-0">
       <input
@@ -1305,27 +1323,26 @@ if (initialLoading) {
       />
 
       {/* Top header */}
-<div className="mb-5">
-  <div className="flex items-start justify-between gap-4">
-    <div ref={headerTriggerRef}>
-      <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-[#C89D72]">
-        профіль студії
-      </p>
+      <div className="mb-5">
+        <div className="flex items-start justify-between gap-4">
+          <div ref={headerTriggerRef}>
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-[#C89D72]">
+              профіль студії
+            </p>
 
-      <h1 className="mt-2 text-3xl font-black tracking-[-0.03em] text-[#1F2A22] sm:text-4xl">
-        Профіль студії
-      </h1>
+            <h1 className="mt-2 text-3xl font-black tracking-[-0.03em] text-[#1F2A22] sm:text-4xl">
+              Профіль студії
+            </h1>
 
-      <p className="mt-2 max-w-2xl text-sm leading-6 text-[#857A70]">
-        Створіть профіль, який підвищує довіру, виглядає професійно та
-        переконує клієнтів записатися саме до вас.
-      </p>
-    </div>
-  </div>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#857A70]">
+              Створіть профіль, який підвищує довіру та виглядає професійно.
+            </p>
+          </div>
+        </div>
 
         {/* Tabs */}
-<div className="mt-4 flex gap-2 overflow-x-auto rounded-[22px] border border-[#E9DED2]  p-2">
-            {[
+        <div className="mt-4 flex gap-2 overflow-x-auto rounded-[22px] border border-[#EEEEEE]  p-2">
+          {[
             { id: "profile", label: "Профіль" },
             { id: "location", label: "Локація" },
             { id: "links", label: "Портфоліо" },
@@ -1334,12 +1351,12 @@ if (initialLoading) {
               key={t.id}
               type="button"
               onClick={() => setTabUrl(t.id)}
-className={[
-  "whitespace-nowrap rounded-[16px] px-4 py-2.5 text-sm font-semibold transition",
-  tab === t.id
-    ? "bg-[#4A5D4E] text-white shadow-[0_10px_24px_rgba(74,93,78,0.18)]"
-    : "bg-white text-[#6B625A] hover:bg-[#FAF7F4]",
-].join(" ")}
+              className={[
+                "whitespace-nowrap rounded-[16px] px-4 py-2.5 text-sm font-semibold transition",
+                tab === t.id
+                  ? "bg-[#4A5D4E] text-white shadow-[0_10px_24px_rgba(74,93,78,0.18)]"
+                  : "bg-white text-[#6B625A] hover:bg-[#FAF7F4]",
+              ].join(" ")}
             >
               {t.label}
             </button>
@@ -1353,10 +1370,12 @@ className={[
         <div className="lg:col-span-5 space-y-6">
           {/* Live preview */}
           <div className={tab === "profile" ? "block" : "hidden"}>
-<section className="overflow-hidden rounded-[12px] border border-[#E9DED2]  shadow-[0_10px_30px_rgba(93,64,55,0.06)]">              <div
+            <section className="overflow-hidden rounded-[12px] border border-[#EEEEEE]  shadow-[0_10px_30px_rgba(93,64,55,0.06)]">
+              {" "}
+              <div
                 id="studio-field-coverUrl"
                 className={[
-                  "relative h-44 bg-[#F3ECE4]",
+                  "relative h-44 ",
                   highlightId === "studio-field-coverUrl" ? highlightClass : "",
                 ].join(" ")}
               >
@@ -1400,12 +1419,12 @@ className={[
                       e.stopPropagation();
                       removeImage("coverUrl");
                     }}
-className="
+                    className="
   absolute right-2 top-2 z-10
   grid h-6 w-6 place-items-center rounded-md
-  border border-[#E9DED2] bg-white/90
+  border border-[#EEEEEE] bg-white/90
   text-[#5F544B] shadow-sm backdrop-blur
-  transition hover:border-[#F0D6D1] hover:bg-[#FFF3F1] hover:text-[#B2504A]
+  transition hover:border-[#F0D6D1] hover:bg-[#FFFCF8]/92 hover:text-[#B2504A]
 "
                     title="Видалити обкладинку"
                     aria-label="Remove cover"
@@ -1425,7 +1444,7 @@ className="
                   <div
                     id="studio-field-logoUrl"
                     className={[
-                      "relative h-20 w-20 shrink-0 overflow-hidden rounded-[12px] border border-[#E9DED2] bg-white",
+                      "relative h-20 w-20 shrink-0 overflow-hidden rounded-[12px] border border-[#EEEEEE] bg-white",
                       highlightId === "studio-field-logoUrl"
                         ? highlightClass
                         : "",
@@ -1489,7 +1508,8 @@ className="
                     )}
                   </div>
 
-<div className="min-w-0 min-h-[44px] rounded-[12px] border border-[#E9DED2] bg-white px-3 py-2">                    {" "}
+                  <div className="min-w-0 min-h-[44px] rounded-[12px] border border-[#EEEEEE] bg-white px-3 py-2">
+                    {" "}
                     {/* Назва студії — максимум 2 рядки */}
                     <p
                       className="w-full min-w-0 text-sm sm:text-base font-extrabold text-[#1F2A22] leading-5 line-clamp-2 break-words"
@@ -1511,10 +1531,9 @@ className="
                   </div>
                 </div>
               </div>
-
               <div className="px-3 pb-3 pt-14">
-<div className="rounded-[22px] border border-[#E9DED2] bg-[#FBF7F2] p-4">   
-                 <p className="text-xs font-semibold text-[#8B7F73]">Адреса</p>
+                <div className="rounded-[22px] border border-[#EEEEEE] bg-[#FFFCF8]/92 p-4">
+                  <p className="text-xs font-semibold text-[#8B7F73]">Адреса</p>
                   <p
                     className="mt-1 text-sm font-semibold text-[#1F2A22] line-clamp-2 break-words"
                     title={AddressLine}
@@ -1534,7 +1553,7 @@ className="
               </div>
             </section>
           </div>
-          <section className="rounded-[16px] border border-[#E9DED2]  shadow-[0_10px_30px_rgba(93,64,55,0.06)]">
+          <section className="rounded-[16px] border border-[#EEEEEE]  shadow-[0_10px_30px_rgba(93,64,55,0.06)]">
             <div className="px-5 py-4 border-b border-gray-100">
               <div className="flex items-center justify-between gap-3">
                 <div>
@@ -1546,12 +1565,12 @@ className="
                   </p>
                 </div>
                 <div
-className={[
-  "rounded-[16px] border px-3 py-2 text-sm font-extrabold transition-colors",
-  profile.percent === 100
-    ? "border-[#B8DDBE] bg-[#EAF7EC] text-[#4A5D4E]"
-    : "border-[#E9DED2] bg-[#F8F4EF] text-[#1F2A22]",
-].join(" ")}
+                  className={[
+                    "rounded-[16px] border px-3 py-2 text-sm font-extrabold transition-colors",
+                    profile.percent === 100
+                      ? "border-[#B8DDBE] bg-[#EAF7EC] text-[#4A5D4E]"
+                      : "border-[#EEEEEE] bg-[#F8F4EF] text-[#1F2A22]",
+                  ].join(" ")}
                 >
                   {profile.percent}%
                 </div>
@@ -1580,8 +1599,8 @@ className={[
 
               {/* next step */}
               {profile.next && (
-<div className="rounded-[22px] border border-[#E9DED2] bg-[#FBF7F2] p-4 text-center">   
-                 <p className="text-xs font-semibold text-[#8B7F73]">
+                <div className="rounded-[22px] border border-[#EEEEEE] bg-[#FFFCF8]/92 p-4 text-center">
+                  <p className="text-xs font-semibold text-[#8B7F73]">
                     Наступний крок
                   </p>
                   <p className="mt-1 text-sm font-semibold text-[#1F2A22]">
@@ -1654,8 +1673,8 @@ className={[
                               onClick={() =>
                                 goToField(i.key, { tone: "green" })
                               }
-className="
-  group w-full rounded-[18px] border border-[#E9DED2] bg-white px-4 py-3 text-left
+                              className="
+  group w-full rounded-[18px] border border-[#EEEEEE] bg-white px-4 py-3 text-left
   transition hover:bg-[#FCF8F3] active:scale-[0.99]
 "
                             >
@@ -1664,9 +1683,9 @@ className="
                                 <span
                                   className={[
                                     "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border",
-i.ok
-  ? "border-[#B8DDBE] bg-[#EAF7EC] text-[#4A5D4E]"
-  : "border-[#E9DED2] bg-[#F8F4EF] text-[#7B6D61]",
+                                    i.ok
+                                      ? "border-[#B8DDBE] bg-[#EAF7EC] text-[#4A5D4E]"
+                                      : "border-[#EEEEEE] bg-[#F8F4EF] text-[#7B6D61]",
                                   ].join(" ")}
                                 >
                                   {i.ok ? "✓" : "+"}
@@ -1769,7 +1788,6 @@ i.ok
                       className={fieldClass("studio-field-email")}
                     />
                   </Field>
-
                   <div className="sm:col-span-2">
                     <Field
                       label="Опис"
@@ -1787,11 +1805,9 @@ i.ok
                         className={fieldClass("studio-field-description")}
                       />
                     </Field>
-                    <div className="mt-3 space-y-3 rounded-[22px] border border-[#E9DED2] bg-[#FBF7F2] p-4">
+                    <div className="mt-3 space-y-3 rounded-[22px] border border-[#EEEEEE] bg-[#FFFCF8]/92 p-4">
                       <div>
-                        <p className="text-xs font-semibold ">
-                          Рекомендація
-                        </p>
+                        <p className="text-xs font-semibold ">Рекомендація</p>
                         <p className="mt-1 text-sm text-[#6F655C]">
                           Детальний опис допомагає клієнтам краще зрозуміти ваш
                           досвід і підвищує ймовірність запису. Опишіть свою
@@ -1800,7 +1816,7 @@ i.ok
                       </div>
 
                       {/* divider */}
-                      <div className="h-px bg-[#E9DED2]" />
+                      <div className="h-px bg-[#]" />
 
                       {/* additional tips */}
                       <div>
@@ -1818,7 +1834,7 @@ i.ok
                       </div>
 
                       {/* extra highlight */}
-                      <div className="rounded-[16px] border border-[#E9DED2] bg-white px-3 py-2">
+                      <div className="rounded-[16px] border border-[#EEEEEE] bg-white px-3 py-2">
                         <p className="text-xs text-[#857A70]">
                           💡 Студії з повним описом отримують більше переглядів
                           і записів.
@@ -1876,7 +1892,7 @@ i.ok
                     />
                   </Field>
 
-                  <div className="sm:col-span-2 rounded-2xl border border-gray-200 bg-[#FBF7F2] p-4">
+                  <div className="sm:col-span-2 rounded-2xl border border-gray-200 bg-[#FFFCF8]/92 p-4">
                     <p className="text-xs font-semibold text-[#8B7F73]">
                       Перевірка
                     </p>
@@ -1908,10 +1924,12 @@ i.ok
                       <div className="flex flex-wrap items-center gap-2">
                         <label
                           id="studio-field-portfolio-add"
-className={[
-  "inline-flex  items-center justify-center rounded-[16px] bg-[#4A5D4E] px-4 py-2.5 text-sm font-extrabold text-white shadow-[0_10px_24px_rgba(74,93,78,0.22)] transition hover:bg-[#3F5143]",
-  highlightId === "studio-field-portfolio-add" ? highlightClass : "",
-].join(" ")}
+                          className={[
+                            "inline-flex  items-center justify-center rounded-[16px] bg-[#4A5D4E] px-4 py-2.5 text-sm font-extrabold text-white shadow-[0_10px_24px_rgba(74,93,78,0.22)] transition hover:bg-[#3F5143]",
+                            highlightId === "studio-field-portfolio-add"
+                              ? highlightClass
+                              : "",
+                          ].join(" ")}
                         >
                           Додати фото
                           <input
@@ -1930,10 +1948,12 @@ className={[
                             disabled={
                               !portfolioCount || clearingPortfolio || saving
                             }
-className={[
-  "inline-flex items-center justify-center rounded-[16px] border border-[#F0D6D1] bg-[#FFF3F1] px-4 py-2.5 text-sm font-extrabold text-[#B2504A] transition hover:bg-[#FDE8E4]",
-  clearingPortfolio || saving ? "cursor-not-allowed opacity-60" : "",
-].join(" ")}
+                            className={[
+                              "inline-flex items-center justify-center rounded-[16px] border border-[#F0D6D1] bg-[#FFFCF8]/92 px-4 py-2.5 text-sm font-extrabold text-[#B2504A] transition hover:bg-[#FDE8E4]",
+                              clearingPortfolio || saving
+                                ? "cursor-not-allowed opacity-60"
+                                : "",
+                            ].join(" ")}
                           >
                             {clearingPortfolio ? "Очищення..." : "Очистити"}
                           </button>
@@ -1943,7 +1963,7 @@ className={[
                       {/* Grid preview */}
                       <div className="mt-4">
                         {!hasAnyPortfolio ? (
-                         <div className="rounded-[22px] border border-[#E9DED2] bg-[#FBF7F2] p-4 text-sm text-[#857A70]">
+                          <div className="rounded-[22px] border border-[#EEEEEE] bg-[#FFFCF8]/92 p-4 text-sm text-[#857A70]">
                             Додай фото робіт — це найсильніший доказ якості.
                           </div>
                         ) : (
@@ -1967,9 +1987,9 @@ className={[
                                     onClick={() =>
                                       setPortfolioPreview({ open: true, src })
                                     }
-className="
+                                    className="
   group block w-full overflow-hidden rounded-[22px]
-  border border-[#E9DED2] bg-[#F3ECE4]
+  border border-[#EEEEEE] bg-[#F3ECE4]
   transition hover:shadow-[0_10px_24px_rgba(93,64,55,0.10)]
 "
                                     style={{ aspectRatio: "1 / 1" }}
@@ -2028,7 +2048,7 @@ className="
                                               movePortfolioMixed(idx, idx + 1);
                                             }}
                                             disabled={isLast}
-className="
+                                            className="
   flex h-9 w-9 items-center justify-center rounded-full
   bg-white/92 text-[#5F544B] backdrop-blur-md
   shadow-sm ring-1 ring-black/5 transition-all
@@ -2062,11 +2082,11 @@ className="
                                             e.stopPropagation();
                                             removePortfolioMixed(idx);
                                           }}
-className="
+                                          className="
   flex h-9 w-9 items-center justify-center rounded-full
   bg-white/92 text-[#5F544B] backdrop-blur-md
   shadow-sm ring-1 ring-black/5 transition-all
-  hover:bg-[#FFF3F1] hover:text-[#B2504A] hover:ring-[#F0D6D1]
+  hover:bg-[#FFFCF8]/92 hover:text-[#B2504A] hover:ring-[#F0D6D1]
   hover:shadow-md active:scale-95
 "
                                           title="Видалити"
@@ -2110,66 +2130,51 @@ className="
         </div>
       </div>
 
-      {/* Professional Toast */}
+      {/* Toast */}
       <div
         className={[
-          "fixed z-[90] left-1/2 top-[calc(12px+env(safe-area-inset-top))] -translate-x-1/2 md:left-4 md:bottom-6 md:top-auto md:translate-x-0",
-          "w-[calc(100%-2rem)] max-w-[420px] md:w-auto md:min-w-[260px] md:max-w-[340px]",
-          "transition-all duration-300",
+          "fixed z-[90] left-1/2 top-[calc(12px+env(safe-area-inset-top))] -translate-x-1/2 md:left-6 md:bottom-6 md:top-auto md:translate-x-0",
+          "w-[calc(100%-2rem)] max-w-[430px] md:w-auto md:min-w-[300px] md:max-w-[360px]",
+          "transition-all duration-150",
           toast.open
-            ? "opacity-100 translate-y-0"
-            : "pointer-events-none opacity-0 -translate-y-3",
+            ? "translate-y-0 opacity-100"
+            : "pointer-events-none -translate-y-2 opacity-0 md:translate-y-2",
         ].join(" ")}
         role="status"
         aria-live="polite"
       >
         <div
           className={[
-            "relative overflow-hidden rounded-[22px] border ",
-            "shadow-[0_12px_30px_rgba(0,0,0,0.16)]",
+            "relative overflow-hidden rounded-[24px] border bg-[#FFFDF9]/98 backdrop-blur-xl",
+            "shadow-[0_18px_50px_rgba(93,64,55,0.16)] ring-1 ring-[#F4E8DC]",
             toast.type === "success"
-              ? "border-emerald-300"
+              ? "border-[#CFE5CC]"
               : toast.type === "warning"
-                ? "border-amber-300"
-                : "border-red-300",
+                ? "border-[#EFD7B2]"
+                : "border-[#EBCFCB]",
           ].join(" ")}
         >
-          {/* Glow */}
           <div
             className={[
-              "pointer-events-none absolute -inset-10 blur-2xl opacity-30",
+              "absolute inset-x-0 top-0 h-1",
               toast.type === "success"
-                ? "bg-emerald-300"
+                ? "bg-gradient-to-r from-[#8CC686] via-[#6FAF6B] to-[#4A8F46]"
                 : toast.type === "warning"
-                  ? "bg-amber-300"
-                  : "bg-red-300",
+                  ? "bg-gradient-to-r from-[#E7C27A] via-[#DDAA57] to-[#C98B31]"
+                  : "bg-gradient-to-r from-[#E8A59C] via-[#DB8B80] to-[#C96E62]",
             ].join(" ")}
           />
 
-          {/* Left accent */}
-          <div
-            className={[
-              "absolute left-0 top-0 h-full w-1.5",
-              toast.type === "success"
-                ? "bg-emerald-500"
-                : toast.type === "warning"
-                  ? "bg-amber-500"
-                  : "bg-red-500",
-            ].join(" ")}
-          />
-
-          <div className="relative flex items-start gap-3 p-4 pl-5">
-            {/* Icon bubble */}
+          <div className="relative flex items-start gap-3 px-4 py-4 sm:px-5">
             <div
               className={[
-                "flex h-10 w-10 items-center justify-center rounded-xl",
-                "shadow-[0_6px_14px_rgba(0,0,0,0.12)]",
-                "animate-[toastPop_260ms_ease-out]",
+                "mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border",
+                "shadow-[0_8px_22px_rgba(93,64,55,0.10)] animate-[toastPop_260ms_ease-out]",
                 toast.type === "success"
-                  ? "bg-emerald-600 text-white"
+                  ? "border-[#CFE5CC] bg-[#E2F3DF] text-[#3F6F3A]"
                   : toast.type === "warning"
-                    ? "bg-amber-500 text-white"
-                    : "bg-red-600 text-white",
+                    ? "border-[#EFD7B2] bg-[#FFF4DE] text-[#A36A18]"
+                    : "border-[#EBCFCB] bg-[#FFF1EF] text-[#B85C52]",
               ].join(" ")}
               aria-hidden="true"
             >
@@ -2177,7 +2182,7 @@ className="
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                   <path
                     d="M20 6L9 17l-5-5"
-                    stroke="#ffffff"
+                    stroke="currentColor"
                     strokeWidth="2.6"
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -2188,15 +2193,15 @@ className="
               {toast.type === "warning" && (
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                   <path
-                    d="M12 9v4"
+                    d="M12 8.5v5"
                     stroke="currentColor"
                     strokeWidth="2.6"
                     strokeLinecap="round"
                   />
                   <path
-                    d="M12 16h.01"
+                    d="M12 17h.01"
                     stroke="currentColor"
-                    strokeWidth="3.6"
+                    strokeWidth="3.2"
                     strokeLinecap="round"
                   />
                 </svg>
@@ -2214,31 +2219,46 @@ className="
               )}
             </div>
 
-            {/* Text */}
-            <div className="min-w-0">
-              <p className="text-sm font-extrabold text-[#1F2A22] leading-5">
+            <div className="min-w-0 flex-1">
+              <p className="mt-2 text-[15px] font-black leading-5 text-[#1F2A22]">
                 {toast.title}
               </p>
-              <p className="mt-1 text-sm text-[#6F655C] leading-5">
+
+              <p className="mt-1 text-sm leading-5 text-[#7D7065]">
                 {toast.text}
               </p>
             </div>
           </div>
 
-          {/* Progress bar */}
-          <div className="h-[4px] w-full bg-gray-100">
+          <div className="h-[3px] w-full bg-[#F4ECE3]">
             <div
+              key={toast.id}
               className={[
-                "h-full w-full origin-left animate-[toastbar_3.2s_linear_forwards]",
+                "h-full w-full origin-left",
                 toast.type === "success"
-                  ? "bg-emerald-500"
+                  ? "bg-[#8FBC89]"
                   : toast.type === "warning"
-                    ? "bg-amber-500"
-                    : "bg-red-500",
+                    ? "bg-[#D7A246]"
+                    : "bg-[#D9897E]",
               ].join(" ")}
+              style={{
+                animation: `toastbar ${toast.duration}ms linear forwards`,
+              }}
             />
           </div>
         </div>
+
+        <style>{`
+    @keyframes toastbar {
+      from { transform: scaleX(1); }
+      to   { transform: scaleX(0); }
+    }
+
+    @keyframes toastPop {
+      0%   { transform: scale(.94); opacity: .65; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+  `}</style>
       </div>
 
       {portfolioPreview.open && (
@@ -2268,25 +2288,25 @@ className="
 
       {/* Error modal */}
       {errorModal.open && (
-<div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[rgba(32,24,18,0.38)] px-4">
-  <div className="w-full max-w-md rounded-[26px] border border-[#E9DED2]  p-6 shadow-[0_24px_80px_rgba(93,64,55,0.18)]">
-    <h3 className="text-lg font-extrabold text-[#1F2A22]">
-      {errorModal.title}
-    </h3>
-    <p className="mt-2 text-sm text-[#6F655C]">{errorModal.message}</p>
-    <div className="mt-5 flex justify-end">
-      <button
-        type="button"
-        onClick={() =>
-          setErrorModal({ open: false, title: "", message: "" })
-        }
-        className="rounded-[16px] bg-[#4A5D4E] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[#3F5143]"
-      >
-        Зрозуміло
-      </button>
-    </div>
-  </div>
-</div>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[rgba(32,24,18,0.38)] px-4">
+          <div className="w-full max-w-md rounded-[26px] border border-[#EEEEEE]  p-6 shadow-[0_24px_80px_rgba(93,64,55,0.18)]">
+            <h3 className="text-lg font-extrabold text-[#1F2A22]">
+              {errorModal.title}
+            </h3>
+            <p className="mt-2 text-sm text-[#6F655C]">{errorModal.message}</p>
+            <div className="mt-5 flex justify-end">
+              <button
+                type="button"
+                onClick={() =>
+                  setErrorModal({ open: false, title: "", message: "" })
+                }
+                className="rounded-[16px] bg-[#4A5D4E] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[#3F5143]"
+              >
+                Зрозуміло
+              </button>
+            </div>
+          </div>
+        </div>
       )}
       {/* Top-right Save (appears only when header is visible) */}
       <div
@@ -2300,102 +2320,113 @@ className="
       ></div>
 
       {/* Mobile bottom actions */}
-<div
-  className={[
-    "fixed inset-x-0 bottom-0 z-[60] transition-all duration-200 md:hidden",
-    menuOpen
-      ? "pointer-events-none opacity-0"
-      : "pointer-events-auto opacity-100",
-  ].join(" ")}
->
-  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#FFFDF9] via-[#FFFDF9]/95 to-transparent" />
+      <div
+        className={[
+          "fixed inset-x-0 bottom-0 z-[80] transition-all duration-300 md:hidden",
+          menuOpen || !hasPendingChanges
+            ? "pointer-events-none translate-y-4 opacity-0"
+            : "pointer-events-auto translate-y-0 opacity-100",
+        ].join(" ")}
+      >
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#FFFDF9] via-[#FFFDF9]/95 to-transparent" />
 
-<div className="hidden md:block fixed left-1/2 bottom-6 z-[80] -translate-x-1/2">
-  <div
-    className={[
-      "rounded-[26px] border border-[#E8DDD2] /95 backdrop-blur-md",
-      "px-5 py-4 shadow-[0_20px_60px_rgba(93,64,55,0.12)]",
-      "transition-all duration-200",
-      hasPendingChanges
-        ? "translate-y-0 opacity-100"
-        : "pointer-events-none translate-y-3 opacity-0",
-    ].join(" ")}
-  >
-    <div className="flex items-center gap-4">
-      <div className="min-w-0 pr-2">
-        <p className="text-[16px] font-extrabold leading-none text-[#1F2A22]">
-          Маєте незбережені зміни
-        </p>
+        <div className="relative mx-auto max-w-5xl px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+          <div className="relative overflow-hidden rounded-[26px] border border-[#D9C7B4] bg-[#FFFDF9]/98 px-4 py-4 backdrop-blur-xl shadow-[0_24px_80px_rgba(31,42,34,0.22)] ring-1 ring-[#F3E6D8]">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#F0B56B] via-[#E29A54] to-[#C97B63]" />
+
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={resetChanges}
+                  disabled={!dirty || saving}
+                  className={[
+                    "flex-1 rounded-[16px] border px-4 py-3 text-sm font-extrabold transition active:scale-[0.98]",
+                    dirty && !saving
+                      ? "border-[#D9CDC1] bg-white text-[#6E6257] shadow-[0_6px_18px_rgba(0,0,0,0.05)] hover:bg-[#FAF7F4]"
+                      : "cursor-not-allowed border-[#EFE7E0] bg-[#F8F5F2] text-[#B8B1AA]",
+                  ].join(" ")}
+                >
+                  Скасувати
+                </button>
+
+                <button
+                  type="button"
+                  onClick={save}
+                  disabled={!canSave}
+                  className={[
+                    "flex-1 rounded-[16px] px-4 py-3 text-sm font-black transition active:scale-[0.98]",
+                    canSave
+                      ? "bg-[#4A5D4E] text-white shadow-[0_14px_30px_rgba(74,93,78,0.34)]"
+                      : "cursor-not-allowed bg-[#BFC8C0] text-white/80",
+                  ].join(" ")}
+                >
+                  {saving ? "Збереження..." : "Зберегти"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={resetChanges}
-          disabled={!dirty || saving}
+      {/* Tablet + Desktop bottom actions */}
+      <div className="hidden md:block fixed left-1/2 bottom-6 z-[80] -translate-x-1/2">
+        <div
           className={[
-            "inline-flex items-center justify-center rounded-[16px] border px-5 py-3 text-sm font-bold transition active:scale-[0.98]",
-            dirty && !saving
-              ? "border-[#E7DED6] bg-white text-[#7A6F65] hover:bg-[#FAF7F4] hover:text-[#374151]"
-              : "cursor-not-allowed border-[#EFE7E0] bg-[#F8F5F2] text-[#B8B1AA]",
+            "relative overflow-hidden rounded-[28px] border border-[#D9C7B4] bg-[#FFFDF9]/98 backdrop-blur-xl",
+            "px-5 py-4 shadow-[0_24px_80px_rgba(31,42,34,0.22)] ring-1 ring-[#F3E6D8]",
+            "transition-all duration-300",
+            hasPendingChanges
+              ? "translate-y-0 scale-100 opacity-100"
+              : "pointer-events-none translate-y-4 scale-[0.98] opacity-0",
           ].join(" ")}
         >
-          Скасувати
-        </button>
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#F0B56B] via-[#E29A54] to-[#C97B63]" />
 
-        <button
-          type="button"
-          onClick={save}
-          disabled={!canSave}
-          className={[
-            "inline-flex min-w-[148px] items-center justify-center rounded-[16px] px-6 py-3 text-sm font-extrabold transition active:scale-[0.98]",
-            canSave
-              ? "bg-[#4A5D4E] text-white shadow-[0_10px_24px_rgba(74,93,78,0.24)] hover:bg-[#3F5143]"
-              : "cursor-not-allowed bg-[#BFC8C0] text-white/80",
-          ].join(" ")}
-        >
-          {saving ? "Збереження..." : "Зберегти"}
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-</div>
+          <div className="flex items-center gap-4">
+            <div className="flex min-w-0 items-center gap-3 pr-2">
+              <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#FFF3E6] shadow-[0_8px_20px_rgba(226,154,84,0.25)]">
+                <span className="absolute inline-flex h-3 w-3 rounded-full bg-[#E38B45] animate-ping opacity-75" />
+                <span className="relative inline-flex h-3 w-3 rounded-full bg-[#E38B45]" />
+              </div>
 
-      {/* Tablet + Desktop bottom-right actions */}
-      <div className="hidden md:block fixed right-6 bottom-6 z-[80]">
-        <div className="flex items-center gap-3">
-          {hasPendingChanges && (
-            <span className="mr-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700 pill-enter">
-              Збережи зміни
-            </span>
-          )}
-          {/* Save */}
-          <button
-            type="button"
-            onClick={save}
-            disabled={!canSave}
-            className={[
-              "rounded-2xl px-6 py-3 text-sm font-extrabold shadow-sm",
-              "transition active:scale-[0.98]",
-              canSave ? "ui-button-primary" : "ui-button-primary",
-            ].join(" ")}
-          >
-            {saving ? "Збереження..." : "Зберегти"}
-          </button>
-          {/* Cancel */}
-          <button
-            type="button"
-            onClick={resetChanges}
-            disabled={!dirty || saving}
-            className={[
-              "rounded-2xl px-5 py-3 text-sm font-extrabold shadow-sm",
-              "transition active:scale-[0.98]",
-              dirty && !saving ? "ui-button-cancel" : "ui-button-cancel",
-            ].join(" ")}
-          >
-            Скасувати
-          </button>
+              <div className="min-w-0">
+                <p className="mt-1 text-[17px] font-black leading-none text-[#1F2A22]">
+                  Маєте незбережені зміни
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={resetChanges}
+                disabled={!dirty || saving}
+                className={[
+                  "inline-flex items-center justify-center rounded-[16px] border px-5 py-3 text-sm font-extrabold transition active:scale-[0.98]",
+                  dirty && !saving
+                    ? "border-[#D9CDC1] bg-white text-[#6E6257] shadow-[0_6px_18px_rgba(0,0,0,0.05)] hover:bg-[#FAF7F4] hover:text-[#1F2A22]"
+                    : "cursor-not-allowed border-[#EFE7E0] bg-[#F8F5F2] text-[#B8B1AA]",
+                ].join(" ")}
+              >
+                Скасувати
+              </button>
+
+              <button
+                type="button"
+                onClick={save}
+                disabled={!canSave}
+                className={[
+                  "inline-flex min-w-[160px] items-center justify-center rounded-[16px] px-6 py-3 text-sm font-black transition active:scale-[0.98]",
+                  canSave
+                    ? "bg-[#4A5D4E] text-white shadow-[0_14px_30px_rgba(74,93,78,0.34)] hover:bg-[#3F5143]"
+                    : "cursor-not-allowed bg-[#BFC8C0] text-white/80",
+                ].join(" ")}
+              >
+                {saving ? "Збереження..." : "Зберегти"}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

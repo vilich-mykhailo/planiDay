@@ -90,7 +90,7 @@ function Card({ className = "", children }) {
   return (
     <section
       className={cx(
-        "rounded-[28px] border border-[#E9DED2] bg-[#FFFCF8] shadow-[0_10px_30px_rgba(93,64,55,0.06)]",
+        "rounded-[28px] border border-[#EEEEEE] bg-[#FFFCF8] shadow-[0_10px_30px_rgba(93,64,55,0.06)]",
         className,
       )}
     >
@@ -101,7 +101,7 @@ function Card({ className = "", children }) {
 
 function Badge({ variant = "neutral", children, className = "" }) {
   const styles = {
-    neutral: "border-[#E9DED2] bg-[#F8F4EF] text-[#7B6D61]",
+    neutral: "border-[#EEEEEE] bg-[#F8F4EF] text-[#7B6D61]",
     success: "border-[#B8DDBE] bg-[#EAF7EC] text-[#4A5D4E]",
     danger: "border-[#F0D6D1] bg-[#FFF3F1] text-[#B2504A]",
     warning: "border-[#F2DEC2] bg-[#FFF6E8] text-[#B07A2A]",
@@ -187,7 +187,7 @@ function Pill({ active, count, children, onClick }) {
         "transition active:scale-[0.98]",
         active
           ? "border-[#4A5D4E] bg-[#4A5D4E] text-white shadow-sm"
-          : "border-[#E9DED2] bg-white text-[#6B625A] hover:bg-[#FAF7F4] hover:border-[#DDCFC1]",
+          : "border-[#EEEEEE] bg-white text-[#6B625A] hover:bg-[#FAF7F4] hover:border-[#DDCFC1]",
       )}
     >
       <span>{children}</span>
@@ -242,7 +242,7 @@ function Modal({
       >
         <div
           className={cx(
-            "w-full overflow-hidden rounded-[30px] border border-[#E9DED2] bg-[#FFFCF8] shadow-[0_24px_80px_rgba(93,64,55,0.18)]",
+            "w-full overflow-hidden rounded-[30px] border border-[#EEEEEE] bg-[#FFFCF8] shadow-[0_24px_80px_rgba(93,64,55,0.18)]",
             maxWidth,
           )}
           onMouseDown={(e) => e.stopPropagation()}
@@ -263,7 +263,7 @@ function Modal({
               <button
                 type="button"
                 onClick={onClose}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[#E9DED2] bg-white text-[#8B7F73] transition hover:bg-[#FAF7F4] hover:text-[#1F2A22] active:scale-[0.95]"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[#EEEEEE] bg-white text-[#8B7F73] transition hover:bg-[#FAF7F4] hover:text-[#1F2A22] active:scale-[0.95]"
                 aria-label="Закрити"
               >
                 <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
@@ -340,7 +340,7 @@ function BookingsSkeleton() {
           <SkeletonBlock className="h-4 w-64 max-w-full" />
         </div>
 
-        <div className="inline-flex rounded-[22px] border border-[#E9DED2] bg-[#FFFCF8] p-1 shadow-sm">
+        <div className="inline-flex rounded-[22px] border border-[#EEEEEE] bg-[#FFFCF8] p-1 shadow-sm">
           <SkeletonBlock className="h-10 w-24 rounded-2xl" />
           <SkeletonBlock className="ml-1 h-10 w-24 rounded-2xl" />
         </div>
@@ -614,7 +614,7 @@ export default function Bookings() {
           </p>
         </div>
 
-        <div className="inline-flex rounded-[22px] border border-[#E9DED2] bg-[#FFFCF8] p-1 shadow-sm">
+        <div className="inline-flex rounded-[22px] border border-[#EEEEEE] bg-[#FFFCF8] p-1 shadow-sm">
           <button
             type="button"
             onClick={() => setTab("list")}
@@ -672,7 +672,7 @@ export default function Bookings() {
         keys.length === 0 ? (
           <Card className="p-8">
             <div className="mx-auto max-w-md text-center">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-[18px] border border-[#E9DED2] bg-[#FBF7F2]">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-[18px] border border-[#EEEEEE] bg-[#FFFCF8]/92">
                 {" "}
                 <svg
                   viewBox="0 0 24 24"
@@ -749,7 +749,7 @@ export default function Bookings() {
                         key={b.id}
                         className={cx(
                           "p-4 sm:p-5",
-                          isArchived && "bg-[#FBF7F2]",
+                          isArchived && "bg-[#FFFCF8]/92",
                         )}
                       >
                         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -973,17 +973,17 @@ export default function Bookings() {
                     title={count > 0 ? `Записів: ${count}` : "Немає записів"}
                     className={cx(
                       "relative aspect-square rounded-[20px] border p-2 transition-all duration-200 active:scale-[0.98] sm:aspect-auto sm:p-3",
-                      isInMonth ? "bg-white" : "bg-[#FBF7F2]",
+                      isInMonth ? "bg-white" : "bg-[#FFFCF8]/92",
                       count > 0
                         ? "cursor-pointer"
                         : "cursor-default opacity-70",
                       isToday && "ring-2 ring-[#4A5D4E]/15",
                       isPastDay
-                        ? "border-[#E9DED2] bg-[#F3ECE4] text-[#8B7F73] opacity-80 hover:opacity-90"
+                        ? "border-[#EEEEEE] bg-[#F3ECE4] text-[#8B7F73] opacity-80 hover:opacity-90"
                         : newCount > 0
                           ? "border-[#E9C98F] bg-[#FFF6E8] shadow-sm hover:border-[#DDB56C] hover:shadow-md"
                           : count > 0
-                            ? "border-[#E9DED2] hover:border-[#DDCFC1] hover:shadow-sm"
+                            ? "border-[#EEEEEE] hover:border-[#DDCFC1] hover:shadow-sm"
                             : "border-[#F1E7DE]",
                     )}
                   >
@@ -1173,7 +1173,7 @@ export default function Bookings() {
             return (
               <div className="space-y-4">
                 {/* Top summary */}
-                <div className="rounded-[24px] border border-[#E9DED2] bg-gradient-to-b from-[#FBF7F2] to-white p-5">
+                <div className="rounded-[24px] border border-[#EEEEEE] bg-gradient-to-b from-[#FBF7F2] to-white p-5">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="min-w-0">
                       <p className="text-xs font-semibold uppercase tracking-wide text-[#8B7F73]">
@@ -1209,7 +1209,7 @@ export default function Bookings() {
 
                 {/* Details grid */}
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <div className="rounded-[22px] border border-[#E9DED2] bg-white p-4">
+                  <div className="rounded-[22px] border border-[#EEEEEE] bg-white p-4">
                     <p className="text-xs font-semibold uppercase tracking-wide text-[#8B7F73]">
                       Клієнт
                     </p>
@@ -1355,7 +1355,7 @@ export default function Bookings() {
             })}
 
             {(bookingsByDateKey.get(calendarDayKey)?.count ?? 0) === 0 && (
-              <div className="rounded-[22px] border border-[#E9DED2] bg-[#FBF7F2] p-6 text-sm text-[#857A70]">
+              <div className="rounded-[22px] border border-[#EEEEEE] bg-[#FFFCF8]/92 p-6 text-sm text-[#857A70]">
                 На цей день записів немає.
               </div>
             )}

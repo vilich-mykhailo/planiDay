@@ -1,4 +1,5 @@
-import { Routes, Route, useLocation, useParams } from "react-router-dom";
+// App.jsx
+import { Routes, Route, useParams } from "react-router-dom";
 import Header from "./components/Header";
 
 import Studios from "./pages/Studios";
@@ -35,9 +36,6 @@ function StudioDetailsKeyed() {
 }
 
 export default function App() {
-  const location = useLocation();
-  const backgroundLocation = location.state?.backgroundLocation;
-
   return (
     <>
       <ScrollRestoration />
@@ -46,7 +44,7 @@ export default function App() {
         <AppBackground>
           <Header />
 
-          <Routes location={backgroundLocation || location}>
+          <Routes>
             <Route path="/" element={<Studios />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/bookings" element={<MyBookings />} />
@@ -77,16 +75,8 @@ export default function App() {
               <Route path="masters" element={<Masters />} />
             </Route>
 
-            {!backgroundLocation && (
-              <Route path="/:slug" element={<StudioPublicPage />} />
-            )}
+            <Route path="/:slug" element={<StudioPublicPage />} />
           </Routes>
-
-          {backgroundLocation && (
-            <Routes>
-              <Route path="/:slug" element={<StudioPublicPage />} />
-            </Routes>
-          )}
         </AppBackground>
       </FavouritesProvider>
     </>

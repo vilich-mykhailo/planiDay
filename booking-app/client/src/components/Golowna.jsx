@@ -68,7 +68,7 @@ function Card({ className = "", children }) {
   return (
     <section
       className={cx(
-        "rounded-[28px] border border-[#E9DED2] bg-[#FFFCF8] shadow-[0_10px_30px_rgba(93,64,55,0.06)]",
+        "rounded-[28px] border border-[#EEEEEE] bg-[#FFFCF8] shadow-[0_10px_30px_rgba(93,64,55,0.06)]",
         className,
       )}
     >
@@ -77,14 +77,38 @@ function Card({ className = "", children }) {
   );
 }
 
+function formatCompactNumber(num) {
+  if (num == null || num === 0) return "0";
+  if (num < 1000) return String(num);
+
+  if (num < 10_000)   return `${Math.floor(num / 100) / 10}k`;     // 1.2k
+  if (num < 1_000_000) return `${Math.floor(num / 1000)}k`;        // 12k, 999k
+  if (num < 10_000_000) return `${Math.floor(num / 1_000_000)}M`;  // 1M
+  return "999k+"; // або будь-яке інше максимальне значення
+}
+
 function StatCard({ title, value }) {
+  const displayValue = formatCompactNumber(value);
+
   return (
-    <div className="rounded-3xl border border-gray-200 bg-white p-4 shadow-sm">
-      <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+    <div className="rounded-3xl border border-gray-200 bg-white p-3.5 sm:p-4 md:p-5 shadow-sm">
+      <div 
+        className={`
+          font-semibold uppercase tracking-wide text-gray-500 
+          leading-tight
+          text-[10px]              /* базовий — менший */
+          sm:text-[8px]           /* від ~640px */
+          lg:text-xs           /* від ~1024px */
+          leading-tight
+          break-words           /* або hyphenate */
+          max-w-full
+`}
+      >
         {title}
       </div>
-      <div className="mt-2 text-3xl font-black tracking-tight text-gray-900">
-        {value}
+      <div
+className={`mt-2 text-3xl font-black tracking-tight text-gray-900`}>
+        {displayValue}
       </div>
     </div>
   );
@@ -275,7 +299,7 @@ return [
               return (
 <li
   key={x.id}
-  className="flex flex-col gap-1 rounded-[22px] border border-[#E9DED2] bg-white p-4 transition hover:bg-[#FCF8F3] sm:flex-row sm:items-center sm:justify-between"
+  className="flex flex-col gap-1 rounded-[22px] border border-[#EEEEEE] bg-white p-4 transition hover:bg-[#FCF8F3] sm:flex-row sm:items-center sm:justify-between"
 >
                   <div className="min-w-0">
                     <p className="text-base font-bold text-[#1F2A22]">

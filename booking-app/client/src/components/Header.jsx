@@ -271,7 +271,7 @@ export default function Header() {
         <div
           className="
             rounded-[28px]
-            border border-[#E9DED2]
+            border border-[#EEEEEE]
             bg-[#FFFCF8]/92
             backdrop-blur-md
             shadow-[0_10px_30px_rgba(93,64,55,0.08)]
@@ -304,7 +304,7 @@ export default function Header() {
             <button
               type="button"
               onClick={() => setOpen((v) => !v)}
-              className="inline-flex items-center justify-center rounded-[16px] border border-[#E9DED2] bg-white px-3 py-2 text-sm font-bold text-[#1F2A22] transition hover:bg-[#FAF7F4] md:hidden"
+              className="inline-flex items-center justify-center rounded-[16px] border border-[#EEEEEE] bg-white px-3 py-2 text-sm font-bold text-[#1F2A22] transition hover:bg-[#FAF7F4] md:hidden"
               aria-label="Menu"
               aria-expanded={open}
             >
@@ -340,9 +340,9 @@ export default function Header() {
             open ? "translate-y-0 opacity-100" : "-translate-y-3 opacity-0",
           )}
         >
-          <div className="rounded-[24px] border border-[#E9DED2] bg-[#FFFCF8] p-4 shadow-[0_20px_60px_rgba(93,64,55,0.14)]">
+          <div className="rounded-[24px] border border-[#EEEEEE] bg-[#FFFCF8] p-4 shadow-[0_20px_60px_rgba(93,64,55,0.14)]">
             <div className="mb-3 border-b border-[#F1E7DE] px-2 pb-[14px] pt-[10px] text-center">
-              <div className="inline-flex items-center rounded-full border border-[#E9DED2] bg-[#F8F4EF] px-[10px] py-[6px] text-xs font-extrabold uppercase tracking-[0.12em] text-[#7B6D61]">
+              <div className="inline-flex items-center rounded-full border border-[#EEEEEE] bg-[#F8F4EF] px-[10px] py-[6px] text-xs font-extrabold uppercase tracking-[0.12em] text-[#7B6D61]">
                 {mobileItems.subtitle || "Кабінет"}
               </div>
 
@@ -366,7 +366,7 @@ export default function Header() {
                       "relative flex items-center rounded-[16px] border px-3 py-2.5 text-sm font-semibold transition-all duration-200",
                       isActive
                         ? "border-[#4A5D4E] bg-[#4A5D4E] text-white shadow-[0_10px_22px_rgba(74,93,78,0.18)] before:absolute before:-left-2 before:top-1/2 before:h-[22px] before:w-1 before:-translate-y-1/2 before:rounded-full before:bg-[#4A5D4E]"
-                        : "border-transparent bg-transparent text-[#6B625A] hover:border-[#E9DED2] hover:bg-[#FAF7F4] hover:text-[#1F2A22]",
+                        : "border-transparent bg-transparent text-[#6B625A] hover:border-[#EEEEEE] hover:bg-[#FAF7F4] hover:text-[#1F2A22]",
                     ].join(" ")
                   }
                 >
@@ -375,7 +375,7 @@ export default function Header() {
               ))}
 
               {mobileItems.logout && (
-                <div className="mt-3 border-t border-[#E9DED2] pt-3">
+                <div className="mt-3 border-t border-[#EEEEEE] pt-3">
                   <button
                     type="button"
                     onClick={() => {

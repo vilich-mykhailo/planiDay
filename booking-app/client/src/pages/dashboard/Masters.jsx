@@ -37,13 +37,15 @@ function initialsFromName(name) {
 
 function SectionCard({ title, subtitle, right, children }) {
   return (
-    <section className="overflow-hidden rounded-[26px] border border-[#E9DED2] bg-[#FFFCF8] shadow-[0_10px_30px_rgba(93,64,55,0.06)] sm:rounded-[30px]">
+    <section className="overflow-hidden rounded-[26px] border border-[#EEEEEE]  shadow-[0_10px_30px_rgba(93,64,55,0.06)] sm:rounded-[30px]">
       <div className="flex flex-col gap-3 border-b border-[#F1E7DE] px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
         <div className="min-w-0">
           <h2 className="text-[18px] font-extrabold tracking-[-0.02em] text-[#1F2A22]">
             {title}
           </h2>
-          {subtitle && <p className="mt-1 text-sm text-[#857A70]">{subtitle}</p>}
+          {subtitle && (
+            <p className="mt-1 text-sm text-[#857A70]">{subtitle}</p>
+          )}
         </div>
         {right && <div className="w-full sm:w-auto">{right}</div>}
       </div>
@@ -93,14 +95,16 @@ function Modal({ open, onClose, title, subtitle, children, footer }) {
       onClick={onClose}
     >
       <div
-        className="flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-[28px] border border-[#E9DED2] bg-[#FFFCF8] shadow-[0_24px_80px_rgba(93,64,55,0.18)] sm:max-h-[85vh] sm:max-w-md sm:rounded-[30px]"
+        className="flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-[28px] border border-[#EEEEEE] bg-[#FFFCF8] shadow-[0_24px_80px_rgba(93,64,55,0.18)] sm:max-h-[85vh] sm:max-w-md sm:rounded-[30px]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex-shrink-0 border-b border-[#F1E7DE] px-4 py-4 sm:px-5">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#C89D72]">
             {title}
           </p>
-          {subtitle && <p className="mt-1 text-sm text-[#857A70]">{subtitle}</p>}
+          {subtitle && (
+            <p className="mt-1 text-sm text-[#857A70]">{subtitle}</p>
+          )}
         </div>
 
         <div className="space-y-4 overflow-auto p-4 sm:p-5">{children}</div>
@@ -118,7 +122,7 @@ function Modal({ open, onClose, title, subtitle, children, footer }) {
 function Avatar({ name, photoUrl }) {
   const initials = initialsFromName(name);
   return (
-    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-[18px] border border-[#E9DED2] bg-[#F8F4EF]">
+    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-[18px] border border-[#EEEEEE] bg-[#F8F4EF]">
       {photoUrl ? (
         <img
           src={photoUrl}
@@ -127,7 +131,9 @@ function Avatar({ name, photoUrl }) {
           onError={(e) => (e.currentTarget.style.display = "none")}
         />
       ) : (
-        <span className="text-xs font-extrabold text-[#7B6D61]">{initials}</span>
+        <span className="text-xs font-extrabold text-[#7B6D61]">
+          {initials}
+        </span>
       )}
     </div>
   );
@@ -316,15 +322,15 @@ export default function Masters() {
 
   // edit modal
   const [editMaster, setEditMaster] = useState(null); // master object
-const [editDraft, setEditDraft] = useState({
-  id: "",
-  name: "",
-  role: "",
-  bio: "",
-  photoUrl: "",
-  photoKey: null,
-  photoFile: null, // ✅ додали
-});
+  const [editDraft, setEditDraft] = useState({
+    id: "",
+    name: "",
+    role: "",
+    bio: "",
+    photoUrl: "",
+    photoKey: null,
+    photoFile: null, // ✅ додали
+  });
 
   function handleChange(e) {
     setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
@@ -465,7 +471,6 @@ const [editDraft, setEditDraft] = useState({
           console.warn("Photo delete from R2 failed:", e);
           // можна показати toast, але майстра вже видалено — не блокуємо
         }
-        
       }
 
       // локально прибираємо майстра (або refreshMasters)
@@ -484,164 +489,173 @@ const [editDraft, setEditDraft] = useState({
       photoUrl: master.photoUrl || "",
     });
 
-setEditDraft({
-  id: master.id,
-  name: master.name || "",
-  role: master.role || "",
-  bio: master.bio || "",
-  photoUrl: master.photoUrl || "",
-  photoKey: master.photoKey ?? null,
-  photoFile: null, // ✅
-});
+    setEditDraft({
+      id: master.id,
+      name: master.name || "",
+      role: master.role || "",
+      bio: master.bio || "",
+      photoUrl: master.photoUrl || "",
+      photoKey: master.photoKey ?? null,
+      photoFile: null, // ✅
+    });
   }
 
-async function closeEdit() {
-  // якщо в цьому редагуванні ми встигли залити НОВЕ фото — прибираємо його при Cancel
-  const prevKey = editOriginal.photoKey;
-  const draftKey = editDraft.photoKey;
+  async function closeEdit() {
+    // якщо в цьому редагуванні ми встигли залити НОВЕ фото — прибираємо його при Cancel
+    const prevKey = editOriginal.photoKey;
+    const draftKey = editDraft.photoKey;
 
-  const uploadedNewButCancelled =
-    Boolean(draftKey) && draftKey !== prevKey;
+    const uploadedNewButCancelled = Boolean(draftKey) && draftKey !== prevKey;
 
-  if (uploadedNewButCancelled) {
-    try {
-      await deleteMasterPhoto(studio.id, draftKey);
-    } catch (e) {
-      console.warn("Cancel cleanup delete failed:", e);
-    }
-  }
-
-  setEditMaster(null);
-  setEditDraft({
-  id: "",
-  name: "",
-  role: "",
-  bio: "",
-  photoUrl: "",
-  photoKey: null,
-  photoFile: null,
-});
-  setEditOriginal({ photoKey: null, photoUrl: "" });
-}
-
-async function editPickPhoto(e) {
-  const file = e.target.files?.[0];
-  if (!file) return;
-
-  const localUrl = URL.createObjectURL(file);
-
-  setEditDraft((p) => {
-    // прибираємо попередній blob, якщо був
-    if (p.photoUrl?.startsWith("blob:")) URL.revokeObjectURL(p.photoUrl);
-
-    return {
-      ...p,
-      photoUrl: localUrl, // ✅ показуємо в UI
-      photoFile: file,    // ✅ файл для аплоаду на Save
-      // photoKey поки не чіпаємо — він оновиться після upload на Save
-    };
-  });
-
-  e.target.value = "";
-}
-
-async function saveEdit() {
-  const name = String(editDraft.name || "").trim();
-  if (!name || !studio?.id) return;
-
-  const token = localStorage.getItem("token");
-
-  const prevKey = editOriginal.photoKey; // що було ДО редагування
-
-  let nextKey = editDraft.photoKey ?? null;
-  let nextUrl = editDraft.photoUrl || "";
-
-  // ✅ якщо користувач вибрав новий файл — аплоадимо в R2 зараз
-  if (editDraft.photoFile) {
-    const uploaded = await uploadMasterPhoto(studio.id, editDraft.photoFile);
-    nextKey = uploaded.key;
-    nextUrl = uploaded.url;
-  }
-
-  // якщо фото прибрали -> nextKey буде null, nextUrl ""
-  if (!nextUrl) nextUrl = "";
-  if (!nextKey) nextKey = null;
-
-  const shouldDeletePrev = Boolean(prevKey) && prevKey !== nextKey;
-
-  const res = await fetch(
-    `${import.meta.env.VITE_API_URL}/studio/masters/${editDraft.id}`,
-    {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        name,
-        role: editDraft.role,
-        bio: editDraft.bio,
-        photoUrl: nextUrl,
-        photoKey: nextKey,
-      }),
-    }
-  );
-
-  const data = await res.json().catch(() => null);
-
-  // ❌ якщо PATCH не вдався — видаляємо щойно залите фото (ролбек)
-  if (!res.ok) {
-    if (editDraft.photoFile && nextKey) {
+    if (uploadedNewButCancelled) {
       try {
-        await deleteMasterPhoto(studio.id, nextKey);
+        await deleteMasterPhoto(studio.id, draftKey);
       } catch (e) {
-        console.warn("Rollback delete failed:", e);
+        console.warn("Cancel cleanup delete failed:", e);
       }
     }
-    alert(data?.message || `Update failed (${res.status})`);
-    return;
+
+    setEditMaster(null);
+    setEditDraft({
+      id: "",
+      name: "",
+      role: "",
+      bio: "",
+      photoUrl: "",
+      photoKey: null,
+      photoFile: null,
+    });
+    setEditOriginal({ photoKey: null, photoUrl: "" });
   }
 
-  // ✅ після успішного PATCH — видаляємо старе фото
-  if (shouldDeletePrev) {
-    try {
-      await deleteMasterPhoto(studio.id, prevKey);
-    } catch (e) {
-      console.warn("Old photo delete failed:", e);
+  async function editPickPhoto(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const localUrl = URL.createObjectURL(file);
+
+    setEditDraft((p) => {
+      // прибираємо попередній blob, якщо був
+      if (p.photoUrl?.startsWith("blob:")) URL.revokeObjectURL(p.photoUrl);
+
+      return {
+        ...p,
+        photoUrl: localUrl, // ✅ показуємо в UI
+        photoFile: file, // ✅ файл для аплоаду на Save
+        // photoKey поки не чіпаємо — він оновиться після upload на Save
+      };
+    });
+
+    e.target.value = "";
+  }
+
+const inputBaseClass =
+  "w-full rounded-[18px] border border-[#EEEEEE] px-4 py-3 " +
+  "text-sm font-semibold text-[#6B625A] outline-none transition " +           // ← текст сірий
+  "placeholder:text-[#A89F94] placeholder:opacity-100 " +                    // плейсхолдер світліший сірий
+  "hover:bg-[#FCF8F3] hover:border-[#DDCFC1] " +
+  "focus:border-[#4A5D4E] focus:ring-2 focus:ring-[#4A5D4E]/15 " +
+  "focus:text-[#4A3F38] focus:bg-white";                                     // при фокусі — темніший сірий/майже чорний
+  
+  async function saveEdit() {
+    const name = String(editDraft.name || "").trim();
+    if (!name || !studio?.id) return;
+
+    const token = localStorage.getItem("token");
+
+    const prevKey = editOriginal.photoKey; // що було ДО редагування
+
+    let nextKey = editDraft.photoKey ?? null;
+    let nextUrl = editDraft.photoUrl || "";
+
+    // ✅ якщо користувач вибрав новий файл — аплоадимо в R2 зараз
+    if (editDraft.photoFile) {
+      const uploaded = await uploadMasterPhoto(studio.id, editDraft.photoFile);
+      nextKey = uploaded.key;
+      nextUrl = uploaded.url;
     }
+
+    // якщо фото прибрали -> nextKey буде null, nextUrl ""
+    if (!nextUrl) nextUrl = "";
+    if (!nextKey) nextKey = null;
+
+    const shouldDeletePrev = Boolean(prevKey) && prevKey !== nextKey;
+
+    const res = await fetch(
+      `${import.meta.env.VITE_API_URL}/studio/masters/${editDraft.id}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name,
+          role: editDraft.role,
+          bio: editDraft.bio,
+          photoUrl: nextUrl,
+          photoKey: nextKey,
+        }),
+      },
+    );
+
+    const data = await res.json().catch(() => null);
+
+    // ❌ якщо PATCH не вдався — видаляємо щойно залите фото (ролбек)
+    if (!res.ok) {
+      if (editDraft.photoFile && nextKey) {
+        try {
+          await deleteMasterPhoto(studio.id, nextKey);
+        } catch (e) {
+          console.warn("Rollback delete failed:", e);
+        }
+      }
+      alert(data?.message || `Update failed (${res.status})`);
+      return;
+    }
+
+    // ✅ після успішного PATCH — видаляємо старе фото
+    if (shouldDeletePrev) {
+      try {
+        await deleteMasterPhoto(studio.id, prevKey);
+      } catch (e) {
+        console.warn("Old photo delete failed:", e);
+      }
+    }
+
+    // прибираємо blob якщо був
+    if (editDraft.photoUrl?.startsWith("blob:"))
+      URL.revokeObjectURL(editDraft.photoUrl);
+
+    closeEdit();
+    await refreshMasters();
   }
-
-  // прибираємо blob якщо був
-  if (editDraft.photoUrl?.startsWith("blob:")) URL.revokeObjectURL(editDraft.photoUrl);
-
-  closeEdit();
-  await refreshMasters();
-}
 
   const total = masters.length;
 
   const [photoBroken, setPhotoBroken] = useState(false);
 
-if (loading) {
-  return <MastersSkeleton />;
-}
-  
+  if (loading) {
+    return <MastersSkeleton />;
+  }
+
   return (
     <div className="space-y-6">
       {/* header */}
-<div className="flex items-start justify-between gap-3">
-  <div className="min-w-0">
-    <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-[#C89D72]">
-      команда студії
-    </p>
-    <h1 className="mt-2 text-3xl font-black tracking-[-0.03em] text-[#1F2A22] sm:text-4xl">
-      Майстри
-    </h1>
-    <p className="mt-2 text-sm leading-6 text-[#857A70]">
-      Додай майстрів, щоб привʼязувати їх до послуг, графіка та записів клієнтів.
-    </p>
-  </div>
-</div>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-[#C89D72]">
+            команда студії
+          </p>
+          <h1 className="mt-2 text-3xl font-black tracking-[-0.03em] text-[#1F2A22] sm:text-4xl">
+            Майстри
+          </h1>
+          <p className="mt-2 text-sm leading-6 text-[#857A70]">
+            Додай майстрів, щоб привʼязувати їх до послуг, графіка та записів
+            клієнтів.
+          </p>
+        </div>
+      </div>
 
       {/* add master */}
       <SectionCard
@@ -652,7 +666,9 @@ if (loading) {
           {/* photo row */}
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <div className="flex items-center gap-4">
-<div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-[22px] border border-[#E9DED2] bg-[#F8F4EF]">                {form.photoUrl && !photoBroken ? (
+              <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-[22px] border border-[#EEEEEE] bg-[#F8F4EF]">
+                {" "}
+                {form.photoUrl && !photoBroken ? (
                   <img
                     src={form.photoUrl}
                     alt="Фото майстра"
@@ -668,9 +684,9 @@ if (loading) {
 
               <div className="flex flex-wrap items-center gap-2">
                 <label className="cursor-pointer">
-                 <span className="inline-flex items-center justify-center rounded-[16px] bg-[#4A5D4E] px-4 py-2.5 text-sm font-extrabold text-white shadow-[0_10px_24px_rgba(74,93,78,0.22)] transition hover:bg-[#3F5143]">
-  Додати фото
-</span>
+                  <span className="inline-flex items-center justify-center rounded-[16px] bg-[#4A5D4E] px-4 py-2.5 text-sm font-extrabold text-white shadow-[0_10px_24px_rgba(74,93,78,0.22)] transition hover:bg-[#3F5143]">
+                    Додати фото
+                  </span>
                   <input
                     type="file"
                     accept="image/*"
@@ -698,7 +714,7 @@ if (loading) {
               placeholder="Напр. Олена Коваль"
               value={form.name}
               onChange={handleChange}
-              className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-[#1F2A22] outline-none transition focus:border-black focus:ring-2 focus:ring-black/15"
+              className={inputBaseClass}
             />
           </div>
           {/* role */}
@@ -710,7 +726,7 @@ if (loading) {
               name="role"
               value={form.role}
               onChange={handleChange}
-              className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-[#1F2A22] outline-none transition focus:border-black focus:ring-2 focus:ring-black/15"
+              className={inputBaseClass}
               placeholder="Напр. Майстер манікюру / Brow artist"
             />
             <p className="mt-1 text-xs text-[#8B7F73]">
@@ -729,8 +745,7 @@ if (loading) {
               value={form.bio}
               onChange={handleChange}
               rows={4}
-              className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-[#1F2A22] outline-none transition focus:border-black focus:ring-2 focus:ring-black/15 resize-none"
-            />
+className={inputBaseClass}            />
             <p className="mt-1 text-xs text-[#8B7F73]">
               Коротко і по суті (2–4 речення).
             </p>
@@ -762,16 +777,17 @@ if (loading) {
             : "Додай першого майстра вище."
         }
       >
-{total === 0 ? (
-  <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 text-sm text-[#857A70]">
-    Поки що немає майстрів. Додай першого майстра зверху.
-  </div>
-) : (
+        {total === 0 ? (
+          <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 text-sm text-[#857A70]">
+            Поки що немає майстрів. Додай першого майстра зверху.
+          </div>
+        ) : (
           <div className="space-y-3">
             {masters.map((m) => (
               <div
                 key={m.id}
-className="rounded-[24px] border border-[#E9DED2] bg-white p-4 transition "              >
+                className="rounded-[24px] border border-[#EEEEEE] bg-white p-4 transition "
+              >
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div className="flex items-start gap-3 min-w-0">
                     <Avatar name={m.name} photoUrl={m.photoUrl} />
@@ -802,15 +818,8 @@ className="rounded-[24px] border border-[#E9DED2] bg-white p-4 transition "     
                   </div>
 
                   <div className="grid grid-cols-2 sm:flex gap-2 sm:shrink-0">
-<Button
-  onClick={() => openEdit(m)}
->
-                      Редагувати
-                    </Button>
-<Button
-  variant="danger"
-  onClick={() => deleteMaster(m)}
->
+                    <Button onClick={() => openEdit(m)}>Редагувати</Button>
+                    <Button variant="danger" onClick={() => deleteMaster(m)}>
                       Видалити
                     </Button>
                   </div>
@@ -829,22 +838,22 @@ className="rounded-[24px] border border-[#E9DED2] bg-white p-4 transition "     
         subtitle="Онови фото, імʼя або опис і збережи зміни."
         footer={
           <div className="flex items-center justify-end gap-2">
-<Button
-  variant="primary"
-  onClick={saveEdit}
-  disabled={!String(editDraft.name || "").trim()}
->
+            <Button
+              variant="primary"
+              onClick={saveEdit}
+              disabled={!String(editDraft.name || "").trim()}
+            >
               Зберегти
             </Button>
-            <Button onClick={closeEdit}>
-              Скасувати
-            </Button>
+            <Button onClick={closeEdit}>Скасувати</Button>
           </div>
         }
       >
         {/* photo */}
         <div className="flex items-center gap-4">
-<div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-[22px] border border-[#E9DED2] bg-[#F8F4EF]">            {editDraft.photoUrl ? (
+          <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-[22px] border border-[#EEEEEE] bg-[#F8F4EF]">
+            {" "}
+            {editDraft.photoUrl ? (
               <img
                 src={editDraft.photoUrl}
                 alt="Фото майстра"
@@ -860,8 +869,8 @@ className="rounded-[24px] border border-[#E9DED2] bg-white p-4 transition "     
           <div className="flex flex-wrap items-center gap-2">
             <label className="cursor-pointer">
               <span className="inline-flex items-center justify-center rounded-[16px] border border-[#E7DED6] bg-white px-4 py-2.5 text-sm font-extrabold text-[#6B625A] transition hover:bg-[#FAF7F4] hover:text-[#1F2A22]">
-  Змінити фото
-</span>
+                Змінити фото
+              </span>
               <input
                 type="file"
                 accept="image/*"
@@ -870,19 +879,25 @@ className="rounded-[24px] border border-[#E9DED2] bg-white p-4 transition "     
               />
             </label>
 
-{editDraft.photoUrl && (
-<Button
-  variant="danger"
-onClick={() =>
-  setEditDraft((p) => {
-    if (p.photoUrl?.startsWith("blob:")) URL.revokeObjectURL(p.photoUrl);
-    return { ...p, photoUrl: "", photoKey: null, photoFile: null };
-  })
-}
-  >
-    Прибрати
-  </Button>
-)}
+            {editDraft.photoUrl && (
+              <Button
+                variant="danger"
+                onClick={() =>
+                  setEditDraft((p) => {
+                    if (p.photoUrl?.startsWith("blob:"))
+                      URL.revokeObjectURL(p.photoUrl);
+                    return {
+                      ...p,
+                      photoUrl: "",
+                      photoKey: null,
+                      photoFile: null,
+                    };
+                  })
+                }
+              >
+                Прибрати
+              </Button>
+            )}
           </div>
         </div>
 
@@ -896,7 +911,7 @@ onClick={() =>
             onChange={(e) =>
               setEditDraft((p) => ({ ...p, name: e.target.value }))
             }
-            className="w-full rounded-2xl border border-[#E9DED2] bg-white px-4 py-3 text-sm font-semibold text-[#1F2A22] outline-none transition focus:border-black focus:ring-2 focus:ring-black/15"
+            className="w-full rounded-2xl border border-[#EEEEEE] bg-white px-4 py-3 text-sm font-semibold text-[#1F2A22] outline-none transition focus:border-black focus:ring-2 focus:ring-black/15"
             placeholder="Напр. Олена Коваль"
           />
         </div>

@@ -58,7 +58,7 @@ function normalizeSchedule(incoming) {
 
 function Card({ title, subtitle, children, right }) {
   return (
-    <section className="overflow-hidden rounded-[30px] border border-[#E9DED2]  shadow-[0_10px_30px_rgba(93,64,55,0.06)]">
+    <section className="overflow-hidden rounded-[30px] border border-[#EEEEEE]  shadow-[0_10px_30px_rgba(93,64,55,0.06)]">
       <div className="flex items-start justify-between gap-3 border-b border-[#F0E7DE] px-5 py-4 sm:px-6">
         <div className="min-w-0">
           <h2 className="text-[18px] font-extrabold tracking-[-0.02em] text-[#1F2A22]">
@@ -209,23 +209,32 @@ export default function Schedule() {
   const [preview, setPreview] = useState({});
   const [saving, setSaving] = useState(false);
 
-  const [toast, setToast] = useState({
-    open: false,
-    type: "success",
-    title: "",
-    text: "",
+const [toast, setToast] = useState({
+  id: 0,
+  open: false,
+  type: "success",
+  title: "",
+  text: "",
+  duration: 2200,
+});
+
+function showToast({ type = "success", title, text }) {
+  const duration = type === "error" ? 2200 : 2200;
+
+  setToast({
+    id: Date.now(),
+    open: true,
+    type,
+    title,
+    text,
+    duration,
   });
 
-  function showToast({ type = "success", title, text }) {
-    setToast({ open: true, type, title, text });
-
-    clearTimeout(showToast._t);
-    const ms = type === "error" ? 4500 : 3200;
-
-    showToast._t = setTimeout(() => {
-      setToast((prev) => ({ ...prev, open: false }));
-    }, ms);
-  }
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => {
+    setToast((prev) => ({ ...prev, open: false }));
+  }, duration);
+}
 
   const dirty = useMemo(() => {
     return (
@@ -273,53 +282,64 @@ export default function Schedule() {
     setPreview(result);
   }
 
-  async function saveAll() {
-    if (!dirty || saving || !studio?.id) return;
+async function saveAll() {
+  if (!dirty || saving || !studio?.id) return;
 
-    setSaving(true);
-    try {
-      const token = localStorage.getItem("token");
+  setSaving(true);
+  try {
+    const token = localStorage.getItem("token");
 
-      // 1) зберегли
-      await api(`/studio/${studio.id}/schedule`, {
-        method: "PATCH",
-        token,
-        body: { schedule, slotDuration },
-      });
+    await api(`/studio/${studio.id}/schedule`, {
+      method: "PATCH",
+      token,
+      body: { schedule, slotDuration },
+    });
 
-      // 2) одразу прочитали (джерело правди)
-      const fresh = await api(`/studio/${studio.id}/schedule`, {
-        method: "GET",
-        token,
-      });
+    const fresh = await api(`/studio/${studio.id}/schedule`, {
+      method: "GET",
+      token,
+    });
 
-      const nextSchedule = normalizeSchedule(fresh.schedule ?? schedule);
-      const nextDuration =
-        typeof fresh.slotDuration === "number" ? fresh.slotDuration : 15;
+    const nextSchedule = normalizeSchedule(fresh.schedule ?? schedule);
+    const nextDuration =
+      typeof fresh.slotDuration === "number" ? fresh.slotDuration : 15;
 
-      setScheduleDraft(nextSchedule);
-      setSlotDuration(nextDuration);
+    setScheduleDraft(nextSchedule);
+    setSlotDuration(nextDuration);
 
-      setSavedSchedule(nextSchedule);
-      setSavedSlotDuration(nextDuration);
+    setSavedSchedule(nextSchedule);
+    setSavedSlotDuration(nextDuration);
 
-      setPreview({});
-      showToast({
-        type: "success",
-        title: "Збережено",
-        text: "Зміни успішно оновлено.",
-      });
-    } catch (err) {
-      console.error(err);
-      showToast({
-        type: "error",
-        title: "Не збережено",
-        text: err?.message || "Помилка.",
-      });
-    } finally {
-      setSaving(false);
-    }
+    setPreview({});
+    showToast({
+      type: "success",
+      title: "Графік оновлено",
+      text: "Зміни успішно збережено.",
+    });
+  } catch (err) {
+    console.error(err);
+
+    const rawMessage = String(err?.message || "").toLowerCase();
+
+    const isOffline =
+      !navigator.onLine ||
+      rawMessage.includes("failed to fetch") ||
+      rawMessage.includes("networkerror") ||
+      rawMessage.includes("network error") ||
+      rawMessage.includes("load failed") ||
+      rawMessage.includes("fetch");
+
+    showToast({
+      type: "error",
+      title: isOffline ? "Немає інтернету" : "Не вдалося зберегти",
+      text: isOffline
+        ? "Перевірте підключення до інтернету."
+        : err?.message || "Сталася помилка під час збереження.",
+    });
+  } finally {
+    setSaving(false);
   }
+}
 
   function cancelChanges() {
     if (saving) return;
@@ -404,119 +424,119 @@ export default function Schedule() {
   return (
     <div className="mx-auto max-w-5xl space-y-6 pb-20 md:pb-0">
       {/* Professional Toast (same as StudioSettings) */}
+{/* Toast in page style */}
+<div
+  className={[
+    "fixed z-[90] transition-all duration-300",
+    "left-1/2 top-[calc(1rem+env(safe-area-inset-top))] -translate-x-1/2",
+    "md:left-6 md:top-auto md:bottom-6 md:translate-x-0",
+    "w-[calc(100%-2rem)] max-w-[430px] md:w-auto md:min-w-[300px] md:max-w-[360px]",
+    toast.open
+      ? "translate-y-0 opacity-100"
+      : "pointer-events-none -translate-y-2 opacity-0 md:translate-y-2",
+  ].join(" ")}
+  role="status"
+  aria-live="polite"
+>
+  <div
+    className={[
+      "relative overflow-hidden rounded-[24px] border bg-[#FFFDF9]/98 backdrop-blur-xl",
+      "shadow-[0_18px_50px_rgba(93,64,55,0.16)] ring-1 ring-[#F4E8DC]",
+      toast.type === "success"
+        ? "border-[#D8E7D7]"
+        : "border-[#EBCFCB]",
+    ].join(" ")}
+  >
+    {/* top accent */}
+    <div
+      className={[
+        "absolute inset-x-0 top-0 h-1",
+        toast.type === "success"
+          ? "bg-gradient-to-r from-[#9FC59B] via-[#86B882] to-[#6FA56A]"
+          : "bg-gradient-to-r from-[#E8A59C] via-[#DB8B80] to-[#C96E62]",
+      ].join(" ")}
+    />
+
+    <div className="relative flex items-start gap-3 px-4 py-4 sm:px-5">
+      {/* icon */}
       <div
         className={[
-          "fixed z-[90] transition-all duration-300",
-          // ✅ Mobile: top-center + safe area
-          "left-1/2 -translate-x-1/2 top-[calc(1rem+env(safe-area-inset-top))]",
-          // ✅ md+: bottom-left
-          "md:left-4 md:top-auto md:bottom-6 md:translate-x-0",
-          "w-[calc(100%-2rem)] max-w-[420px] md:w-auto md:min-w-[260px] md:max-w-[340px]",
-          toast.open
-            ? "opacity-100 translate-y-0"
-            : "pointer-events-none opacity-0 -translate-y-2",
+          "mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border",
+          "shadow-[0_8px_22px_rgba(93,64,55,0.10)]",
+          "animate-[toastPop_260ms_ease-out]",
+          toast.type === "success"
+            ? "border-[#D8E7D7] bg-[#EDF7EC] text-[#4A7B45]"
+            : "border-[#EBCFCB] bg-[#FFF1EF] text-[#B85C52]",
         ].join(" ")}
-        role="status"
-        aria-live="polite"
+        aria-hidden="true"
       >
-        <div
-          className={[
-            "relative overflow-hidden rounded-[22px] border ",
-            "shadow-[0_12px_30px_rgba(0,0,0,0.16)]",
-            toast.type === "success" ? "border-emerald-300" : "border-red-300",
-          ].join(" ")}
-        >
-          {/* Glow */}
-          <div
-            className={[
-              "pointer-events-none absolute -inset-10 blur-2xl opacity-30",
-              toast.type === "success" ? "bg-emerald-300" : "bg-red-300",
-            ].join(" ")}
-          />
-
-          {/* Left accent */}
-          <div
-            className={[
-              "absolute left-0 top-0 h-full w-1.5",
-              toast.type === "success" ? "bg-emerald-500" : "bg-red-500",
-            ].join(" ")}
-          />
-
-          <div className="relative flex items-start gap-3 p-4 pl-5">
-            {/* Icon bubble */}
-            <div
-              className={[
-                "flex h-10 w-10 items-center justify-center rounded-xl",
-                "shadow-[0_6px_14px_rgba(0,0,0,0.12)]",
-                "animate-[toastPop_260ms_ease-out]",
-                toast.type === "success"
-                  ? "bg-emerald-600 text-white"
-                  : "bg-red-600 text-white",
-              ].join(" ")}
-              aria-hidden="true"
-            >
-              {toast.type === "success" ? (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M20 6L9 17l-5-5"
-                    stroke="#ffffff"
-                    strokeWidth="2.6"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              ) : (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M12 9v5"
-                    stroke="currentColor"
-                    strokeWidth="2.6"
-                    strokeLinecap="round"
-                  />
-                  <path
-                    d="M12 17h.01"
-                    stroke="currentColor"
-                    strokeWidth="3.6"
-                    strokeLinecap="round"
-                  />
-                </svg>
-              )}
-            </div>
-
-            {/* Text */}
-            <div className="min-w-0">
-              <p className="text-sm font-extrabold leading-5 text-[#1F2A22]">
-                {toast.title ||
-                  (toast.type === "success" ? "Збережено" : "Помилка")}
-              </p>
-              <p className="mt-1 text-sm leading-5 text-[#6F655C]">
-                {toast.text}
-              </p>
-            </div>
-          </div>
-
-          {/* Progress bar */}
-          <div className="h-[4px] w-full bg-gray-100">
-            <div
-              className={[
-                "h-full w-full origin-left animate-[toastbar_3.2s_linear_forwards]",
-                toast.type === "success" ? "bg-emerald-500" : "bg-red-500",
-              ].join(" ")}
+        {toast.type === "success" ? (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M20 6L9 17l-5-5"
+              stroke="currentColor"
+              strokeWidth="2.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             />
-          </div>
-        </div>
+          </svg>
+        ) : (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M12 8.5v5"
+              stroke="currentColor"
+              strokeWidth="2.6"
+              strokeLinecap="round"
+            />
+            <path
+              d="M12 17h.01"
+              stroke="currentColor"
+              strokeWidth="3.2"
+              strokeLinecap="round"
+            />
+          </svg>
+        )}
+      </div>
 
-        <style>{`
+      {/* text */}
+      <div className="min-w-0 flex-1">
+        <p className="mt-2 text-[15px] font-black leading-5 text-[#1F2A22]">
+          {toast.title || (toast.type === "success" ? "Збережено" : "Сталася помилка")}
+        </p>
+
+        <p className="mt-1 text-sm leading-5 text-[#7D7065]">
+          {toast.text}
+        </p>
+      </div>
+    </div>
+
+    {/* subtle progress */}
+<div className="h-[3px] w-full bg-[#F4ECE3]">
+  <div
+    key={toast.id}
+    className={[
+      "h-full w-full origin-left",
+      toast.type === "success" ? "bg-[#8FBC89]" : "bg-[#D9897E]",
+    ].join(" ")}
+    style={{
+      animation: `toastbar ${toast.duration}ms linear forwards`,
+    }}
+  />
+</div>
+  </div>
+
+  <style>{`
     @keyframes toastbar {
       from { transform: scaleX(1); }
       to   { transform: scaleX(0); }
     }
+
     @keyframes toastPop {
-      0%   { transform: scale(.92); opacity: .6; }
+      0%   { transform: scale(.94); opacity: .65; }
       100% { transform: scale(1); opacity: 1; }
     }
   `}</style>
-      </div>
+</div>
 
       {/* header */}
       <div className="flex items-start justify-between gap-3">
@@ -552,8 +572,8 @@ export default function Schedule() {
                 className={[
                   "rounded-[24px] border p-4 transition-all duration-200",
                   enabled
-                    ? "border-[#E9DED2] bg-white shadow-[0_6px_18px_rgba(93,64,55,0.04)]"
-                    : "border-[#EEE4DA] bg-[#FBF7F2]",
+                    ? "border-[#EEEEEE] bg-white shadow-[0_6px_18px_rgba(93,64,55,0.04)]"
+                    : "border-[#EEE4DA] bg-[#FFFCF8]/92",
                 ].join(" ")}
               >
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -628,7 +648,7 @@ export default function Schedule() {
   w-fit min-w-[150px]
   appearance-none
   rounded-[18px]
-  border border-[#E9DED2]
+  border border-[#EEEEEE]
   
   px-4 py-3 pr-12
   text-sm font-extrabold text-[#1F2A22]
@@ -649,7 +669,7 @@ export default function Schedule() {
                 className="
   pointer-events-none
   absolute right-3 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center
-  rounded-xl border border-[#E9DED2] bg-white text-[#8C7F73]
+  rounded-xl border border-[#EEEEEE] bg-white text-[#8C7F73]
   transition
   peer-hover:bg-[#FCF8F3] peer-hover:border-[#DDCFC1]
   peer-focus:rotate-180 peer-focus:border-[#4A5D4E] peer-focus:text-[#1F2A22]
@@ -716,107 +736,116 @@ export default function Schedule() {
       )}
 
       {/* Tablet + Desktop bottom-right actions (md+) */}
-      <div className="hidden md:block fixed left-1/2 bottom-6 z-[60]  -translate-x-1/2">
-        <div
+<div className="hidden md:block fixed left-1/2 bottom-6 z-[80] -translate-x-1/2">
+  <div
+    className={[
+      "relative overflow-hidden rounded-[28px] border border-[#D9C7B4] bg-[#FFFDF9]/98 backdrop-blur-xl",
+      "px-5 py-4 shadow-[0_24px_80px_rgba(31,42,34,0.22)] ring-1 ring-[#F3E6D8]",
+      "transition-all duration-100",
+      dirty
+        ? "translate-y-0 scale-100 opacity-100"
+        : "pointer-events-none translate-y-4 scale-[0.98] opacity-0",
+    ].join(" ")}
+  >
+    {/* accent glow */}
+    <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#F0B56B] via-[#E29A54] to-[#C97B63]" />
+
+    <div className="flex items-center gap-4">
+      <div className="flex min-w-0 items-center gap-3 pr-2">
+        <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#FFF3E6] shadow-[0_8px_20px_rgba(226,154,84,0.25)]">
+          <span className="absolute inline-flex h-3 w-3 rounded-full bg-[#E38B45] animate-ping opacity-75" />
+          <span className="relative inline-flex h-3 w-3 rounded-full bg-[#E38B45]" />
+        </div>
+
+        <div className="min-w-0">
+          <p className="mt-1 text-[17px] font-black leading-none text-[#1F2A22]">
+            Маєте незбережені зміни
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={cancelChanges}
+          disabled={!dirty || saving}
           className={[
-            "rounded-[26px] border border-[#E8DDD2] /95 backdrop-blur-md bg-white ",
-            "px-5 py-4 shadow-[0_20px_60px_rgba(93,64,55,0.12)]",
-            "transition-all duration-200",
-            dirty
-              ? "translate-y-0 opacity-100"
-              : "pointer-events-none translate-y-3 opacity-0",
+            "inline-flex items-center justify-center rounded-[16px] border px-5 py-3 text-sm font-extrabold transition active:scale-[0.98]",
+            dirty && !saving
+              ? "border-[#D9CDC1] bg-white text-[#6E6257] shadow-[0_6px_18px_rgba(0,0,0,0.05)] hover:bg-[#FAF7F4] hover:text-[#1F2A22]"
+              : "cursor-not-allowed border-[#EFE7E0] bg-[#F8F5F2] text-[#B8B1AA]",
           ].join(" ")}
         >
-          <div className="flex items-center gap-4 ">
-            <div className="min-w-0 pr-2">
-              <p className="text-[16px] font-extrabold leading-none text-[#1F2A22]">
-                Маєте незбережені зміни
-              </p>
-            </div>
+          Скасувати
+        </button>
 
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={cancelChanges}
-                disabled={!dirty || saving}
-                className={[
-                  "inline-flex items-center justify-center rounded-[16px] border px-5 py-3 text-sm font-bold transition active:scale-[0.98]",
-                  dirty && !saving
-                    ? "border-[#E7DED6] bg-white text-[#7A6F65] hover:bg-[#FAF7F4] hover:text-[#374151]"
-                    : "cursor-not-allowed border-[#EFE7E0] bg-[#F8F5F2] text-[#B8B1AA]",
-                ].join(" ")}
-              >
-                Скасувати
-              </button>
-
-              <button
-                type="button"
-                onClick={saveAll}
-                disabled={!dirty || saving}
-                className={[
-                  "inline-flex min-w-[148px] items-center justify-center rounded-[16px] px-6 py-3 text-sm font-extrabold transition active:scale-[0.98]",
-                  dirty && !saving
-                    ? "bg-[#4A5D4E] text-white shadow-[0_10px_24px_rgba(74,93,78,0.24)] hover:bg-[#3F5143]"
-                    : "cursor-not-allowed bg-[#BFC8C0] text-white/80",
-                ].join(" ")}
-              >
-                {saving ? "Збереження..." : "Зберегти"}
-              </button>
-            </div>
-          </div>
-        </div>
+        <button
+          type="button"
+          onClick={saveAll}
+          disabled={!dirty || saving}
+          className={[
+            "inline-flex min-w-[160px] items-center justify-center rounded-[16px] px-6 py-3 text-sm font-black transition active:scale-[0.98]",
+            dirty && !saving
+              ? "bg-[#4A5D4E] text-white shadow-[0_14px_30px_rgba(74,93,78,0.34)] hover:bg-[#3F5143]"
+              : "cursor-not-allowed bg-[#BFC8C0] text-white/80",
+          ].join(" ")}
+        >
+          {saving ? "Збереження..." : "Зберегти"}
+        </button>
       </div>
+    </div>
+  </div>
+</div>
       {/* Mobile bottom actions */}
-      <div
-        className={[
-          "fixed inset-x-0 bottom-0 z-[60] transition-all duration-200 md:hidden",
-          menuOpen || !dirty
-            ? "pointer-events-none translate-y-3 opacity-0"
-            : "pointer-events-auto translate-y-0 opacity-100",
-        ].join(" ")}
-      >
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[#FFFDF9] via-[#FFFDF9]/95 to-transparent" />
+<div
+  className={[
+    "fixed inset-x-0 bottom-0 z-[80] transition-all duration-300 md:hidden",
+    menuOpen || !dirty
+      ? "pointer-events-none translate-y-4 opacity-0"
+      : "pointer-events-auto translate-y-0 opacity-100",
+  ].join(" ")}
+>
+  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#FFFDF9] via-[#FFFDF9]/95 to-transparent" />
 
-        <div className="relative mx-auto max-w-5xl px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-          <div className="rounded-[24px] border border-[#E8DDD2] /95 px-4 py-4 backdrop-blur-md shadow-[0_20px_60px_rgba(93,64,55,0.12)]">
-            <div className="space-y-3">
-              <p className="text-[15px] font-extrabold leading-tight text-[#1F2A22]">
-                Маєте незбережені зміни
-              </p>
+  <div className="relative mx-auto max-w-5xl px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+    <div className="relative overflow-hidden rounded-[26px] border border-[#D9C7B4] bg-[#FFFDF9]/98 px-4 py-4 backdrop-blur-xl shadow-[0_24px_80px_rgba(31,42,34,0.22)] ring-1 ring-[#F3E6D8]">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#F0B56B] via-[#E29A54] to-[#C97B63]" />
 
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={cancelChanges}
-                  disabled={!dirty || saving}
-                  className={[
-                    "flex-1 rounded-[16px] border px-4 py-3 text-sm font-bold transition active:scale-[0.98]",
-                    dirty && !saving
-                      ? "border-[#E7DED6] bg-white text-[#7A6F65] hover:bg-[#FAF7F4]"
-                      : "cursor-not-allowed border-[#EFE7E0] bg-[#F8F5F2] text-[#B8B1AA]",
-                  ].join(" ")}
-                >
-                  Скасувати
-                </button>
+      <div className="space-y-3">
 
-                <button
-                  type="button"
-                  onClick={saveAll}
-                  disabled={!dirty || saving}
-                  className={[
-                    "flex-1 rounded-[16px] px-4 py-3 text-sm font-extrabold transition active:scale-[0.98]",
-                    dirty && !saving
-                      ? "bg-[#4A5D4E] text-white shadow-[0_10px_24px_rgba(74,93,78,0.24)]"
-                      : "cursor-not-allowed bg-[#BFC8C0] text-white/80",
-                  ].join(" ")}
-                >
-                  {saving ? "Збереження..." : "Зберегти"}
-                </button>
-              </div>
-            </div>
-          </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={cancelChanges}
+            disabled={!dirty || saving}
+            className={[
+              "flex-1 rounded-[16px] border px-4 py-3 text-sm font-extrabold transition active:scale-[0.98]",
+              dirty && !saving
+                ? "border-[#D9CDC1] bg-white text-[#6E6257] shadow-[0_6px_18px_rgba(0,0,0,0.05)] hover:bg-[#FAF7F4]"
+                : "cursor-not-allowed border-[#EFE7E0] bg-[#F8F5F2] text-[#B8B1AA]",
+            ].join(" ")}
+          >
+            Скасувати
+          </button>
+
+          <button
+            type="button"
+            onClick={saveAll}
+            disabled={!dirty || saving}
+            className={[
+              "flex-1 rounded-[16px] px-4 py-3 text-sm font-black transition active:scale-[0.98]",
+              dirty && !saving
+                ? "bg-[#4A5D4E] text-white shadow-[0_14px_30px_rgba(74,93,78,0.34)]"
+                : "cursor-not-allowed bg-[#BFC8C0] text-white/80",
+            ].join(" ")}
+          >
+            {saving ? "Збереження..." : "Зберегти"}
+          </button>
         </div>
       </div>
+    </div>
+  </div>
+</div>
     </div>
   );
 }

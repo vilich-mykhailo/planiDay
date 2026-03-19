@@ -27,7 +27,7 @@ function MasterChip({ master, checked }) {
 
   return (
     <div className="flex min-w-0 items-center gap-3">
-      <div className="h-9 w-9 flex-shrink-0 overflow-hidden rounded-full border border-[#E9DED2] bg-white">
+      <div className="h-9 w-9 flex-shrink-0 overflow-hidden rounded-full border border-[#EEEEEE] bg-white">
         {avatar ? (
           <img
             src={avatar}
@@ -56,7 +56,7 @@ function MasterChip({ master, checked }) {
 
 function SectionCard({ title, subtitle, right, children }) {
   return (
-    <section className="overflow-hidden rounded-[26px] border border-[#E9DED2]  shadow-[0_10px_30px_rgba(93,64,55,0.06)] sm:rounded-[30px]">
+    <section className="overflow-hidden rounded-[26px] border border-[#EEEEEE]  shadow-[0_10px_30px_rgba(93,64,55,0.06)] sm:rounded-[30px]">
       <div className="flex flex-col gap-3 border-b border-[#F1E7DE] px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
         <div className="min-w-0">
           <h2 className="text-[18px] font-extrabold tracking-[-0.02em] text-[#1F2A22]">
@@ -109,7 +109,7 @@ function Modal({
         ].join(" ")}
       >
         <div
-          className="w-full max-w-2xl overflow-hidden rounded-[30px] border border-[#E9DED2] bg-white shadow-[0_24px_80px_rgba(93,64,55,0.18)]"
+          className="w-full max-w-2xl overflow-hidden rounded-[30px] border border-[#EEEEEE] bg-white shadow-[0_24px_80px_rgba(93,64,55,0.18)]"
           onMouseDown={(e) => e.stopPropagation()}
           onMouseUp={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
@@ -650,8 +650,8 @@ export default function Services() {
         </h1>
 
         <p className="mt-2 max-w-2xl text-sm leading-6 text-[#857A70] sm:text-[15px]">
-          Налаштуйте категорії та послуги у м’якому, зрозумілому форматі — саме
-          так клієнти бачитимуть їх під час онлайн-запису.
+          Налаштуйте категорії та послуги у зручному форматі — саме так їх
+          бачитимуть клієнти під час онлайн-запису.
         </p>
       </div>
 
@@ -659,18 +659,13 @@ export default function Services() {
       <SectionCard
         title="Категорії"
         subtitle="Додай категорію (наприклад: Вії, Нігті, Брови)."
-        right={
-          <span className="rounded-full border border-[#E9DED2] bg-[#F8F4EF] px-3 py-1 text-xs font-semibold text-[#7B6D61]">
-            {" "}
-          </span>
-        }
       >
         <div className="flex flex-col sm:flex-row gap-2">
           <input
             value={newCategoryName}
             onChange={(e) => setNewCategoryName(e.target.value)}
             placeholder="Напр. Вії"
-            className="w-full rounded-[18px] border border-[#E9DED2] px-4 py-3 text-sm font-semibold text-[#1F2A22] outline-none transition placeholder:text-[#B1A59A] hover:bg-[#FCF8F3] hover:border-[#DDCFC1] focus:border-[#4A5D4E] focus:ring-2 focus:ring-[#4A5D4E]/15"
+            className="w-full rounded-[18px] border border-[#EEEEEE] px-4 py-3 text-sm font-semibold text-[#1F2A22] outline-none transition placeholder:text-[#B1A59A] hover:bg-[#FCF8F3] hover:border-[#DDCFC1] focus:border-[#4A5D4E] focus:ring-2 focus:ring-[#4A5D4E]/15"
           />
           <button
             type="button"
@@ -766,7 +761,7 @@ export default function Services() {
               }
             >
               {(cat.services?.length || 0) === 0 ? (
-                <div className="rounded-[22px] border border-[#E9DED2] bg-[#FBF7F2] p-4 text-sm text-[#857A70]">
+                <div className="rounded-[22px] border border-[#EEEEEE] bg-[#FFFCF8]/92 p-4 text-sm text-[#857A70]">
                   Тут ще немає послуг. Натисни “Додати послугу”.
                 </div>
               ) : (
@@ -774,7 +769,8 @@ export default function Services() {
                   {cat.services.map((srv) => (
                     <div
                       key={srv.id}
-className="rounded-[24px] border border-[#E9DED2] bg-white p-4 transition hover:bg-[#FCF8F3] hover:shadow-[0_8px_20px_rgba(93,64,55,0.05)]"                    >
+                      className="rounded-[24px] border border-[#EEEEEE] bg-white p-4 transition hover:bg-[#FCF8F3] hover:shadow-[0_8px_20px_rgba(93,64,55,0.05)]"
+                    >
                       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                         <div className="min-w-0">
                           <p className="truncate text-[15px] font-extrabold text-[#1F2A22]">
@@ -808,7 +804,7 @@ className="rounded-[24px] border border-[#E9DED2] bg-white p-4 transition hover:
                             </svg>
                           </Button>
                           <Button
-                      className="w-full sm:w-auto inline-flex items-center justify-center rounded-[16px] border border-[#F0D6D1] bg-[#FFF3F1] px-3 py-2 text-[#B2504A] transition hover:bg-[#FDE8E4]"
+                            className="w-full sm:w-auto inline-flex items-center justify-center rounded-[16px] border border-[#F0D6D1] bg-[#FFF3F1] px-3 py-2 text-[#B2504A] transition hover:bg-[#FDE8E4]"
                             onClick={() => deleteService(cat.id, srv.id)}
                             title="Видалити"
                             aria-label="Видалити"
@@ -873,7 +869,7 @@ className="rounded-[24px] border border-[#E9DED2] bg-white p-4 transition hover:
           <input
             value={categoryDraftName}
             onChange={(e) => setCategoryDraftName(e.target.value)}
-            className="w-full rounded-[18px] border border-[#E9DED2]  px-4 py-3 text-sm font-semibold text-[#1F2A22] outline-none transition placeholder:text-[#B1A59A] hover:bg-[#FCF8F3] hover:border-[#DDCFC1] focus:border-[#4A5D4E] focus:ring-2 focus:ring-[#4A5D4E]/15"
+            className="w-full rounded-[18px] border border-[#EEEEEE]  px-4 py-3 text-sm font-semibold text-[#1F2A22] outline-none transition placeholder:text-[#B1A59A] hover:bg-[#FCF8F3] hover:border-[#DDCFC1] focus:border-[#4A5D4E] focus:ring-2 focus:ring-[#4A5D4E]/15"
             placeholder="Напр. Вії"
           />
         </div>
@@ -893,11 +889,13 @@ className="rounded-[24px] border border-[#E9DED2] bg-white p-4 transition hover:
               variant="primary"
               onClick={saveService}
               disabled={!canSaveServiceDraft(serviceDraft)}
-className="rounded-[16px] bg-[#4A5D4E] px-5 py-2.5 text-sm font-extrabold text-white shadow-[0_10px_24px_rgba(74,93,78,0.22)] transition hover:bg-[#3F5143]"            >
+              className="rounded-[16px] bg-[#4A5D4E] px-5 py-2.5 text-sm font-extrabold text-white shadow-[0_10px_24px_rgba(74,93,78,0.22)] transition hover:bg-[#3F5143]"
+            >
               Зберегти
             </Button>
-            <Button onClick={closeServiceModal} 
-            className="rounded-[16px] border border-[#E7DED6] bg-white px-5 py-2.5 text-sm font-extrabold text-[#6B625A] transition hover:bg-[#FAF7F4]"
+            <Button
+              onClick={closeServiceModal}
+              className="rounded-[16px] border border-[#E7DED6] bg-white px-5 py-2.5 text-sm font-extrabold text-[#6B625A] transition hover:bg-[#FAF7F4]"
             >
               Скасувати
             </Button>
@@ -915,7 +913,7 @@ className="rounded-[16px] bg-[#4A5D4E] px-5 py-2.5 text-sm font-extrabold text-w
               onChange={(e) =>
                 setServiceDraft((p) => ({ ...p, categoryId: e.target.value }))
               }
-              className="w-full rounded-[18px] border border-[#E9DED2]  px-4 py-3 text-sm font-semibold text-[#1F2A22] outline-none transition placeholder:text-[#B1A59A] hover:bg-[#FCF8F3] hover:border-[#DDCFC1] focus:border-[#4A5D4E] focus:ring-2 focus:ring-[#4A5D4E]/15"
+              className="w-full rounded-[18px] border border-[#EEEEEE]  px-4 py-3 text-sm font-semibold text-[#1F2A22] outline-none transition placeholder:text-[#B1A59A] hover:bg-[#FCF8F3] hover:border-[#DDCFC1] focus:border-[#4A5D4E] focus:ring-2 focus:ring-[#4A5D4E]/15"
             >
               <option value={UNCATEGORIZED_ID}>Послуги без категорії</option>
               {serviceCategories.map((c) => (
@@ -940,7 +938,7 @@ className="rounded-[16px] bg-[#4A5D4E] px-5 py-2.5 text-sm font-extrabold text-w
                 setServiceDraft((p) => ({ ...p, name: e.target.value }))
               }
               placeholder="Напр. Нарощування"
-              className="w-full rounded-[18px] border border-[#E9DED2]  px-4 py-3 text-sm font-semibold text-[#1F2A22] outline-none transition placeholder:text-[#B1A59A] hover:bg-[#FCF8F3] hover:border-[#DDCFC1] focus:border-[#4A5D4E] focus:ring-2 focus:ring-[#4A5D4E]/15"
+              className="w-full rounded-[18px] border border-[#EEEEEE]  px-4 py-3 text-sm font-semibold text-[#1F2A22] outline-none transition placeholder:text-[#B1A59A] hover:bg-[#FCF8F3] hover:border-[#DDCFC1] focus:border-[#4A5D4E] focus:ring-2 focus:ring-[#4A5D4E]/15"
             />
           </div>
 
@@ -956,7 +954,7 @@ className="rounded-[16px] bg-[#4A5D4E] px-5 py-2.5 text-sm font-extrabold text-w
                 setServiceDraft((p) => ({ ...p, price: e.target.value }))
               }
               placeholder="грн"
-              className="w-full rounded-[18px] border border-[#E9DED2]  px-4 py-3 text-sm font-semibold text-[#1F2A22] outline-none transition placeholder:text-[#B1A59A] hover:bg-[#FCF8F3] hover:border-[#DDCFC1] focus:border-[#4A5D4E] focus:ring-2 focus:ring-[#4A5D4E]/15"
+              className="w-full rounded-[18px] border border-[#EEEEEE]  px-4 py-3 text-sm font-semibold text-[#1F2A22] outline-none transition placeholder:text-[#B1A59A] hover:bg-[#FCF8F3] hover:border-[#DDCFC1] focus:border-[#4A5D4E] focus:ring-2 focus:ring-[#4A5D4E]/15"
             />
           </div>
 
@@ -969,86 +967,105 @@ className="rounded-[16px] bg-[#4A5D4E] px-5 py-2.5 text-sm font-extrabold text-w
 
               <div className="grid grid-cols-2 gap-3">
                 {/* hours */}
-                <div className="rounded-[22px] border border-[#E9DED2]  px-3 py-3">
-                  <p className="text-[11px] font-bold uppercase tracking-wide text-gray-500 mb-2 text-center">
-                    Години
-                  </p>
-                  <div className="relative overflow-x-hidden">
-<div className="pointer-events-none absolute left-0 right-0 top-1/2 h-10 -translate-y-1/2 rounded-xl border border-[#E9DED2] bg-[#F8F4EF]" />                    <div
-                      ref={hoursRef}
-                      onScroll={() => {
-                        if (hoursTimerRef.current)
-                          clearTimeout(hoursTimerRef.current);
-                        hoursTimerRef.current = setTimeout(() => {
-                          const v = pickCenteredValue(hoursRef.current);
-                          if (v == null) return;
-                          setDuration({ h: v });
-                        }, 80);
-                      }}
-                      className="h-40 overflow-y-auto overflow-x-hidden snap-y snap-mandatory scroll-smooth no-scrollbar py-16 touch-pan-y"
-                    >
-                      {Array.from({ length: 13 }, (_, i) => i).map((h) => {
-                        const active = Number(durationHM.h) === h;
-                        return (
-                          <div
-                            key={h}
-                            data-value={h}
-                            className={[
-                              "w-full snap-center h-10 grid place-items-center rounded-xl font-extrabold select-none",
-                              "transition-all duration-200",
-                              active
-                                ? "text-gray-900 scale-[1.15]"
-                                : "text-gray-400 scale-[0.92] opacity-70",
-                            ].join(" ")}
-                          >
-                            {h}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
+<div className="rounded-[22px] border border-[#EEEEEE] px-3 py-3">
+  <p className="text-[11px] font-bold uppercase tracking-wide text-gray-500 mb-2 text-center">
+    Години
+  </p>
+  <div className="relative overflow-x-hidden">
+    {/* Центрований підсвіт — легкий і чистий */}
+    <div 
+      className="
+        pointer-events-none absolute left-0 right-0 top-1/2 h-10 
+        -translate-y-1/2 rounded-4xl 
+        bg-white/70 backdrop-blur-sm 
+        border border-gray-200/50 shadow-sm
+      " 
+    />
+
+    <div
+      ref={hoursRef}
+      onScroll={() => {
+        if (hoursTimerRef.current) clearTimeout(hoursTimerRef.current);
+        hoursTimerRef.current = setTimeout(() => {
+          const v = pickCenteredValue(hoursRef.current);
+          if (v == null) return;
+          setDuration({ h: v });
+        }, 80);
+      }}
+      className="h-40 overflow-y-auto overflow-x-hidden snap-y snap-mandatory scroll-smooth no-scrollbar py-16 touch-pan-y"
+    >
+      {Array.from({ length: 13 }, (_, i) => i).map((h) => {
+        const active = Number(durationHM.h) === h;
+        return (
+          <div
+            key={h}
+            data-value={h}
+            className={[
+              "w-full snap-center h-10 grid place-items-center rounded-xl font-extrabold select-none",
+              "transition-all duration-200",
+              active
+                ? "text-gray-900 scale-[1.15] font-black"
+                : "text-gray-400 scale-[0.92] opacity-70",
+            ].join(" ")}
+          >
+            {h}
+          </div>
+        );
+      })}
+    </div>
+  </div>
+</div>
 
                 {/* minutes */}
-                <div className="rounded-2xl border border-gray-200 bg-white px-3 py-3">
-                  <p className="text-[11px] font-bold uppercase tracking-wide text-gray-500 mb-2 text-center">
-                    Хвилини
-                  </p>
-                  <div className="relative overflow-x-hidden">
-<div className="pointer-events-none absolute left-0 right-0 top-1/2 h-10 -translate-y-1/2 rounded-xl border border-[#E9DED2] bg-[#F8F4EF]" />                    <div
-                      ref={minutesRef}
-                      onScroll={() => {
-                        if (minutesTimerRef.current)
-                          clearTimeout(minutesTimerRef.current);
-                        minutesTimerRef.current = setTimeout(() => {
-                          const v = pickCenteredValue(minutesRef.current);
-                          if (v == null) return;
-                          setDuration({ m: v });
-                        }, 80);
-                      }}
-                      className="h-40 overflow-y-auto overflow-x-hidden snap-y snap-mandatory scroll-smooth no-scrollbar py-16 touch-pan-y"
-                    >
-                      {Array.from({ length: 12 }, (_, i) => i * 5).map((m) => {
-                        const active = Number(durationHM.m) === m;
-                        return (
-                          <div
-                            key={m}
-                            data-value={m}
-                            className={[
-                              "w-full snap-center h-10 grid place-items-center rounded-xl font-extrabold select-none",
-                              "transition-all duration-200",
-active
-  ? "text-[#1F2A22] scale-[1.15]"
-  : "text-[#B6AA9E] scale-[0.92] opacity-70",
-                            ].join(" ")}
-                          >
-                            {String(m).padStart(2, "0")}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
+{/* ХВИЛИНИ */}
+<div className="rounded-[22px] border border-[#EEEEEE] px-3 py-3">
+  <p className="text-[11px] font-bold uppercase tracking-wide text-gray-500 mb-2 text-center">
+    Хвилини
+  </p>
+  <div className="relative overflow-x-hidden">
+    {/* Центрований підсвіт — легкий, чистий, без рижого */}
+    <div 
+      className="
+        pointer-events-none absolute left-0 right-0 top-1/2 h-10 
+        -translate-y-1/2 rounded-4xl 
+        bg-white/70 backdrop-blur-sm 
+        border border-gray-200/50 shadow-sm
+      " 
+    />
+
+    <div
+      ref={minutesRef}
+      onScroll={() => {
+        if (minutesTimerRef.current) clearTimeout(minutesTimerRef.current);
+        minutesTimerRef.current = setTimeout(() => {
+          const v = pickCenteredValue(minutesRef.current);
+          if (v == null) return;
+          setDuration({ m: v });
+        }, 80);
+      }}
+      className="h-40 overflow-y-auto overflow-x-hidden snap-y snap-mandatory scroll-smooth no-scrollbar py-16 touch-pan-y"
+    >
+      {Array.from({ length: 12 }, (_, i) => i * 5).map((m) => {
+        const active = Number(durationHM.m) === m;
+        return (
+          <div
+            key={m}
+            data-value={m}
+            className={[
+              "w-full snap-center h-10 grid place-items-center rounded-xl font-extrabold select-none",
+              "transition-all duration-200",
+              active
+                ? "text-gray-900 scale-[1.15] font-black"
+                : "text-gray-400 scale-[0.92] opacity-70",
+            ].join(" ")}
+          >
+            {String(m).padStart(2, "0")}
+          </div>
+        );
+      })}
+    </div>
+  </div>
+</div>
               </div>
 
               {/* summary */}
@@ -1071,8 +1088,8 @@ active
           </div>
 
           {/* masters */}
-<div className="rounded-[24px] border border-[#E9DED2] bg-[#FBF7F2] p-4">
-              <p className="text-sm font-extrabold text-[#1F2A22]">Виконавці</p>
+          <div className="rounded-[24px] border border-[#EEEEEE] bg-[#FFFCF8]/92 p-4">
+            <p className="text-sm font-extrabold text-[#1F2A22]">Виконавці</p>
             <p className="mt-1 text-xs text-[#857A70]">
               За замовчуванням — всі майстри. Якщо потрібно — обери конкретних.
             </p>
@@ -1087,12 +1104,12 @@ active
                     masters: [],
                   }))
                 }
-className={[
-  "rounded-[16px] border px-4 py-2 text-sm font-extrabold transition",
-  serviceDraft.allMasters
-    ? "border-[#B8DDBE] bg-[#EAF7EC] text-[#4A5D4E]"
-    : "border-[#E7DED6] bg-white text-[#6B625A] hover:bg-[#FAF7F4]",
-].join(" ")}
+                className={[
+                  "rounded-[16px] border px-4 py-2 text-sm font-extrabold transition",
+                  serviceDraft.allMasters
+                    ? "border-[#B8DDBE] bg-[#EAF7EC] text-[#4A5D4E]"
+                    : "border-[#E7DED6] bg-white text-[#6B625A] hover:bg-[#FAF7F4]",
+                ].join(" ")}
               >
                 Для всіх майстрів
               </button>
@@ -1111,12 +1128,12 @@ className={[
                     return next;
                   })
                 }
-className={[
-  "rounded-[16px] border px-4 py-2 text-sm font-extrabold transition",
-  !serviceDraft.allMasters
-    ? "border-[#B8DDBE] bg-[#EAF7EC] text-[#4A5D4E]"
-    : "border-[#E7DED6] bg-white text-[#6B625A] hover:bg-[#FAF7F4]",
-].join(" ")}
+                className={[
+                  "rounded-[16px] border px-4 py-2 text-sm font-extrabold transition",
+                  !serviceDraft.allMasters
+                    ? "border-[#B8DDBE] bg-[#EAF7EC] text-[#4A5D4E]"
+                    : "border-[#E7DED6] bg-white text-[#6B625A] hover:bg-[#FAF7F4]",
+                ].join(" ")}
               >
                 Обрати майстрів
               </button>
@@ -1125,9 +1142,9 @@ className={[
             {!serviceDraft.allMasters && (
               <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {masters.length === 0 ? (
-<div className="rounded-[18px] border border-[#E9DED2] bg-white p-3 text-sm text-[#857A70]">
-  Спочатку додайте майстрів.
-</div>
+                  <div className="rounded-[18px] border border-[#EEEEEE] bg-white p-3 text-sm text-[#857A70]">
+                    Спочатку додайте майстрів.
+                  </div>
                 ) : (
                   masters.map((m) => {
                     const id = String(m.id ?? m.name);
@@ -1138,9 +1155,9 @@ className={[
                         key={id}
                         className={[
                           "flex items-center gap-3 rounded-2xl border p-3 cursor-pointer transition",
-checked
-  ? "border-[#B8DDBE] bg-[#EAF7EC]"
-  : "border-[#E9DED2] bg-white hover:bg-[#FCF8F3]",
+                          checked
+                            ? "border-[#B8DDBE] bg-[#EAF7EC]"
+                            : "border-[#EEEEEE] bg-white hover:bg-[#FCF8F3]",
                         ].join(" ")}
                       >
                         <input
@@ -1164,19 +1181,19 @@ checked
             )}
 
             {!serviceDraft.allMasters && (
-<p className="mt-2 text-xs text-[#8B7F73]">
-  Обрано:{" "}
-  <span className="font-extrabold text-[#1F2A22]">
-    {(serviceDraft.masters || []).length}
-  </span>
-</p>
+              <p className="mt-2 text-xs text-[#8B7F73]">
+                Обрано:{" "}
+                <span className="font-extrabold text-[#1F2A22]">
+                  {(serviceDraft.masters || []).length}
+                </span>
+              </p>
             )}
           </div>
         </div>
       </Modal>
       {showTips && (
-<div className="rounded-[28px] border border-[#E9DED2]  px-4 py-5 shadow-[0_10px_30px_rgba(93,64,55,0.06)] sm:px-6">          
-  <h2 className="text-center text-lg font-extrabold text-[#1F2A22] sm:text-xl">
+        <div className="rounded-[28px] border border-[#EEEEEE]  px-4 py-5 shadow-[0_10px_30px_rgba(93,64,55,0.06)] sm:px-6">
+          <h2 className="text-center text-lg font-extrabold text-[#1F2A22] sm:text-xl">
             Як правильно організувати послуги
           </h2>
 
@@ -1205,7 +1222,7 @@ checked
             </span>
             . Такий варіант підходить для простих або одиничних послуг.
           </p>
-          <div className="mt-3 rounded-[22px] border border-[#E9DED2] bg-[#FBF7F2] p-4">
+          <div className="mt-3 rounded-[22px] border border-[#EEEEEE] bg-[#FFFCF8]/92 p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#C89D72]">
               Приклад
             </p>

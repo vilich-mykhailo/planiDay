@@ -6,7 +6,14 @@ export default function ScrollToTop() {
   const location = useLocation();
 
   useLayoutEffect(() => {
-    if (location.state?.restoreScroll) return;
+    const shouldRestoreStudios =
+      location.pathname === "/" &&
+      sessionStorage.getItem("restore-studios-scroll") === "1";
+
+    if (location.state?.restoreScroll || shouldRestoreStudios) {
+      return;
+    }
+
     window.scrollTo({ top: 0, behavior: "auto" });
   }, [location.pathname, location.search, location.state]);
 

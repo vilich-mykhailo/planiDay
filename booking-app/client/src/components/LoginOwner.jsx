@@ -62,15 +62,11 @@ export default function LoginOwner() {
   }
 
   return (
-    <main className="min-h-[100dvh]">
-      <div className="mx-auto max-w-md px-4 py-10">
+    <main className="min-h-[100dvh] space-y-6">
+      <div className="mx-auto max-w-md px-4 py-10 ">
         {/* Header */}
-        <div className="text-center">
-          <div className="hidden sm:grid mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-black text-white font-extrabold">
-            P
-          </div>
-
-          <h1 className="mt-4 text-2xl font-extrabold text-gray-900">
+        <div className="text-center ">
+          <h1 className="mt-12 text-2xl font-extrabold text-gray-900">
             Вхід для власників салону
           </h1>
 

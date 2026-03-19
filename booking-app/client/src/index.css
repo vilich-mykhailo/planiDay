@@ -69,6 +69,20 @@ a,
   }
 }
 
+/* Усі плейсхолдери в формі налаштування студії */
+input::placeholder,
+textarea::placeholder {
+  color: #B1A59A !important;          /* сірий, як у тебе вже був */
+  opacity: 1;                         /* щоб не було прозорості в деяких браузерах */
+  font-weight: 400;                   /* нормальний, не жирний */
+}
+
+/* Опціонально: коли фокус — плейсхолдер ховається або стає ще сірішим */
+input:focus::placeholder,
+textarea:focus::placeholder {
+  color: #D1C5B8;                     /* трохи світліший при фокусі */
+}
+
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus {

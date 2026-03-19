@@ -13,17 +13,16 @@ export default function ScrollRestoration() {
   }, []);
 
   useLayoutEffect(() => {
-    if (pathname !== "/") return;
+    const shouldRestoreStudios =
+      pathname === "/" &&
+      sessionStorage.getItem("restore-studios-scroll") === "1";
 
-    const skipOnce = sessionStorage.getItem("skip-home-scroll-once") === "1";
-
-    if (skipOnce) {
-      sessionStorage.removeItem("skip-home-scroll-once");
+    if (shouldRestoreStudios) {
       return;
     }
 
     window.scrollTo(0, 0);
-  }, [pathname]);
+  }, [pathname, location.search, location.state]);
 
   return null;
 }

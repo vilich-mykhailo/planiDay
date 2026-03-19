@@ -59,10 +59,7 @@ export default function LoginClient() {
         <div className="mx-auto max-w-md">
           {/* header */}
           <div className="text-center">
-            <div className="hidden sm:grid mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-black text-white font-extrabold">
-              P
-            </div>
-            <h1 className="mt-4 text-2xl sm:text-3xl font-extrabold text-gray-900">
+            <h1 className="mt-10 text-2xl sm:text-3xl font-extrabold text-gray-900">
               Вхід для клієнтів
             </h1>
             <p className="mt-2 text-sm text-gray-600">
@@ -140,7 +137,7 @@ export default function LoginClient() {
             </div>
           </div>
 
-          <p className="mt-6 text-center text-xs text-gray-500">
+          <p className="mt-2 text-center text-xs text-gray-500">
             Продовжуючи, ти погоджуєшся з умовами сервісу та політикою
             конфіденційності.
           </p>
