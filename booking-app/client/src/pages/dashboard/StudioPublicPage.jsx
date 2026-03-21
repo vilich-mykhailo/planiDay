@@ -1,7 +1,6 @@
 // StudioPublicPage.jsx
 import { useState, useEffect, useMemo, useRef } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
-/* eslint-disable no-unused-vars */
+import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MapPin,
@@ -19,15 +18,18 @@ import {
   Heart,
   Share2,
   Phone,
-  Instagram,
-  Facebook,
   Wifi,
   Car,
   Users,
+  Crown,
 } from "lucide-react";
 import StudioBookingWidget from "../../components/StudioBookingWidget";
 
 const R2_PUBLIC = import.meta.env.VITE_R2_PUBLIC_BASE_URL;
+
+function cn(...classes) {
+  return classes.filter(Boolean).join(" ");
+}
 
 function toPublicUrl(v) {
   const s = String(v || "").trim();
@@ -53,6 +55,20 @@ function parsePortfolio(value) {
     .map(toPublicUrl);
 }
 
+function SectionShell({ children, className = "" }) {
+  return (
+    <div
+      className={cn(
+        "overflow-hidden rounded-[30px] border border-stone-200/60 bg-white shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]",
+        className,
+      )}
+    >
+      <div className="h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-70" />
+      {children}
+    </div>
+  );
+}
+
 function BookingModal({ open, title, onClose, children }) {
   if (!open) return null;
 
@@ -65,7 +81,7 @@ function BookingModal({ open, title, onClose, children }) {
         type="button"
         aria-label="Закрити"
         onClick={onClose}
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        className="absolute inset-0 bg-stone-900/40 backdrop-blur-sm"
       />
 
       <div className="relative z-10 m-auto w-full max-w-2xl px-3 sm:px-6">
@@ -78,23 +94,23 @@ function BookingModal({ open, title, onClose, children }) {
           role="dialog"
           aria-modal="true"
         >
-          <div className="flex-shrink-0 border-b border-[#E8E1DB] bg-white px-5 py-5 sm:px-6">
+          <div className="h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-70" />
+
+          <div className="flex-shrink-0 border-b border-stone-100 px-5 py-5 sm:px-6">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
-                <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#C8A278]">
+                <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-amber-600">
                   Онлайн бронювання
                 </p>
-                <h3
-                  className="mt-1 truncate text-lg font-semibold text-[#2A2A2A] sm:text-xl"
-                  style={{ fontFamily: "var(--font-heading)" }}
-                >
+                <h3 className="mt-1 truncate text-lg font-bold text-stone-800 sm:text-xl">
                   {title}
                 </h3>
               </div>
+
               <button
                 type="button"
                 onClick={onClose}
-                className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#E0DCD8] bg-[#F8F5F2] text-[#7A7A7A] transition-colors duration-200 hover:bg-[#F0EEEA] hover:text-[#2A2A2A]"
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-stone-200 bg-stone-50 text-stone-500 transition-colors duration-200 hover:bg-stone-100 hover:text-stone-800"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -148,10 +164,11 @@ function ImageLightbox({ open, images = [], startIndex = 0, onClose }) {
         <span className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-white/80 backdrop-blur-md">
           {idx + 1} / {images.length}
         </span>
+
         <button
           type="button"
           onClick={onClose}
-          className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-[#2A2A2A] shadow-lg transition-transform duration-200 hover:scale-105 active:scale-95"
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-stone-800 shadow-lg transition-transform duration-200 hover:scale-105 active:scale-95"
         >
           <X className="h-5 w-5" />
         </button>
@@ -164,7 +181,7 @@ function ImageLightbox({ open, images = [], startIndex = 0, onClose }) {
             onClick={() =>
               setIdx((p) => (p - 1 + images.length) % images.length)
             }
-            className="absolute left-4 top-1/2 z-[130] flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full  text-[#2A2A2A] shadow-xl transition-transform duration-200 hover:scale-105 active:scale-95"
+            className="absolute left-4 top-1/2 z-[130] flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-stone-800 shadow-xl transition-transform duration-200 hover:scale-105 active:scale-95"
           >
             <ChevronLeft className="h-6 w-6" />
           </button>
@@ -172,7 +189,7 @@ function ImageLightbox({ open, images = [], startIndex = 0, onClose }) {
           <button
             type="button"
             onClick={() => setIdx((p) => (p + 1) % images.length)}
-            className="absolute right-4 top-1/2 z-[130] flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#2A2A2A] shadow-xl transition-transform duration-200 hover:scale-105 active:scale-95"
+            className="absolute right-4 top-1/2 z-[130] flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-stone-800 shadow-xl transition-transform duration-200 hover:scale-105 active:scale-95"
           >
             <ChevronRight className="h-6 w-6" />
           </button>
@@ -200,26 +217,29 @@ function ImageLightbox({ open, images = [], startIndex = 0, onClose }) {
 
 function ServiceRow({ service, onBook }) {
   return (
-    <div className="group flex items-center gap-4 rounded-2xl border border-[#ECE6E1] bg-white p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_30px_rgba(0,0,0,0.06)] sm:p-5">
+    <div className="group flex items-center gap-4 rounded-2xl border border-stone-200 bg-white p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-amber-200 hover:shadow-[0_12px_30px_rgba(0,0,0,0.06)] sm:p-5">
       <div className="min-w-0 flex-1">
-        <p className="text-[15px] font-semibold text-[#2A2A2A] transition-colors duration-200 group-hover:text-[#4A5D4E] sm:text-base">
+        <p className="text-[15px] font-semibold text-stone-800 transition-colors duration-200 group-hover:text-emerald-700 sm:text-base">
           {service.name}
         </p>
+
         {!!service.description && (
-          <p className="mt-1 line-clamp-2 text-xs text-[#8A817A] sm:text-sm">
+          <p className="mt-1 line-clamp-2 text-xs text-stone-500 sm:text-sm">
             {service.description}
           </p>
         )}
-        <div className="mt-2.5 flex flex-wrap items-center gap-3 text-xs text-[#7A7A7A]">
+
+        <div className="mt-2.5 flex flex-wrap items-center gap-3 text-xs text-stone-500">
           {service.duration && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#F8F5F2] px-2.5 py-1">
-              <Clock className="h-3.5 w-3.5 text-[#C8A278]" />
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-stone-100 px-2.5 py-1">
+              <Clock className="h-3.5 w-3.5 text-amber-600" />
               {service.duration} хв
             </span>
           )}
+
           {service.price != null && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#F8F5F2] px-2.5 py-1 font-semibold text-[#2A2A2A]">
-              <Banknote className="h-3.5 w-3.5 text-[#C8A278]" />
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-stone-100 px-2.5 py-1 font-semibold text-stone-800">
+              <Banknote className="h-3.5 w-3.5 text-amber-600" />
               {service.price} грн
             </span>
           )}
@@ -229,7 +249,15 @@ function ServiceRow({ service, onBook }) {
       <button
         type="button"
         onClick={() => onBook(service)}
-        className="shrink-0 rounded-2xl bg-[#4A5D4E] px-4 py-3 text-xs font-bold text-white shadow-[0_8px_20px_rgba(74,93,78,0.2)] transition-all duration-200 hover:bg-[#3A4A3E] active:scale-[0.98] sm:px-5"
+        className="
+hidden sm:inline-flex h-10 items-center justify-center gap-2
+rounded-xl px-4 text-sm font-bold
+bg-gradient-to-r from-emerald-600 to-emerald-700 text-white
+shadow-[0_10px_24px_rgba(74,93,78,0.25)]
+transition-all duration-200
+hover:scale-[1.03] hover:shadow-lg
+active:scale-95
+"
       >
         Забронювати
       </button>
@@ -242,25 +270,26 @@ function CategoryAccordion({ category, onBook }) {
   const services = category.services || [];
 
   return (
-    <div className="overflow-hidden rounded-[28px] border border-[#E6DFD8] bg-white shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
+    <div className="overflow-hidden rounded-[28px] border border-stone-200 bg-white shadow-[0_8px_24px_rgba(0,0,0,0.04)]">
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center justify-between gap-3 p-5 text-left transition-colors duration-200 hover:bg-[#FBF9F7] sm:p-6"
+        className="flex w-full items-center justify-between gap-3 p-5 text-left transition-colors duration-200 hover:bg-stone-50 sm:p-6"
       >
         <div className="min-w-0">
-          <p className="text-base font-semibold text-[#2A2A2A] sm:text-lg">
+          <p className="text-base font-semibold text-stone-800 sm:text-lg">
             {category.name}
           </p>
-          <p className="mt-0.5 text-xs text-[#7A7A7A]">
+          <p className="mt-0.5 text-xs text-stone-500">
             {services.length} {services.length === 1 ? "послуга" : "послуг"}
           </p>
         </div>
 
         <div
-          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-[#E6DFD8] bg-[#F8F5F2] text-[#7A7A7A] transition-transform duration-300 ${
-            open ? "rotate-180" : ""
-          }`}
+          className={cn(
+            "flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-stone-200 bg-stone-100 text-stone-500 transition-transform duration-300",
+            open ? "rotate-180" : "",
+          )}
         >
           <ChevronDown className="h-4 w-4" />
         </div>
@@ -275,11 +304,9 @@ function CategoryAccordion({ category, onBook }) {
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
             className="overflow-hidden"
           >
-            <div className="border-t border-[#EEE7E1] bg-[#FFFEFD] px-4 py-4 sm:px-6">
+            <div className="border-t border-stone-100 bg-[#FFFEFD] px-4 py-4 sm:px-6">
               {services.length === 0 ? (
-                <p className="py-4 text-sm text-[#7A7A7A]">
-                  Послуги не додані.
-                </p>
+                <p className="py-4 text-sm text-stone-500">Послуги не додані.</p>
               ) : (
                 <div className="space-y-3">
                   {services.map((s) => (
@@ -296,15 +323,13 @@ function CategoryAccordion({ category, onBook }) {
 }
 
 function StaffCard({ member }) {
-  const photo = toPublicUrl(
-    member?.photoUrl || member?.avatar || member?.image,
-  );
+  const photo = toPublicUrl(member?.photoUrl || member?.avatar || member?.image);
   const name = safe(member?.name || member?.fullName || member?.title);
   const role = safe(member?.role || member?.position || member?.speciality);
 
   return (
     <div className="flex min-w-[96px] max-w-[120px] flex-col items-center text-center sm:min-w-[120px]">
-      <div className="h-20 w-20 overflow-hidden rounded-full border-4 border-white bg-[#EEE7E1] shadow-[0_10px_24px_rgba(0,0,0,0.06)] sm:h-24 sm:w-24">
+      <div className="h-20 w-20 overflow-hidden rounded-full border-4 border-white bg-stone-100 shadow-[0_10px_24px_rgba(0,0,0,0.06)] sm:h-24 sm:w-24">
         {photo ? (
           <img
             src={photo}
@@ -312,15 +337,16 @@ function StaffCard({ member }) {
             className="h-full w-full object-cover"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-[#B8A49A]">
+          <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-stone-400">
             {name ? name.slice(0, 1).toUpperCase() : "?"}
           </div>
         )}
       </div>
-      <p className="mt-3 line-clamp-2 text-sm font-semibold text-[#2A2A2A]">
+
+      <p className="mt-3 line-clamp-2 text-sm font-semibold text-stone-800">
         {name || "Майстер"}
       </p>
-      <p className="mt-0.5 line-clamp-2 text-xs text-[#8A817A]">
+      <p className="mt-0.5 line-clamp-2 text-xs text-stone-500">
         {role || "Спеціаліст"}
       </p>
     </div>
@@ -329,24 +355,29 @@ function StaffCard({ member }) {
 
 function ReviewCard({ review }) {
   return (
-    <div className="rounded-[26px] border border-[#E7E0DA] bg-white p-5 shadow-[0_8px_25px_rgba(0,0,0,0.04)]">
+    <div className="rounded-[26px] border border-stone-200 bg-white p-5 shadow-[0_8px_25px_rgba(0,0,0,0.04)]">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-sm font-semibold text-[#2A2A2A]">
-            {review.author}
-          </p>
+          <p className="text-sm font-semibold text-stone-800">{review.author}</p>
           <div className="mt-1 flex items-center gap-1">
             {Array.from({ length: 5 }).map((_, i) => (
               <Star
                 key={i}
-                className={`h-3.5 w-3.5 ${i < review.rating ? "fill-[#F5A524] text-[#F5A524]" : "text-[#E6DFD8]"}`}
+                className={cn(
+                  "h-3.5 w-3.5",
+                  i < review.rating
+                    ? "fill-amber-400 text-amber-400"
+                    : "text-stone-200",
+                )}
               />
             ))}
           </div>
         </div>
-        <span className="text-xs text-[#8A817A]">{review.date}</span>
+
+        <span className="text-xs text-stone-500">{review.date}</span>
       </div>
-      <p className="mt-3 text-sm leading-relaxed text-[#5E5752]">
+
+      <p className="mt-3 text-sm leading-relaxed text-stone-600">
         {review.text}
       </p>
     </div>
@@ -374,7 +405,6 @@ export default function StudioPublicPage() {
   const portfolioRef = useRef(null);
   const detailsRef = useRef(null);
   const navigate = useNavigate();
-  const location = useLocation();
 
   const [isFavourite, setIsFavourite] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
@@ -389,9 +419,7 @@ export default function StudioPublicPage() {
       setError("");
 
       try {
-        const res = await fetch(
-          `${import.meta.env.VITE_API_URL}/client/${slug}`,
-        );
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/client/${slug}`);
         const data = await res.json().catch(() => null);
 
         if (!res.ok) {
@@ -438,26 +466,7 @@ export default function StudioPublicPage() {
     .filter(Boolean)
     .join(", ");
   const fullAddress = [address, city].filter(Boolean).join(", ");
-  const portfolio = useMemo(
-    () => parsePortfolio(studio?.portfolioUrls),
-    [studio],
-  );
-  const serviceCategories = studio?.serviceCategories || [];
-  const uncategorizedServices = studio?.uncategorizedServices || [];
-  const allServices = useMemo(() => {
-    const serviceCategories = studio?.serviceCategories ?? [];
-    const uncategorizedServices = studio?.uncategorizedServices ?? [];
-
-    return [
-      ...uncategorizedServices,
-      ...serviceCategories.flatMap((cat) =>
-        (cat.services || []).map((service) => ({
-          ...service,
-          categoryName: cat.name,
-        })),
-      ),
-    ];
-  }, [studio?.serviceCategories, studio?.uncategorizedServices]);
+  const portfolio = useMemo(() => parsePortfolio(studio?.portfolioUrls), [studio]);
 
   const filteredUncategorizedServices = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -590,12 +599,10 @@ export default function StudioPublicPage() {
     return () => observer.disconnect();
   }, [studio]);
 
-function handleGoBack() {
-  // Повернення назад → кажемо списку, що треба відновити скрол
-  sessionStorage.setItem("restore-studios-scroll", "1");
-  // y вже збережено раніше, тому повторно писати не обов'язково
-  navigate(-1);
-}
+  function handleGoBack() {
+    sessionStorage.setItem("restore-studios-scroll", "1");
+    navigate(-1);
+  }
 
   async function handleShare() {
     const shareData = {
@@ -614,7 +621,7 @@ function handleGoBack() {
       setShareCopied(true);
       setTimeout(() => setShareCopied(false), 1600);
     } catch {
-      // нічого критичного
+      // ignore
     }
   }
 
@@ -625,7 +632,7 @@ function handleGoBack() {
   if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center px-4">
-        <div className="rounded-2xl border border-[#E0DCD8] bg-white px-6 py-4 text-sm text-[#7A7A7A]">
+        <div className="rounded-2xl border border-stone-200 bg-white px-6 py-4 text-sm text-stone-500 shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
           Завантаження студії...
         </div>
       </div>
@@ -635,8 +642,8 @@ function handleGoBack() {
   if (!studio) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center px-4">
-        <div className="w-full max-w-2xl rounded-[28px] border border-[#E0DCD8] bg-white p-12 text-center shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
-          <h1 className="text-xl font-bold text-[#2A2A2A]">
+        <div className="w-full max-w-2xl rounded-[28px] border border-stone-200 bg-white p-12 text-center shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
+          <h1 className="text-xl font-bold text-stone-800">
             {error ? "Не вдалося завантажити студію" : "Студію не знайдено"}
           </h1>
           {error ? <p className="mt-2 text-sm text-red-600">{error}</p> : null}
@@ -645,348 +652,346 @@ function handleGoBack() {
     );
   }
 
-return (
-  <div
-    className="min-h-screen bg-[#F8F5F2] text-[#2A2A2A]"
-    data-testid="studio-public-page"
-  >
-    <div className="mx-auto w-full max-w-[1380px] px-3 sm:px-4 lg:px-6">
-      <div className="mx-auto w-full max-w-[1200px] text-[#2A2A2A]">
-        <section className="relative">
-          <div className="relative h-[280px] overflow-hidden rounded-b-[20px] sm:h-[360px] lg:h-[420px]">
-            {" "}
-            {coverUrl ? (
-              <img
-                src={coverUrl}
-                alt={name}
-                className="absolute inset-0 h-full w-full object-cover"
-              />
-            ) : (
-              <div className="absolute inset-0 bg-[#E6E2DE]" />
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/10 to-black/20" />
-            <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-4 pb-4 pt-4 sm:px-6">
-              <button
-                type="button"
-                onClick={handleGoBack}
-                aria-label="Назад"
-                className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/90 text-[#2A2A2A] shadow-lg backdrop-blur-md transition hover:scale-105 active:scale-95"
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </button>
+  return (
+    <div
+      className="min-h-screen bg-gradient-to-br from-stone-50 via-amber-50/30 to-orange-50/20 text-stone-800"
+      data-testid="studio-public-page"
+    >
+      <div className="mx-auto w-full max-w-[1380px] px-3 sm:px-4 lg:px-6">
+        <div className="mx-auto w-full max-w-[1200px] text-stone-800">
+          <section className="relative">
+            <div className="relative h-[280px] overflow-hidden rounded-b-[24px] sm:h-[360px] lg:h-[420px]">
+              {coverUrl ? (
+                <img
+                  src={coverUrl}
+                  alt={name}
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+              ) : (
+                <div className="absolute inset-0 bg-stone-200" />
+              )}
 
-              <div className="flex items-center gap-2">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/10 to-black/20" />
+
+              <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-4 pb-4 pt-4 sm:px-6">
                 <button
                   type="button"
-                  onClick={handleShare}
-                  aria-label="Поділитися"
-                  title={shareCopied ? "Посилання скопійовано" : "Поділитися"}
-                  className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/90 text-[#2A2A2A] shadow-lg backdrop-blur-md transition hover:scale-105 active:scale-95"
+                  onClick={handleGoBack}
+                  aria-label="Назад"
+                  className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/90 text-stone-800 shadow-lg backdrop-blur-md transition hover:scale-105 active:scale-95"
                 >
-                  <Share2 className="h-4.5 w-4.5" />
+                  <ChevronLeft className="h-5 w-5" />
                 </button>
-                <button
-                  type="button"
-                  onClick={handleToggleFavourite}
-                  aria-label="В обране"
-                  className={`flex h-11 w-11 items-center justify-center rounded-2xl shadow-lg backdrop-blur-md transition hover:scale-105 active:scale-95 ${
-                    isFavourite
-                      ? "bg-[#FFE8EE] text-[#E25577]"
-                      : "bg-white/90 text-[#2A2A2A]"
-                  }`}
-                >
-                  <Heart
-                    className={`h-4.5 w-4.5 ${isFavourite ? "fill-current" : ""}`}
-                  />
-                </button>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleShare}
+                    aria-label="Поділитися"
+                    title={shareCopied ? "Посилання скопійовано" : "Поділитися"}
+                    className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/90 text-stone-800 shadow-lg backdrop-blur-md transition hover:scale-105 active:scale-95"
+                  >
+                    <Share2 className="h-4.5 w-4.5" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleToggleFavourite}
+                    aria-label="В обране"
+                    className={cn(
+                      "flex h-11 w-11 items-center justify-center rounded-2xl shadow-lg backdrop-blur-md transition hover:scale-105 active:scale-95",
+                      isFavourite
+                        ? "bg-rose-100 text-rose-500"
+                        : "bg-white/90 text-stone-800",
+                    )}
+                  >
+                    <Heart
+                      className={cn("h-4.5 w-4.5", isFavourite ? "fill-current" : "")}
+                    />
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="relative z-10 -mt-14 w-full px-0 sm:-mt-16 sm:px-6 lg:mx-auto lg:max-w-[1180px] lg:px-8">
-            <div className="bg-white rounded-[30px] md:border md:border-white/70 md:shadow-[0_20px_60px_rgba(0,0,0,0.08)]">
-              {/* <div className="overflow-hidden rounded-[30px] border border-white/70 bg-white/92 shadow-[0_20px_60px_rgba(0,0,0,0.08)] backdrop-blur-xl">           */}
-              <div className="px-4 pb-5 pt-4 sm:px-6 sm:pb-6">
-                <div className="flex items-start justify-between gap-6">
-                  {/* ЛІВА ЧАСТИНА */}
-                  <div className="flex items-center gap-4">
-                    {/* LOGO */}
-                    <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-[#EEE6DF] bg-white shadow-[0_8px_24px_rgba(0,0,0,0.06)] sm:h-20 sm:w-20">
-                      {logoUrl ? (
-                        <img
-                          src={logoUrl}
-                          alt={`${name} logo`}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center text-xs font-bold tracking-widest text-[#C8A278]">
-                          LOGO
-                        </div>
-                      )}
-                    </div>
-
-                    {/* ТЕКСТ */}
-                    <div className="flex flex-col">
-                      <div className="flex flex-wrap items-center gap-2">
-                        {category && (
-                          <span className="rounded-full bg-[#4A5D4E]/8 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#4A5D4E]">
-                            {category}
-                          </span>
-                        )}
-
-                        {studio?.priceFrom != null && (
-                          <span className="rounded-full bg-[#C8A278]/12 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#B98752]">
-                            від {studio.priceFrom} грн
-                          </span>
+            <div className="relative z-10 -mt-14 w-full px-0 sm:-mt-16 sm:px-6 lg:mx-auto lg:max-w-[1180px] lg:px-8">
+              <SectionShell>
+                <div className="px-4 pb-5 pt-4 sm:px-6 sm:pb-6">
+                  <div className="flex items-start justify-between gap-6">
+                    <div className="flex items-center gap-4">
+                      <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-[0_8px_24px_rgba(0,0,0,0.06)] sm:h-20 sm:w-20">
+                        {logoUrl ? (
+                          <img
+                            src={logoUrl}
+                            alt={`${name} logo`}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-xs font-bold tracking-widest text-amber-600">
+                            LOGO
+                          </div>
                         )}
                       </div>
 
-                      <h1
-                        className="mt-2 text-[26px] font-medium leading-[1.05] tracking-tight text-[#1F1F1F] sm:text-4xl lg:text-5xl"
-                        style={{ fontFamily: "var(--font-heading)" }}
+                      <div className="flex flex-col">
+                        <div className="flex flex-wrap items-center gap-2">
+                          {category && (
+                            <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700">
+                              {category}
+                            </span>
+                          )}
+
+                          {studio?.priceFrom != null && (
+                            <span className="rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-amber-700">
+                              від {studio.priceFrom} грн
+                            </span>
+                          )}
+
+                          {studio?.premium && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white">
+                              <Crown className="h-3 w-3" />
+                              Premium
+                            </span>
+                          )}
+                        </div>
+
+                        <h1 className="mt-2 text-[26px] font-bold leading-[1.05] tracking-tight text-stone-800 sm:text-4xl lg:text-5xl">
+                          {name}
+                        </h1>
+
+                        {fullAddress && (
+                          <div className="mt-2 flex items-center gap-2 text-sm text-stone-500">
+                            <MapPin className="h-4 w-4 shrink-0 text-amber-600" />
+                            <p className="line-clamp-1">{fullAddress}</p>
+                          </div>
+                        )}
+
+                        <div className="mt-2 flex items-center gap-3 text-sm">
+                          <div className="flex items-center gap-1.5 font-semibold text-stone-800">
+                            <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                            {reviewsSummary.rating.toFixed(1)}
+                            <span className="font-normal text-sky-700">
+                              ({reviewsSummary.count} відгуків)
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 rounded-full border border-green-300 bg-green-50 px-2 py-[2px] text-[11px] font-medium text-green-700">
+                            <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                            Працює зараз
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="hidden lg:block mt-4">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPreselectedService(null);
+                          setOpenBooking(true);
+                        }}
+                        className="rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-700 px-7 py-4 text-sm font-bold text-white shadow-[0_10px_25px_rgba(74,93,78,0.22)] transition-all duration-200 hover:from-emerald-700 hover:to-emerald-800"
                       >
-                        {name}
-                      </h1>
+                        <span className="flex items-center gap-2 whitespace-nowrap">
+                          Забронювати онлайн
+                          <Sparkles className="h-4 w-4 opacity-75" />
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
 
-                      {fullAddress && (
-                        <div className="mt-2 flex items-center gap-2 text-sm text-[#746D67]">
-                          <MapPin className="h-4 w-4 shrink-0 text-[#C8A278]" />
-                          <p className="line-clamp-1">{fullAddress}</p>
+                <div className="sticky top-0 z-30 border-t border-stone-100 bg-white/95 backdrop-blur-xl">
+                  <div className="mx-auto max-w-[900px] px-4">
+                    <div className="scrollbar-none flex justify-center overflow-x-auto">
+                      {[
+                        { key: "services", label: "Послуги" },
+                        { key: "reviews", label: "Відгуки" },
+                        { key: "portfolio", label: "Портфоліо" },
+                        { key: "details", label: "Деталі" },
+                      ].map((tab) => {
+                        const isActive = activeTab === tab.key;
+
+                        return (
+                          <button
+                            key={tab.key}
+                            type="button"
+                            onClick={() => scrollToSection(tab.key)}
+                            className={cn(
+                              "relative shrink-0 px-4 py-4 text-sm font-semibold transition-colors sm:px-5",
+                              isActive
+                                ? "text-stone-800"
+                                : "text-stone-400 hover:text-stone-700",
+                            )}
+                          >
+                            {tab.label}
+
+                            {isActive && (
+                              <motion.span
+                                layoutId="activeStudioTab"
+                                className="absolute bottom-0 left-4 right-4 h-[2.5px] rounded-full bg-emerald-700"
+                                transition={{
+                                  type: "spring",
+                                  stiffness: 380,
+                                  damping: 32,
+                                }}
+                              />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="px-4 pb-8 pt-3 sm:px-0 lg:px-8">
+                  {mobileTab === "services" && (
+                    <motion.section
+                      key="services"
+                      ref={servicesRef}
+                      className="scroll-mt-28"
+                      initial={{ opacity: 0, y: 24 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 18 }}
+                      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                    >
+                      <div className="rounded-[30px] p-4 sm:p-6">
+                        <div className="mb-5 flex items-end justify-between gap-4">
+                          <div>
+                            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-amber-600">
+                              Меню послуг
+                            </p>
+                            <h2 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">
+                              Популярні послуги
+                            </h2>
+                          </div>
                         </div>
-                      )}
 
-                      <div className="mt-2 flex items-center gap-3 text-sm">
-                        <div className="flex items-center gap-1.5 font-semibold text-[#1F1F1F]">
-                          <Star className="h-4 w-4 fill-[#F5A524] text-[#F5A524]" />
-                          {reviewsSummary.rating.toFixed(1)}
-                          <span className="font-normal text-[#0A7EA4]">
-                            ({reviewsSummary.count} відгуків)
+                        <div className="relative mb-6">
+                          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+                          <input
+                            type="text"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            placeholder="Пошук послуг"
+                            className="h-12 w-full rounded-2xl border border-stone-200 bg-stone-50 pl-11 pr-4 text-sm text-stone-800 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10"
+                          />
+                        </div>
+
+                        {filteredCategories.length === 0 &&
+                        filteredUncategorizedServices.length === 0 ? (
+                          <div className="rounded-2xl bg-stone-100 p-8 text-center text-sm text-stone-500">
+                            Послуги не знайдено.
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
+                            {filteredUncategorizedServices.length > 0 && (
+                              <div className="space-y-3">
+                                {filteredUncategorizedServices.map((s) => (
+                                  <ServiceRow
+                                    key={s.id}
+                                    service={s}
+                                    onBook={openBookingForService}
+                                  />
+                                ))}
+                              </div>
+                            )}
+
+                            {filteredCategories.map((cat) => (
+                              <CategoryAccordion
+                                key={cat.id}
+                                category={cat}
+                                onBook={openBookingForService}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </motion.section>
+                  )}
+
+                  {mobileTab === "reviews" && (
+                    <motion.section
+                      key="reviews"
+                      ref={reviewsRef}
+                      className="scroll-mt-28"
+                      initial={{ opacity: 0, y: 24 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 18 }}
+                      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                    >
+                      <div className="rounded-[30px] p-4 sm:p-6">
+                        <div className="mb-6 flex items-end justify-between gap-4">
+                          <div>
+                            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-amber-600">
+                              Довіра клієнтів
+                            </p>
+                            <h2 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">
+                              Відгуки
+                            </h2>
+                          </div>
+
+                          <span className="text-sm text-stone-500">
+                            {reviewsSummary.count} відгуків
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-1.5 rounded-full border border-green-300 bg-green-50 px-2 py-[2px] text-[11px] font-medium text-green-600">
-                          <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
-                          Працює зараз
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* КНОПКА */}
-                  <div className="hidden lg:block mt-4">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setPreselectedService(null);
-                        setOpenBooking(true);
-                      }}
-                      className="rounded-2xl bg-[#4A5D4E] px-7 py-4 text-sm font-bold text-white shadow-[0_10px_25px_rgba(74,93,78,0.22)] transition-all duration-200 hover:bg-[#3A4A3E]"
-                    >
-                      <span className="flex items-center gap-2 whitespace-nowrap">
-                        Забронювати онлайн
-                        <Sparkles className="h-4 w-4 opacity-75" />
-                      </span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="sticky top-0 z-30 border-t border-[#EEE7E1] bg-white/95 backdrop-blur-xl">
-                <div className="mx-auto max-w-[900px] px-4">
-                  <div className="scrollbar-none flex justify-center overflow-x-auto">
-                    {[
-                      { key: "services", label: "Послуги" },
-                      { key: "reviews", label: "Відгуки" },
-                      { key: "portfolio", label: "Портфоліо" },
-                      { key: "details", label: "Деталі" },
-                    ].map((tab) => {
-                      const isActive = activeTab === tab.key;
-
-                      return (
-                        <button
-                          key={tab.key}
-                          type="button"
-                          onClick={() => scrollToSection(tab.key)}
-                          className={`relative shrink-0 px-4 py-4 text-sm font-semibold transition-colors sm:px-5 ${
-                            isActive
-                              ? "text-[#1F1F1F]"
-                              : "text-[#8A817A] hover:text-[#2A2A2A]"
-                          }`}
-                        >
-                          {tab.label}
-
-                          {isActive && (
-                            <motion.span
-                              layoutId="activeStudioTab"
-                              className="absolute bottom-0 left-4 right-4 h-[2.5px] rounded-full bg-[#1F1F1F]"
-                              transition={{
-                                type: "spring",
-                                stiffness: 380,
-                                damping: 32,
-                              }}
-                            />
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-              <div className="px-4 pb-8 pt-3 sm:px-0 lg:px-8">
-                {mobileTab === "services" && (
-                  <motion.section
-                    key="services"
-                    ref={servicesRef}
-                    className="scroll-mt-28"
-                    initial={{ opacity: 0, y: 24 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 18 }}
-                    transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                  >
-                    <div className="rounded-[30px] p-4 sm:p-6">
-                      <div className="mb-5 flex items-end justify-between gap-4">
-                        <div>
-                          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#C8A278]">
-                            Меню послуг
-                          </p>
-                          <h2
-                            className="mt-2 text-2xl font-medium tracking-tight sm:text-3xl"
-                            style={{ fontFamily: "var(--font-heading)" }}
-                          >
-                            Популярні послуги
-                          </h2>
-                        </div>
-                      </div>
-
-                      <div className="relative mb-6">
-                        <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9B928B]" />
-                        <input
-                          type="text"
-                          value={search}
-                          onChange={(e) => setSearch(e.target.value)}
-                          placeholder="Пошук послуг"
-                          className="h-12 w-full rounded-2xl border border-[#E8E1DB] bg-[#FBFAF8] pl-11 pr-4 text-sm text-[#2A2A2A] outline-none transition focus:border-[#C8A278]"
-                        />
-                      </div>
-
-                      {filteredCategories.length === 0 &&
-                      filteredUncategorizedServices.length === 0 ? (
-                        <div className="rounded-2xl bg-[#F8F5F2] p-8 text-center text-sm text-[#7A7A7A]">
-                          Послуги не знайдено.
-                        </div>
-                      ) : (
-                        <div className="space-y-4">
-                          {filteredUncategorizedServices.length > 0 && (
-                            <div className="space-y-3">
-                              {filteredUncategorizedServices.map((s) => (
-                                <ServiceRow
-                                  key={s.id}
-                                  service={s}
-                                  onBook={openBookingForService}
-                                />
-                              ))}
-                            </div>
-                          )}
-
-                          {filteredCategories.map((cat) => (
-                            <CategoryAccordion
-                              key={cat.id}
-                              category={cat}
-                              onBook={openBookingForService}
-                            />
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </motion.section>
-                )}
-
-                {mobileTab === "reviews" && (
-                  <motion.section
-                    key="reviews"
-                    ref={reviewsRef}
-                    className="scroll-mt-28"
-                    initial={{ opacity: 0, y: 24 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 18 }}
-                    transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                  >
-                    <div className="rounded-[30px] p-4 sm:p-6">
-                      <div className="mb-6 flex items-end justify-between gap-4">
-                        <div>
-                          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#C8A278]">
-                            Довіра клієнтів
-                          </p>
-                          <h2
-                            className="mt-2 text-2xl font-medium tracking-tight sm:text-3xl"
-                            style={{ fontFamily: "var(--font-heading)" }}
-                          >
-                            Відгуки
-                          </h2>
-                        </div>
-                        <span className="text-sm text-[#8A817A]">
-                          {reviewsSummary.count} відгуків
-                        </span>
-                      </div>
-
-                      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[280px,1fr]">
-                        <div className="rounded-[26px] border border-[#E7E0DA] bg-[#FFFEFD] p-5">
-                          <div className="text-center">
-                            <p className="text-5xl font-light text-[#2A2A2A]">
-                              {reviewsSummary.rating.toFixed(1)}
-                            </p>
-                            <div className="mt-3 flex items-center justify-center gap-1">
-                              {Array.from({ length: 5 }).map((_, i) => (
-                                <Star
-                                  key={i}
-                                  className="h-5 w-5 fill-[#F5A524] text-[#F5A524]"
-                                />
-                              ))}
-                            </div>
-                            <p className="mt-2 text-sm text-[#8A817A]">
-                              {reviewsSummary.count} відгуків
-                            </p>
-                          </div>
-
-                          <div className="mt-6 space-y-2.5">
-                            {[5, 4, 3, 2, 1].map((num) => {
-                              const val =
-                                reviewsSummary.distribution?.[num] || 0;
-                              const max = reviewsSummary.distribution?.[5] || 1;
-                              return (
-                                <div
-                                  key={num}
-                                  className="flex items-center gap-3 text-xs text-[#6E665F]"
-                                >
-                                  <span className="w-2">{num}</span>
-                                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#EFE8E2]">
-                                    <div
-                                      className="h-full rounded-full bg-[#F5A524]"
-                                      style={{ width: `${(val / max) * 100}%` }}
-                                    />
-                                  </div>
-                                  <span className="w-8 text-right">{val}</span>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-
-                        <div className="space-y-4">
-                          {displayedPortfolio.length > 0 && (
-                            <div>
-                              <p className="mb-3 text-sm font-semibold text-[#2A2A2A]">
-                                Фотографії клієнтів
+                        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[280px,1fr]">
+                          <div className="rounded-[26px] border border-stone-200 bg-[#FFFEFD] p-5">
+                            <div className="text-center">
+                              <p className="text-5xl font-light text-stone-800">
+                                {reviewsSummary.rating.toFixed(1)}
                               </p>
-                              <div className="flex gap-3 overflow-x-auto pb-1">
-                                {displayedPortfolio
-                                  .slice(0, 6)
-                                  .map((url, idx) => (
+
+                              <div className="mt-3 flex items-center justify-center gap-1">
+                                {Array.from({ length: 5 }).map((_, i) => (
+                                  <Star
+                                    key={i}
+                                    className="h-5 w-5 fill-amber-400 text-amber-400"
+                                  />
+                                ))}
+                              </div>
+
+                              <p className="mt-2 text-sm text-stone-500">
+                                {reviewsSummary.count} відгуків
+                              </p>
+                            </div>
+
+                            <div className="mt-6 space-y-2.5">
+                              {[5, 4, 3, 2, 1].map((num) => {
+                                const val = reviewsSummary.distribution?.[num] || 0;
+                                const max = reviewsSummary.distribution?.[5] || 1;
+                                return (
+                                  <div
+                                    key={num}
+                                    className="flex items-center gap-3 text-xs text-stone-500"
+                                  >
+                                    <span className="w-2">{num}</span>
+                                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-stone-200">
+                                      <div
+                                        className="h-full rounded-full bg-amber-400"
+                                        style={{ width: `${(val / max) * 100}%` }}
+                                      />
+                                    </div>
+                                    <span className="w-8 text-right">{val}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          <div className="space-y-4">
+                            {displayedPortfolio.length > 0 && (
+                              <div>
+                                <p className="mb-3 text-sm font-semibold text-stone-800">
+                                  Фотографії клієнтів
+                                </p>
+                                <div className="flex gap-3 overflow-x-auto pb-1">
+                                  {displayedPortfolio.slice(0, 6).map((url, idx) => (
                                     <button
                                       key={url + idx}
                                       type="button"
                                       onClick={() => setPreviewIndex(idx)}
-                                      className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-[#ECE5DE] bg-[#EEE7E1] sm:h-24 sm:w-24"
+                                      className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-stone-200 bg-stone-100 sm:h-24 sm:w-24"
                                     >
                                       <img
                                         src={url}
@@ -995,339 +1000,348 @@ return (
                                       />
                                     </button>
                                   ))}
-                              </div>
-                            </div>
-                          )}
-
-                          <div className="grid gap-4 md:grid-cols-2">
-                            {reviews.map((review) => (
-                              <ReviewCard key={review.id} review={review} />
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.section>
-                )}
-
-                {displayedPortfolio.length > 0 && mobileTab === "portfolio" && (
-                  <motion.section
-                    key="portfolio"
-                    ref={portfolioRef}
-                    className="scroll-mt-28"
-                    initial={{ opacity: 0, y: 24 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 18 }}
-                    transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                  >
-                    <div className="rounded-[30px] p-4 sm:p-6">
-                      <div className="mb-10">
-                        <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.25em] text-[#C8A278]">
-                          Наші роботи
-                        </p>
-                        <h2
-                          className="text-2xl font-medium tracking-tight text-[#2A2A2A] md:text-4xl"
-                          style={{ fontFamily: "var(--font-heading)" }}
-                        >
-                          Портфоліо
-                        </h2>
-                      </div>
-
-                      <div className="columns-2 gap-3 sm:columns-3 sm:gap-4 lg:columns-4">
-                        {displayedPortfolio.map((url, idx) => (
-                          <motion.button
-                            key={url + idx}
-                            type="button"
-                            onClick={() => setPreviewIndex(idx)}
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ delay: idx * 0.05, duration: 0.4 }}
-                            className="group relative mb-3 block w-full cursor-zoom-in overflow-hidden rounded-2xl bg-[#E6E2DE] sm:mb-4"
-                          >
-                            <img
-                              src={url}
-                              alt={`Портфоліо ${idx + 1}`}
-                              className={`w-full object-cover transition-transform duration-500 group-hover:scale-105 ${
-                                idx % 3 === 0
-                                  ? "aspect-[3/4]"
-                                  : idx % 3 === 1
-                                    ? "aspect-square"
-                                    : "aspect-[4/5]"
-                              }`}
-                              loading="lazy"
-                              onError={(e) => {
-                                e.currentTarget.style.display = "none";
-                              }}
-                            />
-                            <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/10" />
-                          </motion.button>
-                        ))}
-                      </div>
-                    </div>
-                  </motion.section>
-                )}
-
-                {mobileTab === "details" && (
-                  <motion.section
-                    key="details"
-                    ref={detailsRef}
-                    className="scroll-mt-28"
-                    initial={{ opacity: 0, y: 24 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 18 }}
-                    transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                  >
-                    <div className="rounded-[30px] p-4 sm:p-6">
-                      <div className="mb-6">
-                        <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#C8A278]">
-                          Контакти та інформація
-                        </p>
-                        <h2
-                          className="mt-2 text-2xl font-medium tracking-tight sm:text-3xl"
-                          style={{ fontFamily: "var(--font-heading)" }}
-                        >
-                          Деталі
-                        </h2>
-                      </div>
-
-                      <div className="grid gap-4 lg:grid-cols-[1.15fr,0.85fr]">
-                        <div className="rounded-[28px] border border-[#E8E1DB] bg-[#FBFAF8] p-5">
-                          <div className="overflow-hidden rounded-[16px] border border-[#E8E1DB] bg-white">
-                            <div className="relative h-[220px] bg-[linear-gradient(135deg,#ece5de_0%,#f7f4f1_100%)]">
-                              <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(74,93,78,0.12),transparent_28%),radial-gradient(circle_at_70%_40%,rgba(200,162,120,0.18),transparent_26%),linear-gradient(0deg,rgba(255,255,255,0.35),rgba(255,255,255,0.35))]" />
-                              <div className="absolute left-1/2 top-1/2 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-[#1F1F1F] text-white shadow-xl">
-                                <MapPin className="h-5 w-5" />
-                              </div>
-                            </div>
-
-                            <div className="flex items-center justify-between gap-4 p-4">
-                              <div className="min-w-0">
-                                <p className="text-lg font-semibold text-[#2A2A2A]">
-                                  {name}
-                                </p>
-                                <p className="mt-1 text-sm text-[#6E665F]">
-                                  {fullAddress || "Адресу ще не додано"}
-                                </p>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={handleCopyAddress}
-                                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[#E8E1DB] bg-white text-[#6E665F] transition hover:bg-[#F3F0ED]"
-                                title={copied ? "Скопійовано" : "Копіювати"}
-                              >
-                                {copied ? (
-                                  <CheckCheck className="h-4 w-4 text-[#4A5D4E]" />
-                                ) : (
-                                  <Copy className="h-4 w-4" />
-                                )}
-                              </button>
-                            </div>
-                          </div>
-
-                          {!!description && (
-                            <div className="mt-4 rounded-[24px] border border-[#E8E1DB] bg-white p-5">
-                              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#B08A64]">
-                                Про нас
-                              </p>
-                              <p className="mt-3 text-sm leading-7 text-[#5E5752]">
-                                {description}
-                              </p>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="space-y-4">
-                          <div className="rounded-[28px] border border-[#E8E1DB] bg-[#FBFAF8] p-5">
-                            <div className="rounded-[30px] border border-[#E8E1DB] bg-white/70 backdrop-blur-xl p-6 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
-                              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#B08A64]">
-                                ГРАФІК РОБОТИ
-                              </p>
-
-                              <div className="mt-5 space-y-2 text-sm">
-                                {studioPhone && (
-                                  <a
-                                    href={`tel:${studioPhone}`}
-                                    className="flex items-center justify-between rounded-xl px-3 py-2 transition "
-                                  >
-                                    <span className="flex items-center gap-3 font-medium text-[#2A2A2A]">
-                                      <Phone className="h-4 w-4 text-[#C8A278]" />
-                                      {studioPhone}
-                                    </span>
-
-                                    <span className="text-[#4A5D4E] text-xs font-semibold">
-                                      Подзвонити
-                                    </span>
-                                  </a>
-                                )}
-
-                                {[
-                                  { day: "Понеділок", hours: "10:00 - 20:00" },
-                                  { day: "Вівторок", hours: "10:00 - 20:00" },
-                                  { day: "Середа", hours: "10:00 - 20:00" },
-                                  { day: "Четвер", hours: "10:00 - 20:00" },
-                                  { day: "П’ятниця", hours: "10:00 - 20:00" },
-                                  { day: "Субота", hours: "10:00 - 18:00" },
-                                  { day: "Неділя", hours: "Вихідний" },
-                                ].map((item, index) => {
-                                  const today = new Date().getDay();
-                                  const dayIndex = index === 6 ? 0 : index + 1;
-                                  const isToday = today === dayIndex;
-
-                                  return (
-                                    <div
-                                      key={item.day}
-                                      className={`flex items-center justify-between rounded-xl px-3 py-2 transition ${
-                                        isToday ? "bg-[#F8F5F2]" : ""
-                                      }`}
-                                    >
-                                      <span
-                                        className={`flex items-center gap-3 ${
-                                          isToday
-                                            ? "font-semibold text-[#2A2A2A]"
-                                            : "text-[#6E665F]"
-                                        }`}
-                                      >
-                                        <Clock className="h-4 w-4 text-[#C8A278]" />
-                                        {item.day}
-                                      </span>
-
-                                      <span
-                                        className={`font-medium ${
-                                          item.hours === "Вихідний"
-                                            ? "text-[#B3261E]"
-                                            : isToday
-                                              ? "text-[#4A5D4E]"
-                                              : "text-[#2A2A2A]"
-                                        }`}
-                                      >
-                                        {item.hours}
-                                      </span>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="rounded-[28px] border border-[#E8E1DB] bg-[#FBFAF8] p-5">
-                            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#B08A64]">
-                              Зручності закладу
-                            </p>
-                            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                              {[
-                                { icon: Car, label: "Паркування" },
-                                { icon: Wifi, label: "Wi‑Fi" },
-                                { icon: Users, label: "Можна з дітьми" },
-                              ].map((item) => (
-                                <div
-                                  key={item.label}
-                                  className="flex items-center gap-3 rounded-2xl border border-[#E8E1DB] bg-white px-4 py-3 text-sm text-[#2A2A2A]"
-                                >
-                                  <item.icon className="h-4 w-4 text-[#4CB8B8]" />
-                                  {item.label}
                                 </div>
+                              </div>
+                            )}
+
+                            <div className="grid gap-4 md:grid-cols-2">
+                              {reviews.map((review) => (
+                                <ReviewCard key={review.id} review={review} />
                               ))}
                             </div>
                           </div>
                         </div>
                       </div>
+                    </motion.section>
+                  )}
 
-                      {teamMembers.length > 0 && (
-                        <div className="mt-6 rounded-[28px] border border-[#E8E1DB] bg-[#FBFAF8] p-5">
-                          <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#B08A64]">
-                            Працівники
+                  {displayedPortfolio.length > 0 && mobileTab === "portfolio" && (
+                    <motion.section
+                      key="portfolio"
+                      ref={portfolioRef}
+                      className="scroll-mt-28"
+                      initial={{ opacity: 0, y: 24 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 18 }}
+                      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                    >
+                      <div className="rounded-[30px] p-4 sm:p-6">
+                        <div className="mb-10">
+                          <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.25em] text-amber-600">
+                            Наші роботи
                           </p>
-                          <div className="mt-5 flex gap-5 overflow-x-auto pb-2">
-                            {teamMembers.map((member, idx) => (
-                              <StaffCard
-                                key={member.id || idx}
-                                member={member}
+                          <h2 className="text-2xl font-bold tracking-tight text-stone-800 md:text-4xl">
+                            Портфоліо
+                          </h2>
+                        </div>
+
+                        <div className="columns-2 gap-3 sm:columns-3 sm:gap-4 lg:columns-4">
+                          {displayedPortfolio.map((url, idx) => (
+                            <motion.button
+                              key={url + idx}
+                              type="button"
+                              onClick={() => setPreviewIndex(idx)}
+                              initial={{ opacity: 0, y: 20 }}
+                              whileInView={{ opacity: 1, y: 0 }}
+                              viewport={{ once: true }}
+                              transition={{ delay: idx * 0.05, duration: 0.4 }}
+                              className="group relative mb-3 block w-full cursor-zoom-in overflow-hidden rounded-2xl bg-stone-100 sm:mb-4"
+                            >
+                              <img
+                                src={url}
+                                alt={`Портфоліо ${idx + 1}`}
+                                className={cn(
+                                  "w-full object-cover transition-transform duration-500 group-hover:scale-105",
+                                  idx % 3 === 0
+                                    ? "aspect-[3/4]"
+                                    : idx % 3 === 1
+                                      ? "aspect-square"
+                                      : "aspect-[4/5]",
+                                )}
+                                loading="lazy"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = "none";
+                                }}
                               />
-                            ))}
+                              <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/10" />
+                            </motion.button>
+                          ))}
+                        </div>
+                      </div>
+                    </motion.section>
+                  )}
+
+                  {mobileTab === "details" && (
+                    <motion.section
+                      key="details"
+                      ref={detailsRef}
+                      className="scroll-mt-28"
+                      initial={{ opacity: 0, y: 24 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 18 }}
+                      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                    >
+                      <div className="rounded-[30px] p-4 sm:p-6">
+                        <div className="mb-6">
+                          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-amber-600">
+                            Контакти та інформація
+                          </p>
+                          <h2 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">
+                            Деталі
+                          </h2>
+                        </div>
+
+                        <div className="grid gap-4 lg:grid-cols-[1.15fr,0.85fr]">
+                          <div className="rounded-[28px] border border-stone-200 bg-stone-50 p-5">
+                            <div className="overflow-hidden rounded-[16px] border border-stone-200 bg-white">
+                              <div className="relative h-[220px] bg-[linear-gradient(135deg,#ece5de_0%,#f7f4f1_100%)]">
+                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(74,93,78,0.12),transparent_28%),radial-gradient(circle_at_70%_40%,rgba(200,162,120,0.18),transparent_26%),linear-gradient(0deg,rgba(255,255,255,0.35),rgba(255,255,255,0.35))]" />
+                                <div className="absolute left-1/2 top-1/2 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-stone-800 text-white shadow-xl">
+                                  <MapPin className="h-5 w-5" />
+                                </div>
+                              </div>
+
+                              <div className="flex items-center justify-between gap-4 p-4">
+                                <div className="min-w-0">
+                                  <p className="text-lg font-semibold text-stone-800">
+                                    {name}
+                                  </p>
+                                  <p className="mt-1 text-sm text-stone-600">
+                                    {fullAddress || "Адресу ще не додано"}
+                                  </p>
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={handleCopyAddress}
+                                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-stone-200 bg-white text-stone-600 transition hover:bg-stone-50"
+                                  title={copied ? "Скопійовано" : "Копіювати"}
+                                >
+                                  {copied ? (
+                                    <CheckCheck className="h-4 w-4 text-emerald-700" />
+                                  ) : (
+                                    <Copy className="h-4 w-4" />
+                                  )}
+                                </button>
+                              </div>
+                            </div>
+
+                            {!!description && (
+                              <div className="mt-4 rounded-[24px] border border-stone-200 bg-white p-5">
+                                <p className="text-xs font-bold uppercase tracking-[0.18em] text-amber-700">
+                                  Про нас
+                                </p>
+                                <p className="mt-3 text-sm leading-7 text-stone-600">
+                                  {description}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="space-y-4">
+                            <div className="rounded-[28px] border border-stone-200 bg-stone-50 p-5">
+                              <div className="rounded-[30px] border border-stone-200 bg-white/70 p-6 shadow-[0_10px_30px_rgba(0,0,0,0.04)] backdrop-blur-xl">
+                                <p className="text-xs font-bold uppercase tracking-[0.18em] text-amber-700">
+                                  Графік роботи
+                                </p>
+
+                                <div className="mt-5 space-y-2 text-sm">
+                                  {studioPhone && (
+                                    <a
+                                      href={`tel:${studioPhone}`}
+                                      className="flex items-center justify-between rounded-xl px-3 py-2 transition"
+                                    >
+                                      <span className="flex items-center gap-3 font-medium text-stone-800">
+                                        <Phone className="h-4 w-4 text-amber-600" />
+                                        {studioPhone}
+                                      </span>
+
+                                      <span className="text-emerald-700 text-xs font-semibold">
+                                        Подзвонити
+                                      </span>
+                                    </a>
+                                  )}
+
+                                  {[
+                                    { day: "Понеділок", hours: "10:00 - 20:00" },
+                                    { day: "Вівторок", hours: "10:00 - 20:00" },
+                                    { day: "Середа", hours: "10:00 - 20:00" },
+                                    { day: "Четвер", hours: "10:00 - 20:00" },
+                                    { day: "П’ятниця", hours: "10:00 - 20:00" },
+                                    { day: "Субота", hours: "10:00 - 18:00" },
+                                    { day: "Неділя", hours: "Вихідний" },
+                                  ].map((item, index) => {
+                                    const today = new Date().getDay();
+                                    const dayIndex = index === 6 ? 0 : index + 1;
+                                    const isToday = today === dayIndex;
+
+                                    return (
+                                      <div
+                                        key={item.day}
+                                        className={cn(
+                                          "flex items-center justify-between rounded-xl px-3 py-2 transition",
+                                          isToday ? "bg-stone-100" : "",
+                                        )}
+                                      >
+                                        <span
+                                          className={cn(
+                                            "flex items-center gap-3",
+                                            isToday
+                                              ? "font-semibold text-stone-800"
+                                              : "text-stone-600",
+                                          )}
+                                        >
+                                          <Clock className="h-4 w-4 text-amber-600" />
+                                          {item.day}
+                                        </span>
+
+                                        <span
+                                          className={cn(
+                                            "font-medium",
+                                            item.hours === "Вихідний"
+                                              ? "text-red-700"
+                                              : isToday
+                                                ? "text-emerald-700"
+                                                : "text-stone-800",
+                                          )}
+                                        >
+                                          {item.hours}
+                                        </span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="rounded-[28px] border border-stone-200 bg-stone-50 p-5">
+                              <p className="text-xs font-bold uppercase tracking-[0.18em] text-amber-700">
+                                Зручності закладу
+                              </p>
+                              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                                {[
+                                  { icon: Car, label: "Паркування" },
+                                  { icon: Wifi, label: "Wi-Fi" },
+                                  { icon: Users, label: "Можна з дітьми" },
+                                ].map((item) => (
+                                  <div
+                                    key={item.label}
+                                    className="flex items-center gap-3 rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-800"
+                                  >
+                                    <item.icon className="h-4 w-4 text-emerald-700" />
+                                    {item.label}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
                           </div>
                         </div>
-                      )}
-                    </div>
-                  </motion.section>
-                )}
-              </div>
-            </div>
-          </div>
-        </section>
 
-        <AnimatePresence>
-          {openBooking && (
-            <BookingModal
-              open={openBooking}
-              title={name}
-              onClose={() => {
-                setOpenBooking(false);
+                        {teamMembers.length > 0 && (
+                          <div className="mt-6 rounded-[28px] border border-stone-200 bg-stone-50 p-5">
+                            <p className="text-xs font-bold uppercase tracking-[0.18em] text-amber-700">
+                              Працівники
+                            </p>
+                            <div className="mt-5 flex gap-5 overflow-x-auto pb-2">
+                              {teamMembers.map((member, idx) => (
+                                <StaffCard key={member.id || idx} member={member} />
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </motion.section>
+                  )}
+                </div>
+              </SectionShell>
+            </div>
+          </section>
+
+          <div className="fixed bottom-4 left-4 right-4 z-40 lg:hidden">
+            <button
+              type="button"
+              onClick={() => {
                 setPreselectedService(null);
+                setOpenBooking(true);
               }}
+              className="w-full rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-700 px-6 py-4 text-sm font-bold text-white shadow-[0_12px_28px_rgba(74,93,78,0.28)] transition-all hover:from-emerald-700 hover:to-emerald-800"
             >
-              <StudioBookingWidget
-                studio={studio}
-                preselectedService={preselectedService}
-                onCancel={() => {
+              Забронювати онлайн
+            </button>
+          </div>
+
+          <AnimatePresence>
+            {openBooking && (
+              <BookingModal
+                open={openBooking}
+                title={name}
+                onClose={() => {
                   setOpenBooking(false);
                   setPreselectedService(null);
                 }}
-                onSuccess={(data) => {
-                  setSuccessData(data);
-                  setOpenBooking(false);
-                }}
+              >
+                <StudioBookingWidget
+                  studio={studio}
+                  preselectedService={preselectedService}
+                  onCancel={() => {
+                    setOpenBooking(false);
+                    setPreselectedService(null);
+                  }}
+                  onSuccess={(data) => {
+                    setSuccessData(data);
+                    setOpenBooking(false);
+                  }}
+                />
+              </BookingModal>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {previewIndex !== null && (
+              <ImageLightbox
+                open={previewIndex !== null}
+                images={displayedPortfolio}
+                startIndex={previewIndex}
+                onClose={() => setPreviewIndex(null)}
               />
-            </BookingModal>
-          )}
-        </AnimatePresence>
+            )}
+          </AnimatePresence>
 
-        <AnimatePresence>
-          {previewIndex !== null && (
-            <ImageLightbox
-              open={previewIndex !== null}
-              images={displayedPortfolio}
-              startIndex={previewIndex}
-              onClose={() => setPreviewIndex(null)}
-            />
-          )}
-        </AnimatePresence>
-
-        <AnimatePresence>
-          {successData && (
-            <motion.div
-              initial={{ opacity: 0, y: 40, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 40, scale: 0.95 }}
-              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-              className="fixed bottom-4 left-4 right-4 z-[200] mx-auto max-w-md rounded-2xl border border-[#E0DCD8] bg-white p-5 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.15)] sm:bottom-8 sm:left-auto sm:right-8"
-            >
-              <div className="flex items-start gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#4A5D4E]/10">
-                  <CheckCheck className="h-5 w-5 text-[#4A5D4E]" />
+          <AnimatePresence>
+            {successData && (
+              <motion.div
+                initial={{ opacity: 0, y: 40, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 40, scale: 0.95 }}
+                transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                className="fixed bottom-4 left-4 right-4 z-[200] mx-auto max-w-md rounded-2xl border border-stone-200 bg-white p-5 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.15)] sm:bottom-8 sm:left-auto sm:right-8"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100">
+                    <CheckCheck className="h-5 w-5 text-emerald-700" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold text-stone-800">
+                      Запис створено!
+                    </p>
+                    <p className="mt-1 text-xs text-stone-500">
+                      {successData.serviceName} · {successData.date} о{" "}
+                      {successData.time}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSuccessData(null)}
+                    className="flex h-7 w-7 items-center justify-center rounded-lg text-stone-500 transition-colors duration-200 hover:bg-stone-100"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-bold text-[#2A2A2A]">
-                    Запис створено!
-                  </p>
-                  <p className="mt-1 text-xs text-[#7A7A7A]">
-                    {successData.serviceName} · {successData.date} о{" "}
-                    {successData.time}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setSuccessData(null)}
-                  className="flex h-7 w-7 items-center justify-center rounded-lg text-[#7A7A7A] transition-colors duration-200 hover:bg-[#F0EEEA]"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
-    </div>
     </div>
   );
 }

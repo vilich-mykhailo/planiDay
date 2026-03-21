@@ -1,5 +1,21 @@
+// Header.jsx
 import { Link, NavLink, useLocation, useSearchParams } from "react-router-dom";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import {
+  Sparkles,
+  User,
+  Heart,
+  CalendarDays,
+  LayoutDashboard,
+  Building2,
+  BriefcaseBusiness,
+  Clock3,
+  Users,
+  LogOut,
+  Menu,
+  X,
+  Settings2,
+} from "lucide-react";
 
 function cx(...a) {
   return a.filter(Boolean).join(" ");
@@ -36,13 +52,15 @@ function useRole() {
 }
 
 const navLinkBase =
-  "rounded-[16px] px-3 py-2.5 text-sm font-semibold transition-all duration-200";
-const navLinkActive =
-  "bg-[#4A5D4E] text-white shadow-[0_10px_22px_rgba(74,93,78,0.18)]";
-const navLinkIdle =
-  "text-[#6B625A] hover:bg-[#FAF7F4] hover:text-[#1F2A22]";
+  "inline-flex items-center gap-2 rounded-2xl px-3.5 py-2.5 text-sm font-semibold transition-all duration-200";
 
-function HeaderLink({ to, children, onClick }) {
+const navLinkActive =
+  "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-[0_10px_24px_rgba(74,93,78,0.18)]";
+
+const navLinkIdle =
+  "text-stone-600 hover:bg-stone-50 hover:text-stone-800";
+
+function HeaderLink({ to, children, icon, onClick }) {
   return (
     <NavLink
       to={to}
@@ -51,6 +69,7 @@ function HeaderLink({ to, children, onClick }) {
         cx(navLinkBase, isActive ? navLinkActive : navLinkIdle)
       }
     >
+      {icon}
       {children}
     </NavLink>
   );
@@ -63,11 +82,12 @@ function ButtonLink({
   onClick,
   disabled,
   className = "",
+  icon,
 }) {
   const styles =
     variant === "primary"
-      ? "bg-[#4A5D4E] text-white shadow-[0_10px_24px_rgba(74,93,78,0.22)] hover:bg-[#3F5143]"
-      : "border border-[#E7DED6] bg-white text-[#6B625A] hover:bg-[#FAF7F4] hover:text-[#1F2A22]";
+      ? "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-lg shadow-emerald-500/20 hover:from-emerald-700 hover:to-emerald-800"
+      : "border border-stone-200 bg-white text-stone-700 hover:bg-stone-50 hover:text-stone-800";
 
   const disabledStyles = "opacity-50 pointer-events-none cursor-not-allowed";
 
@@ -77,27 +97,39 @@ function ButtonLink({
       onClick={disabled ? undefined : onClick}
       aria-disabled={disabled ? "true" : "false"}
       tabIndex={disabled ? -1 : 0}
-      className={[
-        "inline-flex items-center justify-center rounded-[16px] px-4 py-2.5 text-sm font-extrabold transition",
+      className={cx(
+        "inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-bold transition-all duration-200",
         styles,
         disabled ? disabledStyles : "",
         className,
-      ].join(" ")}
+      )}
     >
+      {icon}
       {children}
     </Link>
+  );
+}
+
+function MobileNavIcon({ children, active }) {
+  return (
+    <span
+      className={cx(
+        "inline-flex h-9 w-9 items-center justify-center rounded-xl border transition-all duration-200",
+        active
+          ? "border-white/20 bg-white/10 text-white"
+          : "border-stone-200 bg-white text-stone-500",
+      )}
+    >
+      {children}
+    </span>
   );
 }
 
 export default function Header() {
   const [open, setOpen] = useState(false);
   const location = useLocation();
-
   const isLogin = location.pathname === "/login";
-  const isRegister = location.pathname === "/register";
   const isOwnerLogin = location.pathname === "/login-owner";
-  const isOwnerRegister = location.pathname === "/register-owner";
-
   const role = useRole();
 
   const handleLogout = () => {
@@ -120,14 +152,22 @@ export default function Header() {
     if (role === "client") {
       return {
         links: [
-          { to: "/", label: "Головна" },
-          { to: "/profile", label: "Мої дані" },
-          { to: "/bookings", label: "Мої записи" },
-          { to: "/favourites", label: "Улюблені" },
+          { to: "/", label: "Головна", icon: <Sparkles className="h-4 w-4" /> },
+          { to: "/profile", label: "Мої дані", icon: <User className="h-4 w-4" /> },
+          {
+            to: "/bookings",
+            label: "Мої записи",
+            icon: <CalendarDays className="h-4 w-4" />,
+          },
+          {
+            to: "/favourites",
+            label: "Улюблені",
+            icon: <Heart className="h-4 w-4" />,
+          },
         ],
         actions: (
           <div className="hidden items-center gap-2 md:flex">
-            <ButtonLink to="/" variant="secondary" onClick={handleLogout}>
+            <ButtonLink to="/" variant="secondary" onClick={handleLogout} icon={<LogOut className="h-4 w-4" />}>
               Вийти
             </ButtonLink>
           </div>
@@ -140,68 +180,36 @@ export default function Header() {
         links: [],
         actions: (
           <div className="hidden items-center gap-2 md:flex">
-            <ButtonLink to="/dashboard/studio" className="flex items-center">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-4 w-4"
-              >
-                <circle cx="12" cy="12" r="3" />
-                <path d="M19.4 15a1.7 1.7 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1v.1a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-.4-1 1.7 1.7 0 0 0-1-.6 1.7 1.7 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1-.4h-.1a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1-.4 1.7 1.7 0 0 0 .6-1 1.7 1.7 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6c.3 0 .6-.1 1-.4a1.7 1.7 0 0 0 .4-1V3a2 2 0 1 1 4 0v.1c0 .4.1.7.4 1 .4.3.7.4 1 .4.6 0 1.2-.2 1.8-.7l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06c-.5.6-.7 1.2-.7 1.8 0 .3.1.6.4 1 .3.4.6.7 1 .7h.1a2 2 0 1 1 0 4h-.1c-.4 0-.7.1-1 .4-.3.4-.4.7-.4 1z" />
-              </svg>
-              &nbsp;&nbsp;Керувати студією
+            <ButtonLink
+              to="/dashboard/studio"
+              icon={<Settings2 className="h-4 w-4" />}
+            >
+              Керувати студією
             </ButtonLink>
           </div>
         ),
       };
     }
 
-    const ownerAuthScreen = isOwnerLogin || isOwnerRegister;
-
     return {
       links: [],
       actions: (
         <div className="hidden items-center gap-2 md:flex">
-          {ownerAuthScreen ? (
-            <ButtonLink
-              to="/register-owner"
-              variant="primary"
-              disabled={isOwnerRegister}
-            >
-              Зареєструватись
-            </ButtonLink>
-          ) : (
-            <ButtonLink to="/login" variant="primary" disabled={isLogin}>
-              Увійти як клієнт
-            </ButtonLink>
-          )}
+          <ButtonLink to="/login" variant="primary" disabled={isLogin}>
+            Увійти як клієнт
+          </ButtonLink>
 
-          {isLogin || isRegister ? (
-            <ButtonLink
-              to="/register"
-              variant="secondary"
-              disabled={isRegister}
-            >
-              Зареєструватись
-            </ButtonLink>
-          ) : (
-            <ButtonLink
-              to="/login-owner"
-              variant="secondary"
-              disabled={isOwnerLogin}
-            >
-              Увійти як власник
-            </ButtonLink>
-          )}
+          <ButtonLink
+            to="/login-owner"
+            variant="secondary"
+            disabled={isOwnerLogin}
+          >
+            Увійти як власник
+          </ButtonLink>
         </div>
       ),
     };
-  }, [role, isLogin, isRegister, isOwnerLogin, isOwnerRegister]);
+  }, [role, isLogin, isOwnerLogin]);
 
   const mobileItems = useMemo(() => {
     if (role === "client") {
@@ -209,10 +217,14 @@ export default function Header() {
         title: "Меню",
         subtitle: "Клієнтський режим",
         links: [
-          { to: "/", label: "Головна" },
-          { to: "/profile", label: "Мої дані" },
-          { to: "/bookings", label: "Мої записи" },
-          { to: "/favourites", label: "Улюблені" },
+          { to: "/", label: "Головна", icon: <Sparkles className="h-4 w-4" /> },
+          { to: "/profile", label: "Мої дані", icon: <User className="h-4 w-4" /> },
+          {
+            to: "/bookings",
+            label: "Мої записи",
+            icon: <CalendarDays className="h-4 w-4" />,
+          },
+          { to: "/favourites", label: "Улюблені", icon: <Heart className="h-4 w-4" /> },
         ],
         logout: true,
       };
@@ -223,12 +235,24 @@ export default function Header() {
         title: "Панель керування",
         subtitle: "Кабінет",
         links: [
-          { to: "/dashboard", label: "Головна" },
-          { to: "/dashboard/studio", label: "Студія" },
-          { to: "/dashboard/services", label: "Послуги" },
-          { to: "/dashboard/schedule", label: "Графік роботи" },
-          { to: "/dashboard/bookings", label: "Записи" },
-          { to: "/dashboard/masters", label: "Майстри" },
+          { to: "/dashboard", label: "Головна", icon: <LayoutDashboard className="h-4 w-4" /> },
+          { to: "/dashboard/studio", label: "Студія", icon: <Building2 className="h-4 w-4" /> },
+          {
+            to: "/dashboard/services",
+            label: "Послуги",
+            icon: <BriefcaseBusiness className="h-4 w-4" />,
+          },
+          {
+            to: "/dashboard/schedule",
+            label: "Графік роботи",
+            icon: <Clock3 className="h-4 w-4" />,
+          },
+          {
+            to: "/dashboard/bookings",
+            label: "Записи",
+            icon: <CalendarDays className="h-4 w-4" />,
+          },
+          { to: "/dashboard/masters", label: "Майстри", icon: <Users className="h-4 w-4" /> },
         ],
         logout: true,
       };
@@ -238,8 +262,12 @@ export default function Header() {
       title: "Меню",
       subtitle: "Гостьовий режим",
       links: [
-        { to: "/login", label: "Я клієнт" },
-        { to: "/login-owner", label: "Я власник" },
+        { to: "/login", label: "Я клієнт", icon: <User className="h-4 w-4" /> },
+        {
+          to: "/login-owner",
+          label: "Я власник",
+          icon: <Settings2 className="h-4 w-4" />,
+        },
       ],
       logout: false,
     };
@@ -270,30 +298,33 @@ export default function Header() {
       <div className="mx-auto max-w-6xl px-4">
         <div
           className="
-            rounded-[28px]
-            border border-[#EEEEEE]
-            bg-[#FFFCF8]/92
+            overflow-hidden rounded-[28px]
+            border border-stone-200/70
+            bg-white/90
             backdrop-blur-md
             shadow-[0_10px_30px_rgba(93,64,55,0.08)]
           "
         >
+          <div className="h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-70" />
+
           <div className="flex h-16 items-center justify-between gap-3 px-3 sm:px-4">
             <Link
               to="/"
-              className="flex items-center gap-2 rounded-[18px] px-2 py-1.5 transition hover:bg-[#FAF7F4]"
+              className="flex items-center gap-2 rounded-[18px] px-2 py-1.5 transition hover:bg-stone-50"
               aria-label="Planiday"
             >
-              <span className="grid h-9 w-9 place-items-center rounded-[18px] bg-[#4A5D4E] text-sm font-extrabold text-white shadow-[0_8px_20px_rgba(74,93,78,0.22)]">
+              <span className="grid h-9 w-9 place-items-center rounded-[18px] bg-gradient-to-r from-emerald-600 to-emerald-700 text-sm font-extrabold text-white shadow-[0_8px_20px_rgba(74,93,78,0.22)]">
                 P
               </span>
-              <span className="text-sm font-extrabold tracking-tight text-[#1F2A22] sm:text-base">
-                Plani<span className="text-[#C89D72]">Day</span>
+
+              <span className="text-sm font-extrabold tracking-tight text-stone-800 sm:text-base">
+                Plani<span className="text-amber-600">Day</span>
               </span>
             </Link>
 
             <nav className="hidden items-center gap-1 md:flex">
               {desktopItems.links?.map((i) => (
-                <HeaderLink key={i.to} to={i.to}>
+                <HeaderLink key={i.to} to={i.to} icon={i.icon}>
                   {i.label}
                 </HeaderLink>
               ))}
@@ -304,15 +335,11 @@ export default function Header() {
             <button
               type="button"
               onClick={() => setOpen((v) => !v)}
-              className="inline-flex items-center justify-center rounded-[16px] border border-[#EEEEEE] bg-white px-3 py-2 text-sm font-bold text-[#1F2A22] transition hover:bg-[#FAF7F4] md:hidden"
+              className="inline-flex items-center justify-center rounded-2xl border border-stone-200 bg-white p-2.5 text-stone-800 transition hover:bg-stone-50 md:hidden"
               aria-label="Menu"
               aria-expanded={open}
             >
-              {open ? (
-                <span className="text-lg leading-none">×</span>
-              ) : (
-                <span className="text-lg leading-none">≡</span>
-              )}
+              {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
           </div>
         </div>
@@ -327,7 +354,7 @@ export default function Header() {
       >
         <div
           className={cx(
-            "absolute inset-0 bg-[rgba(32,24,18,0.38)] transition-opacity duration-300",
+            "absolute inset-0 bg-stone-900/35 backdrop-blur-[2px] transition-opacity duration-300",
             open ? "opacity-100" : "opacity-0",
           )}
           onClick={() => setOpen(false)}
@@ -340,18 +367,20 @@ export default function Header() {
             open ? "translate-y-0 opacity-100" : "-translate-y-3 opacity-0",
           )}
         >
-          <div className="rounded-[24px] border border-[#EEEEEE] bg-[#FFFCF8] p-4 shadow-[0_20px_60px_rgba(93,64,55,0.14)]">
-            <div className="mb-3 border-b border-[#F1E7DE] px-2 pb-[14px] pt-[10px] text-center">
-              <div className="inline-flex items-center rounded-full border border-[#EEEEEE] bg-[#F8F4EF] px-[10px] py-[6px] text-xs font-extrabold uppercase tracking-[0.12em] text-[#7B6D61]">
+          <div className="overflow-hidden rounded-[24px] border border-stone-200 bg-white shadow-[0_20px_60px_rgba(93,64,55,0.14)]">
+            <div className="h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-70" />
+
+            <div className="mb-3 border-b border-stone-100 px-4 pb-4 pt-4 text-center">
+              <div className="inline-flex items-center rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-amber-700">
                 {mobileItems.subtitle || "Кабінет"}
               </div>
 
-              <h2 className="mb-1 mt-[10px] text-[18px] font-extrabold leading-[1.2] tracking-[-0.02em] text-[#1F2A22]">
+              <h2 className="mt-3 text-[18px] font-bold leading-[1.2] tracking-[-0.02em] text-stone-800">
                 {mobileItems.title || "Панель керування"}
               </h2>
             </div>
 
-            <nav className="flex flex-col gap-[8px] p-1">
+            <nav className="flex flex-col gap-2 p-4 pt-1">
               {mobileItems.links.map((i) => (
                 <NavLink
                   key={i.to}
@@ -362,20 +391,25 @@ export default function Header() {
                     setOpen(false);
                   }}
                   className={({ isActive }) =>
-                    [
-                      "relative flex items-center rounded-[16px] border px-3 py-2.5 text-sm font-semibold transition-all duration-200",
+                    cx(
+                      "group flex items-center gap-3 rounded-2xl border px-3.5 py-3 text-sm font-semibold transition-all duration-200",
                       isActive
-                        ? "border-[#4A5D4E] bg-[#4A5D4E] text-white shadow-[0_10px_22px_rgba(74,93,78,0.18)] before:absolute before:-left-2 before:top-1/2 before:h-[22px] before:w-1 before:-translate-y-1/2 before:rounded-full before:bg-[#4A5D4E]"
-                        : "border-transparent bg-transparent text-[#6B625A] hover:border-[#EEEEEE] hover:bg-[#FAF7F4] hover:text-[#1F2A22]",
-                    ].join(" ")
+                        ? "border-emerald-700 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-[0_10px_24px_rgba(74,93,78,0.18)]"
+                        : "border-transparent bg-transparent text-stone-600 hover:border-stone-200 hover:bg-stone-50 hover:text-stone-800",
+                    )
                   }
                 >
-                  {i.label}
+                  {({ isActive }) => (
+                    <>
+                      <MobileNavIcon active={isActive}>{i.icon}</MobileNavIcon>
+                      <span>{i.label}</span>
+                    </>
+                  )}
                 </NavLink>
               ))}
 
               {mobileItems.logout && (
-                <div className="mt-3 border-t border-[#EEEEEE] pt-3">
+                <div className="mt-3 border-t border-stone-100 pt-3">
                   <button
                     type="button"
                     onClick={() => {
@@ -383,13 +417,15 @@ export default function Header() {
                       setOpen(false);
                     }}
                     className="
-                      inline-flex w-full items-center justify-center rounded-[16px] border border-[#F0D6D1]
-                      bg-[#FFF3F1] px-4 py-2.5 text-sm font-semibold text-[#B2504A] transition-all duration-150
-                      hover:bg-[#FDE8E4]
-                      active:translate-y-[1px]
-                      focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#B2504A]/15
+                      inline-flex w-full items-center justify-center gap-2 rounded-2xl
+                      border border-red-200 bg-gradient-to-r from-red-50 to-rose-50
+                      px-4 py-3 text-sm font-semibold text-red-600 transition-all duration-150
+                      hover:from-red-100 hover:to-rose-100
+                      active:scale-[0.98]
+                      focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-500/10
                     "
                   >
+                    <LogOut className="h-4 w-4" />
                     Вихід
                   </button>
                 </div>

@@ -1,17 +1,42 @@
-// RegisterOwner.jsx //
+// RegisterOwner.jsx
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { api } from "../api/http"; // ✅ підкоригуй шлях якщо треба
+import {
+  Sparkles,
+  Mail,
+  Lock,
+  Phone,
+  Building2,
+  ArrowRight,
+} from "lucide-react";
+import { api } from "../api/http";
 
-function Input({ label, ...props }) {
+function cn(...classes) {
+  return classes.filter(Boolean).join(" ");
+}
+
+function Input({ label, icon, error, ...props }) {
   return (
     <label className="block">
-      <span className="text-sm font-semibold text-gray-900">{label}</span>
+      <span className="text-sm font-medium text-stone-700">{label}</span>
 
-      <input
-        {...props}
-        className="mt-2 w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm font-semibold outline-none focus:border-black focus:ring-2 focus:ring-black/30"
-      />
+      <div
+        className={cn(
+          "mt-2 flex items-center gap-3 rounded-2xl border bg-white px-4 py-3 transition-all",
+          error
+            ? "border-red-200 bg-red-50/40 focus-within:border-red-300 focus-within:ring-4 focus-within:ring-red-100"
+            : "border-stone-200 focus-within:border-amber-400 focus-within:ring-4 focus-within:ring-amber-400/10",
+        )}
+      >
+        {icon && <span className="text-stone-400">{icon}</span>}
+
+        <input
+          {...props}
+          className="w-full bg-transparent text-sm font-medium text-stone-800 outline-none placeholder:text-stone-400"
+        />
+      </div>
+
+      {error && <p className="mt-2 text-xs font-medium text-red-500">{error}</p>}
     </label>
   );
 }
@@ -41,7 +66,6 @@ export default function RegisterOwner() {
     try {
       setLoading(true);
 
-      // ✅ Реєстрація owner в БД
       const data = await api("/auth/owner/register", {
         method: "POST",
         body: {
@@ -58,7 +82,6 @@ export default function RegisterOwner() {
       window.dispatchEvent(new Event("auth-changed"));
 
       navigate("/dashboard/studio");
-
       navigate("/dashboard/studio");
     } catch (err) {
       setError(err?.message || "Помилка реєстрації");
@@ -68,92 +91,141 @@ export default function RegisterOwner() {
   }
 
   return (
-    <main className="min-h-[100dvh]">
-      <div className="mx-auto max-w-md px-4 py-10">
-        <div className="text-center">
-          <h1 className="mt-12 text-2xl font-extrabold text-gray-900">
-            Створити салон
-          </h1>
-
-          <p className="mt-2 text-sm text-gray-600">
-            Почніть приймати онлайн-записи вже сьогодні
-          </p>
-        </div>
-
-        <div className="mt-8 rounded-3xl bg-white border border-gray-200 p-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <Input
-              label="Назва салону"
-              placeholder="Beauty Studio"
-              value={form.name}
-              onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-            />
-
-            <Input
-              label="Email"
-              type="email"
-              placeholder="studio@email.com"
-              value={form.email}
-              onChange={(e) =>
-                setForm((p) => ({ ...p, email: e.target.value }))
-              }
-            />
-
-            <Input
-              label="Телефон"
-              type="tel"
-              placeholder="+380..."
-              value={form.phone}
-              onChange={(e) =>
-                setForm((p) => ({ ...p, phone: e.target.value }))
-              }
-            />
-
-            <Input
-              label="Пароль"
-              type="password"
-              placeholder="Мінімум 6 символів"
-              value={form.password}
-              onChange={(e) =>
-                setForm((p) => ({ ...p, password: e.target.value }))
-              }
-            />
-
-            <label className="flex gap-2 text-sm">
-              <input type="checkbox" required />
-              <span>
-                Я погоджуюся з{" "}
-                <Link to="/terms" className="font-bold hover:underline">
-                  умовами
-                </Link>{" "}
-                та{" "}
-                <Link to="/privacy" className="font-bold hover:underline">
-                  політикою конфіденційності
-                </Link>
+    <main className="min-h-[100dvh] mt-10 bg-gradient-to-br from-stone-50 via-amber-50/30 to-orange-50/20">
+      <div className="mx-auto max-w-6xl px-4 py-10 sm:py-14">
+        <div className="mx-auto max-w-md">
+          {/* header */}
+          <div className="text-center">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-4 py-1.5">
+              <Sparkles className="h-4 w-4 text-amber-600" />
+              <span className="text-xs font-bold uppercase tracking-wider text-amber-700">
+                Кабінет власника
               </span>
-            </label>
+            </div>
 
-            {error && (
-              <div className="text-sm text-red-600 font-semibold">{error}</div>
-            )}
+            <h1 className="text-3xl font-black tracking-tight text-stone-800 sm:text-4xl">
+              Створити салон
+            </h1>
 
-            <button
-              disabled={loading}
-              className="w-full rounded-2xl bg-black py-3 text-sm font-extrabold text-white hover:bg-gray-900 disabled:opacity-60"
-            >
-              {loading ? "Створення..." : "Створити салон"}
-            </button>
-          </form>
-
-          <div className="mt-6 text-center text-sm text-gray-600">
-            Вже маєте акаунт?{" "}
-            <Link
-              to="/login-owner"
-              className="font-extrabold text-black hover:underline"
-            >
-              Увійти
-            </Link>
+            <p className="mt-3 text-sm leading-6 text-stone-600">
+              Почніть приймати онлайн-записи вже сьогодні
+            </p>
           </div>
+
+          {/* card */}
+          <div className="mt-8 overflow-hidden rounded-3xl border border-stone-200/60 bg-white shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]">
+            <div className="h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-70" />
+
+            <div className="p-6 sm:p-7">
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <Input
+                  label="Назва салону"
+                  placeholder="Beauty Studio"
+                  value={form.name}
+                  error={error ? true : false}
+                  icon={<Building2 className="h-4 w-4" />}
+                  onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+                />
+
+                <Input
+                  label="Email"
+                  type="email"
+                  placeholder="studio@email.com"
+                  value={form.email}
+                  error={error ? true : false}
+                  icon={<Mail className="h-4 w-4" />}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, email: e.target.value }))
+                  }
+                />
+
+                <Input
+                  label="Телефон"
+                  type="tel"
+                  placeholder="+380..."
+                  value={form.phone}
+                  error={error ? true : false}
+                  icon={<Phone className="h-4 w-4" />}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, phone: e.target.value }))
+                  }
+                />
+
+                <Input
+                  label="Пароль"
+                  type="password"
+                  placeholder="Мінімум 6 символів"
+                  value={form.password}
+                  error={error ? true : false}
+                  icon={<Lock className="h-4 w-4" />}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, password: e.target.value }))
+                  }
+                />
+
+                <label className="flex items-start gap-2 text-sm text-stone-600">
+                  <input
+                    type="checkbox"
+                    required
+                    className="mt-0.5 h-4 w-4 rounded border-stone-300 text-emerald-600 focus:ring-emerald-500"
+                  />
+                  <span>
+                    Я погоджуюся з{" "}
+                    <Link
+                      to="/terms"
+                      className="font-semibold text-stone-800 transition hover:text-emerald-700 hover:underline"
+                    >
+                      умовами
+                    </Link>{" "}
+                    та{" "}
+                    <Link
+                      to="/privacy"
+                      className="font-semibold text-stone-800 transition hover:text-emerald-700 hover:underline"
+                    >
+                      політикою конфіденційності
+                    </Link>
+                  </span>
+                </label>
+
+                {error && (
+                  <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                    {error}
+                  </div>
+                )}
+
+                <button
+                  disabled={loading}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-700 px-5 py-3.5 text-sm font-bold text-white shadow-lg shadow-emerald-500/20 transition-all hover:from-emerald-700 hover:to-emerald-800 disabled:opacity-60"
+                >
+                  {loading ? (
+                    "Створення..."
+                  ) : (
+                    <>
+                      Створити салон
+                      <ArrowRight className="h-4 w-4" />
+                    </>
+                  )}
+                </button>
+              </form>
+
+              <div className="mt-6 border-t border-stone-100 pt-5 text-center">
+                <p className="text-sm text-stone-600">
+                  Вже маєте акаунт?{" "}
+                  <Link
+                    to="/login-owner"
+                    className="font-bold text-stone-800 transition hover:text-emerald-700 hover:underline"
+                  >
+                    Увійти
+                  </Link>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <p className="mt-4 text-center text-xs leading-5 text-stone-500">
+            Після реєстрації ви зможете налаштувати профіль студії, послуги,
+            графік роботи та прийом онлайн-записів.
+          </p>
         </div>
       </div>
     </main>

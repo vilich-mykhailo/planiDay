@@ -12,6 +12,7 @@
     "tw:init": "node ./node_modules/tailwindcss/dist/cli.js init -p"
   },
   "dependencies": {
+    "@radix-ui/react-slider": "^1.3.6",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.35.2",
     "lucide-react": "^0.577.0",

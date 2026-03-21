@@ -1,9 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 /* eslint-disable no-unused-vars */
 import { motion, AnimatePresence } from "framer-motion";
-import { Clock, Check, ChevronRight } from "lucide-react";
+import { Clock, Check, ChevronRight, Sparkles } from "lucide-react";
 import Calendar from "./Calendar";
 import BookingCustomerForm from "./BookingCustomerForm";
+
+function cn(...classes) {
+  return classes.filter(Boolean).join(" ");
+}
 
 function timeToMinutes(t) {
   const [hh, mm] = String(t || "00:00").split(":").map(Number);
@@ -160,7 +164,9 @@ function StudioBookingWidgetInner({
     if (!visibleServices.length) return null;
 
     const wantedId = preselectedService?.serviceId;
-    const exists = wantedId && visibleServices.some((s) => String(s.id) === String(wantedId));
+    const exists =
+      wantedId &&
+      visibleServices.some((s) => String(s.id) === String(wantedId));
 
     return exists ? wantedId : (visibleServices[0]?.id ?? null);
   }, [visibleServices, preselectedService?.serviceId]);
@@ -172,7 +178,9 @@ function StudioBookingWidgetInner({
   });
 
   const [step, setStep] = useState("pick");
-  const [selectedServiceId, setSelectedServiceId] = useState(() => defaultServiceId);
+  const [selectedServiceId, setSelectedServiceId] = useState(
+    () => defaultServiceId,
+  );
   const [selectedTime, setSelectedTime] = useState(null);
   const [form, setForm] = useState({ name: "", phone: "" });
 
@@ -181,12 +189,12 @@ function StudioBookingWidgetInner({
 
   const selectedDateStr = useMemo(
     () => (selectedDate ? formatDateLocal(selectedDate) : null),
-    [selectedDate]
+    [selectedDate],
   );
 
   const dayKey = useMemo(
     () => (selectedDate ? getDayKeyFromDateObj(selectedDate) : null),
-    [selectedDate]
+    [selectedDate],
   );
 
   const isDayEnabled = useMemo(() => {
@@ -219,7 +227,7 @@ function StudioBookingWidgetInner({
           `${import.meta.env.VITE_API_URL}/bookings/studio/${studio.id}/busy?date=${encodeURIComponent(selectedDateStr)}`,
           {
             headers: token ? { Authorization: `Bearer ${token}` } : {},
-          }
+          },
         );
 
         const data = await res.json().catch(() => null);
@@ -254,7 +262,7 @@ function StudioBookingWidgetInner({
 
   const disabledDays = useMemo(() => {
     const enabledKeys = new Set(
-      Object.keys(schedule || {}).filter((k) => schedule?.[k]?.enabled)
+      Object.keys(schedule || {}).filter((k) => schedule?.[k]?.enabled),
     );
 
     return (date) => {
@@ -272,8 +280,9 @@ function StudioBookingWidgetInner({
   }, [schedule]);
 
   const selectedService = useMemo(
-    () => services.find((s) => String(s.id) === String(selectedServiceId)) || null,
-    [services, selectedServiceId]
+    () =>
+      services.find((s) => String(s.id) === String(selectedServiceId)) || null,
+    [services, selectedServiceId],
   );
 
   useEffect(() => {
@@ -310,13 +319,15 @@ function StudioBookingWidgetInner({
             name: form.name,
             phone: form.phone,
           }),
-        }
+        },
       );
 
       const data = await res.json().catch(() => null);
 
       if (!res.ok) {
-        throw new Error(data?.message || `Create booking failed (${res.status})`);
+        throw new Error(
+          data?.message || `Create booking failed (${res.status})`,
+        );
       }
 
       if (onSuccess) {
@@ -357,63 +368,55 @@ function StudioBookingWidgetInner({
   return (
     <div className="flex h-full flex-col" data-testid="booking-widget">
       <div className="mb-8 flex items-center gap-3">
-        {["Послуга", "Дата & Час"].map((label, i) => (
-          <div key={label} className="flex items-center gap-2">
-            <div
-              className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-colors duration-300 ${
-                i === 0
-                  ? selectedServiceId
-                    ? "bg-[#4A5D4E] text-white"
-                    : "bg-[#C8A278] text-white"
-                  : selectedTime
-                    ? "bg-[#4A5D4E] text-white"
-                    : "bg-[#E0DCD8] text-[#7A7A7A]"
-              }`}
-            >
-              {(i === 0 && selectedServiceId) || (i === 1 && selectedTime) ? (
-                <Check className="h-3.5 w-3.5" />
-              ) : (
-                i + 1
-              )}
+        {["Послуга", "Дата & Час"].map((label, i) => {
+          const done =
+            (i === 0 && selectedServiceId) || (i === 1 && selectedTime);
+
+          return (
+            <div key={label} className="flex items-center gap-2">
+              <div
+                className={cn(
+                  "flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-colors duration-300",
+                  done
+                    ? "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white"
+                    : i === 0
+                      ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white"
+                      : "bg-stone-200 text-stone-500",
+                )}
+              >
+                {done ? <Check className="h-3.5 w-3.5" /> : i + 1}
+              </div>
+
+              <span
+                className={cn(
+                  "text-xs font-semibold tracking-wide",
+                  done || i === 0 ? "text-stone-800" : "text-stone-500",
+                )}
+              >
+                {label}
+              </span>
+
+              {i === 0 && <ChevronRight className="h-3.5 w-3.5 text-stone-300" />}
             </div>
-
-            <span
-              className={`text-xs font-semibold tracking-wide ${
-                i === 0
-                  ? "text-[#2A2A2A]"
-                  : selectedTime
-                    ? "text-[#2A2A2A]"
-                    : "text-[#7A7A7A]"
-              }`}
-            >
-              {label}
-            </span>
-
-            {i === 0 && <ChevronRight className="h-3.5 w-3.5 text-[#D0CCC8]" />}
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="flex-1 space-y-8">
         <section data-testid="booking-services-section">
           <div className="mb-4">
-            <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.25em] text-[#C8A278]">
+            <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.25em] text-amber-600">
               Крок 1
             </p>
-            <h2
-              className="text-lg font-semibold text-[#2A2A2A]"
-              style={{ fontFamily: "var(--font-heading)" }}
-            >
-              Оберіть послугу
-            </h2>
+            <h2 className="text-lg font-bold text-stone-800">Оберіть послугу</h2>
           </div>
 
           {visibleServices.length === 0 ? (
-            <div className="rounded-2xl bg-[#F0EEEA] p-5 text-sm text-[#7A7A7A]">
+            <div className="rounded-2xl border border-stone-200 bg-stone-100 p-5 text-sm text-stone-500">
               Послуги ще не додані.
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               {visibleServices.map((service) => {
                 const active = String(service.id) === String(selectedServiceId);
 
@@ -428,30 +431,30 @@ function StudioBookingWidgetInner({
                       setSelectedTime(null);
                     }}
                     data-testid={`booking-service-${service.id}`}
-                    className={`
-                      w-full rounded-2xl border p-4 text-left transition-colors duration-200
-                      ${
-                        active
-                          ? "border-[#4A5D4E] bg-[#4A5D4E] shadow-lg shadow-[#4A5D4E]/10"
-                          : "border-[#E0DCD8] bg-white hover:border-[#C8A278]/40 hover:bg-[#F8F5F2]"
-                      }
-                      ${isSinglePreselected ? "cursor-default" : ""}
-                    `}
+                    className={cn(
+                      "w-full rounded-2xl border p-4 text-left transition-all duration-200",
+                      active
+                        ? "border-emerald-600 bg-gradient-to-r from-emerald-600 to-emerald-700 shadow-lg shadow-emerald-600/10"
+                        : "border-stone-200 bg-white hover:border-amber-200 hover:bg-stone-50",
+                      isSinglePreselected ? "cursor-default" : "",
+                    )}
                   >
                     <div className="flex items-center justify-between">
                       <div className="min-w-0 flex-1">
                         <p
-                          className={`text-sm font-semibold ${
-                            active ? "text-white" : "text-[#2A2A2A]"
-                          }`}
+                          className={cn(
+                            "text-sm font-semibold",
+                            active ? "text-white" : "text-stone-800",
+                          )}
                         >
                           {service.name}
                         </p>
 
                         <div
-                          className={`mt-1.5 flex items-center gap-3 text-xs ${
-                            active ? "text-white/70" : "text-[#7A7A7A]"
-                          }`}
+                          className={cn(
+                            "mt-1.5 flex items-center gap-3 text-xs",
+                            active ? "text-white/80" : "text-stone-500",
+                          )}
                         >
                           <span className="flex items-center gap-1">
                             <Clock className="h-3 w-3" />
@@ -478,18 +481,13 @@ function StudioBookingWidgetInner({
 
         <section data-testid="booking-calendar-section">
           <div className="mb-4">
-            <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.25em] text-[#C8A278]">
+            <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.25em] text-amber-600">
               Крок 2
             </p>
-            <h2
-              className="text-lg font-semibold text-[#2A2A2A]"
-              style={{ fontFamily: "var(--font-heading)" }}
-            >
-              Дата та час
-            </h2>
+            <h2 className="text-lg font-bold text-stone-800">Дата та час</h2>
           </div>
 
-          <div className="rounded-2xl border border-[#E0DCD8] bg-white p-4 sm:p-5">
+          <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-[0_4px_18px_rgba(0,0,0,0.03)] sm:p-5">
             <Calendar
               selected={selectedDate}
               onSelect={(d) => {
@@ -504,7 +502,7 @@ function StudioBookingWidgetInner({
 
           {!isDayEnabled && selectedDate && (
             <p
-              className="pl-1 mt-3 text-xs text-red-500"
+              className="mt-3 pl-1 text-xs text-red-500"
               data-testid="booking-day-closed-msg"
             >
               У цей день студія не працює
@@ -516,19 +514,19 @@ function StudioBookingWidgetInner({
           <section data-testid="booking-time-section">
             <div className="mb-4 flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold capitalize text-[#7A7A7A]">
+                <p className="text-xs font-semibold capitalize text-stone-500">
                   {dateDisplay}
                 </p>
-                <p className="mt-0.5 text-sm font-semibold text-[#2A2A2A]">
+                <p className="mt-0.5 text-sm font-semibold text-stone-800">
                   Оберіть час{" "}
                   {busyLoading && (
-                    <span className="text-[#C8A278]">&middot; оновлення...</span>
+                    <span className="text-amber-600">&middot; оновлення...</span>
                   )}
                 </p>
               </div>
 
               {selectedTime && (
-                <div className="flex items-center gap-1.5 text-xs font-bold text-[#4A5D4E]">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-700">
                   <Check className="h-3.5 w-3.5" />
                   {selectedTime}
                 </div>
@@ -551,16 +549,14 @@ function StudioBookingWidgetInner({
                     onClick={() => !busy && setSelectedTime(time)}
                     disabled={busy}
                     data-testid={`booking-time-${time}`}
-                    className={`
-                      rounded-xl border px-4 py-2.5 text-sm font-semibold transition-colors duration-200
-                      ${
-                        active
-                          ? "border-[#4A5D4E] bg-[#4A5D4E] text-white shadow-md shadow-[#4A5D4E]/15"
-                          : busy
-                            ? "cursor-not-allowed border-[#E0DCD8] bg-[#F0EEEA] text-[#C8C4C0] line-through"
-                            : "border-[#E0DCD8] bg-white text-[#2A2A2A] hover:border-[#C8A278]/50 hover:bg-[#F8F5F2]"
-                      }
-                    `}
+                    className={cn(
+                      "rounded-xl border px-4 py-2.5 text-sm font-semibold transition-all duration-200",
+                      active
+                        ? "border-emerald-600 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-md shadow-emerald-600/15"
+                        : busy
+                          ? "cursor-not-allowed border-stone-200 bg-stone-100 text-stone-400 line-through"
+                          : "border-stone-200 bg-white text-stone-800 hover:border-amber-200 hover:bg-stone-50",
+                    )}
                     title={busy ? "Зайнято" : ""}
                   >
                     {time}
@@ -572,11 +568,11 @@ function StudioBookingWidgetInner({
         )}
       </div>
 
-      <div className="sticky bottom-0 z-20 -mx-5 mt-6 border-t border-[#E0DCD8] bg-white px-5 py-4 sm:-mx-6 sm:px-6">
+      <div className="sticky bottom-0 z-20 -mx-5 mt-6 border-t border-stone-200 bg-white px-5 py-4 sm:-mx-6 sm:px-6">
         {selectedService && selectedTime && (
-          <div className="mb-3 flex items-center justify-between text-xs text-[#7A7A7A]">
+          <div className="mb-3 flex items-center justify-between text-xs text-stone-500">
             <span>{selectedService.name}</span>
-            <span className="font-bold text-[#2A2A2A]">
+            <span className="font-bold text-stone-800">
               {selectedService.price} грн
             </span>
           </div>
@@ -588,23 +584,24 @@ function StudioBookingWidgetInner({
             disabled={!canGoNext}
             onClick={() => setStep("details")}
             data-testid="booking-next-btn"
-            className={`
-              flex-1 rounded-xl py-3.5 text-sm font-bold transition-colors duration-200
-              ${
-                canGoNext
-                  ? "bg-[#4A5D4E] text-white hover:bg-[#3A4A3E] active:scale-[0.98]"
-                  : "cursor-not-allowed bg-[#E0DCD8] text-[#B0ACA8]"
-              }
-            `}
+            className={cn(
+              "flex-1 rounded-2xl py-3.5 text-sm font-bold transition-all duration-200",
+              canGoNext
+                ? "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white hover:from-emerald-700 hover:to-emerald-800 active:scale-[0.98]"
+                : "cursor-not-allowed bg-stone-200 text-stone-400",
+            )}
           >
-            Далі
+            <span className="inline-flex items-center gap-2">
+              Далі
+              <Sparkles className="h-4 w-4 opacity-80" />
+            </span>
           </button>
 
           <button
             type="button"
             onClick={onCancel}
             data-testid="booking-cancel-btn"
-            className="rounded-xl border border-[#E0DCD8] bg-white px-6 py-3.5 text-sm font-bold text-[#2A2A2A] transition-colors duration-200 hover:bg-[#F8F5F2] active:scale-[0.98]"
+            className="rounded-2xl border border-stone-200 bg-white px-6 py-3.5 text-sm font-bold text-stone-800 transition-colors duration-200 hover:bg-stone-50 active:scale-[0.98]"
           >
             Скасувати
           </button>

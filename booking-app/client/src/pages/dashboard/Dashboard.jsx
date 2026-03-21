@@ -1,70 +1,103 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
+import {
+  LayoutDashboard,
+  Building2,
+  BriefcaseBusiness,
+  Clock3,
+  CalendarDays,
+  Users,
+  LogOut,
+  Sparkles,
+} from "lucide-react";
 
 const linkClass = ({ isActive }) =>
   [
-    "relative flex items-center rounded-[16px] border px-3 py-2.5 text-sm font-semibold transition-all duration-200",
-    "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#4A5D4E]/15",
+    "group relative flex items-center gap-3 rounded-2xl border px-3.5 py-3 text-sm font-semibold transition-all duration-200",
+    "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-amber-400/10",
     isActive
-      ? "border-[#4A5D4E] bg-[#4A5D4E] text-white shadow-[0_10px_22px_rgba(74,93,78,0.18)] before:absolute before:-left-2 before:top-1/2 before:h-[22px] before:w-1 before:-translate-y-1/2 before:rounded-full before:bg-[#4A5D4E]"
-      : "border-transparent bg-transparent text-[#6B625A] hover:-translate-y-[1px] hover:border-[#EEEEEE] hover:bg-[#FAF7F4] hover:text-[#1F2A22] hover:shadow-[0_1px_0_rgba(93,64,55,0.05)]",
+      ? "border-emerald-700 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-[0_10px_24px_rgba(16,185,129,0.22)]"
+      : "border-transparent bg-transparent text-stone-600 hover:border-stone-200 hover:bg-stone-50 hover:text-stone-800",
   ].join(" ");
 
 function SkeletonBlock({ className = "" }) {
   return (
     <div
-      className={`animate-pulse rounded-xl bg-gray-200/80 ${className}`}
+      className={`animate-pulse rounded-xl bg-stone-200/60 ${className}`}
       aria-hidden="true"
     />
   );
 }
 
+function NavItemSkeleton() {
+  return <SkeletonBlock className="h-12 w-full rounded-2xl" />;
+}
+
 function DashboardSkeleton() {
   return (
-    <div className="mx-auto max-w-6xl px-4 pt-24 md:pt-22">
-      <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-[190px_minmax(0,1fr)]">
-        <aside
-          className="
-            hidden md:block
-            relative top-auto h-fit rounded-[18px] border border-gray-200 bg-white p-4
-            shadow-[0_1px_2px_rgba(16,24,40,0.06),0_10px_26px_rgba(16,24,40,0.08)]
-            md:sticky md:top-[88px]
-          "
-        >
-          <div className="mb-3 border-b border-slate-100 px-2 pb-[14px] pt-[10px] text-center">
-            <SkeletonBlock className="mx-auto h-7 w-20 rounded-full" />
-            <SkeletonBlock className="mx-auto mt-[10px] h-6 w-36 rounded-xl" />
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-stone-50 via-amber-50/30 to-orange-50/20">
+      <div className="mx-auto max-w-6xl px-4 pt-24 md:pt-22">
+        <div className="grid grid-cols-1 items-start gap-5 md:grid-cols-[220px_minmax(0,1fr)]">
+          <aside
+            className="
+              hidden md:block
+              relative top-auto h-fit overflow-hidden rounded-3xl border border-stone-200/60 bg-white p-4
+              shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]
+              md:sticky md:top-[88px]
+            "
+          >
+            <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-60" />
 
-          <nav className="flex flex-col gap-[6px] p-1">
-            <SkeletonBlock className="h-11 w-full rounded-[14px]" />
-            <SkeletonBlock className="h-11 w-full rounded-[14px]" />
-            <SkeletonBlock className="h-11 w-full rounded-[14px]" />
-            <SkeletonBlock className="h-11 w-full rounded-[14px]" />
-            <SkeletonBlock className="h-11 w-full rounded-[14px]" />
-            <SkeletonBlock className="h-11 w-full rounded-[14px]" />
-
-            <div className="mt-3 border-t border-gray-200 pt-3">
-              <SkeletonBlock className="h-11 w-full rounded-xl" />
+            <div className="mb-4 border-b border-stone-100 px-2 pb-4 pt-2 text-center">
+              <SkeletonBlock className="mx-auto h-8 w-24 rounded-full" />
+              <SkeletonBlock className="mx-auto mt-3 h-7 w-40 rounded-xl" />
             </div>
-          </nav>
-        </aside>
 
-        <section
-          className="
-            min-h-[200px] rounded-[18px] border border-gray-200 bg-white p-6
-            shadow-[0_1px_2px_rgba(16,24,40,0.06),0_12px_28px_rgba(16,24,40,0.08)]
-          "
-        >
-          <div className="space-y-4">
-            <SkeletonBlock className="h-8 w-48 rounded-xl" />
-            <SkeletonBlock className="h-4 w-72 max-w-full" />
-            <SkeletonBlock className="h-32 w-full rounded-2xl" />
-            <SkeletonBlock className="h-32 w-full rounded-2xl" />
-          </div>
-        </section>
+            <nav className="flex flex-col gap-2 p-1">
+              <NavItemSkeleton />
+              <NavItemSkeleton />
+              <NavItemSkeleton />
+              <NavItemSkeleton />
+              <NavItemSkeleton />
+              <NavItemSkeleton />
+
+              <div className="mt-3 border-t border-stone-100 pt-3">
+                <SkeletonBlock className="h-12 w-full rounded-2xl" />
+              </div>
+            </nav>
+          </aside>
+
+          <section
+            className="
+              min-h-[200px] overflow-hidden rounded-3xl border border-stone-200/60 bg-white p-6
+              shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]
+            "
+          >
+            <div className="space-y-4">
+              <SkeletonBlock className="h-8 w-48 rounded-xl" />
+              <SkeletonBlock className="h-4 w-72 max-w-full" />
+              <SkeletonBlock className="h-32 w-full rounded-2xl" />
+              <SkeletonBlock className="h-32 w-full rounded-2xl" />
+            </div>
+          </section>
+        </div>
       </div>
     </div>
+  );
+}
+
+function SidebarLinkIcon({ children, isActive }) {
+  return (
+    <span
+      className={[
+        "inline-flex h-9 w-9 items-center justify-center rounded-xl border transition-all duration-200",
+        isActive
+          ? "border-white/20 bg-white/10 text-white"
+          : "border-stone-200 bg-white text-stone-500 group-hover:border-stone-300 group-hover:text-stone-700",
+      ].join(" ")}
+    >
+      {children}
+    </span>
   );
 }
 
@@ -91,77 +124,127 @@ export default function Dashboard() {
   }
 
   return (
-   <div className="mx-auto max-w-6xl px-4 pt-24 md:pt-22">
-      <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-[190px_minmax(0,1fr)]">
-<aside
-  className="
-    hidden md:block
-    relative top-auto h-fit rounded-[18px] border border-gray-200 bg-white p-4
-    shadow-[0_1px_2px_rgba(16,24,40,0.06),0_10px_26px_rgba(16,24,40,0.08)]
-    md:sticky md:top-[88px]
-  "
->
-<div className="mb-3 border-b border-[#F1E7DE] px-2 pb-[14px] pt-[10px] text-center">
-  <div className="inline-flex items-center rounded-full border border-[#EEEEEE] bg-[#F8F4EF] px-[10px] py-[6px] text-xs font-extrabold uppercase tracking-[0.12em] text-[#7B6D61]">
-    Кабінет
-  </div>
+    <div className="min-h-screen bg-gradient-to-br from-stone-50 via-amber-50/30 to-orange-50/20">
+      <div className="mx-auto max-w-6xl px-4 pt-24 md:pt-22">
+        <div className="grid grid-cols-1 items-start gap-5 md:grid-cols-[220px_minmax(0,1fr)]">
+          <aside
+            className="
+              hidden md:block
+              relative top-auto h-fit overflow-hidden rounded-3xl border border-stone-200/60 bg-white p-3
+              shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]
+              md:sticky md:top-[88px]
+            "
+          >
+            <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-60" />
 
-  <h2 className="mt-[8px] mb-1 text-[18px] font-extrabold leading-[1.2] tracking-[-0.02em] text-[#1F2A22]">
-    Панель керування
-  </h2>
-</div>
+            <div className="mb-2 border-b border-stone-100 px-1 pb-1 pt-1 text-center">
+              <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-3 py-1.5">
+                <Sparkles className="h-3.5 w-3.5 text-amber-600" />
+                <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-amber-700">
+                  Кабінет
+                </span>
+              </div>
 
-         <nav className="flex flex-col gap-[2px] p-1">
-            <NavLink to="/dashboard" end className={linkClass}>
-              Головна
-            </NavLink>
+              <h2 className="mt-3 text-lg font-bold tracking-tight text-stone-800">
+                Панель керування
+              </h2>
+            </div>
 
-            <NavLink to="/dashboard/studio" className={linkClass}>
-              Студія
-            </NavLink>
+            <nav className="flex flex-col gap-1 p-1">
+              <NavLink to="/dashboard" end className={linkClass}>
+                {({ isActive }) => (
+                  <>
+                    <SidebarLinkIcon isActive={isActive}>
+                      <LayoutDashboard className="h-4.5 w-4.5" />
+                    </SidebarLinkIcon>
+                    <span>Головна</span>
+                  </>
+                )}
+              </NavLink>
 
-            <NavLink to="/dashboard/services" className={linkClass}>
-              Послуги
-            </NavLink>
+              <NavLink to="/dashboard/studio" className={linkClass}>
+                {({ isActive }) => (
+                  <>
+                    <SidebarLinkIcon isActive={isActive}>
+                      <Building2 className="h-4.5 w-4.5" />
+                    </SidebarLinkIcon>
+                    <span>Студія</span>
+                  </>
+                )}
+              </NavLink>
 
-            <NavLink to="/dashboard/schedule" className={linkClass}>
-              Графік роботи
-            </NavLink>
+              <NavLink to="/dashboard/services" className={linkClass}>
+                {({ isActive }) => (
+                  <>
+                    <SidebarLinkIcon isActive={isActive}>
+                      <BriefcaseBusiness className="h-4.5 w-4.5" />
+                    </SidebarLinkIcon>
+                    <span>Послуги</span>
+                  </>
+                )}
+              </NavLink>
 
-            <NavLink to="/dashboard/bookings" className={linkClass}>
-              Записи
-            </NavLink>
+              <NavLink to="/dashboard/schedule" className={linkClass}>
+                {({ isActive }) => (
+                  <>
+                    <SidebarLinkIcon isActive={isActive}>
+                      <Clock3 className="h-4.5 w-4.5" />
+                    </SidebarLinkIcon>
+                    <span>Графік роботи</span>
+                  </>
+                )}
+              </NavLink>
 
-            <NavLink to="/dashboard/masters" className={linkClass}>
-              Майстри
-            </NavLink>
+              <NavLink to="/dashboard/bookings" className={linkClass}>
+                {({ isActive }) => (
+                  <>
+                    <SidebarLinkIcon isActive={isActive}>
+                      <CalendarDays className="h-4.5 w-4.5" />
+                    </SidebarLinkIcon>
+                    <span>Записи</span>
+                  </>
+                )}
+              </NavLink>
 
-<div className="mt-3 border-t border-[#EEEEEE] pt-3">
-  <button
-    type="button"
-    onClick={handleLogout}
-    className="
-      inline-flex w-full items-center justify-center rounded-[16px] border border-[#F0D6D1]
-      bg-[#FFF3F1] px-4 py-2.5 text-sm font-semibold text-[#B2504A] transition-all duration-150
-      hover:bg-[#FDE8E4]
-      active:translate-y-[1px]
-      focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#B2504A]/15
-    "
-  >
-    Вихід
-  </button>
-</div>
-          </nav>
-        </aside>
+              <NavLink to="/dashboard/masters" className={linkClass}>
+                {({ isActive }) => (
+                  <>
+                    <SidebarLinkIcon isActive={isActive}>
+                      <Users className="h-4.5 w-4.5" />
+                    </SidebarLinkIcon>
+                    <span>Майстри</span>
+                  </>
+                )}
+              </NavLink>
 
-        <section
-          className="
-            min-h-[200px] rounded-[18px] border border-gray-200 bg-white p-6 mb-6
-            shadow-[0_1px_2px_rgba(16,24,40,0.06),0_12px_28px_rgba(16,24,40,0.08)]
-          "
-        >
-          <Outlet />
-        </section>
+              <div className="mt-3 border-t border-stone-100 pt-3">
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="
+                    inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-red-200
+                    bg-gradient-to-r from-red-50 to-rose-50 px-4 py-3 text-sm font-semibold text-red-600
+                    transition-all duration-200 hover:from-red-100 hover:to-rose-100
+                    active:scale-[0.98]
+                    focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-500/10
+                  "
+                >
+                  <LogOut className="h-4 w-4" />
+                  Вихід
+                </button>
+              </div>
+            </nav>
+          </aside>
+
+          <section
+            className="
+              min-h-[200px] overflow-hidden rounded-3xl border border-stone-200/60 bg-white p-6 mb-6
+              shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]
+            "
+          >
+            <Outlet />
+          </section>
+        </div>
       </div>
     </div>
   );

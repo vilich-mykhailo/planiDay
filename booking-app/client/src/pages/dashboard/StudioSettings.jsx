@@ -1,12 +1,57 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import {
+  Sparkles,
+  ChevronDown,
+  Plus,
+  X,
+  Camera,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { useStudio } from "../../context/studio/useStudio";
 import { api } from "../../api/http";
 
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 const MAX_DESC = 400;
 const MAX_PORTFOLIO = 12;
 const PUBLIC = import.meta.env.VITE_R2_PUBLIC_BASE_URL;
+
+const STUDIO_CATEGORIES = [
+  { value: "hair", label: "Перукарня" },
+  { value: "barber", label: "Барбершоп" },
+  { value: "beauty_salon", label: "Салон краси" },
+  { value: "nails", label: "Манікюр і педикюр" },
+  { value: "brows_lashes", label: "Брови та вії" },
+  { value: "cosmetology", label: "Косметологія" },
+  { value: "makeup", label: "Макіяж" },
+  { value: "massage", label: "Масаж" },
+  { value: "physiotherapy", label: "Фізіотерапія" },
+  { value: "depilation", label: "Депіляція" },
+  { value: "tattoo_piercing", label: "Тату і пірсинг" },
+  { value: "spa", label: "SPA і wellness" },
+  { value: "health", label: "Здоровʼя" },
+  { value: "fitness_diet", label: "Тренування і дієта" },
+  { value: "dentistry", label: "Стоматологія" },
+  { value: "podiatry", label: "Подологія" },
+  { value: "aesthetic_medicine", label: "Естетична медицина" },
+  { value: "natural_medicine", label: "Натуральна медицина" },
+  { value: "psychotherapy", label: "Психотерапія" },
+  { value: "pets", label: "Тварини" },
+  { value: "finance", label: "Фінансові послуги" },
+  { value: "shopping", label: "Покупки" },
+  { value: "auto", label: "Автосервіс" },
+  { value: "other", label: "Інше" },
+];
+
+const getCategoryLabel = (value) => {
+  return STUDIO_CATEGORIES.find((c) => c.value === value)?.label || value;
+};
+
+function cn(...classes) {
+  return classes.filter(Boolean).join(" ");
+}
 
 function fileToPreviewUrl(file) {
   return file ? URL.createObjectURL(file) : "";
@@ -15,34 +60,249 @@ function fileToPreviewUrl(file) {
 function toPublicUrl(v) {
   const s = String(v || "").trim();
   if (!s) return null;
-  if (/^https?:\/\//i.test(s)) return s; // вже повний URL
-  return PUBLIC ? `${PUBLIC}/${s}` : s; // це key -> робимо URL
+  if (/^https?:\/\//i.test(s)) return s;
+  return PUBLIC ? `${PUBLIC}/${s}` : s;
+}
+
+function SectionCard({
+  title,
+  subtitle,
+  badge,
+  actions,
+  children,
+  className = "",
+}) {
+  return (
+    <section
+      className={cn(
+        "group relative overflow-hidden rounded-3xl border border-stone-200/60 bg-white",
+        "shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)] hover:shadow-[0_8px_32px_-4px_rgba(120,90,60,0.12)]",
+        "transition-all duration-300",
+        className,
+      )}
+    >
+      <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-60" />
+
+      <div className="flex flex-col gap-3 border-b border-stone-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-bold tracking-tight text-stone-800">
+              {title}
+            </h2>
+            {badge && (
+              <span className="inline-flex items-center rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
+                {badge}
+              </span>
+            )}
+          </div>
+          {subtitle && <p className="mt-0.5 text-sm text-stone-500">{subtitle}</p>}
+        </div>
+
+        {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
+      </div>
+
+      <div className="p-5">{children}</div>
+    </section>
+  );
+}
+
+function Button({
+  variant = "secondary",
+  size = "md",
+  className = "",
+  children,
+  ...props
+}) {
+  const variants = {
+    primary:
+      "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/35 hover:from-emerald-700 hover:to-emerald-800",
+    secondary:
+      "bg-white border border-stone-200 text-stone-700 hover:bg-stone-50 hover:border-stone-300",
+    danger:
+      "bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 text-red-600 hover:from-red-100 hover:to-rose-100",
+    ghost: "text-stone-600 hover:bg-stone-100",
+    warning:
+      "bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 text-amber-700 hover:from-amber-100 hover:to-orange-100",
+  };
+
+  const sizes = {
+    sm: "px-3 py-1.5 text-xs rounded-xl",
+    md: "px-4 py-2.5 text-sm rounded-2xl",
+    lg: "px-6 py-3 text-sm rounded-2xl",
+  };
+
+  return (
+    <button
+      type="button"
+      className={cn(
+        "inline-flex items-center justify-center gap-2 font-semibold transition-all duration-200",
+        "active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50",
+        variants[variant],
+        sizes[size],
+        className,
+      )}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+}
+
+function IconButton({ variant = "secondary", className = "", children, ...props }) {
+  const variants = {
+    secondary:
+      "bg-white border border-stone-200 text-stone-600 hover:bg-stone-50 hover:text-stone-800",
+    danger: "bg-red-50 border border-red-200 text-red-500 hover:bg-red-100",
+  };
+
+  return (
+    <button
+      type="button"
+      className={cn(
+        "inline-flex items-center justify-center rounded-xl p-2.5 transition-all duration-200 active:scale-95",
+        variants[variant],
+        className,
+      )}
+      {...props}
+    >
+      {children}
+    </button>
+  );
 }
 
 function Field({ label, hint, error, children }) {
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between gap-3">
-        <label className="text-sm font-semibold text-[#1F2A22]">{label}</label>
-        {hint && <span className="text-xs text-[#8B7F73]">{hint}</span>}
+        <label className="text-sm font-medium text-stone-700">{label}</label>
+        {hint && <span className="text-xs text-stone-500">{hint}</span>}
       </div>
       {children}
-      {error && <p className="text-xs text-[#C85C54]">{error}</p>}
+      {error && <p className="text-xs text-red-500">{error}</p>}
     </div>
   );
 }
 
-function Card({ title, subtitle, children }) {
+function SkeletonBlock({ className = "" }) {
   return (
-    <section className="rounded-[16px] border border-[#EEEEEE]  shadow-[0_10px_30px_rgba(93,64,55,0.06)]">
-      <div className="border-b border-[#F1E7DE] px-5 py-4">
-        <h2 className="text-[18px] font-extrabold tracking-[-0.02em] text-[#1F2A22]">
-          {title}
-        </h2>
-        {subtitle && <p className="mt-1 text-sm text-[#857A70]">{subtitle}</p>}
+    <div
+      className={cn("animate-pulse rounded-xl bg-stone-200/60", className)}
+      aria-hidden="true"
+    />
+  );
+}
+
+function StudioSettingsSkeleton() {
+  return (
+    <div className="mx-auto max-w-6xl min-h-[100svh]">
+      <div className="mb-6">
+        <div className="space-y-3">
+          <SkeletonBlock className="h-8 w-56 rounded-2xl" />
+          <SkeletonBlock className="h-5 w-80 max-w-full" />
+        </div>
+
+        <div className="mt-4 rounded-2xl border border-stone-200 bg-white p-2 shadow-sm">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex gap-2 overflow-x-auto">
+              <SkeletonBlock className="h-10 w-24 shrink-0 rounded-xl" />
+              <SkeletonBlock className="h-10 w-24 shrink-0 rounded-xl" />
+              <SkeletonBlock className="h-10 w-28 shrink-0 rounded-xl" />
+            </div>
+
+            <SkeletonBlock className="h-12 w-[220px] shrink-0 rounded-2xl" />
+          </div>
+        </div>
       </div>
-      <div className="px-5 py-5">{children}</div>
-    </section>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        {/* Left column */}
+        <div className="space-y-6 lg:col-span-5">
+          <section className="overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]">
+            <div className="relative h-44 bg-stone-50">
+              <SkeletonBlock className="h-full w-full rounded-none" />
+
+              <div className="absolute -bottom-10 left-3 right-3 flex items-end gap-2">
+                <SkeletonBlock className="h-20 w-20 shrink-0 rounded-[22px]" />
+
+                <div className="min-w-0 flex-1 rounded-2xl border border-stone-200 bg-white px-3 py-2 shadow-sm">
+                  <SkeletonBlock className="h-5 w-40 max-w-full" />
+                  <SkeletonBlock className="mt-2 h-4 w-32 max-w-full" />
+                </div>
+              </div>
+            </div>
+
+            <div className="px-3 pb-3 pt-14">
+              <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+                <SkeletonBlock className="h-3 w-14" />
+                <SkeletonBlock className="mt-2 h-4 w-full" />
+                <SkeletonBlock className="mt-1 h-4 w-4/5" />
+
+                <SkeletonBlock className="mt-4 h-3 w-12" />
+                <SkeletonBlock className="mt-2 h-4 w-full" />
+                <SkeletonBlock className="mt-1 h-4 w-11/12" />
+                <SkeletonBlock className="mt-1 h-4 w-2/3" />
+              </div>
+            </div>
+          </section>
+        </div>
+
+        {/* Right column */}
+        <div className="space-y-6 lg:col-span-7">
+          <section className="overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]">
+            <div className="border-b border-stone-100 px-5 py-4">
+              <SkeletonBlock className="h-6 w-28" />
+              <SkeletonBlock className="mt-2 h-4 w-80 max-w-full" />
+            </div>
+
+            <div className="px-5 py-5">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <SkeletonBlock className="h-4 w-24" />
+                  <SkeletonBlock className="h-12 w-full rounded-2xl" />
+                </div>
+
+                <div className="space-y-2">
+                  <SkeletonBlock className="h-4 w-24" />
+                  <SkeletonBlock className="h-12 w-full rounded-2xl" />
+                </div>
+
+                <div className="space-y-2">
+                  <SkeletonBlock className="h-4 w-32" />
+                  <SkeletonBlock className="h-12 w-full rounded-2xl" />
+                </div>
+
+                <div className="space-y-2">
+                  <SkeletonBlock className="h-4 w-20" />
+                  <SkeletonBlock className="h-12 w-full rounded-2xl" />
+                </div>
+
+                <div className="space-y-2 sm:col-span-2">
+                  <SkeletonBlock className="h-4 w-16" />
+                  <SkeletonBlock className="h-32 w-full rounded-2xl" />
+
+                  <div className="mt-3 rounded-2xl border border-stone-200 bg-stone-50 p-4">
+                    <SkeletonBlock className="h-3 w-24" />
+                    <SkeletonBlock className="mt-2 h-4 w-full" />
+                    <SkeletonBlock className="mt-1 h-4 w-5/6" />
+                    <SkeletonBlock className="mt-1 h-4 w-3/4" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <div className="fixed inset-x-0 bottom-0 z-[60] md:hidden">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-white via-white/95 to-transparent" />
+        <div className="relative mx-auto max-w-5xl px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+          <div className="flex gap-2">
+            <SkeletonBlock className="h-12 w-1/2 rounded-2xl" />
+            <SkeletonBlock className="h-12 w-1/2 rounded-2xl" />
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -62,7 +322,7 @@ function completeness(form) {
     {
       key: "category",
       label: "Категорія",
-      ok: Boolean(form.category?.trim()),
+      ok: Boolean(form.category),
     },
     {
       key: "phone",
@@ -92,8 +352,11 @@ function completeness(form) {
     {
       key: "address",
       label: "Адреса",
-      ok: Boolean(form.street?.trim() && form.building?.trim()), // залишив як у тебе
-      // якщо хочеш щоб city теж рахувалось — скажи, зміню на city+street+building
+      ok: Boolean(
+        form.city?.trim() &&
+          form.street?.trim() &&
+          form.building?.trim()
+      ),
     },
     {
       key: "portfolio",
@@ -108,207 +371,6 @@ function completeness(form) {
   const next = items.find((i) => !i.ok);
 
   return { items, done, total, percent, next };
-}
-
-function CollapsibleCard({
-  title,
-  subtitle,
-  children,
-  defaultOpen = true,
-  rightSlot,
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-
-  return (
-    <section className="overflow-hidden rounded-[28px] border border-[#EEEEEE]  shadow-[0_10px_30px_rgba(93,64,55,0.06)]">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-start justify-between gap-3 border-b border-[#F1E7DE] px-5 py-4 text-left transition hover:bg-[#FCF8F3]"
-        aria-expanded={open}
-      >
-        <div className="min-w-0">
-          <h2 className="text-[18px] font-extrabold tracking-[-0.02em] text-[#1F2A22]">
-            {title}
-          </h2>
-          {subtitle && (
-            <p className="mt-1 text-sm text-[#857A70]">{subtitle}</p>
-          )}
-        </div>
-
-        <div className="flex shrink-0 items-center gap-3">
-          {rightSlot}
-          <span
-            className={[
-              "grid h-9 w-9 place-items-center rounded-xl border border-[#EEEEEE] bg-white text-[#8B7F73] transition",
-              open ? "rotate-180" : "rotate-0",
-            ].join(" ")}
-            aria-hidden="true"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M6 9l6 6 6-6"
-                stroke="currentColor"
-                strokeWidth="2.4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </span>
-        </div>
-      </button>
-
-      <div
-        className={[
-          "grid transition-[grid-template-rows] duration-300 ease-out",
-          open ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
-        ].join(" ")}
-      >
-        <div className="overflow-hidden px-5 py-5">{children}</div>
-      </div>
-    </section>
-  );
-}
-
-function SkeletonBlock({ className = "" }) {
-  return (
-    <div
-      className={`animate-pulse rounded-xl bg-gray-200/80 ${className}`}
-      aria-hidden="true"
-    />
-  );
-}
-
-function StudioSettingsSkeleton() {
-  return (
-    <div className="mx-auto max-w-6xl min-h-[100svh] pb-10 md:pb-0">
-      <div className="mb-5">
-        <div className="space-y-3">
-          <SkeletonBlock className="h-9 w-56 rounded-2xl" />
-          <SkeletonBlock className="h-4 w-80 max-w-full" />
-        </div>
-
-        <div className="mt-4 flex gap-2 overflow-x-auto rounded-[22px] border border-[#EEEEEE]  p-2">
-          <SkeletonBlock className="h-10 w-24 shrink-0" />
-          <SkeletonBlock className="h-10 w-24 shrink-0" />
-          <SkeletonBlock className="h-10 w-28 shrink-0" />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        <div className="space-y-6 lg:col-span-5">
-          <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.06)]">
-            <div className="relative h-44 bg-gray-50">
-              <SkeletonBlock className="h-full w-full rounded-none" />
-              <div className="absolute -bottom-10 left-3 right-3 flex items-end gap-2">
-                <SkeletonBlock className="h-20 w-20 shrink-0 rounded-2xl" />
-                <div className="min-w-0 flex-1 rounded-xl border border-gray-200 bg-white px-3 py-2">
-                  <SkeletonBlock className="h-5 w-40 max-w-full" />
-                  <SkeletonBlock className="mt-2 h-4 w-32 max-w-full" />
-                </div>
-              </div>
-            </div>
-
-            <div className="px-3 pb-3 pt-14">
-              <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                <SkeletonBlock className="h-3 w-14" />
-                <SkeletonBlock className="mt-2 h-4 w-full" />
-                <SkeletonBlock className="mt-1 h-4 w-4/5" />
-
-                <SkeletonBlock className="mt-4 h-3 w-12" />
-                <SkeletonBlock className="mt-2 h-4 w-full" />
-                <SkeletonBlock className="mt-1 h-4 w-11/12" />
-                <SkeletonBlock className="mt-1 h-4 w-2/3" />
-              </div>
-            </div>
-          </section>
-
-          <section className="rounded-[16px] border border-[#EEEEEE]  shadow-[0_10px_30px_rgba(93,64,55,0.06)]">
-            <div className="border-b border-gray-100 px-5 py-4">
-              <div className="flex items-center justify-between gap-3">
-                <div className="space-y-2">
-                  <SkeletonBlock className="h-5 w-44" />
-                  <SkeletonBlock className="h-4 w-64 max-w-full" />
-                </div>
-                <SkeletonBlock className="h-10 w-16 rounded-xl" />
-              </div>
-            </div>
-
-            <div className="space-y-4 px-5 py-5">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <SkeletonBlock className="h-3 w-20" />
-                  <SkeletonBlock className="h-3 w-10" />
-                </div>
-                <SkeletonBlock className="h-2 w-full rounded-full" />
-              </div>
-
-              <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                <SkeletonBlock className="mx-auto h-3 w-24" />
-                <SkeletonBlock className="mx-auto mt-2 h-4 w-36" />
-                <div className="mt-3 flex justify-center">
-                  <SkeletonBlock className="h-10 w-28 rounded-xl" />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <SkeletonBlock className="h-10 w-56 rounded-xl mx-auto" />
-                <SkeletonBlock className="h-14 w-full" />
-                <SkeletonBlock className="h-14 w-full" />
-                <SkeletonBlock className="h-14 w-full" />
-              </div>
-            </div>
-          </section>
-        </div>
-
-        <div className="space-y-6 lg:col-span-7">
-          <section className="rounded-[16px] border border-[#EEEEEE]  shadow-[0_10px_30px_rgba(93,64,55,0.06)]">
-            <div className="border-b border-gray-100 px-5 py-4">
-              <SkeletonBlock className="h-5 w-24" />
-              <SkeletonBlock className="mt-2 h-4 w-80 max-w-full" />
-            </div>
-
-            <div className="px-5 py-5">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <SkeletonBlock className="h-4 w-24" />
-                  <SkeletonBlock className="h-12 w-full" />
-                </div>
-                <div className="space-y-2">
-                  <SkeletonBlock className="h-4 w-24" />
-                  <SkeletonBlock className="h-12 w-full" />
-                </div>
-                <div className="space-y-2">
-                  <SkeletonBlock className="h-4 w-32" />
-                  <SkeletonBlock className="h-12 w-full" />
-                </div>
-                <div className="space-y-2">
-                  <SkeletonBlock className="h-4 w-20" />
-                  <SkeletonBlock className="h-12 w-full" />
-                </div>
-
-                <div className="space-y-2 sm:col-span-2">
-                  <SkeletonBlock className="h-4 w-16" />
-                  <SkeletonBlock className="h-32 w-full" />
-                  <SkeletonBlock className="h-28 w-full rounded-2xl" />
-                </div>
-              </div>
-            </div>
-          </section>
-        </div>
-      </div>
-
-      <div className="fixed inset-x-0 bottom-0 md:hidden z-[60]">
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-white via-white/95 to-transparent" />
-        <div className="relative mx-auto max-w-5xl px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-          <div className="flex gap-2">
-            <SkeletonBlock className="h-12 w-1/2 rounded-2xl" />
-            <SkeletonBlock className="h-12 w-1/2 rounded-2xl" />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 export default function StudioSettings() {
@@ -335,7 +397,7 @@ export default function StudioSettings() {
       { replace: true },
     );
   }
-  const [checklistOpen, setChecklistOpen] = useState(false);
+
   const [form, setForm] = useState({
     name: "",
     category: "",
@@ -357,33 +419,24 @@ export default function StudioSettings() {
   const [highlightId, setHighlightId] = useState("");
   const [highlightAddress, setHighlightAddress] = useState(false);
   const [coverPreviewUrl, setCoverPreviewUrl] = useState("");
-
   const [logoPreviewUrl, setLogoPreviewUrl] = useState("");
   const [portfolioPreviewUrls, setPortfolioPreviewUrls] = useState([]);
-
   const [highlightTone, setHighlightTone] = useState("green");
 
   const highlightClass =
     highlightTone === "green"
-      ? "ring-2 ring-[#86C991]/60 bg-[#F3FBF4] border-[#B8DDBE]"
-      : "ring-2 ring-[#4A5D4E]/20 bg-[#FCF8F3] border-[#D8C8B8]";
+      ? "ring-2 ring-emerald-300/70 bg-emerald-50 border-emerald-200"
+      : "ring-2 ring-amber-400/20 bg-amber-50 border-amber-200";
 
   const baseFieldClass =
-    "w-full rounded-[18px] border border-[#EEEEEE] p-3 text-sm font-medium text-gray outline-none " +
-    "transition-all duration-200 " +
-    "placeholder:text-black !important " + // ← основний сірий колір
-    "placeholder:opacity-100 !important " +
-    "focus:placeholder:text-[#8B7F73] !important " + // темніший при фокусі
-    "hover:placeholder:text-[#A89F94] !important " + // при наведенні
-    "hover:bg-[#FCF8F3] hover:border-[#DDCFC1] " +
-    "focus:border-[#4A5D4E] focus:ring-2 focus:ring-[#4A5D4E]/15 focus:bg-white";
+    "w-full rounded-2xl border border-stone-200 bg-white p-3 text-sm font-medium text-stone-700 outline-none transition-all duration-200 placeholder:text-stone-400 hover:bg-stone-50 hover:border-stone-300 focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10 focus:bg-white";
 
-  const [pendingDeletes, setPendingDeletes] = useState([]); // keys які треба видалити після Save
+  const [pendingDeletes, setPendingDeletes] = useState([]);
 
   function stageDelete(key) {
     const k = String(key || "").trim();
     if (!k) return;
-    if (/^https?:\/\//i.test(k)) return; // якщо раптом url — не чіпаємо
+    if (/^https?:\/\//i.test(k)) return;
     setPendingDeletes((prev) => (prev.includes(k) ? prev : [...prev, k]));
   }
 
@@ -411,7 +464,7 @@ export default function StudioSettings() {
   });
 
   function showToast({ type = "success", title, text }) {
-    const duration = type === "error" ? 3000 : type === "warning" ? 3000 : 3000;
+    const duration = 3000;
 
     setToast({
       id: Date.now(),
@@ -438,10 +491,12 @@ export default function StudioSettings() {
   const hasLogo = Boolean(form.logoFile || form.logoUrl?.trim());
   const coverSrc = coverPreviewUrl || toPublicUrl(form.coverUrl);
   const logoSrc = logoPreviewUrl || toPublicUrl(form.logoUrl);
+
   const [portfolioPreview, setPortfolioPreview] = useState({
     open: false,
     src: "",
   });
+
   useEffect(() => {
     if (!form.coverFile) {
       setCoverPreviewUrl("");
@@ -450,7 +505,6 @@ export default function StudioSettings() {
 
     const url = URL.createObjectURL(form.coverFile);
     setCoverPreviewUrl(url);
-
     return () => URL.revokeObjectURL(url);
   }, [form.coverFile]);
 
@@ -462,7 +516,6 @@ export default function StudioSettings() {
 
     const url = URL.createObjectURL(form.logoFile);
     setLogoPreviewUrl(url);
-
     return () => URL.revokeObjectURL(url);
   }, [form.logoFile]);
 
@@ -490,13 +543,14 @@ export default function StudioSettings() {
     };
 
     document.addEventListener("keydown", onKeyDown);
-    document.body.classList.add("modal-open"); // у тебе вже є CSS для цього
+    document.body.classList.add("modal-open");
 
     return () => {
       document.removeEventListener("keydown", onKeyDown);
       document.body.classList.remove("modal-open");
     };
   }, [portfolioPreview.open]);
+
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
@@ -550,10 +604,10 @@ export default function StudioSettings() {
 
         setForm((p) => ({
           ...p,
-          email: p.email || email, // не перетирає, якщо юзер вже ввів
+          email: p.email || email,
         }));
       } catch {
-        // ignore
+        //
       }
     })();
 
@@ -567,7 +621,6 @@ export default function StudioSettings() {
     if (form.coverFile) urls.push(fileToPreviewUrl(form.coverFile));
     if (form.logoFile) urls.push(fileToPreviewUrl(form.logoFile));
     form.portfolioFiles?.forEach((f) => urls.push(fileToPreviewUrl(f)));
-
     return () => urls.forEach((u) => URL.revokeObjectURL(u));
   }, [form.coverFile, form.logoFile, form.portfolioFiles]);
 
@@ -618,7 +671,7 @@ export default function StudioSettings() {
   function resetChanges() {
     if (!studio) return;
 
-    setPendingDeletes([]); // ✅
+    setPendingDeletes([]);
     setForm({
       name: studio?.name || "",
       category: studio?.category || "",
@@ -644,6 +697,7 @@ export default function StudioSettings() {
   const hasPendingChanges = dirty;
   const canSave = dirty && Object.keys(errors).length === 0 && !saving;
   const [clearingPortfolio, setClearingPortfolio] = useState(false);
+
   function setField(name, value) {
     if (name === "description" && value.length > MAX_DESC) return;
     setForm((prev) => ({ ...prev, [name]: value }));
@@ -664,7 +718,7 @@ export default function StudioSettings() {
 
     const data = await res.json().catch(() => null);
     if (!res.ok) throw new Error(data?.message || "Upload failed");
-    return data; // { key, url }
+    return data;
   }
 
   async function uploadMany(studioId, files, token) {
@@ -682,7 +736,7 @@ export default function StudioSettings() {
 
     const data = await res.json().catch(() => null);
     if (!res.ok) throw new Error(data?.message || "Upload failed");
-    return data; // { keys, urls }
+    return data;
   }
 
   function pickImage(e, fieldKey) {
@@ -708,7 +762,6 @@ export default function StudioSettings() {
       return;
     }
 
-    // ✅ зберігаємо ЛИШЕ локально, в Cloudflare піде лише після Save
     if (fieldKey === "coverUrl") {
       setForm((p) => ({ ...p, coverFile: file }));
     } else {
@@ -716,7 +769,7 @@ export default function StudioSettings() {
     }
   }
 
-  function pickPortfolioImages(e) {
+    function pickPortfolioImages(e) {
     const files = Array.from(e.target.files || []);
     e.target.value = "";
     if (!files.length) return;
@@ -778,15 +831,15 @@ export default function StudioSettings() {
 
     if (!res.ok) throw new Error("Delete failed");
   }
+
   async function deleteManyFromR2(keys) {
     const list = (keys || [])
       .map((k) => String(k || "").trim())
       .filter(Boolean)
-      .filter((k) => !/^https?:\/\//i.test(k)); // на всяк випадок
+      .filter((k) => !/^https?:\/\//i.test(k));
 
     if (!list.length) return;
 
-    // паралельно (обмежимо батчами, щоб не “задушити” сервер)
     const BATCH = 5;
     for (let i = 0; i < list.length; i += BATCH) {
       const chunk = list.slice(i, i + BATCH);
@@ -801,7 +854,6 @@ export default function StudioSettings() {
 
     if (to < 0 || to >= total) return;
 
-    // будуємо combined як індекси, а не об’єкти
     const combined = [
       ...(form.portfolioUrls || []).map((_, i) => ({ type: "remote", i })),
       ...(form.portfolioFiles || []).map((_, i) => ({ type: "local", i })),
@@ -829,7 +881,6 @@ export default function StudioSettings() {
   function removePortfolioMixed(idx) {
     const remoteCount = form.portfolioUrls?.length || 0;
 
-    // ✅ REMOTE
     if (idx < remoteCount) {
       const key = form.portfolioUrls[idx];
       if (!key) return;
@@ -850,7 +901,6 @@ export default function StudioSettings() {
       return;
     }
 
-    // ✅ LOCAL
     const localIndex = idx - remoteCount;
 
     setForm((p) => ({
@@ -876,20 +926,16 @@ export default function StudioSettings() {
     setClearingPortfolio(true);
 
     try {
-      // ✅ remote ставимо в чергу на delete після Save
       if (hadRemote) remoteKeys.forEach(stageDelete);
 
-      // ✅ чистимо UI: і remote, і local
       setForm((p) => ({
         ...p,
         portfolioUrls: [],
         portfolioFiles: [],
       }));
 
-      // (опціонально) маленька пауза для “Очищення...”
       await new Promise((r) => setTimeout(r, 350));
 
-      // ✅ правильне повідомлення
       if (hadRemote && hadLocal) {
         showToast({
           type: "success",
@@ -918,10 +964,8 @@ export default function StudioSettings() {
     const key = form[fieldKey];
     if (!key) return;
 
-    // ✅ ставимо в чергу на видалення
     stageDelete(key);
 
-    // ✅ прибираємо з форми одразу (UI)
     setForm((prev) => ({
       ...prev,
       [fieldKey]: "",
@@ -929,7 +973,6 @@ export default function StudioSettings() {
       ...(fieldKey === "logoUrl" ? { logoFile: null } : {}),
     }));
 
-    // (опціонально) якщо хочеш — тост “буде видалено після збереження”
     showToast({
       type: "warning",
       title: "Зміна підготовлена",
@@ -984,7 +1027,7 @@ export default function StudioSettings() {
 
       await updateStudio({
         name: form.name.trim(),
-        category: form.category.trim(),
+        category: form.category,
         phone: form.phone.trim(),
         email: form.email.trim(),
         description: form.description.trim(),
@@ -1054,13 +1097,13 @@ export default function StudioSettings() {
   const headerTriggerRef = useRef(null);
   const [showTopSave, setShowTopSave] = useState(false);
   const floatingVisible = showTopSave || hasPendingChanges;
+
   useEffect(() => {
     const el = headerTriggerRef.current;
     if (!el) return;
 
     function getRootMargin() {
       const w = window.innerWidth;
-
       if (w < 640) return "-620px 0px 0px 0px";
       if (w < 768) return "-400px 0px 0px";
       return "-50px 0px 0px 0px";
@@ -1078,7 +1121,6 @@ export default function StudioSettings() {
 
     observer.observe(el);
 
-    // recreate observer on resize
     function handleResize() {
       observer.disconnect();
 
@@ -1111,7 +1153,9 @@ export default function StudioSettings() {
     ].filter(Boolean);
     return parts.length ? parts.join(", ") : "Адреса не заповнена";
   }, [form]);
+
   const profile = useMemo(() => completeness(form), [form]);
+
   const FIELD_ID = {
     name: "studio-field-name",
     category: "studio-field-category",
@@ -1140,6 +1184,7 @@ export default function StudioSettings() {
 
     return "profile";
   }
+
   function goToNextIncomplete() {
     if (!profile?.next?.key) return;
     goToField(profile.next.key, { tone: "green" });
@@ -1152,19 +1197,16 @@ export default function StudioSettings() {
     const nextTab = resolveTabByKey(key);
     setTabUrl(nextTab);
 
-    // ✅ address = підсвітити всі 4 поля, без highlightId
     if (key === "portfolio") {
       setTabUrl("links");
 
       requestAnimationFrame(() => {
         setTimeout(() => {
-          // скролимо до секції портфоліо
           document.getElementById("studio-field-portfolio")?.scrollIntoView({
             behavior: "smooth",
             block: "center",
           });
 
-          // підсвічуємо саме кнопку "Додати фото"
           setHighlightId("studio-field-portfolio-add");
           window.setTimeout(() => setHighlightId(""), 2800);
         }, 140);
@@ -1172,6 +1214,7 @@ export default function StudioSettings() {
 
       return;
     }
+
     if (key === "coverUrl") {
       setTabUrl("profile");
       requestAnimationFrame(() => {
@@ -1253,6 +1296,7 @@ export default function StudioSettings() {
       fn();
     }
   };
+
   function pickCoverFromPreview() {
     setHighlightId("studio-field-coverUrl");
     window.setTimeout(() => setHighlightId(""), 2800);
@@ -1277,7 +1321,7 @@ export default function StudioSettings() {
       type: "local",
       src: url,
       key: `local-${i}`,
-      value: form.portfolioFiles?.[i], // File
+      value: form.portfolioFiles?.[i],
     }));
 
     return [...remote, ...local].slice(0, MAX_PORTFOLIO);
@@ -1304,1130 +1348,816 @@ export default function StudioSettings() {
   if (initialLoading) {
     return <StudioSettingsSkeleton />;
   }
+
+  const categoryLabel = form.category
+    ? getCategoryLabel(form.category)
+    : "Категорія";
+
   return (
-    <div className="mx-auto max-w-6xl min-h-[100svh]  pb-10 md:pb-0">
-      <input
-        ref={coverInputRef}
-        type="file"
-        accept="image/*"
-        onChange={(e) => pickImage(e, "coverUrl")}
-        className="hidden"
-      />
+    <div className="min-h-screen">
+      <div className="mx-auto max-w-6xl min-h-[100svh]">
+        <input
+          ref={coverInputRef}
+          type="file"
+          accept="image/*"
+          onChange={(e) => pickImage(e, "coverUrl")}
+          className="hidden"
+        />
 
-      <input
-        ref={logoInputRef}
-        type="file"
-        accept="image/*"
-        onChange={(e) => pickImage(e, "logoUrl")}
-        className="hidden"
-      />
+        <input
+          ref={logoInputRef}
+          type="file"
+          accept="image/*"
+          onChange={(e) => pickImage(e, "logoUrl")}
+          className="hidden"
+        />
 
-      {/* Top header */}
-      <div className="mb-5">
-        <div className="flex items-start justify-between gap-4">
-          <div ref={headerTriggerRef}>
-            <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-[#C89D72]">
-              профіль студії
-            </p>
+        {/* Header */}
+        <div className="mb-6">
+          <div className="flex items-start justify-between gap-4">
+            <div ref={headerTriggerRef}>
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-4 py-1.5">
+                <Sparkles className="h-4 w-4 text-amber-600" />
+                <span className="text-xs font-bold uppercase tracking-wider text-amber-700">
+                  Профіль студії
+                </span>
+              </div>
 
-            <h1 className="mt-2 text-3xl font-black tracking-[-0.03em] text-[#1F2A22] sm:text-4xl">
-              Профіль студії
-            </h1>
+              <h1 className="text-4xl font-black tracking-tight text-stone-800 sm:text-5xl">
+                Профіль студії
+              </h1>
 
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#857A70]">
-              Створіть профіль, який підвищує довіру та виглядає професійно.
-            </p>
+              <p className="mt-3 max-w-2xl text-stone-600">
+                Створіть профіль, який підвищує довіру та виглядає професійно.
+              </p>
+            </div>
           </div>
+
+          {/* Tabs */}
+<div className="mt-4 rounded-2xl border border-stone-200 bg-white p-2 shadow-sm">
+  <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+    <div className="flex gap-2 overflow-x-auto">
+      {[
+        { id: "profile", label: "Профіль" },
+        { id: "location", label: "Локація" },
+        { id: "links", label: "Портфоліо" },
+      ].map((t) => (
+        <button
+          key={t.id}
+          type="button"
+          onClick={() => setTabUrl(t.id)}
+          className={cn(
+            "whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-semibold transition",
+            tab === t.id
+              ? "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-[0_10px_24px_rgba(74,93,78,0.18)]"
+              : "bg-white text-stone-600 hover:bg-stone-50",
+          )}
+        >
+          {t.label}
+        </button>
+      ))}
+    </div>
+
+<div
+  className={cn(
+    "flex shrink-0 items-center justify-between gap-3 rounded-2xl px-3 py-2",
+    profile.percent === 100
+      ? "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-[0_10px_24px_rgba(16,185,129,0.25)]"
+      : "border border-amber-200 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-100 shadow-[0_10px_30px_rgba(226,154,84,0.14)]",
+  )}
+>
+  {profile.percent === 100 ? (
+    // ✅ SUCCESS STATE
+    <div className="flex items-center gap-2">
+      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/20">
+        <Check className="h-4 w-4 text-white" />
+      </div>
+
+      <p className="text-xs font-semibold text-white">
+        Профіль заповнено
+      </p>
+    </div>
+  ) : (
+    // 🔄 DEFAULT STATE
+    <>
+      <div className="flex min-w-0 items-center gap-3">
+        <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white shadow-sm">
+          <span className="absolute inline-flex h-3 w-3 rounded-full bg-orange-400 opacity-75 animate-ping" />
+          <span className="relative inline-flex h-3 w-3 rounded-full bg-orange-500" />
         </div>
 
-        {/* Tabs */}
-        <div className="mt-4 flex gap-2 overflow-x-auto rounded-[22px] border border-[#EEEEEE]  p-2">
-          {[
-            { id: "profile", label: "Профіль" },
-            { id: "location", label: "Локація" },
-            { id: "links", label: "Портфоліо" },
-          ].map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => setTabUrl(t.id)}
-              className={[
-                "whitespace-nowrap rounded-[16px] px-4 py-2.5 text-sm font-semibold transition",
-                tab === t.id
-                  ? "bg-[#4A5D4E] text-white shadow-[0_10px_24px_rgba(74,93,78,0.18)]"
-                  : "bg-white text-[#6B625A] hover:bg-[#FAF7F4]",
-              ].join(" ")}
-            >
-              {t.label}
-            </button>
-          ))}
+        <div className="min-w-0">
+          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-amber-700">
+            Заповненість
+          </p>
+
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-black text-stone-800">
+              {profile.percent}%
+            </p>
+
+            <span className="text-xs text-stone-500">
+              {profile.done}/{profile.total}
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Main layout */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        {/* Left column: Preview + Media */}
-        <div className="lg:col-span-5 space-y-6">
-          {/* Live preview */}
-          <div className={tab === "profile" ? "block" : "hidden"}>
-            <section className="overflow-hidden rounded-[12px] border border-[#EEEEEE]  shadow-[0_10px_30px_rgba(93,64,55,0.06)]">
-              {" "}
-              <div
-                id="studio-field-coverUrl"
-                className={[
-                  "relative h-44 ",
-                  highlightId === "studio-field-coverUrl" ? highlightClass : "",
-                ].join(" ")}
-              >
-                {hasCover ? (
-                  <button
-                    type="button"
-                    onClick={pickCoverFromPreview}
-                    className="h-full w-full"
-                  >
-                    <img
-                      src={coverSrc}
-                      alt="Обкладинка"
-                      className="h-full w-full object-cover"
-                      onError={(e) => {
-                        if (!coverPreviewUrl)
-                          e.currentTarget.style.display = "none";
-                      }}
-                    />
-                  </button>
-                ) : (
-                  <div className="flex h-full items-center justify-center px-6 text-center text-sm text-[#8B7F73]">
-                    <button
-                      type="button"
-                      onClick={pickCoverFromPreview}
-                      onKeyDown={onKeyboardPick(pickCoverFromPreview)}
-                      className="flex h-full w-full items-center justify-center px-6 text-center text-sm text-[#8B7F73] hover:text-[#6F655C] transition"
-                      title="Завантажити обкладинку"
-                    >
-                      + Додати обкладинку
-                    </button>
-                  </div>
-                )}
-                {/* ✅ readability overlay */}
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/60 via-black/25 to-transparent" />
-                {/* ❌ DELETE COVER */}
-
-                {hasCover && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      removeImage("coverUrl");
-                    }}
-                    className="
-  absolute right-2 top-2 z-10
-  grid h-6 w-6 place-items-center rounded-md
-  border border-[#EEEEEE] bg-white/90
-  text-[#5F544B] shadow-sm backdrop-blur
-  transition hover:border-[#F0D6D1] hover:bg-[#FFFCF8]/92 hover:text-[#B2504A]
-"
-                    title="Видалити обкладинку"
-                    aria-label="Remove cover"
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                      <path
-                        d="M6 6l12 12M18 6l-12 12"
-                        stroke="currentColor"
-                        strokeWidth="2.4"
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                  </button>
-                )}
-
-                <div className="absolute -bottom-10 left-3 right-3 flex items-end gap-2 min-w-0">
-                  <div
-                    id="studio-field-logoUrl"
-                    className={[
-                      "relative h-20 w-20 shrink-0 overflow-hidden rounded-[12px] border border-[#EEEEEE] bg-white",
-                      highlightId === "studio-field-logoUrl"
-                        ? highlightClass
-                        : "",
-                    ].join(" ")}
-                  >
-                    <button
-                      type="button"
-                      onClick={pickLogoFromPreview}
-                      onKeyDown={onKeyboardPick(pickLogoFromPreview)}
-                      className="h-full w-full"
-                      title="Завантажити логотип"
-                    >
-                      {hasLogo ? (
-                        <img
-                          src={logoSrc}
-                          alt="Лого"
-                          className="h-full w-full object-cover"
-                          onError={(e) =>
-                            (e.currentTarget.style.display = "none")
-                          }
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-[#8B7F73]">
-                          + Додати лого
-                        </div>
-                      )}
-                    </button>
-
-                    {/* ❌ DELETE LOGO */}
-                    {hasLogo && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeImage("logoUrl");
-                        }}
-                        className="
-                              absolute right-1 top-1 z-10
-                              grid h-5 w-5 place-items-center rounded-md
-                              bg-white/90 backdrop-blur border border-gray-200
-                              text-[#1F2A22] hover:bg-red-50 hover:text-red-600 hover:border-red-200
-                              shadow-sm transition
-                            "
-                        title="Видалити логотип"
-                        aria-label="Remove logo"
-                      >
-                        <svg
-                          width="14"
-                          height="14"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                        >
-                          <path
-                            d="M6 6l12 12M18 6l-12 12"
-                            stroke="currentColor"
-                            strokeWidth="2.4"
-                            strokeLinecap="round"
-                          />
-                        </svg>
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="min-w-0 min-h-[44px] rounded-[12px] border border-[#EEEEEE] bg-white px-3 py-2">
-                    {" "}
-                    {/* Назва студії — максимум 2 рядки */}
-                    <p
-                      className="w-full min-w-0 text-sm sm:text-base font-extrabold text-[#1F2A22] leading-5 line-clamp-2 break-words"
-                      title={form.name.trim() ? form.name : "Назва студії"}
-                    >
-                      {form.name.trim() ? form.name : "Назва студії"}
-                    </p>
-                    {/* Категорія + місто — максимум 2 рядки */}
-                    <p
-                      className="w-full min-w-0 text-xs sm:text-sm text-[#857A70] line-clamp-2 break-words"
-                      title={`${form.category.trim() ? form.category : "Категорія"} • ${
-                        form.city.trim() ? form.city : "Місто"
-                      }`}
-                    >
-                      {(form.category.trim() ? form.category : "Категорія") +
-                        " • " +
-                        (form.city.trim() ? form.city : "Місто")}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="px-3 pb-3 pt-14">
-                <div className="rounded-[22px] border border-[#EEEEEE] bg-[#FFFCF8]/92 p-4">
-                  <p className="text-xs font-semibold text-[#8B7F73]">Адреса</p>
-                  <p
-                    className="mt-1 text-sm font-semibold text-[#1F2A22] line-clamp-2 break-words"
-                    title={AddressLine}
-                  >
-                    {AddressLine}
-                  </p>
-
-                  <p className="mt-3 text-xs font-semibold text-[#8B7F73]">
-                    Опис
-                  </p>
-                  <p className="mt-1 text-sm ">
-                    {form.description.trim()
-                      ? form.description.trim()
-                      : "Додай короткий опис: досвід, стиль, стерильність, бренди, гарантії."}
-                  </p>
-                </div>
-              </div>
-            </section>
-          </div>
-          <section className="rounded-[16px] border border-[#EEEEEE]  shadow-[0_10px_30px_rgba(93,64,55,0.06)]">
-            <div className="px-5 py-4 border-b border-gray-100">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <h3 className="text-base font-extrabold text-[#1F2A22]">
-                    Заповненість профілю
-                  </h3>
-                  <p className="mt-1 text-sm text-[#857A70]">
-                    Чим повніший профіль — тим більше записів.
-                  </p>
-                </div>
-                <div
-                  className={[
-                    "rounded-[16px] border px-3 py-2 text-sm font-extrabold transition-colors",
-                    profile.percent === 100
-                      ? "border-[#B8DDBE] bg-[#EAF7EC] text-[#4A5D4E]"
-                      : "border-[#EEEEEE] bg-[#F8F4EF] text-[#1F2A22]",
-                  ].join(" ")}
-                >
-                  {profile.percent}%
-                </div>
-              </div>
-            </div>
-
-            <div className="px-5 py-5 space-y-4">
-              {/* progress bar */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs text-[#857A70]">
-                  <span>
-                    Готово: {profile.done}/{profile.total}
-                  </span>
-                  <span>{profile.percent}%</span>
-                </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-[#EFE6DD]">
-                  <div
-                    className={[
-                      "h-full rounded-full transition-[width,background-color] duration-300",
-                      profile.percent === 100 ? "bg-green-500" : "bg-black",
-                    ].join(" ")}
-                    style={{ width: `${profile.percent}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* next step */}
-              {profile.next && (
-                <div className="rounded-[22px] border border-[#EEEEEE] bg-[#FFFCF8]/92 p-4 text-center">
-                  <p className="text-xs font-semibold text-[#8B7F73]">
-                    Наступний крок
-                  </p>
-                  <p className="mt-1 text-sm font-semibold text-[#1F2A22]">
-                    {profile.next.label}
-                  </p>
-
-                  <div className="mt-3 flex flex-wrap justify-center gap-2">
-                    <button
-                      type="button"
-                      onClick={goToNextIncomplete}
-                      className="inline-flex items-center justify-center rounded-[16px] bg-[#4A5D4E] px-4 py-2.5 text-sm font-extrabold text-white shadow-[0_10px_24px_rgba(74,93,78,0.22)] transition hover:bg-[#3F5143]"
-                    >
-                      Перейти
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* checklist wizard (expand + click -> tab + focus + highlight) */}
-              {/* checklist wizard (FULL collapsible) */}
-              {(() => {
-                const sorted = [...profile.items].sort((a, b) => {
-                  if (a.ok === b.ok) return 0;
-                  return a.ok ? 1 : -1; // незаповнені зверху
-                });
-
-                return (
-                  <div className="space-y-3">
-                    {/* Toggle row */}
-                    <div className="flex items-center justify-center">
-                      <button
-                        type="button"
-                        onClick={() => setChecklistOpen((v) => !v)}
-                        className="inline-flex  items-center justify-center rounded-[16px] bg-[#4A5D4E] px-4 py-2.5 text-sm font-extrabold text-white shadow-[0_10px_24px_rgba(74,93,78,0.22)] transition hover:bg-[#3F5143] flex items-center gap-2"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className={`h-4 w-4 transition-transform duration-300 ${
-                            checklistOpen ? "rotate-180" : ""
-                          }`}
-                        >
-                          <polyline points="6 9 12 15 18 9" />
-                        </svg>
-
-                        {checklistOpen
-                          ? "Сховати кроки заповнення"
-                          : "Показати кроки заповнення"}
-                      </button>
-                    </div>
-
-                    {/* Animated container */}
-                    <div
-                      className={[
-                        "grid transition-[grid-template-rows] duration-300 ease-out",
-                        checklistOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
-                      ].join(" ")}
-                    >
-                      <div className="overflow-hidden">
-                        <div className="grid grid-cols-1 gap-2">
-                          {sorted.map((i) => (
-                            <button
-                              key={i.key}
-                              type="button"
-                              onClick={() =>
-                                goToField(i.key, { tone: "green" })
-                              }
-                              className="
-  group w-full rounded-[18px] border border-[#EEEEEE] bg-white px-4 py-3 text-left
-  transition hover:bg-[#FCF8F3] active:scale-[0.99]
-"
-                            >
-                              <div className="flex items-center gap-4">
-                                {/* LEFT ICON */}
-                                <span
-                                  className={[
-                                    "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border",
-                                    i.ok
-                                      ? "border-[#B8DDBE] bg-[#EAF7EC] text-[#4A5D4E]"
-                                      : "border-[#EEEEEE] bg-[#F8F4EF] text-[#7B6D61]",
-                                  ].join(" ")}
-                                >
-                                  {i.ok ? "✓" : "+"}
-                                </span>
-
-                                {/* CENTER CONTENT */}
-                                <div className="flex-1 min-w-0">
-                                  <div className="text-sm font-semibold text-[#1F2A22]">
-                                    {i.label}
-                                  </div>
-
-                                  <div className="mt-1 flex items-center justify-between">
-                                    <div className="text-xs text-[#8B7F73]">
-                                      {i.ok
-                                        ? "Заповнено"
-                                        : "Натисни, щоб додати"}
-                                    </div>
-                                  </div>
-                                </div>
-
-                                {/* RIGHT ARROW (VERTICALLY CENTERED) */}
-                                <span className="flex h-8 w-8 shrink-0 items-center justify-center text-gray-400">
-                                  <svg
-                                    className="transition group-hover:translate-x-0.5"
-                                    width="18"
-                                    height="18"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                  >
-                                    <path
-                                      d="M9 18l6-6-6-6"
-                                      stroke="currentColor"
-                                      strokeWidth="2.6"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                    />
-                                  </svg>
-                                </span>
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-          </section>
+      <Button
+        variant="primary"
+        size="sm"
+        onClick={goToNextIncomplete}
+        className="shrink-0"
+      >
+        Заповнити
+      </Button>
+    </>
+  )}
+</div>
+  </div>
+</div>
         </div>
 
-        {/* Right column: Forms */}
-        <div className="lg:col-span-7 space-y-6">
-          <form onSubmit={save} className="space-y-6">
-            {tab === "profile" && (
-              <Card
-                title="Профіль"
-                subtitle="Назва, категорія та опис — ключові для довіри клієнтів."
-              >
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <Field label="Назва студії" error={errors.name}>
-                    <input
-                      id="studio-field-name"
-                      value={form.name}
-                      onChange={(e) => setField("name", e.target.value)}
-                      placeholder="Напр. PlanDay Studio"
-                      className={fieldClass("studio-field-name")}
-                    />
-                  </Field>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+          {/* Left column */}
+<div className="space-y-6 lg:col-span-5 lg:sticky lg:top-6 self-start">
+  <section className="overflow-hidden rounded-3xl border border-stone-200/60 bg-white shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]">
+    <div
+      id="studio-field-coverUrl"
+      className={cn(
+        "relative h-44 bg-stone-100",
+        highlightId === "studio-field-coverUrl" && highlightClass,
+      )}
+    >
+      {hasCover ? (
+        <button
+          type="button"
+          onClick={pickCoverFromPreview}
+          className="h-full w-full"
+        >
+          <img
+            src={coverSrc}
+            alt="Обкладинка"
+            className="h-full w-full object-cover"
+            onError={(e) => {
+              if (!coverPreviewUrl) e.currentTarget.style.display = "none";
+            }}
+          />
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={pickCoverFromPreview}
+          onKeyDown={onKeyboardPick(pickCoverFromPreview)}
+          className="flex h-full w-full items-center justify-center gap-2 px-6 text-center text-sm font-medium text-stone-500 transition hover:text-stone-700"
+          title="Завантажити обкладинку"
+        >
+          <Plus className="h-4 w-4" />
+          Додати обкладинку
+        </button>
+      )}
 
-                  <Field label="Категорія" error={errors.category}>
-                    <input
-                      id="studio-field-category"
-                      value={form.category}
-                      onChange={(e) => setField("category", e.target.value)}
-                      placeholder="Нігті / Барбер / Масаж…"
-                      className={fieldClass("studio-field-category")}
-                    />
-                  </Field>
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/60 via-black/25 to-transparent" />
 
-                  <Field label="Номер телефону" error={errors.phone}>
-                    <input
-                      id="studio-field-phone"
-                      value={form.phone}
-                      onChange={(e) => setField("phone", e.target.value)}
-                      placeholder="+380 67 123 45 67"
-                      inputMode="tel"
-                      className={fieldClass("studio-field-phone")}
-                    />
-                  </Field>
+      {hasCover && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            removeImage("coverUrl");
+          }}
+          className="absolute right-2 top-2 z-10 grid h-8 w-8 place-items-center rounded-xl border border-stone-200 bg-white/90 text-stone-600 shadow-sm backdrop-blur transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+          title="Видалити обкладинку"
+          aria-label="Remove cover"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      )}
 
-                  <Field label="Пошта" error={errors.email}>
-                    <input
-                      id="studio-field-email"
-                      type="email"
-                      autoComplete="email"
-                      value={form.email || ""}
-                      onChange={(e) => setField("email", e.target.value)}
-                      placeholder="name@email.com"
-                      className={fieldClass("studio-field-email")}
-                    />
-                  </Field>
-                  <div className="sm:col-span-2">
-                    <Field
-                      label="Опис"
-                      hint={`${form.description.length}/${MAX_DESC}`}
-                      error={errors.description}
-                    >
-                      <textarea
-                        id="studio-field-description"
-                        value={form.description}
-                        onChange={(e) =>
-                          setField("description", e.target.value)
-                        }
-                        rows={5}
-                        placeholder="2–4 речення: розкажіть про себе: досвід, підхід до роботи та що робить ваш сервіс особливим."
-                        className={fieldClass("studio-field-description")}
+      <div className="absolute -bottom-10 left-3 right-3 flex min-w-0 items-end gap-2">
+        <div
+          id="studio-field-logoUrl"
+          className={cn(
+            "relative h-20 w-20 shrink-0 overflow-hidden rounded-[22px] border border-stone-200 bg-white shadow-sm",
+            highlightId === "studio-field-logoUrl" && highlightClass,
+          )}
+        >
+          <button
+            type="button"
+            onClick={pickLogoFromPreview}
+            onKeyDown={onKeyboardPick(pickLogoFromPreview)}
+            className="h-full w-full"
+            title="Завантажити логотип"
+          >
+            {hasLogo ? (
+              <img
+                src={logoSrc}
+                alt="Лого"
+                className="h-full w-full object-cover"
+                onError={(e) => (e.currentTarget.style.display = "none")}
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-stone-500">
+                + Лого
+              </div>
+            )}
+          </button>
+
+          {hasLogo && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                removeImage("logoUrl");
+              }}
+              className="absolute right-1 top-1 z-10 grid h-6 w-6 place-items-center rounded-lg border border-stone-200 bg-white/90 text-stone-600 shadow-sm backdrop-blur transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+              title="Видалити логотип"
+              aria-label="Remove logo"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+
+        <div className="min-h-[44px] min-w-0 rounded-2xl border border-stone-200 bg-white px-3 py-2 shadow-sm">
+          <p
+            className="line-clamp-2 w-full min-w-0 break-words text-sm font-bold leading-5 text-stone-800 sm:text-base"
+            title={form.name.trim() ? form.name : "Назва студії"}
+          >
+            {form.name.trim() ? form.name : "Назва студії"}
+          </p>
+
+          <p
+            className="line-clamp-2 w-full min-w-0 break-words text-xs text-stone-500 sm:text-sm"
+            title={`${categoryLabel} • ${form.city.trim() ? form.city : "Місто"}`}
+          >
+            {categoryLabel + " • " + (form.city.trim() ? form.city : "Місто")}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div className="px-3 pb-3 pt-14">
+      <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+        <p className="text-xs font-semibold text-stone-500">Адреса</p>
+        <p
+          className="mt-1 line-clamp-2 break-words text-sm font-semibold text-stone-800"
+          title={AddressLine}
+        >
+          {AddressLine}
+        </p>
+
+        <p className="mt-3 text-xs font-semibold text-stone-500">Опис</p>
+        <p className="mt-1 text-sm text-stone-600">
+          {form.description.trim()
+            ? form.description.trim()
+            : "Додай короткий опис: досвід, стиль, стерильність, бренди, гарантії."}
+        </p>
+      </div>
+    </div>
+  </section>
+</div>
+
+          {/* Right column */}
+          <div className="space-y-6 lg:col-span-7">
+            <form onSubmit={save} className="space-y-6">
+              {tab === "profile" && (
+                <SectionCard
+                  title="Профіль"
+                  subtitle="Назва, категорія та опис — ключові для довіри клієнтів."
+                >
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <Field label="Назва студії" error={errors.name}>
+                      <input
+                        id="studio-field-name"
+                        value={form.name}
+                        onChange={(e) => setField("name", e.target.value)}
+                        placeholder="Напр. PlanDay Studio"
+                        className={fieldClass("studio-field-name")}
                       />
                     </Field>
-                    <div className="mt-3 space-y-3 rounded-[22px] border border-[#EEEEEE] bg-[#FFFCF8]/92 p-4">
-                      <div>
-                        <p className="text-xs font-semibold ">Рекомендація</p>
-                        <p className="mt-1 text-sm text-[#6F655C]">
-                          Детальний опис допомагає клієнтам краще зрозуміти ваш
-                          досвід і підвищує ймовірність запису. Опишіть свою
-                          спеціалізацію, підхід до роботи та ключові переваги.
-                        </p>
-                      </div>
 
-                      {/* divider */}
-                      <div className="h-px bg-[#]" />
+                    <Field label="Категорія" error={errors.category}>
+                      <select
+                        id="studio-field-category"
+                        value={form.category}
+                        onChange={(e) => setField("category", e.target.value)}
+                        className={fieldClass("studio-field-category")}
+                      >
+                        <option value="">Оберіть категорію</option>
+                        {STUDIO_CATEGORIES.map((cat) => (
+                          <option key={cat.value} value={cat.value}>
+                            {cat.label}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
 
-                      {/* additional tips */}
-                      <div>
-                        <p className="text-xs font-semibold ">
-                          Що варто вказати:
-                        </p>
+                    <Field label="Номер телефону" error={errors.phone}>
+                      <input
+                        id="studio-field-phone"
+                        value={form.phone}
+                        onChange={(e) => setField("phone", e.target.value)}
+                        placeholder="+380 67 123 45 67"
+                        inputMode="tel"
+                        className={fieldClass("studio-field-phone")}
+                      />
+                    </Field>
 
-                        <ul className="mt-1 space-y-1 text-sm text-[#6F655C]">
-                          <li>• Скільки років досвіду має студія</li>
-                          <li>• Які послуги або техніки ви використовуєте</li>
-                          <li>• Які бренди матеріалів застосовуєте</li>
-                          <li>• Чим ви відрізняєтесь від інших</li>
-                          <li>• Гарантії, стерильність або сертифікацію</li>
-                        </ul>
-                      </div>
+                    <Field label="Пошта" error={errors.email}>
+                      <input
+                        id="studio-field-email"
+                        type="email"
+                        autoComplete="email"
+                        value={form.email || ""}
+                        onChange={(e) => setField("email", e.target.value)}
+                        placeholder="name@email.com"
+                        className={fieldClass("studio-field-email")}
+                      />
+                    </Field>
 
-                      {/* extra highlight */}
-                      <div className="rounded-[16px] border border-[#EEEEEE] bg-white px-3 py-2">
-                        <p className="text-xs text-[#857A70]">
-                          💡 Студії з повним описом отримують більше переглядів
-                          і записів.
-                        </p>
+                    <div className="sm:col-span-2">
+                      <Field
+                        label="Опис"
+                        hint={`${form.description.length}/${MAX_DESC}`}
+                        error={errors.description}
+                      >
+                        <textarea
+                          id="studio-field-description"
+                          value={form.description}
+                          onChange={(e) => setField("description", e.target.value)}
+                          rows={5}
+                          placeholder="2–4 речення: розкажіть про себе: досвід, підхід до роботи та що робить ваш сервіс особливим."
+                          className={fieldClass("studio-field-description")}
+                        />
+                      </Field>
+
+                      <div className="mt-3 space-y-3 rounded-2xl border border-stone-200 bg-stone-50 p-4">
+                        <div>
+                          <p className="text-xs font-semibold text-stone-500">
+                            Рекомендація
+                          </p>
+                          <p className="mt-1 text-sm text-stone-600">
+                            Детальний опис допомагає клієнтам краще зрозуміти ваш
+                            досвід і підвищує ймовірність запису. Опишіть свою
+                            спеціалізацію, підхід до роботи та ключові переваги.
+                          </p>
+                        </div>
+
+                        <div className="h-px bg-stone-200" />
+
+                        <div>
+                          <p className="text-xs font-semibold text-stone-500">
+                            Що варто вказати:
+                          </p>
+
+                          <ul className="mt-1 space-y-1 text-sm text-stone-600">
+                            <li>• Скільки років досвіду має студія</li>
+                            <li>• Які послуги або техніки ви використовуєте</li>
+                            <li>• Які бренди матеріалів застосовуєте</li>
+                            <li>• Чим ви відрізняєтесь від інших</li>
+                            <li>• Гарантії, стерильність або сертифікацію</li>
+                          </ul>
+                        </div>
+
+                        <div className="rounded-2xl border border-stone-200 bg-white px-3 py-2">
+                          <p className="text-xs text-stone-500">
+                            💡 Студії з повним описом отримують більше переглядів і записів.
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              </Card>
-            )}
+                </SectionCard>
+              )}
 
-            {tab === "location" && (
-              <Card
-                title="Локація"
-                subtitle="Адреса відображається клієнтам і впливає на пошук."
-              >
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <Field label="Місто">
-                    <input
-                      id="studio-field-city"
-                      value={form.city}
-                      onChange={(e) => setField("city", e.target.value)}
-                      placeholder="Київ"
-                      className={fieldClass("studio-field-city")}
-                    />
-                  </Field>
+              {tab === "location" && (
+                <SectionCard
+                  title="Локація"
+                  subtitle="Адреса відображається клієнтам і впливає на пошук."
+                >
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <Field label="Місто">
+                      <input
+                        id="studio-field-city"
+                        value={form.city}
+                        onChange={(e) => setField("city", e.target.value)}
+                        placeholder="Київ"
+                        className={fieldClass("studio-field-city")}
+                      />
+                    </Field>
 
-                  <Field label="Вулиця">
-                    <input
-                      id="studio-field-street"
-                      value={form.street}
-                      onChange={(e) => setField("street", e.target.value)}
-                      placeholder="Хрещатик"
-                      className={fieldClass("studio-field-street")}
-                    />
-                  </Field>
+                    <Field label="Вулиця">
+                      <input
+                        id="studio-field-street"
+                        value={form.street}
+                        onChange={(e) => setField("street", e.target.value)}
+                        placeholder="Хрещатик"
+                        className={fieldClass("studio-field-street")}
+                      />
+                    </Field>
 
-                  <Field label="Будинок">
-                    <input
-                      id="studio-field-building"
-                      value={form.building}
-                      onChange={(e) => setField("building", e.target.value)}
-                      placeholder="10"
-                      className={fieldClass("studio-field-building")}
-                    />
-                  </Field>
+                    <Field label="Будинок">
+                      <input
+                        id="studio-field-building"
+                        value={form.building}
+                        onChange={(e) => setField("building", e.target.value)}
+                        placeholder="10"
+                        className={fieldClass("studio-field-building")}
+                      />
+                    </Field>
 
-                  <Field label="Квартира/Офіс">
-                    <input
-                      id="studio-field-apartment"
-                      value={form.apartment}
-                      onChange={(e) => setField("apartment", e.target.value)}
-                      placeholder="23"
-                      className={fieldClass("studio-field-apartment")}
-                    />
-                  </Field>
+                    <Field label="Квартира/Офіс">
+                      <input
+                        id="studio-field-apartment"
+                        value={form.apartment}
+                        onChange={(e) => setField("apartment", e.target.value)}
+                        placeholder="23"
+                        className={fieldClass("studio-field-apartment")}
+                      />
+                    </Field>
 
-                  <div className="sm:col-span-2 rounded-2xl border border-gray-200 bg-[#FFFCF8]/92 p-4">
-                    <p className="text-xs font-semibold text-[#8B7F73]">
-                      Перевірка
-                    </p>
+                    <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4 sm:col-span-2">
+                      <p className="text-xs font-semibold text-stone-500">
+                        Перевірка
+                      </p>
 
-                    <p
-                      className="mt-1 text-sm font-semibold text-[#1F2A22] line-clamp-2 break-words"
-                      title={AddressLine}
-                    >
-                      {AddressLine}
-                    </p>
+                      <p
+                        className="mt-1 line-clamp-2 break-words text-sm font-semibold text-stone-800"
+                        title={AddressLine}
+                      >
+                        {AddressLine}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </Card>
-            )}
+                </SectionCard>
+              )}
 
-            {tab === "links" && (
-              <Card
-                title="Портфоліо"
-                subtitle="Додай 4–12 фото робіт — це сильніше за будь-який текст."
-              >
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div id="studio-field-portfolio" className="sm:col-span-2">
-                    <Field
-                      label="Портфоліо (фото робіт)"
-                      error={errors.portfolioUrls}
-                      hint={`${portfolioCount}/${MAX_PORTFOLIO}`}
-                    >
-                      {/* actions */}
-                      <div className="flex flex-wrap items-center gap-2">
-                        <label
-                          id="studio-field-portfolio-add"
-                          className={[
-                            "inline-flex  items-center justify-center rounded-[16px] bg-[#4A5D4E] px-4 py-2.5 text-sm font-extrabold text-white shadow-[0_10px_24px_rgba(74,93,78,0.22)] transition hover:bg-[#3F5143]",
-                            highlightId === "studio-field-portfolio-add"
-                              ? highlightClass
-                              : "",
-                          ].join(" ")}
-                        >
-                          Додати фото
-                          <input
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            onChange={pickPortfolioImages}
-                            className="hidden"
-                          />
-                        </label>
-
-                        {portfolioCount > 0 && (
-                          <button
-                            type="button"
-                            onClick={clearPortfolio}
-                            disabled={
-                              !portfolioCount || clearingPortfolio || saving
-                            }
-                            className={[
-                              "inline-flex items-center justify-center rounded-[16px] border border-[#F0D6D1] bg-[#FFFCF8]/92 px-4 py-2.5 text-sm font-extrabold text-[#B2504A] transition hover:bg-[#FDE8E4]",
-                              clearingPortfolio || saving
-                                ? "cursor-not-allowed opacity-60"
-                                : "",
-                            ].join(" ")}
+              {tab === "links" && (
+                <SectionCard
+                  title="Портфоліо"
+                  subtitle="Додай 4–12 фото робіт — це сильніше за будь-який текст."
+                >
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div id="studio-field-portfolio" className="sm:col-span-2">
+                      <Field
+                        label="Портфоліо (фото робіт)"
+                        error={errors.portfolioUrls}
+                        hint={`${portfolioCount}/${MAX_PORTFOLIO}`}
+                      >
+                        <div className="flex flex-wrap items-center gap-2">
+                          <label
+                            id="studio-field-portfolio-add"
+                            className={cn(
+                              "inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-700 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition hover:from-emerald-700 hover:to-emerald-800",
+                              highlightId === "studio-field-portfolio-add" && highlightClass,
+                            )}
                           >
-                            {clearingPortfolio ? "Очищення..." : "Очистити"}
-                          </button>
-                        )}
-                      </div>
+                            <Plus className="h-4 w-4" />
+                            Додати фото
+                            <input
+                              type="file"
+                              accept="image/*"
+                              multiple
+                              onChange={pickPortfolioImages}
+                              className="hidden"
+                            />
+                          </label>
 
-                      {/* Grid preview */}
-                      <div className="mt-4">
-                        {!hasAnyPortfolio ? (
-                          <div className="rounded-[22px] border border-[#EEEEEE] bg-[#FFFCF8]/92 p-4 text-sm text-[#857A70]">
-                            Додай фото робіт — це найсильніший доказ якості.
-                          </div>
-                        ) : (
-                          <div
-                            className="
-                                      grid gap-4
-                                      grid-cols-2
-                                      sm:grid-cols-3
-                                      lg:grid-cols-[repeat(auto-fill,minmax(180px,1fr))]
-                                    "
-                          >
-                            {portfolioItems.map((item, idx) => {
-                              const src = item.src;
-                              const isFirst = idx === 0;
-                              const isLast = idx === portfolioItems.length - 1;
+                          {portfolioCount > 0 && (
+                            <Button
+                              variant="danger"
+                              onClick={clearPortfolio}
+                              disabled={!portfolioCount || clearingPortfolio || saving}
+                            >
+                              {clearingPortfolio ? "Очищення..." : "Очистити"}
+                            </Button>
+                          )}
+                        </div>
 
-                              return (
-                                <div key={item.key} className="relative">
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      setPortfolioPreview({ open: true, src })
-                                    }
-                                    className="
-  group block w-full overflow-hidden rounded-[22px]
-  border border-[#EEEEEE] bg-[#F3ECE4]
-  transition hover:shadow-[0_10px_24px_rgba(93,64,55,0.10)]
-"
-                                    style={{ aspectRatio: "1 / 1" }}
-                                  >
-                                    <img
-                                      src={src}
-                                      alt={`work ${idx + 1}`}
-                                      className="h-full w-full object-cover"
-                                    />
+                        <div className="mt-4">
+                          {!hasAnyPortfolio ? (
+                            <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4 text-sm text-stone-500">
+                              Додай фото робіт — це найсильніший доказ якості.
+                            </div>
+                          ) : (
+                            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-[repeat(auto-fill,minmax(180px,1fr))]">
+                              {portfolioItems.map((item, idx) => {
+                                const src = item.src;
+                                const isFirst = idx === 0;
+                                const isLast = idx === portfolioItems.length - 1;
 
-                                    {/* bottom toolbar */}
-                                    <div className="pointer-events-none absolute inset-x-0 bottom-0 p-2">
-                                      <div className="absolute inset-x-0 bottom-0 h-16 rounded-b-2xl bg-gradient-to-t from-black/60 via-black/25 to-transparent" />
+                                return (
+                                  <div key={item.key} className="relative">
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setPortfolioPreview({ open: true, src })
+                                      }
+                                      className="group block w-full overflow-hidden rounded-[22px] border border-stone-200 bg-stone-100 transition hover:shadow-[0_10px_24px_rgba(93,64,55,0.10)]"
+                                      style={{ aspectRatio: "1 / 1" }}
+                                    >
+                                      <img
+                                        src={src}
+                                        alt={`work ${idx + 1}`}
+                                        className="h-full w-full object-cover"
+                                      />
 
-                                      <div className="pointer-events-auto relative flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                          <button
-                                            type="button"
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              movePortfolioMixed(idx, idx - 1);
-                                            }}
-                                            disabled={isFirst}
-                                            className="
-                          flex h-9 w-9 items-center justify-center rounded-full
-                          bg-white/90 text-[#1F2A22]
-                          backdrop-blur-md
-                          shadow-sm ring-1 ring-black/5
-                          hover:bg-white hover:shadow-md
-                          active:scale-95 transition-all
-                          disabled:opacity-30 disabled:hover:bg-white/90 disabled:shadow-sm
-                        "
-                                            title="Вліво"
-                                            aria-label="Move left"
-                                          >
-                                            <svg
-                                              width="16"
-                                              height="16"
-                                              viewBox="0 0 24 24"
-                                              fill="none"
+                                      <div className="pointer-events-none absolute inset-x-0 bottom-0 p-2">
+                                        <div className="absolute inset-x-0 bottom-0 h-16 rounded-b-2xl bg-gradient-to-t from-black/60 via-black/25 to-transparent" />
+
+                                        <div className="pointer-events-auto relative flex items-center justify-between">
+                                          <div className="flex items-center gap-2">
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                movePortfolioMixed(idx, idx - 1);
+                                              }}
+                                              disabled={isFirst}
+                                              className="flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-stone-800 backdrop-blur-md shadow-sm ring-1 ring-black/5 transition-all hover:bg-white hover:shadow-md active:scale-95 disabled:opacity-30"
+                                              title="Вліво"
+                                              aria-label="Move left"
                                             >
-                                              <path
-                                                d="M15 18l-6-6 6-6"
-                                                stroke="currentColor"
-                                                strokeWidth="2.4"
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                              />
-                                            </svg>
-                                          </button>
+                                              <ChevronLeft className="h-4 w-4" />
+                                            </button>
+
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                movePortfolioMixed(idx, idx + 1);
+                                              }}
+                                              disabled={isLast}
+                                              className="flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-stone-800 backdrop-blur-md shadow-sm ring-1 ring-black/5 transition-all hover:bg-white hover:shadow-md active:scale-95 disabled:opacity-30"
+                                              title="Вправо"
+                                              aria-label="Move right"
+                                            >
+                                              <ChevronRight className="h-4 w-4" />
+                                            </button>
+                                          </div>
 
                                           <button
                                             type="button"
                                             onClick={(e) => {
                                               e.stopPropagation();
-                                              movePortfolioMixed(idx, idx + 1);
+                                              removePortfolioMixed(idx);
                                             }}
-                                            disabled={isLast}
-                                            className="
-  flex h-9 w-9 items-center justify-center rounded-full
-  bg-white/92 text-[#5F544B] backdrop-blur-md
-  shadow-sm ring-1 ring-black/5 transition-all
-  hover:bg-white hover:shadow-md active:scale-95
-  disabled:opacity-30
-"
-                                            title="Вправо"
-                                            aria-label="Move right"
+                                            className="flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-stone-700 backdrop-blur-md shadow-sm ring-1 ring-black/5 transition-all hover:bg-red-50 hover:text-red-600 hover:ring-red-200 hover:shadow-md active:scale-95"
+                                            title="Видалити"
+                                            aria-label="Remove"
                                           >
-                                            <svg
-                                              width="16"
-                                              height="16"
-                                              viewBox="0 0 24 24"
-                                              fill="none"
-                                            >
-                                              <path
-                                                d="M9 18l6-6-6-6"
-                                                stroke="currentColor"
-                                                strokeWidth="2.4"
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                              />
-                                            </svg>
+                                            <X className="h-4 w-4" />
                                           </button>
                                         </div>
-
-                                        {/* delete */}
-                                        <button
-                                          type="button"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            removePortfolioMixed(idx);
-                                          }}
-                                          className="
-  flex h-9 w-9 items-center justify-center rounded-full
-  bg-white/92 text-[#5F544B] backdrop-blur-md
-  shadow-sm ring-1 ring-black/5 transition-all
-  hover:bg-[#FFFCF8]/92 hover:text-[#B2504A] hover:ring-[#F0D6D1]
-  hover:shadow-md active:scale-95
-"
-                                          title="Видалити"
-                                          aria-label="Remove"
-                                        >
-                                          <svg
-                                            width="16"
-                                            height="16"
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                          >
-                                            <path
-                                              d="M6 6l12 12M18 6l-12 12"
-                                              stroke="currentColor"
-                                              strokeWidth="2.4"
-                                              strokeLinecap="round"
-                                            />
-                                          </svg>
-                                        </button>
                                       </div>
+                                    </button>
+
+                                    <div className="mt-1 text-center text-xs text-stone-500">
+                                      #{idx + 1}
                                     </div>
-                                  </button>
-
-                                  <div className="mt-1 text-center text-xs text-[#8B7F73]">
-                                    #{idx + 1}
                                   </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    </Field>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      </Field>
+                    </div>
                   </div>
-                </div>
-              </Card>
-            )}
-
-            {/* Desktop buttons inside form are hidden (we have top bar). Keep mobile bar below */}
-          </form>
+                </SectionCard>
+              )}
+            </form>
+          </div>
         </div>
-      </div>
 
-      {/* Toast */}
-      <div
-        className={[
-          "fixed z-[90] left-1/2 top-[calc(12px+env(safe-area-inset-top))] -translate-x-1/2 md:left-6 md:bottom-6 md:top-auto md:translate-x-0",
-          "w-[calc(100%-2rem)] max-w-[430px] md:w-auto md:min-w-[300px] md:max-w-[360px]",
-          "transition-all duration-150",
-          toast.open
-            ? "translate-y-0 opacity-100"
-            : "pointer-events-none -translate-y-2 opacity-0 md:translate-y-2",
-        ].join(" ")}
-        role="status"
-        aria-live="polite"
-      >
+        {/* Toast */}
         <div
-          className={[
-            "relative overflow-hidden rounded-[24px] border bg-[#FFFDF9]/98 backdrop-blur-xl",
-            "shadow-[0_18px_50px_rgba(93,64,55,0.16)] ring-1 ring-[#F4E8DC]",
-            toast.type === "success"
-              ? "border-[#CFE5CC]"
-              : toast.type === "warning"
-                ? "border-[#EFD7B2]"
-                : "border-[#EBCFCB]",
-          ].join(" ")}
+          className={cn(
+            "fixed left-1/2 top-[calc(12px+env(safe-area-inset-top))] z-[90] w-[calc(100%-2rem)] max-w-[430px] -translate-x-1/2 transition-all duration-150 md:bottom-6 md:left-6 md:top-auto md:w-auto md:min-w-[300px] md:max-w-[360px] md:translate-x-0",
+            toast.open
+              ? "translate-y-0 opacity-100"
+              : "pointer-events-none -translate-y-2 opacity-0 md:translate-y-2",
+          )}
+          role="status"
+          aria-live="polite"
         >
           <div
-            className={[
-              "absolute inset-x-0 top-0 h-1",
+            className={cn(
+              "relative overflow-hidden rounded-[24px] border bg-white/95 backdrop-blur-xl shadow-[0_18px_50px_rgba(93,64,55,0.16)]",
               toast.type === "success"
-                ? "bg-gradient-to-r from-[#8CC686] via-[#6FAF6B] to-[#4A8F46]"
+                ? "border-emerald-200 ring-1 ring-emerald-100"
                 : toast.type === "warning"
-                  ? "bg-gradient-to-r from-[#E7C27A] via-[#DDAA57] to-[#C98B31]"
-                  : "bg-gradient-to-r from-[#E8A59C] via-[#DB8B80] to-[#C96E62]",
-            ].join(" ")}
-          />
-
-          <div className="relative flex items-start gap-3 px-4 py-4 sm:px-5">
+                  ? "border-amber-200 ring-1 ring-amber-100"
+                  : "border-red-200 ring-1 ring-red-100",
+            )}
+          >
             <div
-              className={[
-                "mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border",
-                "shadow-[0_8px_22px_rgba(93,64,55,0.10)] animate-[toastPop_260ms_ease-out]",
+              className={cn(
+                "absolute inset-x-0 top-0 h-1",
                 toast.type === "success"
-                  ? "border-[#CFE5CC] bg-[#E2F3DF] text-[#3F6F3A]"
+                  ? "bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600"
                   : toast.type === "warning"
-                    ? "border-[#EFD7B2] bg-[#FFF4DE] text-[#A36A18]"
-                    : "border-[#EBCFCB] bg-[#FFF1EF] text-[#B85C52]",
-              ].join(" ")}
-              aria-hidden="true"
-            >
-              {toast.type === "success" && (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M20 6L9 17l-5-5"
-                    stroke="currentColor"
-                    strokeWidth="2.6"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
+                    ? "bg-gradient-to-r from-amber-300 via-amber-400 to-orange-500"
+                    : "bg-gradient-to-r from-red-300 via-red-400 to-rose-500",
               )}
-
-              {toast.type === "warning" && (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M12 8.5v5"
-                    stroke="currentColor"
-                    strokeWidth="2.6"
-                    strokeLinecap="round"
-                  />
-                  <path
-                    d="M12 17h.01"
-                    stroke="currentColor"
-                    strokeWidth="3.2"
-                    strokeLinecap="round"
-                  />
-                </svg>
-              )}
-
-              {toast.type === "error" && (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M6 6l12 12M18 6l-12 12"
-                    stroke="currentColor"
-                    strokeWidth="2.6"
-                    strokeLinecap="round"
-                  />
-                </svg>
-              )}
-            </div>
-
-            <div className="min-w-0 flex-1">
-              <p className="mt-2 text-[15px] font-black leading-5 text-[#1F2A22]">
-                {toast.title}
-              </p>
-
-              <p className="mt-1 text-sm leading-5 text-[#7D7065]">
-                {toast.text}
-              </p>
-            </div>
-          </div>
-
-          <div className="h-[3px] w-full bg-[#F4ECE3]">
-            <div
-              key={toast.id}
-              className={[
-                "h-full w-full origin-left",
-                toast.type === "success"
-                  ? "bg-[#8FBC89]"
-                  : toast.type === "warning"
-                    ? "bg-[#D7A246]"
-                    : "bg-[#D9897E]",
-              ].join(" ")}
-              style={{
-                animation: `toastbar ${toast.duration}ms linear forwards`,
-              }}
             />
-          </div>
-        </div>
 
-        <style>{`
-    @keyframes toastbar {
-      from { transform: scaleX(1); }
-      to   { transform: scaleX(0); }
-    }
-
-    @keyframes toastPop {
-      0%   { transform: scale(.94); opacity: .65; }
-      100% { transform: scale(1); opacity: 1; }
-    }
-  `}</style>
-      </div>
-
-      {portfolioPreview.open && (
-        <div
-          className="fixed inset-0 z-[80] flex items-center justify-center bg-[rgba(32,24,18,0.55)] p-4 backdrop-blur-[2px]"
-          onClick={() => setPortfolioPreview({ open: false, src: "" })}
-        >
-          <div className="max-w-3xl w-full">
-            <img
-              src={portfolioPreview.src}
-              alt="Portfolio preview"
-              className="w-full max-h-[80dvh] object-contain rounded-2xl bg-black"
-              onClick={(e) => e.stopPropagation()}
-            />
-            <div className="mt-3 flex justify-end">
-              <button
-                type="button"
-                className="rounded-xl bg-white px-4 py-2 text-sm font-bold text-[#1F2A22]"
-                onClick={() => setPortfolioPreview({ open: false, src: "" })}
+            <div className="relative flex items-start gap-3 px-4 py-4 sm:px-5">
+              <div
+                className={cn(
+                  "mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border shadow-[0_8px_22px_rgba(93,64,55,0.10)]",
+                  toast.type === "success"
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                    : toast.type === "warning"
+                      ? "border-amber-200 bg-amber-50 text-amber-700"
+                      : "border-red-200 bg-red-50 text-red-600",
+                )}
+                aria-hidden="true"
               >
-                Закрити
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Error modal */}
-      {errorModal.open && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[rgba(32,24,18,0.38)] px-4">
-          <div className="w-full max-w-md rounded-[26px] border border-[#EEEEEE]  p-6 shadow-[0_24px_80px_rgba(93,64,55,0.18)]">
-            <h3 className="text-lg font-extrabold text-[#1F2A22]">
-              {errorModal.title}
-            </h3>
-            <p className="mt-2 text-sm text-[#6F655C]">{errorModal.message}</p>
-            <div className="mt-5 flex justify-end">
-              <button
-                type="button"
-                onClick={() =>
-                  setErrorModal({ open: false, title: "", message: "" })
-                }
-                className="rounded-[16px] bg-[#4A5D4E] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[#3F5143]"
-              >
-                Зрозуміло
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      {/* Top-right Save (appears only when header is visible) */}
-      <div
-        className={[
-          "fixed right-4 z-[9999] transition-all duration-300",
-          checklistOpen ? "top-20" : "top-4",
-          floatingVisible
-            ? "opacity-100 translate-y-0 pointer-events-auto"
-            : "opacity-0 -translate-y-2 pointer-events-none",
-        ].join(" ")}
-      ></div>
-
-      {/* Mobile bottom actions */}
-      <div
-        className={[
-          "fixed inset-x-0 bottom-0 z-[80] transition-all duration-300 md:hidden",
-          menuOpen || !hasPendingChanges
-            ? "pointer-events-none translate-y-4 opacity-0"
-            : "pointer-events-auto translate-y-0 opacity-100",
-        ].join(" ")}
-      >
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#FFFDF9] via-[#FFFDF9]/95 to-transparent" />
-
-        <div className="relative mx-auto max-w-5xl px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-          <div className="relative overflow-hidden rounded-[26px] border border-[#D9C7B4] bg-[#FFFDF9]/98 px-4 py-4 backdrop-blur-xl shadow-[0_24px_80px_rgba(31,42,34,0.22)] ring-1 ring-[#F3E6D8]">
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#F0B56B] via-[#E29A54] to-[#C97B63]" />
-
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={resetChanges}
-                  disabled={!dirty || saving}
-                  className={[
-                    "flex-1 rounded-[16px] border px-4 py-3 text-sm font-extrabold transition active:scale-[0.98]",
-                    dirty && !saving
-                      ? "border-[#D9CDC1] bg-white text-[#6E6257] shadow-[0_6px_18px_rgba(0,0,0,0.05)] hover:bg-[#FAF7F4]"
-                      : "cursor-not-allowed border-[#EFE7E0] bg-[#F8F5F2] text-[#B8B1AA]",
-                  ].join(" ")}
-                >
-                  Скасувати
-                </button>
-
-                <button
-                  type="button"
-                  onClick={save}
-                  disabled={!canSave}
-                  className={[
-                    "flex-1 rounded-[16px] px-4 py-3 text-sm font-black transition active:scale-[0.98]",
-                    canSave
-                      ? "bg-[#4A5D4E] text-white shadow-[0_14px_30px_rgba(74,93,78,0.34)]"
-                      : "cursor-not-allowed bg-[#BFC8C0] text-white/80",
-                  ].join(" ")}
-                >
-                  {saving ? "Збереження..." : "Зберегти"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Tablet + Desktop bottom actions */}
-      <div className="hidden md:block fixed left-1/2 bottom-6 z-[80] -translate-x-1/2">
-        <div
-          className={[
-            "relative overflow-hidden rounded-[28px] border border-[#D9C7B4] bg-[#FFFDF9]/98 backdrop-blur-xl",
-            "px-5 py-4 shadow-[0_24px_80px_rgba(31,42,34,0.22)] ring-1 ring-[#F3E6D8]",
-            "transition-all duration-300",
-            hasPendingChanges
-              ? "translate-y-0 scale-100 opacity-100"
-              : "pointer-events-none translate-y-4 scale-[0.98] opacity-0",
-          ].join(" ")}
-        >
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#F0B56B] via-[#E29A54] to-[#C97B63]" />
-
-          <div className="flex items-center gap-4">
-            <div className="flex min-w-0 items-center gap-3 pr-2">
-              <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#FFF3E6] shadow-[0_8px_20px_rgba(226,154,84,0.25)]">
-                <span className="absolute inline-flex h-3 w-3 rounded-full bg-[#E38B45] animate-ping opacity-75" />
-                <span className="relative inline-flex h-3 w-3 rounded-full bg-[#E38B45]" />
+                {toast.type === "success" && <Check className="h-5 w-5" />}
+                {toast.type === "warning" && <Camera className="h-5 w-5" />}
+                {toast.type === "error" && <X className="h-5 w-5" />}
               </div>
 
-              <div className="min-w-0">
-                <p className="mt-1 text-[17px] font-black leading-none text-[#1F2A22]">
-                  Маєте незбережені зміни
+              <div className="min-w-0 flex-1">
+                <p className="mt-2 text-[15px] font-black leading-5 text-stone-800">
+                  {toast.title}
+                </p>
+                <p className="mt-1 text-sm leading-5 text-stone-500">
+                  {toast.text}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={resetChanges}
-                disabled={!dirty || saving}
-                className={[
-                  "inline-flex items-center justify-center rounded-[16px] border px-5 py-3 text-sm font-extrabold transition active:scale-[0.98]",
-                  dirty && !saving
-                    ? "border-[#D9CDC1] bg-white text-[#6E6257] shadow-[0_6px_18px_rgba(0,0,0,0.05)] hover:bg-[#FAF7F4] hover:text-[#1F2A22]"
-                    : "cursor-not-allowed border-[#EFE7E0] bg-[#F8F5F2] text-[#B8B1AA]",
-                ].join(" ")}
-              >
-                Скасувати
-              </button>
+            <div className="h-[3px] w-full bg-stone-100">
+              <div
+                key={toast.id}
+                className={cn(
+                  "h-full w-full origin-left",
+                  toast.type === "success"
+                    ? "bg-emerald-400"
+                    : toast.type === "warning"
+                      ? "bg-amber-400"
+                      : "bg-red-400",
+                )}
+                style={{
+                  animation: `toastbar ${toast.duration}ms linear forwards`,
+                }}
+              />
+            </div>
+          </div>
 
-              <button
-                type="button"
-                onClick={save}
-                disabled={!canSave}
-                className={[
-                  "inline-flex min-w-[160px] items-center justify-center rounded-[16px] px-6 py-3 text-sm font-black transition active:scale-[0.98]",
-                  canSave
-                    ? "bg-[#4A5D4E] text-white shadow-[0_14px_30px_rgba(74,93,78,0.34)] hover:bg-[#3F5143]"
-                    : "cursor-not-allowed bg-[#BFC8C0] text-white/80",
-                ].join(" ")}
-              >
-                {saving ? "Збереження..." : "Зберегти"}
-              </button>
+          <style>{`
+            @keyframes toastbar {
+              from { transform: scaleX(1); }
+              to   { transform: scaleX(0); }
+            }
+          `}</style>
+        </div>
+
+        {/* Portfolio preview */}
+        {portfolioPreview.open && (
+          <div
+            className="fixed inset-0 z-[80] flex items-center justify-center bg-stone-900/55 p-4 backdrop-blur-[2px]"
+            onClick={() => setPortfolioPreview({ open: false, src: "" })}
+          >
+            <div className="w-full max-w-3xl">
+              <img
+                src={portfolioPreview.src}
+                alt="Portfolio preview"
+                className="max-h-[80dvh] w-full rounded-2xl bg-black object-contain"
+                onClick={(e) => e.stopPropagation()}
+              />
+              <div className="mt-3 flex justify-end">
+                <Button
+                  variant="secondary"
+                  onClick={() => setPortfolioPreview({ open: false, src: "" })}
+                >
+                  Закрити
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Error modal */}
+        {errorModal.open && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-stone-900/40 px-4">
+            <div className="w-full max-w-md rounded-3xl border border-stone-200 bg-white p-6 shadow-[0_24px_80px_rgba(93,64,55,0.18)]">
+              <h3 className="text-lg font-bold text-stone-800">
+                {errorModal.title}
+              </h3>
+              <p className="mt-2 text-sm text-stone-600">{errorModal.message}</p>
+              <div className="mt-5 flex justify-end">
+                <Button
+                  variant="primary"
+                  onClick={() =>
+                    setErrorModal({ open: false, title: "", message: "" })
+                  }
+                >
+                  Зрозуміло
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Mobile bottom actions */}
+        <div
+          className={cn(
+            "fixed inset-x-0 bottom-0 z-[80] transition-all duration-300 md:hidden",
+            menuOpen || !hasPendingChanges
+              ? "pointer-events-none translate-y-4 opacity-0"
+              : "pointer-events-auto translate-y-0 opacity-100",
+          )}
+        >
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-white via-white/95 to-transparent" />
+
+          <div className="relative mx-auto max-w-5xl px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+            <div className="relative overflow-hidden rounded-[26px] border border-amber-200 bg-white/95 px-4 py-4 shadow-[0_24px_80px_rgba(31,42,34,0.18)] ring-1 ring-amber-100 backdrop-blur-xl">
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500" />
+
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="secondary"
+                  onClick={resetChanges}
+                  disabled={!dirty || saving}
+                  className="flex-1"
+                >
+                  Скасувати
+                </Button>
+
+                <Button
+                  variant="primary"
+                  onClick={save}
+                  disabled={!canSave}
+                  className="flex-1"
+                >
+                  {saving ? "Збереження..." : "Зберегти"}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
+
+        {/* Desktop bottom actions */}
+        <div className="fixed bottom-6 left-1/2 z-[80] hidden -translate-x-1/2 md:block">
+          <div
+            className={cn(
+              "relative overflow-hidden rounded-[28px] border border-amber-200 bg-white/95 px-5 py-4 shadow-[0_24px_80px_rgba(31,42,34,0.18)] ring-1 ring-amber-100 backdrop-blur-xl transition-all duration-300",
+              hasPendingChanges
+                ? "translate-y-0 scale-100 opacity-100"
+                : "pointer-events-none translate-y-4 scale-[0.98] opacity-0",
+            )}
+          >
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500" />
+
+            <div className="flex items-center gap-4">
+              <div className="flex min-w-0 items-center gap-3 pr-2">
+                <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-r from-amber-100 to-orange-100 shadow-[0_8px_20px_rgba(226,154,84,0.20)]">
+                  <span className="absolute inline-flex h-3 w-3 rounded-full bg-orange-400 opacity-75 animate-ping" />
+                  <span className="relative inline-flex h-3 w-3 rounded-full bg-orange-500" />
+                </div>
+
+                <div className="min-w-0">
+                  <p className="text-[17px] font-black leading-none text-stone-800">
+                    Маєте незбережені зміни
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="secondary"
+                  onClick={resetChanges}
+                  disabled={!dirty || saving}
+                >
+                  Скасувати
+                </Button>
+
+                <Button
+                  variant="primary"
+                  onClick={save}
+                  disabled={!canSave}
+                  className="min-w-[160px]"
+                >
+                  {saving ? "Збереження..." : "Зберегти"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Optional floating top save slot */}
+<div
+  className={cn(
+    "fixed right-4 top-4 z-[9999] transition-all duration-300",
+    floatingVisible
+      ? "pointer-events-auto translate-y-0 opacity-100"
+      : "pointer-events-none -translate-y-2 opacity-0",
+  )}
+/>
       </div>
     </div>
   );

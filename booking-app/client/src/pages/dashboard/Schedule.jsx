@@ -1,8 +1,17 @@
 // Schedule.jsx
 import { useMemo, useState, useEffect } from "react";
+import {
+  Clock,
+  Sparkles,
+  CalendarDays,
+  Check,
+  XCircle,
+  ChevronDown,
+  RefreshCw,
+} from "lucide-react";
 import TimeSelect from "../../components/TimeSelect";
 import { useStudio } from "../../context/studio/useStudio";
-import { api } from "../../api/http"; // або твій шлях
+import { api } from "../../api/http";
 
 const DAYS = [
   { key: "mon", label: "Пн", full: "Понеділок" },
@@ -13,6 +22,10 @@ const DAYS = [
   { key: "sat", label: "Сб", full: "Субота" },
   { key: "sun", label: "Нд", full: "Неділя" },
 ];
+
+function cn(...classes) {
+  return classes.filter(Boolean).join(" ");
+}
 
 const defaultDay = (enabled = true) => ({
   enabled,
@@ -56,40 +69,108 @@ function normalizeSchedule(incoming) {
   return next;
 }
 
-function Card({ title, subtitle, children, right }) {
+function SectionCard({
+  title,
+  subtitle,
+  badge,
+  actions,
+  children,
+  className = "",
+}) {
   return (
-    <section className="overflow-hidden rounded-[30px] border border-[#EEEEEE]  shadow-[0_10px_30px_rgba(93,64,55,0.06)]">
-      <div className="flex items-start justify-between gap-3 border-b border-[#F0E7DE] px-5 py-4 sm:px-6">
+    <section
+      className={cn(
+        "group relative overflow-hidden rounded-3xl border border-stone-200/60 bg-white",
+        "shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)] hover:shadow-[0_8px_32px_-4px_rgba(120,90,60,0.12)]",
+        "transition-all duration-300",
+        className,
+      )}
+    >
+      <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-60" />
+
+      <div className="flex flex-col gap-3 border-b border-stone-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <h2 className="text-[18px] font-extrabold tracking-[-0.02em] text-[#1F2A22]">
-            {title}
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-bold tracking-tight text-stone-800">
+              {title}
+            </h2>
+
+            {badge && (
+              <span className="inline-flex items-center rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
+                {badge}
+              </span>
+            )}
+          </div>
+
           {subtitle && (
-            <p className="mt-1 text-sm text-[#857A70]">{subtitle}</p>
+            <p className="mt-0.5 text-sm text-stone-500">{subtitle}</p>
           )}
         </div>
-        {right}
+
+        {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
       </div>
 
-      <div className="px-5 py-5 sm:px-6 sm:py-6">{children}</div>
+      <div className="p-5">{children}</div>
     </section>
+  );
+}
+
+function Button({
+  variant = "secondary",
+  size = "md",
+  className = "",
+  children,
+  ...props
+}) {
+  const variants = {
+    primary:
+      "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/35 hover:from-emerald-700 hover:to-emerald-800",
+    secondary:
+      "bg-white border border-stone-200 text-stone-700 hover:bg-stone-50 hover:border-stone-300",
+    danger:
+      "bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 text-red-600 hover:from-red-100 hover:to-rose-100",
+    ghost: "text-stone-600 hover:bg-stone-100",
+  };
+
+  const sizes = {
+    sm: "px-3 py-1.5 text-xs rounded-xl",
+    md: "px-4 py-2.5 text-sm rounded-2xl",
+    lg: "px-6 py-3 text-sm rounded-2xl",
+  };
+
+  return (
+    <button
+      type="button"
+      className={cn(
+        "inline-flex items-center justify-center gap-2 font-semibold transition-all duration-200",
+        "active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50",
+        variants[variant],
+        sizes[size],
+        className,
+      )}
+      {...props}
+    >
+      {children}
+    </button>
   );
 }
 
 function Toggle({ checked }) {
   return (
     <span
-      className={[
-        "relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200",
-        checked ? "bg-[#86C991]" : "bg-[#E8DED4]",
-      ].join(" ")}
+      className={cn(
+        "relative inline-flex h-7 w-12 items-center rounded-full transition-all duration-300",
+        checked
+          ? "bg-gradient-to-r from-emerald-500 to-emerald-600 shadow-[0_8px_18px_rgba(16,185,129,0.28)]"
+          : "bg-stone-200",
+      )}
       aria-hidden="true"
     >
       <span
-        className={[
-          "inline-block h-5 w-5 transform rounded-full bg-white shadow-[0_2px_8px_rgba(0,0,0,0.12)] transition-transform duration-200",
-          checked ? "translate-x-5" : "translate-x-1",
-        ].join(" ")}
+        className={cn(
+          "inline-block h-5 w-5 transform rounded-full bg-white shadow-[0_2px_10px_rgba(0,0,0,0.18)] transition-transform duration-300",
+          checked ? "translate-x-6" : "translate-x-1",
+        )}
       />
     </span>
   );
@@ -97,7 +178,7 @@ function Toggle({ checked }) {
 
 function Chip({ children }) {
   return (
-    <span className="inline-flex items-center rounded-full border border-[#EFE5DB] bg-[#F8F4EF] px-3 py-1 text-xs font-bold text-[#7B6D61]">
+    <span className="inline-flex items-center rounded-full border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 px-3 py-1.5 text-xs font-semibold text-amber-700 shadow-sm">
       {children}
     </span>
   );
@@ -106,7 +187,7 @@ function Chip({ children }) {
 function SkeletonBlock({ className = "" }) {
   return (
     <div
-      className={`animate-pulse rounded-xl bg-gray-200/80 ${className}`}
+      className={cn("animate-pulse rounded-xl bg-stone-200/60", className)}
       aria-hidden="true"
     />
   );
@@ -114,94 +195,127 @@ function SkeletonBlock({ className = "" }) {
 
 function ScheduleSkeleton() {
   return (
-    <div className="mx-auto max-w-5xl space-y-6 bg-[#FFFDF9] pb-24 md:pb-0">
-      <div className="space-y-3">
-        <SkeletonBlock className="h-9 w-52 rounded-2xl" />
-        <SkeletonBlock className="h-4 w-80 max-w-full" />
+    <div className="space-y-6">
+      <div className="mb-8">
+        <SkeletonBlock className="mb-3 h-8 w-44" />
+        <SkeletonBlock className="mb-2 h-12 w-80" />
+        <SkeletonBlock className="h-5 w-96 max-w-full" />
       </div>
 
-      <section className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.06)]">
-        <div className="border-b border-gray-100 px-5 py-4">
-          <SkeletonBlock className="h-5 w-28" />
-          <SkeletonBlock className="mt-2 h-4 w-72 max-w-full" />
-        </div>
-
-        <div className="space-y-3 px-5 py-5">
-          {Array.from({ length: 7 }).map((_, i) => (
-            <div
-              key={i}
-              className="rounded-2xl border border-gray-200 bg-white p-4"
-            >
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-3">
-                  <SkeletonBlock className="h-6 w-11 rounded-full" />
-                  <div className="space-y-2">
-                    <SkeletonBlock className="h-4 w-28" />
-                    <SkeletonBlock className="h-3 w-20" />
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <SkeletonBlock className="h-12 w-[110px] rounded-2xl" />
-                  <SkeletonBlock className="h-4 w-4 rounded-md" />
-                  <SkeletonBlock className="h-12 w-[110px] rounded-2xl" />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.06)]">
-        <div className="border-b border-gray-100 px-5 py-4">
-          <SkeletonBlock className="h-5 w-44" />
-          <SkeletonBlock className="mt-2 h-4 w-80 max-w-full" />
-        </div>
-
-        <div className="px-5 py-5">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      {[1, 2].map((i) => (
+        <div key={i} className="rounded-3xl border border-stone-200 bg-white p-5">
+          <div className="mb-4 flex justify-between">
             <div className="space-y-2">
-              <SkeletonBlock className="h-4 w-32" />
-              <SkeletonBlock className="h-12 w-[160px] rounded-2xl" />
+              <SkeletonBlock className="h-6 w-40" />
+              <SkeletonBlock className="h-4 w-72 max-w-full" />
+            </div>
+            <SkeletonBlock className="h-10 w-32 rounded-2xl" />
+          </div>
+
+          <div className="space-y-3">
+            {Array.from({ length: i === 1 ? 7 : 1 }).map((_, idx) => (
+              <SkeletonBlock key={idx} className="h-20 w-full rounded-2xl" />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function Toast({ toast }) {
+  return (
+    <>
+      <div
+        className={cn(
+          "fixed z-[90] transition-all duration-300",
+          "left-1/2 top-[calc(1rem+env(safe-area-inset-top))] w-[calc(100%-2rem)] max-w-[430px] -translate-x-1/2",
+          "md:bottom-6 md:left-6 md:top-auto md:w-auto md:min-w-[300px] md:max-w-[360px] md:translate-x-0",
+          toast.open
+            ? "translate-y-0 opacity-100"
+            : "pointer-events-none -translate-y-2 opacity-0 md:translate-y-2",
+        )}
+        role="status"
+        aria-live="polite"
+      >
+        <div
+          className={cn(
+            "relative overflow-hidden rounded-[24px] border bg-white/95 backdrop-blur-xl shadow-[0_18px_50px_rgba(93,64,55,0.16)]",
+            toast.type === "success"
+              ? "border-emerald-200 ring-1 ring-emerald-100"
+              : "border-red-200 ring-1 ring-red-100",
+          )}
+        >
+          <div
+            className={cn(
+              "absolute inset-x-0 top-0 h-1",
+              toast.type === "success"
+                ? "bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600"
+                : "bg-gradient-to-r from-red-300 via-red-400 to-rose-500",
+            )}
+          />
+
+          <div className="relative flex items-start gap-3 px-4 py-4 sm:px-5">
+            <div
+              className={cn(
+                "mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border shadow-[0_8px_22px_rgba(93,64,55,0.10)]",
+                toast.type === "success"
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-600"
+                  : "border-red-200 bg-red-50 text-red-500",
+              )}
+            >
+              {toast.type === "success" ? (
+                <Check className="h-5 w-5" />
+              ) : (
+                <XCircle className="h-5 w-5" />
+              )}
             </div>
 
-            <SkeletonBlock className="h-11 w-44 rounded-2xl" />
+            <div className="min-w-0 flex-1">
+              <p className="mt-2 text-[15px] font-black leading-5 text-stone-800">
+                {toast.title || (toast.type === "success" ? "Збережено" : "Помилка")}
+              </p>
+              <p className="mt-1 text-sm leading-5 text-stone-500">
+                {toast.text}
+              </p>
+            </div>
           </div>
-        </div>
-      </section>
 
-      <div className="fixed inset-x-0 bottom-0 md:hidden z-[60]">
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-white via-white/95 to-transparent" />
-        <div className="relative mx-auto max-w-5xl px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-          <div className="flex gap-2">
-            <SkeletonBlock className="h-12 w-1/2 rounded-2xl" />
-            <SkeletonBlock className="h-12 w-1/2 rounded-2xl" />
+          <div className="h-[3px] w-full bg-stone-100">
+            <div
+              key={toast.id}
+              className={cn(
+                "h-full w-full origin-left",
+                toast.type === "success" ? "bg-emerald-400" : "bg-red-400",
+              )}
+              style={{
+                animation: `toastbar ${toast.duration}ms linear forwards`,
+              }}
+            />
           </div>
         </div>
       </div>
 
-      <div className="hidden md:block fixed right-6 bottom-6 z-[60]">
-        <div className="flex items-center gap-3">
-          <SkeletonBlock className="h-10 w-36 rounded-full" />
-          <SkeletonBlock className="h-12 w-32 rounded-2xl" />
-          <SkeletonBlock className="h-12 w-32 rounded-2xl" />
-        </div>
-      </div>
-    </div>
+      <style>{`
+        @keyframes toastbar {
+          from { transform: scaleX(1); }
+          to   { transform: scaleX(0); }
+        }
+      `}</style>
+    </>
   );
 }
 
 export default function Schedule() {
   const { studio } = useStudio();
   const [initialLoading, setInitialLoading] = useState(true);
+
   const storedSchedule = useMemo(() => getDefaultSchedule(), []);
   const storedSlotDuration = 0.1;
 
-  // draft (те що редагуєш)
   const [schedule, setScheduleDraft] = useState(storedSchedule);
   const [slotDuration, setSlotDuration] = useState(storedSlotDuration);
 
-  // baseline (останнє завантажене/збережене)
   const [savedSchedule, setSavedSchedule] = useState(storedSchedule);
   const [savedSlotDuration, setSavedSlotDuration] =
     useState(storedSlotDuration);
@@ -209,32 +323,32 @@ export default function Schedule() {
   const [preview, setPreview] = useState({});
   const [saving, setSaving] = useState(false);
 
-const [toast, setToast] = useState({
-  id: 0,
-  open: false,
-  type: "success",
-  title: "",
-  text: "",
-  duration: 2200,
-});
-
-function showToast({ type = "success", title, text }) {
-  const duration = type === "error" ? 2200 : 2200;
-
-  setToast({
-    id: Date.now(),
-    open: true,
-    type,
-    title,
-    text,
-    duration,
+  const [toast, setToast] = useState({
+    id: 0,
+    open: false,
+    type: "success",
+    title: "",
+    text: "",
+    duration: 2200,
   });
 
-  clearTimeout(showToast._t);
-  showToast._t = setTimeout(() => {
-    setToast((prev) => ({ ...prev, open: false }));
-  }, duration);
-}
+  function showToast({ type = "success", title, text }) {
+    const duration = 2200;
+
+    setToast({
+      id: Date.now(),
+      open: true,
+      type,
+      title,
+      text,
+      duration,
+    });
+
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => {
+      setToast((prev) => ({ ...prev, open: false }));
+    }, duration);
+  }
 
   const dirty = useMemo(() => {
     return (
@@ -282,64 +396,64 @@ function showToast({ type = "success", title, text }) {
     setPreview(result);
   }
 
-async function saveAll() {
-  if (!dirty || saving || !studio?.id) return;
+  async function saveAll() {
+    if (!dirty || saving || !studio?.id) return;
 
-  setSaving(true);
-  try {
-    const token = localStorage.getItem("token");
+    setSaving(true);
+    try {
+      const token = localStorage.getItem("token");
 
-    await api(`/studio/${studio.id}/schedule`, {
-      method: "PATCH",
-      token,
-      body: { schedule, slotDuration },
-    });
+      await api(`/studio/${studio.id}/schedule`, {
+        method: "PATCH",
+        token,
+        body: { schedule, slotDuration },
+      });
 
-    const fresh = await api(`/studio/${studio.id}/schedule`, {
-      method: "GET",
-      token,
-    });
+      const fresh = await api(`/studio/${studio.id}/schedule`, {
+        method: "GET",
+        token,
+      });
 
-    const nextSchedule = normalizeSchedule(fresh.schedule ?? schedule);
-    const nextDuration =
-      typeof fresh.slotDuration === "number" ? fresh.slotDuration : 15;
+      const nextSchedule = normalizeSchedule(fresh.schedule ?? schedule);
+      const nextDuration =
+        typeof fresh.slotDuration === "number" ? fresh.slotDuration : 15;
 
-    setScheduleDraft(nextSchedule);
-    setSlotDuration(nextDuration);
+      setScheduleDraft(nextSchedule);
+      setSlotDuration(nextDuration);
 
-    setSavedSchedule(nextSchedule);
-    setSavedSlotDuration(nextDuration);
+      setSavedSchedule(nextSchedule);
+      setSavedSlotDuration(nextDuration);
 
-    setPreview({});
-    showToast({
-      type: "success",
-      title: "Графік оновлено",
-      text: "Зміни успішно збережено.",
-    });
-  } catch (err) {
-    console.error(err);
+      setPreview({});
+      showToast({
+        type: "success",
+        title: "Графік оновлено",
+        text: "Зміни успішно збережено.",
+      });
+    } catch (err) {
+      console.error(err);
 
-    const rawMessage = String(err?.message || "").toLowerCase();
+      const rawMessage = String(err?.message || "").toLowerCase();
 
-    const isOffline =
-      !navigator.onLine ||
-      rawMessage.includes("failed to fetch") ||
-      rawMessage.includes("networkerror") ||
-      rawMessage.includes("network error") ||
-      rawMessage.includes("load failed") ||
-      rawMessage.includes("fetch");
+      const isOffline =
+        !navigator.onLine ||
+        rawMessage.includes("failed to fetch") ||
+        rawMessage.includes("networkerror") ||
+        rawMessage.includes("network error") ||
+        rawMessage.includes("load failed") ||
+        rawMessage.includes("fetch");
 
-    showToast({
-      type: "error",
-      title: isOffline ? "Немає інтернету" : "Не вдалося зберегти",
-      text: isOffline
-        ? "Перевірте підключення до інтернету."
-        : err?.message || "Сталася помилка під час збереження.",
-    });
-  } finally {
-    setSaving(false);
+      showToast({
+        type: "error",
+        title: isOffline ? "Немає інтернету" : "Не вдалося зберегти",
+        text: isOffline
+          ? "Перевірте підключення до інтернету."
+          : err?.message || "Сталася помилка під час збереження.",
+      });
+    } finally {
+      setSaving(false);
+    }
   }
-}
 
   function cancelChanges() {
     if (saving) return;
@@ -421,431 +535,269 @@ async function saveAll() {
     return <ScheduleSkeleton />;
   }
 
+  const enabledDaysCount = DAYS.filter((d) => schedule[d.key]?.enabled).length;
+
   return (
-    <div className="mx-auto max-w-5xl space-y-6 pb-20 md:pb-0">
-      {/* Professional Toast (same as StudioSettings) */}
-{/* Toast in page style */}
-<div
-  className={[
-    "fixed z-[90] transition-all duration-300",
-    "left-1/2 top-[calc(1rem+env(safe-area-inset-top))] -translate-x-1/2",
-    "md:left-6 md:top-auto md:bottom-6 md:translate-x-0",
-    "w-[calc(100%-2rem)] max-w-[430px] md:w-auto md:min-w-[300px] md:max-w-[360px]",
-    toast.open
-      ? "translate-y-0 opacity-100"
-      : "pointer-events-none -translate-y-2 opacity-0 md:translate-y-2",
-  ].join(" ")}
-  role="status"
-  aria-live="polite"
->
-  <div
-    className={[
-      "relative overflow-hidden rounded-[24px] border bg-[#FFFDF9]/98 backdrop-blur-xl",
-      "shadow-[0_18px_50px_rgba(93,64,55,0.16)] ring-1 ring-[#F4E8DC]",
-      toast.type === "success"
-        ? "border-[#D8E7D7]"
-        : "border-[#EBCFCB]",
-    ].join(" ")}
-  >
-    {/* top accent */}
-    <div
-      className={[
-        "absolute inset-x-0 top-0 h-1",
-        toast.type === "success"
-          ? "bg-gradient-to-r from-[#9FC59B] via-[#86B882] to-[#6FA56A]"
-          : "bg-gradient-to-r from-[#E8A59C] via-[#DB8B80] to-[#C96E62]",
-      ].join(" ")}
-    />
+    <div className="min-h-screen ">
+      <Toast toast={toast} />
 
-    <div className="relative flex items-start gap-3 px-4 py-4 sm:px-5">
-      {/* icon */}
-      <div
-        className={[
-          "mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border",
-          "shadow-[0_8px_22px_rgba(93,64,55,0.10)]",
-          "animate-[toastPop_260ms_ease-out]",
-          toast.type === "success"
-            ? "border-[#D8E7D7] bg-[#EDF7EC] text-[#4A7B45]"
-            : "border-[#EBCFCB] bg-[#FFF1EF] text-[#B85C52]",
-        ].join(" ")}
-        aria-hidden="true"
-      >
-        {toast.type === "success" ? (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M20 6L9 17l-5-5"
-              stroke="currentColor"
-              strokeWidth="2.6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        ) : (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M12 8.5v5"
-              stroke="currentColor"
-              strokeWidth="2.6"
-              strokeLinecap="round"
-            />
-            <path
-              d="M12 17h.01"
-              stroke="currentColor"
-              strokeWidth="3.2"
-              strokeLinecap="round"
-            />
-          </svg>
-        )}
-      </div>
+      <div className="mx-auto max-w-5xl space-y-6">
+        {/* Header */}
+        <div className="mb-2">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-4 py-1.5">
+            <Sparkles className="h-4 w-4 text-amber-600" />
+            <span className="text-xs font-bold uppercase tracking-wider text-amber-700">
+              Графік студії
+            </span>
+          </div>
 
-      {/* text */}
-      <div className="min-w-0 flex-1">
-        <p className="mt-2 text-[15px] font-black leading-5 text-[#1F2A22]">
-          {toast.title || (toast.type === "success" ? "Збережено" : "Сталася помилка")}
-        </p>
-
-        <p className="mt-1 text-sm leading-5 text-[#7D7065]">
-          {toast.text}
-        </p>
-      </div>
-    </div>
-
-    {/* subtle progress */}
-<div className="h-[3px] w-full bg-[#F4ECE3]">
-  <div
-    key={toast.id}
-    className={[
-      "h-full w-full origin-left",
-      toast.type === "success" ? "bg-[#8FBC89]" : "bg-[#D9897E]",
-    ].join(" ")}
-    style={{
-      animation: `toastbar ${toast.duration}ms linear forwards`,
-    }}
-  />
-</div>
-  </div>
-
-  <style>{`
-    @keyframes toastbar {
-      from { transform: scaleX(1); }
-      to   { transform: scaleX(0); }
-    }
-
-    @keyframes toastPop {
-      0%   { transform: scale(.94); opacity: .65; }
-      100% { transform: scale(1); opacity: 1; }
-    }
-  `}</style>
-</div>
-
-      {/* header */}
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-[#C89D72]">
-            графік студії
-          </p>
-
-          <h1 className="mt-2 text-3xl font-black leading-[1.05] tracking-[-0.03em] text-[#1F2A22] sm:text-4xl">
+          <h1 className="text-4xl font-black tracking-tight text-stone-800 sm:text-5xl">
             Графік роботи
           </h1>
 
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-[#857A70] sm:text-[15px]">
-            Налаштуй робочі дні, години роботи та крок запису в стилі зручного
-            онлайн-бронювання.
+          <p className="mt-3 max-w-2xl text-stone-600">
+            Налаштуй робочі дні, години роботи та крок запису в сучасному і
+            зручному форматі.
           </p>
         </div>
-      </div>
 
-      {/* schedule card */}
-      <Card
-        title="Робочі дні"
-        subtitle="Увімкни день і задай час початку та завершення."
-      >
-        <div className="space-y-3">
-          {DAYS.map((day) => {
-            const config = schedule[day.key];
-            const enabled = config.enabled;
+        {/* Work days */}
+        <SectionCard
+          title="Робочі дні"
+          subtitle="Увімкни день і задай час початку та завершення."
+          badge={`${enabledDaysCount} активн.`}
+        >
+          <div className="space-y-3">
+            {DAYS.map((day) => {
+              const config = schedule[day.key];
+              const enabled = config.enabled;
 
-            return (
-              <div
-                key={day.key}
-                className={[
-                  "rounded-[24px] border p-4 transition-all duration-200",
-                  enabled
-                    ? "border-[#EEEEEE] bg-white shadow-[0_6px_18px_rgba(93,64,55,0.04)]"
-                    : "border-[#EEE4DA] bg-[#FFFCF8]/92",
-                ].join(" ")}
-              >
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <button
-                    type="button"
-                    onClick={() => toggleDay(day.key)}
-                    className="flex items-center gap-3 text-left"
-                  >
-                    <Toggle checked={enabled} />
-                    <div className="min-w-0">
-                      <p className="text-[15px] font-extrabold text-[#1F2A22]">
-                        {day.full}
-                      </p>
-                      <p className="text-xs text-[#8B7F73]">
-                        {enabled ? "Робочий день" : "Вихідний"}
-                      </p>
-                    </div>
-                  </button>
-
-                  {enabled ? (
-<div className="flex items-center gap-2">
-  <div className="flex items-center rounded-[18px] border border-[#EFE4D9] bg-white px-3 py-2 w-[220px]">
-    
-    <div className="flex-1 min-w-0">
-      <TimeSelect
-        value={config.start}
-        onChange={(value) => updateTime(day.key, "start", value)}
-      />
-    </div>
-
-    <span className="px-2 text-sm font-bold text-[#B7A899]">
-      —
-    </span>
-
-    <div className="flex-1 min-w-0">
-      <TimeSelect
-        value={config.end}
-        onChange={(value) => updateTime(day.key, "end", value)}
-      />
-    </div>
-
-  </div>
-</div>
-                  ) : (
-                    <div className="w-full text-sm font-semibold text-[#A29588] sm:w-auto sm:text-right">
-                      Вихідний
-                    </div>
+              return (
+                <div
+                  key={day.key}
+                  className={cn(
+                    "rounded-2xl border p-4 transition-all duration-300",
+                    enabled
+                      ? "border-stone-200 bg-white shadow-[0_6px_18px_rgba(93,64,55,0.04)] hover:border-amber-200"
+                      : "border-stone-200/70 bg-stone-50/70",
                   )}
+                >
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <button
+                      type="button"
+                      onClick={() => toggleDay(day.key)}
+                      className="flex items-center gap-3 text-left"
+                    >
+                      <Toggle checked={enabled} />
+
+                      <div className="min-w-0">
+                        <p className="text-[15px] font-bold text-stone-800">
+                          {day.full}
+                        </p>
+                        <p className="text-xs text-stone-500">
+                          {enabled ? "Робочий день" : "Вихідний"}
+                        </p>
+                      </div>
+                    </button>
+
+                    {enabled ? (
+                      <div className="flex items-center gap-2">
+                        <div className="flex w-full items-center rounded-2xl border border-stone-200 bg-white px-3 py-2 shadow-sm sm:w-[250px]">
+                          <div className="min-w-0 flex-1">
+                            <TimeSelect
+                              value={config.start}
+                              onChange={(value) =>
+                                updateTime(day.key, "start", value)
+                              }
+                            />
+                          </div>
+
+                          <span className="px-2 text-sm font-bold text-stone-400">
+                            —
+                          </span>
+
+                          <div className="min-w-0 flex-1">
+                            <TimeSelect
+                              value={config.end}
+                              onChange={(value) =>
+                                updateTime(day.key, "end", value)
+                              }
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="w-full text-sm font-semibold text-stone-400 sm:w-auto sm:text-right">
+                        Вихідний
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      </Card>
-
-      {/* slot settings */}
-      <Card
-        title="Налаштування слотів"
-        subtitle="Це тривалість одного запису (крок між часами)."
-      >
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-          <div className="space-y-2">
-            <label className="text-sm font-extrabold text-gray-900 space-y-2 pr-4">
-              Тривалість слота
-            </label>
-            <div className="relative inline-block">
-              <select
-                value={slotDuration}
-                onChange={(e) => setSlotDuration(Number(e.target.value))}
-                className="
-  peer
-  w-fit min-w-[150px]
-  appearance-none
-  rounded-[18px]
-  border border-[#EEEEEE]
-  
-  px-4 py-3 pr-12
-  text-sm font-extrabold text-[#1F2A22]
-  outline-none
-  transition
-  hover:bg-[#FCF8F3] hover:border-[#DDCFC1]
-  focus:border-[#4A5D4E] focus:ring-2 focus:ring-[#4A5D4E]/15
-"
-              >
-                <option value={10}>10 хв</option>
-                <option value={15}>15 хв</option>
-                <option value={30}>30 хв</option>
-                <option value={60}>60 хв</option>
-              </select>
-
-              {/* Arrow (rotates on focus = "opened") */}
-              <div
-                className="
-  pointer-events-none
-  absolute right-3 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center
-  rounded-xl border border-[#EEEEEE] bg-white text-[#8C7F73]
-  transition
-  peer-hover:bg-[#FCF8F3] peer-hover:border-[#DDCFC1]
-  peer-focus:rotate-180 peer-focus:border-[#4A5D4E] peer-focus:text-[#1F2A22]
-"
-                aria-hidden="true"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M6 9l6 6 6-6"
-                    stroke="currentColor"
-                    strokeWidth="2.6"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-            </div>
+              );
+            })}
           </div>
+        </SectionCard>
 
-          <button
-            type="button"
-            onClick={generateSlots}
-            className="inline-flex items-center justify-center rounded-[18px] bg-[#4A5D4E] px-5 py-3 text-sm font-extrabold text-white shadow-[0_10px_24px_rgba(74,93,78,0.22)] transition hover:bg-[#3F5143] active:scale-[0.98]"
-          >
-            Згенерувати слоти
-          </button>
-        </div>
-      </Card>
-
-      {/* preview */}
-      {Object.keys(preview).length > 0 && (
-        <Card
-          title="Перевірка графіка"
-          subtitle="Показуємо слоти, які будуть доступні для запису."
-          right={
-            <span className="text-xs font-bold text-[#8B7F73]">
-              Крок: {slotDuration} хв
-            </span>
+        {/* Slot settings */}
+        <SectionCard
+          title="Налаштування слотів"
+          subtitle="Це тривалість одного запису — крок між доступними часами."
+          actions={
+            <Button variant="primary" onClick={generateSlots}>
+              <CalendarDays className="h-4 w-4" />
+              Згенерувати слоти
+            </Button>
           }
         >
-          <div className="space-y-5">
-            {DAYS.map((day) =>
-              preview[day.key] ? (
-                <div key={day.key} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-extrabold text-[#1F2A22]">
-                      {day.full}
-                    </p>
-                    <span className="text-xs text-[#8B7F73]">
-                      {preview[day.key].length} слот(и)
-                    </span>
-                  </div>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-stone-700">
+                Тривалість слота
+              </label>
 
-                  <div className="flex flex-wrap gap-2">
-                    {preview[day.key].map((time) => (
-                      <Chip key={time}>{time}</Chip>
-                    ))}
-                  </div>
-                </div>
-              ) : null,
-            )}
+              <div className="relative inline-block">
+                <select
+                  value={slotDuration}
+                  onChange={(e) => setSlotDuration(Number(e.target.value))}
+                  className="w-fit min-w-[170px] appearance-none rounded-2xl border border-stone-200 bg-white px-4 py-3 pr-12 text-sm font-semibold text-stone-800 outline-none transition-all hover:border-stone-300 hover:bg-stone-50 focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10"
+                >
+                  <option value={10}>10 хв</option>
+                  <option value={15}>15 хв</option>
+                  <option value={30}>30 хв</option>
+                  <option value={60}>60 хв</option>
+                </select>
+
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-stone-400" />
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-3 text-sm text-amber-800 shadow-sm">
+              Поточний крок:{" "}
+              <span className="font-bold">{slotDuration} хв</span>
+            </div>
           </div>
-        </Card>
-      )}
+        </SectionCard>
 
-      {/* Tablet + Desktop bottom-right actions (md+) */}
-<div className="hidden md:block fixed left-1/2 bottom-6 z-[80] -translate-x-1/2">
-  <div
-    className={[
-      "relative overflow-hidden rounded-[28px] border border-[#D9C7B4] bg-[#FFFDF9]/98 backdrop-blur-xl",
-      "px-5 py-4 shadow-[0_24px_80px_rgba(31,42,34,0.22)] ring-1 ring-[#F3E6D8]",
-      "transition-all duration-100",
-      dirty
-        ? "translate-y-0 scale-100 opacity-100"
-        : "pointer-events-none translate-y-4 scale-[0.98] opacity-0",
-    ].join(" ")}
-  >
-    {/* accent glow */}
-    <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#F0B56B] via-[#E29A54] to-[#C97B63]" />
-
-    <div className="flex items-center gap-4">
-      <div className="flex min-w-0 items-center gap-3 pr-2">
-        <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#FFF3E6] shadow-[0_8px_20px_rgba(226,154,84,0.25)]">
-          <span className="absolute inline-flex h-3 w-3 rounded-full bg-[#E38B45] animate-ping opacity-75" />
-          <span className="relative inline-flex h-3 w-3 rounded-full bg-[#E38B45]" />
-        </div>
-
-        <div className="min-w-0">
-          <p className="mt-1 text-[17px] font-black leading-none text-[#1F2A22]">
-            Маєте незбережені зміни
-          </p>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={cancelChanges}
-          disabled={!dirty || saving}
-          className={[
-            "inline-flex items-center justify-center rounded-[16px] border px-5 py-3 text-sm font-extrabold transition active:scale-[0.98]",
-            dirty && !saving
-              ? "border-[#D9CDC1] bg-white text-[#6E6257] shadow-[0_6px_18px_rgba(0,0,0,0.05)] hover:bg-[#FAF7F4] hover:text-[#1F2A22]"
-              : "cursor-not-allowed border-[#EFE7E0] bg-[#F8F5F2] text-[#B8B1AA]",
-          ].join(" ")}
-        >
-          Скасувати
-        </button>
-
-        <button
-          type="button"
-          onClick={saveAll}
-          disabled={!dirty || saving}
-          className={[
-            "inline-flex min-w-[160px] items-center justify-center rounded-[16px] px-6 py-3 text-sm font-black transition active:scale-[0.98]",
-            dirty && !saving
-              ? "bg-[#4A5D4E] text-white shadow-[0_14px_30px_rgba(74,93,78,0.34)] hover:bg-[#3F5143]"
-              : "cursor-not-allowed bg-[#BFC8C0] text-white/80",
-          ].join(" ")}
-        >
-          {saving ? "Збереження..." : "Зберегти"}
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-      {/* Mobile bottom actions */}
-<div
-  className={[
-    "fixed inset-x-0 bottom-0 z-[80] transition-all duration-300 md:hidden",
-    menuOpen || !dirty
-      ? "pointer-events-none translate-y-4 opacity-0"
-      : "pointer-events-auto translate-y-0 opacity-100",
-  ].join(" ")}
->
-  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#FFFDF9] via-[#FFFDF9]/95 to-transparent" />
-
-  <div className="relative mx-auto max-w-5xl px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-    <div className="relative overflow-hidden rounded-[26px] border border-[#D9C7B4] bg-[#FFFDF9]/98 px-4 py-4 backdrop-blur-xl shadow-[0_24px_80px_rgba(31,42,34,0.22)] ring-1 ring-[#F3E6D8]">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#F0B56B] via-[#E29A54] to-[#C97B63]" />
-
-      <div className="space-y-3">
-
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={cancelChanges}
-            disabled={!dirty || saving}
-            className={[
-              "flex-1 rounded-[16px] border px-4 py-3 text-sm font-extrabold transition active:scale-[0.98]",
-              dirty && !saving
-                ? "border-[#D9CDC1] bg-white text-[#6E6257] shadow-[0_6px_18px_rgba(0,0,0,0.05)] hover:bg-[#FAF7F4]"
-                : "cursor-not-allowed border-[#EFE7E0] bg-[#F8F5F2] text-[#B8B1AA]",
-            ].join(" ")}
+        {/* Preview */}
+        {Object.keys(preview).length > 0 && (
+          <SectionCard
+            title="Перевірка графіка"
+            subtitle="Показуємо слоти, які будуть доступні для запису."
+            badge={`Крок ${slotDuration} хв`}
           >
-            Скасувати
-          </button>
+            <div className="space-y-5">
+              {DAYS.map((day) =>
+                preview[day.key] ? (
+                  <div key={day.key} className="space-y-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-sm font-bold text-stone-800">
+                        {day.full}
+                      </p>
 
-          <button
-            type="button"
-            onClick={saveAll}
-            disabled={!dirty || saving}
-            className={[
-              "flex-1 rounded-[16px] px-4 py-3 text-sm font-black transition active:scale-[0.98]",
-              dirty && !saving
-                ? "bg-[#4A5D4E] text-white shadow-[0_14px_30px_rgba(74,93,78,0.34)]"
-                : "cursor-not-allowed bg-[#BFC8C0] text-white/80",
-            ].join(" ")}
-          >
-            {saving ? "Збереження..." : "Зберегти"}
-          </button>
+                      <span className="text-xs text-stone-500">
+                        {preview[day.key].length} слот(и)
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      {preview[day.key].map((time) => (
+                        <Chip key={time}>{time}</Chip>
+                      ))}
+                    </div>
+                  </div>
+                ) : null,
+              )}
+            </div>
+          </SectionCard>
+        )}
+      </div>
+
+      {/* Desktop save bar */}
+      <div className="fixed bottom-6 left-1/2 z-[80] hidden -translate-x-1/2 md:block">
+        <div
+          className={cn(
+            "relative overflow-hidden rounded-[28px] border border-amber-200 bg-white/95 px-5 py-4 shadow-[0_24px_80px_rgba(31,42,34,0.18)] ring-1 ring-amber-100 backdrop-blur-xl transition-all duration-200",
+            dirty
+              ? "translate-y-0 scale-100 opacity-100"
+              : "pointer-events-none translate-y-4 scale-[0.98] opacity-0",
+          )}
+        >
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500" />
+
+          <div className="flex items-center gap-4">
+            <div className="flex min-w-0 items-center gap-3 pr-2">
+              <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-r from-amber-100 to-orange-100 shadow-[0_8px_20px_rgba(226,154,84,0.20)]">
+                <span className="absolute inline-flex h-3 w-3 rounded-full bg-orange-400 opacity-75 animate-ping" />
+                <span className="relative inline-flex h-3 w-3 rounded-full bg-orange-500" />
+              </div>
+
+              <div className="min-w-0">
+                <p className="text-[16px] font-black leading-none text-stone-800">
+                  Маєте незбережені зміни
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                onClick={cancelChanges}
+                disabled={!dirty || saving}
+              >
+                <RefreshCw className="h-4 w-4" />
+                Скасувати
+              </Button>
+
+              <Button
+                variant="primary"
+                onClick={saveAll}
+                disabled={!dirty || saving}
+                className="min-w-[160px]"
+              >
+                {saving ? "Збереження..." : "Зберегти"}
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-  </div>
-</div>
+
+      {/* Mobile save bar */}
+      <div
+        className={cn(
+          "fixed inset-x-0 bottom-0 z-[80] transition-all duration-300 md:hidden",
+          menuOpen || !dirty
+            ? "pointer-events-none translate-y-4 opacity-0"
+            : "pointer-events-auto translate-y-0 opacity-100",
+        )}
+      >
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-white via-white/95 to-transparent" />
+
+        <div className="relative mx-auto max-w-5xl px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+          <div className="relative overflow-hidden rounded-[26px] border border-amber-200 bg-white/95 px-4 py-4 shadow-[0_24px_80px_rgba(31,42,34,0.18)] ring-1 ring-amber-100 backdrop-blur-xl">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500" />
+
+            <div className="flex gap-2">
+              <Button
+                variant="secondary"
+                onClick={cancelChanges}
+                disabled={!dirty || saving}
+                className="flex-1"
+              >
+                Скасувати
+              </Button>
+
+              <Button
+                variant="primary"
+                onClick={saveAll}
+                disabled={!dirty || saving}
+                className="flex-1"
+              >
+                {saving ? "Збереження..." : "Зберегти"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
