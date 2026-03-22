@@ -37,13 +37,13 @@ function DashboardSkeleton() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-stone-50 via-amber-50/30 to-orange-50/20">
       <div className="mx-auto max-w-6xl px-4 pt-24 md:pt-22">
-        <div className="grid grid-cols-1 items-start gap-5 md:grid-cols-[220px_minmax(0,1fr)]">
+        <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[220px_minmax(0,1fr)]">
           <aside
             className="
-              hidden md:block
+              hidden lg:block
               relative top-auto h-fit overflow-hidden rounded-3xl border border-stone-200/60 bg-white p-4
               shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]
-              md:sticky md:top-[88px]
+              md:sticky lg:top-[88px]
             "
           >
             <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-60" />
@@ -125,14 +125,14 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-stone-50 via-amber-50/30 to-orange-50/20">
-      <div className="mx-auto max-w-6xl px-4 pt-24 md:pt-22">
-        <div className="grid grid-cols-1 items-start gap-5 md:grid-cols-[220px_minmax(0,1fr)]">
+      <div className="mx-auto max-w-6xl px-4 pt-24 lg:pt-24">
+        <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[220px_minmax(0,1fr)]">
           <aside
             className="
-              hidden md:block
+              hidden lg:block
               relative top-auto h-fit overflow-hidden rounded-3xl border border-stone-200/60 bg-white p-3
               shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]
-              md:sticky md:top-[88px]
+              lg:sticky lg:top-[88px]
             "
           >
             <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-60" />

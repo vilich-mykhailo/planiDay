@@ -1,5 +1,5 @@
+// StudioBookingWidget.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
-/* eslint-disable no-unused-vars */
 import { motion, AnimatePresence } from "framer-motion";
 import { Clock, Check, ChevronRight, Sparkles } from "lucide-react";
 import Calendar from "./Calendar";
@@ -64,8 +64,37 @@ function weekdayEnumToKey(v) {
   return m[s] || null;
 }
 
+function getScheduleForDate(date, schedule, exceptions = []) {
+  if (!date) return null;
+
+  const iso = formatDateLocal(date);
+
+  const exactException = exceptions.find(
+    (item) => String(item?.date || "").slice(0, 10) === iso,
+  );
+
+  if (exactException) {
+    if (!exactException.enabled) return null;
+
+    return {
+      enabled: true,
+      start: exactException.start,
+      end: exactException.end,
+    };
+  }
+
+  const dayKey = getDayKeyFromDateObj(date);
+  const fallback = schedule?.[dayKey];
+
+  if (!fallback?.enabled) return null;
+  return fallback;
+}
+
 export default function StudioBookingWidget({
   studio,
+  schedule: scheduleProp,
+  scheduleExceptions: scheduleExceptionsProp,
+  slotDuration: slotDurationProp,
   preselectedService,
   onCancel,
   onSuccess,
@@ -105,12 +134,15 @@ export default function StudioBookingWidget({
   }, [studio?.id, studio?.slug, preselectedService?.serviceId, services]);
 
   if (!studio) return null;
-
+StudioBookingWidgetInner
   return (
     <StudioBookingWidgetInner
       key={remountKey}
       studio={studio}
       services={services}
+      scheduleProp={scheduleProp}
+      scheduleExceptionsProp={scheduleExceptionsProp}
+      slotDurationProp={slotDurationProp}
       preselectedService={preselectedService}
       onCancel={onCancel}
       onSuccess={onSuccess}
@@ -121,16 +153,25 @@ export default function StudioBookingWidget({
 function StudioBookingWidgetInner({
   studio,
   services,
+  scheduleProp,
+  scheduleExceptionsProp,
+  slotDurationProp,
   preselectedService,
   onCancel,
   onSuccess,
 }) {
   const slotDuration =
-    typeof studio?.slotDuration === "number" && studio.slotDuration > 0
-      ? studio.slotDuration
-      : 15;
+    typeof slotDurationProp === "number" && slotDurationProp > 0
+      ? slotDurationProp
+      : typeof studio?.slotDuration === "number" && studio.slotDuration > 0
+        ? studio.slotDuration
+        : 15;
 
   const schedule = useMemo(() => {
+    if (scheduleProp && typeof scheduleProp === "object") {
+      return scheduleProp;
+    }
+
     if (studio?.schedule && typeof studio.schedule === "object") {
       return studio.schedule;
     }
@@ -139,7 +180,7 @@ function StudioBookingWidgetInner({
     const out = {};
 
     for (const d of days) {
-      const key = weekdayEnumToKey(d.weekday);
+      const key = weekdayEnumToKey(d.weekday || d.day);
       if (!key) continue;
 
       out[key] = {
@@ -150,7 +191,20 @@ function StudioBookingWidgetInner({
     }
 
     return out;
-  }, [studio]);
+  }, [scheduleProp, studio]);
+
+const scheduleExceptions = useMemo(() => {
+  const raw = Array.isArray(scheduleExceptionsProp)
+    ? scheduleExceptionsProp
+    : Array.isArray(studio?.scheduleExceptions)
+      ? studio.scheduleExceptions
+      : [];
+
+  return raw.map((item) => ({
+    ...item,
+    date: String(item?.date || "").slice(0, 10),
+  }));
+}, [scheduleExceptionsProp, studio?.scheduleExceptions]);
 
   const visibleServices = useMemo(() => {
     const wantedId = preselectedService?.serviceId;
@@ -171,11 +225,7 @@ function StudioBookingWidgetInner({
     return exists ? wantedId : (visibleServices[0]?.id ?? null);
   }, [visibleServices, preselectedService?.serviceId]);
 
-  const [selectedDate, setSelectedDate] = useState(() => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d;
-  });
+const [selectedDate, setSelectedDate] = useState(null);
 
   const [step, setStep] = useState("pick");
   const [selectedServiceId, setSelectedServiceId] = useState(
@@ -198,20 +248,21 @@ function StudioBookingWidgetInner({
   );
 
   const isDayEnabled = useMemo(() => {
-    if (!dayKey) return false;
-    return Boolean(schedule?.[dayKey]?.enabled);
-  }, [schedule, dayKey]);
+    if (!selectedDate) return false;
+    return Boolean(getScheduleForDate(selectedDate, schedule, scheduleExceptions));
+  }, [selectedDate, schedule, scheduleExceptions]);
 
   const dayConfig = useMemo(() => {
-    if (!dayKey || !isDayEnabled) return null;
-    return schedule?.[dayKey] ?? null;
-  }, [schedule, dayKey, isDayEnabled]);
+    if (!selectedDate) return null;
+    return getScheduleForDate(selectedDate, schedule, scheduleExceptions);
+  }, [selectedDate, schedule, scheduleExceptions]);
 
   const slots = useMemo(() => {
     if (!dayConfig) return [];
     return buildSlots(dayConfig.start, dayConfig.end, slotDuration);
   }, [dayConfig, slotDuration]);
-
+console.log("selectedDateStr", selectedDateStr);
+console.log("scheduleExceptions", scheduleExceptions);
   useEffect(() => {
     let alive = true;
 
@@ -261,10 +312,6 @@ function StudioBookingWidgetInner({
   }, [studio?.id, selectedDateStr]);
 
   const disabledDays = useMemo(() => {
-    const enabledKeys = new Set(
-      Object.keys(schedule || {}).filter((k) => schedule?.[k]?.enabled),
-    );
-
     return (date) => {
       const d = new Date(date);
       d.setHours(0, 0, 0, 0);
@@ -273,11 +320,11 @@ function StudioBookingWidgetInner({
       today.setHours(0, 0, 0, 0);
 
       if (d < today) return true;
-      if (enabledKeys.size === 0) return true;
 
-      return !enabledKeys.has(getDayKeyFromDateObj(d));
+      const resolved = getScheduleForDate(d, schedule, scheduleExceptions);
+      return !resolved?.enabled;
     };
-  }, [schedule]);
+  }, [schedule, scheduleExceptions]);
 
   const selectedService = useMemo(
     () =>
@@ -396,7 +443,9 @@ function StudioBookingWidgetInner({
                 {label}
               </span>
 
-              {i === 0 && <ChevronRight className="h-3.5 w-3.5 text-stone-300" />}
+              {i === 0 && (
+                <ChevronRight className="h-3.5 w-3.5 text-stone-300" />
+              )}
             </div>
           );
         })}

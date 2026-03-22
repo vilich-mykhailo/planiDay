@@ -95,7 +95,9 @@ const studio = await prisma.studio.findFirst({
     logoUrl: true,
     portfolioUrls: true,
     slotDuration: true,
-    premium: true, // ✅ ОК
+    scheduleDays: true,
+    scheduleExceptions: true,
+    premium: true,
 
     scheduleDays: {
       select: { day: true, enabled: true, startMin: true, endMin: true },
@@ -163,23 +165,32 @@ const studio = await prisma.studio.findFirst({
       };
     }
 
+        const scheduleExceptions = (studio.scheduleExceptions || []).map((item) => ({
+      id: item.id,
+      date: new Date(item.date).toISOString().slice(0, 10),
+      enabled: Boolean(item.enabled),
+      start: item.startMin != null ? minToTime(item.startMin) : null,
+      end: item.endMin != null ? minToTime(item.endMin) : null,
+    }));
+    
     // ✅ плоский список services = uncategorized + category services
     const services = [
       ...(uncategorizedServices || []),
       ...(studio.serviceCategories?.flatMap((c) => c.services || []) || []),
     ];
 
-    res.json({
-      studio: {
-        ...studio,
-        slug: studio.id,
-        priceFrom: min?._min?.price ?? null,
-        premium: Boolean(studio.premium),
-        schedule, 
-        services, 
-        uncategorizedServices,
-      },
-    });
+res.json({
+  studio: {
+    ...studio,
+    slug: studio.id,
+    priceFrom: min?._min?.price ?? null,
+    premium: Boolean(studio.premium),
+    schedule,
+    scheduleExceptions,
+    services,
+    uncategorizedServices,
+  },
+});
   } catch (e) {
     console.error(e);
     res.status(500).json({ message: "Load studio failed" });

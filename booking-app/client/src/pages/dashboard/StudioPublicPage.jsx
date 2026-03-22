@@ -306,7 +306,9 @@ function CategoryAccordion({ category, onBook }) {
           >
             <div className="border-t border-stone-100 bg-[#FFFEFD] px-4 py-4 sm:px-6">
               {services.length === 0 ? (
-                <p className="py-4 text-sm text-stone-500">Послуги не додані.</p>
+                <p className="py-4 text-sm text-stone-500">
+                  Послуги не додані.
+                </p>
               ) : (
                 <div className="space-y-3">
                   {services.map((s) => (
@@ -323,7 +325,9 @@ function CategoryAccordion({ category, onBook }) {
 }
 
 function StaffCard({ member }) {
-  const photo = toPublicUrl(member?.photoUrl || member?.avatar || member?.image);
+  const photo = toPublicUrl(
+    member?.photoUrl || member?.avatar || member?.image,
+  );
   const name = safe(member?.name || member?.fullName || member?.title);
   const role = safe(member?.role || member?.position || member?.speciality);
 
@@ -358,7 +362,9 @@ function ReviewCard({ review }) {
     <div className="rounded-[26px] border border-stone-200 bg-white p-5 shadow-[0_8px_25px_rgba(0,0,0,0.04)]">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-sm font-semibold text-stone-800">{review.author}</p>
+          <p className="text-sm font-semibold text-stone-800">
+            {review.author}
+          </p>
           <div className="mt-1 flex items-center gap-1">
             {Array.from({ length: 5 }).map((_, i) => (
               <Star
@@ -382,6 +388,76 @@ function ReviewCard({ review }) {
       </p>
     </div>
   );
+}
+
+const WEEK_DAYS = [
+  { key: "mon", label: "Понеділок", jsDay: 1 },
+  { key: "tue", label: "Вівторок", jsDay: 2 },
+  { key: "wed", label: "Середа", jsDay: 3 },
+  { key: "thu", label: "Четвер", jsDay: 4 },
+  { key: "fri", label: "П’ятниця", jsDay: 5 },
+  { key: "sat", label: "Субота", jsDay: 6 },
+  { key: "sun", label: "Неділя", jsDay: 0 },
+];
+
+function formatHoursLabel(dayConfig) {
+  if (!dayConfig?.enabled) return "Вихідний";
+  return `${dayConfig.start} - ${dayConfig.end}`;
+}
+
+function getTodaySchedule(schedule, exceptions = []) {
+  const now = new Date();
+
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  const todayIso = `${y}-${m}-${d}`;
+
+  const exception = exceptions.find((item) => item.date === todayIso);
+  if (exception) {
+    if (!exception.enabled) return null;
+
+    return {
+      enabled: true,
+      start: exception.start,
+      end: exception.end,
+    };
+  }
+
+  const map = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+  const key = map[now.getDay()];
+  const fallback = schedule?.[key];
+
+  if (!fallback?.enabled) return null;
+  return fallback;
+}
+
+function isStudioOpenNow(schedule, exceptions = []) {
+  const today = getTodaySchedule(schedule, exceptions);
+  if (!today?.enabled) return false;
+
+  const [sh, sm] = String(today.start || "00:00")
+    .split(":")
+    .map(Number);
+  const [eh, em] = String(today.end || "00:00")
+    .split(":")
+    .map(Number);
+
+  const startMin = sh * 60 + sm;
+  const endMin = eh * 60 + em;
+
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+
+  return nowMin >= startMin && nowMin < endMin;
+}
+
+function buildWeeklyScheduleRows(schedule) {
+  return WEEK_DAYS.map((day) => ({
+    day: day.label,
+    jsDay: day.jsDay,
+    hours: formatHoursLabel(schedule?.[day.key]),
+  }));
 }
 
 export default function StudioPublicPage() {
@@ -419,7 +495,9 @@ export default function StudioPublicPage() {
       setError("");
 
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/client/${slug}`);
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL}/client/${slug}`,
+        );
         const data = await res.json().catch(() => null);
 
         if (!res.ok) {
@@ -435,6 +513,15 @@ export default function StudioPublicPage() {
           coverUrl: toPublicUrl(s.coverUrl),
           logoUrl: toPublicUrl(s.logoUrl),
           portfolioUrls: s.portfolioUrls ?? [],
+          schedule: s.schedule || {},
+scheduleExceptions: Array.isArray(s.scheduleExceptions)
+  ? s.scheduleExceptions.map((item) => ({
+      ...item,
+      date: String(item?.date || "").slice(0, 10),
+    }))
+  : [],
+          slotDuration:
+            typeof s.slotDuration === "number" ? s.slotDuration : 15,
         };
 
         if (alive) setStudio(normalized);
@@ -466,7 +553,10 @@ export default function StudioPublicPage() {
     .filter(Boolean)
     .join(", ");
   const fullAddress = [address, city].filter(Boolean).join(", ");
-  const portfolio = useMemo(() => parsePortfolio(studio?.portfolioUrls), [studio]);
+  const portfolio = useMemo(
+    () => parsePortfolio(studio?.portfolioUrls),
+    [studio],
+  );
 
   const filteredUncategorizedServices = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -501,7 +591,16 @@ export default function StudioPublicPage() {
   const studioPhone = safe(
     studio?.phone || studio?.phoneNumber || studio?.contactPhone,
   );
+  const weeklyScheduleRows = useMemo(
+    () => buildWeeklyScheduleRows(studio?.schedule || {}),
+    [studio?.schedule],
+  );
 
+  const openNow = useMemo(
+    () =>
+      isStudioOpenNow(studio?.schedule || {}, studio?.scheduleExceptions || []),
+    [studio?.schedule, studio?.scheduleExceptions],
+  );
   const reviewsSummary = {
     rating: Number(studio?.rating || 4.9),
     count: Number(studio?.reviewsCount || 1090),
@@ -706,7 +805,10 @@ export default function StudioPublicPage() {
                     )}
                   >
                     <Heart
-                      className={cn("h-4.5 w-4.5", isFavourite ? "fill-current" : "")}
+                      className={cn(
+                        "h-4.5 w-4.5",
+                        isFavourite ? "fill-current" : "",
+                      )}
                     />
                   </button>
                 </div>
@@ -773,10 +875,21 @@ export default function StudioPublicPage() {
                               ({reviewsSummary.count} відгуків)
                             </span>
                           </div>
-
-                          <div className="flex items-center gap-1.5 rounded-full border border-green-300 bg-green-50 px-2 py-[2px] text-[11px] font-medium text-green-700">
-                            <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
-                            Працює зараз
+                          <div
+                            className={cn(
+                              "flex items-center gap-1.5 rounded-full px-2 py-[2px] text-[11px] font-medium",
+                              openNow
+                                ? "border border-green-300 bg-green-50 text-green-700"
+                                : "border border-red-300 bg-red-50 text-red-700",
+                            )}
+                          >
+                            <span
+                              className={cn(
+                                "h-1.5 w-1.5 rounded-full",
+                                openNow ? "bg-green-500" : "bg-red-500",
+                              )}
+                            />
+                            {openNow ? "Працює зараз" : "Зачинено зараз"}
                           </div>
                         </div>
                       </div>
@@ -958,8 +1071,10 @@ export default function StudioPublicPage() {
 
                             <div className="mt-6 space-y-2.5">
                               {[5, 4, 3, 2, 1].map((num) => {
-                                const val = reviewsSummary.distribution?.[num] || 0;
-                                const max = reviewsSummary.distribution?.[5] || 1;
+                                const val =
+                                  reviewsSummary.distribution?.[num] || 0;
+                                const max =
+                                  reviewsSummary.distribution?.[5] || 1;
                                 return (
                                   <div
                                     key={num}
@@ -969,10 +1084,14 @@ export default function StudioPublicPage() {
                                     <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-stone-200">
                                       <div
                                         className="h-full rounded-full bg-amber-400"
-                                        style={{ width: `${(val / max) * 100}%` }}
+                                        style={{
+                                          width: `${(val / max) * 100}%`,
+                                        }}
                                       />
                                     </div>
-                                    <span className="w-8 text-right">{val}</span>
+                                    <span className="w-8 text-right">
+                                      {val}
+                                    </span>
                                   </div>
                                 );
                               })}
@@ -986,20 +1105,22 @@ export default function StudioPublicPage() {
                                   Фотографії клієнтів
                                 </p>
                                 <div className="flex gap-3 overflow-x-auto pb-1">
-                                  {displayedPortfolio.slice(0, 6).map((url, idx) => (
-                                    <button
-                                      key={url + idx}
-                                      type="button"
-                                      onClick={() => setPreviewIndex(idx)}
-                                      className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-stone-200 bg-stone-100 sm:h-24 sm:w-24"
-                                    >
-                                      <img
-                                        src={url}
-                                        alt={`review-portfolio-${idx}`}
-                                        className="h-full w-full object-cover"
-                                      />
-                                    </button>
-                                  ))}
+                                  {displayedPortfolio
+                                    .slice(0, 6)
+                                    .map((url, idx) => (
+                                      <button
+                                        key={url + idx}
+                                        type="button"
+                                        onClick={() => setPreviewIndex(idx)}
+                                        className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-stone-200 bg-stone-100 sm:h-24 sm:w-24"
+                                      >
+                                        <img
+                                          src={url}
+                                          alt={`review-portfolio-${idx}`}
+                                          className="h-full w-full object-cover"
+                                        />
+                                      </button>
+                                    ))}
                                 </div>
                               </div>
                             )}
@@ -1015,61 +1136,68 @@ export default function StudioPublicPage() {
                     </motion.section>
                   )}
 
-                  {displayedPortfolio.length > 0 && mobileTab === "portfolio" && (
-                    <motion.section
-                      key="portfolio"
-                      ref={portfolioRef}
-                      className="scroll-mt-28"
-                      initial={{ opacity: 0, y: 24 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 18 }}
-                      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                    >
-                      <div className="rounded-[30px] p-4 sm:p-6">
-                        <div className="mb-10">
-                          <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.25em] text-amber-600">
-                            Наші роботи
-                          </p>
-                          <h2 className="text-2xl font-bold tracking-tight text-stone-800 md:text-4xl">
-                            Портфоліо
-                          </h2>
-                        </div>
+                  {displayedPortfolio.length > 0 &&
+                    mobileTab === "portfolio" && (
+                      <motion.section
+                        key="portfolio"
+                        ref={portfolioRef}
+                        className="scroll-mt-28"
+                        initial={{ opacity: 0, y: 24 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 18 }}
+                        transition={{
+                          duration: 0.35,
+                          ease: [0.22, 1, 0.36, 1],
+                        }}
+                      >
+                        <div className="rounded-[30px] p-4 sm:p-6">
+                          <div className="mb-10">
+                            <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.25em] text-amber-600">
+                              Наші роботи
+                            </p>
+                            <h2 className="text-2xl font-bold tracking-tight text-stone-800 md:text-4xl">
+                              Портфоліо
+                            </h2>
+                          </div>
 
-                        <div className="columns-2 gap-3 sm:columns-3 sm:gap-4 lg:columns-4">
-                          {displayedPortfolio.map((url, idx) => (
-                            <motion.button
-                              key={url + idx}
-                              type="button"
-                              onClick={() => setPreviewIndex(idx)}
-                              initial={{ opacity: 0, y: 20 }}
-                              whileInView={{ opacity: 1, y: 0 }}
-                              viewport={{ once: true }}
-                              transition={{ delay: idx * 0.05, duration: 0.4 }}
-                              className="group relative mb-3 block w-full cursor-zoom-in overflow-hidden rounded-2xl bg-stone-100 sm:mb-4"
-                            >
-                              <img
-                                src={url}
-                                alt={`Портфоліо ${idx + 1}`}
-                                className={cn(
-                                  "w-full object-cover transition-transform duration-500 group-hover:scale-105",
-                                  idx % 3 === 0
-                                    ? "aspect-[3/4]"
-                                    : idx % 3 === 1
-                                      ? "aspect-square"
-                                      : "aspect-[4/5]",
-                                )}
-                                loading="lazy"
-                                onError={(e) => {
-                                  e.currentTarget.style.display = "none";
+                          <div className="columns-2 gap-3 sm:columns-3 sm:gap-4 lg:columns-4">
+                            {displayedPortfolio.map((url, idx) => (
+                              <motion.button
+                                key={url + idx}
+                                type="button"
+                                onClick={() => setPreviewIndex(idx)}
+                                initial={{ opacity: 0, y: 20 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                                transition={{
+                                  delay: idx * 0.05,
+                                  duration: 0.4,
                                 }}
-                              />
-                              <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/10" />
-                            </motion.button>
-                          ))}
+                                className="group relative mb-3 block w-full cursor-zoom-in overflow-hidden rounded-2xl bg-stone-100 sm:mb-4"
+                              >
+                                <img
+                                  src={url}
+                                  alt={`Портфоліо ${idx + 1}`}
+                                  className={cn(
+                                    "w-full object-cover transition-transform duration-500 group-hover:scale-105",
+                                    idx % 3 === 0
+                                      ? "aspect-[3/4]"
+                                      : idx % 3 === 1
+                                        ? "aspect-square"
+                                        : "aspect-[4/5]",
+                                  )}
+                                  loading="lazy"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = "none";
+                                  }}
+                                />
+                                <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/10" />
+                              </motion.button>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    </motion.section>
-                  )}
+                      </motion.section>
+                    )}
 
                   {mobileTab === "details" && (
                     <motion.section
@@ -1162,18 +1290,9 @@ export default function StudioPublicPage() {
                                     </a>
                                   )}
 
-                                  {[
-                                    { day: "Понеділок", hours: "10:00 - 20:00" },
-                                    { day: "Вівторок", hours: "10:00 - 20:00" },
-                                    { day: "Середа", hours: "10:00 - 20:00" },
-                                    { day: "Четвер", hours: "10:00 - 20:00" },
-                                    { day: "П’ятниця", hours: "10:00 - 20:00" },
-                                    { day: "Субота", hours: "10:00 - 18:00" },
-                                    { day: "Неділя", hours: "Вихідний" },
-                                  ].map((item, index) => {
+                                  {weeklyScheduleRows.map((item) => {
                                     const today = new Date().getDay();
-                                    const dayIndex = index === 6 ? 0 : index + 1;
-                                    const isToday = today === dayIndex;
+                                    const isToday = today === item.jsDay;
 
                                     return (
                                       <div
@@ -1244,7 +1363,10 @@ export default function StudioPublicPage() {
                             </p>
                             <div className="mt-5 flex gap-5 overflow-x-auto pb-2">
                               {teamMembers.map((member, idx) => (
-                                <StaffCard key={member.id || idx} member={member} />
+                                <StaffCard
+                                  key={member.id || idx}
+                                  member={member}
+                                />
                               ))}
                             </div>
                           </div>
@@ -1282,6 +1404,9 @@ export default function StudioPublicPage() {
               >
                 <StudioBookingWidget
                   studio={studio}
+                  schedule={studio?.schedule || {}}
+                  scheduleExceptions={studio?.scheduleExceptions || []}
+                  slotDuration={studio?.slotDuration || 15}
                   preselectedService={preselectedService}
                   onCancel={() => {
                     setOpenBooking(false);

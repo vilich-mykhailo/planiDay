@@ -188,15 +188,15 @@ function Modal({ open, onClose, title, subtitle, children, footer, size = "md" }
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-stone-900/40 p-4 backdrop-blur-sm sm:p-6"
+<div
+  className="fixed inset-0 z-[9999] flex items-center justify-center bg-stone-900/40 p-4 backdrop-blur-sm sm:p-6"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose?.();
       }}
     >
       <div
         className={cn(
-          "relative my-8 w-full overflow-hidden rounded-3xl bg-white shadow-2xl",
+          "relative w-full overflow-hidden rounded-3xl bg-white shadow-2xl",
           "animate-in fade-in-0 zoom-in-95 duration-200",
           sizeClasses[size],
         )}
@@ -238,7 +238,7 @@ function Modal({ open, onClose, title, subtitle, children, footer, size = "md" }
   );
 }
 
-function Avatar({ name, photoUrl, size = "md" }) {
+function Avatar({ name, photoUrl, size = "md", className = "" }) {
   const initials = initialsFromName(name);
 
   const sizes = {
@@ -247,12 +247,13 @@ function Avatar({ name, photoUrl, size = "md" }) {
   };
 
   return (
-    <div
-      className={cn(
-        "flex shrink-0 items-center justify-center overflow-hidden border-2 border-amber-100 bg-gradient-to-br from-amber-50 to-orange-50 shadow-sm",
-        sizes[size],
-      )}
-    >
+<div
+  className={cn(
+    "flex shrink-0 items-center justify-center overflow-hidden border-2 border-amber-100 bg-gradient-to-br from-amber-50 to-orange-50 shadow-sm",
+    sizes[size],
+    className,
+  )}
+>
       {photoUrl ? (
         <img
           src={photoUrl}
@@ -263,7 +264,7 @@ function Avatar({ name, photoUrl, size = "md" }) {
           }}
         />
       ) : (
-        <span className="font-bold text-amber-700">{initials}</span>
+       <Camera className="h-6 w-6 text-amber-500" />
       )}
     </div>
   );
@@ -747,17 +748,15 @@ export default function Masters() {
           badge={`${total} всього`}
         >
           <form onSubmit={addMaster} className="space-y-5">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-              <div className="flex items-center gap-4">
+           <div className="flex flex-col gap-4">
+      <div className="flex items-center gap-3 sm:gap-4">
                 <div className="relative">
-                  <Avatar
-                    name={form.name || "Фото"}
-                    photoUrl={!photoBroken ? form.photoUrl : ""}
-                    size="md"
-                  />
-                  <div className="absolute -bottom-2 -right-2 rounded-xl border border-amber-200 bg-white p-2 shadow-sm">
-                    <Camera className="h-4 w-4 text-amber-600" />
-                  </div>
+<Avatar
+  name={form.name || "Фото"}
+  photoUrl={!photoBroken ? form.photoUrl : ""}
+  size="md"
+  className="h-16 w-16 rounded-2xl sm:h-20 sm:w-20 sm:rounded-[22px]"
+ />
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
@@ -875,7 +874,7 @@ export default function Masters() {
                 >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex min-w-0 items-start gap-3">
-                      <Avatar name={m.name} photoUrl={m.photoUrl} size="sm" />
+                                            <Avatar name={m.name} photoUrl={m.photoUrl} size="sm" />
 
                       <div className="min-w-0">
                         <p className="truncate font-semibold text-stone-800">
@@ -902,12 +901,13 @@ export default function Masters() {
                       </div>
                     </div>
 
-                    <div className="flex gap-2 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100">
-                      <IconButton onClick={() => openEdit(m)} title="Редагувати">
+<div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">          
+            <IconButton  className="flex-1 sm:flex-none" onClick={() => openEdit(m)} title="Редагувати">
                         <Pencil className="h-4 w-4" />
                       </IconButton>
 
                       <IconButton
+                      className="flex-1 sm:flex-none"
                         variant="danger"
                         onClick={() => deleteMaster(m)}
                         title="Видалити"

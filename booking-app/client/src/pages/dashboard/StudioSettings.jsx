@@ -1,3 +1,4 @@
+// StudioSettings.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
@@ -70,7 +71,7 @@ function SectionCard({
   badge,
   actions,
   children,
-  className = "",
+  className = "group relative overflow-hidden rounded-3xl border border-stone-200/60 bg-white",
 }) {
   return (
     <section
@@ -95,7 +96,9 @@ function SectionCard({
               </span>
             )}
           </div>
-          {subtitle && <p className="mt-0.5 text-sm text-stone-500">{subtitle}</p>}
+          {subtitle && (
+            <p className="mt-0.5 text-sm text-stone-500">{subtitle}</p>
+          )}
         </div>
 
         {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
@@ -148,7 +151,12 @@ function Button({
   );
 }
 
-function IconButton({ variant = "secondary", className = "", children, ...props }) {
+function IconButton({
+  variant = "secondary",
+  className = "",
+  children,
+  ...props
+}) {
   const variants = {
     secondary:
       "bg-white border border-stone-200 text-stone-600 hover:bg-stone-50 hover:text-stone-800",
@@ -167,6 +175,183 @@ function IconButton({ variant = "secondary", className = "", children, ...props 
     >
       {children}
     </button>
+  );
+}
+
+function CustomSelect({
+  id,
+  value,
+  onChange,
+  options,
+  placeholder = "Оберіть",
+  className = "",
+  menuClassName = "",
+}) {
+  const [open, setOpen] = useState(false);
+  const [openUp, setOpenUp] = useState(false);
+  const [menuPosition, setMenuPosition] = useState({
+    top: undefined,
+    bottom: undefined,
+    left: 0,
+    width: 0,
+  });
+
+  const rootRef = useRef(null);
+
+  const selected = options.find((opt) => String(opt.value) === String(value));
+
+  function updateMenuPosition() {
+    const rect = rootRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const dropdownHeight = 320;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+
+    const shouldOpenUp =
+      spaceBelow < dropdownHeight && spaceAbove > dropdownHeight;
+
+    setOpenUp(shouldOpenUp);
+
+    setMenuPosition({
+      left: rect.left,
+      width: rect.width,
+      top: shouldOpenUp ? undefined : rect.bottom + 8,
+      bottom: shouldOpenUp ? window.innerHeight - rect.top + 8 : undefined,
+    });
+  }
+
+  function toggleOpen() {
+    if (open) {
+      setOpen(false);
+      return;
+    }
+
+    updateMenuPosition();
+    setOpen(true);
+  }
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (!rootRef.current?.contains(e.target)) {
+        setOpen(false);
+      }
+    }
+
+    function handleEscape(e) {
+      if (e.key === "Escape") setOpen(false);
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handleUpdate = () => {
+      updateMenuPosition();
+    };
+
+    window.addEventListener("resize", handleUpdate);
+    window.addEventListener("scroll", handleUpdate, true);
+
+    return () => {
+      window.removeEventListener("resize", handleUpdate);
+      window.removeEventListener("scroll", handleUpdate, true);
+    };
+  }, [open]);
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        id={id}
+        type="button"
+        onClick={toggleOpen}
+        className={cn(
+          "group flex w-full items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-left text-sm font-medium outline-none transition-all duration-200",
+          open
+            ? "border-amber-400 bg-white shadow-[0_10px_30px_rgba(251,146,60,0.18)] ring-2 ring-amber-400/20"
+            : "border-stone-200 bg-white hover:border-stone-300 hover:bg-stone-50",
+          className,
+        )}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+      >
+        <span className="min-w-0 truncate text-stone-700">
+          {selected?.label || placeholder}
+        </span>
+
+        <ChevronDown
+          className={cn(
+            "h-4.5 w-4.5 shrink-0 text-stone-400 transition-all duration-200",
+            "group-hover:text-stone-600",
+            open && "rotate-180 text-amber-500",
+          )}
+        />
+      </button>
+
+      {open && (
+        <div
+          className={cn(
+            "fixed z-[200] overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-[0_24px_70px_rgba(0,0,0,0.18)]",
+            menuClassName,
+          )}
+          style={{
+            top: menuPosition.top,
+            bottom: menuPosition.bottom,
+            left: menuPosition.left,
+            width: menuPosition.width,
+          }}
+        >
+          <div className="max-h-72 overflow-y-auto py-2">
+            {options.map((opt) => {
+              const isSelected = String(opt.value) === String(value);
+
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => {
+                    onChange(opt.value);
+                    setOpen(false);
+                  }}
+                  className={cn(
+                    "flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm transition-colors duration-150",
+                    isSelected
+                      ? "bg-amber-50 text-amber-700"
+                      : "text-stone-700 hover:bg-stone-50",
+                  )}
+                  role="option"
+                  aria-selected={isSelected}
+                >
+                  <span
+                    className="min-w-0 text-left"
+                    style={{
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical",
+                      overflow: "hidden",
+                    }}
+                  >
+                    {opt.label}
+                  </span>
+
+                  {isSelected && (
+                    <Check className="h-4 w-4 shrink-0 text-amber-600" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -203,7 +388,7 @@ function StudioSettingsSkeleton() {
 
         <div className="mt-4 rounded-2xl border border-stone-200 bg-white p-2 shadow-sm">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex gap-2 overflow-x-auto">
+            <div className="flex flex-1 gap-2 overflow-x-auto">
               <SkeletonBlock className="h-10 w-24 shrink-0 rounded-xl" />
               <SkeletonBlock className="h-10 w-24 shrink-0 rounded-xl" />
               <SkeletonBlock className="h-10 w-28 shrink-0 rounded-xl" />
@@ -353,9 +538,7 @@ function completeness(form) {
       key: "address",
       label: "Адреса",
       ok: Boolean(
-        form.city?.trim() &&
-          form.street?.trim() &&
-          form.building?.trim()
+        form.city?.trim() && form.street?.trim() && form.building?.trim(),
       ),
     },
     {
@@ -769,7 +952,7 @@ export default function StudioSettings() {
     }
   }
 
-    function pickPortfolioImages(e) {
+  function pickPortfolioImages(e) {
     const files = Array.from(e.target.files || []);
     e.target.value = "";
     if (!files.length) return;
@@ -1374,253 +1557,266 @@ export default function StudioSettings() {
 
         {/* Header */}
         <div className="mb-6">
-          <div className="flex items-start justify-between gap-4">
-            <div ref={headerTriggerRef}>
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-4 py-1.5">
-                <Sparkles className="h-4 w-4 text-amber-600" />
-                <span className="text-xs font-bold uppercase tracking-wider text-amber-700">
+          <div className="flex items-start justify-between gap-3">
+            <div ref={headerTriggerRef} className="min-w-0 flex-1">
+              <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-3 py-1.5">
+                <Sparkles className="h-3.5 w-3.5 text-amber-600" />
+                <span className="text-[11px] font-bold uppercase tracking-wider text-amber-700">
                   Профіль студії
                 </span>
               </div>
 
-              <h1 className="text-4xl font-black tracking-tight text-stone-800 sm:text-5xl">
+              <h1 className="text-3xl font-black tracking-tight text-stone-800 sm:text-4xl lg:text-5xl">
                 Профіль студії
               </h1>
 
-              <p className="mt-3 max-w-2xl text-stone-600">
+              <p className="mt-2 max-w-2xl text-sm text-stone-600 sm:text-base">
                 Створіть профіль, який підвищує довіру та виглядає професійно.
               </p>
             </div>
+
+            {/* ✅ ТІЛЬКИ якщо 100% */}
+            {profile.percent === 100 && (
+              <div className="shrink-0 rounded-2xl px-3 py-2 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-[0_10px_24px_rgba(16,185,129,0.18)]">
+                <div className="flex items-center gap-2">
+                  {/* ❌ ховаємо іконку на мобілці */}
+                  <div className="hidden sm:flex h-7 w-7 items-center justify-center rounded-lg bg-white/20">
+                    <Check className="h-4 w-4 text-white" />
+                  </div>
+
+                  <p className="text-[11px] font-bold leading-4">
+                    Профіль заповнено
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Tabs */}
-<div className="mt-4 rounded-2xl border border-stone-200 bg-white p-2 shadow-sm">
-  <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-    <div className="flex gap-2 overflow-x-auto">
-      {[
-        { id: "profile", label: "Профіль" },
-        { id: "location", label: "Локація" },
-        { id: "links", label: "Портфоліо" },
-      ].map((t) => (
-        <button
-          key={t.id}
-          type="button"
-          onClick={() => setTabUrl(t.id)}
-          className={cn(
-            "whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-semibold transition",
-            tab === t.id
-              ? "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-[0_10px_24px_rgba(74,93,78,0.18)]"
-              : "bg-white text-stone-600 hover:bg-stone-50",
-          )}
-        >
-          {t.label}
-        </button>
-      ))}
-    </div>
+          <div className="mt-4 rounded-2xl border border-stone-200 bg-white p-2 shadow-sm">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              {/* Tabs */}
+              <div className="flex justify-center gap-2 overflow-x-auto">
+                {[
+                  { id: "profile", label: "Профіль" },
+                  { id: "location", label: "Локація" },
+                  { id: "links", label: "Портфоліо" },
+                ].map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setTabUrl(t.id)}
+                    className={cn(
+                      "whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-semibold transition",
+                      tab === t.id
+                        ? "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white"
+                        : "bg-white text-stone-600 hover:bg-stone-50",
+                    )}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
 
-<div
-  className={cn(
-    "flex shrink-0 items-center justify-between gap-3 rounded-2xl px-3 py-2",
-    profile.percent === 100
-      ? "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-[0_10px_24px_rgba(16,185,129,0.25)]"
-      : "border border-amber-200 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-100 shadow-[0_10px_30px_rgba(226,154,84,0.14)]",
-  )}
->
-  {profile.percent === 100 ? (
-    // ✅ SUCCESS STATE
-    <div className="flex items-center gap-2">
-      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/20">
-        <Check className="h-4 w-4 text-white" />
-      </div>
+              {/* ❗ ТІЛЬКИ якщо <100% */}
+              {profile.percent !== 100 && (
+                <div className="flex shrink-0 items-center justify-between gap-3 rounded-2xl px-3 py-2 border border-amber-200 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-100">
+                  <div className="flex items-center gap-3">
+                    <div className="relative flex h-10 w-10 items-center justify-center rounded-2xl bg-white shadow-sm">
+                      <span className="absolute inline-flex h-3 w-3 rounded-full bg-orange-400 opacity-75 animate-ping" />
+                      <span className="relative inline-flex h-3 w-3 rounded-full bg-orange-500" />
+                    </div>
 
-      <p className="text-xs font-semibold text-white">
-        Профіль заповнено
-      </p>
-    </div>
-  ) : (
-    // 🔄 DEFAULT STATE
-    <>
-      <div className="flex min-w-0 items-center gap-3">
-        <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white shadow-sm">
-          <span className="absolute inline-flex h-3 w-3 rounded-full bg-orange-400 opacity-75 animate-ping" />
-          <span className="relative inline-flex h-3 w-3 rounded-full bg-orange-500" />
-        </div>
+                    <div>
+                      <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-amber-700">
+                        Заповненість
+                      </p>
 
-        <div className="min-w-0">
-          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-amber-700">
-            Заповненість
-          </p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-black text-stone-800">
+                          {profile.percent}%
+                        </p>
 
-          <div className="flex items-center gap-2">
-            <p className="text-sm font-black text-stone-800">
-              {profile.percent}%
-            </p>
+                        <span className="text-xs text-stone-500">
+                          {profile.done}/{profile.total}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
 
-            <span className="text-xs text-stone-500">
-              {profile.done}/{profile.total}
-            </span>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={goToNextIncomplete}
+                  >
+                    Заповнити
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      </div>
-
-      <Button
-        variant="primary"
-        size="sm"
-        onClick={goToNextIncomplete}
-        className="shrink-0"
-      >
-        Заповнити
-      </Button>
-    </>
-  )}
-</div>
-  </div>
-</div>
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
           {/* Left column */}
-<div className="space-y-6 lg:col-span-5 lg:sticky lg:top-6 self-start">
-  <section className="overflow-hidden rounded-3xl border border-stone-200/60 bg-white shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]">
-    <div
-      id="studio-field-coverUrl"
-      className={cn(
-        "relative h-44 bg-stone-100",
-        highlightId === "studio-field-coverUrl" && highlightClass,
-      )}
-    >
-      {hasCover ? (
-        <button
-          type="button"
-          onClick={pickCoverFromPreview}
-          className="h-full w-full"
-        >
-          <img
-            src={coverSrc}
-            alt="Обкладинка"
-            className="h-full w-full object-cover"
-            onError={(e) => {
-              if (!coverPreviewUrl) e.currentTarget.style.display = "none";
-            }}
-          />
-        </button>
-      ) : (
-        <button
-          type="button"
-          onClick={pickCoverFromPreview}
-          onKeyDown={onKeyboardPick(pickCoverFromPreview)}
-          className="flex h-full w-full items-center justify-center gap-2 px-6 text-center text-sm font-medium text-stone-500 transition hover:text-stone-700"
-          title="Завантажити обкладинку"
-        >
-          <Plus className="h-4 w-4" />
-          Додати обкладинку
-        </button>
-      )}
+          {tab === "profile" && (
+            <div className="space-y-6 lg:col-span-5 lg:sticky lg:top-6 self-start">
+              <section className="overflow-hidden rounded-3xl border border-stone-200/60 bg-white shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]">
+                <div
+                  id="studio-field-coverUrl"
+                  className={cn(
+                    "relative h-44 bg-stone-100",
+                    highlightId === "studio-field-coverUrl" && highlightClass,
+                  )}
+                >
+                  {hasCover ? (
+                    <button
+                      type="button"
+                      onClick={pickCoverFromPreview}
+                      className="h-full w-full"
+                    >
+                      <img
+                        src={coverSrc}
+                        alt="Обкладинка"
+                        className="h-full w-full object-cover"
+                        onError={(e) => {
+                          if (!coverPreviewUrl)
+                            e.currentTarget.style.display = "none";
+                        }}
+                      />
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={pickCoverFromPreview}
+                      onKeyDown={onKeyboardPick(pickCoverFromPreview)}
+                      className="flex h-full w-full items-center justify-center gap-2 px-6 text-center text-sm font-medium text-stone-500 transition hover:text-stone-700"
+                      title="Завантажити обкладинку"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Додати обкладинку
+                    </button>
+                  )}
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/60 via-black/25 to-transparent" />
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/60 via-black/25 to-transparent" />
 
-      {hasCover && (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            removeImage("coverUrl");
-          }}
-          className="absolute right-2 top-2 z-10 grid h-8 w-8 place-items-center rounded-xl border border-stone-200 bg-white/90 text-stone-600 shadow-sm backdrop-blur transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
-          title="Видалити обкладинку"
-          aria-label="Remove cover"
-        >
-          <X className="h-4 w-4" />
-        </button>
-      )}
+                  {hasCover && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeImage("coverUrl");
+                      }}
+                      className="absolute right-2 top-2 z-10 grid h-8 w-8 place-items-center rounded-xl border border-stone-200 bg-white/90 text-stone-600 shadow-sm backdrop-blur transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+                      title="Видалити обкладинку"
+                      aria-label="Remove cover"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
 
-      <div className="absolute -bottom-10 left-3 right-3 flex min-w-0 items-end gap-2">
-        <div
-          id="studio-field-logoUrl"
-          className={cn(
-            "relative h-20 w-20 shrink-0 overflow-hidden rounded-[22px] border border-stone-200 bg-white shadow-sm",
-            highlightId === "studio-field-logoUrl" && highlightClass,
+                  <div className="absolute -bottom-10 left-3 right-3 flex min-w-0 items-end gap-2">
+                    <div
+                      id="studio-field-logoUrl"
+                      className={cn(
+                        "relative h-20 w-20 shrink-0 overflow-hidden rounded-[22px] border border-stone-200 bg-white shadow-sm",
+                        highlightId === "studio-field-logoUrl" &&
+                          highlightClass,
+                      )}
+                    >
+                      <button
+                        type="button"
+                        onClick={pickLogoFromPreview}
+                        onKeyDown={onKeyboardPick(pickLogoFromPreview)}
+                        className="h-full w-full"
+                        title="Завантажити логотип"
+                      >
+                        {hasLogo ? (
+                          <img
+                            src={logoSrc}
+                            alt="Лого"
+                            className="h-full w-full object-cover"
+                            onError={(e) =>
+                              (e.currentTarget.style.display = "none")
+                            }
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-stone-500">
+                            + Лого
+                          </div>
+                        )}
+                      </button>
+
+                      {hasLogo && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeImage("logoUrl");
+                          }}
+                          className="absolute right-1 top-1 z-10 grid h-6 w-6 place-items-center rounded-lg border border-stone-200 bg-white/90 text-stone-600 shadow-sm backdrop-blur transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+                          title="Видалити логотип"
+                          aria-label="Remove logo"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="min-h-[44px] min-w-0 rounded-2xl border border-stone-200 bg-white px-3 py-2 shadow-sm">
+                      <p
+                        className="line-clamp-2 w-full min-w-0 break-words text-sm font-bold leading-5 text-stone-800 sm:text-base"
+                        title={form.name.trim() ? form.name : "Назва студії"}
+                      >
+                        {form.name.trim() ? form.name : "Назва студії"}
+                      </p>
+
+                      <p
+                        className="line-clamp-2 w-full min-w-0 break-words text-xs text-stone-500 sm:text-sm"
+                        title={`${categoryLabel} • ${form.city.trim() ? form.city : "Місто"}`}
+                      >
+                        {categoryLabel +
+                          " • " +
+                          (form.city.trim() ? form.city : "Місто")}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="px-3 pb-3 pt-14">
+                  <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+                    <p className="text-xs font-semibold text-stone-500">
+                      Адреса
+                    </p>
+                    <p
+                      className="mt-1 line-clamp-2 break-words text-sm font-semibold text-stone-800"
+                      title={AddressLine}
+                    >
+                      {AddressLine}
+                    </p>
+
+                    <p className="mt-3 text-xs font-semibold text-stone-500">
+                      Опис
+                    </p>
+                    <p className="mt-1 text-sm text-stone-600">
+                      {form.description.trim()
+                        ? form.description.trim()
+                        : "Додай короткий опис: досвід, стиль, стерильність, бренди, гарантії."}
+                    </p>
+                  </div>
+                </div>
+              </section>
+            </div>
           )}
-        >
-          <button
-            type="button"
-            onClick={pickLogoFromPreview}
-            onKeyDown={onKeyboardPick(pickLogoFromPreview)}
-            className="h-full w-full"
-            title="Завантажити логотип"
-          >
-            {hasLogo ? (
-              <img
-                src={logoSrc}
-                alt="Лого"
-                className="h-full w-full object-cover"
-                onError={(e) => (e.currentTarget.style.display = "none")}
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-stone-500">
-                + Лого
-              </div>
-            )}
-          </button>
-
-          {hasLogo && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                removeImage("logoUrl");
-              }}
-              className="absolute right-1 top-1 z-10 grid h-6 w-6 place-items-center rounded-lg border border-stone-200 bg-white/90 text-stone-600 shadow-sm backdrop-blur transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
-              title="Видалити логотип"
-              aria-label="Remove logo"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          )}
-        </div>
-
-        <div className="min-h-[44px] min-w-0 rounded-2xl border border-stone-200 bg-white px-3 py-2 shadow-sm">
-          <p
-            className="line-clamp-2 w-full min-w-0 break-words text-sm font-bold leading-5 text-stone-800 sm:text-base"
-            title={form.name.trim() ? form.name : "Назва студії"}
-          >
-            {form.name.trim() ? form.name : "Назва студії"}
-          </p>
-
-          <p
-            className="line-clamp-2 w-full min-w-0 break-words text-xs text-stone-500 sm:text-sm"
-            title={`${categoryLabel} • ${form.city.trim() ? form.city : "Місто"}`}
-          >
-            {categoryLabel + " • " + (form.city.trim() ? form.city : "Місто")}
-          </p>
-        </div>
-      </div>
-    </div>
-
-    <div className="px-3 pb-3 pt-14">
-      <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
-        <p className="text-xs font-semibold text-stone-500">Адреса</p>
-        <p
-          className="mt-1 line-clamp-2 break-words text-sm font-semibold text-stone-800"
-          title={AddressLine}
-        >
-          {AddressLine}
-        </p>
-
-        <p className="mt-3 text-xs font-semibold text-stone-500">Опис</p>
-        <p className="mt-1 text-sm text-stone-600">
-          {form.description.trim()
-            ? form.description.trim()
-            : "Додай короткий опис: досвід, стиль, стерильність, бренди, гарантії."}
-        </p>
-      </div>
-    </div>
-  </section>
-</div>
 
           {/* Right column */}
-          <div className="space-y-6 lg:col-span-7">
-            <form onSubmit={save} className="space-y-6">
+          <div
+            className={cn(
+              "space-y-6",
+              tab === "profile" ? "lg:col-span-7" : "lg:col-span-12",
+            )}
+          >
+            <form onSubmit={save} className="space-y-6 ">
               {tab === "profile" && (
                 <SectionCard
                   title="Профіль"
@@ -1638,19 +1834,28 @@ export default function StudioSettings() {
                     </Field>
 
                     <Field label="Категорія" error={errors.category}>
-                      <select
+                      <CustomSelect
                         id="studio-field-category"
                         value={form.category}
-                        onChange={(e) => setField("category", e.target.value)}
-                        className={fieldClass("studio-field-category")}
-                      >
-                        <option value="">Оберіть категорію</option>
-                        {STUDIO_CATEGORIES.map((cat) => (
-                          <option key={cat.value} value={cat.value}>
-                            {cat.label}
-                          </option>
-                        ))}
-                      </select>
+                        onChange={(nextValue) =>
+                          setField("category", nextValue)
+                        }
+                        placeholder="Оберіть категорію"
+                        className={cn(
+                          baseFieldClass,
+                          "justify-between px-4 py-3",
+                          highlightId === "studio-field-category"
+                            ? highlightClass
+                            : "",
+                        )}
+                        options={[
+                          { value: "", label: "Оберіть категорію" },
+                          ...STUDIO_CATEGORIES.map((cat) => ({
+                            value: cat.value,
+                            label: cat.label,
+                          })),
+                        ]}
+                      />
                     </Field>
 
                     <Field label="Номер телефону" error={errors.phone}>
@@ -1685,7 +1890,9 @@ export default function StudioSettings() {
                         <textarea
                           id="studio-field-description"
                           value={form.description}
-                          onChange={(e) => setField("description", e.target.value)}
+                          onChange={(e) =>
+                            setField("description", e.target.value)
+                          }
                           rows={5}
                           placeholder="2–4 речення: розкажіть про себе: досвід, підхід до роботи та що робить ваш сервіс особливим."
                           className={fieldClass("studio-field-description")}
@@ -1698,9 +1905,10 @@ export default function StudioSettings() {
                             Рекомендація
                           </p>
                           <p className="mt-1 text-sm text-stone-600">
-                            Детальний опис допомагає клієнтам краще зрозуміти ваш
-                            досвід і підвищує ймовірність запису. Опишіть свою
-                            спеціалізацію, підхід до роботи та ключові переваги.
+                            Детальний опис допомагає клієнтам краще зрозуміти
+                            ваш досвід і підвищує ймовірність запису. Опишіть
+                            свою спеціалізацію, підхід до роботи та ключові
+                            переваги.
                           </p>
                         </div>
 
@@ -1722,7 +1930,8 @@ export default function StudioSettings() {
 
                         <div className="rounded-2xl border border-stone-200 bg-white px-3 py-2">
                           <p className="text-xs text-stone-500">
-                            💡 Студії з повним описом отримують більше переглядів і записів.
+                            💡 Студії з повним описом отримують більше
+                            переглядів і записів.
                           </p>
                         </div>
                       </div>
@@ -1810,7 +2019,8 @@ export default function StudioSettings() {
                             id="studio-field-portfolio-add"
                             className={cn(
                               "inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-700 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition hover:from-emerald-700 hover:to-emerald-800",
-                              highlightId === "studio-field-portfolio-add" && highlightClass,
+                              highlightId === "studio-field-portfolio-add" &&
+                                highlightClass,
                             )}
                           >
                             <Plus className="h-4 w-4" />
@@ -1828,7 +2038,9 @@ export default function StudioSettings() {
                             <Button
                               variant="danger"
                               onClick={clearPortfolio}
-                              disabled={!portfolioCount || clearingPortfolio || saving}
+                              disabled={
+                                !portfolioCount || clearingPortfolio || saving
+                              }
                             >
                               {clearingPortfolio ? "Очищення..." : "Очистити"}
                             </Button>
@@ -1845,7 +2057,8 @@ export default function StudioSettings() {
                               {portfolioItems.map((item, idx) => {
                                 const src = item.src;
                                 const isFirst = idx === 0;
-                                const isLast = idx === portfolioItems.length - 1;
+                                const isLast =
+                                  idx === portfolioItems.length - 1;
 
                                 return (
                                   <div key={item.key} className="relative">
@@ -1872,7 +2085,10 @@ export default function StudioSettings() {
                                               type="button"
                                               onClick={(e) => {
                                                 e.stopPropagation();
-                                                movePortfolioMixed(idx, idx - 1);
+                                                movePortfolioMixed(
+                                                  idx,
+                                                  idx - 1,
+                                                );
                                               }}
                                               disabled={isFirst}
                                               className="flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-stone-800 backdrop-blur-md shadow-sm ring-1 ring-black/5 transition-all hover:bg-white hover:shadow-md active:scale-95 disabled:opacity-30"
@@ -1886,7 +2102,10 @@ export default function StudioSettings() {
                                               type="button"
                                               onClick={(e) => {
                                                 e.stopPropagation();
-                                                movePortfolioMixed(idx, idx + 1);
+                                                movePortfolioMixed(
+                                                  idx,
+                                                  idx + 1,
+                                                );
                                               }}
                                               disabled={isLast}
                                               className="flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-stone-800 backdrop-blur-md shadow-sm ring-1 ring-black/5 transition-all hover:bg-white hover:shadow-md active:scale-95 disabled:opacity-30"
@@ -2048,7 +2267,9 @@ export default function StudioSettings() {
               <h3 className="text-lg font-bold text-stone-800">
                 {errorModal.title}
               </h3>
-              <p className="mt-2 text-sm text-stone-600">{errorModal.message}</p>
+              <p className="mt-2 text-sm text-stone-600">
+                {errorModal.message}
+              </p>
               <div className="mt-5 flex justify-end">
                 <Button
                   variant="primary"
@@ -2150,14 +2371,14 @@ export default function StudioSettings() {
         </div>
 
         {/* Optional floating top save slot */}
-<div
-  className={cn(
-    "fixed right-4 top-4 z-[9999] transition-all duration-300",
-    floatingVisible
-      ? "pointer-events-auto translate-y-0 opacity-100"
-      : "pointer-events-none -translate-y-2 opacity-0",
-  )}
-/>
+        <div
+          className={cn(
+            "fixed right-4 top-4 z-[9999] transition-all duration-300",
+            floatingVisible
+              ? "pointer-events-auto translate-y-0 opacity-100"
+              : "pointer-events-none -translate-y-2 opacity-0",
+          )}
+        />
       </div>
     </div>
   );

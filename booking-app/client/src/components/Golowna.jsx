@@ -1,8 +1,16 @@
 import { useMemo, useState, useEffect } from "react";
 import { useBookings } from "../context/bookings/useBookings";
+import {
+  Sparkles,
+  CalendarDays,
+  Clock,
+  Users,
+  CheckCheck,
+  ChevronRight,
+} from "lucide-react";
 
 // =========================
-// Helpers (як у Bookings)
+// Helpers
 // =========================
 function pad2(n) {
   return String(n).padStart(2, "0");
@@ -45,9 +53,8 @@ function getBookingDateTime(b) {
 }
 
 function startOfWeekMonday(d) {
-  // week starts Monday
   const x = new Date(d);
-  const day = x.getDay(); // 0..6 Sun..Sat
+  const day = x.getDay();
   const mondayIndex = (day + 6) % 7;
   x.setHours(0, 0, 0, 0);
   x.setDate(x.getDate() - mondayIndex);
@@ -60,96 +67,117 @@ function addDays(d, n) {
   return x;
 }
 
-function cx(...arr) {
+function cn(...arr) {
   return arr.filter(Boolean).join(" ");
-}
-
-function Card({ className = "", children }) {
-  return (
-    <section
-      className={cx(
-        "rounded-[28px] border border-[#EEEEEE] bg-[#FFFCF8] shadow-[0_10px_30px_rgba(93,64,55,0.06)]",
-        className,
-      )}
-    >
-      {children}
-    </section>
-  );
 }
 
 function formatCompactNumber(num) {
   if (num == null || num === 0) return "0";
   if (num < 1000) return String(num);
-
-  if (num < 10_000)   return `${Math.floor(num / 100) / 10}k`;     // 1.2k
-  if (num < 1_000_000) return `${Math.floor(num / 1000)}k`;        // 12k, 999k
-  if (num < 10_000_000) return `${Math.floor(num / 1_000_000)}M`;  // 1M
-  return "999k+"; // або будь-яке інше максимальне значення
+  if (num < 10_000) return `${Math.floor(num / 100) / 10}k`;
+  if (num < 1_000_000) return `${Math.floor(num / 1000)}k`;
+  if (num < 10_000_000) return `${Math.floor(num / 1_000_000)}M`;
+  return "999k+";
 }
 
-function StatCard({ title, value }) {
+// =========================
+// UI
+// =========================
+function SectionShell({ children, className = "" }) {
+  return (
+    <div
+      className={cn(
+        "overflow-hidden rounded-[30px] border border-stone-200/60 bg-white shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]",
+        className,
+      )}
+    >
+      <div className="h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-70" />
+      {children}
+    </div>
+  );
+}
+
+function StatCard({ title, value, icon: Icon, accent = "emerald" }) {
   const displayValue = formatCompactNumber(value);
 
+  const iconTone =
+    accent === "amber"
+      ? "bg-amber-50 text-amber-700"
+      : accent === "blue"
+        ? "bg-sky-50 text-sky-700"
+        : accent === "rose"
+          ? "bg-rose-50 text-rose-700"
+          : "bg-emerald-50 text-emerald-700";
+
   return (
-    <div className="rounded-3xl border border-gray-200 bg-white p-3.5 sm:p-4 md:p-5 shadow-sm">
-      <div 
-        className={`
-          font-semibold uppercase tracking-wide text-gray-500 
-          leading-tight
-          text-[10px]              /* базовий — менший */
-          sm:text-[8px]           /* від ~640px */
-          lg:text-xs           /* від ~1024px */
-          leading-tight
-          break-words           /* або hyphenate */
-          max-w-full
-`}
-      >
-        {title}
-      </div>
-      <div
-className={`mt-2 text-3xl font-black tracking-tight text-gray-900`}>
-        {displayValue}
+    <div className="group rounded-[26px] border border-stone-200 bg-white p-4 shadow-[0_8px_25px_rgba(0,0,0,0.04)] transition-all duration-200 hover:-translate-y-0.5 hover:border-amber-200 hover:shadow-[0_12px_30px_rgba(0,0,0,0.06)] sm:p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-stone-500">
+            {title}
+          </p>
+          <div className="mt-3 text-3xl font-bold tracking-tight text-stone-800 sm:text-4xl">
+            {displayValue}
+          </div>
+        </div>
+
+        <div
+          className={cn(
+            "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl",
+            iconTone,
+          )}
+        >
+          <Icon className="h-5 w-5" />
+        </div>
       </div>
     </div>
   );
 }
 
-function ButtonBase({ className = "", ...props }) {
-  return (
-    <button
-      type="button"
-      className={cx(
-        "inline-flex items-center justify-center gap-2 rounded-[16px] px-4 py-2.5 text-sm font-semibold",
-        "transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50",
-        "focus:outline-none focus:ring-2 focus:ring-[#4A5D4E]/15",
-        className,
-      )}
-      {...props}
-    />
-  );
-}
+function AppointmentCard({ item, todayKey }) {
+  const key = item.date ? String(item.date) : "";
+  const dateLabel = key ? formatDateUA(key) : "—";
+  const isToday = key === todayKey;
 
-function PrimaryButton({ className = "", ...props }) {
   return (
-    <ButtonBase
-      className={cx(
-        "bg-[#4A5D4E] text-white shadow-[0_10px_24px_rgba(74,93,78,0.22)] hover:bg-[#3F5143]",
-        className,
-      )}
-      {...props}
-    />
-  );
-}
+    <li className="group rounded-[24px] border border-stone-200 bg-white p-4 shadow-[0_8px_25px_rgba(0,0,0,0.04)] transition-all duration-200 hover:-translate-y-0.5 hover:border-amber-200 hover:shadow-[0_12px_30px_rgba(0,0,0,0.06)] sm:p-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-stone-100 px-2.5 py-1 text-xs font-semibold text-stone-700">
+              <Clock className="h-3.5 w-3.5 text-amber-600" />
+              {item.time}
+            </span>
 
-function GhostButton({ className = "", ...props }) {
-  return (
-    <ButtonBase
-      className={cx(
-        "border border-[#E7DED6] bg-white text-[#6B625A] hover:bg-[#FAF7F4] hover:text-[#1F2A22]",
-        className,
-      )}
-      {...props}
-    />
+            <span
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold",
+                isToday
+                  ? "bg-emerald-50 text-emerald-700"
+                  : "bg-amber-50 text-amber-700",
+              )}
+            >
+              <CalendarDays className="h-3.5 w-3.5" />
+              {isToday ? "Сьогодні" : dateLabel}
+            </span>
+          </div>
+
+          <p className="mt-3 text-base font-semibold text-stone-800 sm:text-lg">
+            {item.service}
+          </p>
+
+          <p className="mt-1 truncate text-sm text-stone-500">
+            Клієнт:{" "}
+            <span className="font-semibold text-stone-800">{item.client}</span>
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2 self-start text-xs font-semibold text-stone-400 sm:self-center">
+          Детальніше
+          <ChevronRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+        </div>
+      </div>
+    </li>
   );
 }
 
@@ -159,86 +187,104 @@ function GhostButton({ className = "", ...props }) {
 export default function Golowna() {
   const { bookings } = useBookings();
 
-  // щоб “майбутні” самі оновлювалися щохвилини
   const [nowTs, setNowTs] = useState(() => Date.now());
+
   useEffect(() => {
     const id = setInterval(() => setNowTs(Date.now()), 60_000);
     return () => clearInterval(id);
   }, []);
 
-const stats = useMemo(() => {
-  const list = (bookings || []).filter(
-    (b) => b && b.id && b.status !== "deleted" && b.status !== "canceled"
-  );
+  const stats = useMemo(() => {
+    const list = (bookings || []).filter(
+      (b) => b && b.id && b.status !== "deleted" && b.status !== "canceled",
+    );
 
-  const now = new Date(nowTs);
-  const todayKey = toISODateKey(now);
+    const now = new Date(nowTs);
+    const todayKey = toISODateKey(now);
 
-  const weekStart = startOfWeekMonday(now);
-  const weekEnd = addDays(weekStart, 7);
+    const weekStart = startOfWeekMonday(now);
+    const weekEnd = addDays(weekStart, 7);
 
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
-  let todayActive = 0;
-  let weekActive = 0;
-  let monthActive = 0;
+    let todayActive = 0;
+    let weekActive = 0;
+    let monthActive = 0;
+    let todayNew = 0;
 
-  let todayNew = 0; // ✅ нові (не підтверджені) на сьогодні
+    for (const b of list) {
+      const dt = getBookingDateTime(b);
+      if (!dt) continue;
+      if (dt.getTime() < nowTs) continue;
 
-  for (const b of list) {
-    const dt = getBookingDateTime(b);
-    if (!dt) continue;
+      const dateOnly = new Date(b.date);
+      if (Number.isNaN(dateOnly.getTime())) continue;
 
-    // тільки активні (не в минулому)
-    if (dt.getTime() < nowTs) continue;
+      const key = toISODateKey(dateOnly);
+      const isNew = !b.status || b.status === "new";
 
-    const dateOnly = new Date(b.date);
-    if (Number.isNaN(dateOnly.getTime())) continue;
+      if (key === todayKey) {
+        todayActive++;
+        if (isNew) todayNew++;
+      }
 
-    const key = toISODateKey(dateOnly);
+      if (dateOnly >= weekStart && dateOnly < weekEnd) {
+        weekActive++;
+      }
 
-    const isNew = !b.status || b.status === "new";
-
-    // сьогодні
-    if (key === todayKey) {
-      todayActive++;
-      if (isNew) todayNew++;
+      if (dateOnly >= monthStart && dateOnly < monthEnd) {
+        monthActive++;
+      }
     }
 
-    // тиждень
-    if (dateOnly >= weekStart && dateOnly < weekEnd) {
-      weekActive++;
-    }
-
-    // місяць
-    if (dateOnly >= monthStart && dateOnly < monthEnd) {
-      monthActive++;
-    }
-  }
-
-return [
-  { title: <>Активні записи<br />на сьогодні</>, value: todayActive },
-  { title: <>Нові записи<br />(не підтверджені)</>, value: todayNew },
-  { title: <>Активні записи<br />на тижні</>, value: weekActive },
-  { title: <>Активні записи<br />на місяць</>, value: monthActive },
-];
-}, [bookings, nowTs]);
+    return [
+      {
+        key: "today-active",
+        title: "Активні на сьогодні",
+        value: todayActive,
+        icon: CalendarDays,
+        accent: "emerald",
+      },
+      {
+        key: "today-new",
+        title: "Нові непідтверджені",
+        value: todayNew,
+        icon: Sparkles,
+        accent: "amber",
+      },
+      {
+        key: "week-active",
+        title: "Активні на тижні",
+        value: weekActive,
+        icon: CheckCheck,
+        accent: "blue",
+      },
+      {
+        key: "month-active",
+        title: "Активні на місяць",
+        value: monthActive,
+        icon: Users,
+        accent: "rose",
+      },
+    ];
+  }, [bookings, nowTs]);
 
   const upcomingAppointments = useMemo(() => {
-    const list = (bookings || []).filter((b) => b && b.id && b.status !== "deleted");
+    const list = (bookings || []).filter(
+      (b) => b && b.id && b.status !== "deleted",
+    );
 
     const upcoming = [];
     for (const b of list) {
       const dt = getBookingDateTime(b);
       if (!dt) continue;
-      if (dt.getTime() < nowTs) continue; // тільки майбутні
+      if (dt.getTime() < nowTs) continue;
       upcoming.push({ b, ts: dt.getTime() });
     }
 
     upcoming.sort((a, c) => a.ts - c.ts);
 
-    // покажемо 5 найближчих
     return upcoming.slice(0, 5).map(({ b }) => ({
       id: b.id,
       date: b.date,
@@ -251,76 +297,97 @@ return [
   const todayKey = toISODateKey(new Date(nowTs));
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
-      {/* Welcome */}
-<Card className="p-6 sm:p-7">
-  <p className="text-center text-[11px] font-extrabold uppercase tracking-[0.22em] text-[#C89D72]">
-    dashboard студії
-  </p>
+    <div className="min-h-screen ">
+      <div className="mx-auto w-full max-w-[1200px] space-y-6 py-4 sm:py-6">
+        <SectionShell>
+          <div className="relative overflow-hidden px-5 pb-6 pt-6 sm:px-7 sm:pb-7 sm:pt-7">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(245,158,11,0.10),transparent_22%),radial-gradient(circle_at_left,rgba(16,185,129,0.08),transparent_24%)]" />
 
-  <h2 className="mt-3 text-center text-2xl font-black tracking-[-0.03em] text-[#1F2A22] sm:text-3xl">
-    Вітаємо в кабінеті майстра 👋
-  </h2>
+            <div className="relative z-10">
+              <div className="inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-amber-700">
+                <Sparkles className="h-3.5 w-3.5" />
+                dashboard студії
+              </div>
 
-  <p className="mt-3 text-center text-sm leading-6 text-[#857A70] sm:text-base">
-    Керуйте студією, послугами та записами в одному теплому, зручному просторі.
-  </p>
-</Card>
-      {/* Stats */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-        {stats.map((item) => (
-          <StatCard key={item.title} title={item.title} value={item.value} />
-        ))}
-      </div>
-
-
-      {/* Upcoming */}
-<Card className="p-5 sm:p-6">
-  <div className="flex items-start justify-between gap-3">
-    <div>
-      <h3 className="text-lg font-bold text-[#1F2A22]">Найближчі записи</h3>
-      <p className="mt-1 text-sm text-[#857A70]">
-        Тільки майбутні записи, відсортовані за датою та часом.
-      </p>
-    </div>
-  </div>
-
-        {upcomingAppointments.length === 0 ? (
-          <div className="mt-4 rounded-2xl border border-gray-200 bg-gray-50 p-6 text-sm text-gray-600">
-            Немає запланованих записів
-          </div>
-        ) : (
-          <ul className="mt-4 space-y-2">
-            {upcomingAppointments.map((x) => {
-              const key = x.date ? String(x.date) : "";
-              const dateLabel = key ? formatDateUA(key) : "—";
-              const showDate = key && key !== todayKey;
-
-              return (
-<li
-  key={x.id}
-  className="flex flex-col gap-1 rounded-[22px] border border-[#EEEEEE] bg-white p-4 transition hover:bg-[#FCF8F3] sm:flex-row sm:items-center sm:justify-between"
+<h1
+  className="
+    mt-4 font-bold tracking-tight text-stone-800
+    text-[26px] leading-[1.15]        /* мобілка */
+    sm:text-4xl sm:leading-[1.1]
+    lg:text-5xl
+  "
 >
-                  <div className="min-w-0">
-                    <p className="text-base font-bold text-[#1F2A22]">
-                      {x.time}{" "}
-                      <span className="font-medium text-[#D8C8B8]">•</span>{" "}
-                      {x.service}
-                    </p>
-<p className="mt-1 truncate text-sm text-[#857A70]">
-  Клієнт: <span className="font-semibold text-[#1F2A22]">{x.client}</span>
-</p>
-                  </div>
+  <span className="inline-flex items-center gap-2 sm:gap-3">
+    <span>Вітаємо в кабінеті майстра</span>
+    <span className="hidden sm:inline">👋</span>
+  </span>
+</h1>
 
-                  <div className="text-sm font-semibold text-[#857A70] sm:text-right">
-                    {showDate ? dateLabel : "Сьогодні"}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </Card>
+<p
+  className="
+    mt-3 text-stone-600
+    text-[13.5px] leading-6        /* мобілка */
+    sm:text-base sm:leading-7
+  "
+>
+  Керуйте студією, послугами та записами в одному теплому,
+  сучасному та зручному просторі.
+</p>
+            </div>
+          </div>
+        </SectionShell>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {stats.map((item) => (
+            <StatCard
+              key={item.key}
+              title={item.title}
+              value={item.value}
+              icon={item.icon}
+              accent={item.accent}
+            />
+          ))}
+        </div>
+
+        <SectionShell>
+          <div className="px-5 pb-6 pt-5 sm:px-6 sm:pb-7 sm:pt-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-amber-600">
+                  Розклад
+                </p>
+                <h2 className="mt-2 text-2xl font-bold tracking-tight text-stone-800 sm:text-3xl">
+                  Найближчі записи
+                </h2>
+                <p className="mt-2 text-sm text-stone-500">
+                  Тільки майбутні записи, відсортовані за датою та часом.
+                </p>
+              </div>
+
+              <div className="inline-flex items-center gap-2 rounded-full border border-green-300 bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-700">
+                <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                Оновлюється автоматично
+              </div>
+            </div>
+
+            {upcomingAppointments.length === 0 ? (
+              <div className="mt-6 rounded-[24px] border border-stone-200 bg-stone-50 p-8 text-center text-sm text-stone-500">
+                Немає запланованих записів
+              </div>
+            ) : (
+              <ul className="mt-6 space-y-3">
+                {upcomingAppointments.map((item) => (
+                  <AppointmentCard
+                    key={item.id}
+                    item={item}
+                    todayKey={todayKey}
+                  />
+                ))}
+              </ul>
+            )}
+          </div>
+        </SectionShell>
+      </div>
     </div>
   );
 }

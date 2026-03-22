@@ -140,34 +140,137 @@ function SectionCard({
     >
       <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-60" />
 
-      <div className="flex flex-col gap-3 border-b border-stone-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg font-bold tracking-tight text-stone-800">
+      <div className="border-b border-stone-100 px-4 py-3 sm:px-5 sm:py-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h2 className="line-clamp-3 text-base font-bold leading-snug tracking-tight text-stone-800 sm:text-lg">
               {title}
             </h2>
 
             {badge && (
-              <span className="inline-flex items-center rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
-                {badge}
-              </span>
+              <div className="mt-1.5">
+                <span className="inline-flex max-w-full items-center rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-2.5 py-1 text-[11px] font-semibold text-amber-700 sm:text-xs">
+                  {badge}
+                </span>
+              </div>
+            )}
+
+            {subtitle && (
+              <p className="mt-2 text-sm leading-5 text-stone-500">
+                {subtitle}
+              </p>
             )}
           </div>
 
-          {subtitle && (
-            <p className="mt-0.5 text-sm text-stone-500">{subtitle}</p>
+          {/* desktop actions — як було раніше */}
+          {actions?.desktop && (
+            <div className="hidden shrink-0 items-center gap-2 sm:flex">
+              {actions.desktop}
+            </div>
+          )}
+
+          {/* mobile top actions — тільки іконки */}
+          {actions?.mobileTop && (
+            <div className="flex shrink-0 items-center gap-2 sm:hidden">
+              {actions.mobileTop}
+            </div>
           )}
         </div>
 
-        {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
+        {/* mobile bottom action — кнопка під категорією */}
+        {actions?.mobileBottom && (
+          <div className="mt-3 sm:hidden">
+            {actions.mobileBottom}
+          </div>
+        )}
       </div>
 
-      <div className="p-5">{children}</div>
+      <div className="p-4 sm:p-5">{children}</div>
     </section>
   );
 }
 
-function Modal({ open, onClose, title, subtitle, children, footer, size = "md" }) {
+function CustomSelect({ value, onChange, options, placeholder = "Оберіть" }) {
+  const [open, setOpen] = useState(false);
+
+  const selected = options.find((opt) => String(opt.value) === String(value));
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((p) => !p)}
+        className={cn(
+          "flex w-full items-center justify-between rounded-2xl border bg-white px-4 py-3 text-left text-sm font-medium transition-all outline-none",
+          open
+            ? "border-amber-400 ring-4 ring-amber-400/10"
+            : "border-stone-200 hover:border-stone-300",
+        )}
+      >
+        <span className="truncate text-stone-800">
+          {selected?.label || placeholder}
+        </span>
+
+        <ChevronDown
+          className={cn(
+            "h-5 w-5 flex-shrink-0 text-stone-400 transition-transform duration-200",
+            open && "rotate-180",
+          )}
+        />
+      </button>
+
+      {open && (
+        <>
+          <button
+            type="button"
+            className="fixed inset-0 z-10 cursor-default"
+            onClick={() => setOpen(false)}
+            aria-label="Закрити список"
+          />
+
+          <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-[0_20px_50px_-12px_rgba(0,0,0,0.18)]">
+            <div className="max-h-64 overflow-y-auto py-2">
+              {options.map((opt) => {
+                const isActive = String(opt.value) === String(value);
+
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => {
+                      onChange(opt.value);
+                      setOpen(false);
+                    }}
+                    className={cn(
+                      "flex w-full items-center justify-between px-4 py-3 text-left text-sm transition-colors",
+                      isActive
+                        ? "bg-amber-50 text-amber-700"
+                        : "text-stone-700 hover:bg-stone-50",
+                    )}
+                  >
+                    <span className="truncate">{opt.label}</span>
+
+                    {isActive && <Check className="h-4 w-4 flex-shrink-0" />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function Modal({
+  open,
+  onClose,
+  title,
+  subtitle,
+  children,
+  footer,
+  size = "md",
+}) {
   useEffect(() => {
     if (open) {
       document.body.style.overflow = "hidden";
@@ -197,6 +300,8 @@ function Modal({ open, onClose, title, subtitle, children, footer, size = "md" }
     lg: "max-w-2xl",
   };
 
+  const isSmall = size === "sm";
+
   const handleBackdropClick = (e) => {
     if (e.target === e.currentTarget) {
       onClose?.();
@@ -205,48 +310,63 @@ function Modal({ open, onClose, title, subtitle, children, footer, size = "md" }
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-stone-900/40 p-4 backdrop-blur-sm sm:p-6"
+      className="fixed inset-0 z-[9999] bg-stone-900/40 p-3 backdrop-blur-sm sm:p-6"
       onClick={handleBackdropClick}
     >
       <div
         className={cn(
-          "relative my-8 w-full overflow-hidden rounded-3xl bg-white shadow-2xl",
-          "animate-in fade-in-0 zoom-in-95 duration-200",
-          sizeClasses[size],
+          "flex h-full w-full justify-center overflow-hidden",
+          isSmall ? "items-center" : "items-center",
         )}
-        onClick={(e) => e.stopPropagation()}
       >
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-amber-50/80 to-transparent" />
+        <div
+          className={cn(
+            "relative flex w-full flex-col overflow-hidden rounded-[26px] bg-white shadow-2xl",
+            "animate-in fade-in-0 zoom-in-95 duration-200",
+            sizeClasses[size],
+            isSmall
+              ? "max-h-[calc(100vh-24px)]"
+              : "max-h-[calc(100vh-24px)] sm:max-h-[calc(100vh-48px)]",
+          )}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-amber-50/80 to-transparent" />
 
-        <div className="relative border-b border-stone-100 px-6 py-5">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-amber-600">
-                {title}
-              </p>
-              {subtitle && <p className="mt-1 text-sm text-stone-500">{subtitle}</p>}
+          <div className="relative shrink-0 border-b border-stone-100 px-4 py-3 sm:px-5">
+            <div className="relative flex items-center justify-center">
+              <div className="min-w-0">
+                <h3 className="text-center text-base font-bold uppercase text-amber-600 sm:text-lg">
+                  {title}
+                </h3>
+
+                {subtitle && (
+                  <p className="mx-auto mt-1 max-w-[260px] text-center text-sm text-stone-500">
+                    {subtitle}
+                  </p>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => onClose?.()}
+                className="absolute right-0 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-xl text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 sm:h-9 sm:w-9"
+                aria-label="Закрити"
+              >
+                <X className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
+              </button>
             </div>
-
-            <button
-              type="button"
-              onClick={() => onClose?.()}
-              className="-mr-2 -mt-1 rounded-xl p-2 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600"
-              aria-label="Закрити"
-            >
-              <X className="h-5 w-5" />
-            </button>
           </div>
-        </div>
 
-        <div className="max-h-[calc(100vh-280px)] overflow-y-auto px-6 py-5">
-          {children}
-        </div>
-
-        {footer && (
-          <div className="border-t border-stone-100 bg-stone-50/50 px-6 py-4">
-            {footer}
+          <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-5">
+            {children}
           </div>
-        )}
+
+          {footer && (
+            <div className="shrink-0 border-t border-stone-100 bg-stone-50/50 px-4 py-3 sm:px-5">
+              {footer}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -270,9 +390,9 @@ function Button({
   };
 
   const sizes = {
-    sm: "px-3 py-1.5 text-xs rounded-xl",
-    md: "px-4 py-2.5 text-sm rounded-2xl",
-    lg: "px-6 py-3 text-sm rounded-2xl",
+    sm: "px-3 py-2 text-xs rounded-xl",
+    md: "px-4 py-2 text-sm rounded-2xl sm:px-4 sm:py-2.5",
+    lg: "px-5 py-2.5 text-sm rounded-2xl sm:px-6 sm:py-3",
   };
 
   return (
@@ -292,7 +412,12 @@ function Button({
   );
 }
 
-function IconButton({ variant = "secondary", className = "", children, ...props }) {
+function IconButton({
+  variant = "secondary",
+  className = "",
+  children,
+  ...props
+}) {
   const variants = {
     secondary:
       "bg-white border border-stone-200 text-stone-600 hover:bg-stone-50 hover:text-stone-800",
@@ -303,7 +428,7 @@ function IconButton({ variant = "secondary", className = "", children, ...props 
     <button
       type="button"
       className={cn(
-        "inline-flex items-center justify-center rounded-xl p-2.5 transition-all duration-200 active:scale-95",
+        "inline-flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-200 active:scale-95 sm:h-11 sm:w-11",
         variants[variant],
         className,
       )}
@@ -321,6 +446,7 @@ function DurationSlider({ value, onChange }) {
 
   const presets = [
     { label: "30 хв", value: 30 },
+    { label: "45 хв", value: 45 },
     { label: "1 год", value: 60 },
     { label: "1.5 год", value: 90 },
     { label: "2 год", value: 120 },
@@ -332,29 +458,29 @@ function DurationSlider({ value, onChange }) {
       <div className="flex items-center justify-center">
         <div className="relative">
           <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-400 opacity-20 blur-xl" />
-          <div className="relative flex items-center gap-3 rounded-2xl border border-amber-200/50 bg-gradient-to-r from-amber-50 to-orange-50 px-6 py-3">
-            <Clock className="h-5 w-5 text-amber-600" />
-            <span className="text-2xl font-bold text-stone-800">
+          <div className="relative flex items-center gap-2 rounded-2xl border border-amber-200/50 bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-2.5 sm:gap-3 sm:px-6 sm:py-3">
+            <Clock className="h-4.5 w-4.5 text-amber-600 sm:h-5 sm:w-5" />
+            <span className="text-xl font-bold text-stone-800 sm:text-2xl">
               {formatDuration(value)}
             </span>
           </div>
         </div>
       </div>
 
-      <div className="px-2 py-4">
-        <Slider
-          value={[value]}
-          onValueChange={([v]) => onChange(v)}
-          min={minVal}
-          max={maxVal}
-          step={step}
-          className="[&_[data-slot=track]]:h-2 [&_[data-slot=track]]:bg-gradient-to-r [&_[data-slot=track]]:from-stone-100 [&_[data-slot=track]]:to-stone-200 [&_[data-slot=range]]:bg-gradient-to-r [&_[data-slot=range]]:from-amber-400 [&_[data-slot=range]]:to-orange-500 [&_[data-slot=thumb]]:h-6 [&_[data-slot=thumb]]:w-6 [&_[data-slot=thumb]]:border-2 [&_[data-slot=thumb]]:border-amber-400 [&_[data-slot=thumb]]:bg-white [&_[data-slot=thumb]]:shadow-lg"
-        />
+      <div className="px-1 py-2 sm:px-2 sm:py-4">
+<Slider
+  value={[value]}
+  onValueChange={([v]) => onChange(v)}
+  min={minVal}
+  max={maxVal}
+  step={step}
+  className="w-full"
+/>
 
         <div className="mt-2 flex justify-between px-1">
-          <span className="text-xs text-stone-400">5 хв</span>
-          <span className="text-xs text-stone-400">6 год</span>
-          <span className="text-xs text-stone-400">12 год</span>
+          <span className="text-[11px] text-stone-400 sm:text-xs">5 хв</span>
+          <span className="text-[11px] text-stone-400 sm:text-xs">6 год</span>
+          <span className="text-[11px] text-stone-400 sm:text-xs">12 год</span>
         </div>
       </div>
 
@@ -365,7 +491,7 @@ function DurationSlider({ value, onChange }) {
             type="button"
             onClick={() => onChange(preset.value)}
             className={cn(
-              "rounded-xl px-4 py-2 text-sm font-medium transition-all duration-200",
+              "rounded-xl px-3 py-2 text-xs font-medium transition-all duration-200 sm:px-4 sm:text-sm",
               value === preset.value
                 ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md"
                 : "bg-stone-100 text-stone-600 hover:bg-stone-200",
@@ -376,23 +502,25 @@ function DurationSlider({ value, onChange }) {
         ))}
       </div>
 
-      <div className="flex items-center justify-center gap-4">
+      <div className="flex items-center justify-center gap-3 sm:gap-4">
         <button
           type="button"
           onClick={() => onChange(Math.max(minVal, value - 5))}
           disabled={value <= minVal}
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-stone-100 text-stone-600 transition-all hover:bg-stone-200 disabled:opacity-40"
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-stone-100 text-stone-600 transition-all hover:bg-stone-200 disabled:opacity-40 sm:h-10 sm:w-10"
         >
           <span className="text-lg font-bold">−</span>
         </button>
 
-        <span className="w-16 text-center text-sm text-stone-500">±5 хв</span>
+        <span className="w-14 text-center text-xs text-stone-500 sm:w-16 sm:text-sm">
+          ±5 хв
+        </span>
 
         <button
           type="button"
           onClick={() => onChange(Math.min(maxVal, value + 5))}
           disabled={value >= maxVal}
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-stone-100 text-stone-600 transition-all hover:bg-stone-200 disabled:opacity-40"
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-stone-100 text-stone-600 transition-all hover:bg-stone-200 disabled:opacity-40 sm:h-10 sm:w-10"
         >
           <span className="text-lg font-bold">+</span>
         </button>
@@ -402,7 +530,11 @@ function DurationSlider({ value, onChange }) {
 }
 
 function SkeletonBlock({ className = "" }) {
-  return <div className={cn("animate-pulse rounded-xl bg-stone-200/60", className)} />;
+  return (
+    <div
+      className={cn("animate-pulse rounded-xl bg-stone-200/60", className)}
+    />
+  );
 }
 
 function ServicesSkeleton() {
@@ -415,7 +547,10 @@ function ServicesSkeleton() {
       </div>
 
       {[1, 2, 3].map((i) => (
-        <div key={i} className="rounded-3xl border border-stone-200 bg-white p-5">
+        <div
+          key={i}
+          className="rounded-3xl border border-stone-200 bg-white p-5"
+        >
           <div className="mb-4 flex justify-between">
             <SkeletonBlock className="h-6 w-40" />
             <SkeletonBlock className="h-10 w-32 rounded-2xl" />
@@ -738,43 +873,48 @@ export default function Services() {
     return [unc, ...cats];
   }, [serviceCategories, uncategorizedServices]);
 
-  const totalServices = blocks.reduce((acc, b) => acc + (b.services?.length || 0), 0);
+  const totalServices = blocks.reduce(
+    (acc, b) => acc + (b.services?.length || 0),
+    0,
+  );
   const showTips = totalServices === 0;
-
+  const isModalOpen = categoryModal.open || serviceModal.open;
   if (loading) return <ServicesSkeleton />;
 
   return (
     <div className="min-h-screen">
       <div className="mx-auto max-w-5xl">
-        <div className="mb-10">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-4 py-1.5">
-            <Sparkles className="h-4 w-4 text-amber-600" />
-            <span className="text-xs font-bold uppercase tracking-wider text-amber-700">
-              Меню студії
-            </span>
+        {!isModalOpen && (
+          <div className="mb-10">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-4 py-1.5">
+              <Sparkles className="h-4 w-4 text-amber-600" />
+              <span className="text-xs font-bold uppercase tracking-wider text-amber-700">
+                Меню студії
+              </span>
+            </div>
+
+            <h1 className="text-4xl font-black tracking-tight text-stone-800 sm:text-5xl">
+              Послуги
+            </h1>
+
+            <p className="mt-3 max-w-2xl text-stone-600">
+              Налаштуйте категорії та послуги — саме так їх бачитимуть клієнти
+              під час онлайн-запису.
+            </p>
           </div>
-
-          <h1 className="text-4xl font-black tracking-tight text-stone-800 sm:text-5xl">
-            Послуги
-          </h1>
-
-          <p className="mt-3 max-w-2xl text-stone-600">
-            Налаштуйте категорії та послуги — саме так їх бачитимуть клієнти під
-            час онлайн-запису.
-          </p>
-        </div>
+        )}
 
         <SectionCard
           title="Нова категорія"
           subtitle="Згрупуйте схожі послуги (наприклад: Вії, Нігті, Брови)"
           className="mb-6"
         >
-          <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="flex flex-col gap-2.5 sm:flex-row">
             <input
               value={newCategoryName}
               onChange={(e) => setNewCategoryName(e.target.value)}
               placeholder="Введіть назву категорії..."
-              className="flex-1 rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm font-medium text-stone-800 outline-none transition-all placeholder:text-stone-400 focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10"
+              className="flex-1 rounded-xl border border-stone-200 bg-white px-3.5 py-2.5 text-sm font-medium text-stone-800 outline-none transition-all placeholder:text-stone-400 focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10 sm:rounded-2xl sm:px-4 sm:py-3"
               onKeyDown={(e) => e.key === "Enter" && addCategory()}
             />
 
@@ -799,45 +939,87 @@ export default function Services() {
               <SectionCard
                 key={cat.id}
                 title={cat.name}
-                badge={`${servicesCount} ${servicesCount === 1 ? "послуга" : "послуг"}`}
-                actions={
-                  <>
-                    <Button
-                      variant="primary"
-                      size="md"
-                      onClick={() => openAddService(cat.id)}
-                    >
-                      <Plus className="h-4 w-4" />
-                      Додати послугу
-                    </Button>
+                badge={`К-ть послуг: ${servicesCount}`}
+actions={{
+  desktop: (
+    <>
+      <Button
+        variant="primary"
+        size="md"
+        onClick={() => openAddService(cat.id)}
+      >
+        <Plus className="h-4 w-4" />
+        Додати послугу
+      </Button>
 
-                    {!isUnc && (
-                      <>
-                        <IconButton
-                          onClick={() => openEditCategory(cat.id)}
-                          title="Редагувати"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </IconButton>
+      {!isUnc && (
+        <>
+          <IconButton
+            onClick={() => openEditCategory(cat.id)}
+            title="Редагувати"
+            className="h-[42px] w-[42px] shrink-0"
+          >
+            <Pencil className="h-4 w-4" />
+          </IconButton>
 
-                        <IconButton
-                          variant="danger"
-                          onClick={() => deleteCategory(cat.id)}
-                          title="Видалити"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </IconButton>
-                      </>
-                    )}
-                  </>
-                }
+          <IconButton
+            variant="danger"
+            onClick={() => deleteCategory(cat.id)}
+            title="Видалити"
+            className="h-[42px] w-[42px] shrink-0"
+          >
+            <Trash2 className="h-4 w-4" />
+          </IconButton>
+        </>
+      )}
+    </>
+  ),
+
+  mobileTop: !isUnc ? (
+    <>
+      <IconButton
+        onClick={() => openEditCategory(cat.id)}
+        title="Редагувати"
+        className="h-[42px] w-[42px] shrink-0"
+      >
+        <Pencil className="h-4 w-4" />
+      </IconButton>
+
+      <IconButton
+        variant="danger"
+        onClick={() => deleteCategory(cat.id)}
+        title="Видалити"
+        className="h-[42px] w-[42px] shrink-0"
+      >
+        <Trash2 className="h-4 w-4" />
+      </IconButton>
+    </>
+  ) : null,
+
+  mobileBottom: (
+    <Button
+      variant="primary"
+      size="md"
+      onClick={() => openAddService(cat.id)}
+      className="w-full"
+    >
+      <Plus className="h-4 w-4" />
+      Додати послугу
+    </Button>
+  ),
+}}
               >
                 {servicesCount === 0 ? (
-                  <div className="rounded-2xl border-2 border-dashed border-stone-200 bg-stone-50/50 p-8 text-center">
+                  <div className="rounded-2xl border-2 border-dashed border-stone-200 bg-stone-50/50 p-6 text-center sm:p-8">
+                    {" "}
                     <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-stone-100">
-                      <Plus className="h-6 w-6 text-stone-400" />
+                      <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-stone-100 sm:h-12 sm:w-12">
+                        <Plus className="h-5 w-5 text-stone-400 sm:h-6 sm:w-6" />
+                      </div>
                     </div>
-                    <p className="text-sm text-stone-500">Тут ще немає послуг</p>
+                    <p className="text-sm text-stone-500">
+                      Тут ще немає послуг
+                    </p>
                     <p className="mt-1 text-xs text-stone-400">
                       Натисніть "Додати послугу" щоб створити
                     </p>
@@ -845,51 +1027,53 @@ export default function Services() {
                 ) : (
                   <div className="space-y-3">
                     {cat.services.map((srv) => (
-                      <div
-                        key={srv.id}
-                        className="group/service rounded-2xl border border-stone-200 bg-white p-4 transition-all hover:border-amber-200 hover:shadow-md hover:shadow-amber-500/5"
-                      >
-                        <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-                          <div className="min-w-0">
-                            <h3 className="truncate font-semibold text-stone-800">
-                              {srv.name}
-                            </h3>
+<div
+  key={srv.id}
+  className="group/service rounded-2xl border border-stone-200 bg-white p-3.5 transition-all hover:border-amber-200 hover:shadow-md hover:shadow-amber-500/5 sm:p-4"
+>
+  <div className="flex items-start justify-between gap-3">
+    <div className="min-w-0 flex-1">
+      <h3 className="line-clamp-2 break-words text-sm font-semibold text-stone-800 sm:text-base">
+        {srv.name}
+      </h3>
 
-                            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-stone-500">
-                              <span className="inline-flex items-center gap-1">
-                                <Clock className="h-3.5 w-3.5" />
-                                {formatDuration(srv.duration)}
-                              </span>
+      <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-stone-500 sm:text-sm">
+        <span className="inline-flex items-center gap-1">
+          <Clock className="h-3.5 w-3.5" />
+          {formatDuration(srv.duration)}
+        </span>
 
-                              <span className="font-semibold text-stone-700">
-                                {srv.price} грн
-                              </span>
+        <span className="font-semibold text-stone-700">
+          {srv.price} грн
+        </span>
 
-                              <span className="inline-flex items-center gap-1">
-                                <Users className="h-3.5 w-3.5" />
-                                {resolveServiceMastersText(srv)}
-                              </span>
-                            </div>
-                          </div>
+        <span className="inline-flex items-center gap-1">
+          <Users className="h-3.5 w-3.5" />
+          {resolveServiceMastersText(srv)}
+        </span>
+      </div>
+    </div>
 
-                          <div className="flex gap-2 transition-opacity sm:opacity-0 sm:group-hover/service:opacity-100">
-                            <IconButton
-                              onClick={() => openEditService(cat.id, srv.id)}
-                              title="Редагувати"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </IconButton>
+    <div className="flex shrink-0 items-center gap-2">
+      <IconButton
+        onClick={() => openEditService(cat.id, srv.id)}
+        title="Редагувати"
+        className="h-11 w-11"
+      >
+        <Pencil className="h-4 w-4" />
+      </IconButton>
 
-                            <IconButton
-                              variant="danger"
-                              onClick={() => deleteService(cat.id, srv.id)}
-                              title="Видалити"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </IconButton>
-                          </div>
-                        </div>
-                      </div>
+      <IconButton
+        variant="danger"
+        onClick={() => deleteService(cat.id, srv.id)}
+        title="Видалити"
+        className="h-11 w-11"
+      >
+        <Trash2 className="h-4 w-4" />
+      </IconButton>
+    </div>
+  </div>
+</div>
                     ))}
                   </div>
                 )}
@@ -906,7 +1090,8 @@ export default function Services() {
 
             <ul className="space-y-2 text-sm text-stone-600">
               <li>
-                • Створіть <strong>категорії</strong> для групування схожих послуг
+                • Створіть <strong>категорії</strong> для групування схожих
+                послуг
               </li>
               <li>• Наприклад: "Вії", "Брови", "Манікюр"</li>
               <li>• Послуги без категорії відображаються окремим блоком</li>
@@ -934,7 +1119,8 @@ export default function Services() {
               onClick={saveCategoryName}
               disabled={!categoryDraftName.trim()}
             >
-              Зберегти
+                <Check className="h-4 w-4" />
+                Зберегти
             </Button>
           </div>
         }
@@ -947,7 +1133,7 @@ export default function Services() {
           <input
             value={categoryDraftName}
             onChange={(e) => setCategoryDraftName(e.target.value)}
-            className="w-full rounded-2xl border border-stone-200 px-4 py-3 text-sm font-medium text-stone-800 outline-none transition-all placeholder:text-stone-400 focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10"
+            className="w-full rounded-xl border border-stone-200 px-3 py-2.5 text-sm text-sm font-medium text-stone-800 outline-none transition-all placeholder:text-stone-400 focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10"
             placeholder="Введіть назву..."
           />
         </div>
@@ -956,7 +1142,9 @@ export default function Services() {
       <Modal
         open={serviceModal.open}
         onClose={closeServiceModal}
-        title={serviceModal.mode === "add" ? "Нова послуга" : "Редагування послуги"}
+        title={
+          serviceModal.mode === "add" ? "Нова послуга" : "Редагування послуги"
+        }
         subtitle="Заповніть деталі послуги"
         size="lg"
         footer={
@@ -970,8 +1158,8 @@ export default function Services() {
               onClick={saveService}
               disabled={!canSaveServiceDraft(serviceDraft)}
             >
-              <Check className="h-4 w-4" />
-              Зберегти
+                <Check className="h-4 w-4" />
+                Зберегти
             </Button>
           </div>
         }
@@ -982,24 +1170,19 @@ export default function Services() {
               Категорія
             </label>
 
-            <div className="relative">
-              <select
-                value={serviceDraft.categoryId || UNCATEGORIZED_ID}
-                onChange={(e) =>
-                  setServiceDraft((p) => ({ ...p, categoryId: e.target.value }))
-                }
-                className="w-full appearance-none rounded-2xl border border-stone-200 bg-white px-4 py-3 pr-10 text-sm font-medium text-stone-800 outline-none transition-all focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10"
-              >
-                <option value={UNCATEGORIZED_ID}>Без категорії</option>
-                {serviceCategories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-
-              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-stone-400" />
-            </div>
+            <CustomSelect
+              value={serviceDraft.categoryId || UNCATEGORIZED_ID}
+              onChange={(nextValue) =>
+                setServiceDraft((p) => ({ ...p, categoryId: nextValue }))
+              }
+              options={[
+                { value: UNCATEGORIZED_ID, label: "Без категорії" },
+                ...serviceCategories.map((c) => ({
+                  value: c.id,
+                  label: c.name,
+                })),
+              ]}
+            />
           </div>
 
           <div>
@@ -1013,7 +1196,7 @@ export default function Services() {
                 setServiceDraft((p) => ({ ...p, name: e.target.value }))
               }
               placeholder="Наприклад: Нарощування вій"
-              className="w-full rounded-2xl border border-stone-200 px-4 py-3 text-sm font-medium text-stone-800 outline-none transition-all placeholder:text-stone-400 focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10"
+              className="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-sm font-medium text-stone-800 outline-none transition-all placeholder:text-stone-400 focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10 sm:rounded-2xl sm:px-4 sm:py-3"
             />
           </div>
 
@@ -1045,12 +1228,12 @@ export default function Services() {
             />
           </div>
 
-          <div className="rounded-2xl border border-stone-200 bg-stone-50/50 p-4">
+          <div className="rounded-2xl border border-stone-200 bg-stone-50/50 p-3.5 sm:p-4">
+            {" "}
             <div className="mb-3 flex items-center gap-2">
               <Users className="h-5 w-5 text-stone-600" />
               <span className="font-medium text-stone-800">Виконавці</span>
             </div>
-
             <div className="mb-4 flex flex-wrap gap-2">
               <button
                 type="button"
@@ -1062,7 +1245,7 @@ export default function Services() {
                   }))
                 }
                 className={cn(
-                  "rounded-xl px-4 py-2 text-sm font-medium transition-all",
+                  "rounded-xl px-3 py-2 text-sm font-medium transition-all sm:px-4",
                   serviceDraft.allMasters
                     ? "border-2 border-emerald-300 bg-emerald-100 text-emerald-700"
                     : "border border-stone-200 bg-white text-stone-600 hover:bg-stone-50",
@@ -1077,7 +1260,10 @@ export default function Services() {
                   setServiceDraft((p) => {
                     const next = { ...p, allMasters: false };
 
-                    if ((next.masters || []).length === 0 && masters.length > 0) {
+                    if (
+                      (next.masters || []).length === 0 &&
+                      masters.length > 0
+                    ) {
                       next.masters = [String(masters[0].id ?? masters[0].name)];
                     }
 
@@ -1094,13 +1280,14 @@ export default function Services() {
                 Обрати майстрів
               </button>
             </div>
-
             {!serviceDraft.allMasters && (
               <div className="space-y-2">
                 {masters.length === 0 ? (
-                  <p className="text-sm text-stone-500">Спочатку додайте майстрів</p>
+                  <p className="text-sm text-stone-500">
+                    Спочатку додайте майстрів
+                  </p>
                 ) : (
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                     {masters.map((m) => {
                       const id = String(m.id ?? m.name);
                       const checked = (serviceDraft.masters || []).includes(id);

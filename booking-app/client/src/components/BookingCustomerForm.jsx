@@ -1,6 +1,5 @@
 // BookingCustomerForm.jsx
 import { useMemo, useState } from "react";
-/* eslint-disable no-unused-vars */
 import { motion } from "framer-motion";
 import { X, User, Phone, CheckCheck } from "lucide-react";
 
