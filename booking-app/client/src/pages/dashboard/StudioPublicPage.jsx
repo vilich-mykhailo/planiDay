@@ -475,7 +475,7 @@ export default function StudioPublicPage() {
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("services");
   const [mobileTab, setMobileTab] = useState("services");
-
+const [selectedMaster, setSelectedMaster] = useState(null);
   const servicesRef = useRef(null);
   const reviewsRef = useRef(null);
   const portfolioRef = useRef(null);
@@ -514,10 +514,22 @@ export default function StudioPublicPage() {
           logoUrl: toPublicUrl(s.logoUrl),
           portfolioUrls: s.portfolioUrls ?? [],
           schedule: s.schedule || {},
-scheduleExceptions: Array.isArray(s.scheduleExceptions)
-  ? s.scheduleExceptions.map((item) => ({
-      ...item,
-      date: String(item?.date || "").slice(0, 10),
+          scheduleExceptions: Array.isArray(s.scheduleExceptions)
+            ? s.scheduleExceptions.map((item) => ({
+                ...item,
+                date: String(item?.date || "").slice(0, 10),
+              }))
+            : [],
+            masters: Array.isArray(s.masters)
+  ? s.masters.map((master) => ({
+      ...master,
+      schedule: master?.schedule || {},
+      scheduleExceptions: Array.isArray(master?.scheduleExceptions)
+        ? master.scheduleExceptions.map((item) => ({
+            ...item,
+            date: String(item?.date || "").slice(0, 10),
+          }))
+        : [],
     }))
   : [],
           slotDuration:
@@ -651,10 +663,11 @@ scheduleExceptions: Array.isArray(s.scheduleExceptions)
     setTimeout(() => setCopied(false), 1500);
   }
 
-  function openBookingForService(service) {
-    setPreselectedService({ categoryId: null, serviceId: service.id });
-    setOpenBooking(true);
-  }
+function openBookingForService(service) {
+  setPreselectedService({ categoryId: null, serviceId: service.id });
+  setSelectedMaster(null);
+  setOpenBooking(true);
+}
 
   function scrollToSection(key) {
     setActiveTab(key);
@@ -898,10 +911,11 @@ scheduleExceptions: Array.isArray(s.scheduleExceptions)
                     <div className="hidden lg:block mt-4">
                       <button
                         type="button"
-                        onClick={() => {
-                          setPreselectedService(null);
-                          setOpenBooking(true);
-                        }}
+onClick={() => {
+  setPreselectedService(null);
+  setSelectedMaster(null);
+  setOpenBooking(true);
+}}
                         className="rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-700 px-7 py-4 text-sm font-bold text-white shadow-[0_10px_25px_rgba(74,93,78,0.22)] transition-all duration-200 hover:from-emerald-700 hover:to-emerald-800"
                       >
                         <span className="flex items-center gap-2 whitespace-nowrap">
@@ -1382,10 +1396,11 @@ scheduleExceptions: Array.isArray(s.scheduleExceptions)
           <div className="fixed bottom-4 left-4 right-4 z-40 lg:hidden">
             <button
               type="button"
-              onClick={() => {
-                setPreselectedService(null);
-                setOpenBooking(true);
-              }}
+onClick={() => {
+  setPreselectedService(null);
+  setSelectedMaster(null);
+  setOpenBooking(true);
+}}
               className="w-full rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-700 px-6 py-4 text-sm font-bold text-white shadow-[0_12px_28px_rgba(74,93,78,0.28)] transition-all hover:from-emerald-700 hover:to-emerald-800"
             >
               Забронювати онлайн
@@ -1407,6 +1422,11 @@ scheduleExceptions: Array.isArray(s.scheduleExceptions)
                   schedule={studio?.schedule || {}}
                   scheduleExceptions={studio?.scheduleExceptions || []}
                   slotDuration={studio?.slotDuration || 15}
+                  master={selectedMaster || null}
+                  masterSchedule={selectedMaster?.schedule || {}}
+                  masterScheduleExceptions={
+                    selectedMaster?.scheduleExceptions || []
+                  }
                   preselectedService={preselectedService}
                   onCancel={() => {
                     setOpenBooking(false);

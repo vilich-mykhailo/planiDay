@@ -804,7 +804,7 @@ export default function Schedule() {
     }
   }
 
-    function sortExceptions(list) {
+  function sortExceptions(list) {
     return [...list].sort((a, b) => {
       const ad = a.date || "";
       const bd = b.date || "";
@@ -812,21 +812,21 @@ export default function Schedule() {
     });
   }
 
-function addExceptionRow() {
-  const newItem = createEmptyException();
+  function addExceptionRow() {
+    const newItem = createEmptyException();
 
-  setExceptions((prev) => {
-    const next = sortExceptions([...prev, newItem]);
-    const newIndex = next.findIndex((item) => item === newItem);
-    const key = getExceptionKey(newItem, newIndex);
+    setExceptions((prev) => {
+      const next = sortExceptions([...prev, newItem]);
+      const newIndex = next.findIndex((item) => item === newItem);
+      const key = getExceptionKey(newItem, newIndex);
 
-    setTimeout(() => {
-      setExceptionExpanded(key, true);
-    }, 0);
+      setTimeout(() => {
+        setExceptionExpanded(key, true);
+      }, 0);
 
-    return next;
-  });
-}
+      return next;
+    });
+  }
 
   function updateException(index, field, value) {
     setExceptions((prev) =>
@@ -890,14 +890,11 @@ function addExceptionRow() {
       let res;
 
       if (item.id) {
-        res = await api(
-          `/studio/${studio.id}/schedule/exceptions/${item.id}`,
-          {
-            method: "PATCH",
-            token,
-            body,
-          },
-        );
+        res = await api(`/studio/${studio.id}/schedule/exceptions/${item.id}`, {
+          method: "PATCH",
+          token,
+          body,
+        });
       } else {
         res = await api(`/studio/${studio.id}/schedule/exceptions`, {
           method: "POST",
@@ -906,44 +903,44 @@ function addExceptionRow() {
         });
       }
 
-setExceptions((prev) => {
-  const next = sortExceptions(
-    prev.map((row, i) =>
-      i === index
-        ? {
-            ...res.exception,
-            isNew: false,
-          }
-        : row,
-    ),
-  );
+      setExceptions((prev) => {
+        const next = sortExceptions(
+          prev.map((row, i) =>
+            i === index
+              ? {
+                  ...res.exception,
+                  isNew: false,
+                }
+              : row,
+          ),
+        );
 
-  const savedIndex = next.findIndex(
-    (row) =>
-      row.id === res.exception?.id ||
-      (!row.id && row.date === res.exception?.date),
-  );
+        const savedIndex = next.findIndex(
+          (row) =>
+            row.id === res.exception?.id ||
+            (!row.id && row.date === res.exception?.date),
+        );
 
-  const nextKey =
-    savedIndex >= 0
-      ? getExceptionKey(next[savedIndex], savedIndex)
-      : getExceptionKey(res.exception, index);
+        const nextKey =
+          savedIndex >= 0
+            ? getExceptionKey(next[savedIndex], savedIndex)
+            : getExceptionKey(res.exception, index);
 
-  setTimeout(() => {
-    setExpandedExceptions((prevExpanded) => {
-      const updated = { ...prevExpanded };
+        setTimeout(() => {
+          setExpandedExceptions((prevExpanded) => {
+            const updated = { ...prevExpanded };
 
-      Object.keys(updated).forEach((k) => {
-        if (k.includes(item.date || "")) delete updated[k];
+            Object.keys(updated).forEach((k) => {
+              if (k.includes(item.date || "")) delete updated[k];
+            });
+
+            updated[nextKey] = false;
+            return updated;
+          });
+        }, 0);
+
+        return next;
       });
-
-      updated[nextKey] = false;
-      return updated;
-    });
-  }, 0);
-
-  return next;
-});
 
       setPreview({});
 
@@ -1035,15 +1032,15 @@ setExceptions((prev) => {
         const nextDuration =
           typeof data?.slotDuration === "number" ? data.slotDuration : 15;
 
-const nextExceptions = Array.isArray(exceptionsData?.exceptions)
-  ? sortExceptions(
-      exceptionsData.exceptions.map((item) => ({
-        ...item,
-        date: String(item?.date || "").slice(0, 10),
-        isNew: false,
-      })),
-    )
-  : [];
+        const nextExceptions = Array.isArray(exceptionsData?.exceptions)
+          ? sortExceptions(
+              exceptionsData.exceptions.map((item) => ({
+                ...item,
+                date: String(item?.date || "").slice(0, 10),
+                isNew: false,
+              })),
+            )
+          : [];
 
         if (!alive) return;
 
@@ -1080,25 +1077,25 @@ const nextExceptions = Array.isArray(exceptionsData?.exceptions)
   }, [studio?.id]);
 
   const [menuOpen, setMenuOpen] = useState(false);
-const [expandedExceptions, setExpandedExceptions] = useState({});
+  const [expandedExceptions, setExpandedExceptions] = useState({});
 
-function getExceptionKey(item, index) {
-  return item.id || `${item.date || "new"}-${index}`;
-}
+  function getExceptionKey(item, index) {
+    return item.id || `${item.date || "new"}-${index}`;
+  }
 
-function toggleExceptionExpanded(key) {
-  setExpandedExceptions((prev) => ({
-    ...prev,
-    [key]: !prev[key],
-  }));
-}
+  function toggleExceptionExpanded(key) {
+    setExpandedExceptions((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  }
 
-function setExceptionExpanded(key, value) {
-  setExpandedExceptions((prev) => ({
-    ...prev,
-    [key]: value,
-  }));
-}
+  function setExceptionExpanded(key, value) {
+    setExpandedExceptions((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  }
 
   useEffect(() => {
     const syncMenuState = () => {
@@ -1153,20 +1150,20 @@ function setExceptionExpanded(key, value) {
           badge={`${enabledDaysCount} активн.`}
         >
           <div className="space-y-3">
-{DAYS.map((day) => {
-  const config = schedule[day.key];
-  const enabled = config.enabled;
+            {DAYS.map((day) => {
+              const config = schedule[day.key];
+              const enabled = config.enabled;
 
-  return (
-    <div
-      key={day.key}
-      className={cn(
-        "rounded-2xl border p-4 transition-all duration-300",
-        enabled
-          ? "border-stone-200 bg-white shadow-[0_6px_18px_rgba(93,64,55,0.04)] hover:border-amber-200"
-          : "border-stone-200/70 bg-stone-50/70",
-      )}
-    >
+              return (
+                <div
+                  key={day.key}
+                  className={cn(
+                    "rounded-2xl border p-4 transition-all duration-300",
+                    enabled
+                      ? "border-stone-200 bg-white shadow-[0_6px_18px_rgba(93,64,55,0.04)] hover:border-amber-200"
+                      : "border-stone-200/70 bg-stone-50/70",
+                  )}
+                >
                   <div className="grid gap-4 sm:grid-cols-[1fr_260px] sm:items-center">
                     {/* LEFT */}
                     <button
@@ -1247,13 +1244,17 @@ function setExceptionExpanded(key, value) {
         <SectionCard
           title="Особливі дати"
           subtitle="Задай інший графік для конкретної дати: свято, скорочений день або вихідний."
-          badge={`${exceptions.length} дат`}
-          actions={
-            <Button variant="primary" onClick={addExceptionRow}>
-              <CalendarDays className="h-4 w-4" />
-              Додати дату
-            </Button>
-          }
+          badge={`К-ть днів: ${exceptions.length}`}
+actions={
+  <Button
+    variant="primary"
+    onClick={addExceptionRow}
+    className="w-full sm:w-auto sm:shrink-0 whitespace-nowrap justify-center"
+  >
+    <CalendarDays className="h-4 w-4" />
+    Додати дату
+  </Button>
+}
         >
           {exceptionsLoading ? (
             <div className="space-y-3">
@@ -1267,167 +1268,171 @@ function setExceptionExpanded(key, value) {
             </div>
           ) : (
             <div className="space-y-3">
-{exceptions.map((item, index) => {
-  const exceptionKey = getExceptionKey(item, index);
-  const isExpanded =
-    item.isNew || expandedExceptions[exceptionKey] === true;
+              {exceptions.map((item, index) => {
+                const exceptionKey = getExceptionKey(item, index);
+                const isExpanded =
+                  item.isNew || expandedExceptions[exceptionKey] === true;
 
-  return (
-    <div
-      key={exceptionKey}
-      className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-[0_6px_18px_rgba(93,64,55,0.04)] transition-all duration-300"
-    >
-      <button
-        type="button"
-        onClick={() => !item.isNew && toggleExceptionExpanded(exceptionKey)}
-        className={cn(
-          "flex w-full items-start justify-between gap-3 p-4 text-left transition-colors",
-          !item.isNew && "hover:bg-stone-50/80",
-        )}
-      >
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="text-[15px] font-bold text-stone-800">
-              {item.date
-                ? formatExceptionDate(item.date)
-                : "Нова особлива дата"}
-            </p>
+                return (
+                  <div
+                    key={exceptionKey}
+                    className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-[0_6px_18px_rgba(93,64,55,0.04)] transition-all duration-300"
+                  >
+                    <button
+                      type="button"
+                      onClick={() =>
+                        !item.isNew && toggleExceptionExpanded(exceptionKey)
+                      }
+                      className={cn(
+                        "flex w-full items-start justify-between gap-3 p-4 text-left transition-colors",
+                        !item.isNew && "hover:bg-stone-50/80",
+                      )}
+                    >
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-[15px] font-bold text-stone-800">
+                            {item.date
+                              ? formatExceptionDate(item.date)
+                              : "Нова особлива дата"}
+                          </p>
 
-            <div className="rounded-full border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 px-3 py-1 text-xs font-semibold text-amber-700">
-              {item.enabled ? "Особливий графік" : "Вихідний"}
-            </div>
-          </div>
+                          <div className="rounded-full border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                            {item.enabled ? "Особливий графік" : "Вихідний"}
+                          </div>
+                        </div>
 
-          <p className="mt-1 text-xs text-stone-500">
-            {exceptionSubtitle(item)}
-          </p>
-        </div>
+                        <p className="mt-1 text-xs text-stone-500">
+                          {exceptionSubtitle(item)}
+                        </p>
+                      </div>
 
-        <div className="flex items-center gap-2">
-          {!item.isNew && (
-            <span className="hidden text-xs font-medium text-stone-400 sm:inline">
-              {isExpanded ? "Згорнути" : "Розгорнути"}
-            </span>
-          )}
+                      <div className="flex items-center gap-2">
+                        {!item.isNew && (
+                          <span className="hidden text-xs font-medium text-stone-400 sm:inline">
+                            {isExpanded ? "Згорнути" : "Розгорнути"}
+                          </span>
+                        )}
 
-          {!item.isNew &&
-            (isExpanded ? (
-              <ChevronUp className="h-5 w-5 shrink-0 text-stone-400" />
-            ) : (
-              <ChevronDown className="h-5 w-5 shrink-0 text-stone-400" />
-            ))}
-        </div>
-      </button>
+                        {!item.isNew &&
+                          (isExpanded ? (
+                            <ChevronUp className="h-5 w-5 shrink-0 text-stone-400" />
+                          ) : (
+                            <ChevronDown className="h-5 w-5 shrink-0 text-stone-400" />
+                          ))}
+                      </div>
+                    </button>
 
-      <div
-        className={cn(
-          "grid transition-all duration-300 ease-out",
-          isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
-        )}
-      >
-        <div className="overflow-hidden">
-          <div className="border-t border-stone-100 px-4 pb-4 pt-4">
-            <div className="grid gap-3 lg:grid-cols-[180px_170px_1fr_auto] lg:items-end">
-<div>
-  <DatePicker
-    label="Дата"
-    value={item.date}
-    onChange={(value) => updateException(index, "date", value)}
-  />
-</div>
+                    <div
+                      className={cn(
+                        "grid transition-all duration-300 ease-out",
+                        isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+                      )}
+                    >
+                      <div className="overflow-hidden">
+                        <div className="border-t border-stone-100 px-4 pb-4 pt-4">
+<div className="grid gap-3 sm:grid-cols-2 sm:items-end">                        <div>
+                              <DatePicker
+                                label="Дата"
+                                value={item.date}
+                                onChange={(value) =>
+                                  updateException(index, "date", value)
+                                }
+                              />
+                            </div>
 
-              <div>
-                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-stone-500">
-                  Статус
-                </label>
-                <button
-                  type="button"
-                  onClick={() =>
-                    updateException(index, "enabled", !item.enabled)
-                  }
-                  className="flex h-[50px] w-full items-center gap-3 rounded-2xl border border-stone-200 bg-stone-50 px-4 transition-all duration-200 hover:border-stone-300 hover:bg-white"
-                >
-                  <Toggle checked={item.enabled} />
-                  <span className="text-sm font-semibold text-stone-700">
-                    {item.enabled ? "Робочий день" : "Вихідний"}
-                  </span>
-                </button>
-              </div>
+                            <div>
+                              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-stone-500">
+                                Статус
+                              </label>
+<button
+  type="button"
+  onClick={() => updateException(index, "enabled", !item.enabled)}
+  className="flex h-[50px] w-full items-center gap-3 rounded-2xl border border-stone-200 bg-stone-50 px-4 transition-all duration-200 hover:border-stone-300 hover:bg-white"
+>
+  <div className="shrink-0">
+    <Toggle checked={item.enabled} />
+  </div>
 
-              {item.enabled ? (
-                <div className="grid gap-2 sm:grid-cols-2">
-                  <div className="min-w-0">
-                    <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-stone-500">
-                      Початок
-                    </label>
-                    <div className="rounded-[16px] border border-stone-200 bg-stone-50">
-                      <TimeSelect
-                        value={item.start}
-                        label="Початок"
-                        dayLabel={item.date || "Особлива дата"}
-                        onChange={(value) =>
-                          updateException(index, "start", value)
-                        }
-                        onCommit={(value) =>
-                          updateException(index, "start", value)
-                        }
-                      />
+  <span className="whitespace-nowrap text-sm font-semibold text-stone-700">
+    {item.enabled ? "Робочий день" : "Вихідний"}
+  </span>
+</button>
+                            </div>
+
+                            {item.enabled ? (
+                              <div className="grid gap-2 sm:grid-cols-2">
+                                <div className="min-w-0">
+                                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-stone-500">
+                                    Початок
+                                  </label>
+                                  <div className="rounded-[16px] border border-stone-200 bg-stone-50">
+                                    <TimeSelect
+                                      value={item.start}
+                                      label="Початок"
+                                      dayLabel={item.date || "Особлива дата"}
+                                      onChange={(value) =>
+                                        updateException(index, "start", value)
+                                      }
+                                      onCommit={(value) =>
+                                        updateException(index, "start", value)
+                                      }
+                                    />
+                                  </div>
+                                </div>
+
+                                <div className="min-w-0">
+                                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-stone-500">
+                                    Завершення
+                                  </label>
+                                  <div className="rounded-[16px] border border-stone-200 bg-stone-50">
+                                    <TimeSelect
+                                      value={item.end}
+                                      label="Завершення"
+                                      dayLabel={item.date || "Особлива дата"}
+                                      onChange={(value) =>
+                                        updateException(index, "end", value)
+                                      }
+                                      onCommit={(value) =>
+                                        updateException(index, "end", value)
+                                      }
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex items-center">
+                                <div className="w-full rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
+                                  У цей день студія не працює
+                                </div>
+                              </div>
+                            )}
+
+                            <div className="flex gap-2 lg:justify-end">
+                              <Button
+                                variant="secondary"
+                                onClick={() => saveException(item, index)}
+                                disabled={!item.date}
+                                className="flex-1 h-[50px] lg:flex-none"
+                              >
+                                Зберегти
+                              </Button>
+
+                              <Button
+                                variant="danger"
+                                onClick={() => removeException(item, index)}
+                                className="flex-1 h-[50px] lg:flex-none"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                Видалити
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
-
-                  <div className="min-w-0">
-                    <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-stone-500">
-                      Завершення
-                    </label>
-                    <div className="rounded-[16px] border border-stone-200 bg-stone-50">
-                      <TimeSelect
-                        value={item.end}
-                        label="Завершення"
-                        dayLabel={item.date || "Особлива дата"}
-                        onChange={(value) =>
-                          updateException(index, "end", value)
-                        }
-                        onCommit={(value) =>
-                          updateException(index, "end", value)
-                        }
-                      />
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center">
-                  <div className="w-full rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
-                    У цей день студія не працює
-                  </div>
-                </div>
-              )}
-
-              <div className="flex gap-2 lg:justify-end">
-                <Button
-                  variant="secondary"
-                  onClick={() => saveException(item, index)}
-                  disabled={!item.date}
-                  className="flex-1 lg:flex-none"
-                >
-                  Зберегти
-                </Button>
-
-                <Button
-                  variant="danger"
-                  onClick={() => removeException(item, index)}
-                  className="flex-1 lg:flex-none"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Видалити
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-})}
+                );
+              })}
             </div>
           )}
         </SectionCard>
@@ -1437,12 +1442,16 @@ function setExceptionExpanded(key, value) {
           title="Налаштування слотів"
           subtitle="Це тривалість одного запису — крок між доступними часами."
           className="relative z-20"
-          actions={
-            <Button variant="primary" onClick={generateSlots}>
-              <CalendarDays className="h-4 w-4" />
-              Згенерувати слоти
-            </Button>
-          }
+actions={
+  <Button
+    variant="primary"
+    onClick={generateSlots}
+    className="w-full sm:w-auto sm:shrink-0 whitespace-nowrap justify-center"
+  >
+    <CalendarDays className="h-4 w-4" />
+    Згенерувати слоти
+  </Button>
+}
         >
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div className="space-y-2">
@@ -1468,7 +1477,6 @@ function setExceptionExpanded(key, value) {
             </div>
           </div>
         </SectionCard>
-
 
         {/* Preview */}
         {Object.keys(preview).length > 0 && (

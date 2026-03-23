@@ -1,4 +1,3 @@
-// StudioBookingWidget.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Clock, Check, ChevronRight, Sparkles } from "lucide-react";
@@ -64,6 +63,8 @@ function weekdayEnumToKey(v) {
   return m[s] || null;
 }
 
+const ANY_MASTER_ID = "__any_master__";
+
 function getScheduleForDate(date, schedule, exceptions = []) {
   if (!date) return null;
 
@@ -90,11 +91,49 @@ function getScheduleForDate(date, schedule, exceptions = []) {
   return fallback;
 }
 
+function getMasterSchedule(master) {
+  if (!master) return {};
+
+  if (master.schedule && typeof master.schedule === "object") {
+    return master.schedule;
+  }
+
+  const days = Array.isArray(master.scheduleDays) ? master.scheduleDays : [];
+  const out = {};
+
+  for (const d of days) {
+    const key = weekdayEnumToKey(d.weekday || d.day);
+    if (!key) continue;
+
+    out[key] = {
+      enabled: Boolean(d.enabled),
+      start: minutesToTime(Number(d.startMin || 0)),
+      end: minutesToTime(Number(d.endMin || 0)),
+    };
+  }
+
+  return out;
+}
+
+function getMasterExceptions(master) {
+  const raw = Array.isArray(master?.scheduleExceptions)
+    ? master.scheduleExceptions
+    : [];
+
+  return raw.map((item) => ({
+    ...item,
+    date: String(item?.date || "").slice(0, 10),
+  }));
+}
+
 export default function StudioBookingWidget({
   studio,
   schedule: scheduleProp,
   scheduleExceptions: scheduleExceptionsProp,
   slotDuration: slotDurationProp,
+  master,
+  masterSchedule: masterScheduleProp,
+  masterScheduleExceptions: masterScheduleExceptionsProp,
   preselectedService,
   onCancel,
   onSuccess,
@@ -127,14 +166,15 @@ export default function StudioBookingWidget({
 
   const remountKey = useMemo(() => {
     const studioKey = studio?.id ?? studio?.slug ?? "no-studio";
+    const masterKey = master?.id ?? "no-master";
     const preKey = preselectedService?.serviceId ?? "no-pre";
     const servicesKey = services.map((s) => s.id).join("|");
 
-    return `${studioKey}::${preKey}::${servicesKey}`;
-  }, [studio?.id, studio?.slug, preselectedService?.serviceId, services]);
+    return `${studioKey}::${masterKey}::${preKey}::${servicesKey}`;
+  }, [studio?.id, studio?.slug, master?.id, preselectedService?.serviceId, services]);
 
   if (!studio) return null;
-StudioBookingWidgetInner
+
   return (
     <StudioBookingWidgetInner
       key={remountKey}
@@ -143,6 +183,9 @@ StudioBookingWidgetInner
       scheduleProp={scheduleProp}
       scheduleExceptionsProp={scheduleExceptionsProp}
       slotDurationProp={slotDurationProp}
+      initialMaster={master}
+      initialMasterScheduleProp={masterScheduleProp}
+      initialMasterScheduleExceptionsProp={masterScheduleExceptionsProp}
       preselectedService={preselectedService}
       onCancel={onCancel}
       onSuccess={onSuccess}
@@ -156,6 +199,9 @@ function StudioBookingWidgetInner({
   scheduleProp,
   scheduleExceptionsProp,
   slotDurationProp,
+  initialMaster,
+  initialMasterScheduleProp,
+  initialMasterScheduleExceptionsProp,
   preselectedService,
   onCancel,
   onSuccess,
@@ -193,18 +239,18 @@ function StudioBookingWidgetInner({
     return out;
   }, [scheduleProp, studio]);
 
-const scheduleExceptions = useMemo(() => {
-  const raw = Array.isArray(scheduleExceptionsProp)
-    ? scheduleExceptionsProp
-    : Array.isArray(studio?.scheduleExceptions)
-      ? studio.scheduleExceptions
-      : [];
+  const scheduleExceptions = useMemo(() => {
+    const raw = Array.isArray(scheduleExceptionsProp)
+      ? scheduleExceptionsProp
+      : Array.isArray(studio?.scheduleExceptions)
+        ? studio.scheduleExceptions
+        : [];
 
-  return raw.map((item) => ({
-    ...item,
-    date: String(item?.date || "").slice(0, 10),
-  }));
-}, [scheduleExceptionsProp, studio?.scheduleExceptions]);
+    return raw.map((item) => ({
+      ...item,
+      date: String(item?.date || "").slice(0, 10),
+    }));
+  }, [scheduleExceptionsProp, studio?.scheduleExceptions]);
 
   const visibleServices = useMemo(() => {
     const wantedId = preselectedService?.serviceId;
@@ -225,17 +271,128 @@ const scheduleExceptions = useMemo(() => {
     return exists ? wantedId : (visibleServices[0]?.id ?? null);
   }, [visibleServices, preselectedService?.serviceId]);
 
-const [selectedDate, setSelectedDate] = useState(null);
-
+  const [selectedDate, setSelectedDate] = useState(null);
   const [step, setStep] = useState("pick");
   const [selectedServiceId, setSelectedServiceId] = useState(
     () => defaultServiceId,
   );
   const [selectedTime, setSelectedTime] = useState(null);
   const [form, setForm] = useState({ name: "", phone: "" });
-
   const [busyTimes, setBusyTimes] = useState(() => new Set());
   const [busyLoading, setBusyLoading] = useState(false);
+
+  const allMasters = useMemo(() => {
+    return Array.isArray(studio?.masters) ? studio.masters : [];
+  }, [studio?.masters]);
+
+const availableMasters = useMemo(() => {
+  const service = services.find(
+    (s) => String(s.id) === String(selectedServiceId || defaultServiceId),
+  );
+
+  if (!service) return allMasters;
+  if (service.allMasters) return allMasters;
+
+  const allowedIds = Array.isArray(service.masters)
+    ? service.masters
+        .map((m) => String(m?.id || m?.masterId || m?.master?.id || ""))
+        .filter(Boolean)
+    : [];
+
+  return allMasters.filter((m) => allowedIds.includes(String(m.id)));
+}, [allMasters, services, selectedServiceId, defaultServiceId]);
+
+const [selectedMasterId, setSelectedMasterId] = useState(() => {
+  if (initialMaster?.id) return String(initialMaster.id);
+  return ANY_MASTER_ID;
+});
+
+useEffect(() => {
+  if (!availableMasters.length) {
+    setSelectedMasterId(ANY_MASTER_ID);
+    return;
+  }
+
+  setSelectedMasterId((prev) => {
+    if (prev === ANY_MASTER_ID) return prev;
+
+    const exists = prev
+      ? availableMasters.some((m) => String(m.id) === String(prev))
+      : false;
+
+    if (exists) return prev;
+
+    if (
+      initialMaster?.id &&
+      availableMasters.some((m) => String(m.id) === String(initialMaster.id))
+    ) {
+      return String(initialMaster.id);
+    }
+
+    return ANY_MASTER_ID;
+  });
+}, [availableMasters, initialMaster?.id]);
+
+const selectedMaster = useMemo(() => {
+  if (selectedMasterId === ANY_MASTER_ID) return null;
+
+  return (
+    availableMasters.find((m) => String(m.id) === String(selectedMasterId)) ||
+    null
+  );
+}, [availableMasters, selectedMasterId]);
+
+const isAnyMasterSelected = selectedMasterId === ANY_MASTER_ID;
+
+const masterSchedule = useMemo(() => {
+  if (
+    initialMasterScheduleProp &&
+    typeof initialMasterScheduleProp === "object" &&
+    initialMaster?.id &&
+    selectedMaster?.id &&
+    String(initialMaster.id) === String(selectedMaster.id)
+  ) {
+    return initialMasterScheduleProp;
+  }
+
+  return getMasterSchedule(selectedMaster);
+}, [initialMasterScheduleProp, initialMaster?.id, selectedMaster]);
+
+const masterScheduleExceptions = useMemo(() => {
+  if (
+    Array.isArray(initialMasterScheduleExceptionsProp) &&
+    initialMaster?.id &&
+    selectedMaster?.id &&
+    String(initialMaster.id) === String(selectedMaster.id)
+  ) {
+    return initialMasterScheduleExceptionsProp.map((item) => ({
+      ...item,
+      date: String(item?.date || "").slice(0, 10),
+    }));
+  }
+
+  return getMasterExceptions(selectedMaster);
+}, [
+  initialMasterScheduleExceptionsProp,
+  initialMaster?.id,
+  selectedMaster?.id,
+  selectedMaster?.scheduleExceptions,
+]);
+
+function intersectSchedules(a, b) {
+  if (!a?.enabled || !b?.enabled) return null;
+
+  const start = Math.max(timeToMinutes(a.start), timeToMinutes(b.start));
+  const end = Math.min(timeToMinutes(a.end), timeToMinutes(b.end));
+
+  if (end <= start) return null;
+
+  return {
+    enabled: true,
+    start: minutesToTime(start),
+    end: minutesToTime(end),
+  };
+}
 
   const selectedDateStr = useMemo(
     () => (selectedDate ? formatDateLocal(selectedDate) : null),
@@ -247,22 +404,98 @@ const [selectedDate, setSelectedDate] = useState(null);
     [selectedDate],
   );
 
-  const isDayEnabled = useMemo(() => {
-    if (!selectedDate) return false;
-    return Boolean(getScheduleForDate(selectedDate, schedule, scheduleExceptions));
-  }, [selectedDate, schedule, scheduleExceptions]);
-
   const dayConfig = useMemo(() => {
     if (!selectedDate) return null;
-    return getScheduleForDate(selectedDate, schedule, scheduleExceptions);
-  }, [selectedDate, schedule, scheduleExceptions]);
 
-  const slots = useMemo(() => {
-    if (!dayConfig) return [];
-    return buildSlots(dayConfig.start, dayConfig.end, slotDuration);
-  }, [dayConfig, slotDuration]);
-console.log("selectedDateStr", selectedDateStr);
-console.log("scheduleExceptions", scheduleExceptions);
+    const studioDay = getScheduleForDate(
+      selectedDate,
+      schedule,
+      scheduleExceptions,
+    );
+
+    if (!studioDay) return null;
+if (isAnyMasterSelected) {
+  const anyMasterDay = availableMasters
+    .map((m) => {
+      const masterDay = getScheduleForDate(
+        selectedDate,
+        getMasterSchedule(m),
+        getMasterExceptions(m),
+      );
+
+      if (!masterDay) return null;
+
+      return intersectSchedules(studioDay, masterDay);
+    })
+    .filter(Boolean);
+
+  return anyMasterDay[0] || null;
+}
+
+if (!selectedMaster) return null;
+
+    const masterDay = getScheduleForDate(
+      selectedDate,
+      masterSchedule,
+      masterScheduleExceptions,
+    );
+
+    if (!masterDay) return null;
+
+    return intersectSchedules(studioDay, masterDay);
+  }, [
+    selectedDate,
+    schedule,
+    scheduleExceptions,
+    selectedMaster,
+    masterSchedule,
+    masterScheduleExceptions,
+    availableMasters,
+isAnyMasterSelected,
+  ]);
+
+  const isDayEnabled = useMemo(() => {
+    return Boolean(dayConfig?.enabled);
+  }, [dayConfig]);
+
+const slots = useMemo(() => {
+  if (!selectedDate || !dayConfig) return [];
+
+  if (isAnyMasterSelected) {
+    const unique = new Set();
+
+    availableMasters.forEach((m) => {
+      const studioDay = getScheduleForDate(selectedDate, schedule, scheduleExceptions);
+      const masterDay = getScheduleForDate(
+        selectedDate,
+        getMasterSchedule(m),
+        getMasterExceptions(m),
+      );
+
+      if (!studioDay || !masterDay) return;
+
+      const intersection = intersectSchedules(studioDay, masterDay);
+      if (!intersection) return;
+
+      buildSlots(intersection.start, intersection.end, slotDuration).forEach((slot) => {
+        unique.add(slot);
+      });
+    });
+
+    return Array.from(unique).sort((a, b) => timeToMinutes(a) - timeToMinutes(b));
+  }
+
+  return buildSlots(dayConfig.start, dayConfig.end, slotDuration);
+}, [
+  selectedDate,
+  dayConfig,
+  isAnyMasterSelected,
+  availableMasters,
+  schedule,
+  scheduleExceptions,
+  slotDuration,
+]);
+
   useEffect(() => {
     let alive = true;
 
@@ -274,12 +507,13 @@ console.log("scheduleExceptions", scheduleExceptions);
       try {
         const token = localStorage.getItem("token");
 
-        const res = await fetch(
-          `${import.meta.env.VITE_API_URL}/bookings/studio/${studio.id}/busy?date=${encodeURIComponent(selectedDateStr)}`,
-          {
-            headers: token ? { Authorization: `Bearer ${token}` } : {},
-          },
-        );
+        const busyUrl = selectedMaster?.id
+          ? `${import.meta.env.VITE_API_URL}/bookings/studio/${studio.id}/busy?date=${encodeURIComponent(selectedDateStr)}&masterId=${encodeURIComponent(selectedMaster.id)}`
+          : `${import.meta.env.VITE_API_URL}/bookings/studio/${studio.id}/busy?date=${encodeURIComponent(selectedDateStr)}`;
+
+        const res = await fetch(busyUrl, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
 
         const data = await res.json().catch(() => null);
 
@@ -309,7 +543,7 @@ console.log("scheduleExceptions", scheduleExceptions);
     return () => {
       alive = false;
     };
-  }, [studio?.id, selectedDateStr]);
+  }, [studio?.id, selectedDateStr, selectedMaster?.id]);
 
   const disabledDays = useMemo(() => {
     return (date) => {
@@ -321,10 +555,46 @@ console.log("scheduleExceptions", scheduleExceptions);
 
       if (d < today) return true;
 
-      const resolved = getScheduleForDate(d, schedule, scheduleExceptions);
-      return !resolved?.enabled;
+      const studioDay = getScheduleForDate(d, schedule, scheduleExceptions);
+      if (!studioDay?.enabled) return true;
+
+if (isAnyMasterSelected) {
+  const hasAnyAvailableMaster = availableMasters.some((m) => {
+    const masterDay = getScheduleForDate(
+      d,
+      getMasterSchedule(m),
+      getMasterExceptions(m),
+    );
+
+    if (!masterDay?.enabled) return false;
+
+    return Boolean(intersectSchedules(studioDay, masterDay));
+  });
+
+  return !hasAnyAvailableMaster;
+}
+
+if (!selectedMaster) return true;
+
+      const masterDay = getScheduleForDate(
+        d,
+        masterSchedule,
+        masterScheduleExceptions,
+      );
+
+      if (!masterDay?.enabled) return true;
+
+      return !intersectSchedules(studioDay, masterDay);
     };
-  }, [schedule, scheduleExceptions]);
+  }, [
+    schedule,
+    scheduleExceptions,
+    selectedMaster,
+    masterSchedule,
+    masterScheduleExceptions,
+    availableMasters,
+isAnyMasterSelected,
+  ]);
 
   const selectedService = useMemo(
     () =>
@@ -347,6 +617,11 @@ console.log("scheduleExceptions", scheduleExceptions);
     const service = selectedService || visibleServices?.[0] || null;
     if (!service?.id) return;
 
+if (!selectedMaster?.id && !isAnyMasterSelected) {
+  alert("Оберіть майстра");
+  return;
+}
+
     try {
       const token = localStorage.getItem("token");
 
@@ -360,6 +635,7 @@ console.log("scheduleExceptions", scheduleExceptions);
           },
           body: JSON.stringify({
             serviceId: service.id,
+            masterId: selectedMaster?.id || null,
             date: selectedDateStr,
             time: selectedTime,
             duration: Number(service?.duration || studio?.slotDuration || 60),
@@ -394,11 +670,12 @@ console.log("scheduleExceptions", scheduleExceptions);
     }
   }
 
-  const canGoNext =
-    Boolean(selectedServiceId) &&
-    Boolean(selectedDateStr) &&
-    isDayEnabled &&
-    Boolean(selectedTime);
+const canGoNext =
+  Boolean(selectedServiceId) &&
+  Boolean(selectedDateStr) &&
+  Boolean(selectedTime) &&
+  Boolean(selectedMaster?.id || isAnyMasterSelected) &&
+  isDayEnabled;
 
   const timeRowRef = useRef(null);
 
@@ -414,10 +691,12 @@ console.log("scheduleExceptions", scheduleExceptions);
 
   return (
     <div className="flex h-full flex-col" data-testid="booking-widget">
-      <div className="mb-8 flex items-center gap-3">
-        {["Послуга", "Дата & Час"].map((label, i) => {
-          const done =
-            (i === 0 && selectedServiceId) || (i === 1 && selectedTime);
+      <div className="mb-8 flex flex-wrap items-center gap-3">
+        {["Послуга", "Майстер", "Дата & Час"].map((label, i) => {
+const done =
+  (i === 0 && selectedServiceId) ||
+  (i === 1 && (selectedMaster?.id || isAnyMasterSelected)) ||
+  (i === 2 && selectedTime);
 
           return (
             <div key={label} className="flex items-center gap-2">
@@ -443,7 +722,7 @@ console.log("scheduleExceptions", scheduleExceptions);
                 {label}
               </span>
 
-              {i === 0 && (
+              {(i === 0 || i === 1) && (
                 <ChevronRight className="h-3.5 w-3.5 text-stone-300" />
               )}
             </div>
@@ -477,6 +756,8 @@ console.log("scheduleExceptions", scheduleExceptions);
                     onClick={() => {
                       if (isSinglePreselected) return;
                       setSelectedServiceId(service.id);
+                      setSelectedMasterId(null);
+                      setSelectedDate(null);
                       setSelectedTime(null);
                     }}
                     data-testid={`booking-service-${service.id}`}
@@ -528,10 +809,148 @@ console.log("scheduleExceptions", scheduleExceptions);
           )}
         </section>
 
-        <section data-testid="booking-calendar-section">
+        <section data-testid="booking-masters-section">
           <div className="mb-4">
             <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.25em] text-amber-600">
               Крок 2
+            </p>
+            <h2 className="text-lg font-bold text-stone-800">Оберіть майстра</h2>
+          </div>
+<button
+  type="button"
+  onClick={() => {
+    setSelectedMasterId(ANY_MASTER_ID);
+    setSelectedDate(null);
+    setSelectedTime(null);
+  }}
+  className={cn(
+    "flex w-full items-center gap-3 rounded-2xl border p-4 text-left transition-all duration-200 sm:col-span-2",
+    isAnyMasterSelected
+      ? "border-emerald-600 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-lg shadow-emerald-600/10"
+      : "border-stone-200 bg-white hover:border-amber-200 hover:bg-stone-50",
+  )}
+>
+  <div
+    className={cn(
+      "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border text-sm font-bold",
+      isAnyMasterSelected
+        ? "border-white/20 bg-white/15 text-white"
+        : "border-stone-200 bg-stone-100 text-stone-600",
+    )}
+  >
+    *
+  </div>
+
+  <div className="min-w-0 flex-1">
+    <p
+      className={cn(
+        "truncate text-sm font-semibold",
+        isAnyMasterSelected ? "text-white" : "text-stone-800",
+      )}
+    >
+      Будь-хто вільний
+    </p>
+
+    <p
+      className={cn(
+        "mt-1 truncate text-xs",
+        isAnyMasterSelected ? "text-white/80" : "text-stone-500",
+      )}
+    >
+      Підберемо доступного майстра автоматично
+    </p>
+  </div>
+
+  {isAnyMasterSelected && (
+    <div className="ml-2 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/20">
+      <Check className="h-3.5 w-3.5 text-white" />
+    </div>
+  )}
+</button>
+          {availableMasters.length === 0 ? (
+            <div className="rounded-2xl border border-stone-200 bg-stone-100 p-5 text-sm text-stone-500">
+              Для цієї послуги немає доступних майстрів.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {availableMasters.map((item) => {
+                const active =
+                  String(item.id) === String(selectedMasterId || "");
+
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedMasterId(String(item.id));
+                      setSelectedDate(null);
+                      setSelectedTime(null);
+                    }}
+                    className={cn(
+                      "flex items-center gap-3 rounded-2xl border p-4 text-left transition-all duration-200",
+                      active
+                        ? "border-emerald-600 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-lg shadow-emerald-600/10"
+                        : "border-stone-200 bg-white hover:border-amber-200 hover:bg-stone-50",
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border text-sm font-bold",
+                        active
+                          ? "border-white/20 bg-white/15 text-white"
+                          : "border-stone-200 bg-stone-100 text-stone-600",
+                      )}
+                    >
+                      {item.photoUrl ? (
+                        <img
+                          src={item.photoUrl}
+                          alt={item.name}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        String(item.name || "M")
+                          .trim()
+                          .slice(0, 1)
+                          .toUpperCase()
+                      )}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <p
+                        className={cn(
+                          "truncate text-sm font-semibold",
+                          active ? "text-white" : "text-stone-800",
+                        )}
+                      >
+                        {item.name || "Майстер"}
+                      </p>
+
+                      <p
+                        className={cn(
+                          "mt-1 truncate text-xs",
+                          active ? "text-white/80" : "text-stone-500",
+                        )}
+                      >
+                        {item.role || "Спеціаліст"}
+                      </p>
+                    </div>
+
+                    {active && (
+                      <div className="ml-2 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/20">
+                        <Check className="h-3.5 w-3.5 text-white" />
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        <section data-testid="booking-calendar-section">
+          <div className="mb-4">
+            <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.25em] text-amber-600">
+              Крок 3
             </p>
             <h2 className="text-lg font-bold text-stone-800">Дата та час</h2>
           </div>
@@ -549,12 +968,24 @@ console.log("scheduleExceptions", scheduleExceptions);
             />
           </div>
 
-          {!isDayEnabled && selectedDate && (
+{!selectedMaster && !isAnyMasterSelected && (
+  <p className="mt-3 pl-1 text-xs text-stone-500">
+    Спочатку оберіть майстра
+  </p>
+)}
+
+{isAnyMasterSelected && (
+  <p className="mt-3 pl-1 text-xs text-stone-500">
+    Буде призначено доступного майстра
+  </p>
+)}
+
+          {!isDayEnabled && selectedDate && (selectedMaster || isAnyMasterSelected) && (
             <p
               className="mt-3 pl-1 text-xs text-red-500"
               data-testid="booking-day-closed-msg"
             >
-              У цей день студія не працює
+              У цей день майстер недоступний
             </p>
           )}
         </section>

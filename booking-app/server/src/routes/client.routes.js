@@ -95,8 +95,6 @@ const studio = await prisma.studio.findFirst({
     logoUrl: true,
     portfolioUrls: true,
     slotDuration: true,
-    scheduleDays: true,
-    scheduleExceptions: true,
     premium: true,
 
     scheduleDays: {
@@ -104,14 +102,76 @@ const studio = await prisma.studio.findFirst({
       orderBy: { day: "asc" },
     },
 
+    scheduleExceptions: {
+      select: {
+        id: true,
+        date: true,
+        enabled: true,
+        startMin: true,
+        endMin: true,
+      },
+      orderBy: { date: "asc" },
+    },
+
+    masters: {
+      orderBy: { createdAt: "asc" },
+      select: {
+        id: true,
+        name: true,
+        role: true,
+        bio: true,
+        photoUrl: true,
+        createdAt: true,
+
+        scheduleDays: {
+          select: {
+            day: true,
+            enabled: true,
+            startMin: true,
+            endMin: true,
+          },
+          orderBy: { day: "asc" },
+        },
+
+        scheduleExceptions: {
+          select: {
+            id: true,
+            date: true,
+            enabled: true,
+            startMin: true,
+            endMin: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+          orderBy: { date: "asc" },
+        },
+      },
+    },
+
     serviceCategories: {
       select: {
         id: true,
         name: true,
-        services: {
-          select: { id: true, name: true, price: true, duration: true },
-          orderBy: { createdAt: "asc" },
+services: {
+  select: {
+    id: true,
+    name: true,
+    price: true,
+    duration: true,
+    allMasters: true,
+    masters: {
+      select: {
+        master: {
+          select: {
+            id: true,
+            name: true,
+          },
         },
+      },
+    },
+  },
+  orderBy: { createdAt: "asc" },
+},
       },
       orderBy: { createdAt: "asc" },
     },
@@ -121,11 +181,27 @@ const studio = await prisma.studio.findFirst({
     if (!studio) return res.status(404).json({ message: "Studio not found" });
 
     // ✅ послуги без категорії
-    const uncategorizedServices = await prisma.service.findMany({
-      where: { studioId: studio.id, categoryId: null },
-      select: { id: true, name: true, price: true, duration: true },
-      orderBy: { createdAt: "asc" },
-    });
+const uncategorizedServices = await prisma.service.findMany({
+  where: { studioId: studio.id, categoryId: null },
+  select: {
+    id: true,
+    name: true,
+    price: true,
+    duration: true,
+    allMasters: true,
+    masters: {
+      select: {
+        master: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    },
+  },
+  orderBy: { createdAt: "asc" },
+});
 
     // min price
     const min = await prisma.service.aggregate({
@@ -173,11 +249,66 @@ const studio = await prisma.studio.findFirst({
       end: item.endMin != null ? minToTime(item.endMin) : null,
     }));
     
-    // ✅ плоский список services = uncategorized + category services
-    const services = [
-      ...(uncategorizedServices || []),
-      ...(studio.serviceCategories?.flatMap((c) => c.services || []) || []),
-    ];
+    const masters = (studio.masters || []).map((master) => {
+  const masterSchedule = {};
+
+  for (const row of master.scheduleDays || []) {
+    const key = dayToKey(row.day);
+    if (!key) continue;
+
+    masterSchedule[key] = {
+      enabled: Boolean(row.enabled),
+      start: minToTime(row.startMin ?? 600),
+      end: minToTime(row.endMin ?? 1080),
+    };
+  }
+
+  const masterScheduleExceptions = (master.scheduleExceptions || []).map(
+    (item) => ({
+      id: item.id,
+      date: new Date(item.date).toISOString().slice(0, 10),
+      enabled: Boolean(item.enabled),
+      start: item.startMin != null ? minToTime(item.startMin) : null,
+      end: item.endMin != null ? minToTime(item.endMin) : null,
+    }),
+  );
+
+  return {
+    id: master.id,
+    name: master.name,
+    role: master.role,
+    bio: master.bio,
+    photoUrl: master.photoUrl,
+    createdAt: master.createdAt,
+    schedule: masterSchedule,
+    scheduleExceptions: masterScheduleExceptions,
+  };
+});
+
+const normalizeService = (service) => ({
+  ...service,
+  masters: Array.isArray(service?.masters)
+    ? service.masters
+        .map((item) => item?.master)
+        .filter(Boolean)
+        .map((master) => {
+          const full = masters.find((m) => m.id === master.id);
+          return full || master;
+        })
+    : [],
+});
+
+const services = [
+  ...(uncategorizedServices || []).map(normalizeService),
+  ...(studio.serviceCategories?.flatMap((c) =>
+    (c.services || []).map(normalizeService),
+  ) || []),
+];
+
+const serviceCategories = (studio.serviceCategories || []).map((category) => ({
+  ...category,
+  services: (category.services || []).map(normalizeService),
+}));
 
 res.json({
   studio: {
@@ -188,7 +319,9 @@ res.json({
     schedule,
     scheduleExceptions,
     services,
-    uncategorizedServices,
+    uncategorizedServices: (uncategorizedServices || []).map(normalizeService),
+    serviceCategories,
+    masters,
   },
 });
   } catch (e) {

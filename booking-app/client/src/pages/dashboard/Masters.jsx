@@ -8,7 +8,12 @@ import {
   X,
   Check,
   Camera,
+  CalendarDays,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
+import DatePicker from "../../components/ui/DatePicker";
+import TimeSelect from "../../components/TimeSelect";
 import { useStudio } from "../../context/studio/useStudio";
 
 async function uploadMasterPhoto(studioId, file) {
@@ -95,6 +100,16 @@ function SectionCard({
   );
 }
 
+function isExceptionValid(item) {
+  if (!item.date) return false;
+
+  if (!item.enabled) return true; // вихідний → можна зберігати
+
+  if (!item.start || !item.end) return false;
+
+  return item.start < item.end;
+}
+
 function Button({
   variant = "secondary",
   size = "md",
@@ -109,6 +124,8 @@ function Button({
       "bg-white border border-stone-200 text-stone-700 hover:bg-stone-50 hover:border-stone-300",
     danger:
       "bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 text-red-600 hover:from-red-100 hover:to-rose-100",
+    accent:
+      "border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 text-amber-700 shadow-sm hover:border-amber-300 hover:from-amber-100 hover:to-orange-100",
     ghost: "text-stone-600 hover:bg-stone-100",
   };
 
@@ -135,18 +152,29 @@ function Button({
   );
 }
 
-function IconButton({ variant = "secondary", className = "", children, ...props }) {
+function IconButton({
+  variant = "secondary",
+  className = "",
+  children,
+  ...props
+}) {
   const variants = {
+    primary:
+      "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/35 hover:from-emerald-700 hover:to-emerald-800",
     secondary:
-      "bg-white border border-stone-200 text-stone-600 hover:bg-stone-50 hover:text-stone-800",
-    danger: "bg-red-50 border border-red-200 text-red-500 hover:bg-red-100",
+      "bg-white border border-stone-200 text-stone-700 hover:bg-stone-50 hover:border-stone-300",
+    danger:
+      "bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 text-red-600 hover:from-red-100 hover:to-rose-100",
+    accent:
+      "border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 text-amber-700 shadow-sm hover:border-amber-300 hover:from-amber-100 hover:to-orange-100",
+    ghost: "text-stone-600 hover:bg-stone-100",
   };
 
   return (
     <button
       type="button"
       className={cn(
-        "inline-flex items-center justify-center rounded-xl p-2.5 transition-all duration-200 active:scale-95",
+        "inline-flex h-11 items-center justify-center rounded-2xl px-3 transition-all duration-200 active:scale-95",
         variants[variant],
         className,
       )}
@@ -157,7 +185,15 @@ function IconButton({ variant = "secondary", className = "", children, ...props 
   );
 }
 
-function Modal({ open, onClose, title, subtitle, children, footer, size = "md" }) {
+function Modal({
+  open,
+  onClose,
+  title,
+  subtitle,
+  children,
+  footer,
+  size = "md",
+}) {
   useEffect(() => {
     if (open) {
       document.body.style.overflow = "hidden";
@@ -188,8 +224,8 @@ function Modal({ open, onClose, title, subtitle, children, footer, size = "md" }
   };
 
   return (
-<div
-  className="fixed inset-0 z-[9999] flex items-center justify-center bg-stone-900/40 p-4 backdrop-blur-sm sm:p-6"
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-stone-900/40 p-4 backdrop-blur-sm sm:p-6"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose?.();
       }}
@@ -210,7 +246,9 @@ function Modal({ open, onClose, title, subtitle, children, footer, size = "md" }
               <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-amber-600">
                 {title}
               </p>
-              {subtitle && <p className="mt-1 text-sm text-stone-500">{subtitle}</p>}
+              {subtitle && (
+                <p className="mt-1 text-sm text-stone-500">{subtitle}</p>
+              )}
             </div>
 
             <button
@@ -247,13 +285,13 @@ function Avatar({ name, photoUrl, size = "md", className = "" }) {
   };
 
   return (
-<div
-  className={cn(
-    "flex shrink-0 items-center justify-center overflow-hidden border-2 border-amber-100 bg-gradient-to-br from-amber-50 to-orange-50 shadow-sm",
-    sizes[size],
-    className,
-  )}
->
+    <div
+      className={cn(
+        "flex shrink-0 items-center justify-center overflow-hidden border-2 border-amber-100 bg-gradient-to-br from-amber-50 to-orange-50 shadow-sm",
+        sizes[size],
+        className,
+      )}
+    >
       {photoUrl ? (
         <img
           src={photoUrl}
@@ -264,7 +302,7 @@ function Avatar({ name, photoUrl, size = "md", className = "" }) {
           }}
         />
       ) : (
-       <Camera className="h-6 w-6 text-amber-500" />
+        <Camera className="h-6 w-6 text-amber-500" />
       )}
     </div>
   );
@@ -349,6 +387,11 @@ export default function Masters() {
   const [mastersLocal, setMastersLocal] = useState([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
+  const [exceptionsMaster, setExceptionsMaster] = useState(null);
+  const [exceptionsModalOpen, setExceptionsModalOpen] = useState(false);
+  const [masterExceptions, setMasterExceptions] = useState([]);
+  const [exceptionsLoading, setExceptionsLoading] = useState(false);
+  const [expandedExceptions, setExpandedExceptions] = useState({});
 
   async function refreshMasters() {
     if (!studio?.id) return;
@@ -570,6 +613,228 @@ export default function Masters() {
     }
   }
 
+  function dateToInputValue(date = new Date()) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+
+  function createEmptyException() {
+    return {
+      id: "",
+      date: dateToInputValue(),
+      enabled: true,
+      start: "08:00",
+      end: "18:00",
+      isNew: true,
+    };
+  }
+
+  function sortExceptions(list) {
+    return [...list].sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+  }
+
+  function getExceptionKey(item, index) {
+    return item.id || `${item.date || "new"}-${index}`;
+  }
+
+  function formatExceptionDate(dateStr) {
+    if (!dateStr) return "";
+    const date = new Date(`${dateStr}T00:00:00`);
+    if (Number.isNaN(date.getTime())) return dateStr;
+
+    return new Intl.DateTimeFormat("uk-UA", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    }).format(date);
+  }
+
+  async function openMasterExceptions(master) {
+    if (!studio?.id || !master?.id) return;
+
+    setExceptionsMaster(master);
+    setExceptionsModalOpen(true);
+    setExceptionsLoading(true);
+    setExpandedExceptions({});
+
+    try {
+      const token = localStorage.getItem("token");
+
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/studio/masters/${master.id}/schedule/exceptions`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        throw new Error(
+          data?.message || "Не вдалося завантажити особливі дати",
+        );
+      }
+
+      setMasterExceptions(
+        Array.isArray(data?.exceptions)
+          ? sortExceptions(
+              data.exceptions.map((item) => ({
+                ...item,
+                date: String(item?.date || "").slice(0, 10),
+                isNew: false,
+              })),
+            )
+          : [],
+      );
+    } catch (e) {
+      alert(e?.message || "Помилка завантаження");
+    } finally {
+      setExceptionsLoading(false);
+    }
+  }
+
+  function addExceptionRow() {
+    const newItem = createEmptyException();
+
+    setMasterExceptions((prev) => {
+      const next = sortExceptions([...prev, newItem]);
+      const newIndex = next.findIndex((item) => item === newItem);
+      const key = getExceptionKey(newItem, newIndex);
+
+      setTimeout(() => {
+        setExpandedExceptions((prevExpanded) => ({
+          ...prevExpanded,
+          [key]: true,
+        }));
+      }, 0);
+
+      return next;
+    });
+  }
+
+  function updateException(index, field, value) {
+    setMasterExceptions((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, [field]: value } : item)),
+    );
+  }
+
+  async function saveException(item, index) {
+    if (!exceptionsMaster?.id) return;
+
+    const token = localStorage.getItem("token");
+
+    if (!item.date) {
+      alert("Оберіть дату");
+      return;
+    }
+
+    const body = {
+      date: item.date,
+      enabled: item.enabled,
+      start: item.enabled ? item.start : null,
+      end: item.enabled ? item.end : null,
+    };
+
+    const url = item.id
+      ? `${import.meta.env.VITE_API_URL}/studio/masters/${exceptionsMaster.id}/schedule/exceptions/${item.id}`
+      : `${import.meta.env.VITE_API_URL}/studio/masters/${exceptionsMaster.id}/schedule/exceptions`;
+
+    const method = item.id ? "PATCH" : "POST";
+
+    const res = await fetch(url, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(body),
+    });
+
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      alert(data?.message || "Не вдалося зберегти");
+      return;
+    }
+
+    setMasterExceptions((prev) => {
+      const next = sortExceptions(
+        prev.map((row, i) =>
+          i === index
+            ? {
+                ...data.exception,
+                isNew: false,
+              }
+            : row,
+        ),
+      );
+
+      const savedIndex = next.findIndex(
+        (row) =>
+          row.id === data.exception?.id ||
+          (!row.id && row.date === data.exception?.date),
+      );
+
+      const nextKey =
+        savedIndex >= 0
+          ? getExceptionKey(next[savedIndex], savedIndex)
+          : getExceptionKey(data.exception, index);
+
+      setTimeout(() => {
+        setExpandedExceptions((prevExpanded) => {
+          const updated = { ...prevExpanded };
+          Object.keys(updated).forEach((k) => {
+            if (k.includes(item.date || "")) delete updated[k];
+          });
+          updated[nextKey] = false;
+          return updated;
+        });
+      }, 0);
+
+      return next;
+    });
+  }
+
+  async function removeException(item, index) {
+    if (!exceptionsMaster?.id) return;
+
+    if (!item.id) {
+      setMasterExceptions((prev) => prev.filter((_, i) => i !== index));
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(
+      `${import.meta.env.VITE_API_URL}/studio/masters/${exceptionsMaster.id}/schedule/exceptions/${item.id}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      alert(data?.message || "Не вдалося видалити");
+      return;
+    }
+
+    setMasterExceptions((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function exceptionSubtitle(item) {
+    if (!item?.date) return "Нова особлива дата";
+    if (!item.enabled) return `${formatExceptionDate(item.date)} • Вихідний`;
+    return `${formatExceptionDate(item.date)} • ${item.start}–${item.end}`;
+  }
+
   function openEdit(master) {
     setEditMaster(master);
 
@@ -748,15 +1013,15 @@ export default function Masters() {
           badge={`${total} всього`}
         >
           <form onSubmit={addMaster} className="space-y-5">
-           <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-3 sm:gap-4">
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-3 sm:gap-4">
                 <div className="relative">
-<Avatar
-  name={form.name || "Фото"}
-  photoUrl={!photoBroken ? form.photoUrl : ""}
-  size="md"
-  className="h-16 w-16 rounded-2xl sm:h-20 sm:w-20 sm:rounded-[22px]"
- />
+                  <Avatar
+                    name={form.name || "Фото"}
+                    photoUrl={!photoBroken ? form.photoUrl : ""}
+                    size="md"
+                    className="h-16 w-16 rounded-2xl sm:h-20 sm:w-20 sm:rounded-[22px]"
+                  />
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
@@ -840,7 +1105,8 @@ export default function Masters() {
               </Button>
 
               <p className="text-sm text-stone-500">
-                Усього: <span className="font-bold text-stone-800">{total}</span>
+                Усього:{" "}
+                <span className="font-bold text-stone-800">{total}</span>
               </p>
             </div>
           </form>
@@ -872,48 +1138,82 @@ export default function Masters() {
                   key={m.id}
                   className="group rounded-2xl border border-stone-200 bg-white p-4 transition-all hover:border-amber-200 hover:shadow-md hover:shadow-amber-500/5"
                 >
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex min-w-0 items-start gap-3">
-                                            <Avatar name={m.name} photoUrl={m.photoUrl} size="sm" />
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex min-w-0 items-start gap-3">
+                        <Avatar name={m.name} photoUrl={m.photoUrl} size="sm" />
 
-                      <div className="min-w-0">
-                        <p className="truncate font-semibold text-stone-800">
-                          {m.name}
-                        </p>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-semibold text-stone-800">
+                            {m.name}
+                          </p>
 
-                        {m.role ? (
-                          <p className="mt-1 truncate text-sm font-medium text-stone-600">
-                            {m.role}
-                          </p>
-                        ) : (
-                          <p className="mt-1 text-sm text-stone-400">
-                            Спеціалізація не вказана
-                          </p>
-                        )}
+                          {m.role ? (
+                            <p className="mt-1 truncate text-sm font-medium text-stone-600">
+                              {m.role}
+                            </p>
+                          ) : (
+                            <p className="mt-1 text-sm text-stone-400">
+                              Спеціалізація не вказана
+                            </p>
+                          )}
 
-                        {m.bio ? (
-                          <p className="mt-1 line-clamp-2 text-sm text-stone-500">
-                            {m.bio}
-                          </p>
-                        ) : (
-                          <p className="mt-1 text-sm text-stone-400">Без опису</p>
-                        )}
+                          {m.bio ? (
+                            <p className="mt-1 line-clamp-2 break-words text-sm text-stone-500">
+                              {m.bio}
+                            </p>
+                          ) : (
+                            <p className="mt-1 text-sm text-stone-400">
+                              Без опису
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </div>
 
-<div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">          
-            <IconButton  className="flex-1 sm:flex-none" onClick={() => openEdit(m)} title="Редагувати">
-                        <Pencil className="h-4 w-4" />
-                      </IconButton>
-
-                      <IconButton
-                      className="flex-1 sm:flex-none"
-                        variant="danger"
-                        onClick={() => deleteMaster(m)}
-                        title="Видалити"
+                    <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row lg:w-auto lg:shrink-0">
+                      {/* Особливі дати */}
+                      <Button
+                        variant="accent"
+                        className="
+      h-11 w-full
+      sm:flex-[3]
+      lg:flex-none lg:w-auto lg:min-w-[170px]
+      justify-center
+    "
+                        onClick={() => openMasterExceptions(m)}
                       >
-                        <Trash2 className="h-4 w-4" />
-                      </IconButton>
+                        <CalendarDays className="h-4 w-4" />
+                        Особливі дати
+                      </Button>
+
+                      {/* Mobile row (2 кнопки по 50%) */}
+                      <div className="flex w-full gap-2 sm:contents">
+                        <IconButton
+                          className="
+        h-11 w-1/2
+        sm:flex-[1]
+        lg:flex-none lg:w-11
+      "
+                          onClick={() => openEdit(m)}
+                          title="Редагувати"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </IconButton>
+
+                        <IconButton
+                          className="
+        h-11 w-1/2
+        sm:flex-[1]
+        lg:flex-none lg:w-11
+      "
+                          variant="danger"
+                          onClick={() => deleteMaster(m)}
+                          title="Видалити"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </IconButton>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -931,10 +1231,7 @@ export default function Masters() {
           size="md"
           footer={
             <div className="flex items-center justify-end gap-2">
-              <Button
-                variant="secondary"
-                onClick={closeEdit}
-              >
+              <Button variant="secondary" onClick={closeEdit}>
                 Скасувати
               </Button>
 
@@ -1043,6 +1340,248 @@ export default function Masters() {
               />
             </div>
           </div>
+        </Modal>
+        <Modal
+          open={exceptionsModalOpen}
+          onClose={() => {
+            setExceptionsModalOpen(false);
+            setExceptionsMaster(null);
+            setMasterExceptions([]);
+            setExpandedExceptions({});
+          }}
+          title={`Особливі дати — ${exceptionsMaster?.name || ""}`}
+          subtitle="Керуйте індивідуальним графіком майстра на конкретні дати."
+          size="lg"
+          footer={
+            <div className="flex justify-end">
+              <Button
+                variant="primary"
+                onClick={addExceptionRow}
+                className="w-full sm:w-auto sm:shrink-0 whitespace-nowrap justify-center"
+              >
+                <CalendarDays className="h-4 w-4" />
+                Додати ще дату
+              </Button>
+            </div>
+          }
+        >
+          {exceptionsLoading ? (
+            <div className="space-y-3">
+              <SkeletonBlock className="h-24 w-full rounded-2xl" />
+              <SkeletonBlock className="h-24 w-full rounded-2xl" />
+            </div>
+          ) : masterExceptions.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-6 text-sm text-stone-500">
+              Ще немає особливих дат для цього майстра.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {masterExceptions.map((item, index) => {
+                const isValid = isExceptionValid(item);
+
+                const exceptionKey = getExceptionKey(item, index);
+                const isExpanded =
+                  item.isNew || expandedExceptions[exceptionKey] === true;
+
+                return (
+                  <div
+                    key={exceptionKey}
+                    className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-[0_6px_18px_rgba(93,64,55,0.04)]"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (item.isNew) return;
+
+                        setExpandedExceptions((prev) => ({
+                          ...prev,
+                          [exceptionKey]: !prev[exceptionKey],
+                        }));
+                      }}
+                      className={cn(
+                        "flex w-full items-start justify-between gap-3 p-4 text-left transition-colors",
+                        !item.isNew && "hover:bg-stone-50/80",
+                      )}
+                    >
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-[15px] font-bold text-stone-800">
+                            {item.date
+                              ? formatExceptionDate(item.date)
+                              : "Нова особлива дата"}
+                          </p>
+
+                          <div className="rounded-full border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                            {item.enabled ? "Особливий графік" : "Вихідний"}
+                          </div>
+                        </div>
+
+                        <p className="mt-1 text-xs text-stone-500">
+                          {exceptionSubtitle(item)}
+                        </p>
+                      </div>
+
+                      <div className="flex shrink-0 items-center gap-2">
+                        {!item.isNew && (
+                          <span className="hidden text-xs font-medium text-stone-400 sm:inline">
+                            {isExpanded ? "Згорнути" : "Розгорнути"}
+                          </span>
+                        )}
+
+                        {!item.isNew &&
+                          (isExpanded ? (
+                            <ChevronUp className="h-5 w-5 shrink-0 text-stone-400" />
+                          ) : (
+                            <ChevronDown className="h-5 w-5 shrink-0 text-stone-400" />
+                          ))}
+                      </div>
+                    </button>
+
+                    <div
+                      className={cn(
+                        "grid transition-all duration-300 ease-out",
+                        isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+                      )}
+                    >
+                      <div className="overflow-hidden">
+                        <div className="border-t border-stone-100 px-4 pb-4 pt-4">
+                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:items-end">
+                            <div>
+                              <div className="min-w-0">
+                                <div className="col-span-1 sm:col-span-1">
+                                  <DatePicker
+                                    label="Дата"
+                                    value={item.date}
+                                    onChange={(value) =>
+                                      updateException(index, "date", value)
+                                    }
+                                  />
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="col-span-1 sm:col-span-1">
+                              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-stone-500">
+                                Статус
+                              </label>
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  updateException(
+                                    index,
+                                    "enabled",
+                                    !item.enabled,
+                                  )
+                                }
+                                className="flex h-[50px] w-full items-center gap-3 rounded-2xl border border-stone-200 bg-stone-50 px-4 transition-all duration-200 hover:border-stone-300 hover:bg-white"
+                              >
+                                <span
+                                  className={cn(
+                                    "relative inline-flex h-7 w-12 items-center rounded-full transition-all duration-300",
+                                    item.enabled
+                                      ? "bg-gradient-to-r from-emerald-500 to-emerald-600"
+                                      : "bg-stone-200",
+                                  )}
+                                >
+                                  <span
+                                    className={cn(
+                                      "inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-300",
+                                      item.enabled
+                                        ? "translate-x-6"
+                                        : "translate-x-1",
+                                    )}
+                                  />
+                                </span>
+
+                                <span className="text-sm font-semibold text-stone-700 whitespace-nowrap">
+                                  {item.enabled ? "Робочий день" : "Вихідний"}
+                                </span>
+                              </button>
+                            </div>
+
+                            {item.enabled ? (
+                              <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 sm:col-span-2">
+                                <div className="min-w-0">
+                                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-stone-500">
+                                    Початок
+                                  </label>
+
+                                  <div className="rounded-[16px] flex items-center border border-stone-200 bg-stone-50 h-[50px] overflow-hidden">
+                                    <TimeSelect
+                                      value={item.start}
+                                      label="Початок"
+                                      dayLabel={item.date || "Особлива дата"}
+                                      onChange={(value) =>
+                                        updateException(index, "start", value)
+                                      }
+                                      onCommit={(value) =>
+                                        updateException(index, "start", value)
+                                      }
+                                    />
+                                  </div>
+                                </div>
+
+                                <div className="min-w-0">
+                                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-stone-500">
+                                    Завершення
+                                  </label>
+                                  <div className="rounded-[16px] flex items-center border border-stone-200 bg-stone-50 h-[50px] overflow-hidden">
+                                    <TimeSelect
+                                      value={item.end}
+                                      label="Завершення"
+                                      dayLabel={item.date || "Особлива дата"}
+                                      onChange={(value) =>
+                                        updateException(index, "end", value)
+                                      }
+                                      onCommit={(value) =>
+                                        updateException(index, "end", value)
+                                      }
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="sm:col-span-2 flex items-center">
+                                <div className="w-full rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
+                                  У цей день майстер не працює
+                                </div>
+                              </div>
+                            )}
+
+                            <div className="grid grid-cols-2 gap-2 sm:flex sm:col-span-2">
+                              {" "}
+                              <Button
+                                variant={isValid ? "primary" : "secondary"}
+                                onClick={() => saveException(item, index)}
+                                disabled={!isValid}
+                                className={cn(
+                                  "h-[50px] w-full justify-center",
+                                  !isValid &&
+                                    "bg-stone-100 text-stone-400 border-stone-200 cursor-not-allowed",
+                                )}
+                              >
+                                <Check className="h-4 w-4" />
+                                Зберегти
+                              </Button>
+                              <Button
+                                variant="danger"
+                                onClick={() => removeException(item, index)}
+                                className="h-[50px] w-full text-center justify-center"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                Видалити
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </Modal>
       </div>
     </div>

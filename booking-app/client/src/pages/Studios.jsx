@@ -466,7 +466,7 @@ export default function Studios() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-stone-50 via-amber-50/30 to-orange-50/20">
-      <div className="mx-auto max-w-6xl px-4 pb-8 pt-20">
+      <div className="mx-auto max-w-6xl px-4 pb-8 pt-16">
         <div className="space-y-5 px-0 pt-6 sm:px-0 sm:pt-8 lg:pt-6">
           <section className="overflow-hidden rounded-3xl border border-stone-200/60 bg-white shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]">
             <div className="h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-70" />

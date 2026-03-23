@@ -6,10 +6,10 @@ import cors from "cors";
 import { authRouter } from "./routes/auth.routes.js";
 import { ownerRouter } from "./routes/owner.routes.js";
 import { clientRouter } from "./routes/client.routes.js";
-
 import studioRoutes from "./routes/studio.js";
 import mediaRoutes from "./routes/media.js";
 import scheduleRoutes from "./routes/schedule.routes.js";
+import { masterScheduleRouter } from "./routes/masterSchedule.routes.js";
 import bookingsRoutes from "./routes/bookings.js";
 const app = express();
 
@@ -31,7 +31,7 @@ app.use(
 
 app.options("*", cors());
 app.use(express.json({ limit: "10mb" }));
-
+app.use(masterScheduleRouter);
 app.get("/health", (req, res) => res.json({ ok: true }));
 
 app.use("/bookings", bookingsRoutes);

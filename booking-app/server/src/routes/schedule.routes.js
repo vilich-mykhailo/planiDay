@@ -1,3 +1,4 @@
+// schedule.routes.js
 import express from "express";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth, requireOwner } from "../middleware/auth.js";

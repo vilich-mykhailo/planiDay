@@ -52,38 +52,36 @@ enum Weekday {
 }
 
 model Studio {
-  id      String       @id @default(cuid())
-  email       String @default("")
-  published Boolean  @default(false)
+  id        String  @id @default(cuid())
+  email     String  @default("")
+  published Boolean @default(false)
   premium   Boolean @default(false)
-  name          String @default("")
+  name      String  @default("")
 
-  category      String @default("")
-  phone         String @default("")
-  description   String @default("")
-  city          String @default("")
-  street        String @default("")
-  building      String @default("")
-  apartment     String @default("")
+  category          String            @default("")
+  phone             String            @default("")
+  description       String            @default("")
+  city              String            @default("")
+  street            String            @default("")
+  building          String            @default("")
+  apartment         String            @default("")
   serviceCategories ServiceCategory[]
   services          Service[]
   masters           Master[]
-  coverUrl      String @default("")
-  logoUrl       String @default("")
-  portfolioUrls Json   @default("[]")
+  coverUrl          String            @default("")
+  logoUrl           String            @default("")
+  portfolioUrls     Json              @default("[]")
 
-  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   bookings Booking[]
 
-
-  slotDuration Int @default(15)
-scheduleExceptions StudioScheduleException[]
-  scheduleDays StudioScheduleDay[]
-  ownerId String       @unique
-  owner   OwnerAccount @relation(fields: [ownerId], references: [id])
+  slotDuration       Int                       @default(15)
+  scheduleExceptions StudioScheduleException[]
+  scheduleDays       StudioScheduleDay[]
+  ownerId            String                    @unique
+  owner              OwnerAccount              @relation(fields: [ownerId], references: [id])
 }
 
 model StudioScheduleDay {
@@ -103,13 +101,13 @@ model StudioScheduleDay {
 
 model StudioScheduleException {
   id        String   @id @default(cuid())
-  studioId   String
-  date       DateTime
-  enabled    Boolean  @default(true)
-  startMin   Int?
-  endMin     Int?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  studioId  String
+  date      DateTime
+  enabled   Boolean  @default(true)
+  startMin  Int?
+  endMin    Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   studio Studio @relation(fields: [studioId], references: [id], onDelete: Cascade)
 
@@ -122,8 +120,8 @@ model Booking {
   studioId String
   clientId String
 
-  serviceId String? // ✅ додати
-  masterId  String? // ✅ додати (якщо треба)
+  serviceId String?
+  masterId  String?
 
   startAt DateTime
   endAt   DateTime
@@ -132,12 +130,15 @@ model Booking {
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 
-  studio Studio        @relation(fields: [studioId], references: [id], onDelete: Cascade)
-  client ClientAccount @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  studio  Studio        @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  client  ClientAccount @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  service Service?      @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  master  Master?       @relation(fields: [masterId], references: [id], onDelete: SetNull)
 
   @@index([studioId, startAt])
   @@index([clientId, startAt])
   @@index([serviceId, startAt])
+  @@index([masterId, startAt])
 }
 
 enum BookingStatus {
@@ -171,7 +172,8 @@ model Service {
   categoryId String?
   category   ServiceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
-  masters ServiceMaster[]
+  masters  ServiceMaster[]
+  bookings Booking[]
 
   sort      Int      @default(0)
   createdAt DateTime @default(now())
@@ -198,6 +200,42 @@ model Master {
 
   createdAt DateTime @default(now())
 
-  studio   Studio          @relation(fields: [studioId], references: [id], onDelete: Cascade)
-  services ServiceMaster[]
+  studio             Studio                    @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  services           ServiceMaster[]
+  bookings           Booking[]
+  scheduleDays       MasterScheduleDay[]
+  scheduleExceptions MasterScheduleException[]
+
+  @@index([studioId])
+}
+
+model MasterScheduleDay {
+  id       String @id @default(uuid())
+  masterId String
+  master   Master @relation(fields: [masterId], references: [id], onDelete: Cascade)
+
+  day     Weekday
+  enabled Boolean @default(true)
+
+  startMin Int @default(600)
+  endMin   Int @default(1080)
+
+  @@unique([masterId, day])
+  @@index([masterId])
+}
+
+model MasterScheduleException {
+  id        String   @id @default(cuid())
+  masterId  String
+  date      DateTime
+  enabled   Boolean  @default(true)
+  startMin  Int?
+  endMin    Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  master Master @relation(fields: [masterId], references: [id], onDelete: Cascade)
+
+  @@unique([masterId, date])
+  @@index([masterId, date])
 }
