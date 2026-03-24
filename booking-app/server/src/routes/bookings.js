@@ -1,3 +1,4 @@
+// bookings.js
 import { Router } from "express";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth, requireOwner } from "../middleware/auth.js";

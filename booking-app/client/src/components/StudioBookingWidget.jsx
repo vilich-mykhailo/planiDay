@@ -1,3 +1,4 @@
+// StudioBookingWidget.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Clock, Check, ChevronRight, Sparkles } from "lucide-react";
@@ -64,6 +65,10 @@ function weekdayEnumToKey(v) {
 }
 
 const ANY_MASTER_ID = "__any_master__";
+const MASTER_PICK_MODE = {
+  ANY: "any",
+  SPECIFIC: "specific",
+};
 
 function getScheduleForDate(date, schedule, exceptions = []) {
   if (!date) return null;
@@ -91,6 +96,39 @@ function getScheduleForDate(date, schedule, exceptions = []) {
   return fallback;
 }
 
+function resolveMasterDayForDate(date, master) {
+  if (!date || !master) return null;
+
+  const masterScheduleData = getMasterSchedule(master);
+  const masterExceptionsData = getMasterExceptions(master);
+
+  const iso = formatDateLocal(date);
+
+  const exactException = masterExceptionsData.find(
+    (item) => String(item?.date || "").slice(0, 10) === iso,
+  );
+
+  // 1. Якщо є точний виняток на дату — він головний
+  if (exactException) {
+    if (!exactException.enabled) return null;
+
+    return {
+      enabled: true,
+      start: exactException.start,
+      end: exactException.end,
+    };
+  }
+
+  // 2. Якщо є базовий графік — беремо його
+  if (masterScheduleData && Object.keys(masterScheduleData).length > 0) {
+    return getScheduleForDate(date, masterScheduleData, []);
+  }
+
+  // 3. Якщо нема ні графіка, ні винятку — повертаємо спеціальний маркер:
+  // "працює за графіком студії"
+  return "__USE_STUDIO_SCHEDULE__";
+} 
+
 function getMasterSchedule(master) {
   if (!master) return {};
 
@@ -105,10 +143,23 @@ function getMasterSchedule(master) {
     const key = weekdayEnumToKey(d.weekday || d.day);
     if (!key) continue;
 
+    const rawStart = d.start ?? d.startTime ?? d.from ?? d.startMin;
+    const rawEnd = d.end ?? d.endTime ?? d.to ?? d.endMin;
+
+    const start =
+      typeof rawStart === "string" && rawStart.includes(":")
+        ? rawStart
+        : minutesToTime(Number(rawStart || 0));
+
+    const end =
+      typeof rawEnd === "string" && rawEnd.includes(":")
+        ? rawEnd
+        : minutesToTime(Number(rawEnd || 0));
+
     out[key] = {
       enabled: Boolean(d.enabled),
-      start: minutesToTime(Number(d.startMin || 0)),
-      end: minutesToTime(Number(d.endMin || 0)),
+      start,
+      end,
     };
   }
 
@@ -290,14 +341,27 @@ const availableMasters = useMemo(() => {
     (s) => String(s.id) === String(selectedServiceId || defaultServiceId),
   );
 
+  console.log("selectedServiceId", selectedServiceId);
+  console.log("service", service);
+  console.log("service.masters", service?.masters);
+  console.log("allMasters", allMasters);
+
   if (!service) return allMasters;
   if (service.allMasters) return allMasters;
 
   const allowedIds = Array.isArray(service.masters)
     ? service.masters
-        .map((m) => String(m?.id || m?.masterId || m?.master?.id || ""))
+        .map((m) => {
+          if (typeof m === "string" || typeof m === "number") {
+            return String(m);
+          }
+
+          return String(m?.id || m?.masterId || m?.master?.id || "");
+        })
         .filter(Boolean)
     : [];
+
+  console.log("allowedIds", allowedIds);
 
   return allMasters.filter((m) => allowedIds.includes(String(m.id)));
 }, [allMasters, services, selectedServiceId, defaultServiceId]);
@@ -310,6 +374,7 @@ const [selectedMasterId, setSelectedMasterId] = useState(() => {
 useEffect(() => {
   if (!availableMasters.length) {
     setSelectedMasterId(ANY_MASTER_ID);
+    setMasterPickMode(MASTER_PICK_MODE.ANY);
     return;
   }
 
@@ -331,7 +396,19 @@ useEffect(() => {
 
     return ANY_MASTER_ID;
   });
+
+  if (
+    initialMaster?.id &&
+    availableMasters.some((m) => String(m.id) === String(initialMaster.id))
+  ) {
+    setMasterPickMode(MASTER_PICK_MODE.SPECIFIC);
+  }
 }, [availableMasters, initialMaster?.id]);
+
+const [masterPickMode, setMasterPickMode] = useState(() => {
+  if (initialMaster?.id) return MASTER_PICK_MODE.SPECIFIC;
+  return MASTER_PICK_MODE.ANY;
+});
 
 const selectedMaster = useMemo(() => {
   if (selectedMasterId === ANY_MASTER_ID) return null;
@@ -342,7 +419,9 @@ const selectedMaster = useMemo(() => {
   );
 }, [availableMasters, selectedMasterId]);
 
-const isAnyMasterSelected = selectedMasterId === ANY_MASTER_ID;
+const isAnyMasterSelected =
+  masterPickMode === MASTER_PICK_MODE.ANY ||
+  selectedMasterId === ANY_MASTER_ID;
 
 const masterSchedule = useMemo(() => {
   if (
@@ -375,8 +454,7 @@ const masterScheduleExceptions = useMemo(() => {
 }, [
   initialMasterScheduleExceptionsProp,
   initialMaster?.id,
-  selectedMaster?.id,
-  selectedMaster?.scheduleExceptions,
+  selectedMaster,
 ]);
 
 function intersectSchedules(a, b) {
@@ -404,55 +482,54 @@ function intersectSchedules(a, b) {
     [selectedDate],
   );
 
-  const dayConfig = useMemo(() => {
-    if (!selectedDate) return null;
+const dayConfig = useMemo(() => {
+  if (!selectedDate) return null;
 
-    const studioDay = getScheduleForDate(
-      selectedDate,
-      schedule,
-      scheduleExceptions,
-    );
-
-    if (!studioDay) return null;
-if (isAnyMasterSelected) {
-  const anyMasterDay = availableMasters
-    .map((m) => {
-      const masterDay = getScheduleForDate(
-        selectedDate,
-        getMasterSchedule(m),
-        getMasterExceptions(m),
-      );
-
-      if (!masterDay) return null;
-
-      return intersectSchedules(studioDay, masterDay);
-    })
-    .filter(Boolean);
-
-  return anyMasterDay[0] || null;
-}
-
-if (!selectedMaster) return null;
-
-    const masterDay = getScheduleForDate(
-      selectedDate,
-      masterSchedule,
-      masterScheduleExceptions,
-    );
-
-    if (!masterDay) return null;
-
-    return intersectSchedules(studioDay, masterDay);
-  }, [
+  const studioDay = getScheduleForDate(
     selectedDate,
     schedule,
     scheduleExceptions,
-    selectedMaster,
-    masterSchedule,
-    masterScheduleExceptions,
-    availableMasters,
-isAnyMasterSelected,
-  ]);
+  );
+
+  if (!studioDay) return null;
+
+  if (isAnyMasterSelected) {
+    const anyMasterDay = availableMasters
+      .map((m) => {
+        const resolvedMasterDay = resolveMasterDayForDate(selectedDate, m);
+
+        if (!resolvedMasterDay) return null;
+
+        if (resolvedMasterDay === "__USE_STUDIO_SCHEDULE__") {
+          return studioDay;
+        }
+
+        return intersectSchedules(studioDay, resolvedMasterDay);
+      })
+      .filter(Boolean);
+
+    return anyMasterDay[0] || null;
+  }
+
+  if (!selectedMaster) return null;
+
+  const resolvedMasterDay = resolveMasterDayForDate(selectedDate, selectedMaster);
+
+  if (!resolvedMasterDay) return null;
+
+  if (resolvedMasterDay === "__USE_STUDIO_SCHEDULE__") {
+    return studioDay;
+  }
+
+  return intersectSchedules(studioDay, resolvedMasterDay);
+}, [
+  selectedDate,
+  schedule,
+  scheduleExceptions,
+  selectedMaster,
+  availableMasters,
+  isAnyMasterSelected,
+]);
 
   const isDayEnabled = useMemo(() => {
     return Boolean(dayConfig?.enabled);
@@ -461,20 +538,25 @@ isAnyMasterSelected,
 const slots = useMemo(() => {
   if (!selectedDate || !dayConfig) return [];
 
+  const studioDay = getScheduleForDate(selectedDate, schedule, scheduleExceptions);
+  if (!studioDay) return [];
+
   if (isAnyMasterSelected) {
     const unique = new Set();
 
     availableMasters.forEach((m) => {
-      const studioDay = getScheduleForDate(selectedDate, schedule, scheduleExceptions);
-      const masterDay = getScheduleForDate(
-        selectedDate,
-        getMasterSchedule(m),
-        getMasterExceptions(m),
-      );
+      const resolvedMasterDay = resolveMasterDayForDate(selectedDate, m);
 
-      if (!studioDay || !masterDay) return;
+      if (!resolvedMasterDay) return;
 
-      const intersection = intersectSchedules(studioDay, masterDay);
+      if (resolvedMasterDay === "__USE_STUDIO_SCHEDULE__") {
+        buildSlots(studioDay.start, studioDay.end, slotDuration).forEach((slot) => {
+          unique.add(slot);
+        });
+        return;
+      }
+
+      const intersection = intersectSchedules(studioDay, resolvedMasterDay);
       if (!intersection) return;
 
       buildSlots(intersection.start, intersection.end, slotDuration).forEach((slot) => {
@@ -485,12 +567,24 @@ const slots = useMemo(() => {
     return Array.from(unique).sort((a, b) => timeToMinutes(a) - timeToMinutes(b));
   }
 
-  return buildSlots(dayConfig.start, dayConfig.end, slotDuration);
+  const resolvedMasterDay = resolveMasterDayForDate(selectedDate, selectedMaster);
+
+  if (!resolvedMasterDay) return [];
+
+  if (resolvedMasterDay === "__USE_STUDIO_SCHEDULE__") {
+    return buildSlots(studioDay.start, studioDay.end, slotDuration);
+  }
+
+  const intersection = intersectSchedules(studioDay, resolvedMasterDay);
+  if (!intersection) return [];
+
+  return buildSlots(intersection.start, intersection.end, slotDuration);
 }, [
   selectedDate,
   dayConfig,
   isAnyMasterSelected,
   availableMasters,
+  selectedMaster,
   schedule,
   scheduleExceptions,
   slotDuration,
@@ -545,56 +639,58 @@ const slots = useMemo(() => {
     };
   }, [studio?.id, selectedDateStr, selectedMaster?.id]);
 
-  const disabledDays = useMemo(() => {
-    return (date) => {
-      const d = new Date(date);
-      d.setHours(0, 0, 0, 0);
 
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
 
-      if (d < today) return true;
 
-      const studioDay = getScheduleForDate(d, schedule, scheduleExceptions);
-      if (!studioDay?.enabled) return true;
+  
+const disabledDays = useMemo(() => {
+  return (date) => {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
 
-if (isAnyMasterSelected) {
-  const hasAnyAvailableMaster = availableMasters.some((m) => {
-    const masterDay = getScheduleForDate(
-      d,
-      getMasterSchedule(m),
-      getMasterExceptions(m),
-    );
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-    if (!masterDay?.enabled) return false;
+    if (d < today) return true;
 
-    return Boolean(intersectSchedules(studioDay, masterDay));
-  });
+    const studioDay = getScheduleForDate(d, schedule, scheduleExceptions);
+    if (!studioDay?.enabled) return true;
 
-  return !hasAnyAvailableMaster;
-}
+    if (isAnyMasterSelected) {
+      const hasAnyAvailableMaster = availableMasters.some((m) => {
+        const resolvedMasterDay = resolveMasterDayForDate(d, m);
 
-if (!selectedMaster) return true;
+        if (!resolvedMasterDay) return false;
 
-      const masterDay = getScheduleForDate(
-        d,
-        masterSchedule,
-        masterScheduleExceptions,
-      );
+        if (resolvedMasterDay === "__USE_STUDIO_SCHEDULE__") {
+          return true;
+        }
 
-      if (!masterDay?.enabled) return true;
+        return Boolean(intersectSchedules(studioDay, resolvedMasterDay));
+      });
 
-      return !intersectSchedules(studioDay, masterDay);
-    };
-  }, [
-    schedule,
-    scheduleExceptions,
-    selectedMaster,
-    masterSchedule,
-    masterScheduleExceptions,
-    availableMasters,
-isAnyMasterSelected,
-  ]);
+      return !hasAnyAvailableMaster;
+    }
+
+    if (!selectedMaster) return true;
+
+    const resolvedMasterDay = resolveMasterDayForDate(d, selectedMaster);
+
+    if (!resolvedMasterDay) return true;
+
+    if (resolvedMasterDay === "__USE_STUDIO_SCHEDULE__") {
+      return false;
+    }
+
+    return !intersectSchedules(studioDay, resolvedMasterDay);
+  };
+}, [
+  schedule,
+  scheduleExceptions,
+  selectedMaster,
+  availableMasters,
+  isAnyMasterSelected,
+]);
 
   const selectedService = useMemo(
     () =>
@@ -617,7 +713,10 @@ isAnyMasterSelected,
     const service = selectedService || visibleServices?.[0] || null;
     if (!service?.id) return;
 
-if (!selectedMaster?.id && !isAnyMasterSelected) {
+if (
+  masterPickMode === MASTER_PICK_MODE.SPECIFIC &&
+  !selectedMaster?.id
+) {
   alert("Оберіть майстра");
   return;
 }
@@ -674,7 +773,10 @@ const canGoNext =
   Boolean(selectedServiceId) &&
   Boolean(selectedDateStr) &&
   Boolean(selectedTime) &&
-  Boolean(selectedMaster?.id || isAnyMasterSelected) &&
+  (
+    masterPickMode === MASTER_PICK_MODE.ANY ||
+    Boolean(selectedMaster?.id)
+  ) &&
   isDayEnabled;
 
   const timeRowRef = useRef(null);
@@ -695,7 +797,11 @@ const canGoNext =
         {["Послуга", "Майстер", "Дата & Час"].map((label, i) => {
 const done =
   (i === 0 && selectedServiceId) ||
-  (i === 1 && (selectedMaster?.id || isAnyMasterSelected)) ||
+  (i === 1 &&
+  (
+    masterPickMode === MASTER_PICK_MODE.ANY ||
+    Boolean(selectedMaster?.id)
+  )) ||
   (i === 2 && selectedTime);
 
           return (
@@ -753,13 +859,14 @@ const done =
                     key={service.id}
                     type="button"
                     layout
-                    onClick={() => {
-                      if (isSinglePreselected) return;
-                      setSelectedServiceId(service.id);
-                      setSelectedMasterId(null);
-                      setSelectedDate(null);
-                      setSelectedTime(null);
-                    }}
+onClick={() => {
+  if (isSinglePreselected) return;
+  setSelectedServiceId(service.id);
+  setMasterPickMode(MASTER_PICK_MODE.ANY);
+  setSelectedMasterId(ANY_MASTER_ID);
+  setSelectedDate(null);
+  setSelectedTime(null);
+}}
                     data-testid={`booking-service-${service.id}`}
                     className={cn(
                       "w-full rounded-2xl border p-4 text-left transition-all duration-200",
@@ -809,143 +916,225 @@ const done =
           )}
         </section>
 
-        <section data-testid="booking-masters-section">
-          <div className="mb-4">
-            <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.25em] text-amber-600">
-              Крок 2
-            </p>
-            <h2 className="text-lg font-bold text-stone-800">Оберіть майстра</h2>
-          </div>
-<button
-  type="button"
-  onClick={() => {
-    setSelectedMasterId(ANY_MASTER_ID);
-    setSelectedDate(null);
-    setSelectedTime(null);
-  }}
-  className={cn(
-    "flex w-full items-center gap-3 rounded-2xl border p-4 text-left transition-all duration-200 sm:col-span-2",
-    isAnyMasterSelected
-      ? "border-emerald-600 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-lg shadow-emerald-600/10"
-      : "border-stone-200 bg-white hover:border-amber-200 hover:bg-stone-50",
-  )}
->
-  <div
-    className={cn(
-      "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border text-sm font-bold",
-      isAnyMasterSelected
-        ? "border-white/20 bg-white/15 text-white"
-        : "border-stone-200 bg-stone-100 text-stone-600",
-    )}
-  >
-    *
+<section data-testid="booking-masters-section">
+  <div className="mb-4">
+    <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.25em] text-amber-600">
+      Крок 2
+    </p>
+    <h2 className="text-lg font-bold text-stone-800">Оберіть майстра</h2>
   </div>
 
-  <div className="min-w-0 flex-1">
-    <p
+  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+    <button
+      type="button"
+      onClick={() => {
+        setMasterPickMode(MASTER_PICK_MODE.ANY);
+        setSelectedMasterId(ANY_MASTER_ID);
+        setSelectedDate(null);
+        setSelectedTime(null);
+      }}
       className={cn(
-        "truncate text-sm font-semibold",
-        isAnyMasterSelected ? "text-white" : "text-stone-800",
+        "flex min-h-[88px] items-center gap-3 rounded-2xl border p-4 text-left transition-all duration-200",
+        masterPickMode === MASTER_PICK_MODE.ANY
+          ? "border-emerald-600 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-lg shadow-emerald-600/10"
+          : "border-stone-200 bg-white hover:border-amber-200 hover:bg-stone-50",
       )}
     >
-      Будь-хто вільний
-    </p>
+      <div
+        className={cn(
+          "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border text-sm font-bold",
+          masterPickMode === MASTER_PICK_MODE.ANY
+            ? "border-white/20 bg-white/15 text-white"
+            : "border-stone-200 bg-stone-100 text-stone-600",
+        )}
+      >
+        *
+      </div>
 
-    <p
+      <div className="min-w-0 flex-1">
+        <p
+          className={cn(
+            "truncate text-sm font-semibold",
+            masterPickMode === MASTER_PICK_MODE.ANY
+              ? "text-white"
+              : "text-stone-800",
+          )}
+        >
+          Будь-хто вільний
+        </p>
+
+        <p
+          className={cn(
+            "mt-1 text-xs",
+            masterPickMode === MASTER_PICK_MODE.ANY
+              ? "text-white/80"
+              : "text-stone-500",
+          )}
+        >
+          Підберемо доступного майстра автоматично
+        </p>
+      </div>
+
+      {masterPickMode === MASTER_PICK_MODE.ANY && (
+        <div className="ml-2 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/20">
+          <Check className="h-3.5 w-3.5 text-white" />
+        </div>
+      )}
+    </button>
+
+    <button
+      type="button"
+      onClick={() => {
+        setMasterPickMode(MASTER_PICK_MODE.SPECIFIC);
+
+        if (
+          selectedMasterId === ANY_MASTER_ID &&
+          availableMasters.length === 1
+        ) {
+          setSelectedMasterId(String(availableMasters[0].id));
+        }
+
+        setSelectedDate(null);
+        setSelectedTime(null);
+      }}
       className={cn(
-        "mt-1 truncate text-xs",
-        isAnyMasterSelected ? "text-white/80" : "text-stone-500",
+        "flex min-h-[88px] items-center gap-3 rounded-2xl border p-4 text-left transition-all duration-200",
+        masterPickMode === MASTER_PICK_MODE.SPECIFIC
+          ? "border-emerald-600 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-lg shadow-emerald-600/10"
+          : "border-stone-200 bg-white hover:border-amber-200 hover:bg-stone-50",
       )}
     >
+      <div
+        className={cn(
+          "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border text-sm font-bold",
+          masterPickMode === MASTER_PICK_MODE.SPECIFIC
+            ? "border-white/20 bg-white/15 text-white"
+            : "border-stone-200 bg-stone-100 text-stone-600",
+        )}
+      >
+        ✓
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <p
+          className={cn(
+            "truncate text-sm font-semibold",
+            masterPickMode === MASTER_PICK_MODE.SPECIFIC
+              ? "text-white"
+              : "text-stone-800",
+          )}
+        >
+          Обрати певного майстра
+        </p>
+
+        <p
+          className={cn(
+            "mt-1 text-xs",
+            masterPickMode === MASTER_PICK_MODE.SPECIFIC
+              ? "text-white/80"
+              : "text-stone-500",
+          )}
+        >
+          Самостійно виберіть спеціаліста
+        </p>
+      </div>
+
+      {masterPickMode === MASTER_PICK_MODE.SPECIFIC && (
+        <div className="ml-2 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/20">
+          <Check className="h-3.5 w-3.5 text-white" />
+        </div>
+      )}
+    </button>
+  </div>
+
+  {masterPickMode === MASTER_PICK_MODE.ANY && (
+    <p className="mt-3 pl-1 text-xs text-stone-500">
       Підберемо доступного майстра автоматично
     </p>
-  </div>
-
-  {isAnyMasterSelected && (
-    <div className="ml-2 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/20">
-      <Check className="h-3.5 w-3.5 text-white" />
-    </div>
   )}
-</button>
-          {availableMasters.length === 0 ? (
-            <div className="rounded-2xl border border-stone-200 bg-stone-100 p-5 text-sm text-stone-500">
-              Для цієї послуги немає доступних майстрів.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {availableMasters.map((item) => {
-                const active =
-                  String(item.id) === String(selectedMasterId || "");
 
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => {
-                      setSelectedMasterId(String(item.id));
-                      setSelectedDate(null);
-                      setSelectedTime(null);
-                    }}
+  {masterPickMode === MASTER_PICK_MODE.SPECIFIC && (
+    <div className="mt-4">
+      {availableMasters.length === 0 ? (
+        <div className="rounded-2xl border border-stone-200 bg-stone-100 p-5 text-sm text-stone-500">
+          Для цієї послуги немає доступних майстрів.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {availableMasters.map((item) => {
+            const active = String(item.id) === String(selectedMasterId || "");
+
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => {
+                  setSelectedMasterId(String(item.id));
+                  setSelectedDate(null);
+                  setSelectedTime(null);
+                }}
+                className={cn(
+                  "flex items-center gap-3 rounded-2xl border p-4 text-left transition-all duration-200",
+                  active
+                    ? "border-emerald-600 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-lg shadow-emerald-600/10"
+                    : "border-stone-200 bg-white hover:border-amber-200 hover:bg-stone-50",
+                )}
+              >
+                <div
+                  className={cn(
+                    "flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border text-sm font-bold",
+                    active
+                      ? "border-white/20 bg-white/15 text-white"
+                      : "border-stone-200 bg-stone-100 text-stone-600",
+                  )}
+                >
+                  {item.photoUrl ? (
+                    <img
+                      src={item.photoUrl}
+                      alt={item.name}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    String(item.name || "M")
+                      .trim()
+                      .slice(0, 1)
+                      .toUpperCase()
+                  )}
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <p
                     className={cn(
-                      "flex items-center gap-3 rounded-2xl border p-4 text-left transition-all duration-200",
-                      active
-                        ? "border-emerald-600 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-lg shadow-emerald-600/10"
-                        : "border-stone-200 bg-white hover:border-amber-200 hover:bg-stone-50",
+                      "truncate text-sm font-semibold",
+                      active ? "text-white" : "text-stone-800",
                     )}
                   >
-                    <div
-                      className={cn(
-                        "flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border text-sm font-bold",
-                        active
-                          ? "border-white/20 bg-white/15 text-white"
-                          : "border-stone-200 bg-stone-100 text-stone-600",
-                      )}
-                    >
-                      {item.photoUrl ? (
-                        <img
-                          src={item.photoUrl}
-                          alt={item.name}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        String(item.name || "M")
-                          .trim()
-                          .slice(0, 1)
-                          .toUpperCase()
-                      )}
-                    </div>
+                    {item.name || "Майстер"}
+                  </p>
 
-                    <div className="min-w-0 flex-1">
-                      <p
-                        className={cn(
-                          "truncate text-sm font-semibold",
-                          active ? "text-white" : "text-stone-800",
-                        )}
-                      >
-                        {item.name || "Майстер"}
-                      </p>
-
-                      <p
-                        className={cn(
-                          "mt-1 truncate text-xs",
-                          active ? "text-white/80" : "text-stone-500",
-                        )}
-                      >
-                        {item.role || "Спеціаліст"}
-                      </p>
-                    </div>
-
-                    {active && (
-                      <div className="ml-2 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/20">
-                        <Check className="h-3.5 w-3.5 text-white" />
-                      </div>
+                  <p
+                    className={cn(
+                      "mt-1 truncate text-xs",
+                      active ? "text-white/80" : "text-stone-500",
                     )}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </section>
+                  >
+                    {item.role || "Спеціаліст"}
+                  </p>
+                </div>
+
+                {active && (
+                  <div className="ml-2 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/20">
+                    <Check className="h-3.5 w-3.5 text-white" />
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  )}
+</section>
 
         <section data-testid="booking-calendar-section">
           <div className="mb-4">
@@ -974,13 +1163,18 @@ const done =
   </p>
 )}
 
-{isAnyMasterSelected && (
+{masterPickMode === MASTER_PICK_MODE.ANY && (
   <p className="mt-3 pl-1 text-xs text-stone-500">
     Буде призначено доступного майстра
   </p>
 )}
 
-          {!isDayEnabled && selectedDate && (selectedMaster || isAnyMasterSelected) && (
+          {!isDayEnabled &&
+  selectedDate &&
+  (
+    masterPickMode === MASTER_PICK_MODE.ANY ||
+    selectedMaster
+  ) && (
             <p
               className="mt-3 pl-1 text-xs text-red-500"
               data-testid="booking-day-closed-msg"

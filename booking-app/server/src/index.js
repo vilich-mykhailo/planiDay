@@ -43,18 +43,7 @@ app.use("/client", clientRouter);
 app.use("/studio", studioRoutes);
 app.use("/media", mediaRoutes);
 
-/**
- * ВАЖЛИВО:
- * ✅ Якщо в schedule.routes.js шляхи "/:studioId/schedule"
- * тоді підключай так:
- */
 app.use("/studio", scheduleRoutes);
-
-/**
- * ❗ Якщо лишиш у schedule.routes.js "/studio/:studioId/schedule",
- * тоді має бути:
- * app.use(scheduleRoutes);
- */
 
 app.post("/logout", (req, res) => {
   res.clearCookie("token");
