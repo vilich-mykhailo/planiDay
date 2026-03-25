@@ -16,7 +16,7 @@ import { api } from "../../api/http";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 const MAX_DESC = 400;
-const MAX_PORTFOLIO = 12;
+const MAX_PORTFOLIO = 6;
 const PUBLIC = import.meta.env.VITE_R2_PUBLIC_BASE_URL;
 
 const STUDIO_CATEGORIES = [

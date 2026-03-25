@@ -14,6 +14,7 @@ import {
   X,
   ArrowRight,
   Crown,
+  Star,
 } from "lucide-react";
 import AnimatedField from "../components/AnimatedField";
 import AnimatedDropdown from "../components/AnimatedDropdown";
@@ -335,7 +336,10 @@ export default function Studios() {
         const categoryTokens = tokensFrom(s.category);
         const descTokens = tokensFrom(s.description);
         const servicesTokens = tokenizeAndStem(
-          (Array.isArray(s.services) ? s.services.map((x) => x?.name) : []).join(" "),
+          (Array.isArray(s.services)
+            ? s.services.map((x) => x?.name)
+            : []
+          ).join(" "),
         );
 
         if (qTokens.length === 0) {
@@ -440,6 +444,28 @@ export default function Studios() {
     });
   }
 
+  function generateFakeRating(seed) {
+    const str = String(seed || "");
+    let hash = 0;
+
+    for (let i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+
+    const normalized = Math.abs(hash % 1000) / 1000;
+
+    // рейтинг 4.2 – 5.0
+    const rating = 4.2 + normalized * 0.8;
+
+    // кількість відгуків 5 – 120
+    const reviewsCount = Math.floor(5 + normalized * 115);
+
+    return {
+      rating: Number(rating.toFixed(1)),
+      reviewsCount,
+    };
+  }
+
   function removeChip(key) {
     if (key === "q") setQ("");
     if (key === "city") setCity("");
@@ -481,7 +507,8 @@ export default function Studios() {
                 </div>
 
                 <h1 className="text-3xl font-black tracking-[-0.03em] text-stone-800 sm:text-4xl lg:text-5xl">
-                  Обирай та <span className="text-amber-600">записуйся онлайн</span>
+                  Обирай та{" "}
+                  <span className="text-amber-600">записуйся онлайн</span>
                 </h1>
 
                 <p className="hidden max-w-2xl text-base leading-7 text-stone-600 sm:block">
@@ -528,10 +555,15 @@ export default function Studios() {
               <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex flex-wrap gap-2">
                   {activeChips.length === 0 ? (
-                    <span className="text-sm text-stone-500">Фільтри не вибрані</span>
+                    <span className="text-sm text-stone-500">
+                      Фільтри не вибрані
+                    </span>
                   ) : (
                     activeChips.map((ch) => (
-                      <FilterChip key={ch.key} onClick={() => removeChip(ch.key)}>
+                      <FilterChip
+                        key={ch.key}
+                        onClick={() => removeChip(ch.key)}
+                      >
                         {ch.label}
                       </FilterChip>
                     ))
@@ -631,133 +663,237 @@ export default function Studios() {
           ) : (
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {filtered.slice(0, visibleCount).map((studio) => {
-                const name = safeText(studio.name) || "Студія";
-                const cat = safeText(studio.category);
-                const cityLabel = safeText(studio.city);
-                const description = safeText(studio.description);
-                const coverUrl = safeText(studio.coverUrl);
-                const logoUrl = safeText(studio.logoUrl);
+  const name = safeText(studio.name) || "Студія";
+  const cat = safeText(studio.category);
+  const cityLabel = safeText(studio.city);
+  const description = safeText(studio.description);
+  const coverUrl = safeText(studio.coverUrl);
+  const logoUrl = safeText(studio.logoUrl);
+  const { rating, reviewsCount } = generateFakeRating(studio.id);
+  const isTopRated = rating >= 4.8;
 
-                const street = safeText(studio.street);
-                const building = safeText(studio.building);
-                const address = [street, building].filter(Boolean).join(", ");
+  const street = safeText(studio.street);
+  const building = safeText(studio.building);
+  const address = [street, building].filter(Boolean).join(", ");
+  const priceLabel =
+    studio.priceFrom != null && studio.priceFrom !== ""
+      ? `від ${studio.priceFrom} грн`
+      : null;
 
-                return (
-                  <div
-                    key={studio.slug}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => {
-                      if (location.pathname === "/") {
-                        sessionStorage.setItem(
-                          "studios-scroll-y",
-                          String(window.scrollY),
-                        );
-                        sessionStorage.setItem("restore-studios-scroll", "1");
-                      }
-                      navigate(`/${studio.slug}`);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        sessionStorage.setItem(
-                          "studios-scroll-y",
-                          String(window.scrollY),
-                        );
-                        navigate(`/${studio.slug}`);
-                      }
-                    }}
-                    className={cn(
-                      "group relative flex h-full cursor-pointer flex-col overflow-visible rounded-[26px] border bg-white transform-gpu transition-all duration-300 will-change-transform active:scale-[0.98]",
-                      studio.premium
-                        ? "border-amber-300 hover:-translate-y-[4px] hover:border-amber-400 hover:shadow-[0_14px_34px_rgba(221,181,108,0.24)]"
-                        : "border-stone-200 hover:-translate-y-[2px] hover:border-stone-300 hover:shadow-[0_12px_28px_rgba(93,64,55,0.08)]",
-                    )}
-                  >
-                    {studio.premium && (
-                      <div className="absolute right-3 top-3 z-50 flex items-center gap-1 rounded-full border border-yellow-300/40 bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 px-3 py-1 text-[11px] font-semibold tracking-wide text-white shadow-lg backdrop-blur-sm pointer-events-none">
-                        <Crown className="h-3.5 w-3.5" />
-                        PREMIUM
-                      </div>
-                    )}
+  return (
+    <div
+      key={studio.slug}
+      role="button"
+      tabIndex={0}
+      onClick={() => {
+        if (location.pathname === "/") {
+          sessionStorage.setItem("studios-scroll-y", String(window.scrollY));
+          sessionStorage.setItem("restore-studios-scroll", "1");
+        }
+        navigate(`/${studio.slug}`);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          sessionStorage.setItem("studios-scroll-y", String(window.scrollY));
+          sessionStorage.setItem("restore-studios-scroll", "1");
+          navigate(`/${studio.slug}`);
+        }
+      }}
+      className={cn(
+        "group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-[30px] border transition-all duration-500 will-change-transform",
+        "bg-white/95 backdrop-blur-sm",
+        studio.premium
+          ? "border-amber-300/70 shadow-[0_20px_60px_rgba(217,168,72,0.22)] hover:-translate-y-2 hover:shadow-[0_28px_70px_rgba(217,168,72,0.30)]"
+          : "border-stone-200/80 shadow-[0_14px_38px_rgba(15,23,42,0.08)] hover:-translate-y-1.5 hover:border-stone-300 hover:shadow-[0_22px_48px_rgba(15,23,42,0.12)]",
+      )}
+    >
+      {studio.premium && (
+        <>
+          <div className="pointer-events-none absolute inset-0 rounded-[30px] bg-[linear-gradient(135deg,rgba(251,191,36,0.10),rgba(255,255,255,0),rgba(245,158,11,0.08))]" />
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-amber-400 to-transparent opacity-90" />
+        </>
+      )}
 
-                    <div className="relative shrink-0 overflow-hidden rounded-t-[26px]">
-                      <div className="relative h-28 bg-stone-100">
-                        {coverUrl ? (
-                          <img
-                            src={coverUrl}
-                            alt={`${name} cover`}
-                            className="h-full w-full object-cover"
-                            loading="lazy"
-                            onError={(e) => (e.currentTarget.style.display = "none")}
-                          />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center text-xs text-stone-500">
-                            Без обкладинки
-                          </div>
-                        )}
-                      </div>
-                    </div>
+      <div className="relative h-56 overflow-hidden">
+        {coverUrl ? (
+          <img
+            src={coverUrl}
+            alt={`${name} cover`}
+            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.06]"
+            loading="lazy"
+            onError={(e) => (e.currentTarget.style.display = "none")}
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-stone-100 to-stone-200 text-sm text-stone-500">
+            Без обкладинки
+          </div>
+        )}
 
-                    <div className="absolute left-4 top-[88px] z-40 h-12 w-12 overflow-hidden rounded-[18px] border border-stone-200 bg-white shadow-[0_8px_18px_rgba(93,64,55,0.10)]">
-                      {logoUrl ? (
-                        <img
-                          src={logoUrl}
-                          alt={`${name} logo`}
-                          className="h-full w-full object-cover"
-                          loading="lazy"
-                          onError={(e) => (e.currentTarget.style.display = "none")}
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center text-[10px] font-semibold text-stone-400">
-                          LOGO
-                        </div>
-                      )}
-                    </div>
+        <div className="absolute inset-0 bg-gradient-to-t from-stone-950/70 via-stone-900/20 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-stone-950/20 via-transparent to-transparent" />
 
-                    <div className="flex flex-1 flex-col px-4 pb-4 pt-8">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <h2 className="truncate text-base font-semibold text-stone-800">
-                            {name}
-                          </h2>
+        <div className="absolute left-4 top-4 z-20 flex flex-wrap items-center gap-2">
+          {studio.premium && (
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-white shadow-[0_10px_24px_rgba(245,158,11,0.30)]">
+              <Crown className="h-3.5 w-3.5" />
+              Premium
+            </div>
+          )}
 
-                          <p className="mt-0.5 text-sm text-stone-500">
-                            {cat || "Категорія"}
-                            {cityLabel ? ` • ${cityLabel}` : ""}
-                          </p>
-                        </div>
+          {cat && (
+            <div className="inline-flex items-center rounded-full border border-white/15 bg-white/12 px-3 py-1.5 text-[11px] font-semibold text-white/95 backdrop-blur-md">
+              {cat}
+            </div>
+          )}
+        </div>
 
-                        {studio.priceFrom != null && (
-                          <div className="shrink-0 rounded-xl border border-stone-200 bg-stone-50 px-3 py-1 text-sm font-semibold text-stone-800">
-                            від {studio.priceFrom} грн
-                          </div>
-                        )}
-                      </div>
+        {rating !== null && (
+          <div
+            className={cn(
+              "absolute right-4 top-4 z-20 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-bold backdrop-blur-md",
+              isTopRated
+                ? "border border-amber-300/50 bg-gradient-to-r from-amber-100/95 via-yellow-100/95 to-amber-200/95 text-amber-900 shadow-[0_10px_26px_rgba(245,158,11,0.25)]"
+                : "border border-white/20 bg-white/92 text-stone-800 shadow-[0_8px_22px_rgba(15,23,42,0.16)]",
+            )}
+          >
+            <Star
+              className={cn(
+                "h-3.5 w-3.5",
+                isTopRated
+                  ? "fill-amber-500 text-amber-500"
+                  : "fill-amber-400 text-amber-400",
+              )}
+            />
+            <span>{rating.toFixed(1)}</span>
+            {reviewsCount > 0 && (
+              <span
+                className={cn(
+                  "font-semibold",
+                  isTopRated ? "text-amber-800/80" : "text-stone-500",
+                )}
+              >
+                ({reviewsCount})
+              </span>
+            )}
+          </div>
+        )}
 
-                      {description && (
-                        <p className="mt-3 line-clamp-2 text-sm text-stone-600">
-                          {description}
-                        </p>
-                      )}
+        <div className="absolute inset-x-0 bottom-0 z-20 p-4">
+          <div className="flex items-end gap-3">
+            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-[20px] border border-white/35 bg-white shadow-[0_12px_24px_rgba(15,23,42,0.18)] ring-1 ring-black/5">
+              {logoUrl ? (
+                <img
+                  src={logoUrl}
+                  alt={`${name} logo`}
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                  onError={(e) => (e.currentTarget.style.display = "none")}
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-stone-100 to-stone-200 text-[11px] font-bold text-stone-500">
+                  LOGO
+                </div>
+              )}
+            </div>
 
-                      {address && (
-                        <p className="mt-3 inline-flex items-center gap-1.5 text-sm text-stone-500">
-                          <MapPin className="h-4 w-4" />
-                          {address}
-                        </p>
-                      )}
+            <div className="min-w-0 flex-1 pb-1">
+              <h2 className="truncate text-xl font-black tracking-[-0.03em] text-white drop-shadow-sm">
+                {name}
+              </h2>
 
-                      <div className="mt-auto flex items-center justify-between pt-4">
-                        <span className="inline-flex items-center gap-1 text-sm font-medium text-stone-800 group-hover:underline">
-                          Переглянути <ArrowRight className="h-4 w-4" />
-                        </span>
-                        <FavouriteButton studio={studio} />
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+              <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-white/90">
+                {cityLabel && (
+                  <span className="inline-flex items-center gap-1">
+                    <MapPin className="h-4 w-4 text-rose-300" />
+                    {cityLabel}
+                  </span>
+                )}
+
+                {priceLabel && (
+                  <span className="rounded-full border border-white/15 bg-white/12 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-md">
+                    {priceLabel}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="relative flex flex-1 flex-col p-5">
+        <div className="absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-stone-200 to-transparent" />
+
+        {description ? (
+          <p className="line-clamp-3 text-sm leading-6 text-stone-600">
+            {description}
+          </p>
+        ) : (
+          <p className="text-sm leading-6 text-stone-400">
+            Детальний опис студії скоро буде додано.
+          </p>
+        )}
+
+        {/* {address && (
+          <div className="mt-4 flex items-start gap-2 rounded-2xl border border-stone-200/80 bg-stone-50/80 px-3 py-3">
+            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm">
+              <MapPin className="h-4 w-4 text-rose-500" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-stone-400">
+                Адреса
+              </p>
+              <p className="mt-1 line-clamp-2 text-sm font-medium text-stone-700">
+                {address}
+              </p>
+            </div>
+          </div>
+        )} */}
+
+        <div className="mt-auto pt-5">
+          <div className="flex items-center gap-3">
+ <div
+  className={cn(
+    "group flex h-12 w-full items-center justify-center gap-2.5 rounded-2xl text-sm font-semibold transition-all duration-200 active:scale-[0.98]",
+    
+    studio.premium
+      ? "bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 text-white shadow-[0_12px_28px_rgba(245,158,11,0.25)]"
+      : "border border-stone-200/80 bg-gradient-to-b from-white to-stone-50 text-stone-800 shadow-[0_8px_24px_rgba(15,23,42,0.05)] hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-[0_12px_30px_rgba(15,23,42,0.08)]",
+  )}
+>
+  {!studio.premium && (
+    <span
+      className="
+        flex h-8 w-8 items-center justify-center rounded-xl
+        bg-emerald-50 text-emerald-600
+        transition-colors duration-200
+        group-hover:bg-emerald-100
+      "
+    >
+      <ArrowRight className="h-4 w-4" />
+    </span>
+  )}
+
+  <span>Переглянути студію</span>
+
+  {studio.premium && (
+    <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
+  )}
+</div>
+
+<div
+  className="relative z-20 flex items-center justify-center"
+  onClick={(e) => e.stopPropagation()}
+  onMouseDown={(e) => e.stopPropagation()}
+>
+              <FavouriteButton studio={studio} />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+})}
             </div>
           )}
 

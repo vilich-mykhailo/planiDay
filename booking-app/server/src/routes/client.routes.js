@@ -91,6 +91,7 @@ const studio = await prisma.studio.findFirst({
     street: true,
     building: true,
     apartment: true,
+    phone: true,
     coverUrl: true,
     logoUrl: true,
     portfolioUrls: true,

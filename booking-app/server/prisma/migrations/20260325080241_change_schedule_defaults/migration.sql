@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "StudioScheduleDay" ALTER COLUMN "startMin" SET DEFAULT 480,
+ALTER COLUMN "endMin" SET DEFAULT 1020;

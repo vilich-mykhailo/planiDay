@@ -1012,11 +1012,7 @@ actions={{
                 {servicesCount === 0 ? (
                   <div className="rounded-2xl border-2 border-dashed border-stone-200 bg-stone-50/50 p-6 text-center sm:p-8">
                     {" "}
-                    <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-stone-100">
-                      <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-stone-100 sm:h-12 sm:w-12">
-                        <Plus className="h-5 w-5 text-stone-400 sm:h-6 sm:w-6" />
-                      </div>
-                    </div>
+
                     <p className="text-sm text-stone-500">
                       Тут ще немає послуг
                     </p>
