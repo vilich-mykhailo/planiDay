@@ -1203,14 +1203,6 @@ export default function StudioPublicPage() {
                             </p>
                           </div>
 
-                          <div className="inline-flex w-fit items-center gap-2 rounded-full border border-stone-200 bg-white px-3 py-2 text-sm font-semibold text-stone-700 shadow-sm">
-                            <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                            {reviewsSummary.rating.toFixed(1)}
-                            <span className="text-stone-400">·</span>
-                            <span className="text-stone-500">
-                              {reviewsSummary.count} відгуків
-                            </span>
-                          </div>
                         </div>
 
                         <div className="grid gap-5 xl:grid-cols-[340px,1fr]">
@@ -1547,26 +1539,6 @@ export default function StudioPublicPage() {
                                       {name}
                                     </h3>
 
-                                    <span
-                                      className={cn(
-                                        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-[3px] text-[11px] font-semibold",
-                                        openNow
-                                          ? "border-green-200 bg-green-50/90 text-green-700"
-                                          : "border-red-200 bg-red-50/90 text-red-700",
-                                      )}
-                                    >
-                                      <span
-                                        className={cn(
-                                          "h-1.5 w-1.5 rounded-full",
-                                          openNow
-                                            ? "bg-green-500"
-                                            : "bg-red-500",
-                                        )}
-                                      />
-                                      {openNow
-                                        ? "Відчинено зараз"
-                                        : "Наразі зачинено"}
-                                    </span>
                                   </div>
 
                                   <div className="mt-3 flex flex-wrap items-center gap-2">

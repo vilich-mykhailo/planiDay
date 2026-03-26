@@ -1557,66 +1557,73 @@ export default function StudioSettings() {
 
         {/* Header */}
         <div className="mb-6">
-          <div className="flex items-start justify-between gap-3">
-            <div ref={headerTriggerRef} className="min-w-0 flex-1">
-              <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-3 py-1.5">
-                <Sparkles className="h-3.5 w-3.5 text-amber-600" />
-                <span className="text-[11px] font-bold uppercase tracking-wider text-amber-700">
-                  Профіль студії
-                </span>
-              </div>
+<div
+  ref={headerTriggerRef}
+  className="relative overflow-hidden rounded-3xl border border-stone-200/60 bg-white p-5 sm:p-6 shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]"
+>
+  {/* top accent */}
+  <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-60" />
 
-              <h1 className="text-3xl font-black tracking-tight text-stone-800 sm:text-4xl lg:text-5xl">
-                Профіль студії
-              </h1>
-
-              <p className="mt-2 max-w-2xl text-sm text-stone-600 sm:text-base">
-                Створіть профіль, який підвищує довіру та виглядає професійно.
-              </p>
-            </div>
-
-            {/* ✅ ТІЛЬКИ якщо 100% */}
-            {profile.percent === 100 && (
-              <div className="shrink-0 rounded-2xl px-3 py-2 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-[0_10px_24px_rgba(16,185,129,0.18)]">
-                <div className="flex items-center gap-2">
-                  {/* ❌ ховаємо іконку на мобілці */}
-                  <div className="hidden sm:flex h-7 w-7 items-center justify-center rounded-lg bg-white/20">
-                    <Check className="h-4 w-4 text-white" />
-                  </div>
-
-                  <p className="text-[11px] font-bold leading-4">
-                    Профіль заповнено
-                  </p>
-                </div>
-              </div>
-            )}
+  {/* ✅ badge в правому верхньому куті */}
+  {profile.percent === 100 && (
+    <div className="absolute right-4 top-4">
+      <div className="rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-700 px-3 py-2 text-white shadow-[0_10px_24px_rgba(16,185,129,0.18)]">
+        <div className="flex items-center gap-2">
+          <div className="hidden h-7 w-7 items-center justify-center rounded-lg bg-white/20 sm:flex">
+            <Check className="h-4 w-4 text-white" />
           </div>
 
+          <p className="text-[11px] font-bold leading-4">
+            Профіль заповнено
+          </p>
+        </div>
+      </div>
+    </div>
+  )}
+
+  <div className="relative">
+    <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-3 py-1.5">
+      <Sparkles className="h-3.5 w-3.5 text-amber-600" />
+      <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-amber-700">
+        Профіль студії
+      </span>
+    </div>
+
+    <h1 className="text-3xl font-black tracking-tight text-stone-800 sm:text-4xl">
+      Профіль студії
+    </h1>
+
+    <p className="mt-2 max-w-xl text-sm text-stone-600 sm:text-base">
+      Створіть профіль, який підвищує довіру та виглядає професійно.
+    </p>
+  </div>
+</div>
+
           {/* Tabs */}
-          <div className="mt-4 rounded-2xl border border-stone-200 bg-white p-2 shadow-sm">
+         <div className="mt-4 rounded-2xl border border-stone-200 bg-white px-0 py-2 shadow-sm sm:p-2">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               {/* Tabs */}
-              <div className="flex justify-center gap-2 overflow-x-auto">
-                {[
-                  { id: "profile", label: "Профіль" },
-                  { id: "location", label: "Локація" },
-                  { id: "links", label: "Портфоліо" },
-                ].map((t) => (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => setTabUrl(t.id)}
-                    className={cn(
-                      "whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-semibold transition",
-                      tab === t.id
-                        ? "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white"
-                        : "bg-white text-stone-600 hover:bg-stone-50",
-                    )}
-                  >
-                    {t.label}
-                  </button>
-                ))}
-              </div>
+<div className="flex justify-center gap-1 overflow-x-auto px-0 sm:gap-2">
+  {[
+    { id: "profile", label: "Профіль" },
+    { id: "location", label: "Локація" },
+    { id: "links", label: "Портфоліо" },
+  ].map((t) => (
+    <button
+      key={t.id}
+      type="button"
+      onClick={() => setTabUrl(t.id)}
+      className={cn(
+        "shrink-0 whitespace-nowrap rounded-xl px-3 py-2 text-[13px] font-semibold transition sm:px-4 sm:py-2.5 sm:text-sm",
+        tab === t.id
+          ? "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white"
+          : "bg-white text-stone-600 hover:bg-stone-50",
+      )}
+    >
+      {t.label}
+    </button>
+  ))}
+</div>
 
               {/* ❗ ТІЛЬКИ якщо <100% */}
               {profile.percent !== 100 && (

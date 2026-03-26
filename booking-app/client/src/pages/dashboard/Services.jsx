@@ -179,9 +179,7 @@ function SectionCard({
 
         {/* mobile bottom action — кнопка під категорією */}
         {actions?.mobileBottom && (
-          <div className="mt-3 sm:hidden">
-            {actions.mobileBottom}
-          </div>
+          <div className="mt-3 sm:hidden">{actions.mobileBottom}</div>
         )}
       </div>
 
@@ -468,14 +466,14 @@ function DurationSlider({ value, onChange }) {
       </div>
 
       <div className="px-1 py-2 sm:px-2 sm:py-4">
-<Slider
-  value={[value]}
-  onValueChange={([v]) => onChange(v)}
-  min={minVal}
-  max={maxVal}
-  step={step}
-  className="w-full"
-/>
+        <Slider
+          value={[value]}
+          onValueChange={([v]) => onChange(v)}
+          min={minVal}
+          max={maxVal}
+          step={step}
+          className="w-full"
+        />
 
         <div className="mt-2 flex justify-between px-1">
           <span className="text-[11px] text-stone-400 sm:text-xs">5 хв</span>
@@ -491,7 +489,8 @@ function DurationSlider({ value, onChange }) {
             type="button"
             onClick={() => onChange(preset.value)}
             className={cn(
-              "rounded-xl px-3 py-2 text-xs font-medium transition-all duration-200 sm:px-4 sm:text-sm",
+              preset.value === 180 ? "hidden sm:inline-flex" : "inline-flex",
+              "items-center justify-center rounded-xl px-3 py-2 text-xs font-medium transition-all duration-200 sm:px-4 sm:text-sm",
               value === preset.value
                 ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md"
                 : "bg-stone-100 text-stone-600 hover:bg-stone-200",
@@ -885,23 +884,27 @@ export default function Services() {
     <div className="min-h-screen">
       <div className="mx-auto max-w-5xl">
         {!isModalOpen && (
-          <div className="mb-10">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-4 py-1.5">
-              <Sparkles className="h-4 w-4 text-amber-600" />
-              <span className="text-xs font-bold uppercase tracking-wider text-amber-700">
-                Меню студії
-              </span>
-            </div>
+<div className="relative mb-6 overflow-hidden rounded-3xl border border-stone-200/60 bg-white p-5 sm:p-6 shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]">
+  {/* top accent */}
+  <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-60" />
 
-            <h1 className="text-4xl font-black tracking-tight text-stone-800 sm:text-5xl">
-              Послуги
-            </h1>
+  <div className="relative">
+    <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-3 py-1.5">
+      <Sparkles className="h-4 w-4 text-amber-600" />
+      <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-amber-700">
+        Меню студії
+      </span>
+    </div>
 
-            <p className="mt-3 max-w-2xl text-stone-600">
-              Налаштуйте категорії та послуги — саме так їх бачитимуть клієнти
-              під час онлайн-запису.
-            </p>
-          </div>
+    <h1 className="text-3xl font-black tracking-tight text-stone-800 sm:text-4xl">
+      Послуги
+    </h1>
+
+    <p className="mt-2 max-w-xl text-sm text-stone-600 sm:text-base">
+      Налаштуйте категорії та послуги — саме так їх бачитимуть клієнти під час онлайн-запису.
+    </p>
+  </div>
+</div>
         )}
 
         <SectionCard
@@ -940,79 +943,78 @@ export default function Services() {
                 key={cat.id}
                 title={cat.name}
                 badge={`К-ть послуг: ${servicesCount}`}
-actions={{
-  desktop: (
-    <>
-      <Button
-        variant="primary"
-        size="md"
-        onClick={() => openAddService(cat.id)}
-      >
-        <Plus className="h-4 w-4" />
-        Додати послугу
-      </Button>
+                actions={{
+                  desktop: (
+                    <>
+                      <Button
+                        variant="primary"
+                        size="md"
+                        onClick={() => openAddService(cat.id)}
+                      >
+                        <Plus className="h-4 w-4" />
+                        Додати послугу
+                      </Button>
 
-      {!isUnc && (
-        <>
-          <IconButton
-            onClick={() => openEditCategory(cat.id)}
-            title="Редагувати"
-            className="h-[42px] w-[42px] shrink-0"
-          >
-            <Pencil className="h-4 w-4" />
-          </IconButton>
+                      {!isUnc && (
+                        <>
+                          <IconButton
+                            onClick={() => openEditCategory(cat.id)}
+                            title="Редагувати"
+                            className="h-[42px] w-[42px] shrink-0"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </IconButton>
 
-          <IconButton
-            variant="danger"
-            onClick={() => deleteCategory(cat.id)}
-            title="Видалити"
-            className="h-[42px] w-[42px] shrink-0"
-          >
-            <Trash2 className="h-4 w-4" />
-          </IconButton>
-        </>
-      )}
-    </>
-  ),
+                          <IconButton
+                            variant="danger"
+                            onClick={() => deleteCategory(cat.id)}
+                            title="Видалити"
+                            className="h-[42px] w-[42px] shrink-0"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </IconButton>
+                        </>
+                      )}
+                    </>
+                  ),
 
-  mobileTop: !isUnc ? (
-    <>
-      <IconButton
-        onClick={() => openEditCategory(cat.id)}
-        title="Редагувати"
-        className="h-[42px] w-[42px] shrink-0"
-      >
-        <Pencil className="h-4 w-4" />
-      </IconButton>
+                  mobileTop: !isUnc ? (
+                    <>
+                      <IconButton
+                        onClick={() => openEditCategory(cat.id)}
+                        title="Редагувати"
+                        className="h-[42px] w-[42px] shrink-0"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </IconButton>
 
-      <IconButton
-        variant="danger"
-        onClick={() => deleteCategory(cat.id)}
-        title="Видалити"
-        className="h-[42px] w-[42px] shrink-0"
-      >
-        <Trash2 className="h-4 w-4" />
-      </IconButton>
-    </>
-  ) : null,
+                      <IconButton
+                        variant="danger"
+                        onClick={() => deleteCategory(cat.id)}
+                        title="Видалити"
+                        className="h-[42px] w-[42px] shrink-0"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </IconButton>
+                    </>
+                  ) : null,
 
-  mobileBottom: (
-    <Button
-      variant="primary"
-      size="md"
-      onClick={() => openAddService(cat.id)}
-      className="w-full"
-    >
-      <Plus className="h-4 w-4" />
-      Додати послугу
-    </Button>
-  ),
-}}
+                  mobileBottom: (
+                    <Button
+                      variant="primary"
+                      size="md"
+                      onClick={() => openAddService(cat.id)}
+                      className="w-full"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Додати послугу
+                    </Button>
+                  ),
+                }}
               >
                 {servicesCount === 0 ? (
                   <div className="rounded-2xl border-2 border-dashed border-stone-200 bg-stone-50/50 p-6 text-center sm:p-8">
                     {" "}
-
                     <p className="text-sm text-stone-500">
                       Тут ще немає послуг
                     </p>
@@ -1023,53 +1025,53 @@ actions={{
                 ) : (
                   <div className="space-y-3">
                     {cat.services.map((srv) => (
-<div
-  key={srv.id}
-  className="group/service rounded-2xl border border-stone-200 bg-white p-3.5 transition-all hover:border-amber-200 hover:shadow-md hover:shadow-amber-500/5 sm:p-4"
->
-  <div className="flex items-start justify-between gap-3">
-    <div className="min-w-0 flex-1">
-      <h3 className="line-clamp-2 break-words text-sm font-semibold text-stone-800 sm:text-base">
-        {srv.name}
-      </h3>
+                      <div
+                        key={srv.id}
+                        className="group/service rounded-2xl border border-stone-200 bg-white p-3.5 transition-all hover:border-amber-200 hover:shadow-md hover:shadow-amber-500/5 sm:p-4"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <h3 className="line-clamp-2 break-words text-sm font-semibold text-stone-800 sm:text-base">
+                              {srv.name}
+                            </h3>
 
-      <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-stone-500 sm:text-sm">
-        <span className="inline-flex items-center gap-1">
-          <Clock className="h-3.5 w-3.5" />
-          {formatDuration(srv.duration)}
-        </span>
+                            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-stone-500 sm:text-sm">
+                              <span className="inline-flex items-center gap-1">
+                                <Clock className="h-3.5 w-3.5" />
+                                {formatDuration(srv.duration)}
+                              </span>
 
-        <span className="font-semibold text-stone-700">
-          {srv.price} грн
-        </span>
+                              <span className="font-semibold text-stone-700">
+                                {srv.price} грн
+                              </span>
 
-        <span className="inline-flex items-center gap-1">
-          <Users className="h-3.5 w-3.5" />
-          {resolveServiceMastersText(srv)}
-        </span>
-      </div>
-    </div>
+                              <span className="inline-flex items-center gap-1">
+                                <Users className="h-3.5 w-3.5" />
+                                {resolveServiceMastersText(srv)}
+                              </span>
+                            </div>
+                          </div>
 
-    <div className="flex shrink-0 items-center gap-2">
-      <IconButton
-        onClick={() => openEditService(cat.id, srv.id)}
-        title="Редагувати"
-        className="h-11 w-11"
-      >
-        <Pencil className="h-4 w-4" />
-      </IconButton>
+                          <div className="flex shrink-0 items-center gap-2">
+                            <IconButton
+                              onClick={() => openEditService(cat.id, srv.id)}
+                              title="Редагувати"
+                              className="h-11 w-11"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </IconButton>
 
-      <IconButton
-        variant="danger"
-        onClick={() => deleteService(cat.id, srv.id)}
-        title="Видалити"
-        className="h-11 w-11"
-      >
-        <Trash2 className="h-4 w-4" />
-      </IconButton>
-    </div>
-  </div>
-</div>
+                            <IconButton
+                              variant="danger"
+                              onClick={() => deleteService(cat.id, srv.id)}
+                              title="Видалити"
+                              className="h-11 w-11"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </IconButton>
+                          </div>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 )}
@@ -1115,8 +1117,8 @@ actions={{
               onClick={saveCategoryName}
               disabled={!categoryDraftName.trim()}
             >
-                <Check className="h-4 w-4" />
-                Зберегти
+              <Check className="h-4 w-4" />
+              Зберегти
             </Button>
           </div>
         }
@@ -1154,8 +1156,8 @@ actions={{
               onClick={saveService}
               disabled={!canSaveServiceDraft(serviceDraft)}
             >
-                <Check className="h-4 w-4" />
-                Зберегти
+              <Check className="h-4 w-4" />
+              Зберегти
             </Button>
           </div>
         }
@@ -1252,20 +1254,13 @@ actions={{
 
               <button
                 type="button"
-                onClick={() => {
-                  setServiceDraft((p) => {
-                    const next = { ...p, allMasters: false };
-
-                    if (
-                      (next.masters || []).length === 0 &&
-                      masters.length > 0
-                    ) {
-                      next.masters = [String(masters[0].id ?? masters[0].name)];
-                    }
-
-                    return next;
-                  });
-                }}
+                onClick={() =>
+                  setServiceDraft((p) => ({
+                    ...p,
+                    allMasters: false,
+                    masters: [],
+                  }))
+                }
                 className={cn(
                   "rounded-xl px-4 py-2 text-sm font-medium transition-all",
                   !serviceDraft.allMasters

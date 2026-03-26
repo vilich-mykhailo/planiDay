@@ -237,6 +237,22 @@ function getDefaultSchedule() {
   };
 }
 
+function isPastExceptionDate(dateStr) {
+  if (!dateStr) return false;
+
+  const today = new Date();
+  const todayLocal = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate(),
+  );
+
+  const [y, m, d] = String(dateStr).split("-").map(Number);
+  const target = new Date(y, (m || 1) - 1, d || 1);
+
+  return target < todayLocal;
+}
+
 function normalizeSchedule(incoming) {
   const base = getDefaultSchedule();
   if (!incoming) return base;
@@ -720,6 +736,25 @@ export default function Schedule() {
     }
   }
 
+  async function deleteExpiredExceptions(studioId, token, list) {
+  const expired = (list || []).filter(
+    (item) => item?.id && isPastExceptionDate(item.date),
+  );
+
+  if (!expired.length) return list || [];
+
+  await Promise.allSettled(
+    expired.map((item) =>
+      api(`/studio/${studioId}/schedule/exceptions/${item.id}`, {
+        method: "DELETE",
+        token,
+      }),
+    ),
+  );
+
+  return (list || []).filter((item) => !isPastExceptionDate(item.date));
+}
+
   function generateSlots() {
     const result = {};
 
@@ -1004,77 +1039,83 @@ export default function Schedule() {
     setPreview({});
   }
 
-  useEffect(() => {
-    let alive = true;
+useEffect(() => {
+  let alive = true;
 
-    (async () => {
-      if (!studio?.id) {
-        setInitialLoading(true);
-        return;
-      }
+  (async () => {
+    if (!studio?.id) {
+      setInitialLoading(true);
+      return;
+    }
 
-      try {
-        const token = localStorage.getItem("token");
-        setExceptionsLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      setExceptionsLoading(true);
 
-        const [data, exceptionsData] = await Promise.all([
-          api(`/studio/${studio.id}/schedule`, {
-            method: "GET",
-            token,
-          }),
-          api(`/studio/${studio.id}/schedule/exceptions`, {
-            method: "GET",
-            token,
-          }),
-        ]);
+      const [data, exceptionsData] = await Promise.all([
+        api(`/studio/${studio.id}/schedule`, {
+          method: "GET",
+          token,
+        }),
+        api(`/studio/${studio.id}/schedule/exceptions`, {
+          method: "GET",
+          token,
+        }),
+      ]);
 
-        const nextSchedule = normalizeSchedule(data?.schedule);
-        const nextDuration =
-          typeof data?.slotDuration === "number" ? data.slotDuration : 15;
+      const nextSchedule = normalizeSchedule(data?.schedule);
+      const nextDuration =
+        typeof data?.slotDuration === "number" ? data.slotDuration : 15;
 
-        const nextExceptions = Array.isArray(exceptionsData?.exceptions)
-          ? sortExceptions(
-              exceptionsData.exceptions.map((item) => ({
-                ...item,
-                date: String(item?.date || "").slice(0, 10),
-                isNew: false,
-              })),
-            )
-          : [];
+      const rawExceptions = Array.isArray(exceptionsData?.exceptions)
+        ? exceptionsData.exceptions.map((item) => ({
+            ...item,
+            date: String(item?.date || "").slice(0, 10),
+            isNew: false,
+          }))
+        : [];
 
-        if (!alive) return;
+      const cleanedExceptions = await deleteExpiredExceptions(
+        studio.id,
+        token,
+        rawExceptions,
+      );
 
-        setScheduleDraft(nextSchedule);
-        setSlotDuration(nextDuration);
+      const nextExceptions = sortExceptions(cleanedExceptions);
 
-        setSavedSchedule(nextSchedule);
-        setSavedSlotDuration(nextDuration);
+      if (!alive) return;
 
-        setExceptions(nextExceptions);
-        setPreview({});
-        setInitialLoading(false);
-        setExceptionsLoading(false);
-      } catch (e) {
-        console.error(e);
+      setScheduleDraft(nextSchedule);
+      setSlotDuration(nextDuration);
 
-        if (!alive) return;
+      setSavedSchedule(nextSchedule);
+      setSavedSlotDuration(nextDuration);
 
-        setInitialLoading(false);
-        setExceptionsLoading(false);
+      setExceptions(nextExceptions);
+      setPreview({});
+      setInitialLoading(false);
+      setExceptionsLoading(false);
+    } catch (e) {
+      console.error(e);
 
-        showToast({
-          type: "error",
-          title: "Не вдалося завантажити",
-          text: e?.message || "Помилка завантаження графіка.",
-        });
-      }
-    })();
+      if (!alive) return;
 
-    return () => {
-      alive = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studio?.id]);
+      setInitialLoading(false);
+      setExceptionsLoading(false);
+
+      showToast({
+        type: "error",
+        title: "Не вдалося завантажити",
+        text: e?.message || "Помилка завантаження графіка.",
+      });
+    }
+  })();
+
+  return () => {
+    alive = false;
+  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [studio?.id]);
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [expandedExceptions, setExpandedExceptions] = useState({});
@@ -1125,23 +1166,27 @@ export default function Schedule() {
 
       <div className="mx-auto max-w-5xl space-y-6">
         {/* Header */}
-        <div className="mb-2">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-4 py-1.5">
-            <Sparkles className="h-4 w-4 text-amber-600" />
-            <span className="text-xs font-bold uppercase tracking-wider text-amber-700">
-              Графік студії
-            </span>
-          </div>
+<div className="relative mb-6 overflow-hidden rounded-3xl border border-stone-200/60 bg-white p-5 sm:p-6 shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]">
+  {/* top accent */}
+  <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-60" />
 
-          <h1 className="text-4xl font-black tracking-tight text-stone-800 sm:text-5xl">
-            Графік роботи
-          </h1>
+  <div className="relative">
+    <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-3 py-1.5">
+      <Sparkles className="h-4 w-4 text-amber-600" />
+      <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-amber-700">
+        Графік студії
+      </span>
+    </div>
 
-          <p className="mt-3 max-w-2xl text-stone-600">
-            Налаштуй робочі дні, години роботи та крок запису в сучасному і
-            зручному форматі.
-          </p>
-        </div>
+    <h1 className="text-3xl font-black tracking-tight text-stone-800 sm:text-4xl">
+      Графік роботи
+    </h1>
+
+    <p className="mt-2 max-w-xl text-sm text-stone-600 sm:text-base">
+      Налаштуйте робочі дні, години роботи та крок запису в зручному форматі.
+    </p>
+  </div>
+</div>
 
         {/* Work days */}
         <SectionCard
@@ -1245,16 +1290,16 @@ export default function Schedule() {
           title="Особливі дати"
           subtitle="Задай інший графік для конкретної дати: свято, скорочений день або вихідний."
           badge={`К-ть днів: ${exceptions.length}`}
-actions={
-  <Button
-    variant="primary"
-    onClick={addExceptionRow}
-    className="w-full sm:w-auto sm:shrink-0 whitespace-nowrap justify-center"
-  >
-    <CalendarDays className="h-4 w-4" />
-    Додати дату
-  </Button>
-}
+          actions={
+            <Button
+              variant="primary"
+              onClick={addExceptionRow}
+              className="w-full sm:w-auto sm:shrink-0 whitespace-nowrap justify-center"
+            >
+              <CalendarDays className="h-4 w-4" />
+              Додати дату
+            </Button>
+          }
         >
           {exceptionsLoading ? (
             <div className="space-y-3">
@@ -1330,7 +1375,9 @@ actions={
                     >
                       <div className="overflow-hidden">
                         <div className="border-t border-stone-100 px-4 pb-4 pt-4">
-<div className="grid gap-3 sm:grid-cols-2 sm:items-end">                        <div>
+                          <div className="grid gap-3 sm:grid-cols-2 sm:items-end">
+                            {" "}
+                            <div>
                               <DatePicker
                                 label="Дата"
                                 value={item.date}
@@ -1339,26 +1386,30 @@ actions={
                                 }
                               />
                             </div>
-
                             <div>
                               <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-stone-500">
                                 Статус
                               </label>
-<button
-  type="button"
-  onClick={() => updateException(index, "enabled", !item.enabled)}
-  className="flex h-[50px] w-full items-center gap-3 rounded-2xl border border-stone-200 bg-stone-50 px-4 transition-all duration-200 hover:border-stone-300 hover:bg-white"
->
-  <div className="shrink-0">
-    <Toggle checked={item.enabled} />
-  </div>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  updateException(
+                                    index,
+                                    "enabled",
+                                    !item.enabled,
+                                  )
+                                }
+                                className="flex h-[50px] w-full items-center gap-3 rounded-2xl border border-stone-200 bg-stone-50 px-4 transition-all duration-200 hover:border-stone-300 hover:bg-white"
+                              >
+                                <div className="shrink-0">
+                                  <Toggle checked={item.enabled} />
+                                </div>
 
-  <span className="whitespace-nowrap text-sm font-semibold text-stone-700">
-    {item.enabled ? "Робочий день" : "Вихідний"}
-  </span>
-</button>
+                                <span className="whitespace-nowrap text-sm font-semibold text-stone-700">
+                                  {item.enabled ? "Робочий день" : "Вихідний"}
+                                </span>
+                              </button>
                             </div>
-
                             {item.enabled ? (
                               <div className="grid gap-2 sm:grid-cols-2">
                                 <div className="min-w-0">
@@ -1406,7 +1457,6 @@ actions={
                                 </div>
                               </div>
                             )}
-
                             <div className="flex gap-2 lg:justify-end">
                               <Button
                                 variant="secondary"
@@ -1442,16 +1492,16 @@ actions={
           title="Налаштування слотів"
           subtitle="Це тривалість одного запису — крок між доступними часами."
           className="relative z-20"
-actions={
-  <Button
-    variant="primary"
-    onClick={generateSlots}
-    className="w-full sm:w-auto sm:shrink-0 whitespace-nowrap justify-center"
-  >
-    <CalendarDays className="h-4 w-4" />
-    Згенерувати слоти
-  </Button>
-}
+          actions={
+            <Button
+              variant="primary"
+              onClick={generateSlots}
+              className="w-full sm:w-auto sm:shrink-0 whitespace-nowrap justify-center"
+            >
+              <CalendarDays className="h-4 w-4" />
+              Згенерувати слоти
+            </Button>
+          }
         >
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div className="space-y-2">

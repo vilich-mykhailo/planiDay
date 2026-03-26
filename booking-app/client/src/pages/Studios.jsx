@@ -170,7 +170,7 @@ export default function Studios() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-
+  const [hasSearched, setHasSearched] = useState(false);
   useEffect(() => {
     const flag = sessionStorage.getItem("restore-studios-scroll") === "1";
     if (flag) {
@@ -285,10 +285,10 @@ export default function Studios() {
 
   const sortOptions = useMemo(
     () => [
-      { value: "recommended", label: "Рекомендовані" },
-      { value: "priceAsc", label: "Ціна: ↑" },
-      { value: "priceDesc", label: "Ціна: ↓" },
-      { value: "nameAsc", label: "Назва: A–Z" },
+      { value: "recommended", label: "Рекомендовано" },
+      { value: "priceAsc", label: "За зростанням ціни" },
+      { value: "priceDesc", label: "За спаданням ціни" },
+      { value: "nameAsc", label: "За назвою (A–Z)" },
     ],
     [],
   );
@@ -411,10 +411,11 @@ export default function Studios() {
     if (sort !== "recommended") {
       const label =
         sort === "priceAsc"
-          ? "Сортування: ціна ↑"
+          ? "Ціна ↑"
           : sort === "priceDesc"
-            ? "Сортування: ціна ↓"
-            : "Сортування: назва A–Z";
+            ? "Ціна ↓"
+            : "Назва A–Z";
+
       chips.push({ key: "sort", label });
     }
     return chips;
@@ -442,6 +443,8 @@ export default function Studios() {
       maxPrice: "",
       sort: "recommended",
     });
+
+    setHasSearched(false);
   }
 
   function generateFakeRating(seed) {
@@ -484,29 +487,31 @@ export default function Studios() {
 
   function handleApply() {
     if (isApplying || !hasPendingChanges) return;
+
     setIsApplying(true);
     setApplied({ q, city, category, minPrice, maxPrice, sort });
     setVisibleCount(PAGE_SIZE);
+    setHasSearched(true);
     setIsApplying(false);
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-stone-50 via-amber-50/30 to-orange-50/20">
-      <div className="mx-auto max-w-6xl px-4 pb-8 pt-16">
-        <div className="space-y-5 px-0 pt-6 sm:px-0 sm:pt-8 lg:pt-6">
-          <section className="overflow-hidden rounded-3xl border border-stone-200/60 bg-white shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]">
+      <div className="mx-auto max-w-6xl px-3 pb-6 pt-12 sm:px-4 sm:pb-8 sm:pt-16">
+        <div className="space-y-4 px-0 pt-3 sm:space-y-5 sm:pt-8 lg:pt-6">
+          <section className="overflow-hidden rounded-[28px] border border-stone-200/60 bg-white shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)] sm:rounded-3xl">
+            {" "}
             <div className="h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-70" />
-
-            <div className="px-4 pb-5 pt-4 sm:px-6 sm:pt-5 lg:px-8 lg:pt-6">
-              <div className="mb-6 space-y-3 sm:mb-8 lg:mb-10">
-                <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-4 py-1.5">
-                  <Sparkles className="h-4 w-4 text-amber-600" />
-                  <span className="text-xs font-bold uppercase tracking-[0.22em] text-amber-700">
+            <div className="px-3.5 pb-4 pt-3.5 sm:px-6 sm:pb-5 sm:pt-5 lg:px-8 lg:pt-6">
+              <div className="mb-4 space-y-2.5 sm:mb-8 sm:space-y-3 lg:mb-10">
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-3 py-1 sm:px-4 sm:py-1.5">
+                  <Sparkles className="h-3.5 w-3.5 text-amber-600 sm:h-4 sm:w-4" />
+                  <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-700 sm:text-xs sm:tracking-[0.22em]">
                     Пошук студій
                   </span>
                 </div>
 
-                <h1 className="text-3xl font-black tracking-[-0.03em] text-stone-800 sm:text-4xl lg:text-5xl">
+                <h1 className="max-w-[260px] text-[30px] font-black leading-[0.95] tracking-[-0.04em] text-stone-800 sm:max-w-none sm:text-4xl lg:text-5xl">
                   Обирай та{" "}
                   <span className="text-amber-600">записуйся онлайн</span>
                 </h1>
@@ -517,7 +522,7 @@ export default function Studios() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 lg:grid-cols-[1.2fr_0.9fr_0.9fr_0.9fr]">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-[1.2fr_0.9fr_0.9fr_0.9fr]">
                 <AnimatedField
                   label="Пошук"
                   value={q}
@@ -552,10 +557,10 @@ export default function Studios() {
                 />
               </div>
 
-              <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="mt-3 flex flex-col gap-2.5 sm:mt-4 sm:gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex flex-wrap gap-2">
                   {activeChips.length === 0 ? (
-                    <span className="text-sm text-stone-500">
+                    <span className="text-xs text-stone-500 sm:text-sm">
                       Фільтри не вибрані
                     </span>
                   ) : (
@@ -571,19 +576,12 @@ export default function Studios() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-stone-500">
-                    Знайдено:{" "}
-                    <span className="font-semibold text-stone-800">
-                      {filtered.length}
-                    </span>
-                  </span>
-
                   <button
                     type="button"
                     onClick={handleApply}
                     disabled={!hasPendingChanges || isApplying || isLoadingMore}
                     className={cn(
-                      "flex flex-1 items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold transition-all duration-200 active:scale-95",
+                      "flex h-11 flex-1 items-center justify-center gap-2 rounded-[18px] px-4 text-sm font-bold transition-all duration-200 active:scale-95 sm:h-auto sm:rounded-2xl sm:px-5 sm:py-3",
                       !hasPendingChanges || isApplying
                         ? "cursor-not-allowed border border-stone-200 bg-stone-100 text-stone-400 shadow-none"
                         : "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-[0_10px_24px_rgba(74,93,78,0.22)] hover:from-emerald-700 hover:to-emerald-800 hover:shadow-md",
@@ -606,7 +604,7 @@ export default function Studios() {
                     type="button"
                     onClick={clearAll}
                     disabled={activeChips.length === 0}
-                    className="shrink-0 whitespace-nowrap rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm font-bold text-stone-600 transition-all duration-200 hover:border-red-200 hover:bg-red-50 hover:text-red-600 hover:shadow-sm active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="h-11 shrink-0 whitespace-nowrap rounded-[18px] border border-stone-200 bg-white px-4 text-sm font-bold text-stone-600 transition-all duration-200 hover:border-red-200 hover:bg-red-50 hover:text-red-600 hover:shadow-sm active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 sm:h-auto sm:rounded-2xl sm:py-3"
                   >
                     Очистити все
                   </button>
@@ -622,9 +620,15 @@ export default function Studios() {
               </span>
             )}
 
-            {hasPendingChanges && (
+            {hasPendingChanges && !loading && (
               <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
                 Натисніть “Знайти”
+              </span>
+            )}
+
+            {!hasPendingChanges && hasSearched && !loading && (
+              <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                Знайдено: {filtered.length}
               </span>
             )}
           </div>
@@ -663,237 +667,301 @@ export default function Studios() {
           ) : (
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {filtered.slice(0, visibleCount).map((studio) => {
-  const name = safeText(studio.name) || "Студія";
-  const cat = safeText(studio.category);
-  const cityLabel = safeText(studio.city);
-  const description = safeText(studio.description);
-  const coverUrl = safeText(studio.coverUrl);
-  const logoUrl = safeText(studio.logoUrl);
-  const { rating, reviewsCount } = generateFakeRating(studio.id);
-  const isTopRated = rating >= 4.8;
+                const name = safeText(studio.name) || "Студія";
+                const cat = safeText(studio.category);
+                const cityLabel = safeText(studio.city);
+                const description = safeText(studio.description);
+                const coverUrl = safeText(studio.coverUrl);
+                const logoUrl = safeText(studio.logoUrl);
+                const { rating, reviewsCount } = generateFakeRating(studio.id);
+                const isTopRated = rating >= 4.8;
+                const address = [
+                  studio?.street,
+                  studio?.building,
+                  studio?.apartment,
+                ]
+                  .filter(Boolean)
+                  .join(", ");
+                const fullAddress = [address, cityLabel]
+                  .filter(Boolean)
+                  .join(", ");
 
-  const street = safeText(studio.street);
-  const building = safeText(studio.building);
-  const address = [street, building].filter(Boolean).join(", ");
-  const priceLabel =
-    studio.priceFrom != null && studio.priceFrom !== ""
-      ? `від ${studio.priceFrom} грн`
-      : null;
+                const topServices = Array.isArray(studio.services)
+                  ? studio.services
+                      .map((s) => safeText(s?.name))
+                      .filter(Boolean)
+                      .slice(0, 3)
+                  : [];
+                const priceLabel =
+                  studio.priceFrom != null && studio.priceFrom !== ""
+                    ? `від ${studio.priceFrom} грн`
+                    : null;
 
-  return (
-    <div
-      key={studio.slug}
-      role="button"
-      tabIndex={0}
-      onClick={() => {
-        if (location.pathname === "/") {
-          sessionStorage.setItem("studios-scroll-y", String(window.scrollY));
-          sessionStorage.setItem("restore-studios-scroll", "1");
-        }
-        navigate(`/${studio.slug}`);
-      }}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          sessionStorage.setItem("studios-scroll-y", String(window.scrollY));
-          sessionStorage.setItem("restore-studios-scroll", "1");
-          navigate(`/${studio.slug}`);
-        }
-      }}
-      className={cn(
-        "group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-[30px] border transition-all duration-500 will-change-transform",
-        "bg-white/95 backdrop-blur-sm",
-        studio.premium
-          ? "border-amber-300/70 shadow-[0_20px_60px_rgba(217,168,72,0.22)] hover:-translate-y-2 hover:shadow-[0_28px_70px_rgba(217,168,72,0.30)]"
-          : "border-stone-200/80 shadow-[0_14px_38px_rgba(15,23,42,0.08)] hover:-translate-y-1.5 hover:border-stone-300 hover:shadow-[0_22px_48px_rgba(15,23,42,0.12)]",
-      )}
-    >
-      {studio.premium && (
-        <>
-          <div className="pointer-events-none absolute inset-0 rounded-[30px] bg-[linear-gradient(135deg,rgba(251,191,36,0.10),rgba(255,255,255,0),rgba(245,158,11,0.08))]" />
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-amber-400 to-transparent opacity-90" />
-        </>
-      )}
+                return (
+                  <div
+                    key={studio.slug}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => {
+                      if (location.pathname === "/") {
+                        sessionStorage.setItem(
+                          "studios-scroll-y",
+                          String(window.scrollY),
+                        );
+                        sessionStorage.setItem("restore-studios-scroll", "1");
+                      }
+                      navigate(`/${studio.slug}`);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        sessionStorage.setItem(
+                          "studios-scroll-y",
+                          String(window.scrollY),
+                        );
+                        sessionStorage.setItem("restore-studios-scroll", "1");
+                        navigate(`/${studio.slug}`);
+                      }
+                    }}
+                    className={cn(
+                      "group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-[30px] border transition-all duration-500 will-change-transform",
+                      "bg-white/95 backdrop-blur-sm",
+                      studio.premium
+                        ? "border-amber-300/70 shadow-[0_20px_60px_rgba(217,168,72,0.22)] hover:-translate-y-2 hover:shadow-[0_28px_70px_rgba(217,168,72,0.30)]"
+                        : "border-stone-200/80 shadow-[0_14px_38px_rgba(15,23,42,0.08)] hover:-translate-y-1.5 hover:border-stone-300 hover:shadow-[0_22px_48px_rgba(15,23,42,0.12)]",
+                    )}
+                  >
+                    {studio.premium && (
+                      <>
+                        <div className="pointer-events-none absolute inset-0 rounded-[30px] bg-[linear-gradient(135deg,rgba(251,191,36,0.10),rgba(255,255,255,0),rgba(245,158,11,0.08))]" />
+                        <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-amber-400 to-transparent opacity-90" />
+                      </>
+                    )}
 
-      <div className="relative h-56 overflow-hidden">
-        {coverUrl ? (
-          <img
-            src={coverUrl}
-            alt={`${name} cover`}
-            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.06]"
-            loading="lazy"
-            onError={(e) => (e.currentTarget.style.display = "none")}
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-stone-100 to-stone-200 text-sm text-stone-500">
-            Без обкладинки
-          </div>
-        )}
+                    <div className="relative h-56 overflow-hidden">
+                      {coverUrl ? (
+                        <img
+                          src={coverUrl}
+                          alt={`${name} cover`}
+                          className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.06]"
+                          loading="lazy"
+                          onError={(e) =>
+                            (e.currentTarget.style.display = "none")
+                          }
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-stone-100 to-stone-200 text-sm text-stone-500">
+                          Без обкладинки
+                        </div>
+                      )}
 
-        <div className="absolute inset-0 bg-gradient-to-t from-stone-950/70 via-stone-900/20 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-stone-950/20 via-transparent to-transparent" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-stone-950/70 via-stone-900/20 to-transparent" />
+                      <div className="absolute inset-0 bg-gradient-to-r from-stone-950/20 via-transparent to-transparent" />
 
-        <div className="absolute left-4 top-4 z-20 flex flex-wrap items-center gap-2">
-          {studio.premium && (
-            <div className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-white shadow-[0_10px_24px_rgba(245,158,11,0.30)]">
-              <Crown className="h-3.5 w-3.5" />
-              Premium
-            </div>
-          )}
+                      <div className="absolute left-4 top-4 z-20 flex flex-wrap items-center gap-2">
+                        {studio.premium && (
+                          <div className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-white shadow-[0_10px_24px_rgba(245,158,11,0.30)]">
+                            <Crown className="h-3.5 w-3.5" />
+                            Premium
+                          </div>
+                        )}
 
-          {cat && (
-            <div className="inline-flex items-center rounded-full border border-white/15 bg-white/12 px-3 py-1.5 text-[11px] font-semibold text-white/95 backdrop-blur-md">
-              {cat}
-            </div>
-          )}
-        </div>
+                        {cat && (
+                          <div className="inline-flex items-center rounded-full border border-white/15 bg-white/12 px-3 py-1.5 text-[11px] font-semibold text-white/95 backdrop-blur-md">
+                            {cat}
+                          </div>
+                        )}
+                      </div>
 
-        {rating !== null && (
-          <div
-            className={cn(
-              "absolute right-4 top-4 z-20 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-bold backdrop-blur-md",
-              isTopRated
-                ? "border border-amber-300/50 bg-gradient-to-r from-amber-100/95 via-yellow-100/95 to-amber-200/95 text-amber-900 shadow-[0_10px_26px_rgba(245,158,11,0.25)]"
-                : "border border-white/20 bg-white/92 text-stone-800 shadow-[0_8px_22px_rgba(15,23,42,0.16)]",
-            )}
-          >
-            <Star
-              className={cn(
-                "h-3.5 w-3.5",
-                isTopRated
-                  ? "fill-amber-500 text-amber-500"
-                  : "fill-amber-400 text-amber-400",
-              )}
-            />
-            <span>{rating.toFixed(1)}</span>
-            {reviewsCount > 0 && (
-              <span
-                className={cn(
-                  "font-semibold",
-                  isTopRated ? "text-amber-800/80" : "text-stone-500",
-                )}
-              >
-                ({reviewsCount})
-              </span>
-            )}
-          </div>
-        )}
+                      {rating !== null && (
+                        <div
+                          className={cn(
+                            "absolute right-4 top-4 z-20 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-bold backdrop-blur-md",
+                            isTopRated
+                              ? "border border-amber-300/50 bg-gradient-to-r from-amber-100/95 via-yellow-100/95 to-amber-200/95 text-amber-900 shadow-[0_10px_26px_rgba(245,158,11,0.25)]"
+                              : "border border-white/20 bg-white/92 text-stone-800 shadow-[0_8px_22px_rgba(15,23,42,0.16)]",
+                          )}
+                        >
+                          <Star
+                            className={cn(
+                              "h-3.5 w-3.5",
+                              isTopRated
+                                ? "fill-amber-500 text-amber-500"
+                                : "fill-amber-400 text-amber-400",
+                            )}
+                          />
+                          <span>{rating.toFixed(1)}</span>
+                          {reviewsCount > 0 && (
+                            <span
+                              className={cn(
+                                "font-semibold",
+                                isTopRated
+                                  ? "text-amber-800/80"
+                                  : "text-stone-500",
+                              )}
+                            >
+                              ({reviewsCount})
+                            </span>
+                          )}
+                        </div>
+                      )}
 
-        <div className="absolute inset-x-0 bottom-0 z-20 p-4">
-          <div className="flex items-end gap-3">
-            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-[20px] border border-white/35 bg-white shadow-[0_12px_24px_rgba(15,23,42,0.18)] ring-1 ring-black/5">
-              {logoUrl ? (
-                <img
-                  src={logoUrl}
-                  alt={`${name} logo`}
-                  className="h-full w-full object-cover"
-                  loading="lazy"
-                  onError={(e) => (e.currentTarget.style.display = "none")}
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-stone-100 to-stone-200 text-[11px] font-bold text-stone-500">
-                  LOGO
-                </div>
-              )}
-            </div>
+                      <div className="absolute inset-x-0 bottom-0 z-20 p-4">
+                        <div className="flex items-end gap-3">
+                          <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-[20px] border border-white/35 bg-white shadow-[0_12px_24px_rgba(15,23,42,0.18)] ring-1 ring-black/5">
+                            {logoUrl ? (
+                              <img
+                                src={logoUrl}
+                                alt={`${name} logo`}
+                                className="h-full w-full object-cover"
+                                loading="lazy"
+                                onError={(e) =>
+                                  (e.currentTarget.style.display = "none")
+                                }
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-stone-100 to-stone-200 text-[11px] font-bold text-stone-500">
+                                LOGO
+                              </div>
+                            )}
+                          </div>
 
-            <div className="min-w-0 flex-1 pb-1">
-              <h2 className="truncate text-xl font-black tracking-[-0.03em] text-white drop-shadow-sm">
-                {name}
-              </h2>
+                          <div className="min-w-0 flex-1 pb-1">
+                            <h2 className="truncate text-xl font-black tracking-[-0.03em] text-white drop-shadow-sm">
+                              {name}
+                            </h2>
 
-              <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-white/90">
-                {cityLabel && (
-                  <span className="inline-flex items-center gap-1">
-                    <MapPin className="h-4 w-4 text-rose-300" />
-                    {cityLabel}
-                  </span>
-                )}
+                            <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-white/90">
+                              {cityLabel && (
+                                <span className="inline-flex items-center gap-1">
+                                  <MapPin className="h-4 w-4 text-rose-300" />
+                                  {cityLabel}
+                                </span>
+                              )}
 
-                {priceLabel && (
-                  <span className="rounded-full border border-white/15 bg-white/12 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-md">
-                    {priceLabel}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+                              {priceLabel && (
+                                <span className="rounded-full border border-white/15 bg-white/12 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-md">
+                                  {priceLabel}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
 
-      <div className="relative flex flex-1 flex-col p-5">
-        <div className="absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-stone-200 to-transparent" />
+                    <div className="relative flex flex-1 flex-col p-5">
+                      <div className="absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-stone-200 to-transparent" />
 
-        {description ? (
-          <p className="line-clamp-3 text-sm leading-6 text-stone-600">
-            {description}
-          </p>
-        ) : (
-          <p className="text-sm leading-6 text-stone-400">
-            Детальний опис студії скоро буде додано.
-          </p>
-        )}
+                      <div className="space-y-4">
+                        {description ? (
+                          <p className="line-clamp-2 text-sm leading-6 text-stone-600">
+                            {description}
+                          </p>
+                        ) : (
+                          <p className="text-sm leading-6 text-stone-400">
+                            Детальний опис студії скоро буде додано.
+                          </p>
+                        )}
 
-        {/* {address && (
-          <div className="mt-4 flex items-start gap-2 rounded-2xl border border-stone-200/80 bg-stone-50/80 px-3 py-3">
-            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm">
-              <MapPin className="h-4 w-4 text-rose-500" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-stone-400">
-                Адреса
-              </p>
-              <p className="mt-1 line-clamp-2 text-sm font-medium text-stone-700">
-                {address}
-              </p>
-            </div>
-          </div>
-        )} */}
+                        {fullAddress && (
+                          <div className="flex items-start gap-2.5 rounded-2xl border border-stone-200/80 bg-stone-50/80 px-3 py-3">
+                            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm">
+                              <MapPin className="h-4 w-4 text-rose-500" />
+                            </div>
 
-        <div className="mt-auto pt-5">
-          <div className="flex items-center gap-3">
- <div
-  className={cn(
-    "group flex h-12 w-full items-center justify-center gap-2.5 rounded-2xl text-sm font-semibold transition-all duration-200 active:scale-[0.98]",
-    
-    studio.premium
-      ? "bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 text-white shadow-[0_12px_28px_rgba(245,158,11,0.25)]"
-      : "border border-stone-200/80 bg-gradient-to-b from-white to-stone-50 text-stone-800 shadow-[0_8px_24px_rgba(15,23,42,0.05)] hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-[0_12px_30px_rgba(15,23,42,0.08)]",
-  )}
->
-  {!studio.premium && (
-    <span
-      className="
-        flex h-8 w-8 items-center justify-center rounded-xl
-        bg-emerald-50 text-emerald-600
-        transition-colors duration-200
-        group-hover:bg-emerald-100
-      "
-    >
-      <ArrowRight className="h-4 w-4" />
-    </span>
-  )}
+                            <div className="min-w-0">
+                              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-stone-400">
+                                Адреса
+                              </p>
+                              <p className="mt-1 line-clamp-2 text-sm font-medium leading-5 text-stone-700">
+                                {fullAddress}
+                              </p>
+                            </div>
+                          </div>
+                        )}
 
-  <span>Переглянути студію</span>
+                        {topServices.length > 0 && (
+                          <div className="space-y-2">
+                            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-stone-400">
+                              Популярні послуги
+                            </p>
 
-  {studio.premium && (
-    <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
-  )}
-</div>
+                            <div className="flex flex-wrap gap-2">
+                              {topServices.map((service) => (
+                                <span
+                                  key={service}
+                                  className="rounded-full border border-stone-200 bg-white px-3 py-1.5 text-xs font-medium text-stone-700 shadow-sm"
+                                >
+                                  {service}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
 
-<div
-  className="relative z-20 flex items-center justify-center"
-  onClick={(e) => e.stopPropagation()}
-  onMouseDown={(e) => e.stopPropagation()}
->
-              <FavouriteButton studio={studio} />
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-})}
+                      <div className="mt-auto pt-5">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={cn(
+                              "relative flex h-12 w-full items-center justify-center overflow-hidden rounded-[18px]",
+                              "px-4 text-sm font-semibold tracking-[-0.01em] transition-all duration-300",
+                              "active:scale-[0.985]",
+                              studio.premium
+                                ? "bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 text-white shadow-[0_12px_28px_rgba(245,158,11,0.24)]"
+                                : "border border-stone-200 bg-white text-stone-900 shadow-[0_8px_24px_rgba(15,23,42,0.06)] hover:-translate-y-0.5 hover:border-stone-300 hover:shadow-[0_14px_32px_rgba(15,23,42,0.10)]",
+                            )}
+                          >
+                            {!studio.premium && (
+                              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white to-transparent opacity-80" />
+                            )}
+
+                            <span className="relative z-10 flex items-center gap-2.5">
+                              <span
+                                className={cn(
+                                  "flex h-6 w-6 items-center justify-center rounded-full",
+                                  studio.premium
+                                    ? "bg-white/15"
+                                    : "bg-emerald-50",
+                                )}
+                              >
+                                <span
+                                  className={cn(
+                                    "h-2 w-2 rounded-full",
+                                    studio.premium
+                                      ? "bg-white"
+                                      : "bg-emerald-500",
+                                  )}
+                                />
+                              </span>
+
+                              <span>Переглянути студію</span>
+
+                              <ArrowRight
+                                className={cn(
+                                  "h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5",
+                                  studio.premium
+                                    ? "text-white/90"
+                                    : "text-stone-500",
+                                )}
+                              />
+                            </span>
+                          </div>
+
+                          <div
+                            className="relative z-20 flex items-center justify-center"
+                            onClick={(e) => e.stopPropagation()}
+                            onMouseDown={(e) => e.stopPropagation()}
+                          >
+                            <FavouriteButton studio={studio} />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
 

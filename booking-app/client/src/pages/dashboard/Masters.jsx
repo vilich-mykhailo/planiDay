@@ -73,27 +73,35 @@ function SectionCard({
     >
       <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-60" />
 
-      <div className="flex flex-col gap-3 border-b border-stone-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg font-bold tracking-tight text-stone-800">
-              {title}
-            </h2>
+<div className="border-b border-stone-100 px-5 py-4">
+  
+  {/* ROW 1: title + badge */}
+  <div className="flex items-start justify-between gap-3">
+    <h2 className="text-lg font-bold tracking-tight text-stone-800">
+      {title}
+    </h2>
 
-            {badge && (
-              <span className="inline-flex items-center rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
-                {badge}
-              </span>
-            )}
-          </div>
+    {badge && (
+      <span className="shrink-0 inline-flex items-center rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-3 py-1 text-xs font-semibold text-amber-700">
+        {badge}
+      </span>
+    )}
+  </div>
 
-          {subtitle && (
-            <p className="mt-0.5 text-sm text-stone-500">{subtitle}</p>
-          )}
-        </div>
+  {/* ROW 2: subtitle FULL WIDTH */}
+  {subtitle && (
+    <p className="mt-1.5 text-sm text-stone-500">
+      {subtitle}
+    </p>
+  )}
 
-        {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
-      </div>
+  {/* ROW 3: actions */}
+  {actions && (
+    <div className="mt-3 flex flex-wrap gap-2">
+      {actions}
+    </div>
+  )}
+</div>
 
       <div className="p-5">{children}</div>
     </section>
@@ -315,6 +323,48 @@ function SkeletonBlock({ className = "" }) {
       aria-hidden="true"
     />
   );
+}
+
+function isPastExceptionDate(dateStr) {
+  if (!dateStr) return false;
+
+  const today = new Date();
+  const todayLocal = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate(),
+  );
+
+  const [y, m, d] = String(dateStr).split("-").map(Number);
+  const target = new Date(y, (m || 1) - 1, d || 1);
+
+  return target < todayLocal;
+}
+
+async function deleteExpiredMasterExceptions(masterId, list) {
+  const token = localStorage.getItem("token");
+
+  const expired = (list || []).filter(
+    (item) => item?.id && isPastExceptionDate(item.date),
+  );
+
+  if (!expired.length) return list || [];
+
+  await Promise.allSettled(
+    expired.map((item) =>
+      fetch(
+        `${import.meta.env.VITE_API_URL}/studio/masters/${masterId}/schedule/exceptions/${item.id}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      ),
+    ),
+  );
+
+  return (list || []).filter((item) => !isPastExceptionDate(item.date));
 }
 
 function MasterSkeletonRow() {
@@ -651,51 +701,54 @@ export default function Masters() {
     }).format(date);
   }
 
-  async function openMasterExceptions(master) {
-    if (!studio?.id || !master?.id) return;
+async function openMasterExceptions(master) {
+  if (!studio?.id || !master?.id) return;
 
-    setExceptionsMaster(master);
-    setExceptionsModalOpen(true);
-    setExceptionsLoading(true);
-    setExpandedExceptions({});
+  setExceptionsMaster(master);
+  setExceptionsModalOpen(true);
+  setExceptionsLoading(true);
+  setExpandedExceptions({});
 
-    try {
-      const token = localStorage.getItem("token");
+  try {
+    const token = localStorage.getItem("token");
 
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/studio/masters/${master.id}/schedule/exceptions`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+    const res = await fetch(
+      `${import.meta.env.VITE_API_URL}/studio/masters/${master.id}/schedule/exceptions`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
+      },
+    );
+
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      throw new Error(
+        data?.message || "Не вдалося завантажити особливі дати",
       );
-
-      const data = await res.json().catch(() => null);
-
-      if (!res.ok) {
-        throw new Error(
-          data?.message || "Не вдалося завантажити особливі дати",
-        );
-      }
-
-      setMasterExceptions(
-        Array.isArray(data?.exceptions)
-          ? sortExceptions(
-              data.exceptions.map((item) => ({
-                ...item,
-                date: String(item?.date || "").slice(0, 10),
-                isNew: false,
-              })),
-            )
-          : [],
-      );
-    } catch (e) {
-      alert(e?.message || "Помилка завантаження");
-    } finally {
-      setExceptionsLoading(false);
     }
+
+    const rawExceptions = Array.isArray(data?.exceptions)
+      ? data.exceptions.map((item) => ({
+          ...item,
+          date: String(item?.date || "").slice(0, 10),
+          isNew: false,
+        }))
+      : [];
+
+    const cleanedExceptions = await deleteExpiredMasterExceptions(
+      master.id,
+      rawExceptions,
+    );
+
+    setMasterExceptions(sortExceptions(cleanedExceptions));
+  } catch (e) {
+    alert(e?.message || "Помилка завантаження");
+  } finally {
+    setExceptionsLoading(false);
   }
+}
 
   function addExceptionRow() {
     const newItem = createEmptyException();
@@ -988,29 +1041,33 @@ export default function Masters() {
     <div className="min-h-screen">
       <div className="mx-auto max-w-5xl space-y-6">
         {/* Header */}
-        <div className="mb-2">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-4 py-1.5">
-            <Sparkles className="h-4 w-4 text-amber-600" />
-            <span className="text-xs font-bold uppercase tracking-wider text-amber-700">
-              Команда студії
-            </span>
-          </div>
+<div className="relative overflow-hidden rounded-3xl border border-stone-200/60 bg-white p-5 sm:p-6 shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]">
+  {/* top accent */}
+  <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-60" />
 
-          <h1 className="text-4xl font-black tracking-tight text-stone-800 sm:text-5xl">
-            Майстри
-          </h1>
+  {/* content */}
+  <div className="relative">
+    <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-3 py-1.5">
+      <Sparkles className="h-4 w-4 text-amber-600" />
+      <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-amber-700">
+        Команда студії
+      </span>
+    </div>
 
-          <p className="mt-3 max-w-2xl text-stone-600">
-            Додай майстрів, щоб привʼязувати їх до послуг, графіка та записів
-            клієнтів.
-          </p>
-        </div>
+    <h1 className="text-3xl font-black tracking-tight text-stone-800 sm:text-4xl">
+      Майстри
+    </h1>
+
+    <p className="mt-2 max-w-xl text-sm text-stone-600 sm:text-base">
+      Додай майстрів, щоб привʼязувати їх до послуг, графіка та записів клієнтів.
+    </p>
+  </div>
+</div>
 
         {/* Add master */}
         <SectionCard
           title="Новий майстер"
           subtitle="Фото, імʼя та короткий опис — як у професійних профілях."
-          badge={`${total} всього`}
         >
           <form onSubmit={addMaster} className="space-y-5">
             <div className="flex flex-col gap-4">
@@ -1054,7 +1111,7 @@ export default function Masters() {
               </label>
               <input
                 name="name"
-                placeholder="Напр. Олена Коваль"
+                placeholder="Напр. Наталія"
                 value={form.name}
                 onChange={handleChange}
                 className={inputBaseClass}
@@ -1070,10 +1127,10 @@ export default function Masters() {
                 value={form.role}
                 onChange={handleChange}
                 className={inputBaseClass}
-                placeholder="Напр. Майстер манікюру / Brow artist"
+                placeholder="Напр. Стиліст або Барбер"
               />
               <p className="mt-1 text-xs text-stone-500">
-                Коротко: роль + напрям (манікюр, брови, вії…).
+                 Вкажіть посаду чи спеціалізацію.
               </p>
             </div>
 
@@ -1104,10 +1161,6 @@ export default function Masters() {
                 {adding ? "Додаємо..." : "Додати майстра"}
               </Button>
 
-              <p className="text-sm text-stone-500">
-                Усього:{" "}
-                <span className="font-bold text-stone-800">{total}</span>
-              </p>
             </div>
           </form>
         </SectionCard>
@@ -1120,6 +1173,7 @@ export default function Masters() {
               ? "Клікни “Редагувати”, щоб оновити профіль."
               : "Додай першого майстра вище."
           }
+          badge={`К-ть майстрів: ${total}`}
         >
           {total === 0 ? (
             <div className="rounded-2xl border-2 border-dashed border-stone-200 bg-stone-50/50 p-8 text-center">
@@ -1321,7 +1375,7 @@ export default function Masters() {
                   setEditDraft((p) => ({ ...p, role: e.target.value }))
                 }
                 className={inputBaseClass}
-                placeholder="Напр. Майстер манікюру / Brow artist"
+                placeholder="Напр. Стиліст або Барбер"
               />
             </div>
 
@@ -1372,7 +1426,7 @@ export default function Masters() {
             </div>
           ) : masterExceptions.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-6 text-sm text-stone-500">
-              Ще немає особливих дат для цього майстра.
+              Немає особливих дат для цього майстра.
             </div>
           ) : (
             <div className="space-y-3">

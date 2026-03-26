@@ -642,55 +642,61 @@ export default function Bookings() {
     <div className="min-h-screen ">
       <div className="mx-auto max-w-6xl space-y-6 ">
         {/* Header */}
-        <div className="mb-2 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div className="min-w-0">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-4 py-1.5">
-              <Sparkles className="h-4 w-4 text-amber-600" />
-              <span className="text-xs font-bold uppercase tracking-wider text-amber-700">
-                Записи клієнтів
-              </span>
-            </div>
+<div className="relative mb-6 overflow-hidden rounded-3xl border border-stone-200/60 bg-white p-5 sm:p-6 shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]">
+  {/* top accent */}
+  <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-60" />
 
-            <h1 className="text-4xl font-black tracking-tight text-stone-800 sm:text-5xl">
-              Записи
-            </h1>
+  <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    {/* left */}
+    <div className="min-w-0">
+      <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-3 py-1.5">
+        <Sparkles className="h-4 w-4 text-amber-600" />
+        <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-amber-700">
+          Записи клієнтів
+        </span>
+      </div>
 
-            <p className="mt-3 max-w-2xl text-stone-600">
-              Перегляд записів списком або через календар у чистому та зручному
-              форматі.
-            </p>
-          </div>
+      <h1 className="text-3xl font-black tracking-tight text-stone-800 sm:text-4xl">
+        Записи
+      </h1>
 
-          <div className="inline-flex rounded-2xl border border-stone-200 bg-white p-1 shadow-sm">
-            <button
-              type="button"
-              onClick={() => setTab("list")}
-              className={cn(
-                "inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition",
-                tab === "list"
-                  ? "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-[0_10px_24px_rgba(74,93,78,0.18)]"
-                  : "text-stone-600 hover:bg-stone-50",
-              )}
-            >
-              <List className="h-4 w-4" />
-              Список
-            </button>
+      <p className="mt-2 max-w-xl text-sm text-stone-600 sm:text-base">
+        Перегляд записів списком або через календар у зручному форматі.
+      </p>
+    </div>
 
-            <button
-              type="button"
-              onClick={() => setTab("calendar")}
-              className={cn(
-                "inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition",
-                tab === "calendar"
-                  ? "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-[0_10px_24px_rgba(74,93,78,0.18)]"
-                  : "text-stone-600 hover:bg-stone-50",
-              )}
-            >
-              <CalendarDays className="h-4 w-4" />
-              Календар
-            </button>
-          </div>
-        </div>
+    {/* right tabs */}
+<div className="inline-flex self-center sm:self-start rounded-2xl border border-stone-200 bg-white p-1 shadow-sm">
+      <button
+        type="button"
+        onClick={() => setTab("list")}
+        className={cn(
+          "inline-flex items-center gap-2 rounded-xl px-3 py-2 text-[13px] font-semibold transition sm:px-4 sm:py-2.5 sm:text-sm",
+          tab === "list"
+            ? "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-[0_10px_24px_rgba(74,93,78,0.18)]"
+            : "text-stone-600 hover:bg-stone-50",
+        )}
+      >
+        <List className="h-4 w-4" />
+        Список
+      </button>
+
+      <button
+        type="button"
+        onClick={() => setTab("calendar")}
+        className={cn(
+          "inline-flex items-center gap-2 rounded-xl px-3 py-2 text-[13px] font-semibold transition sm:px-4 sm:py-2.5 sm:text-sm",
+          tab === "calendar"
+            ? "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white "
+            : "text-stone-600 hover:bg-stone-50",
+        )}
+      >
+        <CalendarDays className="h-4 w-4" />
+        Календар
+      </button>
+    </div>
+  </div>
+</div>
 
         {/* Filters */}
         {tab === "list" && (
@@ -886,46 +892,46 @@ export default function Bookings() {
           <SectionCard
             title="Календар записів"
             subtitle="Натисни на день, щоб переглянути записи."
-            actions={
-              <div className="flex items-center gap-2">
-                <IconButton
-                  onClick={() =>
-                    setActiveMonth(
-                      new Date(
-                        activeMonth.getFullYear(),
-                        activeMonth.getMonth() - 1,
-                        1,
-                      ),
-                    )
-                  }
-                  title="Попередній місяць"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </IconButton>
+           actions={
+  <div className="flex w-full items-center justify-center gap-2 sm:w-auto sm:justify-end">
+    <IconButton
+      onClick={() =>
+        setActiveMonth(
+          new Date(
+            activeMonth.getFullYear(),
+            activeMonth.getMonth() - 1,
+            1,
+          ),
+        )
+      }
+      title="Попередній місяць"
+    >
+      <ChevronLeft className="h-4 w-4" />
+    </IconButton>
 
-                <Button
-                  variant="primary"
-                  onClick={() => setActiveMonth(startOfMonth(new Date()))}
-                >
-                  Сьогодні
-                </Button>
+    <Button
+      variant="primary"
+      onClick={() => setActiveMonth(startOfMonth(new Date()))}
+    >
+      Сьогодні
+    </Button>
 
-                <IconButton
-                  onClick={() =>
-                    setActiveMonth(
-                      new Date(
-                        activeMonth.getFullYear(),
-                        activeMonth.getMonth() + 1,
-                        1,
-                      ),
-                    )
-                  }
-                  title="Наступний місяць"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </IconButton>
-              </div>
-            }
+    <IconButton
+      onClick={() =>
+        setActiveMonth(
+          new Date(
+            activeMonth.getFullYear(),
+            activeMonth.getMonth() + 1,
+            1,
+          ),
+        )
+      }
+      title="Наступний місяць"
+    >
+      <ChevronRight className="h-4 w-4" />
+    </IconButton>
+  </div>
+}
             badge={monthLabelUA(activeMonth)}
           >
             <div className="grid grid-cols-7 gap-1.5 text-[11px] font-semibold text-stone-500 sm:gap-2 sm:text-xs">

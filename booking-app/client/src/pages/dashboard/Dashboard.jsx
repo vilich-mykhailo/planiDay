@@ -125,7 +125,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-stone-50 via-amber-50/30 to-orange-50/20">
-      <div className="mx-auto max-w-6xl px-4 pt-24 lg:pt-24">
+     <div className="mx-auto w-full max-w-6xl px-0 pt-24 lg:px-4">
         <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[220px_minmax(0,1fr)]">
           <aside
             className="
@@ -238,7 +238,7 @@ export default function Dashboard() {
 
           <section
             className="
-              min-h-[200px] overflow-hidden rounded-3xl border border-stone-200/60 bg-white p-6 mb-6
+              min-h-[200px] overflow-hidden rounded-3xl border border-stone-200/60 bg-white px-4 py-5 sm:p-6 sm:mb-4 lg:mb--10
               shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]
             "
           >
