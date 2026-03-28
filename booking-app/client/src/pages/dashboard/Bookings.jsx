@@ -299,14 +299,14 @@ function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-stone-900/40 p-4 backdrop-blur-sm sm:p-6"
+      className="fixed inset-0 z-950 flex items-center justify-center overflow-y-auto bg-stone-900/40 p-4 backdrop-blur-sm sm:p-6"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose?.();
       }}
     >
       <div
         className={cn(
-          "relative my-8 w-full overflow-hidden rounded-3xl bg-white shadow-2xl",
+          "relative w-full overflow-hidden rounded-3xl bg-white shadow-2xl",
           "animate-in fade-in-0 zoom-in-95 duration-200",
           sizeClasses[size],
         )}
@@ -320,7 +320,9 @@ function Modal({
               <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-amber-600">
                 {title}
               </p>
-              {subtitle && <p className="mt-1 text-sm text-stone-500">{subtitle}</p>}
+              {subtitle && (
+                <p className="mt-1 text-sm text-stone-500">{subtitle}</p>
+              )}
             </div>
 
             <button
@@ -619,20 +621,20 @@ export default function Bookings() {
     };
   }, [split, deletedList]);
 
-  function handleDelete(id) {
-    const snap =
-      (bookings || []).find((b) => b.id === id) || deletedStore.get(id) || null;
+async function handleDelete(id) {
+  const snap =
+    (bookings || []).find((b) => b.id === id) || deletedStore.get(id) || null;
 
-    if (snap) {
-      setDeletedStore((prev) => {
-        const next = new Map(prev);
-        next.set(id, { ...snap, status: "deleted" });
-        return next;
-      });
-    }
-
-    deleteBooking(id);
+  if (snap) {
+    setDeletedStore((prev) => {
+      const next = new Map(prev);
+      next.set(id, { ...snap, status: "deleted" });
+      return next;
+    });
   }
+
+  await deleteBooking(id);
+}
 
   if (loading) {
     return <BookingsSkeleton />;
@@ -846,17 +848,23 @@ export default function Bookings() {
                               Переглянути
                             </Button>
 
-                            <Button
-                              variant="primary"
-                              onClick={() => confirmBooking(b.id)}
-                              disabled={
-                                isConfirmed || isCanceled || isArchived || isDeleted
-                              }
-                              className="w-full sm:w-auto"
-                            >
-                              <Check className="h-4 w-4" />
-                              Підтвердити
-                            </Button>
+<Button
+  variant="primary"
+  onClick={async () => {
+    try {
+      await confirmBooking(b.id);
+    } catch (e) {
+      alert(e.message || "Не вдалося підтвердити запис");
+    }
+  }}
+  disabled={
+    isConfirmed || isCanceled || isArchived || isDeleted
+  }
+  className="w-full sm:w-auto"
+>
+  <Check className="h-4 w-4" />
+  Підтвердити
+</Button>
 
                             {!isCanceled ? (
                               <Button
@@ -1072,15 +1080,19 @@ export default function Bookings() {
               >
                 Скасувати
               </Button>
-              <Button
-                variant="danger"
-                onClick={() => {
-                  handleDelete(confirmId);
-                  setConfirmId(null);
-                }}
-              >
-                Так, видалити
-              </Button>
+<Button
+  variant="danger"
+  onClick={async () => {
+    try {
+      await handleDelete(confirmId);
+      setConfirmId(null);
+    } catch (e) {
+      alert(e.message || "Не вдалося видалити запис");
+    }
+  }}
+>
+  Так, видалити
+</Button>
             </div>
           }
         >
@@ -1104,15 +1116,19 @@ export default function Bookings() {
               >
                 Назад
               </Button>
-              <Button
-                variant="danger"
-                onClick={() => {
-                  cancelBooking(cancelConfirmId);
-                  setCancelConfirmId(null);
-                }}
-              >
-                Так, скасувати
-              </Button>
+<Button
+  variant="danger"
+  onClick={async () => {
+    try {
+      await cancelBooking(cancelConfirmId);
+      setCancelConfirmId(null);
+    } catch (e) {
+      alert(e.message || "Не вдалося скасувати запис");
+    }
+  }}
+>
+  Так, скасувати
+</Button>
             </div>
           }
         >
@@ -1302,24 +1318,36 @@ export default function Bookings() {
                     </div>
 
                     <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
-                      <Button
-                        variant="primary"
-                        onClick={() => confirmBooking(b.id)}
-                        disabled={isConfirmed || isCanceled || isArchived}
-                        className="w-full sm:w-auto"
-                      >
-                        Підтвердити
-                      </Button>
+<Button
+  variant="primary"
+  onClick={async () => {
+    try {
+      await confirmBooking(b.id);
+    } catch (e) {
+      alert(e.message || "Не вдалося підтвердити запис");
+    }
+  }}
+  disabled={isConfirmed || isCanceled || isArchived}
+  className="w-full sm:w-auto"
+>
+  Підтвердити
+</Button>
 
                       {!isCanceled ? (
-                        <Button
-                          variant="secondary"
-                          onClick={() => cancelBooking(b.id)}
-                          disabled={isCanceled || isArchived}
-                          className="w-full sm:w-auto"
-                        >
-                          Скасувати
-                        </Button>
+<Button
+  variant="secondary"
+  onClick={async () => {
+    try {
+      await cancelBooking(b.id);
+    } catch (e) {
+      alert(e.message || "Не вдалося скасувати запис");
+    }
+  }}
+  disabled={isCanceled || isArchived}
+  className="w-full sm:w-auto"
+>
+  Скасувати
+</Button>
                       ) : (
                         <Button
                           variant="danger"

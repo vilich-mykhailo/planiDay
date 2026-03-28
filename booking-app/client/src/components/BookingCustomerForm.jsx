@@ -1,56 +1,42 @@
 // BookingCustomerForm.jsx
-import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { X, User, Phone, CheckCheck } from "lucide-react";
+import { X, CheckCheck, CalendarDays, Clock3, User, Scissors, Banknote, Building2 } from "lucide-react";
 
 function cn(...classes) {
   return classes.filter(Boolean).join(" ");
 }
 
+function DetailRow({ icon, label, value, strong = false }) {
+  return (
+    <div className="flex items-start gap-3 rounded-2xl border border-stone-200 bg-stone-50/80 px-4 py-3">
+      <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-amber-600 shadow-sm">
+        {icon}
+      </div>
+
+      <div className="min-w-0">
+        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-stone-400">
+          {label}
+        </p>
+        <p
+          className={cn(
+            "mt-1 text-sm leading-5 text-stone-700",
+            strong && "font-bold text-stone-900",
+          )}
+        >
+          {value || "—"}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function BookingCustomerForm({
-  form,
-  setForm,
+  bookingDetails,
   onSubmit,
   onBack,
 }) {
-  const [triedSubmit, setTriedSubmit] = useState(false);
-
-  const digits = String(form?.phone || "").replace(/\D/g, "");
-
-  const isValidPhone = useMemo(() => {
-    return /^380\d{9}$/.test(digits);
-  }, [digits]);
-
-  function formatPhone(value) {
-    let cleaned = String(value || "")
-      .replace(/[^\d+]/g, "")
-      .replace(/(?!^)\+/g, "");
-
-    if (cleaned === "") return "";
-
-    const hasPlus = cleaned.startsWith("+");
-    const numbers = cleaned.replace(/\D/g, "").slice(0, 12);
-
-    if (!numbers.startsWith("380")) {
-      return (hasPlus ? "+" : "") + numbers;
-    }
-
-    let formatted = hasPlus ? "+380 " : "380 ";
-
-    if (numbers.length > 3) formatted += numbers.slice(3, 5);
-    if (numbers.length > 5) formatted += " " + numbers.slice(5, 8);
-    if (numbers.length > 8) formatted += " " + numbers.slice(8, 10);
-    if (numbers.length > 10) formatted += " " + numbers.slice(10, 12);
-
-    return formatted;
-  }
-
   function handleSubmit(e) {
     e.preventDefault();
-    setTriedSubmit(true);
-
-    if (!isValidPhone) return;
-
     onSubmit(e);
   }
 
@@ -92,10 +78,10 @@ export default function BookingCustomerForm({
                   className="text-xl font-bold text-stone-800"
                   data-testid="booking-form-title"
                 >
-                  Ваші дані
+                  Підтвердження запису
                 </h2>
                 <p className="mt-1 text-sm text-stone-500">
-                  Вкажіть ім&apos;я та телефон для підтвердження
+                  Перевірте всі дані перед підтвердженням
                 </p>
               </div>
             </div>
@@ -112,76 +98,61 @@ export default function BookingCustomerForm({
 
           <form
             onSubmit={handleSubmit}
-            className="space-y-5 px-7 py-6"
+            className="space-y-4 px-7 py-6"
             data-testid="booking-customer-form"
           >
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-stone-700">
-                Ім’я
-              </label>
+            <DetailRow
+              icon={<Building2 className="h-4 w-4" />}
+              label="Студія"
+              value={bookingDetails?.studioName}
+              strong
+            />
 
-              <div className="relative">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-600">
-                  <User className="h-4 w-4" />
-                </div>
+            <DetailRow
+              icon={<Scissors className="h-4 w-4" />}
+              label="Послуга"
+              value={bookingDetails?.serviceName}
+            />
 
-                <input
-                  type="text"
-                  placeholder="Ваше ім'я"
-                  value={form?.name || ""}
-                  onChange={(e) =>
-                    setForm((prev) => ({ ...prev, name: e.target.value }))
-                  }
-                  data-testid="booking-form-name-input"
-                  className="w-full rounded-2xl border border-stone-200 bg-stone-50 py-3.5 pl-11 pr-4 text-sm font-medium text-stone-800 placeholder:text-stone-400 outline-none transition-all duration-200 hover:border-stone-300 hover:bg-white focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-amber-400/10"
-                />
-              </div>
+            <DetailRow
+              icon={<User className="h-4 w-4" />}
+              label="Майстер"
+              value={bookingDetails?.masterName}
+            />
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <DetailRow
+                icon={<CalendarDays className="h-4 w-4" />}
+                label="Дата"
+                value={bookingDetails?.date}
+              />
+
+              <DetailRow
+                icon={<Clock3 className="h-4 w-4" />}
+                label="Час"
+                value={bookingDetails?.time}
+                strong
+              />
             </div>
 
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-stone-700">
-                Телефон
-              </label>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <DetailRow
+                icon={<Clock3 className="h-4 w-4" />}
+                label="Тривалість"
+                value={bookingDetails?.duration}
+              />
 
-              <div className="relative">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-600">
-                  <Phone className="h-4 w-4" />
-                </div>
-
-                <input
-                  type="tel"
-                  placeholder="+380 XX XXX XX XX"
-                  value={form?.phone || ""}
-                  onChange={(e) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      phone: formatPhone(e.target.value),
-                    }))
-                  }
-                  data-testid="booking-form-phone-input"
-                  className={cn(
-                    "w-full rounded-2xl bg-stone-50 py-3.5 pl-11 pr-4 text-sm font-medium text-stone-800 placeholder:text-stone-400 outline-none transition-all duration-200 hover:bg-white",
-                    triedSubmit && !isValidPhone
-                      ? "border border-red-300 focus:border-red-400 focus:bg-white focus:ring-4 focus:ring-red-400/10"
-                      : "border border-stone-200 hover:border-stone-300 focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-amber-400/10",
-                  )}
-                />
-              </div>
-
-              {triedSubmit && !isValidPhone && (
-                <p
-                  className="mt-1.5 pl-1 text-xs font-medium text-red-500"
-                  data-testid="booking-form-phone-error"
-                >
-                  Формат телефону: +380 XX XXX XX XX
-                </p>
-              )}
+              <DetailRow
+                icon={<Banknote className="h-4 w-4" />}
+                label="Вартість"
+                value={bookingDetails?.price}
+                strong
+              />
             </div>
 
             <div className="rounded-2xl border border-stone-200 bg-stone-50/70 px-4 py-3">
               <p className="text-xs leading-5 text-stone-500">
-                Після відправки студія отримає ваш запит на бронювання і зможе
-                зв’язатися з вами для підтвердження.
+                Після підтвердження студія отримає ваш запит на бронювання.
               </p>
             </div>
 
@@ -191,7 +162,7 @@ export default function BookingCustomerForm({
                 data-testid="booking-form-submit-btn"
                 className="flex-1 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-700 py-3.5 text-sm font-bold text-white transition-all duration-200 hover:from-emerald-700 hover:to-emerald-800 active:scale-[0.98]"
               >
-                Записатись
+                Підтвердити запис
               </button>
 
               <button

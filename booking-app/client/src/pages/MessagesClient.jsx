@@ -157,9 +157,12 @@ export default function Messages() {
   }
 
   return (
-    <div className="pt-20 px-4 sm:pt-22 sm:px-6 lg:pt-22 lg:px-8 space-y-6">
+    <div className="min-h-screen">
+      <div className="mx-auto max-w-6xl px-2.5 pb-4 pt-18 sm:px-4 sm:pb-8 sm:pt-14 lg:pt-16">
+        <div className="space-y-3 px-0 pt-2 sm:space-y-5 sm:pt-8 lg:pt-6">
       <section className="overflow-hidden rounded-[24px] border border-stone-200/60 bg-white shadow-[0_4px_20px_-6px_rgba(120,90,60,0.08)] sm:rounded-3xl">
         <div className="h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-70" />
+
 
         <div className="px-4 pb-7 pt-7 sm:px-6 sm:pb-4 sm:pt-5 lg:px-8 lg:pt-6">
           <div className="mb-5 space-y-3 sm:mb-4 sm:space-y-2 lg:mb-5">
@@ -242,6 +245,8 @@ export default function Messages() {
           ))}
         </div>
       )}
+    </div>
+    </div>
     </div>
   );
 }

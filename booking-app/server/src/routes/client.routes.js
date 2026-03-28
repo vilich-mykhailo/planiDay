@@ -75,6 +75,153 @@ clientRouter.get("/", async (req, res) => {
   }
 });
 
+
+
+
+clientRouter.patch("/me", requireAuth, requireClient, async (req, res) => {
+  const { firstName, lastName, birthDate, gender, photoUrl } = req.body;
+
+  const updated = await prisma.clientAccount.update({
+    where: { id: req.auth.sub },
+    data: {
+      ...(firstName !== undefined ? { firstName: firstName || null } : {}),
+      ...(lastName !== undefined ? { lastName: lastName || null } : {}),
+      ...(gender !== undefined ? { gender: gender || null } : {}),
+      ...(photoUrl !== undefined ? { photoUrl: photoUrl || null } : {}),
+      ...(birthDate !== undefined
+        ? { birthDate: birthDate ? new Date(birthDate) : null }
+        : {}),
+    },
+    select: {
+      id: true,
+      email: true,
+      phone: true,
+      name: true,
+      firstName: true,
+      lastName: true,
+      birthDate: true,
+      gender: true,
+      photoUrl: true,
+      updatedAt: true,
+    },
+  });
+
+  res.json(updated);
+});
+
+clientRouter.get("/bookings", requireAuth, requireClient, async (req, res) => {
+  try {
+    const clientId = req.auth.sub;
+
+    const items = await prisma.booking.findMany({
+      where: { clientId },
+      orderBy: { startAt: "desc" },
+      include: {
+        studio: {
+          select: {
+            id: true,
+            name: true,
+            city: true,
+            street: true,
+            building: true,
+            apartment: true,
+            phone: true,
+          },
+        },
+        service: {
+          select: {
+            id: true,
+            name: true,
+            price: true,
+          },
+        },
+        master: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    const bookings = items.map((b) => {
+      const d = new Date(b.startAt);
+
+      const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      const time = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+
+      const address = [
+        b.studio?.street,
+        b.studio?.building,
+        b.studio?.apartment,
+        b.studio?.city,
+      ]
+        .filter(Boolean)
+        .join(", ");
+
+      const status =
+        b.status === "PENDING"
+          ? "new"
+          : b.status === "CONFIRMED"
+            ? "confirmed"
+            : b.status === "CANCELED"
+              ? "canceled"
+              : "new";
+
+      return {
+        id: b.id,
+        status,
+        date,
+        time,
+        createdAt: b.createdAt,
+        studioId: b.studio?.id || null,
+        studioName: b.studio?.name || "Студія",
+        studioPhone: b.studio?.phone || "",
+        address,
+        studioAddress: address,
+        serviceName: b.service?.name || "Послуга",
+        price: b.service?.price ?? null,
+        masterName: b.master?.name || "",
+      };
+    });
+
+    res.json({ bookings });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: e?.message || "Load client bookings failed" });
+  }
+});
+
+clientRouter.patch("/bookings/:bookingId/cancel", requireAuth, requireClient, async (req, res) => {
+  try {
+    const clientId = req.auth.sub;
+    const { bookingId } = req.params;
+
+    const booking = await prisma.booking.findFirst({
+      where: { id: bookingId, clientId },
+      select: { id: true, status: true, startAt: true },
+    });
+
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    if (booking.status === "CANCELED") {
+      return res.json({ ok: true });
+    }
+
+    const updated = await prisma.booking.update({
+      where: { id: bookingId },
+      data: { status: "CANCELED" },
+    });
+
+    res.json({ booking: updated });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: e?.message || "Cancel client booking failed" });
+  }
+});
+
 // ✅ PUBLIC: studio details for public page
 clientRouter.get("/:id", async (req, res) => {
   try {
@@ -329,35 +476,4 @@ res.json({
     console.error(e);
     res.status(500).json({ message: "Load studio failed" });
   }
-});
-
-clientRouter.patch("/me", requireAuth, requireClient, async (req, res) => {
-  const { firstName, lastName, birthDate, gender, photoUrl } = req.body;
-
-  const updated = await prisma.clientAccount.update({
-    where: { id: req.auth.sub },
-    data: {
-      ...(firstName !== undefined ? { firstName: firstName || null } : {}),
-      ...(lastName !== undefined ? { lastName: lastName || null } : {}),
-      ...(gender !== undefined ? { gender: gender || null } : {}),
-      ...(photoUrl !== undefined ? { photoUrl: photoUrl || null } : {}),
-      ...(birthDate !== undefined
-        ? { birthDate: birthDate ? new Date(birthDate) : null }
-        : {}),
-    },
-    select: {
-      id: true,
-      email: true,
-      phone: true,
-      name: true,
-      firstName: true,
-      lastName: true,
-      birthDate: true,
-      gender: true,
-      photoUrl: true,
-      updatedAt: true,
-    },
-  });
-
-  res.json(updated);
 });

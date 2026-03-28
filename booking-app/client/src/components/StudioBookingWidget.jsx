@@ -724,7 +724,6 @@ function StudioBookingWidgetInner({
 
     if (!studio?.id || !selectedDateStr || !dayKey || !isDayEnabled) return;
     if (!selectedTime) return;
-    if (!form.name || !form.phone) return;
 
     const service = selectedService || visibleServices?.[0] || null;
     if (!service?.id) return;
@@ -736,6 +735,12 @@ function StudioBookingWidgetInner({
 
     try {
       const token = localStorage.getItem("token");
+      const role = localStorage.getItem("role");
+
+      if (!token || role !== "client") {
+        alert("Щоб записатися, потрібно увійти як клієнт");
+        return;
+      }
 
       const res = await fetch(
         `${import.meta.env.VITE_API_URL}/bookings/studio/${studio.id}`,
@@ -750,9 +755,6 @@ function StudioBookingWidgetInner({
             masterId: selectedMaster?.id || null,
             date: selectedDateStr,
             time: selectedTime,
-            duration: Number(service?.duration || studio?.slotDuration || 60),
-            name: form.name,
-            phone: form.phone,
           }),
         },
       );
@@ -1296,16 +1298,33 @@ function StudioBookingWidgetInner({
 
       <AnimatePresence>
         {step === "details" && (
-          <BookingCustomerForm
-            form={form}
-            setForm={setForm}
-            onSubmit={handleSubmit}
-            submitDisabled={!selectedTime || !form.name || !form.phone}
-            onBack={() => {
-              setForm({ name: "", phone: "" });
-              setStep("pick");
-            }}
-          />
+<BookingCustomerForm
+  bookingDetails={{
+    studioName: studio?.name || "Студія",
+    serviceName: selectedService?.name || "—",
+    masterName:
+      masterPickMode === MASTER_PICK_MODE.ANY
+        ? "Буде призначено автоматично"
+        : selectedMaster?.name || "—",
+    date: selectedDate
+      ? selectedDate.toLocaleDateString("uk-UA", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        })
+      : "—",
+    time: selectedTime || "—",
+    price:
+      selectedService?.price != null ? `${selectedService.price} грн` : "—",
+    duration: selectedService?.duration
+      ? `${selectedService.duration} хв`
+      : `${slotDuration} хв`,
+  }}
+  onSubmit={handleSubmit}
+  onBack={() => {
+    setStep("pick");
+  }}
+/>
         )}
       </AnimatePresence>
     </div>

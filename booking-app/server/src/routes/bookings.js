@@ -1,7 +1,7 @@
 // bookings.js
 import { Router } from "express";
 import { prisma } from "../lib/prisma.js";
-import { requireAuth, requireOwner } from "../middleware/auth.js";
+import { requireAuth, requireOwner, requireClient } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -135,21 +135,18 @@ router.get("/studio/:studioId", requireAuth, requireOwner, async (req, res) => {
 });
 
 // CREATE BOOKING
-router.post("/studio/:studioId", async (req, res) => {
+router.post("/studio/:studioId", requireAuth, requireClient, async (req, res) => {
   try {
-    console.log("BOOKING BODY:", req.body);
-console.log("MASTER ID:", req.body?.masterId);
     const { studioId } = req.params;
     const body = req.body || {};
+    const clientId = req.auth.sub;
 
     const serviceId = body.serviceId ? String(body.serviceId) : null;
     const masterId = body.masterId ? String(body.masterId) : null;
-    const date = String(body.date || "").trim();   // YYYY-MM-DD
-    const time = String(body.time || "").trim();   // HH:MM
-    const name = String(body.name || "").trim();
-    const phone = String(body.phone || "").trim();
+    const date = String(body.date || "").trim();
+    const time = String(body.time || "").trim();
 
-    if (!serviceId || !date || !time || !name || !phone) {
+    if (!serviceId || !date || !time) {
       return res.status(400).json({
         message: "Не всі обов’язкові поля заповнені",
       });
@@ -158,6 +155,15 @@ console.log("MASTER ID:", req.body?.masterId);
     const requestedStartMin = timeToMin(time);
     if (!Number.isFinite(requestedStartMin)) {
       return res.status(400).json({ message: "Некоректний час" });
+    }
+
+    const client = await prisma.clientAccount.findUnique({
+      where: { id: clientId },
+      select: { id: true, name: true, phone: true },
+    });
+
+    if (!client) {
+      return res.status(404).json({ message: "Клієнта не знайдено" });
     }
 
     const studio = await prisma.studio.findUnique({
@@ -219,8 +225,6 @@ console.log("MASTER ID:", req.body?.masterId);
       });
     }
 
-    let effectiveSchedule = studioSchedule;
-
     if (masterId) {
       const master = await prisma.master.findFirst({
         where: {
@@ -250,7 +254,7 @@ console.log("MASTER ID:", req.body?.masterId);
         });
       }
 
-      effectiveSchedule = intersectSchedules(studioSchedule, masterSchedule);
+      const effectiveSchedule = intersectSchedules(studioSchedule, masterSchedule);
 
       if (!effectiveSchedule) {
         return res.status(400).json({
@@ -275,16 +279,14 @@ console.log("MASTER ID:", req.body?.masterId);
 
     const endAt = new Date(startAt.getTime() + durationMin * 60_000);
 
-    const overlapWhere = {
-      studioId,
-      status: { not: "CANCELED" },
-      startAt: { lt: endAt },
-      endAt: { gt: startAt },
-      ...(masterId ? { masterId } : {}),
-    };
-
     const existing = await prisma.booking.findFirst({
-      where: overlapWhere,
+      where: {
+        studioId,
+        status: { not: "CANCELED" },
+        startAt: { lt: endAt },
+        endAt: { gt: startAt },
+        ...(masterId ? { masterId } : {}),
+      },
       select: { id: true },
     });
 
@@ -299,13 +301,12 @@ console.log("MASTER ID:", req.body?.masterId);
     const created = await prisma.booking.create({
       data: {
         studioId,
+        clientId,
         serviceId,
         masterId: masterId || null,
         startAt,
         endAt,
         status: "PENDING",
-        name,
-        phone,
       },
     });
 
@@ -313,6 +314,113 @@ console.log("MASTER ID:", req.body?.masterId);
   } catch (e) {
     console.error(e);
     res.status(500).json({ message: e?.message || "Create booking failed" });
+  }
+});
+
+// CONFIRM BOOKING
+router.patch("/studio/:studioId/:bookingId/confirm", requireAuth, requireOwner, async (req, res) => {
+  try {
+    const { studioId, bookingId } = req.params;
+    const ownerId = req.auth.sub;
+
+    const studio = await prisma.studio.findFirst({
+      where: { id: studioId, ownerId },
+      select: { id: true },
+    });
+
+    if (!studio) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    const booking = await prisma.booking.findFirst({
+      where: { id: bookingId, studioId },
+      select: { id: true, status: true },
+    });
+
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    const updated = await prisma.booking.update({
+      where: { id: bookingId },
+      data: { status: "CONFIRMED" },
+    });
+
+    res.json({ booking: updated });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: e?.message || "Confirm booking failed" });
+  }
+});
+
+// CANCEL BOOKING
+router.patch("/studio/:studioId/:bookingId/cancel", requireAuth, requireOwner, async (req, res) => {
+  try {
+    const { studioId, bookingId } = req.params;
+    const ownerId = req.auth.sub;
+
+    const studio = await prisma.studio.findFirst({
+      where: { id: studioId, ownerId },
+      select: { id: true },
+    });
+
+    if (!studio) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    const booking = await prisma.booking.findFirst({
+      where: { id: bookingId, studioId },
+      select: { id: true, status: true },
+    });
+
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    const updated = await prisma.booking.update({
+      where: { id: bookingId },
+      data: { status: "CANCELED" },
+    });
+
+    res.json({ booking: updated });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: e?.message || "Cancel booking failed" });
+  }
+});
+
+// DELETE BOOKING
+router.delete("/studio/:studioId/:bookingId", requireAuth, requireOwner, async (req, res) => {
+  try {
+    const { studioId, bookingId } = req.params;
+    const ownerId = req.auth.sub;
+
+    const studio = await prisma.studio.findFirst({
+      where: { id: studioId, ownerId },
+      select: { id: true },
+    });
+
+    if (!studio) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    const booking = await prisma.booking.findFirst({
+      where: { id: bookingId, studioId },
+      select: { id: true },
+    });
+
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    await prisma.booking.delete({
+      where: { id: bookingId },
+    });
+
+    res.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: e?.message || "Delete booking failed" });
   }
 });
 

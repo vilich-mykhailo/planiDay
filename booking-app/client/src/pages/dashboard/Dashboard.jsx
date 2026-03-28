@@ -238,10 +238,10 @@ export default function Dashboard() {
           </aside>
 
           <section
-            className="
-              min-h-[200px] overflow-hidden rounded-3xl border border-stone-200/60 bg-white px-4 py-5 sm:p-6 sm:mb-4 lg:mb--10
-              shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]
-            "
+className="
+  min-h-[200px] overflow-hidden rounded-3xl border border-stone-200/60 bg-white px-4 py-5 sm:p-6 sm:mb-4 sm:mt-4 lg:mt-4
+  shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]
+"
           >
             <Outlet />
           </section>

@@ -10,11 +10,22 @@ import {
   Camera,
   CheckCircle2,
   ShieldCheck,
+  X,
 } from "lucide-react";
 import { api } from "../../api/http";
 
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+const PUBLIC = import.meta.env.VITE_R2_PUBLIC_BASE_URL;
+
 function cx(...a) {
   return a.filter(Boolean).join(" ");
+}
+
+function toPublicUrl(v) {
+  const s = String(v || "").trim();
+  if (!s) return "";
+  if (/^https?:\/\//i.test(s)) return s;
+  return PUBLIC ? `${PUBLIC}/${s}` : s;
 }
 
 function Field({ label, hint, icon, children }) {
@@ -228,6 +239,16 @@ export default function Profile() {
     photoUrl: "",
   });
 
+  const [initialProfile, setInitialProfile] = useState({
+    firstName: "",
+    lastName: "",
+    phone: "",
+    email: "",
+    birthDate: "",
+    gender: "unknown",
+    photoUrl: "",
+  });
+
   const [changePhone, setChangePhone] = useState({
     newPhone: "",
     code: "",
@@ -240,7 +261,19 @@ export default function Profile() {
 
   const [isSaved, setIsSaved] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [apiError, setApiError] = useState("");
+
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreviewUrl, setPhotoPreviewUrl] = useState("");
+  const [pendingDeletePhotoKey, setPendingDeletePhotoKey] = useState("");
+
+  const [errorModal, setErrorModal] = useState({
+    open: false,
+    title: "",
+    message: "",
+  });
+
   const fileRef = useRef(null);
 
   const initials = useMemo(() => {
@@ -249,32 +282,137 @@ export default function Profile() {
     return (a + b).trim() || "U";
   }, [profile.firstName, profile.lastName]);
 
+  const photoSrc = photoPreviewUrl || toPublicUrl(profile.photoUrl);
+
+  const isDirty = useMemo(() => {
+    return (
+      initialProfile.firstName !== profile.firstName ||
+      initialProfile.lastName !== profile.lastName ||
+      initialProfile.birthDate !== profile.birthDate ||
+      initialProfile.gender !== profile.gender ||
+      initialProfile.photoUrl !== profile.photoUrl ||
+      Boolean(photoFile)
+    );
+  }, [initialProfile, profile, photoFile]);
+
+  React.useEffect(() => {
+    if (!photoFile) {
+      setPhotoPreviewUrl("");
+      return;
+    }
+
+    const url = URL.createObjectURL(photoFile);
+    setPhotoPreviewUrl(url);
+
+    return () => URL.revokeObjectURL(url);
+  }, [photoFile]);
+
   const updateProfile = (patch) => {
     setProfile((p) => ({ ...p, ...patch }));
     setIsSaved(false);
   };
 
+  function stageDeletePhoto(key) {
+    const k = String(key || "").trim();
+    if (!k) return;
+    if (/^https?:\/\//i.test(k)) return;
+    setPendingDeletePhotoKey(k);
+  }
+
   function onPickPhoto(file) {
     if (!file) return;
 
-    const url = URL.createObjectURL(file);
+    if (file.size > MAX_IMAGE_SIZE) {
+      setErrorModal({
+        open: true,
+        title: "Файл завеликий",
+        message: "Оберіть фото до 5 MB.",
+      });
+      return;
+    }
 
-    setProfile((p) => {
-      if (p.photoUrl?.startsWith("blob:")) {
-        URL.revokeObjectURL(p.photoUrl);
-      }
-      return { ...p, photoUrl: url };
+    if (!file.type?.startsWith("image/")) {
+      setErrorModal({
+        open: true,
+        title: "Невірний формат",
+        message: "Оберіть файл зображення.",
+      });
+      return;
+    }
+
+    setPhotoFile(file);
+    setIsSaved(false);
+  }
+
+  function removePhoto() {
+    if (profile.photoUrl) {
+      stageDeletePhoto(profile.photoUrl);
+    }
+
+    setPhotoFile(null);
+    setProfile((p) => ({ ...p, photoUrl: "" }));
+    setIsSaved(false);
+  }
+
+  async function uploadClientPhoto(file, token) {
+    const fd = new FormData();
+    fd.append("file", file);
+
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/media/client`, {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: fd,
     });
 
-    setIsSaved(false);
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      throw new Error(data?.message || "Upload failed");
+    }
+
+    return data;
+  }
+
+  async function deleteFromR2(key) {
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/media/delete`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ key }),
+    });
+
+    if (!res.ok) {
+      throw new Error("Delete failed");
+    }
   }
 
   async function saveProfile(e) {
     e.preventDefault();
 
     try {
+      setSaving(true);
       setApiError("");
+
       const token = localStorage.getItem("token");
+
+      let nextPhotoKey = profile.photoUrl || "";
+      const deletesAfterSave = [];
+
+      if (photoFile) {
+        const out = await uploadClientPhoto(photoFile, token);
+        nextPhotoKey = out.key;
+
+        if (profile.photoUrl && profile.photoUrl !== out.key) {
+          deletesAfterSave.push(profile.photoUrl);
+        }
+      }
+
+      if (pendingDeletePhotoKey) {
+        deletesAfterSave.push(pendingDeletePhotoKey);
+      }
 
       await api("/client/me", {
         method: "PATCH",
@@ -284,12 +422,36 @@ export default function Profile() {
           lastName: profile.lastName,
           birthDate: profile.birthDate || null,
           gender: profile.gender,
+          photoUrl: nextPhotoKey || null,
         },
       });
 
+      const nextState = {
+        ...profile,
+        photoUrl: nextPhotoKey,
+      };
+
+      setProfile(nextState);
+      setInitialProfile(nextState);
+      setPhotoFile(null);
+      setPendingDeletePhotoKey("");
       setIsSaved(true);
+
+      const uniqDeletes = Array.from(new Set(deletesAfterSave))
+        .filter(Boolean)
+        .filter((k) => !/^https?:\/\//i.test(k));
+
+      for (const key of uniqDeletes) {
+        try {
+          await deleteFromR2(key);
+        } catch (err) {
+          console.error(err);
+        }
+      }
     } catch (e) {
       setApiError(e.message || "Не вдалося зберегти профіль");
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -313,6 +475,17 @@ export default function Profile() {
     console.log("CONFIRM EMAIL CHANGE", changeEmail);
   }
 
+  function resetProfileFields() {
+    setProfile((p) => ({
+      ...p,
+      firstName: "",
+      lastName: "",
+      birthDate: "",
+      gender: "unknown",
+    }));
+    setIsSaved(false);
+  }
+
   React.useEffect(() => {
     let isMounted = true;
     const start = Date.now();
@@ -327,8 +500,7 @@ export default function Profile() {
 
         if (!isMounted) return;
 
-        setProfile((p) => ({
-          ...p,
+        const next = {
           firstName: data.firstName || "",
           lastName: data.lastName || "",
           phone: data.phone || "",
@@ -336,8 +508,10 @@ export default function Profile() {
           birthDate: data.birthDate ? String(data.birthDate).slice(0, 10) : "",
           gender: data.gender || "unknown",
           photoUrl: data.photoUrl || "",
-        }));
+        };
 
+        setProfile(next);
+        setInitialProfile(next);
         setIsSaved(true);
 
         const elapsed = Date.now() - start;
@@ -379,8 +553,7 @@ export default function Profile() {
                 </div>
 
                 <h1 className="max-w-full text-[28px] font-black leading-[1.02] tracking-[-0.035em] text-stone-800 sm:max-w-none sm:!text-5xl lg:!text-5xl">
-                  Керуйте своїм{" "}
-                  <span className="text-amber-600">профілем</span>
+                  Керуйте своїм <span className="text-amber-600">профілем</span>
                 </h1>
 
                 <p className="max-w-2xl text-[13px] leading-5 text-stone-600 sm:text-base sm:leading-7">
@@ -407,23 +580,40 @@ export default function Profile() {
             title="Профіль"
             subtitle="Основні дані, які будуть підставлятися у форму бронювання."
             right={
-              <SecondaryButton
-                type="button"
-                onClick={() => fileRef.current?.click()}
-                className="w-full sm:w-auto"
-              >
-                <Camera className="h-4 w-4" />
-                Змінити фото
-              </SecondaryButton>
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                <SecondaryButton
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  className="w-full sm:w-auto"
+                >
+                  <Camera className="h-4 w-4" />
+                  Змінити фото
+                </SecondaryButton>
+
+                {(profile.photoUrl || photoFile) && (
+                  <SecondaryButton
+                    type="button"
+                    onClick={removePhoto}
+                    className="w-full sm:w-auto"
+                  >
+                    <X className="h-4 w-4" />
+                    Видалити фото
+                  </SecondaryButton>
+                )}
+              </div>
             }
           >
             <form onSubmit={saveProfile} className="space-y-5 sm:space-y-6">
               <div className="flex flex-col gap-3.5 rounded-[22px] border border-stone-200/80 bg-stone-50/70 p-3.5 sm:flex-row sm:items-center sm:gap-4 sm:rounded-[24px] sm:p-5">
                 <div className="relative mx-auto sm:mx-0">
-                  <div className="grid h-18 w-18 place-items-center overflow-hidden rounded-[22px] border border-stone-200 bg-white shadow-sm sm:h-20 sm:w-20 sm:rounded-[24px]">
-                    {profile.photoUrl ? (
+                  <button
+                    type="button"
+                    onClick={() => fileRef.current?.click()}
+                    className="relative grid h-18 w-18 place-items-center overflow-hidden rounded-[22px] border border-stone-200 bg-white shadow-sm transition hover:border-amber-300 sm:h-20 sm:w-20 sm:rounded-[24px]"
+                  >
+                    {photoSrc ? (
                       <img
-                        src={profile.photoUrl}
+                        src={photoSrc}
                         alt="avatar"
                         className="h-full w-full object-cover"
                       />
@@ -432,7 +622,7 @@ export default function Profile() {
                         {initials}
                       </span>
                     )}
-                  </div>
+                  </button>
 
                   <div className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-xl border border-white bg-amber-500 text-white shadow-md">
                     <Camera className="h-4 w-4" />
@@ -443,7 +633,10 @@ export default function Profile() {
                     type="file"
                     accept="image/*"
                     className="hidden"
-                    onChange={(e) => onPickPhoto(e.target.files?.[0])}
+                    onChange={(e) => {
+                      onPickPhoto(e.target.files?.[0]);
+                      e.target.value = "";
+                    }}
                   />
                 </div>
 
@@ -533,10 +726,12 @@ export default function Profile() {
               <div className="flex flex-col gap-2.5 sm:flex-row">
                 <PrimaryButton
                   type="submit"
-                  disabled={isSaved}
+                  disabled={saving || !isDirty}
                   className="w-full sm:w-auto"
                 >
-                  {isSaved ? (
+                  {saving ? (
+                    <>Збереження...</>
+                  ) : isSaved && !isDirty ? (
                     <>
                       <CheckCircle2 className="h-4 w-4" />
                       Збережено
@@ -552,16 +747,7 @@ export default function Profile() {
                 <SecondaryButton
                   type="button"
                   className="w-full sm:w-auto"
-                  onClick={() =>
-                    setProfile((p) => ({
-                      ...p,
-                      firstName: "",
-                      lastName: "",
-                      birthDate: "",
-                      gender: "unknown",
-                      photoUrl: p.photoUrl,
-                    }))
-                  }
+                  onClick={resetProfileFields}
                 >
                   Очистити поля
                 </SecondaryButton>
@@ -680,6 +866,29 @@ export default function Profile() {
           ) : null}
         </div>
       </div>
+
+      {errorModal.open && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-stone-900/40 px-4">
+          <div className="w-full max-w-md rounded-3xl border border-stone-200 bg-white p-6 shadow-[0_24px_80px_rgba(93,64,55,0.18)]">
+            <h3 className="text-lg font-bold text-stone-800">
+              {errorModal.title}
+            </h3>
+            <p className="mt-2 text-sm text-stone-600">
+              {errorModal.message}
+            </p>
+            <div className="mt-5 flex justify-end">
+              <PrimaryButton
+                type="button"
+                onClick={() =>
+                  setErrorModal({ open: false, title: "", message: "" })
+                }
+              >
+                Зрозуміло
+              </PrimaryButton>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
