@@ -1,70 +1,113 @@
+// Favourites.jsx
 import { Link } from "react-router-dom";
+import { Sparkles, ArrowRight, Heart, MapPin } from "lucide-react";
 import { useFavourites } from "../context/favourites.context";
 
 function safeText(v) {
   return String(v ?? "").trim();
 }
 
+function cn(...classes) {
+  return classes.filter(Boolean).join(" ");
+}
+
 export default function Favourites() {
-  const { favourites, toggleFavourite, } = useFavourites();
+  const { favourites, toggleFavourite } = useFavourites();
 
   if (!favourites || favourites.length === 0) {
     return (
-          <div className="pt-6 px-4 sm:pt-8 sm:px-6 lg:pt-6 lg:px-8 space-y-6">
-      <div className="rounded-3xl border border-gray-200 bg-white p-6 sm:p-8">
-        <div className="mx-auto max-w-xl text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-gray-200 bg-gray-50">
-            <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none">
-              <path
-                d="M12 21s-7-4.35-9.33-8.28C1.1 9.9 2.07 6.9 4.7 5.5 7.33 4.1 10 5.7 12 8c2-2.3 4.67-3.9 7.3-2.5 2.63 1.4 3.6 4.4 2.03 7.22C19 16.65 12 21 12 21Z"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinejoin="round"
-              />
-            </svg>
+      <div className="pt-20 px-4 sm:pt-22 sm:px-6 lg:pt-22 lg:px-8 space-y-6">
+        <section className="overflow-hidden rounded-[24px] border border-stone-200/60 bg-white shadow-[0_4px_20px_-6px_rgba(120,90,60,0.08)] sm:rounded-3xl">
+          <div className="h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-70" />
+
+          <div className="px-4 pb-7 pt-7 sm:px-6 sm:pb-4 sm:pt-5 lg:px-8 lg:pt-6">
+            <div className="mb-5 space-y-3 sm:mb-4 sm:space-y-2 lg:mb-5">
+              <div className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-3 py-1 sm:px-4 sm:py-1.5">
+                <Sparkles className="h-3.5 w-3.5 text-amber-600 sm:h-4 sm:w-4" />
+                <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-700 sm:text-xs sm:tracking-[0.22em]">
+                  Збережені студії
+                </span>
+              </div>
+
+              <h1 className="max-w-full !text-[34px] font-black leading-tight tracking-[-0.03em] text-stone-800 sm:max-w-none sm:!text-5xl lg:!text-5xl">
+                Ваші <span className="text-amber-600">улюблені</span>
+              </h1>
+
+              <p className="max-w-2xl text-sm leading-6 text-stone-600 sm:text-base sm:leading-7">
+                Тут з’являться студії, які ти додаси в обране. Зберігай цікаві
+                варіанти та повертайся до них у будь-який момент.
+              </p>
+            </div>
+
+            <div className="rounded-3xl border border-stone-200/70 bg-white p-8 shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)] sm:p-10">
+              <div className="mx-auto max-w-xl text-center">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-[20px] border border-stone-200 bg-stone-100">
+                  <Heart className="h-7 w-7 text-rose-500" />
+                </div>
+
+                <h2 className="mt-4 text-xl font-semibold tracking-tight text-stone-800">
+                  Поки що обране порожнє
+                </h2>
+
+                <p className="mt-2 text-sm text-stone-500">
+                  Додай кілька студій до улюблених, щоб швидко знаходити їх і
+                  записуватись без повторного пошуку.
+                </p>
+
+                <Link
+                  to="/"
+                  className="mt-6 inline-flex items-center justify-center gap-2 rounded-[18px] bg-gradient-to-r from-emerald-600 to-emerald-700 px-5 py-3 text-sm font-bold text-white shadow-[0_10px_24px_rgba(74,93,78,0.22)] transition-all duration-200 hover:from-emerald-700 hover:to-emerald-800 hover:shadow-md active:scale-95"
+                >
+                  Перейти до салонів
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+            </div>
           </div>
-
-          <h1 className="mt-4 text-2xl font-extrabold text-gray-900">Обране</h1>
-          <p className="mt-2 text-sm text-gray-600">
-            Тут з’являться салони, які ти збережеш. Додай пару студій — і повертайся сюди,
-            щоб швидко записуватись.
-          </p>
-
-          <Link
-            to="/"
-            className="mt-6 inline-flex items-center justify-center rounded-2xl bg-black px-5 py-3 text-sm font-extrabold text-white hover:bg-gray-900 transition"
-          >
-            Перейти до салонів →
-          </Link>
-        </div>
-      </div>
+        </section>
       </div>
     );
   }
 
   return (
-    <div className="pt-6 px-4 sm:pt-8 sm:px-6 lg:pt-6 lg:px-8 space-y-6">
-      {/* Header */}
-      <div className="rounded-3xl border border-gray-200 bg-white p-6 sm:p-8">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-<div className="text-center sm:text-left">
-  <h1 className="text-2xl font-extrabold text-gray-900">
-    Улюблені
-  </h1>
+    <div className="min-h-screen">
+      <div className="mx-auto max-w-6xl px-2.5 pb-4 pt-18 sm:px-4 sm:pb-8 sm:pt-14 lg:pt-16">
+        <div className="space-y-3 px-0 pt-2 sm:space-y-5 sm:pt-8 lg:pt-6">
+      <section className="overflow-hidden rounded-[24px] border border-stone-200/60 bg-white shadow-[0_4px_20px_-6px_rgba(120,90,60,0.08)] sm:rounded-3xl">
+        <div className="h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-70" />
 
-</div>
+        <div className="px-4 pb-7 pt-7 sm:px-6 sm:pb-4 sm:pt-5 lg:px-8 lg:pt-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="space-y-3 sm:space-y-2">
+              <div className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-3 py-1 sm:px-4 sm:py-1.5">
+                <Sparkles className="h-3.5 w-3.5 text-amber-600 sm:h-4 sm:w-4" />
+                <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-700 sm:text-xs sm:tracking-[0.22em]">
+                  Улюблені студії
+                </span>
+              </div>
 
-          <Link
-            to="/"
-            className="inline-flex items-center justify-center rounded-2xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-extrabold text-gray-900 hover:bg-gray-50 transition"
-          >
-            Додати ще салони
-          </Link>
+              <h1 className="max-w-full !text-[34px] font-black leading-tight tracking-[-0.03em] text-stone-800 sm:max-w-none sm:!text-5xl lg:!text-5xl">
+                Ваші <span className="text-amber-600">улюблені</span>
+              </h1>
+
+              <p className="max-w-2xl text-sm leading-6 text-stone-600 sm:text-base sm:leading-7">
+                Усі студії, які ти зберіг, знаходяться тут. Можна швидко
+                переглянути деталі або прибрати зайве з обраного.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <Link
+                to="/"
+                className="inline-flex items-center justify-center gap-2 rounded-[18px] border border-stone-200 bg-white px-4 py-3 text-sm font-bold text-stone-700 transition-all duration-200 hover:border-stone-300 hover:bg-stone-50 hover:shadow-sm active:scale-95"
+              >
+                Додати ще салони
+              </Link>
+            </div>
+          </div>
         </div>
-      </div>
-
-      {/* Cards */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      </section>
+      <div className="grid gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
         {favourites.map((s) => {
           const name = safeText(s.name) || "Студія";
           const city = safeText(s.city);
@@ -72,102 +115,115 @@ export default function Favourites() {
           const coverUrl = safeText(s.coverUrl);
           const priceFrom = s.priceFrom;
 
-
-
           return (
             <Link
               key={s.slug}
-              to={`//${s.slug}`}
-              className="
-                group relative overflow-hidden
-                rounded-2xl border border-gray-200 bg-white
-                transition-all duration-300
-                hover:-translate-y-[2px] hover:shadow-md hover:border-gray-300
-                active:scale-[0.99]
-              "
+              to={`/${s.slug}`}
+              className={cn(
+                "group relative flex h-full flex-col overflow-hidden rounded-[24px] border border-stone-200/80 bg-white transition-all duration-500 will-change-transform sm:rounded-[30px]",
+                "shadow-[0_10px_26px_rgba(15,23,42,0.07)] hover:-translate-y-1 hover:border-stone-300 hover:shadow-[0_16px_34px_rgba(15,23,42,0.10)] sm:hover:-translate-y-1.5 sm:hover:shadow-[0_22px_48px_rgba(15,23,42,0.12)]",
+              )}
             >
-              {/* cover */}
-              <div className="relative h-28 bg-gray-100">
+              <div className="relative h-40 overflow-hidden bg-stone-100">
                 {coverUrl ? (
                   <img
                     src={coverUrl}
                     alt={`${name} cover`}
-                    className="h-full w-full object-cover"
+                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.06]"
                     loading="lazy"
                     onError={(e) => (e.currentTarget.style.display = "none")}
                   />
                 ) : (
-                  <div className="flex h-full w-full items-center justify-center text-xs text-gray-500">
+                  <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-stone-100 to-stone-200 text-sm text-stone-500">
                     Без обкладинки
                   </div>
                 )}
 
+                <div className="absolute inset-0 bg-gradient-to-t from-stone-950/55 via-stone-900/10 to-transparent" />
 
-              </div>
-
-              {/* body */}
-              <div className="p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <h2 className="truncate text-base font-semibold text-gray-900">
-                      {name}
-                    </h2>
-                    <p className="mt-0.5 text-sm text-gray-600">
-                      {category || "Категорія"}
-                      {city ? ` • ${city}` : ""}
-                    </p>
-                  </div>
-
-                  {priceFrom != null && (
-                    <div className="shrink-0 rounded-xl border border-gray-200 bg-gray-50 px-3 py-1 text-sm font-semibold text-gray-900">
-                      від {priceFrom} грн
+                <div className="absolute left-4 top-4 z-20 flex flex-wrap items-center gap-2">
+                  {category ? (
+                    <div className="inline-flex items-center rounded-full border border-white/15 bg-white/12 px-3 py-1.5 text-[11px] font-semibold text-white/95 backdrop-blur-md">
+                      {category}
                     </div>
-                  )}
+                  ) : null}
                 </div>
 
-<div className="mt-4 flex items-center justify-between">
-  <span className="text-sm font-semibold text-gray-900 group-hover:underline">
-    Переглянути →
-  </span>
+                <div className="absolute right-4 top-4 z-20">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      toggleFavourite(s);
+                    }}
+                    className="flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-white/90 text-rose-500 shadow-[0_8px_22px_rgba(15,23,42,0.16)] backdrop-blur-md transition-all duration-200 hover:scale-105 hover:bg-rose-50 active:scale-95"
+                    aria-label="Прибрати з обраного"
+                  >
+                    <Heart
+                      className="h-5 w-5 fill-rose-500 text-rose-500"
+                      strokeWidth={2.2}
+                    />
+                  </button>
+                </div>
 
-  <button
-    type="button"
-    onClick={(e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      toggleFavourite(s);
-    }}
-    className="
-      flex items-center justify-center
-      h-10 w-10
-      rounded-full
-      border border-gray-200
-      bg-white
-      transition-all duration-200
-      hover:bg-rose-50 hover:border-rose-200
-      active:scale-95
-      cursor-pointer
-    "
-    aria-label="Прибрати з обраного"
-  >
-    <svg
-      viewBox="0 0 24 24"
-      className="h-6 w-6"
-      fill="#ef4444"
-      stroke="#ef4444"
-      strokeWidth="2.4"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M12 20.5L4.8 13.3C2.9 11.4 2.9 8.3 4.8 6.4C6.7 4.5 9.8 4.5 11.7 6.4L12 6.7L12.3 6.4C14.2 4.5 17.3 4.5 19.2 6.4C21.1 8.3 21.1 11.4 19.2 13.3L12 20.5Z" />
-    </svg>
-  </button>
-</div>
+                <div className="absolute inset-x-0 bottom-0 z-20 p-4">
+                  <div className="min-w-0">
+                    <h2 className="truncate text-xl font-black tracking-[-0.03em] text-white drop-shadow-sm">
+                      {name}
+                    </h2>
+
+                    <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-white/90">
+                      {city ? (
+                        <span className="inline-flex items-center gap-1">
+                          <MapPin className="h-4 w-4 text-rose-300" />
+                          {city}
+                        </span>
+                      ) : null}
+
+                      {priceFrom != null ? (
+                        <span className="rounded-full border border-white/15 bg-white/12 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-md">
+                          від {priceFrom} грн
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="relative flex flex-1 flex-col p-5">
+                <div className="absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-stone-200 to-transparent" />
+
+                <div className="space-y-3">
+                  <p className="text-sm leading-6 text-stone-600">
+                    Збережена студія для швидкого перегляду та запису.
+                  </p>
+                </div>
+
+                <div className="mt-auto pt-5">
+                  <div className="flex items-center gap-3">
+                    <div className="relative flex h-12 w-full items-center justify-center overflow-hidden rounded-[18px] border border-stone-200 bg-white px-4 text-sm font-semibold tracking-[-0.01em] text-stone-900 shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition-all duration-300 hover:-translate-y-0.5 hover:border-stone-300 hover:shadow-[0_14px_32px_rgba(15,23,42,0.10)] active:scale-[0.985]">
+                      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white to-transparent opacity-80" />
+
+                      <span className="relative z-10 flex items-center gap-2.5">
+                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-50">
+                          <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                        </span>
+
+                        <span>Переглянути студію</span>
+
+                        <ArrowRight className="h-4 w-4 text-stone-500 transition-transform duration-300 group-hover:translate-x-0.5" />
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </Link>
           );
         })}
       </div>
+    </div>
+    </div>
     </div>
   );
 }

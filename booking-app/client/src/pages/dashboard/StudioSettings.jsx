@@ -118,7 +118,7 @@ function Button({
 }) {
   const variants = {
     primary:
-      "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/35 hover:from-emerald-700 hover:to-emerald-800",
+      "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white  hover:shadow-emerald-500/35 hover:from-emerald-700 hover:to-emerald-800",
     secondary:
       "bg-white border border-stone-200 text-stone-700 hover:bg-stone-50 hover:border-stone-300",
     danger:
@@ -387,7 +387,7 @@ function StudioSettingsSkeleton() {
         </div>
 
         <div className="mt-4 rounded-2xl border border-stone-200 bg-white p-2 shadow-sm">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div className="flex flex-1 gap-2 overflow-x-auto">
               <SkeletonBlock className="h-10 w-24 shrink-0 rounded-xl" />
               <SkeletonBlock className="h-10 w-24 shrink-0 rounded-xl" />
@@ -605,6 +605,9 @@ export default function StudioSettings() {
   const [logoPreviewUrl, setLogoPreviewUrl] = useState("");
   const [portfolioPreviewUrls, setPortfolioPreviewUrls] = useState([]);
   const [highlightTone, setHighlightTone] = useState("green");
+
+  const strongHighlightClass =
+    "ring-4 ring-amber-400/40 bg-gradient-to-br from-amber-50 to-orange-100 border-amber-300  animate-pulse";
 
   const highlightClass =
     highlightTone === "green"
@@ -1557,77 +1560,77 @@ export default function StudioSettings() {
 
         {/* Header */}
         <div className="mb-6">
-<div
-  ref={headerTriggerRef}
-  className="relative overflow-hidden rounded-3xl border border-stone-200/60 bg-white p-5 sm:p-6 shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]"
->
-  {/* top accent */}
-  <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-60" />
+          <div
+            ref={headerTriggerRef}
+            className="relative overflow-hidden rounded-3xl border border-stone-200/60 bg-white p-5 sm:p-6 shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]"
+          >
+            {/* top accent */}
+            <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-60" />
 
-  {/* ✅ badge в правому верхньому куті */}
-  {profile.percent === 100 && (
-    <div className="absolute right-4 top-4">
-      <div className="rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-700 px-3 py-2 text-white shadow-[0_10px_24px_rgba(16,185,129,0.18)]">
-        <div className="flex items-center gap-2">
-          <div className="hidden h-7 w-7 items-center justify-center rounded-lg bg-white/20 sm:flex">
-            <Check className="h-4 w-4 text-white" />
+            {/* ✅ badge в правому верхньому куті */}
+            {profile.percent === 100 && (
+              <div className="absolute right-4 top-4">
+                <div className="rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-700 px-3 py-2 text-white ">
+                  <div className="flex items-center gap-2">
+                    <div className="hidden h-7 w-7 items-center justify-center rounded-lg bg-white/20 sm:flex">
+                      <Check className="h-4 w-4 text-white" />
+                    </div>
+
+                    <p className="text-[11px] font-bold leading-4">
+                      Профіль заповнено
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="relative">
+              <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-3 py-1.5">
+                <Sparkles className="h-3.5 w-3.5 text-amber-600" />
+                <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-amber-700">
+                  Профіль студії
+                </span>
+              </div>
+
+              <h1 className="text-3xl font-black tracking-tight text-stone-800 sm:text-4xl">
+                Профіль студії
+              </h1>
+
+              <p className="mt-2 max-w-xl text-sm text-stone-600 sm:text-base">
+                Створіть профіль, який підвищує довіру та виглядає професійно.
+              </p>
+            </div>
           </div>
 
-          <p className="text-[11px] font-bold leading-4">
-            Профіль заповнено
-          </p>
-        </div>
-      </div>
-    </div>
-  )}
-
-  <div className="relative">
-    <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-3 py-1.5">
-      <Sparkles className="h-3.5 w-3.5 text-amber-600" />
-      <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-amber-700">
-        Профіль студії
-      </span>
-    </div>
-
-    <h1 className="text-3xl font-black tracking-tight text-stone-800 sm:text-4xl">
-      Профіль студії
-    </h1>
-
-    <p className="mt-2 max-w-xl text-sm text-stone-600 sm:text-base">
-      Створіть профіль, який підвищує довіру та виглядає професійно.
-    </p>
-  </div>
-</div>
-
           {/* Tabs */}
-         <div className="mt-4 rounded-2xl border border-stone-200 bg-white px-0 py-2 shadow-sm sm:p-2">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="mt-4 rounded-2xl border border-stone-200 bg-white px-0 py-2 shadow-sm sm:p-2">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               {/* Tabs */}
-<div className="flex justify-center gap-1 overflow-x-auto px-0 sm:gap-2">
-  {[
-    { id: "profile", label: "Профіль" },
-    { id: "location", label: "Локація" },
-    { id: "links", label: "Портфоліо" },
-  ].map((t) => (
-    <button
-      key={t.id}
-      type="button"
-      onClick={() => setTabUrl(t.id)}
-      className={cn(
-        "shrink-0 whitespace-nowrap rounded-xl px-3 py-2 text-[13px] font-semibold transition sm:px-4 sm:py-2.5 sm:text-sm",
-        tab === t.id
-          ? "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white"
-          : "bg-white text-stone-600 hover:bg-stone-50",
-      )}
-    >
-      {t.label}
-    </button>
-  ))}
-</div>
+              <div className="flex justify-center gap-1 overflow-x-auto px-0 sm:gap-2">
+                {[
+                  { id: "profile", label: "Профіль" },
+                  { id: "location", label: "Локація" },
+                  { id: "links", label: "Портфоліо" },
+                ].map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setTabUrl(t.id)}
+                    className={cn(
+                      "shrink-0 whitespace-nowrap rounded-xl px-3 py-2 text-[13px] font-semibold transition sm:px-4 sm:py-2.5 sm:text-sm",
+                      tab === t.id
+                        ? "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white"
+                        : "bg-white text-stone-600 hover:bg-stone-50",
+                    )}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
 
               {/* ❗ ТІЛЬКИ якщо <100% */}
               {profile.percent !== 100 && (
-                <div className="flex shrink-0 items-center justify-between gap-3 rounded-2xl px-3 py-2 border border-amber-200 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-100">
+                <div className="mx-auto flex w-fit max-w-full shrink-0 items-center gap-3 rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-100 px-3 py-2 sm:mx-0 sm:w-auto sm:min-w-[220px] sm:justify-between">
                   <div className="flex items-center gap-3">
                     <div className="relative flex h-10 w-10 items-center justify-center rounded-2xl bg-white shadow-sm">
                       <span className="absolute inline-flex h-3 w-3 rounded-full bg-orange-400 opacity-75 animate-ping" />
@@ -1671,10 +1674,7 @@ export default function StudioSettings() {
               <section className="overflow-hidden rounded-3xl border border-stone-200/60 bg-white shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]">
                 <div
                   id="studio-field-coverUrl"
-                  className={cn(
-                    "relative h-44 bg-stone-100",
-                    highlightId === "studio-field-coverUrl" && highlightClass,
-                  )}
+                  className="relative h-44 bg-stone-100"
                 >
                   {hasCover ? (
                     <button
@@ -1702,6 +1702,14 @@ export default function StudioSettings() {
                     >
                       <Plus className="h-4 w-4" />
                       Додати обкладинку
+                      {highlightId === "studio-field-coverUrl" && (
+                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-amber-300/20 backdrop-blur-[1px]">
+                          <span className="flex h-full w-full items-center justify-center gap-2 px-6 text-center text-sm font-medium text-stone-500 transition hover:text-stone-700">
+                            <Plus className="h-4 w-4" />
+                            Додати обкладинку
+                          </span>
+                        </div>
+                      )}
                     </button>
                   )}
 
@@ -1726,16 +1734,16 @@ export default function StudioSettings() {
                     <div
                       id="studio-field-logoUrl"
                       className={cn(
-                        "relative h-20 w-20 shrink-0 overflow-hidden rounded-[22px] border border-stone-200 bg-white shadow-sm",
+                        "relative h-20 w-20 shrink-0 overflow-hidden rounded-[22px] border border-stone-200 bg-white shadow-sm transition-all duration-300",
                         highlightId === "studio-field-logoUrl" &&
-                          highlightClass,
+                          cn(highlightClass, "scale-105"),
                       )}
                     >
                       <button
                         type="button"
                         onClick={pickLogoFromPreview}
                         onKeyDown={onKeyboardPick(pickLogoFromPreview)}
-                        className="h-full w-full"
+                        className="relative h-full w-full"
                         title="Завантажити логотип"
                       >
                         {hasLogo ? (
@@ -1748,26 +1756,22 @@ export default function StudioSettings() {
                             }
                           />
                         ) : (
-                          <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-stone-500">
-                            + Лого
+                          <div className="flex h-full w-full items-center justify-center text-stone-500">
+                            <span className="flex items-center justify-center ">
+                              <Camera className="h-7 w-7" />
+                            </span>
+                          </div>
+                        )}
+
+                        {/* 🔥 overlay */}
+                        {highlightId === "studio-field-logoUrl" && (
+                          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-amber-300/25 backdrop-blur-[1px]">
+                            <span className="flex items-center justify-center rounded-lg bg-white/90 p-1.5 text-amber-700 shadow">
+                              <Camera className="h-7 w-7" />
+                            </span>
                           </div>
                         )}
                       </button>
-
-                      {hasLogo && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeImage("logoUrl");
-                          }}
-                          className="absolute right-1 top-1 z-10 grid h-6 w-6 place-items-center rounded-lg border border-stone-200 bg-white/90 text-stone-600 shadow-sm backdrop-blur transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
-                          title="Видалити логотип"
-                          aria-label="Remove logo"
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </button>
-                      )}
                     </div>
 
                     <div className="min-h-[44px] min-w-0 rounded-2xl border border-stone-200 bg-white px-3 py-2 shadow-sm">
@@ -2015,7 +2019,10 @@ export default function StudioSettings() {
                   subtitle="Додай 4–12 фото робіт — це сильніше за будь-який текст."
                 >
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div id="studio-field-portfolio" className="sm:col-span-2">
+                    <div
+                      id="studio-field-portfolio"
+                      className="sm:col-span-2 pb-12 md:pb-0"
+                    >
                       <Field
                         label="Портфоліо (фото робіт)"
                         error={errors.portfolioUrls}
@@ -2025,7 +2032,7 @@ export default function StudioSettings() {
                           <label
                             id="studio-field-portfolio-add"
                             className={cn(
-                              "inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-700 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition hover:from-emerald-700 hover:to-emerald-800",
+                              "inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-700 px-4 py-2.5 text-sm font-semibold text-white  transition hover:from-emerald-700 hover:to-emerald-800",
                               highlightId === "studio-field-portfolio-add" &&
                                 highlightClass,
                             )}

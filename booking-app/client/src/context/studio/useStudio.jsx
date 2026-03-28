@@ -1,3 +1,4 @@
+// useStudio.jsx
 import { useContext } from "react";
 import { StudioContext } from "./StudioContext";
 

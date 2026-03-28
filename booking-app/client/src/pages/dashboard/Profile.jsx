@@ -1,18 +1,45 @@
-// Profile.jsx //
+// Profile.jsx
 import React, { useMemo, useRef, useState } from "react";
+import {
+  Sparkles,
+  User,
+  Phone,
+  Mail,
+  CalendarDays,
+  VenusAndMars,
+  Camera,
+  CheckCircle2,
+  ShieldCheck,
+} from "lucide-react";
 import { api } from "../../api/http";
 
 function cx(...a) {
   return a.filter(Boolean).join(" ");
 }
 
-function Field({ label, hint, children }) {
+function Field({ label, hint, icon, children }) {
   return (
     <div className="space-y-1.5">
-      <div className="flex items-end justify-between gap-3">
-        <p className="text-sm font-semibold text-gray-900">{label}</p>
-        {hint ? <p className="text-xs text-gray-500">{hint}</p> : null}
+      <div className="flex items-end justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2">
+          {icon ? (
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+              {icon}
+            </span>
+          ) : null}
+
+          <p className="truncate text-[13px] font-semibold text-stone-900 sm:text-sm">
+            {label}
+          </p>
+        </div>
+
+        {hint ? (
+          <p className="shrink-0 text-[11px] text-stone-500 sm:text-xs">
+            {hint}
+          </p>
+        ) : null}
       </div>
+
       {children}
     </div>
   );
@@ -23,9 +50,13 @@ function Input(props) {
     <input
       {...props}
       className={cx(
-        "w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm",
-        "outline-none transition",
-        "focus:border-gray-300 focus:ring-4 focus:ring-gray-100",
+        "w-full rounded-2xl border border-stone-200 bg-white px-3.5 py-3 text-[14px] text-stone-800",
+        "outline-none transition-all duration-200",
+        "placeholder:text-stone-400",
+        "focus:border-amber-300 focus:ring-4 focus:ring-amber-100",
+        "sm:px-4 sm:text-sm",
+        props.disabled &&
+          "cursor-not-allowed bg-stone-100 text-stone-500 placeholder:text-stone-400",
         props.className,
       )}
     />
@@ -49,26 +80,23 @@ function Select(props) {
         }}
         onChange={(e) => {
           props.onChange?.(e);
-          // після вибору часто хочеться зразу "закрити" анімацію
           setOpen(false);
         }}
         className={cx(
-          "w-full appearance-none rounded-2xl border border-gray-200 bg-white",
-          "px-4 pr-12 py-3 text-sm",
-          "outline-none transition",
-          "focus:border-gray-300 focus:ring-4 focus:ring-gray-100",
+          "w-full appearance-none rounded-2xl border border-stone-200 bg-white px-3.5 py-3 pr-11 text-[14px] text-stone-800",
+          "outline-none transition-all duration-200",
+          "focus:border-amber-300 focus:ring-4 focus:ring-amber-100",
+          "sm:px-4 sm:pr-12 sm:text-sm",
           props.className,
         )}
       >
         {props.children}
       </select>
 
-      {/* Custom arrow (animated) */}
-      <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center">
+      <div className="pointer-events-none absolute inset-y-0 right-3.5 flex items-center sm:right-4">
         <svg
           className={cx(
-            "h-4 w-4 text-gray-500",
-            "transition-transform duration-200 ease-out",
+            "h-4 w-4 text-stone-500 transition-transform duration-200 ease-out",
             open ? "rotate-180" : "rotate-0",
           )}
           viewBox="0 0 20 20"
@@ -87,47 +115,28 @@ function Select(props) {
   );
 }
 
-function Segmented({ value, onChange, options }) {
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 rounded-2xl bg-gray-50 p-2 border border-gray-200">
-      {options.map((opt) => {
-        const active = value === opt.value;
-
-        return (
-          <button
-            key={opt.value}
-            type="button"
-            onClick={() => onChange(opt.value)}
-            className={cx(
-              "rounded-xl px-3 py-2 text-sm font-extrabold transition",
-              "focus:outline-none focus:ring-4 focus:ring-gray-100",
-              active
-                ? "bg-black text-white shadow-sm"
-                : "bg-white text-gray-900 border border-gray-200 hover:bg-gray-50",
-            )}
-          >
-            {opt.label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
 function Card({ title, subtitle, right, children }) {
   return (
-    <section className="rounded-[28px] border border-gray-200 bg-white shadow-sm">
-      <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 sm:px-7 py-5">
+    <section className="overflow-hidden rounded-[22px] border border-stone-200/60 bg-white shadow-[0_4px_20px_-6px_rgba(120,90,60,0.08)] sm:rounded-3xl">
+      <div className="h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-70" />
+
+      <div className="flex flex-col gap-3 border-b border-stone-100 px-3.5 py-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4 sm:px-6 sm:py-5 lg:px-8">
         <div className="min-w-0">
-          <h2 className="text-base sm:text-lg font-extrabold text-gray-900">
+          <h2 className="text-[15px] font-black tracking-[-0.02em] text-stone-800 sm:text-lg">
             {title}
           </h2>
+
           {subtitle ? (
-            <p className="mt-1 text-sm text-gray-600">{subtitle}</p>
+            <p className="mt-1 text-[13px] leading-5 text-stone-600 sm:text-sm sm:leading-6">
+              {subtitle}
+            </p>
           ) : null}
         </div>
-        {right ? <div className="shrink-0">{right}</div> : null}
+
+        {right ? <div className="w-full shrink-0 sm:w-auto">{right}</div> : null}
       </div>
-      <div className="px-5 sm:px-7 py-6">{children}</div>
+
+      <div className="px-3.5 py-4 sm:px-6 sm:py-6 lg:px-8">{children}</div>
     </section>
   );
 }
@@ -137,11 +146,11 @@ function PrimaryButton({ children, ...props }) {
     <button
       {...props}
       className={cx(
-        "inline-flex items-center justify-center rounded-2xl px-4 py-3",
-        "text-sm font-extrabold transition active:scale-[0.99]",
+        "inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[18px] px-4 py-3",
+        "text-sm font-bold transition-all duration-200 active:scale-[0.98]",
         props.disabled
-          ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-          : "bg-black text-white hover:bg-gray-900",
+          ? "cursor-not-allowed border border-stone-200 bg-stone-100 text-stone-400 shadow-none"
+          : "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-[0_10px_24px_rgba(74,93,78,0.22)] hover:from-emerald-700 hover:to-emerald-800 hover:shadow-md",
         props.className,
       )}
     >
@@ -155,11 +164,11 @@ function SecondaryButton({ children, ...props }) {
     <button
       {...props}
       className={cx(
-        "inline-flex items-center justify-center rounded-2xl px-4 py-3",
-        "text-sm font-extrabold transition active:scale-[0.99]",
+        "inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[18px] border px-4 py-3",
+        "text-sm font-bold transition-all duration-200 active:scale-[0.98]",
         props.disabled
-          ? "bg-white text-gray-300 border border-gray-100 cursor-not-allowed"
-          : "bg-white text-gray-900 border border-gray-200 hover:bg-gray-50",
+          ? "cursor-not-allowed border-stone-200 bg-stone-100 text-stone-400"
+          : "border-stone-200 bg-white text-stone-700 hover:border-red-200 hover:bg-red-50 hover:text-red-600 hover:shadow-sm",
         props.className,
       )}
     >
@@ -170,52 +179,55 @@ function SecondaryButton({ children, ...props }) {
 
 function SkeletonBlock({ className }) {
   return (
-    <div className={`animate-pulse rounded-2xl bg-gray-100 ${className}`} />
+    <div className={cx("animate-pulse rounded-2xl bg-stone-100", className)} />
   );
 }
 
 function ProfileSkeleton() {
   return (
-    <div className="mx-auto w-full max-w-4xl px-4 sm:px-6 pt-8 pb-10 space-y-5">
-      <section className="rounded-[28px] border border-gray-200 bg-white shadow-sm px-5 sm:px-7 py-6 space-y-6">
-        {/* Avatar row */}
-        <div className="flex items-center gap-4">
-          <SkeletonBlock className="h-16 w-16 rounded-3xl" />
-          <div className="space-y-2 w-full max-w-xs">
-            <SkeletonBlock className="h-4 w-40" />
-            <SkeletonBlock className="h-3 w-28" />
-          </div>
-        </div>
+    <div className="min-h-screen">
+      <div className="mx-auto max-w-6xl px-2.5 pb-4 pt-18 sm:px-4 sm:pb-8 sm:pt-14 lg:pt-16">
+        <div className="space-y-3 px-0 pt-2 sm:space-y-5 sm:pt-8 lg:pt-6">
+          <section className="overflow-hidden rounded-[22px] border border-stone-200/60 bg-white shadow-[0_4px_20px_-6px_rgba(120,90,60,0.08)] sm:rounded-3xl">
+            <div className="h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-70" />
+            <div className="space-y-5 px-3.5 py-5 sm:space-y-6 sm:px-6 sm:py-6 lg:px-8">
+              <div className="flex items-center gap-3.5 sm:gap-4">
+                <SkeletonBlock className="h-18 w-18 rounded-[22px] sm:h-20 sm:w-20 sm:rounded-[24px]" />
+                <div className="w-full max-w-xs space-y-2">
+                  <SkeletonBlock className="h-5 w-36 sm:w-40" />
+                  <SkeletonBlock className="h-4 w-24 sm:w-28" />
+                </div>
+              </div>
 
-        {/* Fields grid */}
-        <div className="grid gap-4 sm:grid-cols-2">
-          <SkeletonBlock className="h-12 w-full" />
-          <SkeletonBlock className="h-12 w-full" />
-          <SkeletonBlock className="h-12 w-full" />
-          <SkeletonBlock className="h-12 w-full" />
-          <SkeletonBlock className="h-12 w-full" />
-          <SkeletonBlock className="h-12 w-full" />
-        </div>
+              <div className="grid gap-3 sm:gap-4 sm:grid-cols-2">
+                <SkeletonBlock className="h-12 w-full" />
+                <SkeletonBlock className="h-12 w-full" />
+                <SkeletonBlock className="h-12 w-full" />
+                <SkeletonBlock className="h-12 w-full" />
+                <SkeletonBlock className="h-12 w-full" />
+                <SkeletonBlock className="h-12 w-full" />
+              </div>
 
-        <SkeletonBlock className="h-12 w-40" />
-      </section>
+              <SkeletonBlock className="h-12 w-full sm:w-44" />
+            </div>
+          </section>
+        </div>
+      </div>
     </div>
   );
 }
 
 export default function Profile() {
-  // TODO: потім заміниш на дані з API/контексту
   const [profile, setProfile] = useState({
     firstName: "",
     lastName: "",
     phone: "",
     email: "",
     birthDate: "",
-    gender: "unknown", // male/female/other/unknown
-    photoUrl: "", // для preview
+    gender: "unknown",
+    photoUrl: "",
   });
 
-  // окремі блоки на майбутнє
   const [changePhone, setChangePhone] = useState({
     newPhone: "",
     code: "",
@@ -225,7 +237,10 @@ export default function Profile() {
     newEmail: "",
     code: "",
   });
+
   const [isSaved, setIsSaved] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [apiError, setApiError] = useState("");
   const fileRef = useRef(null);
 
   const initials = useMemo(() => {
@@ -234,20 +249,25 @@ export default function Profile() {
     return (a + b).trim() || "U";
   }, [profile.firstName, profile.lastName]);
 
-function onPickPhoto(file) {
-  if (!file) return;
+  const updateProfile = (patch) => {
+    setProfile((p) => ({ ...p, ...patch }));
+    setIsSaved(false);
+  };
 
-  const url = URL.createObjectURL(file);
+  function onPickPhoto(file) {
+    if (!file) return;
 
-  setProfile((p) => {
-    if (p.photoUrl?.startsWith("blob:")) {
-      URL.revokeObjectURL(p.photoUrl);
-    }
-    return { ...p, photoUrl: url };
-  });
+    const url = URL.createObjectURL(file);
 
-  setIsSaved(false);
-}
+    setProfile((p) => {
+      if (p.photoUrl?.startsWith("blob:")) {
+        URL.revokeObjectURL(p.photoUrl);
+      }
+      return { ...p, photoUrl: url };
+    });
+
+    setIsSaved(false);
+  }
 
   async function saveProfile(e) {
     e.preventDefault();
@@ -264,7 +284,6 @@ function onPickPhoto(file) {
           lastName: profile.lastName,
           birthDate: profile.birthDate || null,
           gender: profile.gender,
-          // photoUrl поки не чіпаємо (бо preview url локальний)
         },
       });
 
@@ -276,34 +295,24 @@ function onPickPhoto(file) {
 
   function requestPhoneChange(e) {
     e.preventDefault();
-    // TODO: API: надіслати код на newPhone
     console.log("REQUEST PHONE CHANGE", changePhone.newPhone);
   }
 
   function confirmPhoneChange(e) {
     e.preventDefault();
-    // TODO: API: підтвердити код
     console.log("CONFIRM PHONE CHANGE", changePhone);
   }
 
   function requestEmailChange(e) {
     e.preventDefault();
-    // TODO: API: надіслати код/лінк на newEmail
     console.log("REQUEST EMAIL CHANGE", changeEmail.newEmail);
   }
 
   function confirmEmailChange(e) {
     e.preventDefault();
-    // TODO: API: підтвердити код
     console.log("CONFIRM EMAIL CHANGE", changeEmail);
   }
 
-  const [loading, setLoading] = useState(true);
-  const [apiError, setApiError] = useState("");
-  const updateProfile = (patch) => {
-    setProfile((p) => ({ ...p, ...patch }));
-    setIsSaved(false);
-  };
   React.useEffect(() => {
     let isMounted = true;
     const start = Date.now();
@@ -331,7 +340,6 @@ function onPickPhoto(file) {
 
         setIsSaved(true);
 
-        // 🔥 Мінімальний час skeleton = 300мс
         const elapsed = Date.now() - start;
         const delay = Math.max(300 - elapsed, 0);
 
@@ -349,250 +357,329 @@ function onPickPhoto(file) {
       isMounted = false;
     };
   }, []);
-  console.log("TOKEN:", localStorage.getItem("token"));
+
   if (loading) {
     return <ProfileSkeleton />;
   }
 
   return (
-    <div className="pt-6 px-4 sm:pt-8 sm:px-6 lg:pt-6 lg:px-8 space-y-6">
-      {/* Main profile */}
-      <Card
-        title="Профіль"
-        subtitle="Основні дані, які будуть підставлятися у форму бронювання."
-        right={
-          <SecondaryButton
-            type="button"
-            onClick={() => fileRef.current?.click()}
-          >
-            Змінити фото
-          </SecondaryButton>
-        }
-      >
-        <form onSubmit={saveProfile} className="space-y-6">
-          {/* Avatar row */}
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <div className="h-16 w-16 rounded-3xl border border-gray-200 bg-gray-50 overflow-hidden grid place-items-center">
-                {profile.photoUrl ? (
-                  <img
-                    src={profile.photoUrl}
-                    alt="avatar"
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <span className="text-sm font-extrabold text-gray-700">
-                    {initials}
+    <div className="min-h-screen">
+      <div className="mx-auto max-w-6xl px-2.5 pb-4 pt-18 sm:px-4 sm:pb-8 sm:pt-14 lg:pt-16">
+        <div className="space-y-3 px-0 pt-2 sm:space-y-5 sm:pt-8 lg:pt-6">
+          <section className="overflow-hidden rounded-[22px] border border-stone-200/60 bg-white shadow-[0_4px_20px_-6px_rgba(120,90,60,0.08)] sm:rounded-3xl">
+            <div className="h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-70" />
+
+            <div className="px-3.5 pb-5 pt-5 sm:px-6 sm:pb-4 sm:pt-5 lg:px-8 lg:pt-6">
+              <div className="mb-4 space-y-2.5 sm:mb-4 sm:space-y-2 lg:mb-5">
+                <div className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-3 py-1 sm:px-4 sm:py-1.5">
+                  <Sparkles className="h-3.5 w-3.5 text-amber-600 sm:h-4 sm:w-4" />
+                  <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-700 sm:text-xs sm:tracking-[0.22em]">
+                    Особистий кабінет
+                  </span>
+                </div>
+
+                <h1 className="max-w-full text-[28px] font-black leading-[1.02] tracking-[-0.035em] text-stone-800 sm:max-w-none sm:!text-5xl lg:!text-5xl">
+                  Керуйте своїм{" "}
+                  <span className="text-amber-600">профілем</span>
+                </h1>
+
+                <p className="max-w-2xl text-[13px] leading-5 text-stone-600 sm:text-base sm:leading-7">
+                  Оновлюй особисті дані, номер телефону та пошту, щоб бронювання
+                  проходили швидко і без зайвих кроків.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 text-sm text-stone-500">
+                <span className="rounded-full border border-stone-200 bg-stone-100 px-2.5 py-1 text-[11px] font-medium text-stone-600 sm:text-xs">
+                  Профіль клієнта
+                </span>
+
+                {isSaved && !apiError && (
+                  <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-700 sm:text-xs">
+                    Дані збережено
                   </span>
                 )}
               </div>
-
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => onPickPhoto(e.target.files?.[0])}
-              />
             </div>
+          </section>
 
-            <div className="min-w-0">
-              <p className="text-sm font-extrabold text-gray-900 truncate">
-                {profile.firstName || profile.lastName
-                  ? `${profile.firstName} ${profile.lastName}`.trim()
-                  : "Ваше ім’я"}
-              </p>
-              <p className="mt-0.5 text-xs text-gray-600">JPG/PNG.</p>
-            </div>
-          </div>
-
-          {/* Fields */}
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Ім’я">
-              <Input
-                value={profile.firstName}
-                onChange={(e) => updateProfile({ firstName: e.target.value })}
-                placeholder="Наприклад, Іван"
-              />
-            </Field>
-
-            <Field label="Прізвище">
-              <Input
-                value={profile.lastName}
-                onChange={(e) => updateProfile({ lastName: e.target.value })}
-              />
-            </Field>
-
-            <Field label="Номер телефону" hint="Редагується у блоці нижче">
-              <Input value={profile.phone} disabled placeholder="+380..." />
-            </Field>
-
-            <Field label="Пошта" hint="Редагується у блоці нижче">
-              <Input value={profile.email} disabled placeholder="email@..." />
-            </Field>
-
-            <Field label="Дата народження">
-              <Input
-                type="date"
-                value={profile.birthDate}
-                onChange={(e) => updateProfile({ birthDate: e.target.value })}
-              />
-            </Field>
-
-            <Field label="Стать">
-              <Select
-                value={profile.gender}
-                onChange={(e) => updateProfile({ gender: e.target.value })}
+          <Card
+            title="Профіль"
+            subtitle="Основні дані, які будуть підставлятися у форму бронювання."
+            right={
+              <SecondaryButton
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                className="w-full sm:w-auto"
               >
-                <option value="unknown">Не вказано</option>
-                <option value="female">Жіноча</option>
-                <option value="male">Чоловіча</option>
-                <option value="other">Інше</option>
-              </Select>
-            </Field>
-          </div>
+                <Camera className="h-4 w-4" />
+                Змінити фото
+              </SecondaryButton>
+            }
+          >
+            <form onSubmit={saveProfile} className="space-y-5 sm:space-y-6">
+              <div className="flex flex-col gap-3.5 rounded-[22px] border border-stone-200/80 bg-stone-50/70 p-3.5 sm:flex-row sm:items-center sm:gap-4 sm:rounded-[24px] sm:p-5">
+                <div className="relative mx-auto sm:mx-0">
+                  <div className="grid h-18 w-18 place-items-center overflow-hidden rounded-[22px] border border-stone-200 bg-white shadow-sm sm:h-20 sm:w-20 sm:rounded-[24px]">
+                    {profile.photoUrl ? (
+                      <img
+                        src={profile.photoUrl}
+                        alt="avatar"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-base font-black text-stone-700 sm:text-lg">
+                        {initials}
+                      </span>
+                    )}
+                  </div>
 
-          <div className="flex flex-col sm:flex-row gap-2">
-            <button
-              type="submit"
-              disabled={isSaved}
-              className={`
-    inline-flex items-center justify-center
-    rounded-2xl px-4 py-3
-    text-sm font-extrabold transition
-    active:scale-[0.99]
-    ${
-      isSaved
-        ? "bg-gray-100 text-gray-500 cursor-default"
-        : "bg-black text-white hover:bg-gray-900"
-    }
-  `}
-            >
-              {isSaved ? "Збережено" : "Зберегти зміни"}
-            </button>
-            <SecondaryButton
-              type="button"
-              onClick={() =>
-                setProfile((p) => ({
-                  ...p,
-                  firstName: "",
-                  lastName: "",
-                  birthDate: "",
-                  gender: "unknown",
-                  photoUrl: p.photoUrl, // фото не скидаю спеціально
-                }))
-              }
-            >
-              Очистити поля
-            </SecondaryButton>
-          </div>
-        </form>
-      </Card>
+                  <div className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-xl border border-white bg-amber-500 text-white shadow-md">
+                    <Camera className="h-4 w-4" />
+                  </div>
 
-      {/* Change phone */}
-      <Card
-        title="Зміна номера телефону"
-        subtitle="Окремий блок на майбутнє: спочатку запит коду, потім підтвердження."
-      >
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Новий номер">
-            <Input
-              value={changePhone.newPhone}
-              onChange={(e) => {
-                setChangePhone((p) => ({ ...p, newPhone: e.target.value }));
-              }}
-              placeholder="+380..."
-            />
-          </Field>
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => onPickPhoto(e.target.files?.[0])}
+                  />
+                </div>
 
-          <div className="flex items-end gap-2">
-            <PrimaryButton
-              type="button"
-              onClick={requestPhoneChange}
-              className="w-full"
-              disabled={!changePhone.newPhone}
-            >
-              Надіслати код
-            </PrimaryButton>
-          </div>
+                <div className="min-w-0 flex-1 text-center sm:text-left">
+                  <p className="truncate text-[15px] font-black tracking-[-0.02em] text-stone-900 sm:text-lg">
+                    {profile.firstName || profile.lastName
+                      ? `${profile.firstName} ${profile.lastName}`.trim()
+                      : "Ваше ім’я"}
+                  </p>
 
-          <Field label="Код підтвердження" hint="SMS код">
-            <Input
-              value={changePhone.code}
-              onChange={(e) => {
-                setChangePhone((p) => ({ ...p, code: e.target.value }));
-              }}
-              placeholder="1234"
-            />
-          </Field>
+                  <p className="mt-1 text-[13px] leading-5 text-stone-600 sm:text-sm">
+                    Фото профілю для майбутнього відображення в акаунті.
+                  </p>
+                </div>
+              </div>
 
-          <div className="flex items-end gap-2">
-            <SecondaryButton
-              type="button"
-              onClick={confirmPhoneChange}
-              className="w-full"
-              disabled={!changePhone.newPhone || !changePhone.code}
-            >
-              Підтвердити зміну
-            </SecondaryButton>
-          </div>
+              <div className="grid gap-3.5 sm:gap-4 sm:grid-cols-2">
+                <Field label="Ім’я" icon={<User className="h-4 w-4" />}>
+                  <Input
+                    value={profile.firstName}
+                    onChange={(e) =>
+                      updateProfile({ firstName: e.target.value })
+                    }
+                    placeholder="Наприклад, Іван"
+                  />
+                </Field>
+
+                <Field label="Прізвище" icon={<User className="h-4 w-4" />}>
+                  <Input
+                    value={profile.lastName}
+                    onChange={(e) =>
+                      updateProfile({ lastName: e.target.value })
+                    }
+                    placeholder="Наприклад, Петренко"
+                  />
+                </Field>
+
+                <Field
+                  label="Номер телефону"
+                  hint="Редагується нижче"
+                  icon={<Phone className="h-4 w-4" />}
+                >
+                  <Input value={profile.phone} disabled placeholder="+380..." />
+                </Field>
+
+                <Field
+                  label="Пошта"
+                  hint="Редагується нижче"
+                  icon={<Mail className="h-4 w-4" />}
+                >
+                  <Input
+                    value={profile.email}
+                    disabled
+                    placeholder="email@domain.com"
+                  />
+                </Field>
+
+                <Field
+                  label="Дата народження"
+                  icon={<CalendarDays className="h-4 w-4" />}
+                >
+                  <Input
+                    type="date"
+                    value={profile.birthDate}
+                    onChange={(e) =>
+                      updateProfile({ birthDate: e.target.value })
+                    }
+                  />
+                </Field>
+
+                <Field
+                  label="Стать"
+                  icon={<VenusAndMars className="h-4 w-4" />}
+                >
+                  <Select
+                    value={profile.gender}
+                    onChange={(e) => updateProfile({ gender: e.target.value })}
+                  >
+                    <option value="unknown">Не вказано</option>
+                    <option value="female">Жіноча</option>
+                    <option value="male">Чоловіча</option>
+                    <option value="other">Інше</option>
+                  </Select>
+                </Field>
+              </div>
+
+              <div className="flex flex-col gap-2.5 sm:flex-row">
+                <PrimaryButton
+                  type="submit"
+                  disabled={isSaved}
+                  className="w-full sm:w-auto"
+                >
+                  {isSaved ? (
+                    <>
+                      <CheckCircle2 className="h-4 w-4" />
+                      Збережено
+                    </>
+                  ) : (
+                    <>
+                      <ShieldCheck className="h-4 w-4" />
+                      Зберегти зміни
+                    </>
+                  )}
+                </PrimaryButton>
+
+                <SecondaryButton
+                  type="button"
+                  className="w-full sm:w-auto"
+                  onClick={() =>
+                    setProfile((p) => ({
+                      ...p,
+                      firstName: "",
+                      lastName: "",
+                      birthDate: "",
+                      gender: "unknown",
+                      photoUrl: p.photoUrl,
+                    }))
+                  }
+                >
+                  Очистити поля
+                </SecondaryButton>
+              </div>
+            </form>
+          </Card>
+
+          <Card
+            title="Зміна номера телефону"
+            subtitle="Спочатку запит коду, потім підтвердження нового номера."
+          >
+            <div className="grid gap-3.5 sm:gap-4 sm:grid-cols-2">
+              <Field label="Новий номер" icon={<Phone className="h-4 w-4" />}>
+                <Input
+                  value={changePhone.newPhone}
+                  onChange={(e) => {
+                    setChangePhone((p) => ({
+                      ...p,
+                      newPhone: e.target.value,
+                    }));
+                  }}
+                  placeholder="+380..."
+                />
+              </Field>
+
+              <div className="flex items-end">
+                <PrimaryButton
+                  type="button"
+                  onClick={requestPhoneChange}
+                  className="w-full"
+                  disabled={!changePhone.newPhone}
+                >
+                  Надіслати код
+                </PrimaryButton>
+              </div>
+
+              <Field label="Код підтвердження" hint="SMS код">
+                <Input
+                  value={changePhone.code}
+                  onChange={(e) => {
+                    setChangePhone((p) => ({ ...p, code: e.target.value }));
+                  }}
+                  placeholder="1234"
+                />
+              </Field>
+
+              <div className="flex items-end">
+                <SecondaryButton
+                  type="button"
+                  onClick={confirmPhoneChange}
+                  className="w-full"
+                  disabled={!changePhone.newPhone || !changePhone.code}
+                >
+                  Підтвердити зміну
+                </SecondaryButton>
+              </div>
+            </div>
+          </Card>
+
+          <Card
+            title="Зміна пошти"
+            subtitle="Можна зробити підтвердження кодом або посиланням на email."
+          >
+            <div className="grid gap-3.5 sm:gap-4 sm:grid-cols-2">
+              <Field label="Нова пошта" icon={<Mail className="h-4 w-4" />}>
+                <Input
+                  value={changeEmail.newEmail}
+                  onChange={(e) => {
+                    setChangeEmail((p) => ({
+                      ...p,
+                      newEmail: e.target.value,
+                    }));
+                  }}
+                  placeholder="email@domain.com"
+                />
+              </Field>
+
+              <div className="flex items-end">
+                <PrimaryButton
+                  type="button"
+                  onClick={requestEmailChange}
+                  className="w-full"
+                  disabled={!changeEmail.newEmail}
+                >
+                  Надіслати підтвердження
+                </PrimaryButton>
+              </div>
+
+              <Field label="Код підтвердження" hint="або код з листа">
+                <Input
+                  value={changeEmail.code}
+                  onChange={(e) => {
+                    setChangeEmail((p) => ({ ...p, code: e.target.value }));
+                  }}
+                  placeholder="123456"
+                />
+              </Field>
+
+              <div className="flex items-end">
+                <SecondaryButton
+                  type="button"
+                  onClick={confirmEmailChange}
+                  className="w-full"
+                  disabled={!changeEmail.newEmail || !changeEmail.code}
+                >
+                  Підтвердити зміну
+                </SecondaryButton>
+              </div>
+            </div>
+          </Card>
+
+          {apiError ? (
+            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 shadow-sm">
+              {apiError}
+            </div>
+          ) : null}
         </div>
-      </Card>
-
-      {/* Change email */}
-      <Card
-        title="Зміна пошти"
-        subtitle="Окремий блок на майбутнє: можна зробити підтвердження кодом або посиланням."
-      >
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Нова пошта">
-            <Input
-              value={changeEmail.newEmail}
-              onChange={(e) => {
-                setChangeEmail((p) => ({ ...p, newEmail: e.target.value }));
-              }}
-              placeholder="email@domain.com"
-            />
-          </Field>
-
-          <div className="flex items-end gap-2">
-            <PrimaryButton
-              type="button"
-              onClick={requestEmailChange}
-              className="w-full"
-              disabled={!changeEmail.newEmail}
-            >
-              Надіслати підтвердження
-            </PrimaryButton>
-          </div>
-
-          <Field label="Код підтвердження" hint="або код з листа">
-            <Input
-              value={changeEmail.code}
-              onChange={(e) => {
-                setChangeEmail((p) => ({ ...p, code: e.target.value }));
-              }}
-              placeholder="123456"
-            />
-          </Field>
-
-          <div className="flex items-end gap-2">
-            <SecondaryButton
-              type="button"
-              onClick={confirmEmailChange}
-              className="w-full"
-              disabled={!changeEmail.newEmail || !changeEmail.code}
-            >
-              Підтвердити зміну
-            </SecondaryButton>
-          </div>
-        </div>
-      </Card>
-      {apiError ? (
-        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
-          {apiError}
-        </div>
-      ) : null}
+      </div>
     </div>
   );
 }

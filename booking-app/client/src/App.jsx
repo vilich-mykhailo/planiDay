@@ -19,8 +19,8 @@ import AppBackground from "./components/AppBackground";
 import LoginClient from "./pages/dashboard/LoginClient";
 import RegisterClient from "./pages/dashboard/RegisterClient";
 import ForgotPassword from "./pages/dashboard/ForgotPassword";
-import Terms from "./pages/dashboard/Terms";
-import Privacy from "./pages/dashboard/Privacy";
+import Terms from "./pages/dashboard/TermsOwner";
+import Privacy from "./pages/dashboard/PrivacyOwner";
 import LoginOwner from "./components/LoginOwner";
 import RegisterOwner from "./components/RegisterOwner";
 import ProtectedRoute from "./routes/ProtectedRoute";
@@ -29,6 +29,11 @@ import Favourites from "./pages/Favourites";
 import { FavouritesProvider } from "./context/FavouritesContext";
 import Profile from "./pages/dashboard/Profile";
 import ScrollRestoration from "./components/ScrollRestoration";
+import PrivacyClient from "./pages/dashboard/PrivacyClient";
+import TermsClient from "./pages/dashboard/TermsClient";
+import PrivacyOwner from "./pages/dashboard/PrivacyOwner";
+import TermsOwner from "./pages/dashboard/TermsOwner";
+import MessagesClient from "./pages/MessagesClient";
 
 function StudioDetailsKeyed() {
   const { slug } = useParams();
@@ -49,8 +54,11 @@ export default function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/bookings" element={<MyBookings />} />
             <Route path="/favourites" element={<Favourites />} />
-            <Route path="/terms" element={<Terms />} />
-            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/messages-client" element={<MessagesClient />} />
+            <Route path="/termsowner" element={<TermsOwner />} />
+            <Route path="/termsclient" element={<TermsClient />} />
+            <Route path="/privacyowner" element={<PrivacyOwner />} />
+            <Route path="/privacyclient" element={<PrivacyClient />} />
             <Route path="/booking/success" element={<BookingSuccess />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/login" element={<LoginClient />} />

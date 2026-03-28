@@ -124,7 +124,10 @@ export default function AnimatedDropdown({
   return (
     <div
       ref={ref}
-      className={cn("relative w-full", disabled && "pointer-events-none opacity-60")}
+      className={cn(
+        "relative w-full",
+        disabled && "pointer-events-none opacity-60",
+      )}
     >
       <button
         type="button"
@@ -143,9 +146,9 @@ export default function AnimatedDropdown({
         <label
           className={cn(
             "pointer-events-none absolute left-4 transition-all duration-200",
-filled || open
-  ? "top-2 text-[9px] font-bold uppercase tracking-[0.16em] text-amber-600 sm:top-2.5 sm:text-[10px]"
-  : "top-1/2 -translate-y-1/2 text-[13px] font-semibold text-stone-500 sm:text-sm",
+            filled || open
+              ? "top-2 text-[9px] font-bold uppercase tracking-[0.16em] text-amber-600 sm:top-2.5 sm:text-[10px]"
+              : "top-1/2 -translate-y-1/2 text-[13px] font-semibold text-stone-500 sm:text-sm",
           )}
         >
           {label}
@@ -161,14 +164,14 @@ filled || open
           {filled ? selected?.label : placeholder}
         </span>
 
-<span
-  className={cn(
-    "pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 transition-all duration-200",
-    open && "rotate-180 text-amber-700",
-  )}
->
-  <ChevronDown className="h-4 w-4" />
-</span>
+        <span
+          className={cn(
+            "pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 transition-all duration-200",
+            open && "rotate-180 text-amber-700",
+          )}
+        >
+          <ChevronDown className="h-4 w-4" />
+        </span>
       </button>
 
       {open && (
@@ -183,12 +186,12 @@ filled || open
           <div
             role="dialog"
             aria-modal="true"
-className={cn(
-  "fixed z-[80] overflow-hidden border border-stone-200/90 bg-white/95 backdrop-blur-xl",
-  "shadow-[0_24px_80px_rgba(15,23,42,0.16)] rounded-[30px]",
-  "left-4 right-4 top-1/2 max-h-[78vh] -translate-y-1/2",
-  "sm:left-1/2 sm:right-auto sm:w-[min(520px,calc(100vw-32px))] sm:-translate-x-1/2",
-)}
+            className={cn(
+              "fixed z-[80] overflow-hidden border border-stone-200/90 bg-white/95 backdrop-blur-xl",
+              "shadow-[0_24px_80px_rgba(15,23,42,0.16)] rounded-[30px]",
+              "left-4 right-4 top-1/2 max-h-[78vh] -translate-y-1/2",
+              "sm:left-1/2 sm:right-auto sm:w-[min(520px,calc(100vw-32px))] sm:-translate-x-1/2",
+            )}
           >
             <div className="h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-70" />
 

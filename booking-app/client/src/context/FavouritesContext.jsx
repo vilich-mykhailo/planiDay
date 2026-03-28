@@ -1,3 +1,4 @@
+// FavouritesContext.jsx
 import { useEffect, useState } from "react";
 import { FavouritesContext } from "./favourites.context";
 

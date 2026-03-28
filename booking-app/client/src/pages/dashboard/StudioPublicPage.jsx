@@ -453,6 +453,23 @@ const WEEK_DAYS = [
   { key: "sun", label: "Неділя", jsDay: 0 },
 ];
 
+const DEMO_REVIEWS = [
+  {
+    id: 1,
+    author: "Marcelina",
+    rating: 5,
+    date: "8 бер. 2026",
+    text: "Хотіла коротку стрижку, але майстер уважно оцінив риси мого обличчя, структуру волосся та навіть стиль життя, після чого порадив іншу форму, яка виглядає гармонійніше та підкреслює мої сильні сторони. Результат перевершив очікування.",
+  },
+  {
+    id: 2,
+    author: "Magdalena",
+    rating: 5,
+    date: "8 бер. 2026",
+    text: "Стрижка дитини, як завжди, бездоганна. Дуже приємна атмосфера і хороший сервіс.",
+  },
+];
+
 function formatHoursLabel(dayConfig) {
   if (!dayConfig?.enabled) return "Вихідний";
   return `${dayConfig.start} - ${dayConfig.end}`;
@@ -688,36 +705,23 @@ export default function StudioPublicPage() {
     },
   };
 
-  const reviews = useMemo(
-    () =>
-      (studio?.reviews && studio.reviews.length
+  const hasRealReviews =
+    Array.isArray(studio?.reviews) && studio.reviews.length > 0;
+
+  const reviews = useMemo(() => {
+    const source =
+      Array.isArray(studio?.reviews) && studio.reviews.length > 0
         ? studio.reviews
-        : [
-            {
-              id: 1,
-              author: "Marcelina",
-              rating: 5,
-              date: "8 бер. 2026",
-              text: "Хотіла коротку стрижку, але майстер уважно оцінив риси мого обличчя, структуру волосся та навіть стиль життя, після чого порадив іншу форму, яка виглядає гармонійніше та підкреслює мої сильні сторони. Спочатку я трохи сумнівалася, але довірилася професіоналу — і результат перевершив очікування. Стрижка виглядає стильно, легко укладається і додає впевненості. Дуже вдячна за індивідуальний підхід і чесну рекомендацію!",
-            },
-            {
-              id: 2,
-              author: "Magdalena",
-              rating: 5,
-              date: "8 бер. 2026",
-              text: "Стрижка дитини, як завжди, бездоганна. Дуже приємна атмосфера і хороший сервіс.",
-            },
-          ]
-      ).map((r, index) => ({
-        id: r.id || index,
-        author: r.author || r.name || "Клієнт",
-        rating: Number(r.rating || 5),
-        date: r.date || r.createdAt || "Нещодавно",
-        text:
-          r.text || r.comment || r.message || "Відгук буде доступний скоро.",
-      })),
-    [studio],
-  );
+        : DEMO_REVIEWS;
+
+    return source.map((r, index) => ({
+      id: r.id || index,
+      author: r.author || r.name || "Клієнт",
+      rating: Number(r.rating || 5),
+      date: r.date || r.createdAt || "Нещодавно",
+      text: r.text || r.comment || r.message || "Відгук буде доступний скоро.",
+    }));
+  }, [studio?.reviews]);
 
   function handleCopyAddress() {
     if (!fullAddress) return;
@@ -832,8 +836,8 @@ export default function StudioPublicPage() {
       className="min-h-screen bg-gradient-to-br from-stone-50 via-amber-50/30 to-orange-50/20 text-stone-800"
       data-testid="studio-public-page"
     >
-<div className="mx-auto w-full max-w-[1220px] px-0 sm:px-2 md:px-3 lg:px-6">
-  <div className="mx-auto w-full max-w-[1120px] pb-0 text-stone-800 sm:pb-20 lg:pb-5">
+      <div className="mx-auto w-full max-w-[1220px] px-0 sm:px-2 md:px-3 lg:px-6">
+        <div className="mx-auto w-full max-w-[1120px] pb-0 text-stone-800 sm:pb-20 lg:pb-5">
           <section className="relative">
             <div className="relative h-[280px] overflow-hidden rounded-b-[24px] sm:h-[360px] md:h-[400px] lg:h-[420px] sm:mx-[-8px] md:mx-[-12px] lg:mx-0">
               {heroImages.length > 0 ? (
@@ -1026,7 +1030,7 @@ export default function StudioPublicPage() {
                           <div className="flex items-center gap-1.5 font-semibold text-stone-800">
                             <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
                             {reviewsSummary.rating.toFixed(1)}
-                            <span className="font-normal text-sky-700">
+                            <span className="hidden sm:inline font-normal text-sky-700">
                               ({reviewsSummary.count} відгуків)
                             </span>
                           </div>
@@ -1068,7 +1072,15 @@ export default function StudioPublicPage() {
                     </div>
                   </div>
                 </div>
-
+                {!!description && (
+                  <div className="px-2  sm:px-5 lg:px-6">
+                    <div className="rounded-[26px] pb-4 px-2 sm:p-6">
+                      <p className="text-sm leading-7 text-stone-600">
+                        {description}
+                      </p>
+                    </div>
+                  </div>
+                )}
                 <div className="sticky top-0 z-30 border-t border-stone-100 bg-white/95 backdrop-blur-xl">
                   <div className="mx-auto max-w-[900px] px-4">
                     <div className="scrollbar-none flex justify-center overflow-x-auto">
@@ -1202,7 +1214,6 @@ export default function StudioPublicPage() {
                               фото робіт.
                             </p>
                           </div>
-
                         </div>
 
                         <div className="grid gap-5 xl:grid-cols-[340px,1fr]">
@@ -1334,115 +1345,136 @@ export default function StudioPublicPage() {
                           </div>
 
                           <div className="space-y-4">
-                            <div className="columns-1 gap-4 md:columns-2">
-                              {reviews.map((review, index) => {
-                                const author = review.author || "Клієнт";
-                                const initials = author
-                                  .split(" ")
-                                  .filter(Boolean)
-                                  .slice(0, 2)
-                                  .map((part) => part[0])
-                                  .join("")
-                                  .toUpperCase();
+                            {reviews.length > 0 ? (
+                              <div className="columns-1 gap-4 md:columns-2">
+                                {reviews.map((review, index) => {
+                                  const author = review.author || "Клієнт";
+                                  const initials = author
+                                    .split(" ")
+                                    .filter(Boolean)
+                                    .slice(0, 2)
+                                    .map((part) => part[0])
+                                    .join("")
+                                    .toUpperCase();
 
-                                return (
-                                  <div
-                                    key={review.id}
-                                    className="mb-4 break-inside-avoid"
-                                  >
-                                    <div className="group flex flex-col rounded-[28px] border border-stone-200 bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.05)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_40px_rgba(15,23,42,0.08)]">
-                                      <div>
-                                        <div className="flex items-start justify-between gap-3">
-                                          <div className="flex min-w-0 items-center gap-3">
-                                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-50 to-stone-100 text-sm font-bold text-stone-700">
-                                              {initials || "K"}
+                                  return (
+                                    <div
+                                      key={review.id}
+                                      className="mb-4 break-inside-avoid"
+                                    >
+                                      <div className="group flex flex-col rounded-[28px] border border-stone-200 bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.05)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_40px_rgba(15,23,42,0.08)]">
+                                        <div>
+                                          <div className="flex items-start justify-between gap-3">
+                                            <div className="flex min-w-0 items-center gap-3">
+                                              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-50 to-stone-100 text-sm font-bold text-stone-700">
+                                                {initials || "K"}
+                                              </div>
+
+                                              <div className="min-w-0">
+                                                <p className="truncate text-sm font-bold text-stone-800">
+                                                  {author}
+                                                </p>
+                                                <p className="mt-0.5 text-xs text-stone-400">
+                                                  Клієнт студії
+                                                </p>
+                                              </div>
                                             </div>
 
-                                            <div className="min-w-0">
-                                              <p className="truncate text-sm font-bold text-stone-800">
-                                                {author}
-                                              </p>
-                                              <p className="mt-0.5 text-xs text-stone-400">
-                                                Клієнт студії
-                                              </p>
-                                            </div>
+                                            <span className="shrink-0 rounded-full bg-stone-100 px-2.5 py-1 text-[11px] font-semibold text-stone-500">
+                                              {review.date}
+                                            </span>
                                           </div>
 
-                                          <span className="shrink-0 rounded-full bg-stone-100 px-2.5 py-1 text-[11px] font-semibold text-stone-500">
-                                            {review.date}
-                                          </span>
+                                          <div className="mt-4 flex items-center gap-1">
+                                            {Array.from({ length: 5 }).map(
+                                              (_, i) => (
+                                                <Star
+                                                  key={i}
+                                                  className={cn(
+                                                    "h-4 w-4",
+                                                    i < review.rating
+                                                      ? "fill-amber-400 text-amber-400"
+                                                      : "text-stone-200",
+                                                  )}
+                                                />
+                                              ),
+                                            )}
+
+                                            <span className="ml-2 text-xs font-semibold text-stone-500">
+                                              {review.rating.toFixed(1)}
+                                            </span>
+                                          </div>
+
+                                          <div className="mt-4">
+                                            <ExpandableText
+                                              text={review.text}
+                                            />
+                                          </div>
                                         </div>
 
-                                        <div className="mt-4 flex items-center gap-1">
-                                          {Array.from({ length: 5 }).map(
-                                            (_, i) => (
-                                              <Star
-                                                key={i}
-                                                className={cn(
-                                                  "h-4 w-4",
-                                                  i < review.rating
-                                                    ? "fill-amber-400 text-amber-400"
-                                                    : "text-stone-200",
-                                                )}
-                                              />
-                                            ),
-                                          )}
+                                        <div className="mt-5 flex items-center justify-between gap-3 border-t border-stone-100 pt-4">
+                                          <div className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700">
+                                            <CheckCheck className="h-3.5 w-3.5" />
+                                            Перевірений відгук
+                                          </div>
 
-                                          <span className="ml-2 text-xs font-semibold text-stone-500">
-                                            {review.rating.toFixed(1)}
-                                          </span>
-                                        </div>
-
-                                        <div className="mt-4">
-                                          <ExpandableText text={review.text} />
-                                        </div>
-                                      </div>
-
-                                      <div className="mt-5 flex items-center justify-between gap-3 border-t border-stone-100 pt-4">
-                                        <div className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700">
-                                          <CheckCheck className="h-3.5 w-3.5" />
-                                          Перевірений відгук
-                                        </div>
-
-                                        <div className="text-[11px] font-medium text-stone-400">
-                                          #{String(index + 1).padStart(2, "0")}
+                                          <div className="text-[11px] font-medium text-stone-400">
+                                            #
+                                            {String(index + 1).padStart(2, "0")}
+                                          </div>
                                         </div>
                                       </div>
                                     </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <div className="rounded-[28px] border border-dashed border-stone-300 bg-gradient-to-br from-stone-50 to-amber-50/40 p-8 text-center shadow-[0_8px_24px_rgba(15,23,42,0.04)] sm:p-10">
+                                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-sm">
+                                  <Star className="h-6 w-6 text-amber-500" />
+                                </div>
+
+                                <h3 className="mt-4 text-lg font-bold text-stone-800">
+                                  Ще немає відгуків
+                                </h3>
+
+                                <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-stone-500">
+                                  У цієї студії поки що немає публічних
+                                  відгуків. Після перших записів тут з’являться
+                                  оцінки та враження клієнтів.
+                                </p>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
                     </motion.section>
                   )}
 
-                  {displayedPortfolio.length > 0 &&
-                    mobileTab === "portfolio" && (
-                      <motion.section
-                        key="portfolio"
-                        ref={portfolioRef}
-                        className="scroll-mt-28"
-                        initial={{ opacity: 0, y: 24 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 18 }}
-                        transition={{
-                          duration: 0.35,
-                          ease: [0.22, 1, 0.36, 1],
-                        }}
-                      >
-                        <div className="rounded-[30px] p-4 sm:p-6">
-                          <div className="mb-10">
-                            <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.25em] text-amber-600">
-                              Наші роботи
-                            </p>
-                            <h2 className="text-2xl font-bold tracking-tight text-stone-800 md:text-4xl">
-                              Портфоліо
-                            </h2>
-                          </div>
+                  {mobileTab === "portfolio" && (
+                    <motion.section
+                      key="portfolio"
+                      ref={portfolioRef}
+                      className="scroll-mt-28"
+                      initial={{ opacity: 0, y: 24 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 18 }}
+                      transition={{
+                        duration: 0.35,
+                        ease: [0.22, 1, 0.36, 1],
+                      }}
+                    >
+                      <div className="rounded-[30px] p-4 sm:p-6">
+                        <div className="mb-10">
+                          <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.25em] text-amber-600">
+                            Наші роботи
+                          </p>
+                          <h2 className="text-2xl font-bold tracking-tight text-stone-800 md:text-4xl">
+                            Портфоліо
+                          </h2>
+                        </div>
 
+                        {displayedPortfolio.length > 0 ? (
                           <div className="columns-2 gap-3 sm:columns-3 sm:gap-4 lg:columns-4">
                             {displayedPortfolio.map((url, idx) => (
                               <motion.button
@@ -1478,9 +1510,26 @@ export default function StudioPublicPage() {
                               </motion.button>
                             ))}
                           </div>
-                        </div>
-                      </motion.section>
-                    )}
+                        ) : (
+                          <div className="rounded-[28px] border border-dashed border-stone-300 bg-gradient-to-br from-stone-50 to-amber-50/40 p-8 text-center shadow-[0_8px_24px_rgba(15,23,42,0.04)] sm:p-10">
+                            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-sm">
+                              <PenLine className="h-6 w-6 text-amber-600" />
+                            </div>
+
+                            <h3 className="mt-4 text-lg font-bold text-stone-800">
+                              Портфоліо поки що порожнє
+                            </h3>
+
+                            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-stone-500">
+                              Студія ще не додала фото своїх робіт. Згодом тут
+                              з’являться приклади виконаних послуг та результати
+                              для клієнтів.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </motion.section>
+                  )}
 
                   {mobileTab === "details" && (
                     <motion.section
@@ -1506,7 +1555,8 @@ export default function StudioPublicPage() {
                           </p>
                         </div>
 
-                        <div className="grid gap-5 lg:grid-cols-[1.15fr,0.85fr]">
+                        <div className="grid gap-5 lg:grid-cols-2">
+                          {/* ЛІВА КОЛОНКА */}
                           <div className="space-y-5">
                             <div className="overflow-hidden rounded-[30px] border border-stone-200 bg-white shadow-[0_10px_35px_rgba(0,0,0,0.04)]">
                               <div className="relative overflow-hidden px-5 py-6 sm:px-6 sm:py-7">
@@ -1517,7 +1567,6 @@ export default function StudioPublicPage() {
                                       alt={name}
                                       className="h-full w-full object-cover"
                                     />
-
                                     <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/85 via-[58%] to-white/10" />
                                     <div className="absolute inset-0 bg-black/5" />
                                   </div>
@@ -1538,7 +1587,6 @@ export default function StudioPublicPage() {
                                     <h3 className="text-xl font-bold text-stone-800 sm:text-2xl">
                                       {name}
                                     </h3>
-
                                   </div>
 
                                   <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -1567,234 +1615,6 @@ export default function StudioPublicPage() {
                                   </div>
                                 </div>
                               </div>
-
-                              <div className="grid gap-3 border-t border-stone-100 bg-white px-4 py-4 sm:grid-cols-2 sm:px-6">
-                                <div className="relative overflow-hidden rounded-[24px] border border-amber-200/60 bg-gradient-to-br from-white via-amber-50/40 to-stone-50 px-4 py-4 shadow-[0_10px_30px_rgba(120,90,60,0.08)] ">
-                                  <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-amber-200/25 blur-2xl" />
-                                  <div className="absolute -bottom-6 left-0 h-16 w-16 rounded-full bg-orange-200/20 blur-2xl" />
-
-                                  <div className="relative z-10 sm:hidden">
-                                    <div className="flex items-center gap-3">
-                                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 shadow-sm">
-                                        <Star className="h-5 w-5 fill-amber-500 text-amber-500" />
-                                      </div>
-
-                                      <div className="min-w-0 flex-1">
-                                        <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-700">
-                                          Рейтинг
-                                        </p>
-
-                                        <div className="mt-1 flex items-baseline gap-2">
-                                          <span className="text-[30px] font-extrabold leading-none text-stone-900">
-                                            {reviewsSummary.rating.toFixed(1)}
-                                          </span>
-                                          <span className="text-sm font-medium text-stone-500">
-                                            ({reviewsSummary.count})
-                                          </span>
-                                        </div>
-
-                                        <p className="mt-1 text-xs text-stone-500">
-                                          Висока оцінка клієнтів
-                                        </p>
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  <div className="relative z-10 hidden text-center sm:block">
-                                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 shadow-sm">
-                                      <Star className="h-5 w-5 fill-amber-500 text-amber-500" />
-                                    </div>
-
-                                    <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.22em] text-amber-700">
-                                      Рейтинг
-                                    </p>
-
-                                    <div className="mt-2 flex items-baseline justify-center gap-2">
-                                      <span className="text-[34px] font-extrabold leading-none text-stone-900">
-                                        {reviewsSummary.rating.toFixed(1)}
-                                      </span>
-                                      <span className="text-base font-medium text-stone-500">
-                                        ({reviewsSummary.count})
-                                      </span>
-                                    </div>
-
-                                    <p className="mt-2 text-sm text-stone-500">
-                                      Висока оцінка клієнтів
-                                    </p>
-                                  </div>
-                                </div>
-
-                                <div className="relative overflow-hidden rounded-[24px] border border-emerald-200/60 bg-gradient-to-br from-white via-emerald-50/30 to-stone-50 px-4 py-4 shadow-[0_10px_30px_rgba(120,90,60,0.08)] ">
-                                  <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-emerald-200/25 blur-2xl" />
-                                  <div className="absolute -bottom-6 left-0 h-16 w-16 rounded-full bg-emerald-100/30 blur-2xl" />
-
-                                  <div className="relative z-10 sm:hidden">
-                                    <div className="flex items-center gap-3">
-                                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 shadow-sm">
-                                        <Phone className="h-5 w-5 text-emerald-600" />
-                                      </div>
-
-                                      <div className="min-w-0 flex-1">
-                                        <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-emerald-700">
-                                          Телефон
-                                        </p>
-
-                                        {studioPhone ? (
-                                          <>
-                                            <div className="mt-1 text-base font-extrabold leading-tight text-stone-900 break-all">
-                                              {studioPhone}
-                                            </div>
-                                            <p className="mt-1 text-xs text-stone-500">
-                                              Натисніть, щоб подзвонити
-                                            </p>
-                                          </>
-                                        ) : (
-                                          <p className="mt-1 text-sm text-stone-400">
-                                            Не вказано
-                                          </p>
-                                        )}
-                                      </div>
-
-                                      {studioPhone && (
-                                        <a
-                                          href={`tel:${studioPhone}`}
-                                          className="
-      inline-flex h-10 shrink-0 items-center justify-center
-      rounded-xl border border-emerald-200 bg-white px-3
-      text-xs font-bold text-emerald-700
-      transition-all duration-150
-      active:scale-95 active:bg-emerald-50 active:shadow-inner
-    "
-                                        >
-                                          Зателефонувати
-                                        </a>
-                                      )}
-                                    </div>
-                                  </div>
-
-                                  <div className="relative z-10 hidden text-center sm:block">
-                                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 shadow-sm">
-                                      <Phone className="h-5 w-5 text-emerald-600" />
-                                    </div>
-
-                                    <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.22em] text-emerald-700">
-                                      Телефон
-                                    </p>
-
-                                    {studioPhone ? (
-                                      <>
-                                        <div className="mt-2 text-base font-extrabold text-stone-900 break-all">
-                                          {studioPhone}
-                                        </div>
-
-                                        <a
-                                          href={`tel:${studioPhone}`}
-                                          className="
-    mt-3 inline-flex h-9 items-center justify-center
-    rounded-xl border border-emerald-200 bg-white px-4
-    text-xs font-bold text-emerald-700
-    transition-all duration-150
-    active:scale-95 active:bg-emerald-50 active:shadow-inner
-    active:translate-y-[1px]
-  "
-                                        >
-                                          Зателефонувати
-                                        </a>
-                                      </>
-                                    ) : (
-                                      <p className="mt-2 text-sm text-stone-400">
-                                        Не вказано
-                                      </p>
-                                    )}
-                                  </div>
-                                </div>
-
-                                <div className="relative overflow-hidden rounded-[24px] border border-indigo-200/60 bg-gradient-to-br from-white via-indigo-50/30 to-stone-50 px-4 py-4 shadow-[0_10px_30px_rgba(120,90,60,0.08)] ">
-                                  <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-indigo-200/20 blur-2xl" />
-                                  <div className="absolute -bottom-6 left-0 h-16 w-16 rounded-full bg-indigo-100/30 blur-2xl" />
-
-                                  <div className="relative z-10 sm:hidden">
-                                    <div className="flex items-center gap-3">
-                                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-indigo-100 shadow-sm">
-                                        <Sparkles className="h-5 w-5 text-indigo-600" />
-                                      </div>
-
-                                      <div className="min-w-0 flex-1">
-                                        <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-indigo-700">
-                                          Формат
-                                        </p>
-                                        <div className="mt-1 text-base font-extrabold leading-tight text-stone-900">
-                                          Онлайн запис
-                                        </div>
-                                        <p className="mt-1 text-xs text-stone-500">
-                                          Швидко та без дзвінків
-                                        </p>
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  <div className="relative z-10 hidden text-center sm:block">
-                                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-100 shadow-sm">
-                                      <Sparkles className="h-5 w-5 text-indigo-600" />
-                                    </div>
-
-                                    <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.22em] text-indigo-700">
-                                      Формат
-                                    </p>
-
-                                    <div className="mt-2 text-base font-extrabold text-stone-900">
-                                      Онлайн запис
-                                    </div>
-
-                                    <p className="mt-1 text-xs text-stone-500">
-                                      Швидко та без дзвінків
-                                    </p>
-                                  </div>
-                                </div>
-
-                                <div className="relative overflow-hidden rounded-[24px] border border-amber-200/60 bg-gradient-to-br from-white via-amber-50/40 to-stone-50 px-4 py-4 shadow-[0_10px_30px_rgba(120,90,60,0.08)] ">
-                                  <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-amber-200/25 blur-2xl" />
-                                  <div className="absolute -bottom-6 left-0 h-16 w-16 rounded-full bg-orange-200/20 blur-2xl" />
-
-                                  <div className="relative z-10 sm:hidden">
-                                    <div className="flex items-center gap-3">
-                                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 shadow-sm">
-                                        <Banknote className="h-5 w-5 text-amber-700" />
-                                      </div>
-
-                                      <div className="min-w-0 flex-1">
-                                        <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-700">
-                                          Оплата
-                                        </p>
-                                        <div className="mt-1 text-base font-extrabold leading-tight text-stone-900">
-                                          Без передоплати
-                                        </div>
-                                        <p className="mt-1 text-xs text-stone-500">
-                                          Оплата після візиту
-                                        </p>
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  <div className="relative z-10 hidden text-center sm:block">
-                                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 shadow-sm">
-                                      <Banknote className="h-5 w-5 text-amber-700" />
-                                    </div>
-
-                                    <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.22em] text-amber-700">
-                                      Оплата
-                                    </p>
-
-                                    <div className="mt-2 text-base font-extrabold text-stone-900">
-                                      Без передоплати
-                                    </div>
-
-                                    <p className="mt-1 text-xs text-stone-500">
-                                      Оплата після візиту
-                                    </p>
-                                  </div>
-                                </div>
-                              </div>
                             </div>
 
                             {!!description && (
@@ -1820,7 +1640,294 @@ export default function StudioPublicPage() {
                               </div>
                             )}
 
-                            <div className="rounded-[30px] border border-stone-200 bg-white p-5 shadow-[0_10px_35px_rgba(0,0,0,0.04)] sm:p-6">
+                            <div className="rounded-[30px] border border-stone-200 bg-white p-5 shadow-[0_10px_35px_rgba(0,0,0,0.04)] sm:p-6 lg:hidden">
+                              <div className="flex items-center gap-3">
+                                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+                                  <Clock className="h-5 w-5" />
+                                </div>
+
+                                <div>
+                                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-600">
+                                    Графік роботи
+                                  </p>
+                                  <h3 className="mt-1 text-lg font-bold text-stone-800">
+                                    Актуальний графік
+                                  </h3>
+                                </div>
+                              </div>
+
+                              <div className="mt-5 grid gap-2">
+                                {weeklyScheduleRows.map((item) => {
+                                  const today = new Date().getDay();
+                                  const isToday = today === item.jsDay;
+
+                                  return (
+                                    <div
+                                      key={item.day}
+                                      className={cn(
+                                        "flex items-center justify-between rounded-2xl border px-4 py-3 transition-all duration-200",
+                                        isToday
+                                          ? "border-emerald-200 bg-emerald-50/60"
+                                          : "border-stone-200 bg-stone-50",
+                                      )}
+                                    >
+                                      <div className="flex items-center gap-3">
+                                        <div
+                                          className={cn(
+                                            "h-2.5 w-2.5 rounded-full",
+                                            isToday
+                                              ? "bg-emerald-500"
+                                              : "bg-stone-300",
+                                          )}
+                                        />
+                                        <span
+                                          className={cn(
+                                            "text-sm",
+                                            isToday
+                                              ? "font-bold text-stone-800"
+                                              : "font-medium text-stone-600",
+                                          )}
+                                        >
+                                          {item.day}
+                                        </span>
+                                      </div>
+
+                                      <span
+                                        className={cn(
+                                          "text-sm font-semibold",
+                                          item.hours === "Вихідний"
+                                            ? "text-red-700"
+                                            : isToday
+                                              ? "text-emerald-700"
+                                              : "text-stone-800",
+                                        )}
+                                      >
+                                        {item.hours}
+                                      </span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+
+                            {/* МОБІЛКА / ПЛАНШЕТ — як було */}
+                            <div className="grid gap-3 border-t border-stone-100 bg-white px-4 py-4 sm:grid-cols-2 sm:px-6 lg:hidden">
+                              <div className="relative overflow-hidden rounded-[24px] border border-amber-200/60 bg-gradient-to-br from-white via-amber-50/40 to-stone-50 px-4 py-4 shadow-[0_10px_30px_rgba(120,90,60,0.08)]">
+                                <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-amber-200/25 blur-2xl" />
+                                <div className="absolute -bottom-6 left-0 h-16 w-16 rounded-full bg-orange-200/20 blur-2xl" />
+
+                                <div className="relative z-10 sm:hidden">
+                                  <div className="flex items-center gap-3">
+                                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 shadow-sm">
+                                      <Star className="h-5 w-5 fill-amber-500 text-amber-500" />
+                                    </div>
+
+                                    <div className="min-w-0 flex-1">
+                                      <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-700">
+                                        Рейтинг
+                                      </p>
+
+                                      <div className="mt-1 flex items-baseline gap-2">
+                                        <span className="text-[30px] font-extrabold leading-none text-stone-900">
+                                          {reviewsSummary.rating.toFixed(1)}
+                                        </span>
+                                        <span className="text-sm font-medium text-stone-500">
+                                          ({reviewsSummary.count})
+                                        </span>
+                                      </div>
+
+                                      <p className="mt-1 text-xs text-stone-500">
+                                        Висока оцінка клієнтів
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="relative z-10 hidden text-center sm:block">
+                                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 shadow-sm">
+                                    <Star className="h-5 w-5 fill-amber-500 text-amber-500" />
+                                  </div>
+
+                                  <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.22em] text-amber-700">
+                                    Рейтинг
+                                  </p>
+
+                                  <div className="mt-2 flex items-baseline justify-center gap-2">
+                                    <span className="text-[34px] font-extrabold leading-none text-stone-900">
+                                      {reviewsSummary.rating.toFixed(1)}
+                                    </span>
+                                    <span className="text-base font-medium text-stone-500">
+                                      ({reviewsSummary.count})
+                                    </span>
+                                  </div>
+
+                                  <p className="mt-2 text-sm text-stone-500">
+                                    Висока оцінка клієнтів
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="relative overflow-hidden rounded-[24px] border border-emerald-200/60 bg-gradient-to-br from-white via-emerald-50/30 to-stone-50 px-4 py-4 shadow-[0_10px_30px_rgba(120,90,60,0.08)]">
+                                <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-emerald-200/25 blur-2xl" />
+                                <div className="absolute -bottom-6 left-0 h-16 w-16 rounded-full bg-emerald-100/30 blur-2xl" />
+
+                                <div className="relative z-10 sm:hidden">
+                                  <div className="flex items-center gap-3">
+                                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 shadow-sm">
+                                      <Phone className="h-5 w-5 text-emerald-600" />
+                                    </div>
+
+                                    <div className="min-w-0 flex-1">
+                                      <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-emerald-700">
+                                        Телефон
+                                      </p>
+
+                                      {studioPhone ? (
+                                        <>
+                                          <div className="mt-1 break-all text-base font-extrabold leading-tight text-stone-900">
+                                            {studioPhone}
+                                          </div>
+                                          <p className="mt-1 text-xs text-stone-500">
+                                            Натисніть, щоб подзвонити
+                                          </p>
+                                        </>
+                                      ) : (
+                                        <p className="mt-1 text-sm text-stone-400">
+                                          Не вказано
+                                        </p>
+                                      )}
+                                    </div>
+
+                                    {studioPhone && (
+                                      <a
+                                        href={`tel:${studioPhone}`}
+                                        className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl border border-emerald-200 bg-white px-3 text-xs font-bold text-emerald-700 transition-all duration-150 active:scale-95 active:bg-emerald-50 active:shadow-inner"
+                                      >
+                                        Зателефонувати
+                                      </a>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <div className="relative z-10 hidden text-center sm:block">
+                                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 shadow-sm">
+                                    <Phone className="h-5 w-5 text-emerald-600" />
+                                  </div>
+
+                                  <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.22em] text-emerald-700">
+                                    Телефон
+                                  </p>
+
+                                  {studioPhone ? (
+                                    <>
+                                      <div className="mt-2 break-all text-base font-extrabold text-stone-900">
+                                        {studioPhone}
+                                      </div>
+
+                                      <a
+                                        href={`tel:${studioPhone}`}
+                                        className="mt-3 inline-flex h-9 items-center justify-center rounded-xl border border-emerald-200 bg-white px-4 text-xs font-bold text-emerald-700 transition-all duration-150 active:translate-y-[1px] active:scale-95 active:bg-emerald-50 active:shadow-inner"
+                                      >
+                                        Зателефонувати
+                                      </a>
+                                    </>
+                                  ) : (
+                                    <p className="mt-2 text-sm text-stone-400">
+                                      Не вказано
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="relative overflow-hidden rounded-[24px] border border-indigo-200/60 bg-gradient-to-br from-white via-indigo-50/30 to-stone-50 px-4 py-4 shadow-[0_10px_30px_rgba(120,90,60,0.08)]">
+                                <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-indigo-200/20 blur-2xl" />
+                                <div className="absolute -bottom-6 left-0 h-16 w-16 rounded-full bg-indigo-100/30 blur-2xl" />
+
+                                <div className="relative z-10 sm:hidden">
+                                  <div className="flex items-center gap-3">
+                                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-indigo-100 shadow-sm">
+                                      <Sparkles className="h-5 w-5 text-indigo-600" />
+                                    </div>
+
+                                    <div className="min-w-0 flex-1">
+                                      <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-indigo-700">
+                                        Формат
+                                      </p>
+                                      <div className="mt-1 text-base font-extrabold leading-tight text-stone-900">
+                                        Онлайн запис
+                                      </div>
+                                      <p className="mt-1 text-xs text-stone-500">
+                                        Швидко та без дзвінків
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="relative z-10 hidden text-center sm:block">
+                                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-100 shadow-sm">
+                                    <Sparkles className="h-5 w-5 text-indigo-600" />
+                                  </div>
+
+                                  <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.22em] text-indigo-700">
+                                    Формат
+                                  </p>
+
+                                  <div className="mt-2 text-base font-extrabold text-stone-900">
+                                    Онлайн запис
+                                  </div>
+
+                                  <p className="mt-1 text-xs text-stone-500">
+                                    Швидко та без дзвінків
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="relative overflow-hidden rounded-[24px] border border-amber-200/60 bg-gradient-to-br from-white via-amber-50/40 to-stone-50 px-4 py-4 shadow-[0_10px_30px_rgba(120,90,60,0.08)]">
+                                <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-amber-200/25 blur-2xl" />
+                                <div className="absolute -bottom-6 left-0 h-16 w-16 rounded-full bg-orange-200/20 blur-2xl" />
+
+                                <div className="relative z-10 sm:hidden">
+                                  <div className="flex items-center gap-3">
+                                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 shadow-sm">
+                                      <Banknote className="h-5 w-5 text-amber-700" />
+                                    </div>
+
+                                    <div className="min-w-0 flex-1">
+                                      <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-700">
+                                        Оплата
+                                      </p>
+                                      <div className="mt-1 text-base font-extrabold leading-tight text-stone-900">
+                                        Без передоплати
+                                      </div>
+                                      <p className="mt-1 text-xs text-stone-500">
+                                        Оплата після візиту
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="relative z-10 hidden text-center sm:block">
+                                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 shadow-sm">
+                                    <Banknote className="h-5 w-5 text-amber-700" />
+                                  </div>
+
+                                  <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.22em] text-amber-700">
+                                    Оплата
+                                  </p>
+
+                                  <div className="mt-2 text-base font-extrabold text-stone-900">
+                                    Без передоплати
+                                  </div>
+
+                                  <p className="mt-1 text-xs text-stone-500">
+                                    Оплата після візиту
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* ДЕСКТОП — окремий великий графік */}
+                            <div className="hidden rounded-[30px] border border-stone-200 bg-white p-5 shadow-[0_10px_35px_rgba(0,0,0,0.04)] sm:p-6 lg:block">
                               <div className="flex items-center gap-3">
                                 <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
                                   <Clock className="h-5 w-5" />
@@ -1891,7 +1998,119 @@ export default function StudioPublicPage() {
                             </div>
                           </div>
 
+                          {/* ПРАВА КОЛОНКА */}
                           <div className="space-y-5 pb-15 sm:pb-0 lg:pb-0">
+                            {/* ДЕСКТОП — 4 карточки 2x2 */}
+                            <div className="hidden lg:grid lg:grid-cols-2 lg:gap-3">
+                              <div className="relative overflow-hidden rounded-[24px] border border-amber-200/60 bg-gradient-to-br from-white via-amber-50/40 to-stone-50 px-4 py-4 text-center shadow-[0_10px_30px_rgba(120,90,60,0.08)]">
+                                <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-amber-200/25 blur-2xl" />
+                                <div className="absolute -bottom-6 left-0 h-16 w-16 rounded-full bg-orange-200/20 blur-2xl" />
+
+                                <div className="relative z-10">
+                                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 shadow-sm">
+                                    <Star className="h-5 w-5 fill-amber-500 text-amber-500" />
+                                  </div>
+
+                                  <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.22em] text-amber-700">
+                                    Рейтинг
+                                  </p>
+
+                                  <div className="mt-2 flex items-baseline justify-center gap-2">
+                                    <span className="text-[34px] font-extrabold leading-none text-stone-900">
+                                      {reviewsSummary.rating.toFixed(1)}
+                                    </span>
+                                    <span className="text-base font-medium text-stone-500">
+                                      ({reviewsSummary.count})
+                                    </span>
+                                  </div>
+
+                                  <p className="mt-2 text-sm text-stone-500">
+                                    Висока оцінка клієнтів
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="relative overflow-hidden rounded-[24px] border border-emerald-200/60 bg-gradient-to-br from-white via-emerald-50/30 to-stone-50 px-4 py-4 text-center shadow-[0_10px_30px_rgba(120,90,60,0.08)]">
+                                <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-emerald-200/25 blur-2xl" />
+                                <div className="absolute -bottom-6 left-0 h-16 w-16 rounded-full bg-emerald-100/30 blur-2xl" />
+
+                                <div className="relative z-10">
+                                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 shadow-sm">
+                                    <Phone className="h-5 w-5 text-emerald-600" />
+                                  </div>
+
+                                  <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.22em] text-emerald-700">
+                                    Телефон
+                                  </p>
+
+                                  {studioPhone ? (
+                                    <>
+                                      <div className="mt-2 break-all text-base font-extrabold text-stone-900">
+                                        {studioPhone}
+                                      </div>
+
+                                      <a
+                                        href={`tel:${studioPhone}`}
+                                        className="mt-3 inline-flex h-9 items-center justify-center rounded-xl border border-emerald-200 bg-white px-4 text-xs font-bold text-emerald-700 transition-all duration-150 active:translate-y-[1px] active:scale-95 active:bg-emerald-50 active:shadow-inner"
+                                      >
+                                        Зателефонувати
+                                      </a>
+                                    </>
+                                  ) : (
+                                    <p className="mt-2 text-sm text-stone-400">
+                                      Не вказано
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="relative overflow-hidden rounded-[24px] border border-indigo-200/60 bg-gradient-to-br from-white via-indigo-50/30 to-stone-50 px-4 py-4 text-center shadow-[0_10px_30px_rgba(120,90,60,0.08)]">
+                                <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-indigo-200/20 blur-2xl" />
+                                <div className="absolute -bottom-6 left-0 h-16 w-16 rounded-full bg-indigo-100/30 blur-2xl" />
+
+                                <div className="relative z-10">
+                                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-100 shadow-sm">
+                                    <Sparkles className="h-5 w-5 text-indigo-600" />
+                                  </div>
+
+                                  <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.22em] text-indigo-700">
+                                    Формат
+                                  </p>
+
+                                  <div className="mt-2 text-base font-extrabold text-stone-900">
+                                    Онлайн запис
+                                  </div>
+
+                                  <p className="mt-1 text-xs text-stone-500">
+                                    Швидко та без дзвінків
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="relative overflow-hidden rounded-[24px] border border-amber-200/60 bg-gradient-to-br from-white via-amber-50/40 to-stone-50 px-4 py-4 text-center shadow-[0_10px_30px_rgba(120,90,60,0.08)]">
+                                <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-amber-200/25 blur-2xl" />
+                                <div className="absolute -bottom-6 left-0 h-16 w-16 rounded-full bg-orange-200/20 blur-2xl" />
+
+                                <div className="relative z-10">
+                                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 shadow-sm">
+                                    <Banknote className="h-5 w-5 text-amber-700" />
+                                  </div>
+
+                                  <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.22em] text-amber-700">
+                                    Оплата
+                                  </p>
+
+                                  <div className="mt-2 text-base font-extrabold text-stone-900">
+                                    Без передоплати
+                                  </div>
+
+                                  <p className="mt-1 text-xs text-stone-500">
+                                    Оплата після візиту
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+
                             <div className="rounded-[30px] border border-stone-200 bg-gradient-to-br from-[#fffaf6] via-white to-[#f8f5f1] p-5 shadow-[0_10px_35px_rgba(0,0,0,0.04)] sm:p-6">
                               <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-600">
                                 Швидкий контакт
@@ -1904,70 +2123,34 @@ export default function StudioPublicPage() {
                                 послугу онлайн за кілька кліків.
                               </p>
 
-                              <div className="mt-5 grid grid-cols-1 gap-3 lg:grid-cols-2">
-                                {studioPhone && (
-                                  <a
-                                    href={`tel:${studioPhone}`}
-                                    className="
-        group flex h-12 w-full items-center justify-center gap-2.5
-        rounded-2xl border border-stone-200/80
-        bg-gradient-to-b from-white to-stone-50
-        text-sm font-semibold text-stone-800
-        shadow-[0_8px_24px_rgba(15,23,42,0.05)]
-        transition-all duration-200
-        hover:-translate-y-0.5 hover:border-amber-200 hover:shadow-[0_12px_30px_rgba(15,23,42,0.08)]
-        active:scale-[0.98]
-      "
-                                  >
-                                    <span
-                                      className="
-          flex h-8 w-8 items-center justify-center rounded-xl
-          bg-amber-50 text-amber-600
-          transition-colors duration-200
-          group-hover:bg-amber-100
-        "
-                                    >
-                                      <Phone className="h-4 w-4" />
-                                    </span>
+<div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+  {studioPhone && (
+    <a
+      href={`tel:${studioPhone}`}
+      className="group flex h-12 w-full items-center justify-center gap-2.5 rounded-2xl border border-stone-200/80 bg-gradient-to-b from-white to-stone-50 text-sm font-semibold text-stone-800 shadow-[0_8px_24px_rgba(15,23,42,0.05)] transition-all duration-200 active:scale-[0.98] sm:hover:-translate-y-0.5 sm:hover:border-amber-200 sm:hover:shadow-[0_12px_30px_rgba(15,23,42,0.08)]"
+    >
+      <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 text-amber-600 transition-colors duration-200 sm:group-hover:bg-amber-100">
+        <Phone className="h-4 w-4" />
+      </span>
+      <span>Зателефонувати</span>
+    </a>
+  )}
 
-                                    <span>Зателефонувати</span>
-                                  </a>
-                                )}
-
-                                {/* тільки desktop */}
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setPreselectedService(null);
-                                    setSelectedMaster(null);
-                                    setOpenBooking(true);
-                                  }}
-                                  className="
-      hidden lg:flex
-      group h-12 w-full items-center justify-center gap-2.5
-      rounded-2xl border border-stone-200/80
-      bg-gradient-to-b from-white to-stone-50
-      text-sm font-semibold text-stone-800
-      shadow-[0_8px_24px_rgba(15,23,42,0.05)]
-      transition-all duration-200
-      hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-[0_12px_30px_rgba(15,23,42,0.08)]
-      active:scale-[0.98]
-    "
-                                >
-                                  <span
-                                    className="
-        flex h-8 w-8 items-center justify-center rounded-xl
-        bg-indigo-50 text-indigo-600
-        transition-colors duration-200
-        group-hover:bg-indigo-100
-      "
-                                  >
-                                    <Sparkles className="h-4 w-4" />
-                                  </span>
-
-                                  <span>Забронювати онлайн</span>
-                                </button>
-                              </div>
+  <button
+    type="button"
+    onClick={() => {
+      setPreselectedService(null);
+      setSelectedMaster(null);
+      setOpenBooking(true);
+    }}
+    className="group flex h-12 w-full items-center justify-center gap-2.5 rounded-2xl border border-stone-200/80 bg-gradient-to-b from-white to-stone-50 text-sm font-semibold text-stone-800 shadow-[0_8px_24px_rgba(15,23,42,0.05)] transition-all duration-200 active:scale-[0.98] sm:hover:-translate-y-0.5 sm:hover:border-indigo-200 sm:hover:shadow-[0_12px_30px_rgba(15,23,42,0.08)]"
+  >
+    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 transition-colors duration-200 sm:group-hover:bg-indigo-100">
+      <Sparkles className="h-4 w-4" />
+    </span>
+    <span>Забронювати онлайн</span>
+  </button>
+</div>
                             </div>
 
                             {teamMembers.length > 0 && (

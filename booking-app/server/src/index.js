@@ -1,4 +1,3 @@
-// index.js //
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
@@ -11,11 +10,13 @@ import mediaRoutes from "./routes/media.js";
 import scheduleRoutes from "./routes/schedule.routes.js";
 import { masterScheduleRouter } from "./routes/masterSchedule.routes.js";
 import bookingsRoutes from "./routes/bookings.js";
+
 const app = express();
 
 const allowedOrigins = new Set([
   "http://localhost:5173",
   "http://127.0.0.1:5173",
+  "http://192.168.1.24:5173", // твій фронт з телефона
 ]);
 
 app.use(
@@ -29,20 +30,17 @@ app.use(
   })
 );
 
-app.options("*", cors());
 app.use(express.json({ limit: "10mb" }));
 app.use(masterScheduleRouter);
+
 app.get("/health", (req, res) => res.json({ ok: true }));
 
 app.use("/bookings", bookingsRoutes);
-
 app.use("/auth", authRouter);
 app.use("/owner", ownerRouter);
 app.use("/client", clientRouter);
-
 app.use("/studio", studioRoutes);
 app.use("/media", mediaRoutes);
-
 app.use("/studio", scheduleRoutes);
 
 app.post("/logout", (req, res) => {
@@ -51,4 +49,7 @@ app.post("/logout", (req, res) => {
 });
 
 const port = process.env.PORT || 4000;
-app.listen(port, () => console.log(`API running on http://localhost:${port}`));
+
+app.listen(port, "0.0.0.0", () => {
+  console.log(`API running on http://0.0.0.0:${port}`);
+});

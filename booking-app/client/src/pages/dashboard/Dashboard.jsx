@@ -1,3 +1,4 @@
+// Dashboard.jsx
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import {
@@ -125,7 +126,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-stone-50 via-amber-50/30 to-orange-50/20">
-     <div className="mx-auto w-full max-w-6xl px-0 pt-24 lg:px-4">
+     <div className="mx-auto w-full max-w-6xl px-0 pt-18 lg:px-4">
         <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[220px_minmax(0,1fr)]">
           <aside
             className="

@@ -126,13 +126,13 @@ async function ensureDefaultDays(studioId) {
   if (existing.length > 0) return;
 
   const defaults = [
-    { day: "MON", enabled: true, startMin: 600, endMin: 1080 },
-    { day: "TUE", enabled: true, startMin: 600, endMin: 1080 },
-    { day: "WED", enabled: true, startMin: 600, endMin: 1080 },
-    { day: "THU", enabled: true, startMin: 600, endMin: 1080 },
-    { day: "FRI", enabled: true, startMin: 600, endMin: 1080 },
-    { day: "SAT", enabled: false, startMin: 600, endMin: 1080 },
-    { day: "SUN", enabled: false, startMin: 600, endMin: 1080 },
+    { day: "MON", enabled: true, startMin: 480, endMin: 1020 },
+    { day: "TUE", enabled: true, startMin: 480, endMin: 1020 },
+    { day: "WED", enabled: true, startMin: 480, endMin: 1020 },
+    { day: "THU", enabled: true, startMin: 480, endMin: 1020 },
+    { day: "FRI", enabled: true, startMin: 480, endMin: 1020 },
+    { day: "SAT", enabled: false, startMin: 480, endMin: 1020 },
+    { day: "SUN", enabled: false, startMin: 480, endMin: 1020 },
   ];
 
   await prisma.studioScheduleDay.createMany({

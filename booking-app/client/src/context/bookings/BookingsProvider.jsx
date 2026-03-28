@@ -1,3 +1,4 @@
+// BookingsProvider.jsx
 import { useEffect, useMemo, useState } from "react";
 import { BookingsContext } from "./BookingsContext";
 

@@ -1,3 +1,4 @@
+// PremiumBadge.jsx
 export default function PremiumBadge() {
   return (
     <div

@@ -321,7 +321,7 @@ function Button({
 }) {
   const variants = {
     primary:
-      "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/35 hover:from-emerald-700 hover:to-emerald-800",
+      "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white hover:shadow-emerald-500/35 hover:from-emerald-700 hover:to-emerald-800",
     secondary:
       "bg-white border border-stone-200 text-stone-700 hover:bg-stone-50 hover:border-stone-300",
     danger:

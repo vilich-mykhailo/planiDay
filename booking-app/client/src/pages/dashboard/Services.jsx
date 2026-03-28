@@ -379,7 +379,7 @@ function Button({
 }) {
   const variants = {
     primary:
-      "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/35 hover:from-emerald-700 hover:to-emerald-800",
+      "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white hover:shadow-emerald-500/35 hover:from-emerald-700 hover:to-emerald-800",
     secondary:
       "bg-white border border-stone-200 text-stone-700 hover:bg-stone-50 hover:border-stone-300",
     danger:
@@ -453,17 +453,41 @@ function DurationSlider({ value, onChange }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-center">
-        <div className="relative">
-          <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-400 opacity-20 blur-xl" />
-          <div className="relative flex items-center gap-2 rounded-2xl border border-amber-200/50 bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-2.5 sm:gap-3 sm:px-6 sm:py-3">
-            <Clock className="h-4.5 w-4.5 text-amber-600 sm:h-5 sm:w-5" />
-            <span className="text-xl font-bold text-stone-800 sm:text-2xl">
-              {formatDuration(value)}
-            </span>
-          </div>
-        </div>
-      </div>
+<div className="grid grid-cols-2 gap-3">
+  {/* блок з вибраним часом */}
+  <div className="relative min-w-0">
+    <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-400 opacity-20 blur-xl" />
+    <div className="relative flex h-full items-center justify-center gap-2 rounded-2xl border border-amber-200/50 bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-3 sm:gap-3 sm:px-6 sm:py-3">
+      <Clock className="h-4.5 w-4.5 flex-shrink-0 text-amber-600 sm:h-5 sm:w-5" />
+      <span className="truncate text-center text-lg font-bold text-stone-800 sm:text-2xl">
+        {formatDuration(value)}
+      </span>
+    </div>
+  </div>
+
+  {/* блок +/- */}
+  <div className="flex items-center justify-center gap-2 rounded-2xl border border-stone-200 bg-white px-2.5 py-2 sm:gap-3 sm:px-3">
+    <button
+      type="button"
+      onClick={() => onChange(Math.max(minVal, value - 5))}
+      disabled={value <= minVal}
+      className="flex h-9 w-9 items-center justify-center rounded-full bg-stone-100 text-stone-600 transition-all hover:bg-stone-200 disabled:opacity-40 sm:h-10 sm:w-10"
+    >
+      <span className="text-lg font-bold">−</span>
+    </button>
+
+    <span className="text-xs text-stone-500 sm:text-sm">±5 хв</span>
+
+    <button
+      type="button"
+      onClick={() => onChange(Math.min(maxVal, value + 5))}
+      disabled={value >= maxVal}
+      className="flex h-9 w-9 items-center justify-center rounded-full bg-stone-100 text-stone-600 transition-all hover:bg-stone-200 disabled:opacity-40 sm:h-10 sm:w-10"
+    >
+      <span className="text-lg font-bold">+</span>
+    </button>
+  </div>
+</div>
 
       <div className="px-1 py-2 sm:px-2 sm:py-4">
         <Slider
@@ -499,30 +523,6 @@ function DurationSlider({ value, onChange }) {
             {preset.label}
           </button>
         ))}
-      </div>
-
-      <div className="flex items-center justify-center gap-3 sm:gap-4">
-        <button
-          type="button"
-          onClick={() => onChange(Math.max(minVal, value - 5))}
-          disabled={value <= minVal}
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-stone-100 text-stone-600 transition-all hover:bg-stone-200 disabled:opacity-40 sm:h-10 sm:w-10"
-        >
-          <span className="text-lg font-bold">−</span>
-        </button>
-
-        <span className="w-14 text-center text-xs text-stone-500 sm:w-16 sm:text-sm">
-          ±5 хв
-        </span>
-
-        <button
-          type="button"
-          onClick={() => onChange(Math.min(maxVal, value + 5))}
-          disabled={value >= maxVal}
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-stone-100 text-stone-600 transition-all hover:bg-stone-200 disabled:opacity-40 sm:h-10 sm:w-10"
-        >
-          <span className="text-lg font-bold">+</span>
-        </button>
       </div>
     </div>
   );
@@ -1163,25 +1163,44 @@ export default function Services() {
         }
       >
         <div className="space-y-6">
-          <div>
-            <label className="mb-2 block text-sm font-medium text-stone-700">
-              Категорія
-            </label>
+<div className="grid grid-cols-[1fr_130px] gap-3 sm:grid-cols-2">
+  <div className="min-w-0">
+    <label className="mb-2 block text-sm font-medium text-stone-700">
+      Категорія
+    </label>
 
-            <CustomSelect
-              value={serviceDraft.categoryId || UNCATEGORIZED_ID}
-              onChange={(nextValue) =>
-                setServiceDraft((p) => ({ ...p, categoryId: nextValue }))
-              }
-              options={[
-                { value: UNCATEGORIZED_ID, label: "Без категорії" },
-                ...serviceCategories.map((c) => ({
-                  value: c.id,
-                  label: c.name,
-                })),
-              ]}
-            />
-          </div>
+    <CustomSelect
+      value={serviceDraft.categoryId || UNCATEGORIZED_ID}
+      onChange={(nextValue) =>
+        setServiceDraft((p) => ({ ...p, categoryId: nextValue }))
+      }
+      options={[
+        { value: UNCATEGORIZED_ID, label: "Без категорії" },
+        ...serviceCategories.map((c) => ({
+          value: c.id,
+          label: c.name,
+        })),
+      ]}
+    />
+  </div>
+
+  <div className="min-w-0">
+    <label className="mb-2 block text-sm font-medium text-stone-700">
+      Ціна (грн) *
+    </label>
+
+    <input
+      type="number"
+      value={serviceDraft.price}
+      onChange={(e) =>
+        setServiceDraft((p) => ({ ...p, price: e.target.value }))
+      }
+      placeholder="0"
+      min="0"
+      className="w-full rounded-2xl border border-stone-200 px-4 py-3 text-sm font-medium text-stone-800 outline-none transition-all placeholder:text-stone-400 focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10"
+    />
+  </div>
+</div>
 
           <div>
             <label className="mb-2 block text-sm font-medium text-stone-700">
@@ -1198,22 +1217,7 @@ export default function Services() {
             />
           </div>
 
-          <div>
-            <label className="mb-2 block text-sm font-medium text-stone-700">
-              Ціна (грн) *
-            </label>
 
-            <input
-              type="number"
-              value={serviceDraft.price}
-              onChange={(e) =>
-                setServiceDraft((p) => ({ ...p, price: e.target.value }))
-              }
-              placeholder="0"
-              min="0"
-              className="w-full rounded-2xl border border-stone-200 px-4 py-3 text-sm font-medium text-stone-800 outline-none transition-all placeholder:text-stone-400 focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10"
-            />
-          </div>
 
           <div>
             <label className="mb-4 block text-sm font-medium text-stone-700">

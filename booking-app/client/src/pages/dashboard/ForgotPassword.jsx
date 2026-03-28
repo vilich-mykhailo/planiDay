@@ -37,7 +37,7 @@ export default function ForgotPassword() {
   }
 
   return (
-    <main className="min-h-[100dvh] bg-gradient-to-br from-stone-50 via-amber-50/30 to-orange-50/20">
+<main className="min-h-[100svh] flex items-center justify-center bg-gradient-to-br from-stone-50 via-amber-50/30 to-orange-50/20">
       <div className="mx-auto max-w-6xl px-4 py-10 sm:py-14">
         <div className="mx-auto max-w-md">
           <div className="text-center">
@@ -53,7 +53,7 @@ export default function ForgotPassword() {
             </p>
           </div>
 
-          <div className="mt-8 overflow-hidden rounded-3xl border border-stone-200/60 bg-white shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]">
+          <div className="mt-5 sm:mt-8 overflow-hidden rounded-3xl border border-stone-200/60 bg-white shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]">
             <div className="h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-70" />
 
             <div className="p-6 sm:p-7">
@@ -109,7 +109,7 @@ export default function ForgotPassword() {
           </div>
 
           <p className="mt-6 text-center text-xs leading-5 text-stone-500">
-            Якщо листа немає — перевір “Спам” або зачекай 1–2 хвилини.
+            Якщо листа немає — перевір “Спам”.
           </p>
         </div>
       </div>

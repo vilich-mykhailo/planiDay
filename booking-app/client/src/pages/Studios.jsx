@@ -496,33 +496,33 @@ export default function Studios() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-stone-50 via-amber-50/30 to-orange-50/20">
-      <div className="mx-auto max-w-6xl px-3 pb-6 pt-12 sm:px-4 sm:pb-8 sm:pt-16">
-        <div className="space-y-4 px-0 pt-3 sm:space-y-5 sm:pt-8 lg:pt-6">
-          <section className="overflow-hidden rounded-[28px] border border-stone-200/60 bg-white shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)] sm:rounded-3xl">
+    <div className="min-h-screen ">
+      <div className="mx-auto max-w-6xl px-2.5 pb-4 pt-18 sm:px-4 sm:pb-8 sm:pt-14 lg:pt-16">
+        <div className="space-y-3 px-0 pt-2 sm:space-y-5 sm:pt-8 lg:pt-6">
+          <section className="overflow-hidden rounded-[24px] border border-stone-200/60 bg-white shadow-[0_4px_20px_-6px_rgba(120,90,60,0.08)] sm:rounded-3xl">
             {" "}
             <div className="h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-70" />
-            <div className="px-3.5 pb-4 pt-3.5 sm:px-6 sm:pb-5 sm:pt-5 lg:px-8 lg:pt-6">
-              <div className="mb-4 space-y-2.5 sm:mb-8 sm:space-y-3 lg:mb-10">
-                <div className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-3 py-1 sm:px-4 sm:py-1.5">
+            <div className="px-4 pb-7 pt-7 sm:px-6 sm:pb-4 sm:pt-5 lg:px-8 lg:pt-6">
+              <div className="mb-5 space-y-3 sm:mb-4 sm:space-y-2 lg:mb-5">
+                <div className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-3 py-1 sm:px-4 sm:py-1.5">
                   <Sparkles className="h-3.5 w-3.5 text-amber-600 sm:h-4 sm:w-4" />
                   <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-700 sm:text-xs sm:tracking-[0.22em]">
-                    Пошук студій
+                    Пошук послуг
                   </span>
                 </div>
 
-                <h1 className="max-w-[260px] text-[30px] font-black leading-[0.95] tracking-[-0.04em] text-stone-800 sm:max-w-none sm:text-4xl lg:text-5xl">
+                <h1 className="max-w-full !text-[37px] font-black leading-tight tracking-[-0.03em] text-stone-800 sm:max-w-none sm:!text-5xl lg:!text-5xl">
                   Обирай та{" "}
                   <span className="text-amber-600">записуйся онлайн</span>
                 </h1>
 
-                <p className="hidden max-w-2xl text-base leading-7 text-stone-600 sm:block">
+                <p className="hidden max-w-2xl text-base leading-7 text-stone-600 ">
                   Обирай послуги поруч із тобою — швидко, зручно та без зайвих
                   дзвінків.
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-[1.2fr_0.9fr_0.9fr_0.9fr]">
+              <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-[1.2fr_0.9fr_0.9fr_0.9fr]">
                 <AnimatedField
                   label="Пошук"
                   value={q}
@@ -557,7 +557,7 @@ export default function Studios() {
                 />
               </div>
 
-              <div className="mt-3 flex flex-col gap-2.5 sm:mt-4 sm:gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="mt-2.5 flex flex-col gap-2 sm:mt-4 sm:gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex flex-wrap gap-2">
                   {activeChips.length === 0 ? (
                     <span className="text-xs text-stone-500 sm:text-sm">
@@ -665,7 +665,7 @@ export default function Studios() {
               </div>
             </div>
           ) : (
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
               {filtered.slice(0, visibleCount).map((studio) => {
                 const name = safeText(studio.name) || "Студія";
                 const cat = safeText(studio.category);
@@ -724,11 +724,11 @@ export default function Studios() {
                       }
                     }}
                     className={cn(
-                      "group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-[30px] border transition-all duration-500 will-change-transform",
+                      "group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-[24px] border transition-all duration-500 will-change-transform sm:rounded-[30px]",
                       "bg-white/95 backdrop-blur-sm",
                       studio.premium
-                        ? "border-amber-300/70 shadow-[0_20px_60px_rgba(217,168,72,0.22)] hover:-translate-y-2 hover:shadow-[0_28px_70px_rgba(217,168,72,0.30)]"
-                        : "border-stone-200/80 shadow-[0_14px_38px_rgba(15,23,42,0.08)] hover:-translate-y-1.5 hover:border-stone-300 hover:shadow-[0_22px_48px_rgba(15,23,42,0.12)]",
+                        ? "border-amber-300/70 shadow-[0_12px_34px_rgba(217,168,72,0.18)] hover:-translate-y-1 hover:shadow-[0_18px_44px_rgba(217,168,72,0.24)] sm:shadow-[0_20px_60px_rgba(217,168,72,0.22)] sm:hover:-translate-y-2 sm:hover:shadow-[0_28px_70px_rgba(217,168,72,0.30)]"
+                        : "border-stone-200/80 shadow-[0_10px_26px_rgba(15,23,42,0.07)] hover:-translate-y-1 hover:border-stone-300 hover:shadow-[0_16px_34px_rgba(15,23,42,0.10)] sm:shadow-[0_14px_38px_rgba(15,23,42,0.08)] sm:hover:-translate-y-1.5 sm:hover:shadow-[0_22px_48px_rgba(15,23,42,0.12)]",
                     )}
                   >
                     {studio.premium && (

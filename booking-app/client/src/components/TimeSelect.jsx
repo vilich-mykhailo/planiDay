@@ -31,7 +31,7 @@ export default function TimeSelect({
   dayLabel,
 }) {
   const safeValue = String(value || "08:00");
-const [submitting, setSubmitting] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [open, setOpen] = useState(false);
   const [draftValue, setDraftValue] = useState(safeValue);
   const [initialValue, setInitialValue] = useState(safeValue);
@@ -90,23 +90,23 @@ const [submitting, setSubmitting] = useState(false);
     setDraftValue(`${hour}:${nextMinute}`);
   }
 
-async function handleDone() {
-  if (!isChanged || submitting) return;
+  async function handleDone() {
+    if (!isChanged || submitting) return;
 
-  try {
-    setSubmitting(true);
+    try {
+      setSubmitting(true);
 
-    onChange?.(draftValue);
+      onChange?.(draftValue);
 
-    if (onCommit) {
-      await onCommit(draftValue);
+      if (onCommit) {
+        await onCommit(draftValue);
+      }
+
+      setOpen(false);
+    } finally {
+      setSubmitting(false);
     }
-
-    setOpen(false);
-  } finally {
-    setSubmitting(false);
   }
-}
 
   function handleClose() {
     setDraftValue(initialValue);
@@ -146,27 +146,26 @@ async function handleDone() {
               "animate-in fade-in zoom-in-95 duration-200",
             )}
           >
-<div className="border-b border-stone-100 bg-gradient-to-b from-amber-50/70 to-white px-4 py-3">
-  
-  {/* день */}
-  {dayLabel && (
-    <p className="text-center text-sm font-semibold text-stone-500">
-      {dayLabel}
-    </p>
-  )}
+            <div className="border-b border-stone-100 bg-gradient-to-b from-amber-50/70 to-white px-4 py-3">
+              {/* день */}
+              {dayLabel && (
+                <p className="text-center text-sm font-semibold text-stone-500">
+                  {dayLabel}
+                </p>
+              )}
 
-  {/* тип (початок / кінець) */}
-  {label && (
-    <p className="mt-1 text-center text-[11px] font-bold uppercase tracking-[0.14em] text-amber-600">
-      {label}
-    </p>
-  )}
+              {/* тип (початок / кінець) */}
+              {label && (
+                <p className="mt-1 text-center text-[11px] font-bold uppercase tracking-[0.14em] text-amber-600">
+                  {label}
+                </p>
+              )}
 
-  {/* вибраний час */}
-  <p className="mt-1 text-center text-xl font-black text-stone-800">
-    {selectedLabel}
-  </p>
-</div>
+              {/* вибраний час */}
+              <p className="mt-1 text-center text-xl font-black text-stone-800">
+                {selectedLabel}
+              </p>
+            </div>
 
             <div className="grid grid-cols-[1fr_auto_1fr] items-stretch gap-0 p-3">
               <div>
@@ -244,20 +243,19 @@ async function handleDone() {
                   Скасувати
                 </button>
 
-<button
-  type="button"
-  onClick={handleDone}
-  disabled={!isChanged || submitting}
-  className={cn(
-    "flex-1 rounded-2xl py-2.5 text-sm font-bold transition-all duration-200",
-    isChanged && !submitting
-      ? "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-lg shadow-emerald-500/25 hover:from-emerald-700 hover:to-emerald-800 active:scale-[0.97]"
-      : "cursor-not-allowed bg-stone-100 text-stone-400"
-  )}
->
-  {submitting ? "Збереження..." : "Готово"}
-</button>
-
+                <button
+                  type="button"
+                  onClick={handleDone}
+                  disabled={!isChanged || submitting}
+                  className={cn(
+                    "flex-1 rounded-2xl py-2.5 text-sm font-bold transition-all duration-200",
+                    isChanged && !submitting
+                      ? "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white hover:from-emerald-700 hover:to-emerald-800 active:scale-[0.97]"
+                      : "cursor-not-allowed bg-stone-100 text-stone-400",
+                  )}
+                >
+                  {submitting ? "Збереження..." : "Готово"}
+                </button>
               </div>
             </div>
           </div>

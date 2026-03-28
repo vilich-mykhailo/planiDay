@@ -1,3 +1,4 @@
+// AppBackground.jsx
 export default function AppBackground({ children }) {
   return (
     <div className="relative min-h-[100dvh] bg-gray-50 overflow-hidden">

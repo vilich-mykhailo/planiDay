@@ -1,7 +1,5 @@
+// StudioDetails.jsx
 /* eslint-disable react-hooks/rules-of-hooks */
-
-
-
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStudio } from '../context/studio/useStudio'

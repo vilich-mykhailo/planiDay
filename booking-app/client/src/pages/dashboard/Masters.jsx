@@ -73,35 +73,35 @@ function SectionCard({
     >
       <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-60" />
 
-<div className="border-b border-stone-100 px-5 py-4">
-  
-  {/* ROW 1: title + badge */}
-  <div className="flex items-start justify-between gap-3">
-    <h2 className="text-lg font-bold tracking-tight text-stone-800">
-      {title}
-    </h2>
+      <div className="border-b border-stone-100 px-5 py-4">
+        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-start justify-between gap-3">
+              <h2 className="text-lg font-bold tracking-tight text-stone-800">
+                {title}
+              </h2>
 
-    {badge && (
-      <span className="shrink-0 inline-flex items-center rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-3 py-1 text-xs font-semibold text-amber-700">
-        {badge}
-      </span>
-    )}
-  </div>
+              {badge && (
+                <span className="shrink-0 inline-flex items-center rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-3 py-1 text-xs font-semibold text-amber-700">
+                  {badge}
+                </span>
+              )}
+            </div>
 
-  {/* ROW 2: subtitle FULL WIDTH */}
-  {subtitle && (
-    <p className="mt-1.5 text-sm text-stone-500">
-      {subtitle}
-    </p>
-  )}
+            {subtitle && (
+              <p className="mt-1.5 text-sm text-stone-500">
+                {subtitle}
+              </p>
+            )}
+          </div>
 
-  {/* ROW 3: actions */}
-  {actions && (
-    <div className="mt-3 flex flex-wrap gap-2">
-      {actions}
-    </div>
-  )}
-</div>
+          {actions && (
+            <div className="w-full md:w-auto md:shrink-0">
+              {actions}
+            </div>
+          )}
+        </div>
+      </div>
 
       <div className="p-5">{children}</div>
     </section>
@@ -127,7 +127,7 @@ function Button({
 }) {
   const variants = {
     primary:
-      "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/35 hover:from-emerald-700 hover:to-emerald-800",
+      "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white  hover:shadow-emerald-500/35 hover:from-emerald-700 hover:to-emerald-800",
     secondary:
       "bg-white border border-stone-200 text-stone-700 hover:bg-stone-50 hover:border-stone-300",
     danger:
@@ -168,7 +168,7 @@ function IconButton({
 }) {
   const variants = {
     primary:
-      "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/35 hover:from-emerald-700 hover:to-emerald-800",
+      "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white hover:shadow-emerald-500/35 hover:from-emerald-700 hover:to-emerald-800",
     secondary:
       "bg-white border border-stone-200 text-stone-700 hover:bg-stone-50 hover:border-stone-300",
     danger:
@@ -437,6 +437,7 @@ export default function Masters() {
   const [mastersLocal, setMastersLocal] = useState([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
   const [exceptionsMaster, setExceptionsMaster] = useState(null);
   const [exceptionsModalOpen, setExceptionsModalOpen] = useState(false);
   const [masterExceptions, setMasterExceptions] = useState([]);
@@ -612,15 +613,16 @@ export default function Masters() {
         URL.revokeObjectURL(form.photoUrl);
       }
 
-      setForm({
-        name: "",
-        role: "",
-        bio: "",
-        photoUrl: "",
-        photoKey: null,
-        photoFile: null,
-      });
-      setPhotoBroken(false);
+setForm({
+  name: "",
+  role: "",
+  bio: "",
+  photoUrl: "",
+  photoKey: null,
+  photoFile: null,
+});
+setPhotoBroken(false);
+setAddOpen(false);
     } finally {
       setAdding(false);
     }
@@ -1065,105 +1067,131 @@ async function openMasterExceptions(master) {
 </div>
 
         {/* Add master */}
-        <SectionCard
-          title="Новий майстер"
-          subtitle="Фото, імʼя та короткий опис — як у професійних профілях."
-        >
-          <form onSubmit={addMaster} className="space-y-5">
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center gap-3 sm:gap-4">
-                <div className="relative">
-                  <Avatar
-                    name={form.name || "Фото"}
-                    photoUrl={!photoBroken ? form.photoUrl : ""}
-                    size="md"
-                    className="h-16 w-16 rounded-2xl sm:h-20 sm:w-20 sm:rounded-[22px]"
+<SectionCard
+  title="Новий майстер"
+  subtitle="Фото, імʼя та короткий опис — як у професійних профілях."
+  actions={
+    <Button
+      variant={addOpen ? "secondary" : "primary"}
+      onClick={() => setAddOpen((prev) => !prev)}
+      className="w-full justify-center md:w-auto"
+    >
+      <Plus className="h-4 w-4" />
+      {addOpen ? "Сховати форму" : "Додати майстра"}
+
+      {addOpen ? (
+        <ChevronUp className="h-4 w-4" />
+      ) : (
+        <ChevronDown className="h-4 w-4" />
+      )}
+    </Button>
+  }
+>
+  <div
+    className={cn(
+      "grid transition-all duration-300 ease-out",
+      addOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
+    )}
+  >
+    <div className="overflow-hidden">
+      <div className="pt-1">
+        <form onSubmit={addMaster} className="space-y-5">
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="relative">
+                <Avatar
+                  name={form.name || "Фото"}
+                  photoUrl={!photoBroken ? form.photoUrl : ""}
+                  size="md"
+                  className="h-16 w-16 rounded-2xl sm:h-20 sm:w-20 sm:rounded-[22px]"
+                />
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="cursor-pointer">
+                  <span className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-700 px-4 py-2.5 text-sm font-semibold text-white transition-all hover:from-emerald-700 hover:to-emerald-800">
+                    <Plus className="h-4 w-4" />
+                    Додати фото
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePickPhoto}
+                    className="hidden"
                   />
-                </div>
+                </label>
 
-                <div className="flex flex-wrap items-center gap-2">
-                  <label className="cursor-pointer">
-                    <span className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-700 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition-all hover:from-emerald-700 hover:to-emerald-800">
-                      <Plus className="h-4 w-4" />
-                      Додати фото
-                    </span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handlePickPhoto}
-                      className="hidden"
-                    />
-                  </label>
-
-                  {form.photoUrl && (
-                    <Button variant="danger" onClick={removePhoto}>
-                      <Trash2 className="h-4 w-4" />
-                      Видалити
-                    </Button>
-                  )}
-                </div>
+                {form.photoUrl && (
+                  <Button variant="danger" onClick={removePhoto}>
+                    <Trash2 className="h-4 w-4" />
+                    Видалити
+                  </Button>
+                )}
               </div>
             </div>
+          </div>
 
-            <div>
-              <label className="mb-2 block text-sm font-medium text-stone-700">
-                Імʼя
-              </label>
-              <input
-                name="name"
-                placeholder="Напр. Наталія"
-                value={form.name}
-                onChange={handleChange}
-                className={inputBaseClass}
-              />
-            </div>
+          <div>
+            <label className="mb-2 block text-sm font-medium text-stone-700">
+              Імʼя
+            </label>
+            <input
+              name="name"
+              placeholder="Напр. Наталія"
+              value={form.name}
+              onChange={handleChange}
+              className={inputBaseClass}
+            />
+          </div>
 
-            <div>
-              <label className="mb-2 block text-sm font-medium text-stone-700">
-                Посада / Спеціалізація
-              </label>
-              <input
-                name="role"
-                value={form.role}
-                onChange={handleChange}
-                className={inputBaseClass}
-                placeholder="Напр. Стиліст або Барбер"
-              />
-              <p className="mt-1 text-xs text-stone-500">
-                 Вкажіть посаду чи спеціалізацію.
-              </p>
-            </div>
+          <div>
+            <label className="mb-2 block text-sm font-medium text-stone-700">
+              Посада / Спеціалізація
+            </label>
+            <input
+              name="role"
+              value={form.role}
+              onChange={handleChange}
+              className={inputBaseClass}
+              placeholder="Напр. Стиліст або Барбер"
+            />
+            <p className="mt-1 text-xs text-stone-500">
+              Вкажіть посаду чи спеціалізацію.
+            </p>
+          </div>
 
-            <div>
-              <label className="mb-2 block text-sm font-medium text-stone-700">
-                Опис
-              </label>
-              <textarea
-                name="bio"
-                placeholder="Напр. 6 років досвіду, спеціалізація: фарбування, укладки..."
-                value={form.bio}
-                onChange={handleChange}
-                rows={4}
-                className={cn(inputBaseClass, "resize-none")}
-              />
-              <p className="mt-1 text-xs text-stone-500">
-                Коротко і по суті (2–4 речення).
-              </p>
-            </div>
+          <div>
+            <label className="mb-2 block text-sm font-medium text-stone-700">
+              Опис
+            </label>
+            <textarea
+              name="bio"
+              placeholder="Напр. 6 років досвіду, спеціалізація: фарбування, укладки..."
+              value={form.bio}
+              onChange={handleChange}
+              rows={4}
+              className={cn(inputBaseClass, "resize-none")}
+            />
+            <p className="mt-1 text-xs text-stone-500">
+              Коротко і по суті (2–4 речення).
+            </p>
+          </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <Button
-                type="submit"
-                variant="primary"
-                disabled={adding || !String(form.name || "").trim()}
-              >
-                <Check className="h-4 w-4" />
-                {adding ? "Додаємо..." : "Додати майстра"}
-              </Button>
-
-            </div>
-          </form>
-        </SectionCard>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={adding || !String(form.name || "").trim()}
+            >
+              <Check className="h-4 w-4" />
+              {adding ? "Додаємо..." : "Додати майстра"}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</SectionCard>
 
         {/* List */}
         <SectionCard
