@@ -299,7 +299,7 @@ export default function Golowna() {
 
   return (
     <div className="min-h-screen ">
-      <div className="mx-auto w-full max-w-[1200px] space-y-6 py-4 sm:py-6">
+      <div className="mx-auto w-full max-w-[1200px] space-y-6 ">
         <SectionShell>
           <div className="relative overflow-hidden px-5 pb-6 pt-6 sm:px-7 sm:pb-7 sm:pt-7">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(245,158,11,0.10),transparent_22%),radial-gradient(circle_at_left,rgba(16,185,129,0.08),transparent_24%)]" />
@@ -312,7 +312,7 @@ export default function Golowna() {
 
 <h1
   className="
-    mt-4 font-bold tracking-tight text-stone-800
+    mt-2 font-bold tracking-tight text-stone-800
     text-[26px] leading-[1.15]        /* мобілка */
     sm:text-4xl sm:leading-[1.1]
     lg:text-5xl

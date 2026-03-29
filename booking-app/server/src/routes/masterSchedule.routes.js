@@ -42,10 +42,12 @@ function formatDateOnly(date) {
   return new Date(date).toISOString().slice(0, 10);
 }
 
-function getDayEnumFromDate(date) {
-  const day = new Date(date).getUTCDay(); // 0 = SUN
+function getDayEnumFromDate(dateStr) {
+  const [year, month, day] = String(dateStr).split("-").map(Number);
+  const d = new Date(year, (month || 1) - 1, day || 1);
+  const weekDay = d.getDay();
   const map = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
-  return map[day];
+  return map[weekDay];
 }
 
 function getScheduleForDate(dateStr, days, exceptions) {
@@ -63,7 +65,7 @@ function getScheduleForDate(dateStr, days, exceptions) {
     };
   }
 
-  const dayEnum = getDayEnumFromDate(`${dateStr}T00:00:00.000Z`);
+  const dayEnum = getDayEnumFromDate(dateStr);
   const dayRow = days.find((x) => x.day === dayEnum);
 
   if (!dayRow || !dayRow.enabled) return null;
@@ -372,7 +374,7 @@ masterScheduleRouter.post(
       const exception = await prisma.masterScheduleException.create({
         data: {
           masterId,
-          date: new Date(`${isoDate}T00:00:00.000Z`),
+          date: new Date(`${isoDate}T12:00:00`),
           enabled: enabled !== false,
           startMin,
           endMin,

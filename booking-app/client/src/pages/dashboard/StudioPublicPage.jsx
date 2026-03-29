@@ -125,7 +125,7 @@ function BookingModal({ open, title, onClose, children }) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex" data-testid="booking-modal">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center" data-testid="booking-modal">
       <motion.button
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -142,7 +142,7 @@ function BookingModal({ open, title, onClose, children }) {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.96, y: 20 }}
           transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-          className="flex max-h-[92vh] flex-col overflow-hidden rounded-3xl bg-white shadow-[0_40px_120px_-30px_rgba(0,0,0,0.2)]"
+        className="flex max-h-[78vh] sm:max-h-[85vh] lg:max-h-[88vh] flex-col overflow-hidden rounded-3xl bg-white shadow-[0_40px_120px_-30px_rgba(0,0,0,0.2)]"
           role="dialog"
           aria-modal="true"
         >
@@ -590,18 +590,23 @@ export default function StudioPublicPage() {
                 date: String(item?.date || "").slice(0, 10),
               }))
             : [],
-          masters: Array.isArray(s.masters)
-            ? s.masters.map((master) => ({
-                ...master,
-                schedule: master?.schedule || {},
-                scheduleExceptions: Array.isArray(master?.scheduleExceptions)
-                  ? master.scheduleExceptions.map((item) => ({
-                      ...item,
-                      date: String(item?.date || "").slice(0, 10),
-                    }))
-                  : [],
-              }))
-            : [],
+masters: Array.isArray(s.masters)
+  ? s.masters.map((master) => ({
+      ...master,
+      schedule:
+        master?.schedule &&
+        typeof master.schedule === "object" &&
+        Object.keys(master.schedule).length > 0
+          ? master.schedule
+          : undefined,
+      scheduleExceptions: Array.isArray(master?.scheduleExceptions)
+        ? master.scheduleExceptions.map((item) => ({
+            ...item,
+            date: String(item?.date || "").slice(0, 10),
+          }))
+        : [],
+    }))
+  : [],
           slotDuration:
             typeof s.slotDuration === "number" ? s.slotDuration : 15,
         };
@@ -1135,7 +1140,7 @@ export default function StudioPublicPage() {
                       exit={{ opacity: 0, y: 18 }}
                       transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
                     >
-                      <div className="rounded-[30px] p-4 pb-18 sm:p-6">
+                   <div className="rounded-[30px] px-0 py-4 pb-18 sm:p-6">
                         <div className="mb-5 flex items-end justify-between gap-4">
                           <div>
                             <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-amber-600">
@@ -2253,10 +2258,14 @@ export default function StudioPublicPage() {
                     setOpenBooking(false);
                     setPreselectedService(null);
                   }}
-                  onSuccess={(data) => {
-                    setSuccessData(data);
-                    setOpenBooking(false);
-                  }}
+onSuccess={(data) => {
+  setSuccessData({
+    ...data,
+    address: fullAddress,
+    studioName: name,
+  });
+  setOpenBooking(false);
+}}
                 />
               </BookingModal>
             )}

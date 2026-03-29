@@ -37,11 +37,30 @@ function formatDateOnly(date) {
   return new Date(date).toISOString().slice(0, 10);
 }
 
-function getDayEnumFromDate(date) {
-  const d = new Date(date);
-  const day = d.getUTCDay();
+function resolveEffectiveMasterSchedule(dateStr, studioSchedule, masterDays = [], masterExceptions = []) {
+  const hasCustomMasterSchedule =
+    (Array.isArray(masterDays) && masterDays.length > 0) ||
+    (Array.isArray(masterExceptions) && masterExceptions.length > 0);
+
+  if (!hasCustomMasterSchedule) {
+    return studioSchedule;
+  }
+
+  const masterSchedule = getScheduleForDate(dateStr, masterDays, masterExceptions);
+
+  if (!masterSchedule) {
+    return null;
+  }
+
+  return intersectSchedules(studioSchedule, masterSchedule);
+}
+
+function getDayEnumFromDate(dateStr) {
+  const [year, month, day] = String(dateStr).split("-").map(Number);
+  const d = new Date(year, (month || 1) - 1, day || 1);
+  const weekDay = d.getDay();
   const map = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
-  return map[day];
+  return map[weekDay];
 }
 
 function getScheduleForDate(dateStr, days = [], exceptions = []) {
@@ -59,7 +78,7 @@ function getScheduleForDate(dateStr, days = [], exceptions = []) {
     };
   }
 
-  const dayEnum = getDayEnumFromDate(`${dateStr}T00:00:00.000Z`);
+  const dayEnum = getDayEnumFromDate(dateStr);
   const dayRow = days.find((x) => x.day === dayEnum);
 
   if (!dayRow || !dayRow.enabled) return null;
@@ -225,52 +244,45 @@ router.post("/studio/:studioId", requireAuth, requireClient, async (req, res) =>
       });
     }
 
-    if (masterId) {
-      const master = await prisma.master.findFirst({
-        where: {
-          id: masterId,
-          studioId,
-        },
-        select: {
-          id: true,
-          scheduleDays: true,
-          scheduleExceptions: true,
-        },
-      });
+if (masterId) {
+  const master = await prisma.master.findFirst({
+    where: {
+      id: masterId,
+      studioId,
+    },
+    select: {
+      id: true,
+      scheduleDays: true,
+      scheduleExceptions: true,
+    },
+  });
 
-      if (!master) {
-        return res.status(404).json({ message: "Майстра не знайдено" });
-      }
+  if (!master) {
+    return res.status(404).json({ message: "Майстра не знайдено" });
+  }
 
-      const masterSchedule = getScheduleForDate(
-        date,
-        master.scheduleDays || [],
-        master.scheduleExceptions || [],
-      );
+  const effectiveSchedule = resolveEffectiveMasterSchedule(
+    date,
+    studioSchedule,
+    master.scheduleDays || [],
+    master.scheduleExceptions || [],
+  );
 
-      if (!masterSchedule) {
-        return res.status(400).json({
-          message: "Майстер не працює у цей день",
-        });
-      }
+  if (!effectiveSchedule) {
+    return res.status(400).json({
+      message: "Майстер не працює у цей день",
+    });
+  }
 
-      const effectiveSchedule = intersectSchedules(studioSchedule, masterSchedule);
-
-      if (!effectiveSchedule) {
-        return res.status(400).json({
-          message: "У цей час майстер недоступний",
-        });
-      }
-
-      if (
-        requestedStartMin < effectiveSchedule.startMin ||
-        requestedEndMin > effectiveSchedule.endMin
-      ) {
-        return res.status(400).json({
-          message: "Час запису виходить за межі графіка майстра",
-        });
-      }
-    }
+  if (
+    requestedStartMin < effectiveSchedule.startMin ||
+    requestedEndMin > effectiveSchedule.endMin
+  ) {
+    return res.status(400).json({
+      message: "Час запису виходить за межі графіка майстра",
+    });
+  }
+}
 
     const startAt = new Date(`${date}T${time}:00`);
     if (Number.isNaN(startAt.getTime())) {
@@ -279,36 +291,115 @@ router.post("/studio/:studioId", requireAuth, requireClient, async (req, res) =>
 
     const endAt = new Date(startAt.getTime() + durationMin * 60_000);
 
-    const existing = await prisma.booking.findFirst({
+let finalMasterId = masterId || null;
+
+if (masterId) {
+  const existing = await prisma.booking.findFirst({
+    where: {
+      studioId,
+      masterId,
+      status: { not: "CANCELED" },
+      startAt: { lt: endAt },
+      endAt: { gt: startAt },
+    },
+    select: { id: true },
+  });
+
+  if (existing) {
+    return res.status(409).json({
+      message: "Цей час уже зайнятий у майстра",
+    });
+  }
+} else {
+  const serviceMastersLinks = await prisma.serviceMaster.findMany({
+    where: { serviceId },
+    select: { masterId: true },
+  });
+
+  let candidateMasters = [];
+
+  if (service.allMasters) {
+    candidateMasters = await prisma.master.findMany({
+      where: { studioId },
+      select: {
+        id: true,
+        scheduleDays: true,
+        scheduleExceptions: true,
+      },
+    });
+  } else {
+    const allowedIds = serviceMastersLinks.map((x) => x.masterId);
+
+    candidateMasters = await prisma.master.findMany({
       where: {
         studioId,
-        status: { not: "CANCELED" },
-        startAt: { lt: endAt },
-        endAt: { gt: startAt },
-        ...(masterId ? { masterId } : {}),
+        id: { in: allowedIds },
       },
-      select: { id: true },
-    });
-
-    if (existing) {
-      return res.status(409).json({
-        message: masterId
-          ? "Цей час уже зайнятий у майстра"
-          : "Цей час уже зайнятий",
-      });
-    }
-
-    const created = await prisma.booking.create({
-      data: {
-        studioId,
-        clientId,
-        serviceId,
-        masterId: masterId || null,
-        startAt,
-        endAt,
-        status: "PENDING",
+      select: {
+        id: true,
+        scheduleDays: true,
+        scheduleExceptions: true,
       },
     });
+  }
+
+  let foundFreeMaster = null;
+
+for (const candidate of candidateMasters) {
+  const effectiveSchedule = resolveEffectiveMasterSchedule(
+    date,
+    studioSchedule,
+    candidate.scheduleDays || [],
+    candidate.scheduleExceptions || [],
+  );
+
+  if (!effectiveSchedule) continue;
+
+  if (
+    requestedStartMin < effectiveSchedule.startMin ||
+    requestedEndMin > effectiveSchedule.endMin
+  ) {
+    continue;
+  }
+
+  const busy = await prisma.booking.findFirst({
+    where: {
+      studioId,
+      masterId: candidate.id,
+      status: { not: "CANCELED" },
+      startAt: { lt: endAt },
+      endAt: { gt: startAt },
+    },
+    select: { id: true },
+  });
+
+  if (!busy) {
+    foundFreeMaster = candidate;
+    break;
+  }
+}
+
+  if (!foundFreeMaster) {
+    return res.status(409).json({
+      message: "На цей час немає вільного майстра",
+    });
+  }
+
+  finalMasterId = foundFreeMaster.id;
+}
+
+
+const created = await prisma.booking.create({
+  data: {
+    studioId,
+    clientId,
+    serviceId,
+    masterId: finalMasterId,
+    startAt,
+    endAt,
+    status: "PENDING",
+  },
+});
 
     res.status(201).json({ booking: created });
   } catch (e) {
@@ -435,6 +526,17 @@ router.get("/studio/:studioId/busy", async (req, res) => {
       return res.status(400).json({ message: "date required" });
     }
 
+    const studio = await prisma.studio.findUnique({
+      where: { id: studioId },
+      select: { slotDuration: true },
+    });
+
+    if (!studio) {
+      return res.status(404).json({ message: "Studio not found" });
+    }
+
+    const slotStep = Number(studio.slotDuration || 15);
+
     const dayStart = new Date(`${date}T00:00:00`);
     const dayEnd = new Date(`${date}T23:59:59.999`);
 
@@ -442,25 +544,112 @@ router.get("/studio/:studioId/busy", async (req, res) => {
       where: {
         studioId,
         status: { not: "CANCELED" },
-        startAt: { gte: dayStart, lte: dayEnd },
+        startAt: { lte: dayEnd },
+        endAt: { gte: dayStart },
         ...(masterId ? { masterId } : {}),
       },
-      select: { startAt: true },
+      select: {
+        startAt: true,
+        endAt: true,
+      },
       orderBy: { startAt: "asc" },
     });
 
-    const busy = items.map((b) => {
-      const d = new Date(b.startAt);
-      const hh = String(d.getHours()).padStart(2, "0");
-      const mm = String(d.getMinutes()).padStart(2, "0");
-      return `${hh}:${mm}`;
-    });
+    const busySet = new Set();
 
-    res.json({ busy });
+    for (const item of items) {
+      const start = new Date(item.startAt);
+      const end = new Date(item.endAt);
+
+      let cursor = new Date(start);
+
+      while (cursor < end) {
+        const hh = String(cursor.getHours()).padStart(2, "0");
+        const mm = String(cursor.getMinutes()).padStart(2, "0");
+        busySet.add(`${hh}:${mm}`);
+        cursor = new Date(cursor.getTime() + slotStep * 60_000);
+      }
+    }
+
+    res.json({ busy: Array.from(busySet).sort() });
   } catch (e) {
     console.error(e);
     res.status(500).json({ message: "Load busy failed" });
   }
 });
 
+// CANCEL BOOKING BY CLIENT
+router.patch("/my/:bookingId/cancel", requireAuth, requireClient, async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const clientId = req.auth.sub;
+
+    const booking = await prisma.booking.findFirst({
+      where: {
+        id: bookingId,
+        clientId,
+      },
+      select: {
+        id: true,
+        status: true,
+        startAt: true,
+      },
+    });
+
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    if (booking.status === "CANCELED") {
+      return res.json({ ok: true });
+    }
+
+    const updated = await prisma.booking.update({
+      where: { id: bookingId },
+      data: { status: "CANCELED" },
+    });
+
+    res.json({ booking: updated });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: e?.message || "Cancel booking failed" });
+  }
+});
+
+router.patch("/client/bookings/:bookingId/cancel", requireAuth, requireClient, async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const clientId = req.auth.sub;
+
+    const booking = await prisma.booking.findFirst({
+      where: {
+        id: bookingId,
+        clientId,
+      },
+      select: {
+        id: true,
+        status: true,
+        startAt: true,
+      },
+    });
+
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    if (booking.status === "CANCELED") {
+      return res.json({ ok: true, alreadyCanceled: true });
+    }
+
+    const updated = await prisma.booking.update({
+      where: { id: bookingId },
+      data: { status: "CANCELED" },
+    });
+
+    res.json({ booking: updated });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: e?.message || "Cancel booking failed" });
+  }
+});
 export default router;

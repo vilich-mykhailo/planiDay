@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Clock, Check, ChevronRight, Sparkles } from "lucide-react";
 import Calendar from "./Calendar";
 import BookingCustomerForm from "./BookingCustomerForm";
-
 function cn(...classes) {
   return classes.filter(Boolean).join(" ");
 }
@@ -134,7 +133,11 @@ function resolveMasterDayForDate(date, master) {
 function getMasterSchedule(master) {
   if (!master) return {};
 
-  if (master.schedule && typeof master.schedule === "object") {
+  if (
+    master.schedule &&
+    typeof master.schedule === "object" &&
+    Object.keys(master.schedule).length > 0
+  ) {
     return master.schedule;
   }
 
@@ -379,6 +382,13 @@ function StudioBookingWidgetInner({
     return ANY_MASTER_ID;
   });
 
+  useEffect(() => {
+  document.body.style.overflow = "hidden";
+
+  return () => {
+    document.body.style.overflow = "";
+  };
+}, []);
   useEffect(() => {
     if (!availableMasters.length) {
       setSelectedMasterId(ANY_MASTER_ID);
@@ -720,6 +730,13 @@ function StudioBookingWidgetInner({
   }, [defaultServiceId]);
 
   async function handleSubmit(e) {
+    console.log("selectedMaster =", selectedMaster);
+console.log("selectedMasterId =", selectedMaster?.id);
+console.log("selectedDateStr =", selectedDateStr);
+console.log("selectedTime =", selectedTime);
+console.log("master scheduleDays =", selectedMaster?.scheduleDays);
+console.log("master schedule =", selectedMaster?.schedule);
+console.log("master scheduleExceptions =", selectedMaster?.scheduleExceptions);
     e.preventDefault();
 
     if (!studio?.id || !selectedDateStr || !dayKey || !isDayEnabled) return;
@@ -805,48 +822,7 @@ function StudioBookingWidgetInner({
 
   return (
     <div className="flex h-full flex-col" data-testid="booking-widget">
-      <div className="mb-8 flex flex-wrap items-center gap-3">
-        {["Послуга", "Майстер", "Дата & Час"].map((label, i) => {
-          const done =
-            (i === 0 && selectedServiceId) ||
-            (i === 1 &&
-              (masterPickMode === MASTER_PICK_MODE.ANY ||
-                Boolean(selectedMaster?.id))) ||
-            (i === 2 && selectedTime);
-
-          return (
-            <div key={label} className="flex items-center gap-2">
-              <div
-                className={cn(
-                  "flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-colors duration-300",
-                  done
-                    ? "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white"
-                    : i === 0
-                      ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white"
-                      : "bg-stone-200 text-stone-500",
-                )}
-              >
-                {done ? <Check className="h-3.5 w-3.5" /> : i + 1}
-              </div>
-
-              <span
-                className={cn(
-                  "text-xs font-semibold tracking-wide",
-                  done || i === 0 ? "text-stone-800" : "text-stone-500",
-                )}
-              >
-                {label}
-              </span>
-
-              {(i === 0 || i === 1) && (
-                <ChevronRight className="h-3.5 w-3.5 text-stone-300" />
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="flex-1 space-y-8">
+    <div className="flex-1 space-y-5">
         <section data-testid="booking-services-section">
           <div className="mb-4">
             <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.25em] text-amber-600">
@@ -1159,7 +1135,7 @@ function StudioBookingWidgetInner({
             <h2 className="text-lg font-bold text-stone-800">Дата та час</h2>
           </div>
 
-          <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-[0_4px_18px_rgba(0,0,0,0.03)] sm:p-5">
+         <div className="rounded-2xl border border-stone-200 bg-white p-3 shadow-[0_4px_18px_rgba(0,0,0,0.03)] sm:p-4">
             <Calendar
               selected={selectedDate}
               onSelect={(d) => {
@@ -1256,7 +1232,7 @@ function StudioBookingWidgetInner({
         )}
       </div>
 
-      <div className="sticky bottom-0 z-20 -mx-5 mt-6 border-t border-stone-200 bg-white px-5 py-4 sm:-mx-6 sm:px-6">
+     <div className="sticky bottom-0 z-20 -mx-5 mt-4 border-t border-stone-200 bg-white px-5 py-3 sm:-mx-6 sm:px-6">
         {selectedService && selectedTime && (
           <div className="mb-3 flex items-center justify-between text-xs text-stone-500">
             <span>{selectedService.name}</span>
@@ -1272,15 +1248,15 @@ function StudioBookingWidgetInner({
             disabled={!canGoNext}
             onClick={() => setStep("details")}
             data-testid="booking-next-btn"
-            className={cn(
-              "flex-1 rounded-2xl py-3.5 text-sm font-bold transition-all duration-200",
+className={cn(
+  "flex-1 rounded-2xl py-3 text-sm font-bold transition-all duration-200",
               canGoNext
                 ? "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white hover:from-emerald-700 hover:to-emerald-800 active:scale-[0.98]"
                 : "cursor-not-allowed bg-stone-200 text-stone-400",
             )}
           >
             <span className="inline-flex items-center gap-2">
-              Далі
+              Продовжити
               <Sparkles className="h-4 w-4 opacity-80" />
             </span>
           </button>
@@ -1301,17 +1277,16 @@ function StudioBookingWidgetInner({
 <BookingCustomerForm
   bookingDetails={{
     studioName: studio?.name || "Студія",
+    address: [studio?.street, studio?.building, studio?.apartment, studio?.city]
+      .filter(Boolean)
+      .join(", "),
     serviceName: selectedService?.name || "—",
     masterName:
       masterPickMode === MASTER_PICK_MODE.ANY
         ? "Буде призначено автоматично"
         : selectedMaster?.name || "—",
     date: selectedDate
-      ? selectedDate.toLocaleDateString("uk-UA", {
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-        })
+      ? `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, "0")}-${String(selectedDate.getDate()).padStart(2, "0")}`
       : "—",
     time: selectedTime || "—",
     price:

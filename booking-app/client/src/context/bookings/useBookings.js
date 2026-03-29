@@ -1,3 +1,4 @@
+// useBookings.js
 import { useContext } from 'react'
 import { BookingsContext } from './BookingsContext'
 

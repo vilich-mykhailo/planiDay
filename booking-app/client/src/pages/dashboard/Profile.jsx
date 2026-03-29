@@ -562,17 +562,6 @@ export default function Profile() {
                 </p>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2 text-sm text-stone-500">
-                <span className="rounded-full border border-stone-200 bg-stone-100 px-2.5 py-1 text-[11px] font-medium text-stone-600 sm:text-xs">
-                  Профіль клієнта
-                </span>
-
-                {isSaved && !apiError && (
-                  <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-700 sm:text-xs">
-                    Дані збережено
-                  </span>
-                )}
-              </div>
             </div>
           </section>
 

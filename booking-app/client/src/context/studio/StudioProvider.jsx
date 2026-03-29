@@ -44,6 +44,7 @@ export default function StudioProvider({ children }) {
 
   // завжди беремо актуальний токен (не з замикання)
   const getToken = () => localStorage.getItem("token") || "";
+const getRole = () => localStorage.getItem("role") || "";
 
   const writeCache = useCallback((next) => {
     try {
@@ -54,79 +55,83 @@ export default function StudioProvider({ children }) {
     }
   }, []);
 
-  const loadMyStudio = useCallback(async () => {
-    const token = getToken();
+const loadMyStudio = useCallback(async () => {
+  const token = getToken();
+  const role = getRole();
 
-    if (!token) {
-      setStudio(null);
-      setLoading(false);
-      setError("");
-      writeCache(null);
-      return null;
-    }
-
-    setLoading(true);
+  if (!token || role !== "owner") {
+    setStudio(null);
+    setLoading(false);
     setError("");
+    writeCache(null);
+    return null;
+  }
 
-    try {
-      // ✅ бекенд повертає студію напряму (не { studio: ... })
-      const data = await api("/studio/me", { token });
-      const next = data ? normalizeStudio(data) : null;
+  setLoading(true);
+  setError("");
 
-      setStudio(next);
-      writeCache(next);
-      return next;
-    } catch (e) {
-      console.warn("Failed to load studio", e);
-      setStudio(null);
-      writeCache(null);
-      setError(e?.message || "Failed to load studio");
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }, [writeCache]);
+  try {
+    const data = await api("/studio/me", { token });
+    const next = data ? normalizeStudio(data) : null;
 
-  const updateStudio = useCallback(
-    async (patch) => {
-      const token = getToken();
-      if (!token) throw new Error("No token");
+    setStudio(next);
+    writeCache(next);
+    return next;
+  } catch (e) {
+    console.warn("Failed to load studio", e);
+    setStudio(null);
+    writeCache(null);
+    setError(e?.message || "Failed to load studio");
+    return null;
+  } finally {
+    setLoading(false);
+  }
+}, [writeCache]);
 
-      // ✅ надсилаємо тільки поля, які реально є в Prisma Studio
-      const body = {
-        name: patch?.name ?? undefined,
-        category: patch?.category ?? undefined,
-        phone: patch?.phone ?? undefined,
-        email: patch?.email ?? undefined,
-        description: patch?.description ?? undefined,
-        city: patch?.city ?? undefined,
-        street: patch?.street ?? undefined,
-        building: patch?.building ?? undefined,
-        apartment: patch?.apartment ?? undefined,
-        coverUrl: patch?.coverUrl ?? undefined,
-        logoUrl: patch?.logoUrl ?? undefined,
-        portfolioUrls: Array.isArray(patch?.portfolioUrls) ? patch.portfolioUrls : undefined,
-        published: typeof patch?.published === "boolean" ? patch.published : undefined,
-      };
+const updateStudio = useCallback(
+  async (patch) => {
+    const token = getToken();
+    const role = getRole();
 
-      // прибираємо undefined (щоб не “затирати” поля випадково)
-      Object.keys(body).forEach((k) => body[k] === undefined && delete body[k]);
+    if (!token) throw new Error("No token");
+    if (role !== "owner") throw new Error("Owner access required");
 
-      const data = await api("/studio/me", {
-        method: "PATCH",
-        token,
-        body,
-      });
+    const body = {
+      name: patch?.name ?? undefined,
+      category: patch?.category ?? undefined,
+      phone: patch?.phone ?? undefined,
+      email: patch?.email ?? undefined,
+      description: patch?.description ?? undefined,
+      city: patch?.city ?? undefined,
+      street: patch?.street ?? undefined,
+      building: patch?.building ?? undefined,
+      apartment: patch?.apartment ?? undefined,
+      coverUrl: patch?.coverUrl ?? undefined,
+      logoUrl: patch?.logoUrl ?? undefined,
+      portfolioUrls: Array.isArray(patch?.portfolioUrls)
+        ? patch.portfolioUrls
+        : undefined,
+      published:
+        typeof patch?.published === "boolean" ? patch.published : undefined,
+    };
 
-      const next = data ? normalizeStudio(data) : null;
+    Object.keys(body).forEach((k) => body[k] === undefined && delete body[k]);
 
-      setStudio(next);
-      writeCache(next);
-      setError("");
-      return next;
-    },
-    [writeCache],
-  );
+    const data = await api("/studio/me", {
+      method: "PATCH",
+      token,
+      body,
+    });
+
+    const next = data ? normalizeStudio(data) : null;
+
+    setStudio(next);
+    writeCache(next);
+    setError("");
+    return next;
+  },
+  [writeCache],
+);
 
   useEffect(() => {
     loadMyStudio();
