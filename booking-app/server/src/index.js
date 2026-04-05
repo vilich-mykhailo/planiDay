@@ -1,6 +1,9 @@
+// index.js
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import http from "http";
+import { Server } from "socket.io";
 
 import { authRouter } from "./routes/auth.routes.js";
 import { ownerRouter } from "./routes/owner.routes.js";
@@ -16,7 +19,7 @@ const app = express();
 const allowedOrigins = new Set([
   "http://localhost:5173",
   "http://127.0.0.1:5173",
-  "http://192.168.1.24:5173", // твій фронт з телефона
+  "http://192.168.1.24:5173",
 ]);
 
 app.use(
@@ -27,7 +30,7 @@ app.use(
       return cb(new Error(`CORS blocked for origin: ${origin}`));
     },
     credentials: true,
-  })
+  }),
 );
 
 app.use(express.json({ limit: "10mb" }));
@@ -50,6 +53,33 @@ app.post("/logout", (req, res) => {
 
 const port = process.env.PORT || 4000;
 
-app.listen(port, "0.0.0.0", () => {
+// --- socket.io ---
+const server = http.createServer(app);
+
+export const io = new Server(server, {
+  cors: {
+    origin(origin, cb) {
+      if (!origin) return cb(null, true);
+      if (allowedOrigins.has(origin)) return cb(null, true);
+      return cb(new Error(`Socket CORS blocked for origin: ${origin}`));
+    },
+    credentials: true,
+  },
+});
+
+io.on("connection", (socket) => {
+  socket.on("auth:join", ({ userId, studioId }) => {
+    if (userId) {
+      socket.join(`user:${userId}`);
+    }
+
+    if (studioId) {
+      socket.join(`studio:${studioId}`);
+    }
+  });
+});
+
+server.listen(port, "0.0.0.0", () => {
   console.log(`API running on http://0.0.0.0:${port}`);
 });
+

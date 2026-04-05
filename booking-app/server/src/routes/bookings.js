@@ -2,6 +2,7 @@
 import { Router } from "express";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth, requireOwner, requireClient } from "../middleware/auth.js";
+import { io } from "../index.js";
 
 const router = Router();
 
@@ -21,6 +22,45 @@ function uiStatus(status) {
   if (status === "CONFIRMED") return "confirmed";
   if (status === "CANCELED") return "canceled";
   return "new";
+}
+
+function emitBookingUpdated(booking, extra = {}) {
+  if (!booking?.id) return;
+
+  const payload = {
+    bookingId: booking.id,
+    studioId: booking.studioId || null,
+    clientId: booking.clientId || null,
+    status: uiStatus(booking.status),
+    ...extra,
+  };
+
+  if (booking.clientId) {
+    io.to(`user:${booking.clientId}`).emit("booking:updated", payload);
+  }
+
+  if (booking.studioId) {
+    io.to(`studio:${booking.studioId}`).emit("booking:updated", payload);
+  }
+}
+
+function emitBookingDeleted(booking) {
+  if (!booking?.id) return;
+
+  const payload = {
+    bookingId: booking.id,
+    studioId: booking.studioId || null,
+    clientId: booking.clientId || null,
+    deleted: true,
+  };
+
+  if (booking.clientId) {
+    io.to(`user:${booking.clientId}`).emit("booking:updated", payload);
+  }
+
+  if (booking.studioId) {
+    io.to(`studio:${booking.studioId}`).emit("booking:updated", payload);
+  }
 }
 
 function timeToMin(value) {
@@ -105,7 +145,7 @@ function intersectSchedules(a, b) {
   };
 }
 
-// GET /bookings/studio/:studioId  (для owner)
+// GET /bookings/studio/:studioId
 router.get("/studio/:studioId", requireAuth, requireOwner, async (req, res) => {
   try {
     const { studioId } = req.params;
@@ -244,45 +284,45 @@ router.post("/studio/:studioId", requireAuth, requireClient, async (req, res) =>
       });
     }
 
-if (masterId) {
-  const master = await prisma.master.findFirst({
-    where: {
-      id: masterId,
-      studioId,
-    },
-    select: {
-      id: true,
-      scheduleDays: true,
-      scheduleExceptions: true,
-    },
-  });
+    if (masterId) {
+      const master = await prisma.master.findFirst({
+        where: {
+          id: masterId,
+          studioId,
+        },
+        select: {
+          id: true,
+          scheduleDays: true,
+          scheduleExceptions: true,
+        },
+      });
 
-  if (!master) {
-    return res.status(404).json({ message: "Майстра не знайдено" });
-  }
+      if (!master) {
+        return res.status(404).json({ message: "Майстра не знайдено" });
+      }
 
-  const effectiveSchedule = resolveEffectiveMasterSchedule(
-    date,
-    studioSchedule,
-    master.scheduleDays || [],
-    master.scheduleExceptions || [],
-  );
+      const effectiveSchedule = resolveEffectiveMasterSchedule(
+        date,
+        studioSchedule,
+        master.scheduleDays || [],
+        master.scheduleExceptions || [],
+      );
 
-  if (!effectiveSchedule) {
-    return res.status(400).json({
-      message: "Майстер не працює у цей день",
-    });
-  }
+      if (!effectiveSchedule) {
+        return res.status(400).json({
+          message: "Майстер не працює у цей день",
+        });
+      }
 
-  if (
-    requestedStartMin < effectiveSchedule.startMin ||
-    requestedEndMin > effectiveSchedule.endMin
-  ) {
-    return res.status(400).json({
-      message: "Час запису виходить за межі графіка майстра",
-    });
-  }
-}
+      if (
+        requestedStartMin < effectiveSchedule.startMin ||
+        requestedEndMin > effectiveSchedule.endMin
+      ) {
+        return res.status(400).json({
+          message: "Час запису виходить за межі графіка майстра",
+        });
+      }
+    }
 
     const startAt = new Date(`${date}T${time}:00`);
     if (Number.isNaN(startAt.getTime())) {
@@ -291,115 +331,122 @@ if (masterId) {
 
     const endAt = new Date(startAt.getTime() + durationMin * 60_000);
 
-let finalMasterId = masterId || null;
+    let finalMasterId = masterId || null;
 
-if (masterId) {
-  const existing = await prisma.booking.findFirst({
-    where: {
-      studioId,
-      masterId,
-      status: { not: "CANCELED" },
-      startAt: { lt: endAt },
-      endAt: { gt: startAt },
-    },
-    select: { id: true },
-  });
+    if (masterId) {
+      const existing = await prisma.booking.findFirst({
+        where: {
+          studioId,
+          masterId,
+          status: { not: "CANCELED" },
+          startAt: { lt: endAt },
+          endAt: { gt: startAt },
+        },
+        select: { id: true },
+      });
 
-  if (existing) {
-    return res.status(409).json({
-      message: "Цей час уже зайнятий у майстра",
-    });
-  }
-} else {
-  const serviceMastersLinks = await prisma.serviceMaster.findMany({
-    where: { serviceId },
-    select: { masterId: true },
-  });
+      if (existing) {
+        return res.status(409).json({
+          message: "Цей час уже зайнятий у майстра",
+        });
+      }
+    } else {
+      const serviceMastersLinks = await prisma.serviceMaster.findMany({
+        where: { serviceId },
+        select: { masterId: true },
+      });
 
-  let candidateMasters = [];
+      let candidateMasters = [];
 
-  if (service.allMasters) {
-    candidateMasters = await prisma.master.findMany({
-      where: { studioId },
-      select: {
-        id: true,
-        scheduleDays: true,
-        scheduleExceptions: true,
-      },
-    });
-  } else {
-    const allowedIds = serviceMastersLinks.map((x) => x.masterId);
+      if (service.allMasters) {
+        candidateMasters = await prisma.master.findMany({
+          where: { studioId },
+          select: {
+            id: true,
+            scheduleDays: true,
+            scheduleExceptions: true,
+          },
+        });
+      } else {
+        const allowedIds = serviceMastersLinks.map((x) => x.masterId);
 
-    candidateMasters = await prisma.master.findMany({
-      where: {
+        candidateMasters = await prisma.master.findMany({
+          where: {
+            studioId,
+            id: { in: allowedIds },
+          },
+          select: {
+            id: true,
+            scheduleDays: true,
+            scheduleExceptions: true,
+          },
+        });
+      }
+
+      let foundFreeMaster = null;
+
+      for (const candidate of candidateMasters) {
+        const effectiveSchedule = resolveEffectiveMasterSchedule(
+          date,
+          studioSchedule,
+          candidate.scheduleDays || [],
+          candidate.scheduleExceptions || [],
+        );
+
+        if (!effectiveSchedule) continue;
+
+        if (
+          requestedStartMin < effectiveSchedule.startMin ||
+          requestedEndMin > effectiveSchedule.endMin
+        ) {
+          continue;
+        }
+
+        const busy = await prisma.booking.findFirst({
+          where: {
+            studioId,
+            masterId: candidate.id,
+            status: { not: "CANCELED" },
+            startAt: { lt: endAt },
+            endAt: { gt: startAt },
+          },
+          select: { id: true },
+        });
+
+        if (!busy) {
+          foundFreeMaster = candidate;
+          break;
+        }
+      }
+
+      if (!foundFreeMaster) {
+        return res.status(409).json({
+          message: "На цей час немає вільного майстра",
+        });
+      }
+
+      finalMasterId = foundFreeMaster.id;
+    }
+
+    const created = await prisma.booking.create({
+      data: {
         studioId,
-        id: { in: allowedIds },
+        clientId,
+        serviceId,
+        masterId: finalMasterId,
+        startAt,
+        endAt,
+        status: "PENDING",
       },
       select: {
         id: true,
-        scheduleDays: true,
-        scheduleExceptions: true,
+        status: true,
+        clientId: true,
+        studioId: true,
       },
     });
-  }
 
-  let foundFreeMaster = null;
-
-for (const candidate of candidateMasters) {
-  const effectiveSchedule = resolveEffectiveMasterSchedule(
-    date,
-    studioSchedule,
-    candidate.scheduleDays || [],
-    candidate.scheduleExceptions || [],
-  );
-
-  if (!effectiveSchedule) continue;
-
-  if (
-    requestedStartMin < effectiveSchedule.startMin ||
-    requestedEndMin > effectiveSchedule.endMin
-  ) {
-    continue;
-  }
-
-  const busy = await prisma.booking.findFirst({
-    where: {
-      studioId,
-      masterId: candidate.id,
-      status: { not: "CANCELED" },
-      startAt: { lt: endAt },
-      endAt: { gt: startAt },
-    },
-    select: { id: true },
-  });
-
-  if (!busy) {
-    foundFreeMaster = candidate;
-    break;
-  }
-}
-
-  if (!foundFreeMaster) {
-    return res.status(409).json({
-      message: "На цей час немає вільного майстра",
-    });
-  }
-
-  finalMasterId = foundFreeMaster.id;
-}
-
-
-const created = await prisma.booking.create({
-  data: {
-    studioId,
-    clientId,
-    serviceId,
-    masterId: finalMasterId,
-    startAt,
-    endAt,
-    status: "PENDING",
-  },
-});
+    emitBookingUpdated(created);
 
     res.status(201).json({ booking: created });
   } catch (e) {
@@ -425,7 +472,12 @@ router.patch("/studio/:studioId/:bookingId/confirm", requireAuth, requireOwner, 
 
     const booking = await prisma.booking.findFirst({
       where: { id: bookingId, studioId },
-      select: { id: true, status: true },
+      select: {
+        id: true,
+        status: true,
+        clientId: true,
+        studioId: true,
+      },
     });
 
     if (!booking) {
@@ -435,7 +487,15 @@ router.patch("/studio/:studioId/:bookingId/confirm", requireAuth, requireOwner, 
     const updated = await prisma.booking.update({
       where: { id: bookingId },
       data: { status: "CONFIRMED" },
+      select: {
+        id: true,
+        status: true,
+        clientId: true,
+        studioId: true,
+      },
     });
+
+    emitBookingUpdated(updated);
 
     res.json({ booking: updated });
   } catch (e) {
@@ -461,7 +521,12 @@ router.patch("/studio/:studioId/:bookingId/cancel", requireAuth, requireOwner, a
 
     const booking = await prisma.booking.findFirst({
       where: { id: bookingId, studioId },
-      select: { id: true, status: true },
+      select: {
+        id: true,
+        status: true,
+        clientId: true,
+        studioId: true,
+      },
     });
 
     if (!booking) {
@@ -471,7 +536,15 @@ router.patch("/studio/:studioId/:bookingId/cancel", requireAuth, requireOwner, a
     const updated = await prisma.booking.update({
       where: { id: bookingId },
       data: { status: "CANCELED" },
+      select: {
+        id: true,
+        status: true,
+        clientId: true,
+        studioId: true,
+      },
     });
+
+    emitBookingUpdated(updated);
 
     res.json({ booking: updated });
   } catch (e) {
@@ -497,7 +570,11 @@ router.delete("/studio/:studioId/:bookingId", requireAuth, requireOwner, async (
 
     const booking = await prisma.booking.findFirst({
       where: { id: bookingId, studioId },
-      select: { id: true },
+      select: {
+        id: true,
+        clientId: true,
+        studioId: true,
+      },
     });
 
     if (!booking) {
@@ -507,6 +584,8 @@ router.delete("/studio/:studioId/:bookingId", requireAuth, requireOwner, async (
     await prisma.booking.delete({
       where: { id: bookingId },
     });
+
+    emitBookingDeleted(booking);
 
     res.json({ ok: true });
   } catch (e) {
@@ -521,6 +600,7 @@ router.get("/studio/:studioId/busy", async (req, res) => {
     const { studioId } = req.params;
     const date = String(req.query.date || "").trim();
     const masterId = String(req.query.masterId || "").trim();
+    const serviceId = String(req.query.serviceId || "").trim();
 
     if (!date) {
       return res.status(400).json({ message: "date required" });
@@ -528,7 +608,12 @@ router.get("/studio/:studioId/busy", async (req, res) => {
 
     const studio = await prisma.studio.findUnique({
       where: { id: studioId },
-      select: { slotDuration: true },
+      select: {
+        id: true,
+        slotDuration: true,
+        scheduleDays: true,
+        scheduleExceptions: true,
+      },
     });
 
     if (!studio) {
@@ -537,41 +622,219 @@ router.get("/studio/:studioId/busy", async (req, res) => {
 
     const slotStep = Number(studio.slotDuration || 15);
 
+    const studioSchedule = getScheduleForDate(
+      date,
+      studio.scheduleDays || [],
+      studio.scheduleExceptions || [],
+    );
+
+    if (!studioSchedule) {
+      return res.json({ busy: [] });
+    }
+
     const dayStart = new Date(`${date}T00:00:00`);
     const dayEnd = new Date(`${date}T23:59:59.999`);
 
-    const items = await prisma.booking.findMany({
+    function buildSlotsByMinutes(startMin, endMin, step) {
+      const out = [];
+      let cursor = startMin;
+
+      while (cursor + step <= endMin) {
+        out.push(cursor);
+        cursor += step;
+      }
+
+      return out;
+    }
+
+    function minToTime(total) {
+      const h = Math.floor(total / 60);
+      const m = total % 60;
+      return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+    }
+
+    function overlaps(aStart, aEnd, bStart, bEnd) {
+      return aStart < bEnd && aEnd > bStart;
+    }
+
+    if (masterId) {
+      const master = await prisma.master.findFirst({
+        where: { id: masterId, studioId },
+        select: {
+          id: true,
+          scheduleDays: true,
+          scheduleExceptions: true,
+        },
+      });
+
+      if (!master) {
+        return res.status(404).json({ message: "Master not found" });
+      }
+
+      const effectiveSchedule = resolveEffectiveMasterSchedule(
+        date,
+        studioSchedule,
+        master.scheduleDays || [],
+        master.scheduleExceptions || [],
+      );
+
+      if (!effectiveSchedule) {
+        return res.json({ busy: [] });
+      }
+
+      const bookings = await prisma.booking.findMany({
+        where: {
+          studioId,
+          masterId,
+          status: { not: "CANCELED" },
+          startAt: { lte: dayEnd },
+          endAt: { gte: dayStart },
+        },
+        select: {
+          startAt: true,
+          endAt: true,
+        },
+      });
+
+      const slots = buildSlotsByMinutes(
+        effectiveSchedule.startMin,
+        effectiveSchedule.endMin,
+        slotStep,
+      );
+
+      const busy = slots
+        .filter((slotStartMin) => {
+          const slotEndMin = slotStartMin + slotStep;
+          const slotStart = new Date(`${date}T${minToTime(slotStartMin)}:00`);
+          const slotEnd = new Date(`${date}T${minToTime(slotEndMin)}:00`);
+
+          return bookings.some((b) =>
+            overlaps(slotStart, slotEnd, new Date(b.startAt), new Date(b.endAt)),
+          );
+        })
+        .map(minToTime);
+
+      return res.json({ busy });
+    }
+
+    if (!serviceId) {
+      return res.status(400).json({ message: "serviceId required for ANY master mode" });
+    }
+
+    const service = await prisma.service.findFirst({
+      where: { id: serviceId, studioId },
+      select: {
+        id: true,
+        duration: true,
+        allMasters: true,
+      },
+    });
+
+    if (!service) {
+      return res.status(404).json({ message: "Service not found" });
+    }
+
+    let candidateMasters = [];
+
+    if (service.allMasters) {
+      candidateMasters = await prisma.master.findMany({
+        where: { studioId },
+        select: {
+          id: true,
+          scheduleDays: true,
+          scheduleExceptions: true,
+        },
+      });
+    } else {
+      const links = await prisma.serviceMaster.findMany({
+        where: { serviceId },
+        select: { masterId: true },
+      });
+
+      const allowedIds = links.map((x) => x.masterId);
+
+      candidateMasters = await prisma.master.findMany({
+        where: {
+          studioId,
+          id: { in: allowedIds },
+        },
+        select: {
+          id: true,
+          scheduleDays: true,
+          scheduleExceptions: true,
+        },
+      });
+    }
+
+    if (!candidateMasters.length) {
+      return res.json({ busy: [] });
+    }
+
+    const serviceDuration = Number(service.duration || slotStep || 60);
+
+    const allBookings = await prisma.booking.findMany({
       where: {
         studioId,
         status: { not: "CANCELED" },
         startAt: { lte: dayEnd },
         endAt: { gte: dayStart },
-        ...(masterId ? { masterId } : {}),
+        masterId: { in: candidateMasters.map((m) => m.id) },
       },
       select: {
+        masterId: true,
         startAt: true,
         endAt: true,
       },
-      orderBy: { startAt: "asc" },
     });
 
-    const busySet = new Set();
+    const studioSlots = buildSlotsByMinutes(
+      studioSchedule.startMin,
+      studioSchedule.endMin,
+      slotStep,
+    );
 
-    for (const item of items) {
-      const start = new Date(item.startAt);
-      const end = new Date(item.endAt);
+    const busy = [];
 
-      let cursor = new Date(start);
+    for (const slotStartMin of studioSlots) {
+      const slotEndMin = slotStartMin + serviceDuration;
 
-      while (cursor < end) {
-        const hh = String(cursor.getHours()).padStart(2, "0");
-        const mm = String(cursor.getMinutes()).padStart(2, "0");
-        busySet.add(`${hh}:${mm}`);
-        cursor = new Date(cursor.getTime() + slotStep * 60_000);
+      if (slotEndMin > studioSchedule.endMin) continue;
+
+      let hasFreeMaster = false;
+
+      for (const master of candidateMasters) {
+        const effectiveSchedule = resolveEffectiveMasterSchedule(
+          date,
+          studioSchedule,
+          master.scheduleDays || [],
+          master.scheduleExceptions || [],
+        );
+
+        if (!effectiveSchedule) continue;
+        if (slotStartMin < effectiveSchedule.startMin) continue;
+        if (slotEndMin > effectiveSchedule.endMin) continue;
+
+        const slotStart = new Date(`${date}T${minToTime(slotStartMin)}:00`);
+        const slotEnd = new Date(`${date}T${minToTime(slotEndMin)}:00`);
+
+        const masterBusy = allBookings.some(
+          (b) =>
+            String(b.masterId) === String(master.id) &&
+            overlaps(slotStart, slotEnd, new Date(b.startAt), new Date(b.endAt)),
+        );
+
+        if (!masterBusy) {
+          hasFreeMaster = true;
+          break;
+        }
+      }
+
+      if (!hasFreeMaster) {
+        busy.push(minToTime(slotStartMin));
       }
     }
 
-    res.json({ busy: Array.from(busySet).sort() });
+    return res.json({ busy });
   } catch (e) {
     console.error(e);
     res.status(500).json({ message: "Load busy failed" });
@@ -593,6 +856,8 @@ router.patch("/my/:bookingId/cancel", requireAuth, requireClient, async (req, re
         id: true,
         status: true,
         startAt: true,
+        clientId: true,
+        studioId: true,
       },
     });
 
@@ -607,7 +872,15 @@ router.patch("/my/:bookingId/cancel", requireAuth, requireClient, async (req, re
     const updated = await prisma.booking.update({
       where: { id: bookingId },
       data: { status: "CANCELED" },
+      select: {
+        id: true,
+        status: true,
+        clientId: true,
+        studioId: true,
+      },
     });
+
+    emitBookingUpdated(updated);
 
     res.json({ booking: updated });
   } catch (e) {
@@ -622,14 +895,12 @@ router.patch("/client/bookings/:bookingId/cancel", requireAuth, requireClient, a
     const clientId = req.auth.sub;
 
     const booking = await prisma.booking.findFirst({
-      where: {
-        id: bookingId,
-        clientId,
-      },
+      where: { id: bookingId, clientId },
       select: {
         id: true,
         status: true,
-        startAt: true,
+        clientId: true,
+        studioId: true,
       },
     });
 
@@ -644,7 +915,15 @@ router.patch("/client/bookings/:bookingId/cancel", requireAuth, requireClient, a
     const updated = await prisma.booking.update({
       where: { id: bookingId },
       data: { status: "CANCELED" },
+      select: {
+        id: true,
+        status: true,
+        clientId: true,
+        studioId: true,
+      },
     });
+
+    emitBookingUpdated(updated);
 
     res.json({ booking: updated });
   } catch (e) {
@@ -652,4 +931,5 @@ router.patch("/client/bookings/:bookingId/cancel", requireAuth, requireClient, a
     res.status(500).json({ message: e?.message || "Cancel booking failed" });
   }
 });
+
 export default router;

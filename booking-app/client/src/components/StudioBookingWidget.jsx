@@ -1,4 +1,5 @@
 // StudioBookingWidget.jsx
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Clock, Check, ChevronRight, Sparkles } from "lucide-react";
@@ -268,6 +269,7 @@ function StudioBookingWidgetInner({
   onCancel,
   onSuccess,
 }) {
+  const queryClient = useQueryClient();
   const slotDuration =
     typeof slotDurationProp === "number" && slotDurationProp > 0
       ? slotDurationProp
@@ -620,54 +622,70 @@ function StudioBookingWidgetInner({
     slotDuration,
   ]);
 
-  useEffect(() => {
-    let alive = true;
+  const selectedService = useMemo(
+    () =>
+      services.find((s) => String(s.id) === String(selectedServiceId)) || null,
+    [services, selectedServiceId],
+  );
+  
+  const selectedServiceIdForBusy = selectedService?.id ?? null;
 
-    async function loadBusy() {
-      if (!studio?.id || !selectedDateStr) return;
+useEffect(() => {
+  let alive = true;
 
-      setBusyLoading(true);
+  async function loadBusy() {
+    if (!studio?.id || !selectedDateStr) return;
 
-      try {
-        const token = localStorage.getItem("token");
+    setBusyLoading(true);
 
-        const busyUrl = selectedMaster?.id
-          ? `${import.meta.env.VITE_API_URL}/bookings/studio/${studio.id}/busy?date=${encodeURIComponent(selectedDateStr)}&masterId=${encodeURIComponent(selectedMaster.id)}`
-          : `${import.meta.env.VITE_API_URL}/bookings/studio/${studio.id}/busy?date=${encodeURIComponent(selectedDateStr)}`;
+    try {
+      const token = localStorage.getItem("token");
 
-        const res = await fetch(busyUrl, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
+      const params = new URLSearchParams({
+        date: selectedDateStr,
+      });
 
-        const data = await res.json().catch(() => null);
+      if (selectedMaster?.id) {
+        params.set("masterId", String(selectedMaster.id));
+      } else if (selectedServiceIdForBusy) {
+        params.set("serviceId", String(selectedServiceIdForBusy));
+      }
 
-        if (!res.ok) {
-          throw new Error(data?.message || `Load busy failed (${res.status})`);
-        }
+      const busyUrl = `${import.meta.env.VITE_API_URL}/bookings/studio/${studio.id}/busy?${params.toString()}`;
 
-        const list = Array.isArray(data?.busy) ? data.busy : [];
+      const res = await fetch(busyUrl, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
 
-        if (alive) {
-          setBusyTimes(new Set(list));
-        }
-      } catch (e) {
-        console.error(e);
-        if (alive) {
-          setBusyTimes(new Set());
-        }
-      } finally {
-        if (alive) {
-          setBusyLoading(false);
-        }
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        throw new Error(data?.message || `Load busy failed (${res.status})`);
+      }
+
+      const list = Array.isArray(data?.busy) ? data.busy : [];
+
+      if (alive) {
+        setBusyTimes(new Set(list));
+      }
+    } catch (e) {
+      console.error(e);
+      if (alive) {
+        setBusyTimes(new Set());
+      }
+    } finally {
+      if (alive) {
+        setBusyLoading(false);
       }
     }
+  }
 
-    loadBusy();
+  loadBusy();
 
-    return () => {
-      alive = false;
-    };
-  }, [studio?.id, selectedDateStr, selectedMaster?.id]);
+  return () => {
+    alive = false;
+  };
+}, [studio?.id, selectedDateStr, selectedMaster?.id, selectedServiceIdForBusy]);
 
   const disabledDays = useMemo(() => {
     return (date) => {
@@ -718,11 +736,6 @@ function StudioBookingWidgetInner({
     isAnyMasterSelected,
   ]);
 
-  const selectedService = useMemo(
-    () =>
-      services.find((s) => String(s.id) === String(selectedServiceId)) || null,
-    [services, selectedServiceId],
-  );
 
   useEffect(() => {
     setSelectedServiceId(defaultServiceId);
@@ -776,25 +789,29 @@ console.log("master scheduleExceptions =", selectedMaster?.scheduleExceptions);
         },
       );
 
-      const data = await res.json().catch(() => null);
+const data = await res.json().catch(() => null);
 
-      if (!res.ok) {
-        throw new Error(
-          data?.message || `Create booking failed (${res.status})`,
-        );
-      }
+if (!res.ok) {
+  throw new Error(
+    data?.message || `Create booking failed (${res.status})`,
+  );
+}
 
-      if (onSuccess) {
-        onSuccess({
-          studioName: studio.name,
-          serviceName: service?.name ?? "",
-          date: selectedDateStr,
-          time: selectedTime,
-          phone: form.phone,
-        });
-      }
+await queryClient.invalidateQueries({
+  queryKey: ["bookings", studio.id],
+});
 
-      onCancel?.();
+if (onSuccess) {
+  onSuccess({
+    studioName: studio.name,
+    serviceName: service?.name ?? "",
+    date: selectedDateStr,
+    time: selectedTime,
+    phone: form.phone,
+  });
+}
+
+onCancel?.();
     } catch (err) {
       console.error(err);
       alert(String(err?.message || "Не вдалося створити запис"));

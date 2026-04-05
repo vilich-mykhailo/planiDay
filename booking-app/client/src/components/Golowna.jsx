@@ -111,15 +111,16 @@ function StatCard({ title, value, icon: Icon, accent = "emerald" }) {
           : "bg-emerald-50 text-emerald-700";
 
   return (
-    <div className="group rounded-[26px] border border-stone-200 bg-white p-4 shadow-[0_8px_25px_rgba(0,0,0,0.04)] transition-all duration-200 hover:-translate-y-0.5 hover:border-amber-200 hover:shadow-[0_12px_30px_rgba(0,0,0,0.06)] sm:p-5">
+  <div className="group rounded-[22px] border border-stone-200 bg-white p-3 shadow-[0_8px_25px_rgba(0,0,0,0.04)] transition-all duration-200 hover:-translate-y-0.5 hover:border-amber-200 hover:shadow-[0_12px_30px_rgba(0,0,0,0.06)] sm:rounded-[26px] sm:p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-stone-500">
-            {title}
-          </p>
-          <div className="mt-3 text-3xl font-bold tracking-tight text-stone-800 sm:text-4xl">
-            {displayValue}
-          </div>
+<p className="text-[9px] font-bold uppercase tracking-[0.14em] text-stone-500 sm:text-[10px] sm:tracking-[0.18em]">
+  {title}
+</p>
+
+<div className="mt-2 text-2xl font-bold tracking-tight text-stone-800 sm:mt-3 sm:text-4xl">
+  {displayValue}
+</div>
         </div>
 
         <div
@@ -249,7 +250,7 @@ export default function Golowna() {
       },
       {
         key: "today-new",
-        title: "Нові непідтверджені",
+        title: "Очікують підтвердження",
         value: todayNew,
         icon: Sparkles,
         accent: "amber",
@@ -313,8 +314,8 @@ export default function Golowna() {
 <h1
   className="
     mt-2 font-bold tracking-tight text-stone-800
-    text-[26px] leading-[1.15]        /* мобілка */
-    sm:text-4xl sm:leading-[1.1]
+    !text-[32px] leading-[1.2]        /* було 26 */
+    sm:text-3xl sm:leading-[1.15]    /* трохи менше і на планшеті */
     lg:text-5xl
   "
 >
@@ -338,7 +339,7 @@ export default function Golowna() {
           </div>
         </SectionShell>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+     <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
           {stats.map((item) => (
             <StatCard
               key={item.key}

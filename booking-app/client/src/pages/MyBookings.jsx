@@ -1,5 +1,6 @@
 // MyBookings.jsx
-import { useMemo, useRef, useState, useEffect, useCallback } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles,
   Search,
@@ -12,11 +13,11 @@ import {
   X,
   Scissors,
   UserRound,
-  ChevronRight,
-  Check,        // 👈 додай
-  XCircle,      // 👈 додай
-  Clock,        // 👈 додай
+  Check,
+  XCircle,
+  Clock,
 } from "lucide-react";
+import { useClientBookings } from "../context/bookings/useClientBookings";
 
 function formatUA(dateStr) {
   if (!dateStr) return "";
@@ -38,8 +39,9 @@ function toPublicUrl(v) {
   return PUBLIC ? `${PUBLIC}/${s}` : s;
 }
 
-function isPast(dateStr, timeStr) {
+function isPast(dateStr, timeStr, nowTs) {
   if (!dateStr) return false;
+
   const [y, m, d] = dateStr.split("-").map(Number);
   const dt = new Date(y, (m || 1) - 1, d || 1);
 
@@ -50,7 +52,7 @@ function isPast(dateStr, timeStr) {
     dt.setHours(23, 59, 59, 999);
   }
 
-  return dt.getTime() < Date.now();
+  return dt.getTime() < nowTs;
 }
 
 function cn(...classes) {
@@ -152,60 +154,47 @@ button:
 }
 
 export default function MyBookings() {
-  const [bookings, setBookings] = useState([]);
-  const [loading, setLoading] = useState(true);
+const { bookings, loading, cancelBooking, loadBookings } = useClientBookings();
+const [removingIds, setRemovingIds] = useState([]);
+const [nowTs, setNowTs] = useState(() => Date.now());
+
+useEffect(() => {
+  const id = setInterval(() => {
+    setNowTs(Date.now());
+  }, 60_000);
+
+  return () => clearInterval(id);
+}, []);
+
+function resolveBookingStatus(booking, nowTs) {
+  const rawStatus = booking?.status || "new";
+
+  if (rawStatus === "canceled") return "canceled";
+
+  const past = isPast(booking?.date, booking?.time, nowTs);
+  if (past) return "completed";
+
+  if (rawStatus === "confirmed") return "confirmed";
+
+  return "new";
+}
   const [tab, setTab] = useState("upcoming");
   const [q, setQ] = useState("");
   const [copiedId, setCopiedId] = useState(null);
   const copyTimerRef = useRef(null);
-  const [activeBooking, setActiveBooking] = useState(null);
-const activeMasterName =
-  activeBooking?.masterName ||
-  activeBooking?.staffName ||
-  activeBooking?.employeeName ||
-  "";
-  const loadBookings = useCallback(async () => {
-    try {
-      setLoading(true);
+  const [activeBookingId, setActiveBookingId] = useState(null);
 
-      const token = localStorage.getItem("token");
-      const role = localStorage.getItem("role");
+  const activeBooking = useMemo(() => {
+    if (!activeBookingId) return null;
+    return bookings.find((b) => b.id === activeBookingId) || null;
+  }, [bookings, activeBookingId]);
 
-      if (!token || role !== "client") {
-        setBookings([]);
-        return;
-      }
-
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/client/bookings`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
-
-      const data = await res.json().catch(() => null);
-
-      if (!res.ok) {
-        throw new Error(
-          data?.message || `Load client bookings failed (${res.status})`,
-        );
-      }
-
-      setBookings(Array.isArray(data?.bookings) ? data.bookings : []);
-    } catch (e) {
-      console.error(e);
-      setBookings([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadBookings();
-  }, [loadBookings]);
-
+  const activeMasterName =
+    activeBooking?.masterName ||
+    activeBooking?.staffName ||
+    activeBooking?.employeeName ||
+    "";
+    
   useEffect(() => {
     if (!activeBooking) {
       document.body.style.overflow = "";
@@ -218,100 +207,79 @@ const activeMasterName =
     };
   }, [activeBooking]);
 
-async function cancelBooking(booking) {
-  if (!booking?.id) return;
-
-  const token = localStorage.getItem("token");
-
-  const res = await fetch(
-    `${import.meta.env.VITE_API_URL}/client/bookings/${booking.id}/cancel`,
-    {
-      method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    },
-  );
-
-  const data = await res.json().catch(() => null);
-
-  if (!res.ok) {
-    throw new Error(data?.message || `Cancel booking failed (${res.status})`);
-  }
-
-  await loadBookings();
-  setActiveBooking((prev) =>
-    prev?.id === booking.id ? { ...prev, status: "canceled" } : prev
-  );
-}
 
   const normalized = useMemo(() => {
     const list = Array.isArray(bookings) ? bookings : [];
     return [...list].reverse();
   }, [bookings]);
 
-  const filtered = useMemo(() => {
-    const query = q.trim().toLowerCase();
+const filtered = useMemo(() => {
+  const query = q.trim().toLowerCase();
 
-    return normalized.filter((b) => {
-      const status = b.status || "active";
-      const past = isPast(b.date, b.time);
+  return normalized.filter((b) => {
+    const status = resolveBookingStatus(b, nowTs);
+    const past = status === "completed";
 
-      const matchTab =
-        tab === "all"
-          ? true
-          : tab === "canceled"
-            ? status === "canceled"
-            : tab === "past"
-              ? status !== "canceled" && past
-              : status !== "canceled" && !past;
+    const matchTab =
+      tab === "all"
+        ? true
+        : tab === "canceled"
+          ? status === "canceled"
+          : tab === "past"
+            ? past
+            : status !== "canceled" && !past;
 
-      if (!matchTab) return false;
-      if (!query) return true;
+    if (!matchTab) return false;
+    if (!query) return true;
 
-      const hay = [
-        b.studioName,
-        b.serviceName,
-        b.date,
-        b.time,
-        b.clientName,
-        b.clientPhone,
-        b.address,
-        b.studioAddress,
-        b.location,
-        b.masterName,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
+    const hay = [
+      b.studioName,
+      b.serviceName,
+      b.date,
+      b.time,
+      b.clientName,
+      b.clientPhone,
+      b.address,
+      b.studioAddress,
+      b.location,
+      b.masterName,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
 
-      return hay.includes(query);
-    });
-  }, [normalized, tab, q]);
+    return hay.includes(query);
+  });
+}, [normalized, tab, q, nowTs]);
 
-  const counters = useMemo(() => {
-    const list = normalized;
-    let upcoming = 0;
-    let past = 0;
-    let canceled = 0;
+const visibleBookings = useMemo(() => {
+  return filtered.filter((b) => !removingIds.includes(b.id));
+}, [filtered, removingIds]);
 
-    for (const b of list) {
-      const status = b.status || "active";
+const counters = useMemo(() => {
+  const list = normalized;
+  let upcoming = 0;
+  let past = 0;
+  let canceled = 0;
 
-      if (status === "canceled") {
-        canceled += 1;
-        continue;
-      }
+  for (const b of list) {
+    const status = resolveBookingStatus(b, nowTs);
 
-      if (isPast(b.date, b.time)) {
-        past += 1;
-      } else {
-        upcoming += 1;
-      }
+    if (status === "canceled") {
+      canceled += 1;
+      continue;
     }
 
-    return { upcoming, past, canceled, all: list.length };
-  }, [normalized]);
+    if (status === "completed") {
+      past += 1;
+    } else {
+      upcoming += 1;
+    }
+  }
+
+  return { upcoming, past, canceled, all: list.length };
+}, [normalized, nowTs]);
+
 
   useEffect(() => {
     return () => {
@@ -354,25 +322,13 @@ async function cancelBooking(booking) {
     );
   }
 
-const rawActiveStatus = activeBooking?.status || "new";
-const activePast =
-  rawActiveStatus !== "canceled" &&
-  isPast(activeBooking?.date, activeBooking?.time);
-
-const activeStatus =
-  rawActiveStatus === "canceled"
-    ? "canceled"
-    : activePast
-      ? "completed"
-      : rawActiveStatus;
+  
+const activeStatus = activeBooking
+  ? resolveBookingStatus(activeBooking, nowTs)
+  : "new";
 
   const activeTitle = activeBooking?.studioName || "Студія";
   const activeService = activeBooking?.serviceName || "Послуга";
-  const activeWhen = activeBooking?.date
-    ? `${activeBooking?.time || ""}${activeBooking?.time ? " • " : ""}${formatUA(
-        activeBooking.date,
-      )}`
-    : "";
 
   const activePhone = activeBooking?.studioPhone || null;
   const activeAddr =
@@ -381,12 +337,7 @@ const activeStatus =
     activeBooking?.location ||
     null;
 
-  const activeStatusUi = getStatusUi(activeStatus);
-  const activeLogo =
-    activeBooking?.studio?.logoUrl ||
-    activeBooking?.logoUrl ||
-    activeBooking?.studioLogo ||
-    "";
+
 function Badge({ variant = "neutral", children, className = "" }) {
   const styles = {
     neutral: "border-stone-200 bg-stone-100 text-stone-600",
@@ -511,171 +462,155 @@ function IconDot({ className = "" }) {
             ) : null}
           </div>
 
-          {filtered.length === 0 ? (
+      {visibleBookings.length === 0 ? (
             <EmptyState />
           ) : (
-            <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2">
-              {filtered.map((b, idx) => {
-                const rawStatus = b.status || "new";
-const bookingPast = isPast(b.date, b.time);
+<div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2">
+  <AnimatePresence initial={false}>
+    {visibleBookings.map((b, idx) => {
+      const status = resolveBookingStatus(b, nowTs);
+      const bookingPast = status === "completed";
+      const statusUi = getStatusUi(status);
+      const title = b.studioName || "Студія";
+      const service = b.serviceName || "Послуга";
+      const rowId =
+        b.id ??
+        `${b.studioSlug ?? "studio"}-${b.date ?? "d"}-${b.time ?? "t"}-${idx}`;
 
-const status =
-  rawStatus === "canceled"
-    ? "canceled"
-    : bookingPast
-      ? "completed"
-      : rawStatus;
-                const statusUi = getStatusUi(status);
+      const dt = b.date ? new Date(`${b.date}T${b.time || "00:00"}`) : null;
 
-                const title = b.studioName || "Студія";
-                const service = b.serviceName || "Послуга";
-                const price =
-                  typeof b.price === "number" ? `${b.price} грн` : null;
-                const phone = b.studioPhone || null;
-                const addr = b.address || b.studioAddress || b.location || null;
+      const monthLabel = dt
+        ? dt.toLocaleDateString("uk-UA", { month: "long" })
+        : "";
 
-                const rowId =
-                  b.id ??
-                  `${b.studioSlug ?? "studio"}-${b.date ?? "d"}-${b.time ?? "t"}-${idx}`;
+      const dayLabel = dt
+        ? dt.toLocaleDateString("uk-UA", { day: "numeric" })
+        : "";
 
-                const numberLabel = `#${String(idx + 1).padStart(3, "0")}`;
+      const timeLabel = b.time || "";
 
-                const dt = b.date
-                  ? new Date(`${b.date}T${b.time || "00:00"}`)
-                  : null;
+      const studioLogo = toPublicUrl(
+        b.studio?.logoUrl || b.logoUrl || b.studioLogo || ""
+      );
 
-                const monthLabel = dt
-                  ? dt.toLocaleDateString("uk-UA", { month: "long" })
-                  : "";
+      return (
+        <motion.div
+          key={rowId}
+          layout
+          initial={{ opacity: 1, scale: 1, height: "auto" }}
+          animate={{ opacity: 1, scale: 1, height: "auto" }}
+          exit={{ opacity: 0, scale: 0.96, height: 0, marginBottom: 0 }}
+          transition={{ duration: 0.25 }}
+          className="rounded-[28px] border border-stone-200/70 bg-white p-3.5 shadow-[0_10px_30px_rgba(15,23,42,0.06)] sm:p-4"
+        >
+          <div className="grid grid-cols-[1fr_auto] gap-3">
+            <div className="min-w-0">
+              <div
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-bold",
+                  statusUi.badge
+                )}
+              >
+                <statusUi.icon className="h-3.5 w-3.5" />
+                {statusUi.text}
+              </div>
 
-                const dayLabel = dt
-                  ? dt.toLocaleDateString("uk-UA", { day: "numeric" })
-                  : "";
+              <h3 className="mt-3 line-clamp-2 text-[18px] font-black leading-[1.05] tracking-[-0.03em] text-stone-900">
+                {service}
+              </h3>
 
-                const timeLabel = b.time || "";
+              {!!b.masterName && (
+                <p className="mt-1 text-[13px] text-stone-500">
+                  працівник:{" "}
+                  <span className="font-medium text-stone-600">
+                    {b.masterName}
+                  </span>
+                </p>
+              )}
 
-                const studioImage = toPublicUrl(
-                  b.studio?.coverUrl ||
-                    b.coverUrl ||
-                    b.studioCover ||
-                    b.studio?.photoUrl ||
-                    ""
-                );
+              <div className="mt-3 flex min-w-0 items-center gap-2">
+                {studioLogo ? (
+                  <img
+                    src={studioLogo}
+                    alt={title}
+                    className="h-7 w-7 shrink-0 rounded-full border border-stone-200 object-cover"
+                  />
+                ) : (
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-stone-200 bg-stone-100">
+                    <Sparkles className="h-3.5 w-3.5 text-stone-400" />
+                  </div>
+                )}
 
-                const studioLogo = toPublicUrl(
-                  b.studio?.logoUrl || b.logoUrl || b.studioLogo || ""
-                );
+                <p className="truncate text-[15px] font-medium text-stone-800">
+                  {title}
+                </p>
+              </div>
 
-                return (
-<div
-  key={rowId}
-  className="rounded-[28px] border border-stone-200/70 bg-white p-3.5 shadow-[0_10px_30px_rgba(15,23,42,0.06)] sm:p-4"
->
-  <div className="grid grid-cols-[1fr_auto] gap-3">
-    <div className="min-w-0">
-<div
-  className={cn(
-    "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-bold",
-    statusUi.badge,
-  )}
->
-  <statusUi.icon className="h-3.5 w-3.5" />
-  {statusUi.text}
-</div>
+              <div className="mt-4 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveBookingId(b.id)}
+                  className={cn(
+                    "inline-flex h-12 flex-1 items-center justify-center rounded-[14px] bg-gradient-to-r px-4 text-[15px] font-black text-white transition-all duration-200 active:scale-[0.98]",
+                    statusUi.button
+                  )}
+                >
+                  {bookingPast ? "Забронювати ще раз" : "Переглянути"}
+                </button>
 
-      <h3 className="mt-3 line-clamp-2 text-[18px] font-black leading-[1.05] tracking-[-0.03em] text-stone-900">
-        {service}
-      </h3>
-
-      {!!b.masterName && (
-        <p className="mt-1 text-[13px] text-stone-500">
-          працівник: <span className="font-medium text-stone-600">{b.masterName}</span>
-        </p>
-      )}
-
-      <div className="mt-3 flex items-center gap-2 min-w-0">
-        {studioLogo ? (
-          <img
-            src={studioLogo}
-            alt={title}
-            className="h-7 w-7 shrink-0 rounded-full border border-stone-200 object-cover"
-          />
-        ) : (
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-stone-200 bg-stone-100">
-            <Sparkles className="h-3.5 w-3.5 text-stone-400" />
-          </div>
-        )}
-
-        <p className="truncate text-[15px] font-medium text-stone-800">
-          {title}
-        </p>
-      </div>
-
-<div className="mt-4 flex gap-2">
-  <button
-    type="button"
-    onClick={() => setActiveBooking(b)}
-    className={cn(
-      "flex-1 inline-flex h-12 items-center justify-center rounded-[14px] bg-gradient-to-r px-4 text-[15px] font-black text-white transition-all duration-200 active:scale-[0.98]",
-      statusUi.button,
-    )}
-  >
-    {bookingPast ? "Забронювати ще раз" : "Переглянути"}
-  </button>
-
-  {status !== "canceled" && !bookingPast && (
-    <button
-      type="button"
+                {status !== "canceled" && !bookingPast && (
+                  <button
+                    type="button"
 onClick={async () => {
   const ok = window.confirm("Скасувати цей запис?");
   if (!ok) return;
 
   try {
-    await cancelBooking(b);
+    await cancelBooking(b.id);
   } catch (e) {
     alert(e.message || "Не вдалося скасувати запис");
   }
 }}
-      className="inline-flex h-12 items-center justify-center rounded-[14px] border border-rose-200 bg-rose-50 px-4 text-[14px] font-bold text-rose-700 transition-all duration-200 hover:bg-rose-100 active:scale-[0.96]"
-    >
-      Скасувати
-    </button>
-  )}
-</div>
-    </div>
-
-    <div
-      className={cn(
-        "flex flex-col items-center justify-center border-l pl-3 text-center min-w-[72px]",
-        statusUi.side,
-      )}
-    >
-      <span className="text-[14px] font-medium capitalize text-stone-600">
-        {monthLabel}
-      </span>
-
-      <span className="mt-1 text-[28px] font-light leading-none tracking-[-0.05em] text-stone-900">
-        {dayLabel}
-      </span>
-
-      <span className={cn("mt-2 text-[16px] font-semibold", statusUi.time)}>
-        {timeLabel}
-      </span>
-    </div>
-  </div>
-</div>
-                );
-              })}
+                    className="inline-flex h-12 items-center justify-center rounded-[14px] border border-rose-200 bg-rose-50 px-4 text-[14px] font-bold text-rose-700 transition-all duration-200 hover:bg-rose-100 active:scale-[0.96]"
+                  >
+                    Скасувати
+                  </button>
+                )}
+              </div>
             </div>
+
+            <div
+              className={cn(
+                "flex min-w-[72px] flex-col items-center justify-center border-l pl-3 text-center",
+                statusUi.side
+              )}
+            >
+              <span className="text-[14px] font-medium capitalize text-stone-600">
+                {monthLabel}
+              </span>
+
+              <span className="mt-1 text-[28px] font-light leading-none tracking-[-0.05em] text-stone-900">
+                {dayLabel}
+              </span>
+
+              <span className={cn("mt-2 text-[16px] font-semibold", statusUi.time)}>
+                {timeLabel}
+              </span>
+            </div>
+          </div>
+        </motion.div>
+      );
+    })}
+  </AnimatePresence>
+</div>
           )}
         </div>
       </div>
-
 {activeBooking && (
   <div
     className="fixed inset-0 z-950 flex items-center justify-center bg-stone-950/55 backdrop-blur-[8px] sm:items-center sm:p-4"
     onClick={() => {
-      setActiveBooking(null);
+     setActiveBookingId(null);
       setCopiedId(null);
     }}
   >
@@ -706,7 +641,7 @@ onClick={async () => {
           <button
             type="button"
             onClick={() => {
-              setActiveBooking(null);
+             setActiveBookingId(null);
               setCopiedId(null);
             }}
             className="flex h-8 w-8 items-center justify-center rounded-full text-stone-500 transition hover:bg-stone-200 hover:text-stone-700 active:scale-95"

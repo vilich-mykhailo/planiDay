@@ -378,11 +378,11 @@ function Modal({
 
   if (!open) return null;
 
-  const sizeClasses = {
-    sm: "sm:max-w-md",
-    md: "sm:max-w-lg",
-    lg: "sm:max-w-2xl",
-  };
+const sizeClasses = {
+  sm: "sm:max-w-md",
+  md: "sm:max-w-lg lg:max-w-xl",
+  lg: "sm:max-w-xl lg:max-w-2xl",
+};
 
   return (
     <div
@@ -402,7 +402,7 @@ function Modal({
       >
         <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-amber-50/80 to-transparent" />
 
-        <div className="relative border-b border-stone-100 px-4 py-3 sm:px-5 sm:py-4">
+      <div className="relative border-b border-stone-100 px-3 py-2.5 sm:px-5 sm:py-4">
           <div className="flex items-center justify-between">
             <p className="text-[14px] font-bold uppercase tracking-[0.12em] text-amber-600">
               {title}
@@ -420,12 +420,12 @@ function Modal({
           {subtitle && <p className="text-[11px] text-stone-500">{subtitle}</p>}
         </div>
 
-        <div className="max-h-[calc(90vh-64px)] overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
+     <div className="max-h-[calc(90vh-64px)] overflow-y-auto px-3 py-3 sm:px-5 sm:py-5">
           {children}
         </div>
 
         {footer && (
-          <div className="border-t border-stone-100 bg-stone-50/50 px-4 py-3 sm:px-5 sm:py-4">
+    <div className="border-t border-stone-100 bg-stone-50/50 px-3 py-2.5 sm:px-5 sm:py-4">
             {footer}
           </div>
         )}
@@ -509,8 +509,14 @@ function BookingsSkeleton() {
 }
 
 export default function Bookings() {
-  const { bookings, confirmBooking, cancelBooking, deleteBooking, loading } =
-    useBookings();
+  const {
+    bookings,
+    confirmBooking,
+    cancelBooking,
+    deleteBooking,
+    loadBookings,
+    loading,
+  } = useBookings();
 
   const [confirmId, setConfirmId] = useState(null);
   const [cancelConfirmId, setCancelConfirmId] = useState(null);
@@ -524,7 +530,7 @@ export default function Bookings() {
   const DELETED_STORE_KEY = "bookings_deleted_store_v1";
 
   const [copiedPhone, setCopiedPhone] = useState(false);
-const [expandedCalendarCards, setExpandedCalendarCards] = useState({});
+  const [expandedCalendarCards, setExpandedCalendarCards] = useState({});
   async function handleCopyPhone(value) {
     if (!value) return;
 
@@ -803,28 +809,29 @@ function toggleCalendarCard(id) {
     <div className="min-h-screen ">
       <div className="mx-auto max-w-6xl space-y-6 ">
         {/* Header */}
-        <div className="relative mb-3 overflow-hidden rounded-3xl border border-stone-200/60 bg-white p-5 sm:p-6 shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]">
+       <div className="relative mb-3 overflow-hidden rounded-3xl border border-stone-200/60 bg-white p-3.5 sm:p-6 shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]">
           {/* top accent */}
           <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-60" />
 
-          <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+       <div className="relative flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             {/* left */}
-            <div className="min-w-0">
-              <div className="mb- inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-3 py-1.5">
-                <Sparkles className="h-4 w-4 text-amber-600" />
-                <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-amber-700">
-                  Записи клієнтів
-                </span>
-              </div>
+              <div className="relative">
+    <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-3 py-1.5">
+      <Sparkles className="h-4 w-4 text-amber-600" />
+      <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-amber-700">
+         Записи клієнтів
+      </span>
+    </div>
 
-              <h1 className="text-3xl font-black tracking-tight text-stone-800 sm:text-4xl">
-                Записи
-              </h1>
+    <h1 className="text-3xl font-black tracking-tight text-stone-800 sm:text-4xl">
+      Записи
+    </h1>
 
-              <p className="mt-2 max-w-xl text-sm text-stone-600 sm:text-base">
-                Перегляд записів списком або через календар у зручному форматі.
-              </p>
-            </div>
+    <p className="mt-2 max-w-xl text-sm text-stone-600 sm:text-base">
+      Перегляд записів списком або через календар у зручному форматі.
+    </p>
+  </div>
+
 
             {/* right tabs */}
             <div className="inline-flex self-center sm:self-start rounded-2xl border border-stone-200 bg-white p-1 shadow-sm">
@@ -1377,7 +1384,7 @@ function toggleCalendarCard(id) {
               ? `Створено: ${new Date(selectedBooking.createdAt).toLocaleString("uk-UA")}`
               : undefined
           }
-          size="md"
+          size="lg"
         >
           {selectedBooking &&
             (() => {
@@ -1490,8 +1497,8 @@ function toggleCalendarCard(id) {
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/70 bg-white/80 px-4 py-3 backdrop-blur">
-                        <div className="flex items-center gap-3 min-w-0">
+<div className="flex flex-col gap-3 rounded-2xl border border-white/70 bg-white/80 px-4 py-3 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+  <div className="flex items-center gap-3 min-w-0">
                           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-stone-100 text-stone-700">
                             <CalendarDays className="h-5 w-5" />
                           </div>
@@ -1501,7 +1508,7 @@ function toggleCalendarCard(id) {
                               Дата і час
                             </p>
 
-                            <div className="mt-0.5 flex items-center gap-2 text-sm font-bold text-stone-800">
+                           <div className="mt-0.5 flex flex-wrap items-center gap-2 text-sm font-bold text-stone-800">
                               <span>{renderBookingDate(selectedBooking)}</span>
 
                               <span className="text-stone-400">•</span>
@@ -1517,8 +1524,8 @@ function toggleCalendarCard(id) {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <div className="rounded-[24px] border border-stone-200 bg-white p-4 shadow-[0_8px_30px_-12px_rgba(15,23,42,0.08)]">
+                 <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                <div className="rounded-[22px] border border-stone-200 bg-white p-3 shadow-[0_8px_30px_-12px_rgba(15,23,42,0.08)] sm:rounded-[24px] sm:p-4">
                       <div className="flex items-center gap-3">
                         <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50 text-amber-700">
                           <UserRound className="h-5 w-5" />
@@ -1534,7 +1541,7 @@ function toggleCalendarCard(id) {
                         </div>
                       </div>
 
-                      <div className="mt-4 rounded-2xl border border-stone-200 bg-stone-50/70 p-3">
+                   <div className="mt-3 rounded-2xl border border-stone-200 bg-stone-50/70 p-2.5 sm:mt-4 sm:p-3">
                         <div className="flex items-center justify-between gap-3">
                           <div className="min-w-0">
                             <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">
@@ -1782,7 +1789,7 @@ const isExpanded = !!expandedCalendarCards[b.id];
 </div>
 
   <div className={cn("p-4 sm:p-5", !isExpanded && "hidden")}>
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+  <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
       <div className="rounded-[22px] border border-stone-200 bg-stone-50/70 p-3.5">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-stone-200 bg-white text-stone-700">
