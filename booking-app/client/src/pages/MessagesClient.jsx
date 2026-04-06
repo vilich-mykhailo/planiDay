@@ -1,252 +1,370 @@
-// MessagesClient.jsx
+// SecurityClient.jsx
 import { useState } from "react";
 import {
   Sparkles,
+  ShieldCheck,
+  Phone,
   Mail,
-  CheckCheck,
+  KeyRound,
+  CheckCircle2,
   X,
-  Bell,
-  Search,
+  Lock,
 } from "lucide-react";
 
 function cn(...classes) {
   return classes.filter(Boolean).join(" ");
 }
 
-function EmptyState() {
+function SectionCard({ icon, title, subtitle, children }) {
   return (
-    <div className="rounded-3xl border border-stone-200/70 bg-white p-8 shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)] sm:p-10">
-      <div className="mx-auto max-w-xl text-center">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-[20px] border border-stone-200 bg-stone-100">
-          <Mail className="h-7 w-7 text-stone-500" />
+    <section className="overflow-hidden rounded-[24px] border border-stone-200/60 bg-white shadow-[0_4px_20px_-6px_rgba(120,90,60,0.08)] sm:rounded-3xl">
+      <div className="h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-70" />
+
+      <div className="px-4 pb-6 pt-6 sm:px-6 sm:pb-6 sm:pt-5 lg:px-8 lg:pt-6">
+        <div className="mb-5 flex items-start gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-stone-200 bg-stone-100">
+            {icon}
+          </div>
+
+          <div className="min-w-0">
+            <h2 className="text-lg font-black tracking-[-0.02em] text-stone-800 sm:text-xl">
+              {title}
+            </h2>
+            {subtitle ? (
+              <p className="mt-1 text-sm leading-6 text-stone-500">
+                {subtitle}
+              </p>
+            ) : null}
+          </div>
         </div>
 
-        <h3 className="mt-4 text-xl font-semibold tracking-tight text-stone-800">
-          Поки що немає повідомлень
-        </h3>
-
-        <p className="mt-2 text-sm text-stone-500">
-          Тут з’являтимуться нагадування про записи, підтвердження та важливі
-          оновлення.
-        </p>
+        {children}
       </div>
+    </section>
+  );
+}
+
+function Field({ label, icon, hint, children }) {
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        <span className="text-stone-500">{icon}</span>
+        <label className="text-sm font-bold text-stone-700">{label}</label>
+      </div>
+
+      {children}
+
+      {hint ? <p className="text-xs text-stone-400">{hint}</p> : null}
     </div>
   );
 }
 
-function MessageItem({ item, onRead }) {
+function SuccessNote({ children }) {
   return (
-    <div
-      className={cn(
-        "group relative overflow-hidden rounded-[24px] border p-5 transition-all duration-300 sm:rounded-[28px]",
-
-        item.read
-          ? "bg-white border-stone-200/80 shadow-[0_10px_26px_rgba(15,23,42,0.07)] hover:shadow-[0_16px_34px_rgba(15,23,42,0.10)]"
-          : "bg-emerald-50/60 border-emerald-200 shadow-[0_12px_28px_rgba(16,185,129,0.15)] hover:shadow-[0_18px_36px_rgba(16,185,129,0.18)]",
-      )}
-    >
-      {/* 🔥 ЛІВА ЛІНІЯ (АКЦЕНТ) */}
-      {!item.read && (
-        <div className="absolute left-0 top-0 h-full w-[4px] bg-gradient-to-b from-emerald-400 to-emerald-600" />
-      )}
-
-      {/* верхня лінія */}
-      <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-stone-200 to-transparent" />
-
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h3
-              className={cn(
-                "tracking-[-0.02em]",
-                item.read
-                  ? "text-base font-semibold text-stone-900 sm:text-lg"
-                  : "text-base font-black text-stone-900 sm:text-lg",
-              )}
-            >
-              {item.title}
-            </h3>
-
-            {!item.read && (
-              <>
-                {/* 🔴 DOT */}
-                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
-
-                {/* BADGE */}
-                <span className="inline-flex items-center rounded-full border border-emerald-200 bg-white px-2.5 py-1 text-[11px] font-bold text-emerald-700 shadow-sm">
-                  Нове
-                </span>
-              </>
-            )}
-          </div>
-
-          <p
-            className={cn(
-              "mt-2 leading-6",
-              item.read
-                ? "text-sm text-stone-600"
-                : "text-sm text-stone-800 font-medium",
-            )}
-          >
-            {item.text}
-          </p>
-
-          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-stone-400">
-            <span className="rounded-full border border-stone-200 bg-stone-100 px-2.5 py-1 font-medium text-stone-600">
-              {item.date}
-            </span>
-          </div>
-        </div>
-
-        {!item.read ? (
-          <button
-            type="button"
-            onClick={() => onRead(item.id)}
-            className="inline-flex items-center justify-center gap-2 rounded-[18px] border border-emerald-200 bg-white px-4 py-2.5 text-sm font-bold text-emerald-700 transition-all duration-200 hover:bg-emerald-50 hover:shadow-md active:scale-95"
-          >
-            <CheckCheck className="h-4 w-4" />
-            Відмітити як переглянуто
-          </button>
-        ) : (
-          <div className="inline-flex items-center justify-center rounded-[18px] border border-stone-200 bg-white px-4 py-2.5 text-sm font-bold text-stone-500 shadow-sm">
-            Переглянуто
-          </div>
-        )}
-      </div>
+    <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+      {children}
     </div>
   );
 }
 
-export default function Messages() {
-  const [q, setQ] = useState("");
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      title: "Запис підтверджено",
-      text: "Ваш запис у студію Beauty Space підтверджено на 12:00.",
-      date: "Сьогодні, 10:32",
-      read: false,
-    },
-    {
-      id: 2,
-      title: "Нагадування про запис",
-      text: "Ваш запис завтра о 14:30. Будь ласка, приходьте за 5–10 хвилин до початку.",
-      date: "Вчора, 18:12",
-      read: true,
-    },
-    {
-      id: 3,
-      title: "Оновлення часу бронювання",
-      text: "Студія змінила час вашого запису з 15:00 на 15:30.",
-      date: "22 липня, 09:10",
-      read: false,
-    },
-  ]);
+export default function SecurityClient() {
+  const [phone, setPhone] = useState("+48 500 123 456");
+  const [newPhone, setNewPhone] = useState("");
+  const [phoneCode, setPhoneCode] = useState("");
+  const [codeSent, setCodeSent] = useState(false);
+  const [phoneSaved, setPhoneSaved] = useState(false);
 
-  const filtered = messages.filter((m) => {
-    const hay = [m.title, m.text, m.date].join(" ").toLowerCase();
-    return hay.includes(q.trim().toLowerCase());
-  });
+  const [email, setEmail] = useState("client@example.com");
+  const [newEmail, setNewEmail] = useState("");
+  const [emailSaved, setEmailSaved] = useState(false);
 
-  const unreadCount = messages.filter((m) => !m.read).length;
+  const [password, setPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [repeatPassword, setRepeatPassword] = useState("");
+  const [passwordSaved, setPasswordSaved] = useState(false);
 
-  function markAsRead(id) {
-    setMessages((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, read: true } : m)),
-    );
+  function handleSendCode() {
+    if (!newPhone.trim()) return;
+    setCodeSent(true);
+    setPhoneSaved(false);
+  }
+
+  function handleConfirmPhone() {
+    if (!newPhone.trim() || !phoneCode.trim()) return;
+
+    setPhone(newPhone);
+    setNewPhone("");
+    setPhoneCode("");
+    setCodeSent(false);
+    setPhoneSaved(true);
+  }
+
+  function handleSaveEmail() {
+    if (!newEmail.trim()) return;
+    setEmail(newEmail);
+    setNewEmail("");
+    setEmailSaved(true);
+  }
+
+  function handleSavePassword(e) {
+    e.preventDefault();
+
+    if (!password.trim() || !newPassword.trim() || !repeatPassword.trim()) {
+      return;
+    }
+
+    if (newPassword !== repeatPassword) {
+      return;
+    }
+
+    setPassword("");
+    setNewPassword("");
+    setRepeatPassword("");
+    setPasswordSaved(true);
   }
 
   return (
     <div className="min-h-screen">
       <div className="mx-auto max-w-6xl px-2.5 pb-4 pt-18 sm:px-4 sm:pb-8 sm:pt-14 lg:pt-16">
-        <div className="space-y-3 px-0 pt-2 sm:space-y-5 sm:pt-8 lg:pt-6">
-      <section className="overflow-hidden rounded-[24px] border border-stone-200/60 bg-white shadow-[0_4px_20px_-6px_rgba(120,90,60,0.08)] sm:rounded-3xl">
-        <div className="h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-70" />
+        <div className="space-y-4 px-0 pt-2 sm:space-y-5 sm:pt-8 lg:pt-6">
+          <section className="overflow-hidden rounded-[24px] border border-stone-200/60 bg-white shadow-[0_4px_20px_-6px_rgba(120,90,60,0.08)] sm:rounded-3xl">
+            <div className="h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-70" />
 
+            <div className="px-4 pb-7 pt-7 sm:px-6 sm:pb-4 sm:pt-5 lg:px-8 lg:pt-6">
+              <div className="mb-5 space-y-3 sm:mb-4 sm:space-y-2 lg:mb-5">
+                <div className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-3 py-1 sm:px-4 sm:py-1.5">
+                  <Sparkles className="h-3.5 w-3.5 text-amber-600 sm:h-4 sm:w-4" />
+                  <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-700 sm:text-xs sm:tracking-[0.22em]">
+                    Налаштування безпеки
+                  </span>
+                </div>
 
-        <div className="px-4 pb-7 pt-7 sm:px-6 sm:pb-4 sm:pt-5 lg:px-8 lg:pt-6">
-          <div className="mb-5 space-y-3 sm:mb-4 sm:space-y-2 lg:mb-5">
-            <div className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-3 py-1 sm:px-4 sm:py-1.5">
-              <Sparkles className="h-3.5 w-3.5 text-amber-600 sm:h-4 sm:w-4" />
-              <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-700 sm:text-xs sm:tracking-[0.22em]">
-                Мої повідомлення
-              </span>
-            </div>
+                <h1 className="max-w-full !text-[34px] font-black leading-tight tracking-[-0.03em] text-stone-800 sm:max-w-none sm:!text-5xl lg:!text-5xl">
+                  Безпека вашого{" "}
+                  <span className="text-amber-600">акаунта</span>
+                </h1>
 
-            <h1 className="max-w-full !text-[34px] font-black leading-tight tracking-[-0.03em] text-stone-800 sm:max-w-none sm:!text-5xl lg:!text-5xl">
-              Слідкуйте за своїми{" "}
-              <span className="text-amber-600">повідомленнями</span>
-            </h1>
+                <p className="max-w-2xl text-sm leading-6 text-stone-600 sm:text-base sm:leading-7">
+                  Тут ви можете змінити номер телефону, email та пароль для
+                  захисту свого профілю.
+                </p>
+              </div>
 
-            <p className="max-w-2xl text-sm leading-6 text-stone-600 sm:text-base sm:leading-7">
-              Тут зберігаються нагадування, підтвердження бронювання та важливі
-              оновлення щодо ваших записів.
-            </p>
-          </div>
+              <div className="flex flex-wrap gap-2">
+                <span className="inline-flex items-center gap-2 rounded-[18px] border border-stone-200 bg-white px-4 py-2 text-sm font-bold text-stone-700">
+                  <ShieldCheck className="h-4 w-4 text-amber-600" />
+                  Захист профілю
+                </span>
 
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div className="flex flex-wrap gap-2">
-              <span className="inline-flex items-center gap-2 rounded-[18px] border border-stone-200 bg-white px-4 py-2 text-sm font-bold text-stone-700">
-                <Bell className="h-4 w-4 text-amber-600" />
-                Усього: {messages.length}
-              </span>
-
-              <span className="inline-flex items-center gap-2 rounded-[18px] border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-800">
-                <Mail className="h-4 w-4" />
-                Нових: {unreadCount}
-              </span>
-            </div>
-
-            <div className="w-full lg:w-[360px]">
-              <div className="flex items-center gap-2.5 rounded-2xl border border-stone-200 bg-white px-4 py-3 shadow-sm transition-all duration-200 focus-within:border-amber-300 focus-within:ring-4 focus-within:ring-amber-100">
-                <Search className="h-4 w-4 text-stone-400" />
-
-                <input
-                  value={q}
-                  onChange={(e) => setQ(e.target.value)}
-                  placeholder="Пошук: підтвердження, нагадування…"
-                  className="w-full bg-transparent text-sm text-stone-800 outline-none placeholder:text-stone-400"
-                />
-
-                {q ? (
-                  <button
-                    type="button"
-                    onClick={() => setQ("")}
-                    className="text-stone-400 transition hover:text-red-600"
-                    aria-label="Очистити пошук"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                ) : null}
+                <span className="inline-flex items-center gap-2 rounded-[18px] border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-800">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Дані під контролем
+                </span>
               </div>
             </div>
-          </div>
+          </section>
+
+          <SectionCard
+            icon={<Phone className="h-5 w-5 text-amber-600" />}
+            title="Зміна телефону"
+            subtitle="Для зміни номера підтвердьте його за допомогою коду."
+          >
+            <div className="grid gap-4">
+              <div className="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-stone-400">
+                  Поточний номер
+                </p>
+                <p className="mt-1 text-base font-bold text-stone-800">
+                  {phone}
+                </p>
+              </div>
+
+              <Field
+                label="Новий номер телефону"
+                icon={<Phone className="h-4 w-4" />}
+              >
+                <input
+                  type="tel"
+                  value={newPhone}
+                  onChange={(e) => setNewPhone(e.target.value)}
+                  placeholder="+48 123 456 789"
+                  className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-800 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
+                />
+              </Field>
+
+              {!codeSent ? (
+                <button
+                  type="button"
+                  onClick={handleSendCode}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-[18px] border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-800 transition hover:bg-amber-100 active:scale-[0.99] sm:w-fit"
+                >
+                  <KeyRound className="h-4 w-4" />
+                  Надіслати код підтвердження
+                </button>
+              ) : (
+                <div className="grid gap-4 rounded-2xl border border-amber-200 bg-amber-50/60 p-4">
+                  <Field
+                    label="Код підтвердження"
+                    icon={<ShieldCheck className="h-4 w-4" />}
+                    hint="Введіть код, який ви отримали на новий номер."
+                  >
+                    <input
+                      type="text"
+                      value={phoneCode}
+                      onChange={(e) => setPhoneCode(e.target.value)}
+                      placeholder="123456"
+                      className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-800 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
+                    />
+                  </Field>
+
+                  <div className="flex flex-col gap-3 sm:flex-row">
+                    <button
+                      type="button"
+                      onClick={handleConfirmPhone}
+                      className="inline-flex items-center justify-center gap-2 rounded-[18px] border border-emerald-200 bg-white px-4 py-3 text-sm font-bold text-emerald-700 transition hover:bg-emerald-50 active:scale-[0.99]"
+                    >
+                      <CheckCircle2 className="h-4 w-4" />
+                      Підтвердити номер
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCodeSent(false);
+                        setPhoneCode("");
+                      }}
+                      className="inline-flex items-center justify-center gap-2 rounded-[18px] border border-stone-200 bg-white px-4 py-3 text-sm font-bold text-stone-600 transition hover:bg-stone-50 active:scale-[0.99]"
+                    >
+                      <X className="h-4 w-4" />
+                      Скасувати
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {phoneSaved ? (
+                <SuccessNote>
+                  Номер телефону успішно оновлено.
+                </SuccessNote>
+              ) : null}
+            </div>
+          </SectionCard>
+
+          <SectionCard
+            icon={<Mail className="h-5 w-5 text-amber-600" />}
+            title="Зміна email"
+            subtitle="Оновіть адресу електронної пошти для входу та сповіщень."
+          >
+            <div className="grid gap-4">
+              <div className="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-stone-400">
+                  Поточний email
+                </p>
+                <p className="mt-1 text-base font-bold text-stone-800">
+                  {email}
+                </p>
+              </div>
+
+              <Field
+                label="Новий email"
+                icon={<Mail className="h-4 w-4" />}
+              >
+                <input
+                  type="email"
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  placeholder="newmail@example.com"
+                  className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-800 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
+                />
+              </Field>
+
+              <button
+                type="button"
+                onClick={handleSaveEmail}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-[18px] border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-800 transition hover:bg-amber-100 active:scale-[0.99] sm:w-fit"
+              >
+                <CheckCircle2 className="h-4 w-4" />
+                Зберегти новий email
+              </button>
+
+              {emailSaved ? (
+                <SuccessNote>Email успішно оновлено.</SuccessNote>
+              ) : null}
+            </div>
+          </SectionCard>
+
+          <SectionCard
+            icon={<Lock className="h-5 w-5 text-amber-600" />}
+            title="Зміна пароля"
+            subtitle="Використовуйте надійний пароль для додаткового захисту акаунта."
+          >
+            <form onSubmit={handleSavePassword} className="grid gap-4">
+              <Field
+                label="Поточний пароль"
+                icon={<KeyRound className="h-4 w-4" />}
+              >
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Введіть поточний пароль"
+                  className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-800 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
+                />
+              </Field>
+
+              <Field
+                label="Новий пароль"
+                icon={<ShieldCheck className="h-4 w-4" />}
+              >
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Введіть новий пароль"
+                  className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-800 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
+                />
+              </Field>
+
+              <Field
+                label="Повторіть новий пароль"
+                icon={<ShieldCheck className="h-4 w-4" />}
+              >
+                <input
+                  type="password"
+                  value={repeatPassword}
+                  onChange={(e) => setRepeatPassword(e.target.value)}
+                  placeholder="Повторіть новий пароль"
+                  className={cn(
+                    "w-full rounded-2xl border bg-white px-4 py-3 text-sm text-stone-800 outline-none transition focus:ring-4",
+                    repeatPassword &&
+                      newPassword !== repeatPassword
+                      ? "border-red-300 focus:border-red-300 focus:ring-red-100"
+                      : "border-stone-200 focus:border-amber-300 focus:ring-amber-100",
+                  )}
+                />
+              </Field>
+
+              {repeatPassword && newPassword !== repeatPassword ? (
+                <p className="text-sm font-medium text-red-600">
+                  Паролі не співпадають.
+                </p>
+              ) : null}
+
+              <button
+                type="submit"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-[18px] border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-800 transition hover:bg-amber-100 active:scale-[0.99] sm:w-fit"
+              >
+                <CheckCircle2 className="h-4 w-4" />
+                Оновити пароль
+              </button>
+
+              {passwordSaved ? (
+                <SuccessNote>Пароль успішно змінено.</SuccessNote>
+              ) : null}
+            </form>
+          </SectionCard>
         </div>
-      </section>
-
-      <div className="flex items-center gap-2 text-sm text-stone-500">
-        <span className="rounded-full border border-stone-200 bg-stone-100 px-2 py-0.5 text-xs text-stone-600">
-          Знайдено: {filtered.length}
-        </span>
-
-        {q ? (
-          <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
-            Пошук: {q}
-          </span>
-        ) : null}
       </div>
-
-      {filtered.length === 0 ? (
-        <EmptyState />
-      ) : (
-        <div className="grid gap-3 sm:gap-4">
-          {filtered.map((item) => (
-            <MessageItem key={item.id} item={item} onRead={markAsRead} />
-          ))}
-        </div>
-      )}
-    </div>
-    </div>
     </div>
   );
 }

@@ -10,6 +10,7 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  CheckCircle2,
 } from "lucide-react";
 import { useStudio } from "../../context/studio/useStudio";
 import { api } from "../../api/http";
@@ -649,23 +650,23 @@ export default function StudioSettings() {
     duration: 3000,
   });
 
-  function showToast({ type = "success", title, text }) {
-    const duration = 3000;
+function showToast({ type = "success", title, text }) {
+  const duration = 2600;
 
-    setToast({
-      id: Date.now(),
-      open: true,
-      type,
-      title,
-      text,
-      duration,
-    });
+  setToast({
+    id: Date.now(),
+    open: true,
+    type,
+    title,
+    text,
+    duration,
+  });
 
-    clearTimeout(showToast._t);
-    showToast._t = setTimeout(() => {
-      setToast((prev) => ({ ...prev, open: false }));
-    }, duration);
-  }
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => {
+    setToast((prev) => ({ ...prev, open: false }));
+  }, duration);
+}
 
   const [errorModal, setErrorModal] = useState({
     open: false,
@@ -1238,24 +1239,25 @@ export default function StudioSettings() {
 
       setPendingDeletes([]);
 
+      let hasDeleteWarning = false;
+
       const uniq = Array.from(new Set(deletesAfterSave)).filter(Boolean);
+
       if (uniq.length) {
         try {
           await deleteManyFromR2(uniq);
         } catch (err) {
           console.error(err);
-          showToast({
-            type: "warning",
-            title: "Збережено, але…",
-            text: "Не всі файли видалено.",
-          });
+          hasDeleteWarning = true;
         }
       }
 
       showToast({
-        type: "success",
-        title: "Профіль оновлено",
-        text: "Зміни збережено.",
+        type: hasDeleteWarning ? "warning" : "success",
+        title: hasDeleteWarning ? "Збережено з зауваженням" : "Збережено",
+        text: hasDeleteWarning
+          ? "Не всі файли вдалося видалити"
+          : "Профіль оновлено",
       });
     } catch (error) {
       console.error(error);
@@ -1272,8 +1274,10 @@ export default function StudioSettings() {
 
       showToast({
         type: "error",
-        title: isOffline ? "Немає інтернету" : "Не вдалося зберегти",
-        text: isOffline ? "Перевірте підключення." : "Спробуйте ще раз.",
+        title: isOffline ? "Немає підключення" : "Помилка",
+        text: isOffline
+          ? "Перевірте інтернет"
+          : "Не вдалося зберегти зміни",
       });
     } finally {
       setSaving(false);
@@ -2164,90 +2168,97 @@ export default function StudioSettings() {
           </div>
         </div>
 
-        {/* Toast */}
-        <div
-          className={cn(
-            "fixed left-1/2 top-[calc(12px+env(safe-area-inset-top))] z-[90] w-[calc(100%-2rem)] max-w-[430px] -translate-x-1/2 transition-all duration-150 md:bottom-6 md:left-6 md:top-auto md:w-auto md:min-w-[300px] md:max-w-[360px] md:translate-x-0",
-            toast.open
-              ? "translate-y-0 opacity-100"
-              : "pointer-events-none -translate-y-2 opacity-0 md:translate-y-2",
-          )}
-          role="status"
-          aria-live="polite"
-        >
-          <div
-            className={cn(
-              "relative overflow-hidden rounded-[24px] border bg-white/95 backdrop-blur-xl shadow-[0_18px_50px_rgba(93,64,55,0.16)]",
-              toast.type === "success"
-                ? "border-emerald-200 ring-1 ring-emerald-100"
-                : toast.type === "warning"
-                  ? "border-amber-200 ring-1 ring-amber-100"
-                  : "border-red-200 ring-1 ring-red-100",
-            )}
-          >
-            <div
-              className={cn(
-                "absolute inset-x-0 top-0 h-1",
-                toast.type === "success"
-                  ? "bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600"
-                  : toast.type === "warning"
-                    ? "bg-gradient-to-r from-amber-300 via-amber-400 to-orange-500"
-                    : "bg-gradient-to-r from-red-300 via-red-400 to-rose-500",
-              )}
-            />
+{/* Toast */}
+<div
+  className={cn(
+    "fixed left-1/2 top-[calc(12px+env(safe-area-inset-top))] z-[120] -translate-x-1/2 transition-all duration-200 ease-out",
+    "md:left-5 md:top-auto md:bottom-5 md:translate-x-0",
+    toast.open
+      ? "translate-y-0 scale-100 opacity-100"
+      : "pointer-events-none -translate-y-2 scale-[0.98] opacity-0 md:translate-y-2",
+  )}
+  role="status"
+  aria-live="polite"
+>
+  <div
+    className={cn(
+      "relative w-fit max-w-[85vw] overflow-hidden rounded-2xl border bg-white shadow-[0_16px_40px_rgba(15,23,42,0.12)]",
+      toast.type === "success" && "border-emerald-200",
+      toast.type === "error" && "border-red-200",
+      toast.type === "warning" && "border-amber-200",
+    )}
+  >
+    <div className="flex items-start gap-3 px-4 py-3.5">
+      {/* icon */}
+      <div
+        className={cn(
+          "mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white",
+          toast.type === "success" && "bg-emerald-600",
+          toast.type === "error" && "bg-red-500",
+          toast.type === "warning" && "bg-amber-500",
+        )}
+      >
+        {toast.type === "success" && (
+          <CheckCircle2 className="h-4.5 w-4.5" />
+        )}
+        {toast.type === "error" && <X className="h-4.5 w-4.5" />}
+        {toast.type === "warning" && <AlertTriangle className="h-4.5 w-4.5" />}
+      </div>
 
-            <div className="relative flex items-start gap-3 px-4 py-4 sm:px-5">
-              <div
-                className={cn(
-                  "mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border shadow-[0_8px_22px_rgba(93,64,55,0.10)]",
-                  toast.type === "success"
-                    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                    : toast.type === "warning"
-                      ? "border-amber-200 bg-amber-50 text-amber-700"
-                      : "border-red-200 bg-red-50 text-red-600",
-                )}
-                aria-hidden="true"
-              >
-                {toast.type === "success" && <Check className="h-5 w-5" />}
-                {toast.type === "warning" && <Camera className="h-5 w-5" />}
-                {toast.type === "error" && <X className="h-5 w-5" />}
-              </div>
+      {/* text */}
+      <div className="min-w-0">
+        <p className="text-[14px] font-semibold text-stone-900 whitespace-nowrap">
+          {toast.title}
+        </p>
 
-              <div className="min-w-0 flex-1">
-                <p className="mt-2 text-[15px] font-black leading-5 text-stone-800">
-                  {toast.title}
-                </p>
-                <p className="mt-1 text-sm leading-5 text-stone-500">
-                  {toast.text}
-                </p>
-              </div>
-            </div>
+        {toast.text && (
+          <p className="mt-0.5 text-[13px] text-stone-500">
+            {toast.text}
+          </p>
+        )}
+      </div>
 
-            <div className="h-[3px] w-full bg-stone-100">
-              <div
-                key={toast.id}
-                className={cn(
-                  "h-full w-full origin-left",
-                  toast.type === "success"
-                    ? "bg-emerald-400"
-                    : toast.type === "warning"
-                      ? "bg-amber-400"
-                      : "bg-red-400",
-                )}
-                style={{
-                  animation: `toastbar ${toast.duration}ms linear forwards`,
-                }}
-              />
-            </div>
-          </div>
+      {/* close */}
+      <button
+        type="button"
+        onClick={() => setToast((prev) => ({ ...prev, open: false }))}
+        className="ml-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-stone-400 transition hover:bg-stone-100 hover:text-stone-700"
+      >
+        <X className="h-4 w-4" />
+      </button>
+    </div>
 
-          <style>{`
-            @keyframes toastbar {
-              from { transform: scaleX(1); }
-              to   { transform: scaleX(0); }
-            }
-          `}</style>
-        </div>
+    {/* progress */}
+    <div
+      className={cn(
+        "h-[2px] w-full",
+        toast.type === "success" && "bg-emerald-100",
+        toast.type === "error" && "bg-red-100",
+        toast.type === "warning" && "bg-amber-100",
+      )}
+    >
+      <div
+        key={toast.id}
+        className={cn(
+          "h-full w-full origin-left",
+          toast.type === "success" && "bg-emerald-600",
+          toast.type === "error" && "bg-red-500",
+          toast.type === "warning" && "bg-amber-500",
+        )}
+        style={{
+          animation: `toastbar ${toast.duration}ms linear forwards`,
+        }}
+      />
+    </div>
+  </div>
+
+  <style>{`
+    @keyframes toastbar {
+      from { transform: scaleX(1); }
+      to { transform: scaleX(0); }
+    }
+  `}</style>
+</div>
 
         {/* Portfolio preview */}
         {portfolioPreview.open && (

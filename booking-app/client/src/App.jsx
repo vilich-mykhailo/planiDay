@@ -54,7 +54,7 @@ export default function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/bookings" element={<MyBookings />} />
             <Route path="/favourites" element={<Favourites />} />
-            <Route path="/messages-client" element={<MessagesClient />} />
+            <Route path="/security-client" element={<MessagesClient />} />
             <Route path="/termsowner" element={<TermsOwner />} />
             <Route path="/termsclient" element={<TermsClient />} />
             <Route path="/privacyowner" element={<PrivacyOwner />} />

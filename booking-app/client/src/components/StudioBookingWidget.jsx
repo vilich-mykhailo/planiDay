@@ -242,6 +242,7 @@ export default function StudioBookingWidget({
     <StudioBookingWidgetInner
       key={remountKey}
       studio={studio}
+      
       services={services}
       scheduleProp={scheduleProp}
       scheduleExceptionsProp={scheduleExceptionsProp}

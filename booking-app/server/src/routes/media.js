@@ -1,12 +1,11 @@
 // media.js //
 import express from "express";
 import multer from "multer";
-import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { r2 } from "../lib/r2.js";
-import { DeleteObjectCommand } from "@aws-sdk/client-s3";
-import { requireAuth, requireOwner } from "../middleware/auth.js";
-import {prisma} from "../lib/prisma.js";
-import { makeStudioKey } from "../lib/r2Keys.js";
+import { requireAuth, requireOwner, requireClient } from "../middleware/auth.js";
+import { prisma } from "../lib/prisma.js";
+import { makeStudioKey, makeClientKey } from "../lib/r2Keys.js";
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -29,9 +28,10 @@ async function putImage({ bucket, key, buffer, mimetype }) {
     })
   );
 }
-router.delete("/delete", async (req, res) => {
+
+router.delete("/delete", requireAuth, async (req, res) => {
   try {
-    const { key } = req.body;
+    const { key } = req.body || {};
 
     if (!key) {
       return res.status(400).json({ message: "Key is required" });
@@ -51,7 +51,7 @@ router.delete("/delete", async (req, res) => {
   }
 });
 
-// наприклад routes/studio.js
+// DELETE category
 router.delete(
   "/studio/:studioId/categories/:categoryId",
   requireAuth,
@@ -60,14 +60,14 @@ router.delete(
     try {
       const { studioId, categoryId } = req.params;
 
-      // спочатку переносимо послуги
       await prisma.service.updateMany({
         where: { studioId, categoryId },
         data: { categoryId: null },
       });
 
-      // потім видаляємо категорію
-      await prisma.serviceCategory.delete({ where: { id: categoryId } });
+      await prisma.serviceCategory.delete({
+        where: { id: categoryId },
+      });
 
       res.json({ ok: true });
     } catch (e) {
@@ -77,7 +77,7 @@ router.delete(
   }
 );
 
-// ✅ DELETE /media/studio/:studioId/master-photo
+// DELETE /media/studio/:studioId/master-photo
 router.delete(
   "/studio/:studioId/master-photo",
   requireAuth,
@@ -87,11 +87,10 @@ router.delete(
       const { studioId } = req.params;
       const { key } = req.body || {};
 
-      if (!key) return res.status(400).json({ message: "Key is required" });
+      if (!key) {
+        return res.status(400).json({ message: "Key is required" });
+      }
 
-      // 🔒 Захист: видаляємо тільки файли цієї студії (важливо!)
-      // Підлаштуй під свій формат makeStudioKey
-      // Напр. якщо ключі виглядають як: studios/<studioId>/masters/...
       const mustStart = `studios/${studioId}/masters/`;
       if (!String(key).startsWith(mustStart)) {
         return res.status(403).json({ message: "Forbidden key" });
@@ -125,16 +124,23 @@ router.post(
       const duration = Number(s.duration || 60);
       const price = Number(s.price || 0);
       const allMasters = Boolean(s.allMasters);
-      const categoryId = s.categoryId ?? null; // null = без категорії
+      const categoryId = s.categoryId ?? null;
       const masters = Array.isArray(s.masters) ? s.masters.map(String) : [];
 
-      if (!name) return res.status(400).json({ message: "Name is required" });
-      if (!Number.isFinite(duration) || duration <= 0)
+      if (!name) {
+        return res.status(400).json({ message: "Name is required" });
+      }
+      if (!Number.isFinite(duration) || duration <= 0) {
         return res.status(400).json({ message: "Duration is invalid" });
-      if (!Number.isFinite(price) || price < 0)
+      }
+      if (!Number.isFinite(price) || price < 0) {
         return res.status(400).json({ message: "Price is invalid" });
-      if (!allMasters && masters.length === 0)
-        return res.status(400).json({ message: "Pick masters or set allMasters=true" });
+      }
+      if (!allMasters && masters.length === 0) {
+        return res
+          .status(400)
+          .json({ message: "Pick masters or set allMasters=true" });
+      }
 
       const created = await prisma.service.create({
         data: {
@@ -163,7 +169,6 @@ router.post(
   }
 );
 
-
 router.patch(
   "/services/:serviceId",
   requireAuth,
@@ -180,22 +185,26 @@ router.patch(
       const categoryId = s.categoryId ?? null;
       const masters = Array.isArray(s.masters) ? s.masters.map(String) : [];
 
-      if (!name) return res.status(400).json({ message: "Name is required" });
-      if (!Number.isFinite(duration) || duration <= 0)
+      if (!name) {
+        return res.status(400).json({ message: "Name is required" });
+      }
+      if (!Number.isFinite(duration) || duration <= 0) {
         return res.status(400).json({ message: "Duration is invalid" });
-      if (!Number.isFinite(price) || price < 0)
+      }
+      if (!Number.isFinite(price) || price < 0) {
         return res.status(400).json({ message: "Price is invalid" });
-      if (!allMasters && masters.length === 0)
-        return res.status(400).json({ message: "Pick masters or set allMasters=true" });
+      }
+      if (!allMasters && masters.length === 0) {
+        return res
+          .status(400)
+          .json({ message: "Pick masters or set allMasters=true" });
+      }
 
-      // 1) оновити базові поля
       const updated = await prisma.service.update({
         where: { id: serviceId },
         data: { name, duration, price, allMasters, categoryId },
       });
 
-      // 2) синхронізувати зв’язки master<->service
-      // просто: видалити всі і створити заново (надійно)
       await prisma.serviceMaster.deleteMany({ where: { serviceId } });
 
       if (!allMasters && masters.length > 0) {
@@ -221,7 +230,6 @@ router.delete(
     try {
       const { serviceId } = req.params;
 
-      // каскад по ServiceMaster є, але можна явно:
       await prisma.serviceMaster.deleteMany({ where: { serviceId } });
       await prisma.service.delete({ where: { id: serviceId } });
 
@@ -232,8 +240,6 @@ router.delete(
     }
   }
 );
-
-
 
 // GET /studio/:studioId/services
 router.get(
@@ -251,13 +257,12 @@ router.get(
           services: {
             orderBy: [{ sort: "asc" }, { createdAt: "asc" }],
             include: {
-              masters: { select: { masterId: true } }, // ServiceMaster rows
+              masters: { select: { masterId: true } },
             },
           },
         },
       });
 
-      // перетворюємо masters: [{masterId}] -> masters: [id]
       const serviceCategories = categories.map((c) => ({
         ...c,
         services: (c.services || []).map((s) => ({
@@ -293,7 +298,10 @@ router.patch(
     try {
       const { categoryId } = req.params;
       const name = String(req.body?.name || "").trim();
-      if (!name) return res.status(400).json({ message: "Name is required" });
+
+      if (!name) {
+        return res.status(400).json({ message: "Name is required" });
+      }
 
       const category = await prisma.serviceCategory.update({
         where: { id: categoryId },
@@ -308,131 +316,198 @@ router.patch(
   }
 );
 
-router.post("/studio-logo/:studioId", upload.single("file"), async (req, res) => {
-  try {
-    const { studioId } = req.params;
-    const file = req.file;
+router.post(
+  "/studio-logo/:studioId",
+  requireAuth,
+  requireOwner,
+  upload.single("file"),
+  async (req, res) => {
+    try {
+      const { studioId } = req.params;
+      const file = req.file;
 
-    if (!file) return res.status(400).json({ message: "No file uploaded" });
-    if (!file.mimetype.startsWith("image/")) {
-      return res.status(400).json({ message: "Only images allowed" });
+      if (!file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+      if (!file.mimetype?.startsWith("image/")) {
+        return res.status(400).json({ message: "Only images allowed" });
+      }
+
+      const key = makeStudioKey({
+        studioId,
+        kind: "logo",
+        originalName: file.originalname,
+        mime: file.mimetype,
+      });
+
+      await putImage({
+        bucket: process.env.R2_BUCKET,
+        key,
+        buffer: file.buffer,
+        mimetype: file.mimetype,
+      });
+
+      const base = process.env.R2_PUBLIC_BASE_URL;
+      const url = base ? `${base}/${key}` : null;
+
+      res.json({ key, url });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ message: "Upload failed" });
     }
-
-    const key = makeStudioKey({
-      studioId,
-      kind: "logo",
-      originalName: file.originalname,
-      mime: file.mimetype,
-    });
-
-    await putImage({
-      bucket: process.env.R2_BUCKET,
-      key,
-      buffer: file.buffer,
-      mimetype: file.mimetype,
-    });
-
-    const base = process.env.R2_PUBLIC_BASE_URL;
-    const url = base ? `${base}/${key}` : null;
-
-    res.json({ key, url });
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ message: "Upload failed" });
   }
-});
+);
 
-router.post("/studio-cover/:studioId", upload.single("file"), async (req, res) => {
-  try {
-    const { studioId } = req.params;
-    const file = req.file;
+router.post(
+  "/studio-cover/:studioId",
+  requireAuth,
+  requireOwner,
+  upload.single("file"),
+  async (req, res) => {
+    try {
+      const { studioId } = req.params;
+      const file = req.file;
 
-    if (!file) return res.status(400).json({ message: "No file uploaded" });
-    if (!file.mimetype.startsWith("image/")) {
-      return res.status(400).json({ message: "Only images allowed" });
+      if (!file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+      if (!file.mimetype?.startsWith("image/")) {
+        return res.status(400).json({ message: "Only images allowed" });
+      }
+
+      const key = makeStudioKey({
+        studioId,
+        kind: "cover",
+        originalName: file.originalname,
+        mime: file.mimetype,
+      });
+
+      await putImage({
+        bucket: process.env.R2_BUCKET,
+        key,
+        buffer: file.buffer,
+        mimetype: file.mimetype,
+      });
+
+      const base = process.env.R2_PUBLIC_BASE_URL;
+      const url = base ? `${base}/${key}` : null;
+
+      res.json({ key, url });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ message: "Upload failed" });
     }
-
-const key = makeStudioKey({
-  studioId,
-  kind: "cover",
-  originalName: file.originalname,
-  mime: file.mimetype,
-});
-
-    await putImage({
-      bucket: process.env.R2_BUCKET,
-      key,
-      buffer: file.buffer,
-      mimetype: file.mimetype,
-    });
-
-    const base = process.env.R2_PUBLIC_BASE_URL;
-    const url = base ? `${base}/${key}` : null;
-
-    res.json({ key, url });
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ message: "Upload failed" });
   }
-});
+);
 
 router.post(
   "/studio-portfolio/:studioId",
+  requireAuth,
+  requireOwner,
   upload.array("files", 12),
   async (req, res) => {
     try {
       const { studioId } = req.params;
-      const files = req.files; // ✅ array
+      const files = req.files;
 
       if (!Array.isArray(files) || files.length === 0) {
         return res.status(400).json({ message: "No files uploaded" });
       }
 
-      // перевірка типів
       for (const f of files) {
         if (!f.mimetype?.startsWith("image/")) {
           return res.status(400).json({ message: "Only images allowed" });
         }
       }
 
-const keys = [];
+      const keys = [];
 
-for (const f of files) {
-  const key = makeStudioKey({
-    studioId,
-    kind: "portfolio",
-    originalName: f.originalname,
-    mime: f.mimetype,
-  });
+      for (const f of files) {
+        const key = makeStudioKey({
+          studioId,
+          kind: "portfolio",
+          originalName: f.originalname,
+          mime: f.mimetype,
+        });
 
-  await putImage({
-    bucket: process.env.R2_BUCKET,
-    key,
-    buffer: f.buffer,
-    mimetype: f.mimetype,
-  });
+        await putImage({
+          bucket: process.env.R2_BUCKET,
+          key,
+          buffer: f.buffer,
+          mimetype: f.mimetype,
+        });
 
-  keys.push(key);
-}
+        keys.push(key);
+      }
 
       const base = process.env.R2_PUBLIC_BASE_URL;
       const urls = base ? keys.map((k) => `${base}/${k}`) : null;
 
       res.json({ keys, urls });
     } catch (e) {
-  console.error(e);
-  res.status(500).json({
-    name: e?.name,
-    message: e?.message,
-    code: e?.Code || e?.code,
-    statusCode: e?.$metadata?.httpStatusCode,
-  });
-}
+      console.error(e);
+      res.status(500).json({
+        name: e?.name,
+        message: e?.message,
+        code: e?.Code || e?.code,
+        statusCode: e?.$metadata?.httpStatusCode,
+      });
+    }
+  }
+);
+
+// POST /media/client
+router.post(
+  "/client",
+  requireAuth,
+  requireClient,
+  upload.single("file"),
+  async (req, res) => {
+    try {
+      const clientId = req.auth?.sub;
+      const file = req.file;
+
+      if (!clientId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      if (!file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      if (!file.mimetype?.startsWith("image/")) {
+        return res.status(400).json({ message: "Only images allowed" });
+      }
+
+      const key = makeClientKey({
+        clientId,
+        kind: "avatar",
+        originalName: file.originalname,
+        mime: file.mimetype,
+      });
+
+      await putImage({
+        bucket: process.env.R2_BUCKET,
+        key,
+        buffer: file.buffer,
+        mimetype: file.mimetype,
+      });
+
+      const base = process.env.R2_PUBLIC_BASE_URL;
+      const url = base ? `${base}/${key}` : null;
+
+      res.json({ key, url });
+    } catch (e) {
+      console.error(e);
+      res
+        .status(500)
+        .json({ message: e?.message || "Upload client photo failed" });
+    }
   }
 );
 
 router.get("/_r2_put_test", async (req, res) => {
-    try {
+  try {
     const key = `tests/ping_${Date.now()}.txt`;
 
     await r2.send(
@@ -456,7 +531,7 @@ router.get("/_r2_put_test", async (req, res) => {
   }
 });
 
-// ✅ POST /media/studio/:studioId/master-photo
+// POST /media/studio/:studioId/master-photo
 router.post(
   "/studio/:studioId/master-photo",
   requireAuth,
@@ -467,17 +542,19 @@ router.post(
       const { studioId } = req.params;
       const file = req.file;
 
-      if (!file) return res.status(400).json({ message: "No file uploaded" });
-      if (!file.mimetype.startsWith("image/")) {
+      if (!file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+      if (!file.mimetype?.startsWith("image/")) {
         return res.status(400).json({ message: "Only images allowed" });
       }
 
-const key = makeStudioKey({
-  studioId,
-  kind: "masters",
-  originalName: file.originalname,
-  mime: file.mimetype,
-});
+      const key = makeStudioKey({
+        studioId,
+        kind: "masters",
+        originalName: file.originalname,
+        mime: file.mimetype,
+      });
 
       await putImage({
         bucket: process.env.R2_BUCKET,
@@ -488,14 +565,19 @@ const key = makeStudioKey({
 
       const base = process.env.R2_PUBLIC_BASE_URL;
       if (!base) {
-  return res.status(500).json({ message: "R2_PUBLIC_BASE_URL is not set" });
-}
-      const url = base ? `${base}/${key}` : null;
+        return res
+          .status(500)
+          .json({ message: "R2_PUBLIC_BASE_URL is not set" });
+      }
+
+      const url = `${base}/${key}`;
 
       res.json({ key, url });
     } catch (e) {
       console.error(e);
-      res.status(500).json({ message: e?.message || "Upload master photo failed" });
+      res
+        .status(500)
+        .json({ message: e?.message || "Upload master photo failed" });
     }
   }
 );

@@ -100,3 +100,23 @@ input:-webkit-autofill:focus {
     font-size: 16px !important;
   }
 }
+
+/* === UNIVERSAL BUTTON HOVER EFFECT === */
+.btn-hover-amber {
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.btn-hover-amber:hover {
+  background-color: #fffbeb !important;
+  border-color: #fde68a !important;
+}
+
+.btn-hover-cancel {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.btn-hover-cancel:hover {
+  background-color: #ebebeb; /* stone-50 */
+  border-color: #e7e5e4; /* stone-200 */
+  color: #1c1917; /* stone-900 */
+}

@@ -1,18 +1,25 @@
 // Header.jsx
-import { Link, NavLink, useLocation, useSearchParams } from "react-router-dom";
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import {
+  Link,
+  NavLink,
+  useLocation,
+  useSearchParams,
+  useNavigate,
+} from "react-router-dom";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import {
   Sparkles,
   User,
   Heart,
   CalendarDays,
-  LayoutDashboard,
+  ShieldCheck,
   Building2,
   BriefcaseBusiness,
   Clock3,
   Users,
   LogOut,
   Menu,
+  Search,
   X,
   Settings2,
   Bell,
@@ -137,21 +144,40 @@ function MobileNavIcon({ children, active }) {
 
 export default function Header() {
   const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
   const location = useLocation();
   const isLogin = location.pathname === "/login";
   const isOwnerLogin = location.pathname === "/login-owner";
   const role = useRole();
   const { studio } = useStudio();
-
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
   const studioName = studio?.name?.trim() || "";
   const studioLogo = toPublicUrl(studio?.logoUrl);
   const showOwnerIdentity = role === "owner";
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("role");
-    window.dispatchEvent(new Event("auth-changed"));
-  };
+const handleLogout = useCallback(() => {
+  const currentRole = localStorage.getItem("role") || role;
+
+  localStorage.removeItem("token");
+  localStorage.removeItem("role");
+  window.dispatchEvent(new Event("auth-changed"));
+
+  if (currentRole === "owner") {
+    navigate("/login-owner", { replace: true });
+    return;
+  }
+
+  navigate("/login", { replace: true });
+}, [navigate, role]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     document.body.classList.toggle("overflow-hidden", open);
@@ -167,10 +193,10 @@ export default function Header() {
     if (role === "client") {
       return {
         links: [
-          { to: "/", label: "Головна", icon: <Sparkles className="h-4 w-4" /> },
+          { to: "/", label: "Пошук", icon: <Search className="h-4 w-4" /> },
           {
             to: "/profile",
-            label: "Мої дані",
+            label: "Профіль",
             icon: <User className="h-4 w-4" />,
           },
           {
@@ -183,11 +209,11 @@ export default function Header() {
             label: "Улюблені",
             icon: <Heart className="h-4 w-4" />,
           },
-{
-  to: "/messages-client",
-  label: "Мої повідомлення",
-  icon: <Bell className="h-4 w-4" />,
-},
+          {
+            to: "/security-client",
+            label: "Безпека",
+            icon: <ShieldCheck  className="h-4 w-4" />,
+          },
         ],
         actions: (
           <div className="hidden items-center gap-2 lg:flex">
@@ -238,7 +264,7 @@ export default function Header() {
         </div>
       ),
     };
-  }, [role, isLogin, isOwnerLogin]);
+ }, [role, isLogin, isOwnerLogin, handleLogout]);
 
   const mobileItems = useMemo(() => {
     if (role === "client") {
@@ -246,10 +272,10 @@ export default function Header() {
         title: "Меню",
         subtitle: "Клієнтський режим",
         links: [
-          { to: "/", label: "Головна", icon: <Sparkles className="h-4 w-4" /> },
+          { to: "/", label: "Пошук", icon: <Search  className="h-4 w-4" /> },
           {
             to: "/profile",
-            label: "Мої дані",
+            label: "Профіль",
             icon: <User className="h-4 w-4" />,
           },
           {
@@ -262,10 +288,10 @@ export default function Header() {
             label: "Улюблені",
             icon: <Heart className="h-4 w-4" />,
           },
-          {
-  to: "/messages-client",
-  label: "Мої повідомлення",
-  icon: <Bell className="h-4 w-4" />,
+{
+  to: "/security-client",
+  label: "Безпека акаунта",
+  icon: <ShieldCheck className="h-4 w-4" />,
 },
         ],
         logout: true,
@@ -279,13 +305,23 @@ export default function Header() {
         links: [
           {
             to: "/dashboard",
-            label: "Головна",
-            icon: <LayoutDashboard className="h-4 w-4" />,
+            label: "Пошук",
+            icon: <Search className="h-4 w-4" />,
+          },
+                    {
+            to: "/dashboard/bookings",
+            label: "Записи",
+            icon: <CalendarDays className="h-4 w-4" />,
           },
           {
             to: "/dashboard/studio",
             label: "Профіль студії",
             icon: <Building2 className="h-4 w-4" />,
+          },
+                    {
+            to: "/dashboard/masters",
+            label: "Майстри",
+            icon: <Users className="h-4 w-4" />,
           },
           {
             to: "/dashboard/services",
@@ -297,16 +333,8 @@ export default function Header() {
             label: "Графік роботи",
             icon: <Clock3 className="h-4 w-4" />,
           },
-          {
-            to: "/dashboard/bookings",
-            label: "Записи",
-            icon: <CalendarDays className="h-4 w-4" />,
-          },
-          {
-            to: "/dashboard/masters",
-            label: "Майстри",
-            icon: <Users className="h-4 w-4" />,
-          },
+
+
         ],
         logout: true,
       };
@@ -327,25 +355,26 @@ export default function Header() {
     };
   }, [role]);
 
-const staticRoutes = [
-  "/",
-  "/login",
-  "/register",
-  "/login-owner",
-  "/register-owner",
-  "/profile",
-  "/bookings",
-  "/favourites",
-  "/messages-client",
-  "/dashboard",
-  "/dashboard/studio",
-  "/dashboard/services",
-  "/dashboard/schedule",
-  "/dashboard/bookings",
-  "/dashboard/masters",
-];
+  const staticRoutes = [
+    "/",
+    "/login",
+    "/register",
+    "/login-owner",
+    "/register-owner",
+    "/profile",
+    "/bookings",
+    "/favourites",
+    "/security-client",
+    "/dashboard",
+    "/dashboard/studio",
+    "/dashboard/services",
+    "/dashboard/schedule",
+    "/dashboard/bookings",
+    "/dashboard/masters",
+  ];
 
   const isStudioPublicPage = !staticRoutes.includes(location.pathname);
+
   if (isStudioPublicPage) return null;
 
   return (

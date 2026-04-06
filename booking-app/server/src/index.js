@@ -67,12 +67,30 @@ export const io = new Server(server, {
   },
 });
 
+app.set("io", io);
+
 io.on("connection", (socket) => {
-  socket.on("auth:join", ({ userId, studioId }) => {
+  socket.on("auth:join", ({ userId, studioId, role }) => {
     if (userId) {
       socket.join(`user:${userId}`);
     }
 
+    if (role === "client" && userId) {
+      socket.join(`client:${userId}`);
+    }
+
+    if (studioId) {
+      socket.join(`studio:${studioId}`);
+    }
+  });
+
+  socket.on("join:client", ({ clientId }) => {
+    if (clientId) {
+      socket.join(`client:${clientId}`);
+    }
+  });
+
+  socket.on("join:studio", ({ studioId }) => {
     if (studioId) {
       socket.join(`studio:${studioId}`);
     }
@@ -82,4 +100,3 @@ io.on("connection", (socket) => {
 server.listen(port, "0.0.0.0", () => {
   console.log(`API running on http://0.0.0.0:${port}`);
 });
-

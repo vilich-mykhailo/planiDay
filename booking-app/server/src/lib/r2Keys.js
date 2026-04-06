@@ -1,3 +1,4 @@
+// r2Keys.js
 import crypto from "crypto";
 import path from "path";
 
@@ -10,10 +11,18 @@ function safeExt(originalName, mime) {
   return ".jpg";
 }
 
+// ✅ STUDIOS
 export function makeStudioKey({ studioId, kind, originalName, mime }) {
   const ext = safeExt(originalName, mime);
   const id = crypto.randomUUID();
 
-  // 👇 Ось тут формуємо "папки"
   return `studios/${studioId}/${kind}/${id}${ext}`;
+}
+
+// ✅ CLIENTS (НОВЕ)
+export function makeClientKey({ clientId, kind, originalName, mime }) {
+  const ext = safeExt(originalName, mime);
+  const id = crypto.randomUUID();
+
+  return `clients/${clientId}/${kind}/${id}${ext}`;
 }

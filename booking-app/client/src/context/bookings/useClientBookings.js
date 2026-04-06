@@ -92,7 +92,10 @@ useEffect(() => {
 
   const joinRoom = () => {
     console.log("CLIENT auth:join", { userId, connected: socket.connected });
-    socket.emit("auth:join", { userId });
+    socket.emit("auth:join", {
+      userId,
+      role: "client",
+    });
   };
 
   if (socket.connected) {
@@ -101,35 +104,44 @@ useEffect(() => {
 
   socket.on("connect", joinRoom);
 
-  const handleBookingUpdated = (payload) => {
-    console.log("CLIENT got booking:updated", payload);
+const handleBookingUpdated = (payload) => {
+  console.log("CLIENT got booking:updated", payload);
 
-    if (!payload) return;
+  if (!payload) return;
 
-    if (payload.clientId && String(payload.clientId) !== String(userId)) {
-      return;
-    }
+  if (payload.clientId && String(payload.clientId) !== String(userId)) {
+    return;
+  }
 
-    const incomingId = payload?.bookingId;
-    const incomingStatus = payload?.status;
+  const incomingId = payload?.bookingId || payload?.id;
+  if (!incomingId) return;
 
-    if (!incomingId) return;
+  const rawStatus = payload?.status;
+  const normalizedStatus =
+    rawStatus === "CONFIRMED"
+      ? "confirmed"
+      : rawStatus === "CANCELED"
+        ? "canceled"
+        : rawStatus === "PENDING"
+          ? "new"
+          : rawStatus;
 
-    queryClient.setQueryData(["client-bookings"], (old = []) =>
-      old.map((b) =>
-        b.id === incomingId
-          ? {
-              ...b,
-              status: incomingStatus || b.status,
-            }
-          : b,
-      ),
-    );
+  queryClient.setQueryData(["client-bookings"], (old = []) =>
+    old.map((b) =>
+      b.id === incomingId
+        ? {
+            ...b,
+            status: normalizedStatus || b.status,
+            canceledBy: payload?.canceledBy ?? b.canceledBy ?? null,
+          }
+        : b,
+    ),
+  );
 
-    queryClient.invalidateQueries({
-      queryKey: ["client-bookings"],
-    });
-  };
+  queryClient.invalidateQueries({
+    queryKey: ["client-bookings"],
+  });
+};
 
   socket.on("booking:updated", handleBookingUpdated);
 
@@ -148,16 +160,17 @@ useEffect(() => {
       const previousBookings =
         queryClient.getQueryData(["client-bookings"]) || [];
 
-      queryClient.setQueryData(["client-bookings"], (old = []) =>
-        old.map((b) =>
-          b.id === bookingId
-            ? {
-                ...b,
-                status: "canceled",
-              }
-            : b,
-        ),
-      );
+queryClient.setQueryData(["client-bookings"], (old = []) =>
+  old.map((b) =>
+    b.id === bookingId
+      ? {
+          ...b,
+          status: "canceled",
+          canceledBy: "client",
+        }
+      : b,
+  ),
+);
 
       return { previousBookings };
     },

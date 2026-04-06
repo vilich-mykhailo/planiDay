@@ -130,7 +130,10 @@ useEffect(() => {
       connected: socket.connected,
     });
 
-    socket.emit("auth:join", { studioId });
+    socket.emit("auth:join", {
+  studioId,
+  role: "owner",
+});
     joinedStudioRef.current = studioId;
   };
 
@@ -146,7 +149,6 @@ useEffect(() => {
 }, [studioId]);
 
   // ================= SOCKET LISTENER =================
-
 useEffect(() => {
   if (!studioId) return;
 
@@ -162,9 +164,10 @@ useEffect(() => {
       return;
     }
 
-    const { bookingId, status, deleted } = payload;
+    const bookingId = payload.bookingId || payload.id;
+    const { status, deleted, hiddenForOwner, canceledBy } = payload;
 
-    if (deleted && bookingId) {
+    if ((deleted || hiddenForOwner) && bookingId) {
       queryClient.setQueryData(["bookings", studioId], (old = []) =>
         old.filter((b) => b.id !== bookingId),
       );
@@ -175,6 +178,7 @@ useEffect(() => {
             ? {
                 ...b,
                 status,
+                canceledBy: canceledBy || b.canceledBy || null,
               }
             : b,
         ),
@@ -205,9 +209,13 @@ useEffect(() => {
       const previous =
         queryClient.getQueryData(["bookings", studioId]) || [];
 
-      queryClient.setQueryData(["bookings", studioId], (old = []) =>
-        old.map((b) => (b.id === id ? { ...b, status: "confirmed" } : b)),
-      );
+queryClient.setQueryData(["bookings", studioId], (old = []) =>
+  old.map((b) =>
+    b.id === id
+      ? { ...b, status: "canceled", canceledBy: "owner" }
+      : b,
+  ),
+);
 
       return { previous };
     },

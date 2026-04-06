@@ -1,7 +1,7 @@
 // FavouriteButton.jsx
 import { useMemo } from "react";
 import { Heart } from "lucide-react";
-import { useFavourites } from "../context/favourites.context";
+import { useFavourites } from "../context/favourites.context.js";
 
 function cn(...classes) {
   return classes.filter(Boolean).join(" ");
@@ -10,19 +10,25 @@ function cn(...classes) {
 export default function FavouriteButton({ studio }) {
   const { toggleFavourite, isFavourite } = useFavourites();
 
-  const key = studio?.slug;
-  const liked = isFavourite(key);
+  const studioId = studio?.id;
+  const liked = isFavourite(studioId);
 
   const payload = useMemo(() => {
-    if (!studio) return null;
+    if (!studio?.id) return null;
 
     return {
-      slug: studio.slug,
-      name: studio.name,
-      city: studio.city,
-      category: studio.category,
-      coverUrl: studio.coverUrl,
-      priceFrom: studio.priceFrom,
+      id: studio.id,
+      slug: studio.slug || studio.id,
+      name: studio.name || "",
+      city: studio.city || "",
+      category: studio.category || "",
+      coverUrl: studio.coverUrl || "",
+      priceFrom: studio.priceFrom ?? null,
+      street: studio.street || "",
+      building: studio.building || "",
+      apartment: studio.apartment || "",
+      phone: studio.phone || "",
+      premium: Boolean(studio.premium),
     };
   }, [studio]);
 

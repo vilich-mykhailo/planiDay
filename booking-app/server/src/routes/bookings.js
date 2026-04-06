@@ -28,15 +28,18 @@ function emitBookingUpdated(booking, extra = {}) {
   if (!booking?.id) return;
 
   const payload = {
+    id: booking.id,
     bookingId: booking.id,
     studioId: booking.studioId || null,
     clientId: booking.clientId || null,
-    status: uiStatus(booking.status),
+   status: uiStatus(booking.status),
+canceledBy: booking.canceledBy || null,
     ...extra,
   };
 
   if (booking.clientId) {
     io.to(`user:${booking.clientId}`).emit("booking:updated", payload);
+    io.to(`client:${booking.clientId}`).emit("booking:updated", payload);
   }
 
   if (booking.studioId) {
@@ -48,6 +51,7 @@ function emitBookingDeleted(booking) {
   if (!booking?.id) return;
 
   const payload = {
+    id: booking.id,
     bookingId: booking.id,
     studioId: booking.studioId || null,
     clientId: booking.clientId || null,
@@ -56,6 +60,7 @@ function emitBookingDeleted(booking) {
 
   if (booking.clientId) {
     io.to(`user:${booking.clientId}`).emit("booking:updated", payload);
+    io.to(`client:${booking.clientId}`).emit("booking:updated", payload);
   }
 
   if (booking.studioId) {
@@ -161,7 +166,10 @@ router.get("/studio/:studioId", requireAuth, requireOwner, async (req, res) => {
     }
 
     const items = await prisma.booking.findMany({
-      where: { studioId },
+    where: {
+  studioId,
+  ownerHiddenAt: null,
+},
       orderBy: { startAt: "asc" },
       include: {
         client: { select: { name: true, phone: true } },
@@ -178,6 +186,7 @@ router.get("/studio/:studioId", requireAuth, requireOwner, async (req, res) => {
         date,
         time,
         status: uiStatus(b.status),
+        canceledBy: b.canceledBy || null,
         clientName: b.client?.name || "—",
         clientPhone: b.client?.phone || "—",
         serviceName: b.service?.name || "—",
@@ -535,7 +544,10 @@ router.patch("/studio/:studioId/:bookingId/cancel", requireAuth, requireOwner, a
 
     const updated = await prisma.booking.update({
       where: { id: bookingId },
-      data: { status: "CANCELED" },
+      data: {
+  status: "CANCELED",
+  canceledBy: "owner",
+},
       select: {
         id: true,
         status: true,
@@ -581,11 +593,19 @@ router.delete("/studio/:studioId/:bookingId", requireAuth, requireOwner, async (
       return res.status(404).json({ message: "Booking not found" });
     }
 
-    await prisma.booking.delete({
+    const updated = await prisma.booking.update({
       where: { id: bookingId },
+      data: {
+        ownerHiddenAt: new Date(),
+      },
+      select: {
+        id: true,
+        clientId: true,
+        studioId: true,
+      },
     });
 
-    emitBookingDeleted(booking);
+    emitBookingUpdated(updated, { hiddenForOwner: true });
 
     res.json({ ok: true });
   } catch (e) {
@@ -841,95 +861,5 @@ router.get("/studio/:studioId/busy", async (req, res) => {
   }
 });
 
-// CANCEL BOOKING BY CLIENT
-router.patch("/my/:bookingId/cancel", requireAuth, requireClient, async (req, res) => {
-  try {
-    const { bookingId } = req.params;
-    const clientId = req.auth.sub;
-
-    const booking = await prisma.booking.findFirst({
-      where: {
-        id: bookingId,
-        clientId,
-      },
-      select: {
-        id: true,
-        status: true,
-        startAt: true,
-        clientId: true,
-        studioId: true,
-      },
-    });
-
-    if (!booking) {
-      return res.status(404).json({ message: "Booking not found" });
-    }
-
-    if (booking.status === "CANCELED") {
-      return res.json({ ok: true });
-    }
-
-    const updated = await prisma.booking.update({
-      where: { id: bookingId },
-      data: { status: "CANCELED" },
-      select: {
-        id: true,
-        status: true,
-        clientId: true,
-        studioId: true,
-      },
-    });
-
-    emitBookingUpdated(updated);
-
-    res.json({ booking: updated });
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ message: e?.message || "Cancel booking failed" });
-  }
-});
-
-router.patch("/client/bookings/:bookingId/cancel", requireAuth, requireClient, async (req, res) => {
-  try {
-    const { bookingId } = req.params;
-    const clientId = req.auth.sub;
-
-    const booking = await prisma.booking.findFirst({
-      where: { id: bookingId, clientId },
-      select: {
-        id: true,
-        status: true,
-        clientId: true,
-        studioId: true,
-      },
-    });
-
-    if (!booking) {
-      return res.status(404).json({ message: "Booking not found" });
-    }
-
-    if (booking.status === "CANCELED") {
-      return res.json({ ok: true, alreadyCanceled: true });
-    }
-
-    const updated = await prisma.booking.update({
-      where: { id: bookingId },
-      data: { status: "CANCELED" },
-      select: {
-        id: true,
-        status: true,
-        clientId: true,
-        studioId: true,
-      },
-    });
-
-    emitBookingUpdated(updated);
-
-    res.json({ booking: updated });
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ message: e?.message || "Cancel booking failed" });
-  }
-});
 
 export default router;

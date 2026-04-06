@@ -26,6 +26,38 @@ function safeText(v) {
 
 const R2_PUBLIC = import.meta.env.VITE_R2_PUBLIC_BASE_URL;
 
+const CATEGORY_LABELS = {
+  hair: "Перукарня",
+  barber: "Барбершоп",
+  beauty_salon: "Салон краси",
+  nails: "Манікюр і педикюр",
+  brows_lashes: "Брови та вії",
+  cosmetology: "Косметологія",
+  makeup: "Макіяж",
+  massage: "Масаж",
+  physiotherapy: "Фізіотерапія",
+  depilation: "Депіляція",
+  tattoo_piercing: "Тату і пірсинг",
+  spa: "SPA і wellness",
+  health: "Здоровʼя",
+  fitness_diet: "Тренування і дієта",
+  dentistry: "Стоматологія",
+  podiatry: "Подологія",
+  aesthetic_medicine: "Естетична медицина",
+  natural_medicine: "Натуральна медицина",
+  psychotherapy: "Психотерапія",
+  pets: "Тварини",
+  finance: "Фінансові послуги",
+  shopping: "Покупки",
+  auto: "Автосервіс",
+  other: "Інше",
+};
+
+function getCategoryLabel(value) {
+  const key = String(value || "").trim();
+  return CATEGORY_LABELS[key] || key;
+}
+
 function toPublicUrl(v) {
   const s = String(v || "").trim();
   if (!s) return "";
@@ -301,10 +333,16 @@ export default function Studios() {
   }, [studios]);
 
   const categories = useMemo(() => {
-    const set = new Set(
-      (studios || []).map((s) => safeText(s.category)).filter(Boolean),
+    const raw = Array.from(
+      new Set((studios || []).map((s) => safeText(s.category)).filter(Boolean)),
     );
-    return Array.from(set).sort((a, b) => a.localeCompare(b));
+
+    return raw
+      .map((value) => ({
+        value,
+        label: getCategoryLabel(value),
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label, "uk"));
   }, [studios]);
 
   const filtered = useMemo(() => {
@@ -401,7 +439,7 @@ export default function Studios() {
     if (safeText(category))
       chips.push({
         key: "category",
-        label: `Категорія: ${safeText(category)}`,
+        label: `Категорія: ${getCategoryLabel(safeText(category))}`,
       });
     if (safeText(minPrice))
       chips.push({ key: "minPrice", label: `Від: ${safeText(minPrice)} грн` });
@@ -544,7 +582,7 @@ export default function Studios() {
                   value={category}
                   onChange={setCategory}
                   placeholder=""
-                  options={categories.map((c) => ({ value: c, label: c }))}
+                  options={categories}
                   searchable
                 />
 
@@ -668,7 +706,7 @@ export default function Studios() {
             <div className="grid gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
               {filtered.slice(0, visibleCount).map((studio) => {
                 const name = safeText(studio.name) || "Студія";
-                const cat = safeText(studio.category);
+                const cat = getCategoryLabel(safeText(studio.category));
                 const cityLabel = safeText(studio.city);
                 const description = safeText(studio.description);
                 const coverUrl = safeText(studio.coverUrl);
@@ -682,7 +720,7 @@ export default function Studios() {
                 ]
                   .filter(Boolean)
                   .join(", ");
-                const fullAddress = [address, cityLabel]
+                const fullAddress = [cityLabel, address]
                   .filter(Boolean)
                   .join(", ");
 
@@ -765,41 +803,15 @@ export default function Studios() {
                             Premium
                           </div>
                         )}
-
-                        {cat && (
-                          <div className="inline-flex items-center rounded-full border border-white/15 bg-white/12 px-3 py-1.5 text-[11px] font-semibold text-white/95 backdrop-blur-md">
-                            {cat}
-                          </div>
-                        )}
                       </div>
 
                       {rating !== null && (
-                        <div
-                          className={cn(
-                            "absolute right-4 top-4 z-20 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-bold backdrop-blur-md",
-                            isTopRated
-                              ? "border border-amber-300/50 bg-gradient-to-r from-amber-100/95 via-yellow-100/95 to-amber-200/95 text-amber-900 shadow-[0_10px_26px_rgba(245,158,11,0.25)]"
-                              : "border border-white/20 bg-white/92 text-stone-800 shadow-[0_8px_22px_rgba(15,23,42,0.16)]",
-                          )}
-                        >
-                          <Star
-                            className={cn(
-                              "h-3.5 w-3.5",
-                              isTopRated
-                                ? "fill-amber-500 text-amber-500"
-                                : "fill-amber-400 text-amber-400",
-                            )}
-                          />
+                        <div className="absolute right-4 top-4 z-20 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/90 px-3 py-1.5 text-[12px] font-bold text-stone-800 shadow-sm backdrop-blur-md">
+                          <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
                           <span>{rating.toFixed(1)}</span>
+
                           {reviewsCount > 0 && (
-                            <span
-                              className={cn(
-                                "font-semibold",
-                                isTopRated
-                                  ? "text-amber-800/80"
-                                  : "text-stone-500",
-                              )}
-                            >
+                            <span className="font-semibold text-stone-500">
                               ({reviewsCount})
                             </span>
                           )}
@@ -832,133 +844,129 @@ export default function Studios() {
                             </h2>
 
                             <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-white/90">
-                              {cityLabel && (
+                              {fullAddress && (
                                 <span className="inline-flex items-center gap-1">
                                   <MapPin className="h-4 w-4 text-rose-300" />
-                                  {cityLabel}
+                                  {fullAddress}
                                 </span>
                               )}
 
-                              {priceLabel && (
+                              {/* {priceLabel && (
                                 <span className="rounded-full border border-white/15 bg-white/12 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-md">
                                   {priceLabel}
                                 </span>
-                              )}
+                              )} */}
                             </div>
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    <div className="relative flex flex-1 flex-col p-5">
-                      <div className="absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-stone-200 to-transparent" />
+<div className="flex flex-1 flex-col p-5">
+  <div className="absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-stone-200 to-transparent" />
 
-                      <div className="space-y-4">
-                        {description ? (
-                          <p className="line-clamp-2 text-sm leading-6 text-stone-600">
-                            {description}
-                          </p>
-                        ) : (
-                          <p className="text-sm leading-6 text-stone-400">
-                            Детальний опис студії скоро буде додано.
-                          </p>
-                        )}
+  <div className="space-y-4">
+    {description ? (
+      <p className="line-clamp-3 text-sm leading-6 text-stone-600">
+        {description}
+      </p>
+    ) : (
+      <p className="text-sm leading-6 text-stone-400">
+        Детальний опис студії скоро буде додано.
+      </p>
+    )}
 
-                        {fullAddress && (
-                          <div className="flex items-start gap-2.5 rounded-2xl border border-stone-200/80 bg-stone-50/80 px-3 py-3">
-                            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm">
-                              <MapPin className="h-4 w-4 text-rose-500" />
-                            </div>
+    {topServices.length > 0 && (
+      <div className="space-y-2">
+        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-stone-400">
+          Популярні послуги
+        </p>
 
-                            <div className="min-w-0">
-                              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-stone-400">
-                                Адреса
-                              </p>
-                              <p className="mt-1 line-clamp-2 text-sm font-medium leading-5 text-stone-700">
-                                {fullAddress}
-                              </p>
-                            </div>
-                          </div>
-                        )}
+        <div className="flex flex-wrap gap-2">
+          {topServices.map((service) => (
+            <span
+              key={service}
+              className="rounded-full border border-stone-200 bg-white px-3 py-1.5 text-xs font-medium text-stone-700 shadow-sm"
+            >
+              {service}
+            </span>
+          ))}
+        </div>
+      </div>
+    )}
+  </div>
 
-                        {topServices.length > 0 && (
-                          <div className="space-y-2">
-                            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-stone-400">
-                              Популярні послуги
-                            </p>
+  <div className="mt-auto pt-4">
+    {cat && (
+      <div className="flex items-start gap-2.5 rounded-2xl border border-stone-200/80 bg-stone-50/80 px-3 py-3">
+        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm">
+          <Sparkles className="h-4 w-4 text-amber-500" />
+        </div>
 
-                            <div className="flex flex-wrap gap-2">
-                              {topServices.map((service) => (
-                                <span
-                                  key={service}
-                                  className="rounded-full border border-stone-200 bg-white px-3 py-1.5 text-xs font-medium text-stone-700 shadow-sm"
-                                >
-                                  {service}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
+        <div className="min-w-0">
+          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-stone-400">
+            Категорія
+          </p>
+          <p className="mt-1 text-sm font-medium leading-5 text-stone-700">
+            {cat}
+          </p>
+        </div>
+      </div>
+    )}
+  </div>
 
-                      <div className="mt-auto pt-5">
-                        <div className="flex items-center gap-3">
-                          <div
-                            className={cn(
-                              "relative flex h-12 w-full items-center justify-center overflow-hidden rounded-[18px]",
-                              "px-4 text-sm font-semibold tracking-[-0.01em] transition-all duration-300",
-                              "active:scale-[0.985]",
-                              studio.premium
-                                ? "bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 text-white shadow-[0_12px_28px_rgba(245,158,11,0.24)]"
-                                : "border border-stone-200 bg-white text-stone-900 shadow-[0_8px_24px_rgba(15,23,42,0.06)] hover:-translate-y-0.5 hover:border-stone-300 hover:shadow-[0_14px_32px_rgba(15,23,42,0.10)]",
-                            )}
-                          >
-                            {!studio.premium && (
-                              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white to-transparent opacity-80" />
-                            )}
+  <div className="pt-5">
+    <div className="flex items-center gap-3">
+      <div
+        className={cn(
+          "relative flex h-12 w-full items-center justify-center overflow-hidden rounded-[18px]",
+          "px-4 text-sm font-semibold tracking-[-0.01em] transition-all duration-300",
+          "active:scale-[0.985]",
+          studio.premium
+            ? "bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 text-white shadow-[0_12px_28px_rgba(245,158,11,0.24)]"
+            : "border border-stone-200 bg-white text-stone-900 shadow-[0_8px_24px_rgba(15,23,42,0.06)] hover:-translate-y-0.5 hover:border-stone-300 hover:shadow-[0_14px_32px_rgba(15,23,42,0.10)]",
+        )}
+      >
+        {!studio.premium && (
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white to-transparent opacity-80" />
+        )}
 
-                            <span className="relative z-10 flex items-center gap-2.5">
-                              <span
-                                className={cn(
-                                  "flex h-6 w-6 items-center justify-center rounded-full",
-                                  studio.premium
-                                    ? "bg-white/15"
-                                    : "bg-emerald-50",
-                                )}
-                              >
-                                <span
-                                  className={cn(
-                                    "h-2 w-2 rounded-full",
-                                    studio.premium
-                                      ? "bg-white"
-                                      : "bg-emerald-500",
-                                  )}
-                                />
-                              </span>
+        <span className="relative z-10 flex items-center gap-2.5">
+          <span
+            className={cn(
+              "flex h-6 w-6 items-center justify-center rounded-full",
+              studio.premium ? "bg-white/15" : "bg-emerald-50",
+            )}
+          >
+            <span
+              className={cn(
+                "h-2 w-2 rounded-full",
+                studio.premium ? "bg-white" : "bg-emerald-500",
+              )}
+            />
+          </span>
 
-                              <span>Переглянути студію</span>
+          <span>Переглянути студію</span>
 
-                              <ArrowRight
-                                className={cn(
-                                  "h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5",
-                                  studio.premium
-                                    ? "text-white/90"
-                                    : "text-stone-500",
-                                )}
-                              />
-                            </span>
-                          </div>
+          <ArrowRight
+            className={cn(
+              "h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5",
+              studio.premium ? "text-white/90" : "text-stone-500",
+            )}
+          />
+        </span>
+      </div>
 
-                          <div
-                            className="relative z-20 flex items-center justify-center"
-                            onClick={(e) => e.stopPropagation()}
-                            onMouseDown={(e) => e.stopPropagation()}
-                          >
-                            <FavouriteButton studio={studio} />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+      <div
+        className="relative z-20 flex items-center justify-center"
+        onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        <FavouriteButton studio={studio} />
+      </div>
+    </div>
+  </div>
+</div>
                   </div>
                 );
               })}

@@ -1,6 +1,6 @@
 // StudioPublicPage.jsx
 import { useState, useEffect, useMemo, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { PenLine } from "lucide-react";
 import {
@@ -59,14 +59,11 @@ function parsePortfolio(value) {
 function heroIconButtonClass(active = false) {
   return cn(
     "group flex h-12 w-12 items-center justify-center rounded-2xl",
-    "border border-white/65 backdrop-blur-xl",
-    "shadow-[0_10px_30px_rgba(15,23,42,0.16)]",
     "transition-all duration-200 ease-out",
     "hover:-translate-y-0.5 hover:scale-[1.03]",
     "active:translate-y-[1px] active:scale-[0.97]",
-    active
-      ? "bg-white text-rose-500"
-      : "bg-white/78 text-stone-800 hover:bg-white/88",
+    "hover:bg-white/10",
+    active ? "text-rose-500" : "text-white",
   );
 }
 
@@ -125,7 +122,10 @@ function BookingModal({ open, title, onClose, children }) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center" data-testid="booking-modal">
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center"
+      data-testid="booking-modal"
+    >
       <motion.button
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -142,7 +142,7 @@ function BookingModal({ open, title, onClose, children }) {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.96, y: 20 }}
           transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-        className="flex max-h-[78vh] sm:max-h-[85vh] lg:max-h-[88vh] flex-col overflow-hidden rounded-3xl bg-white shadow-[0_40px_120px_-30px_rgba(0,0,0,0.2)]"
+          className="flex max-h-[78vh] sm:max-h-[85vh] lg:max-h-[88vh] flex-col overflow-hidden rounded-3xl bg-white shadow-[0_40px_120px_-30px_rgba(0,0,0,0.2)]"
           role="dialog"
           aria-modal="true"
         >
@@ -191,8 +191,9 @@ function ImageLightbox({ open, images = [], startIndex = 0, onClose }) {
     function onKey(e) {
       if (e.key === "Escape") onClose();
       if (e.key === "ArrowRight") setIdx((p) => (p + 1) % images.length);
-      if (e.key === "ArrowLeft")
+      if (e.key === "ArrowLeft") {
         setIdx((p) => (p - 1 + images.length) % images.length);
+      }
     }
 
     window.addEventListener("keydown", onKey);
@@ -202,6 +203,30 @@ function ImageLightbox({ open, images = [], startIndex = 0, onClose }) {
   if (!open || !images.length) return null;
 
   const hasMany = images.length > 1;
+
+  function goNext() {
+    setIdx((p) => (p + 1) % images.length);
+  }
+
+  function goPrev() {
+    setIdx((p) => (p - 1 + images.length) % images.length);
+  }
+
+  function handleLightboxDragEnd(_, info) {
+    if (!hasMany) return;
+
+    const offsetX = info.offset.x;
+    const velocityX = info.velocity.x;
+
+    if (offsetX < -60 || velocityX < -500) {
+      goNext();
+      return;
+    }
+
+    if (offsetX > 60 || velocityX > 500) {
+      goPrev();
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-[120] bg-black/95">
@@ -230,35 +255,37 @@ function ImageLightbox({ open, images = [], startIndex = 0, onClose }) {
         <>
           <button
             type="button"
-            onClick={() =>
-              setIdx((p) => (p - 1 + images.length) % images.length)
-            }
-            className="absolute left-4 top-1/2 z-[130] flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-stone-800 shadow-xl transition-transform duration-200 hover:scale-105 active:scale-95"
+            onClick={goPrev}
+            className="absolute left-4 top-1/2 z-[130] hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-stone-800 shadow-xl transition-transform duration-200 hover:scale-105 active:scale-95 sm:flex"
           >
             <ChevronLeft className="h-6 w-6" />
           </button>
 
           <button
             type="button"
-            onClick={() => setIdx((p) => (p + 1) % images.length)}
-            className="absolute right-4 top-1/2 z-[130] flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-stone-800 shadow-xl transition-transform duration-200 hover:scale-105 active:scale-95"
+            onClick={goNext}
+            className="absolute right-4 top-1/2 z-[130] hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-stone-800 shadow-xl transition-transform duration-200 hover:scale-105 active:scale-95 sm:flex"
           >
             <ChevronRight className="h-6 w-6" />
           </button>
         </>
       )}
 
-      <div className="relative z-[121] flex h-full w-full items-center justify-center px-12 py-20">
+      <div className="relative z-[121] flex h-full w-full items-center justify-center px-6 py-20 sm:px-12">
         <AnimatePresence mode="wait">
           <motion.img
             key={idx}
             initial={{ opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.97 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.12 }}
+            drag={hasMany ? "x" : false}
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.12}
+            onDragEnd={handleLightboxDragEnd}
             src={images[idx]}
             alt={`Фото ${idx + 1}`}
-            className="max-h-[80vh] max-w-full select-none rounded-2xl object-contain shadow-2xl"
+            className="max-h-[80vh] max-w-full select-none rounded-2xl object-contain shadow-2xl cursor-grab active:cursor-grabbing touch-pan-y"
             draggable="false"
           />
         </AnimatePresence>
@@ -530,9 +557,12 @@ function buildWeeklyScheduleRows(schedule) {
   }));
 }
 
+
 export default function StudioPublicPage() {
   const { slug } = useParams();
-
+  const location = useLocation();
+  const [bookingOpen, setBookingOpen] = useState(false);
+  const [preselectedMaster, setPreselectedMaster] = useState(null);
   const [studio, setStudio] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -554,6 +584,32 @@ export default function StudioPublicPage() {
   const navigate = useNavigate();
   const [isFavourite, setIsFavourite] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+const [heroDirection, setHeroDirection] = useState(0);
+  useEffect(() => {
+    const navState = location.state;
+
+    if (!navState?.openBooking) return;
+
+    setBookingOpen(true);
+
+    if (navState.preselectedService?.serviceId) {
+      setPreselectedService({
+        serviceId: navState.preselectedService.serviceId,
+      });
+    }
+
+    if (navState.preselectedMasterId) {
+      const foundMaster = Array.isArray(studio?.masters)
+        ? studio.masters.find(
+            (m) => String(m.id) === String(navState.preselectedMasterId),
+          )
+        : null;
+
+      setPreselectedMaster(foundMaster || null);
+    } else {
+      setPreselectedMaster(null);
+    }
+  }, [location.state, studio?.masters]);
 
   useEffect(() => {
     let alive = true;
@@ -590,23 +646,23 @@ export default function StudioPublicPage() {
                 date: String(item?.date || "").slice(0, 10),
               }))
             : [],
-masters: Array.isArray(s.masters)
-  ? s.masters.map((master) => ({
-      ...master,
-      schedule:
-        master?.schedule &&
-        typeof master.schedule === "object" &&
-        Object.keys(master.schedule).length > 0
-          ? master.schedule
-          : undefined,
-      scheduleExceptions: Array.isArray(master?.scheduleExceptions)
-        ? master.scheduleExceptions.map((item) => ({
-            ...item,
-            date: String(item?.date || "").slice(0, 10),
-          }))
-        : [],
-    }))
-  : [],
+          masters: Array.isArray(s.masters)
+            ? s.masters.map((master) => ({
+                ...master,
+                schedule:
+                  master?.schedule &&
+                  typeof master.schedule === "object" &&
+                  Object.keys(master.schedule).length > 0
+                    ? master.schedule
+                    : undefined,
+                scheduleExceptions: Array.isArray(master?.scheduleExceptions)
+                  ? master.scheduleExceptions.map((item) => ({
+                      ...item,
+                      date: String(item?.date || "").slice(0, 10),
+                    }))
+                  : [],
+              }))
+            : [],
           slotDuration:
             typeof s.slotDuration === "number" ? s.slotDuration : 15,
         };
@@ -788,24 +844,42 @@ masters: Array.isArray(s.masters)
     navigate(-1);
   }
 
-  async function handleShare() {
+  async function handleShare(e) {
+    e?.stopPropagation?.();
+
+    const shareUrl = window.location.href;
     const shareData = {
       title: name,
       text: `Переглянь студію ${name}`,
-      url: window.location.href,
+      url: shareUrl,
     };
 
     try {
-      if (navigator.share) {
+      if (navigator.share && window.isSecureContext) {
         await navigator.share(shareData);
         return;
       }
 
-      await navigator.clipboard.writeText(window.location.href);
-      setShareCopied(true);
-      setTimeout(() => setShareCopied(false), 1600);
-    } catch {
-      // ignore
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 1600);
+        return;
+      }
+
+      alert("На цьому пристрої системне меню 'Поділитися' недоступне.");
+    } catch (err) {
+      if (err?.name === "AbortError") return;
+
+      console.error("Share failed:", err);
+
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 1600);
+      } catch {
+        alert("Не вдалося відкрити меню 'Поділитися'.");
+      }
     }
   }
 
@@ -835,6 +909,32 @@ masters: Array.isArray(s.masters)
       </div>
     );
   }
+function paginateHero(direction) {
+  if (!heroImages.length) return;
+
+  setHeroDirection(direction);
+  setHeroIndex((prev) => {
+    if (direction > 0) return (prev + 1) % heroImages.length;
+    return (prev - 1 + heroImages.length) % heroImages.length;
+  });
+}
+
+  function handleHeroDragEnd(_, info) {
+    const offsetX = info.offset.x;
+    const velocityX = info.velocity.x;
+
+    const swipePower = Math.abs(offsetX) * Math.abs(velocityX);
+    const threshold = 6000;
+
+    if (offsetX < -50 || (velocityX < -500 && swipePower > threshold)) {
+      paginateHero(1);
+      return;
+    }
+
+    if (offsetX > 50 || (velocityX > 500 && swipePower > threshold)) {
+      paginateHero(-1);
+    }
+  }
 
   return (
     <div
@@ -844,7 +944,7 @@ masters: Array.isArray(s.masters)
       <div className="mx-auto w-full max-w-[1220px] px-0 sm:px-2 md:px-3 lg:px-6">
         <div className="mx-auto w-full max-w-[1120px] pb-0 text-stone-800 sm:pb-20 lg:pb-5">
           <section className="relative">
-            <div className="relative h-[280px] overflow-hidden rounded-b-[24px] sm:h-[360px] md:h-[400px] lg:h-[420px] sm:mx-[-8px] md:mx-[-12px] lg:mx-0">
+           <div className="relative h-[320px] sm:h-[420px] md:h-[480px] lg:h-[520px] overflow-hidden rounded-b-[24px] bg-black sm:mx-[-8px] md:mx-[-12px] lg:mx-0">
               {heroImages.length > 0 ? (
                 <>
                   <button
@@ -853,32 +953,40 @@ masters: Array.isArray(s.masters)
                     className="absolute inset-0 block h-full w-full cursor-zoom-in"
                     aria-label="Переглянути фото студії"
                   >
-                    <AnimatePresence mode="wait">
-                      <motion.img
-                        key={heroImages[heroIndex]}
-                        initial={{ opacity: 0, scale: 1.02 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 1.01 }}
-                        transition={{ duration: 0.35 }}
-                        src={heroImages[heroIndex]}
-                        alt={`${name} ${heroIndex + 1}`}
-                        className="absolute inset-0 h-full w-full object-cover"
-                      />
-                    </AnimatePresence>
+                    <div
+                      className="absolute inset-0"
+                      aria-label="Переглянути фото студії"
+                    >
+<AnimatePresence initial={false}>
+  <motion.img
+    key={heroImages[heroIndex]}
+    initial={{ x: heroDirection > 0 ? 40 : -40 }}
+    animate={{ x: 0 }}
+    exit={{ x: heroDirection > 0 ? -40 : 40 }}
+    transition={{
+      duration: 0.22,
+      ease: [0.22, 1, 0.36, 1],
+    }}
+    drag="x"
+    dragConstraints={{ left: 0, right: 0 }}
+    dragElastic={0.06}
+    onDragEnd={handleHeroDragEnd}
+    onClick={() => setHeroPreviewIndex(heroIndex)}
+    src={heroImages[heroIndex]}
+    alt={`${name} ${heroIndex + 1}`}
+    className="absolute inset-0 h-full w-full object-cover cursor-grab active:cursor-grabbing touch-pan-y"
+    style={{ backfaceVisibility: "hidden", willChange: "transform" }}
+  />
+</AnimatePresence>
+                    </div>
                   </button>
 
                   {heroImages.length > 1 && (
                     <>
                       <button
                         type="button"
-                        onClick={() =>
-                          setHeroIndex(
-                            (prev) =>
-                              (prev - 1 + heroImages.length) %
-                              heroImages.length,
-                          )
-                        }
-                        className="group absolute left-4 top-1/2 z-30 -translate-y-1/2 p-2"
+onClick={() => paginateHero(-1)}
+                        className="hidden sm:block group absolute left-4 top-1/2 z-30 -translate-y-1/2 p-2"
                       >
                         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 backdrop-blur-sm transition-all duration-200 group-hover:bg-white/20">
                           <ChevronLeft className="h-7 w-7 text-white drop-shadow-[0_4px_12px_rgba(0,0,0,0.6)] transition-transform duration-200 group-hover:-translate-x-1 group-hover:scale-110" />
@@ -887,10 +995,8 @@ masters: Array.isArray(s.masters)
 
                       <button
                         type="button"
-                        onClick={() =>
-                          setHeroIndex((prev) => (prev + 1) % heroImages.length)
-                        }
-                        className="group absolute right-4 top-1/2 z-30 -translate-y-1/2 p-2"
+onClick={() => paginateHero(1)}
+                        className="hidden sm:block group absolute right-4 top-1/2 z-30 -translate-y-1/2 p-2"
                       >
                         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 backdrop-blur-sm transition-all duration-200 group-hover:bg-white/20">
                           <ChevronRight className="h-7 w-7 text-white drop-shadow-[0_4px_12px_rgba(0,0,0,0.6)] transition-transform duration-200 group-hover:translate-x-1 group-hover:scale-110" />
@@ -902,7 +1008,11 @@ masters: Array.isArray(s.masters)
                           <button
                             key={img + idx}
                             type="button"
-                            onClick={() => setHeroIndex(idx)}
+                            onClick={() => {
+  if (idx === heroIndex) return;
+  setHeroDirection(idx > heroIndex ? 1 : -1);
+  setHeroIndex(idx);
+}}
                             aria-label={`Перейти до фото ${idx + 1}`}
                             className={cn(
                               "h-2.5 rounded-full transition-all duration-200",
@@ -929,7 +1039,7 @@ masters: Array.isArray(s.masters)
                   aria-label="Назад"
                   className={heroIconButtonClass()}
                 >
-                  <ChevronLeft className="h-5 w-5 transition-transform duration-200 group-hover:-translate-x-0.5" />
+                  <ChevronLeft className="h-8 w-8 text-white transition-transform duration-200 group-hover:-translate-x-0.5" />
                 </button>
 
                 <div className="flex items-center gap-2.5">
@@ -940,7 +1050,7 @@ masters: Array.isArray(s.masters)
                     title={shareCopied ? "Посилання скопійовано" : "Поділитися"}
                     className={heroIconButtonClass()}
                   >
-                    <Share2 className="h-[18px] w-[18px] transition-transform duration-200 group-hover:rotate-6" />
+                    <Share2 className="h-[25px] w-[25px] text-white transition-transform duration-200 group-hover:rotate-6" />
                   </button>
 
                   <button
@@ -951,10 +1061,10 @@ masters: Array.isArray(s.masters)
                   >
                     <Heart
                       className={cn(
-                        "h-[18px] w-[18px] transition-all duration-200",
+                        "h-[25px] w-[25px] transition-all duration-200",
                         isFavourite
                           ? "fill-current scale-105"
-                          : "group-hover:scale-110",
+                          : "text-white group-hover:scale-110",
                       )}
                     />
                   </button>
@@ -984,17 +1094,6 @@ masters: Array.isArray(s.masters)
 
                       <div className="flex flex-col">
                         <div className="flex flex-wrap items-center gap-2">
-                          {category && (
-                            <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700">
-                              {category}
-                            </span>
-                          )}
-
-                          {studio?.priceFrom != null && (
-                            <span className="rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-amber-700">
-                              від {studio.priceFrom} грн
-                            </span>
-                          )}
 
                           {studio?.premium && (
                             <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white">
@@ -1028,7 +1127,9 @@ masters: Array.isArray(s.masters)
                                 )}
                               </button>
                             )}
+                            
                           </div>
+                          
                         )}
 
                         <div className="mt-2 flex items-center gap-3 text-sm">
@@ -1080,9 +1181,9 @@ masters: Array.isArray(s.masters)
                 {!!description && (
                   <div className="px-2  sm:px-5 lg:px-6">
                     <div className="rounded-[26px] pb-4 px-2 sm:p-6">
-                      <p className="text-sm leading-7 text-stone-600">
-                        {description}
-                      </p>
+<p className="text-sm leading-5.5 text-stone-600">
+  {description}
+</p>
                     </div>
                   </div>
                 )}
@@ -1140,7 +1241,7 @@ masters: Array.isArray(s.masters)
                       exit={{ opacity: 0, y: 18 }}
                       transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
                     >
-                   <div className="rounded-[30px] px-0 py-4 pb-18 sm:p-6">
+                      <div className="rounded-[30px] px-0 py-4 pb-18 sm:p-6">
                         <div className="mb-5 flex items-end justify-between gap-4">
                           <div>
                             <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-amber-600">
@@ -1205,7 +1306,7 @@ masters: Array.isArray(s.masters)
                       exit={{ opacity: 0, y: 18 }}
                       transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
                     >
-                      <div className="rounded-[30px] p-4 sm:p-6">
+                     <div className="rounded-[30px] px-0 py-4 pb-18 sm:p-6">
                         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                           <div>
                             <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-amber-600">
@@ -1223,74 +1324,67 @@ masters: Array.isArray(s.masters)
 
                         <div className="grid gap-5 xl:grid-cols-[340px,1fr]">
                           <div className="space-y-5">
-                            <div className="overflow-hidden rounded-[30px] border border-stone-200 bg-white shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
-                              <div className="h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-70" />
+<div className="overflow-hidden rounded-[24px] sm:rounded-[30px] border border-stone-200 bg-white shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
+  <div className="h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-70" />
 
-                              <div className="p-5 sm:p-6">
-                                <div className="text-center">
-                                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 shadow-sm">
-                                    <Star className="h-6 w-6 fill-amber-400 text-amber-400" />
-                                  </div>
+  <div className="p-4 sm:p-6">
+    <div className="text-center">
+      <div className="mx-auto flex h-11 w-11 sm:h-14 sm:w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 shadow-sm">
+        <Star className="h-5 w-5 sm:h-6 sm:w-6 fill-amber-400 text-amber-400" />
+      </div>
 
-                                  <p className="mt-4 text-[54px] font-extrabold leading-none tracking-tight text-stone-900">
-                                    {reviewsSummary.rating.toFixed(1)}
-                                  </p>
+      <p className="mt-3 sm:mt-4 text-[38px] sm:text-[54px] font-extrabold leading-none tracking-tight text-stone-900">
+        {reviewsSummary.rating.toFixed(1)}
+      </p>
 
-                                  <div className="mt-3 flex items-center justify-center gap-1">
-                                    {Array.from({ length: 5 }).map((_, i) => (
-                                      <Star
-                                        key={i}
-                                        className={cn(
-                                          "h-5 w-5",
-                                          i < Math.round(reviewsSummary.rating)
-                                            ? "fill-amber-400 text-amber-400"
-                                            : "text-stone-200",
-                                        )}
-                                      />
-                                    ))}
-                                  </div>
+      <div className="mt-2 sm:mt-3 flex items-center justify-center gap-0.5 sm:gap-1">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Star
+            key={i}
+            className={cn(
+              "h-4 w-4 sm:h-5 sm:w-5",
+              i < Math.round(reviewsSummary.rating)
+                ? "fill-amber-400 text-amber-400"
+                : "text-stone-200",
+            )}
+          />
+        ))}
+      </div>
 
-                                  <p className="mt-3 text-sm text-stone-500">
-                                    На основі {reviewsSummary.count} відгуків
-                                  </p>
-                                </div>
+      <p className="mt-2 sm:mt-3 text-xs sm:text-sm text-stone-500">
+        На основі {reviewsSummary.count} відгуків
+      </p>
+    </div>
 
-                                <div className="mt-6 space-y-3">
-                                  {[5, 4, 3, 2, 1].map((num) => {
-                                    const val =
-                                      reviewsSummary.distribution?.[num] || 0;
-                                    const total = Math.max(
-                                      reviewsSummary.count || 1,
-                                      1,
-                                    );
-                                    const width = (val / total) * 100;
+    <div className="mt-4 sm:mt-6 space-y-2.5 sm:space-y-3">
+      {[5, 4, 3, 2, 1].map((num) => {
+        const val = reviewsSummary.distribution?.[num] || 0;
+        const total = Math.max(reviewsSummary.count || 1, 1);
+        const width = (val / total) * 100;
 
-                                    return (
-                                      <div
-                                        key={num}
-                                        className="flex items-center gap-3"
-                                      >
-                                        <div className="flex w-8 items-center gap-1 text-xs font-semibold text-stone-600">
-                                          <span>{num}</span>
-                                          <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                                        </div>
+        return (
+          <div key={num} className="flex items-center gap-2 sm:gap-3">
+            <div className="flex w-7 sm:w-8 items-center gap-1 text-[11px] sm:text-xs font-semibold text-stone-600">
+              <span>{num}</span>
+              <Star className="h-3 w-3 sm:h-3.5 sm:w-3.5 fill-amber-400 text-amber-400" />
+            </div>
 
-                                        <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-stone-100">
-                                          <div
-                                            className="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-400"
-                                            style={{ width: `${width}%` }}
-                                          />
-                                        </div>
+            <div className="h-2 sm:h-2.5 flex-1 overflow-hidden rounded-full bg-stone-100">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-400"
+                style={{ width: `${width}%` }}
+              />
+            </div>
 
-                                        <span className="w-10 text-right text-xs font-medium text-stone-500">
-                                          {val}
-                                        </span>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            </div>
+            <span className="w-8 sm:w-10 text-right text-[11px] sm:text-xs font-medium text-stone-500">
+              {val}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  </div>
+</div>
 
                             {displayedPortfolio.length > 0 && (
                               <div className="overflow-hidden rounded-[30px] border border-stone-200 bg-white shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
@@ -1469,8 +1563,8 @@ masters: Array.isArray(s.masters)
                         ease: [0.22, 1, 0.36, 1],
                       }}
                     >
-                      <div className="rounded-[30px] p-4 sm:p-6">
-                        <div className="mb-10">
+                   <div className="rounded-[30px] px-0 py-4 pb-18 sm:p-6">
+                        <div className="mb-2">
                           <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.25em] text-amber-600">
                             Наші роботи
                           </p>
@@ -1480,7 +1574,7 @@ masters: Array.isArray(s.masters)
                         </div>
 
                         {displayedPortfolio.length > 0 ? (
-                          <div className="columns-2 gap-3 sm:columns-3 sm:gap-4 lg:columns-4">
+                          <div className="rounded-[30px] p-4 sm:p-6 columns-2 gap-3 sm:columns-3 sm:gap-4 lg:columns-4">
                             {displayedPortfolio.map((url, idx) => (
                               <motion.button
                                 key={url + idx}
@@ -1546,7 +1640,7 @@ masters: Array.isArray(s.masters)
                       exit={{ opacity: 0, y: 18 }}
                       transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
                     >
-                      <div className="rounded-[30px] p-4 sm:p-6">
+                    <div className="rounded-[30px] px-0 py-4 pb-18 sm:p-6">
                         <div className="mb-8">
                           <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-amber-600">
                             Контакти та інформація
@@ -1622,29 +1716,6 @@ masters: Array.isArray(s.masters)
                               </div>
                             </div>
 
-                            {!!description && (
-                              <div className="rounded-[30px] border border-stone-200 bg-white p-5 shadow-[0_10px_35px_rgba(0,0,0,0.04)] sm:p-6">
-                                <div className="flex items-center gap-3">
-                                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50 text-amber-700">
-                                    <Sparkles className="h-5 w-5" />
-                                  </div>
-
-                                  <div>
-                                    <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-600">
-                                      Про студію
-                                    </p>
-                                    <h3 className="mt-1 text-lg font-bold text-stone-800">
-                                      Атмосфера та сервіс
-                                    </h3>
-                                  </div>
-                                </div>
-
-                                <p className="mt-5 text-sm leading-7 text-stone-600">
-                                  {description}
-                                </p>
-                              </div>
-                            )}
-
                             <div className="rounded-[30px] border border-stone-200 bg-white p-5 shadow-[0_10px_35px_rgba(0,0,0,0.04)] sm:p-6 lg:hidden">
                               <div className="flex items-center gap-3">
                                 <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
@@ -1715,221 +1786,216 @@ masters: Array.isArray(s.masters)
                               </div>
                             </div>
 
-                            {/* МОБІЛКА / ПЛАНШЕТ — як було */}
-                            <div className="grid gap-3 border-t border-stone-100 bg-white px-4 py-4 sm:grid-cols-2 sm:px-6 lg:hidden">
-                              <div className="relative overflow-hidden rounded-[24px] border border-amber-200/60 bg-gradient-to-br from-white via-amber-50/40 to-stone-50 px-4 py-4 shadow-[0_10px_30px_rgba(120,90,60,0.08)]">
-                                <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-amber-200/25 blur-2xl" />
-                                <div className="absolute -bottom-6 left-0 h-16 w-16 rounded-full bg-orange-200/20 blur-2xl" />
+{/* МОБІЛКА / ПЛАНШЕТ */}
+<div className="grid w-full gap-3 border-t border-stone-100 bg-white px-0 py-0 sm:grid-cols-2 sm:px-6 lg:hidden">
+  <div className="relative w-full overflow-hidden rounded-[24px] border border-amber-200/60 bg-gradient-to-br from-white via-amber-50/40 to-stone-50 px-4 py-4 shadow-[0_10px_30px_rgba(120,90,60,0.08)]">
+    <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-amber-200/25 blur-2xl" />
+    <div className="absolute -bottom-6 left-0 h-16 w-16 rounded-full bg-orange-200/20 blur-2xl" />
 
-                                <div className="relative z-10 sm:hidden">
-                                  <div className="flex items-center gap-3">
-                                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 shadow-sm">
-                                      <Star className="h-5 w-5 fill-amber-500 text-amber-500" />
-                                    </div>
+    <div className="relative z-10 sm:hidden">
+      <div className="flex items-center gap-3">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 shadow-sm">
+          <Star className="h-5 w-5 fill-amber-500 text-amber-500" />
+        </div>
 
-                                    <div className="min-w-0 flex-1">
-                                      <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-700">
-                                        Рейтинг
-                                      </p>
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-700">
+            Рейтинг
+          </p>
 
-                                      <div className="mt-1 flex items-baseline gap-2">
-                                        <span className="text-[30px] font-extrabold leading-none text-stone-900">
-                                          {reviewsSummary.rating.toFixed(1)}
-                                        </span>
-                                        <span className="text-sm font-medium text-stone-500">
-                                          ({reviewsSummary.count})
-                                        </span>
-                                      </div>
+          <div className="mt-1 flex items-baseline gap-2">
+            <span className="text-[30px] font-extrabold leading-none text-stone-900">
+              {reviewsSummary.rating.toFixed(1)}
+            </span>
+            <span className="text-sm font-medium text-stone-500">
+              ({reviewsSummary.count})
+            </span>
+          </div>
 
-                                      <p className="mt-1 text-xs text-stone-500">
-                                        Висока оцінка клієнтів
-                                      </p>
-                                    </div>
-                                  </div>
-                                </div>
+          <p className="mt-1 text-xs text-stone-500">
+            Висока оцінка клієнтів
+          </p>
+        </div>
+      </div>
+    </div>
 
-                                <div className="relative z-10 hidden text-center sm:block">
-                                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 shadow-sm">
-                                    <Star className="h-5 w-5 fill-amber-500 text-amber-500" />
-                                  </div>
+    <div className="relative z-10 hidden text-center sm:block">
+      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 shadow-sm">
+        <Star className="h-5 w-5 fill-amber-500 text-amber-500" />
+      </div>
 
-                                  <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.22em] text-amber-700">
-                                    Рейтинг
-                                  </p>
+      <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.22em] text-amber-700">
+        Рейтинг
+      </p>
 
-                                  <div className="mt-2 flex items-baseline justify-center gap-2">
-                                    <span className="text-[34px] font-extrabold leading-none text-stone-900">
-                                      {reviewsSummary.rating.toFixed(1)}
-                                    </span>
-                                    <span className="text-base font-medium text-stone-500">
-                                      ({reviewsSummary.count})
-                                    </span>
-                                  </div>
+      <div className="mt-2 flex items-baseline justify-center gap-2">
+        <span className="text-[34px] font-extrabold leading-none text-stone-900">
+          {reviewsSummary.rating.toFixed(1)}
+        </span>
+        <span className="text-base font-medium text-stone-500">
+          ({reviewsSummary.count})
+        </span>
+      </div>
 
-                                  <p className="mt-2 text-sm text-stone-500">
-                                    Висока оцінка клієнтів
-                                  </p>
-                                </div>
-                              </div>
+      <p className="mt-2 text-sm text-stone-500">
+        Висока оцінка клієнтів
+      </p>
+    </div>
+  </div>
 
-                              <div className="relative overflow-hidden rounded-[24px] border border-emerald-200/60 bg-gradient-to-br from-white via-emerald-50/30 to-stone-50 px-4 py-4 shadow-[0_10px_30px_rgba(120,90,60,0.08)]">
-                                <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-emerald-200/25 blur-2xl" />
-                                <div className="absolute -bottom-6 left-0 h-16 w-16 rounded-full bg-emerald-100/30 blur-2xl" />
+  <div className="relative w-full overflow-hidden rounded-[24px] border border-emerald-200/60 bg-gradient-to-br from-white via-emerald-50/30 to-stone-50 px-4 py-4 shadow-[0_10px_30px_rgba(120,90,60,0.08)]">
+    <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-emerald-200/25 blur-2xl" />
+    <div className="absolute -bottom-6 left-0 h-16 w-16 rounded-full bg-emerald-100/30 blur-2xl" />
 
-                                <div className="relative z-10 sm:hidden">
-                                  <div className="flex items-center gap-3">
-                                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 shadow-sm">
-                                      <Phone className="h-5 w-5 text-emerald-600" />
-                                    </div>
+    <div className="relative z-10 sm:hidden">
+      <div className="flex flex-col gap-3">
+        <div className="flex items-start gap-3">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 shadow-sm">
+            <Phone className="h-5 w-5 text-emerald-600" />
+          </div>
 
-                                    <div className="min-w-0 flex-1">
-                                      <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-emerald-700">
-                                        Телефон
-                                      </p>
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-emerald-700">
+              Телефон
+            </p>
 
-                                      {studioPhone ? (
-                                        <>
-                                          <div className="mt-1 break-all text-base font-extrabold leading-tight text-stone-900">
-                                            {studioPhone}
-                                          </div>
-                                          <p className="mt-1 text-xs text-stone-500">
-                                            Натисніть, щоб подзвонити
-                                          </p>
-                                        </>
-                                      ) : (
-                                        <p className="mt-1 text-sm text-stone-400">
-                                          Не вказано
-                                        </p>
-                                      )}
-                                    </div>
+            {studioPhone ? (
+              <>
+                <div className="mt-1 break-all text-[20px] font-extrabold leading-tight text-stone-900">
+                  {studioPhone}
+                </div>
+              </>
+            ) : (
+              <p className="mt-1 text-sm text-stone-400">Не вказано</p>
+            )}
+          </div>
+        </div>
 
-                                    {studioPhone && (
-                                      <a
-                                        href={`tel:${studioPhone}`}
-                                        className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl border border-emerald-200 bg-white px-3 text-xs font-bold text-emerald-700 transition-all duration-150 active:scale-95 active:bg-emerald-50 active:shadow-inner"
-                                      >
-                                        Зателефонувати
-                                      </a>
-                                    )}
-                                  </div>
-                                </div>
+        {studioPhone && (
+          <a
+            href={`tel:${studioPhone}`}
+            className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-emerald-200 bg-white px-4 text-sm font-bold text-emerald-700 transition-all duration-150 active:scale-95 active:bg-emerald-50 active:shadow-inner"
+          >
+            Зателефонувати
+          </a>
+        )}
+      </div>
+    </div>
 
-                                <div className="relative z-10 hidden text-center sm:block">
-                                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 shadow-sm">
-                                    <Phone className="h-5 w-5 text-emerald-600" />
-                                  </div>
+    <div className="relative z-10 hidden text-center sm:block">
+      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 shadow-sm">
+        <Phone className="h-5 w-5 text-emerald-600" />
+      </div>
 
-                                  <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.22em] text-emerald-700">
-                                    Телефон
-                                  </p>
+      <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.22em] text-emerald-700">
+        Телефон
+      </p>
 
-                                  {studioPhone ? (
-                                    <>
-                                      <div className="mt-2 break-all text-base font-extrabold text-stone-900">
-                                        {studioPhone}
-                                      </div>
+      {studioPhone ? (
+        <>
+          <div className="mt-2 break-all text-base font-extrabold text-stone-900">
+            {studioPhone}
+          </div>
 
-                                      <a
-                                        href={`tel:${studioPhone}`}
-                                        className="mt-3 inline-flex h-9 items-center justify-center rounded-xl border border-emerald-200 bg-white px-4 text-xs font-bold text-emerald-700 transition-all duration-150 active:translate-y-[1px] active:scale-95 active:bg-emerald-50 active:shadow-inner"
-                                      >
-                                        Зателефонувати
-                                      </a>
-                                    </>
-                                  ) : (
-                                    <p className="mt-2 text-sm text-stone-400">
-                                      Не вказано
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
+          <a
+            href={`tel:${studioPhone}`}
+            className="mt-3 inline-flex h-9 items-center justify-center rounded-xl border border-emerald-200 bg-white px-4 text-xs font-bold text-emerald-700 transition-all duration-150 active:translate-y-[1px] active:scale-95 active:bg-emerald-50 active:shadow-inner"
+          >
+            Зателефонувати
+          </a>
+        </>
+      ) : (
+        <p className="mt-2 text-sm text-stone-400">Не вказано</p>
+      )}
+    </div>
+  </div>
 
-                              <div className="relative overflow-hidden rounded-[24px] border border-indigo-200/60 bg-gradient-to-br from-white via-indigo-50/30 to-stone-50 px-4 py-4 shadow-[0_10px_30px_rgba(120,90,60,0.08)]">
-                                <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-indigo-200/20 blur-2xl" />
-                                <div className="absolute -bottom-6 left-0 h-16 w-16 rounded-full bg-indigo-100/30 blur-2xl" />
+  <div className="relative w-full overflow-hidden rounded-[24px] border border-indigo-200/60 bg-gradient-to-br from-white via-indigo-50/30 to-stone-50 px-4 py-4 shadow-[0_10px_30px_rgba(120,90,60,0.08)]">
+    <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-indigo-200/20 blur-2xl" />
+    <div className="absolute -bottom-6 left-0 h-16 w-16 rounded-full bg-indigo-100/30 blur-2xl" />
 
-                                <div className="relative z-10 sm:hidden">
-                                  <div className="flex items-center gap-3">
-                                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-indigo-100 shadow-sm">
-                                      <Sparkles className="h-5 w-5 text-indigo-600" />
-                                    </div>
+    <div className="relative z-10 sm:hidden">
+      <div className="flex items-center gap-3">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-indigo-100 shadow-sm">
+          <Sparkles className="h-5 w-5 text-indigo-600" />
+        </div>
 
-                                    <div className="min-w-0 flex-1">
-                                      <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-indigo-700">
-                                        Формат
-                                      </p>
-                                      <div className="mt-1 text-base font-extrabold leading-tight text-stone-900">
-                                        Онлайн запис
-                                      </div>
-                                      <p className="mt-1 text-xs text-stone-500">
-                                        Швидко та без дзвінків
-                                      </p>
-                                    </div>
-                                  </div>
-                                </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-indigo-700">
+            Формат
+          </p>
+          <div className="mt-1 text-base font-extrabold leading-tight text-stone-900">
+            Онлайн запис
+          </div>
+          <p className="mt-1 text-xs text-stone-500">
+            Швидко та без дзвінків
+          </p>
+        </div>
+      </div>
+    </div>
 
-                                <div className="relative z-10 hidden text-center sm:block">
-                                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-100 shadow-sm">
-                                    <Sparkles className="h-5 w-5 text-indigo-600" />
-                                  </div>
+    <div className="relative z-10 hidden text-center sm:block">
+      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-100 shadow-sm">
+        <Sparkles className="h-5 w-5 text-indigo-600" />
+      </div>
 
-                                  <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.22em] text-indigo-700">
-                                    Формат
-                                  </p>
+      <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.22em] text-indigo-700">
+        Формат
+      </p>
 
-                                  <div className="mt-2 text-base font-extrabold text-stone-900">
-                                    Онлайн запис
-                                  </div>
+      <div className="mt-2 text-base font-extrabold text-stone-900">
+        Онлайн запис
+      </div>
 
-                                  <p className="mt-1 text-xs text-stone-500">
-                                    Швидко та без дзвінків
-                                  </p>
-                                </div>
-                              </div>
+      <p className="mt-1 text-xs text-stone-500">
+        Швидко та без дзвінків
+      </p>
+    </div>
+  </div>
 
-                              <div className="relative overflow-hidden rounded-[24px] border border-amber-200/60 bg-gradient-to-br from-white via-amber-50/40 to-stone-50 px-4 py-4 shadow-[0_10px_30px_rgba(120,90,60,0.08)]">
-                                <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-amber-200/25 blur-2xl" />
-                                <div className="absolute -bottom-6 left-0 h-16 w-16 rounded-full bg-orange-200/20 blur-2xl" />
+  <div className="relative w-full overflow-hidden rounded-[24px] border border-amber-200/60 bg-gradient-to-br from-white via-amber-50/40 to-stone-50 px-4 py-4 shadow-[0_10px_30px_rgba(120,90,60,0.08)]">
+    <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-amber-200/25 blur-2xl" />
+    <div className="absolute -bottom-6 left-0 h-16 w-16 rounded-full bg-orange-200/20 blur-2xl" />
 
-                                <div className="relative z-10 sm:hidden">
-                                  <div className="flex items-center gap-3">
-                                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 shadow-sm">
-                                      <Banknote className="h-5 w-5 text-amber-700" />
-                                    </div>
+    <div className="relative z-10 sm:hidden">
+      <div className="flex items-center gap-3">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 shadow-sm">
+          <Banknote className="h-5 w-5 text-amber-700" />
+        </div>
 
-                                    <div className="min-w-0 flex-1">
-                                      <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-700">
-                                        Оплата
-                                      </p>
-                                      <div className="mt-1 text-base font-extrabold leading-tight text-stone-900">
-                                        Без передоплати
-                                      </div>
-                                      <p className="mt-1 text-xs text-stone-500">
-                                        Оплата після візиту
-                                      </p>
-                                    </div>
-                                  </div>
-                                </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-700">
+            Оплата
+          </p>
+          <div className="mt-1 text-base font-extrabold leading-tight text-stone-900">
+            Без передоплати
+          </div>
+          <p className="mt-1 text-xs text-stone-500">
+            Оплата після візиту
+          </p>
+        </div>
+      </div>
+    </div>
 
-                                <div className="relative z-10 hidden text-center sm:block">
-                                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 shadow-sm">
-                                    <Banknote className="h-5 w-5 text-amber-700" />
-                                  </div>
+    <div className="relative z-10 hidden text-center sm:block">
+      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 shadow-sm">
+        <Banknote className="h-5 w-5 text-amber-700" />
+      </div>
 
-                                  <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.22em] text-amber-700">
-                                    Оплата
-                                  </p>
+      <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.22em] text-amber-700">
+        Оплата
+      </p>
 
-                                  <div className="mt-2 text-base font-extrabold text-stone-900">
-                                    Без передоплати
-                                  </div>
+      <div className="mt-2 text-base font-extrabold text-stone-900">
+        Без передоплати
+      </div>
 
-                                  <p className="mt-1 text-xs text-stone-500">
-                                    Оплата після візиту
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
+      <p className="mt-1 text-xs text-stone-500">
+        Оплата після візиту
+      </p>
+    </div>
+  </div>
+</div>
 
                             {/* ДЕСКТОП — окремий великий графік */}
                             <div className="hidden rounded-[30px] border border-stone-200 bg-white p-5 shadow-[0_10px_35px_rgba(0,0,0,0.04)] sm:p-6 lg:block">
@@ -2004,7 +2070,7 @@ masters: Array.isArray(s.masters)
                           </div>
 
                           {/* ПРАВА КОЛОНКА */}
-                          <div className="space-y-5 pb-15 sm:pb-0 lg:pb-0">
+                          <div className="space-y-2 pb-0 sm:pb-0 lg:pb-0">
                             {/* ДЕСКТОП — 4 карточки 2x2 */}
                             <div className="hidden lg:grid lg:grid-cols-2 lg:gap-3">
                               <div className="relative overflow-hidden rounded-[24px] border border-amber-200/60 bg-gradient-to-br from-white via-amber-50/40 to-stone-50 px-4 py-4 text-center shadow-[0_10px_30px_rgba(120,90,60,0.08)]">
@@ -2128,34 +2194,19 @@ masters: Array.isArray(s.masters)
                                 послугу онлайн за кілька кліків.
                               </p>
 
-<div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
-  {studioPhone && (
-    <a
-      href={`tel:${studioPhone}`}
-      className="group flex h-12 w-full items-center justify-center gap-2.5 rounded-2xl border border-stone-200/80 bg-gradient-to-b from-white to-stone-50 text-sm font-semibold text-stone-800 shadow-[0_8px_24px_rgba(15,23,42,0.05)] transition-all duration-200 active:scale-[0.98] sm:hover:-translate-y-0.5 sm:hover:border-amber-200 sm:hover:shadow-[0_12px_30px_rgba(15,23,42,0.08)]"
-    >
-      <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 text-amber-600 transition-colors duration-200 sm:group-hover:bg-amber-100">
-        <Phone className="h-4 w-4" />
-      </span>
-      <span>Зателефонувати</span>
-    </a>
-  )}
-
-  <button
-    type="button"
-    onClick={() => {
-      setPreselectedService(null);
-      setSelectedMaster(null);
-      setOpenBooking(true);
-    }}
-    className="group flex h-12 w-full items-center justify-center gap-2.5 rounded-2xl border border-stone-200/80 bg-gradient-to-b from-white to-stone-50 text-sm font-semibold text-stone-800 shadow-[0_8px_24px_rgba(15,23,42,0.05)] transition-all duration-200 active:scale-[0.98] sm:hover:-translate-y-0.5 sm:hover:border-indigo-200 sm:hover:shadow-[0_12px_30px_rgba(15,23,42,0.08)]"
-  >
-    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 transition-colors duration-200 sm:group-hover:bg-indigo-100">
-      <Sparkles className="h-4 w-4" />
-    </span>
-    <span>Забронювати онлайн</span>
-  </button>
-</div>
+                              <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                {studioPhone && (
+                                  <a
+                                    href={`tel:${studioPhone}`}
+                                    className="group flex h-12 w-full items-center justify-center gap-2.5 rounded-2xl border border-stone-200/80 bg-gradient-to-b from-white to-stone-50 text-sm font-semibold text-stone-800 shadow-[0_8px_24px_rgba(15,23,42,0.05)] transition-all duration-200 active:scale-[0.98] sm:hover:-translate-y-0.5 sm:hover:border-amber-200 sm:hover:shadow-[0_12px_30px_rgba(15,23,42,0.08)]"
+                                  >
+                                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 text-amber-600 transition-colors duration-200 sm:group-hover:bg-amber-100">
+                                      <Phone className="h-4 w-4" />
+                                    </span>
+                                    <span>Зателефонувати</span>
+                                  </a>
+                                )}
+                              </div>
                             </div>
 
                             {teamMembers.length > 0 && (
@@ -2258,14 +2309,14 @@ masters: Array.isArray(s.masters)
                     setOpenBooking(false);
                     setPreselectedService(null);
                   }}
-onSuccess={(data) => {
-  setSuccessData({
-    ...data,
-    address: fullAddress,
-    studioName: name,
-  });
-  setOpenBooking(false);
-}}
+                  onSuccess={(data) => {
+                    setSuccessData({
+                      ...data,
+                      address: fullAddress,
+                      studioName: name,
+                    });
+                    setOpenBooking(false);
+                  }}
                 />
               </BookingModal>
             )}

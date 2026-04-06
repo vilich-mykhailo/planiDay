@@ -37,8 +37,22 @@ model ClientAccount {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
+  favouriteStudios FavouriteStudio[]
   bookings Booking[]
+}
+
+model FavouriteStudio {
+  id        String   @id @default(cuid())
+  clientId  String
+  studioId  String
+  createdAt DateTime @default(now())
+
+  client ClientAccount @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  studio Studio        @relation(fields: [studioId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, studioId])
+  @@index([clientId])
+  @@index([studioId])
 }
 
 enum Weekday {
@@ -74,7 +88,7 @@ model Studio {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
+  favouritedBy FavouriteStudio[]
   bookings Booking[]
 
   slotDuration       Int                       @default(15)
@@ -119,6 +133,9 @@ model Booking {
   id       String @id @default(cuid())
   studioId String
   clientId String
+  canceledBy String?
+
+  ownerHiddenAt DateTime?
 
   serviceId String?
   masterId  String?

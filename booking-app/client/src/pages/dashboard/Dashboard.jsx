@@ -163,13 +163,35 @@ export default function Dashboard() {
                 )}
               </NavLink>
 
+              <NavLink to="/dashboard/bookings" className={linkClass}>
+                {({ isActive }) => (
+                  <>
+                    <SidebarLinkIcon isActive={isActive}>
+                      <CalendarDays className="h-4.5 w-4.5" />
+                    </SidebarLinkIcon>
+                    <span>Записи</span>
+                  </>
+                )}
+              </NavLink>
+
               <NavLink to="/dashboard/studio" className={linkClass}>
                 {({ isActive }) => (
                   <>
                     <SidebarLinkIcon isActive={isActive}>
                       <Building2 className="h-4.5 w-4.5" />
                     </SidebarLinkIcon>
-                    <span>Студія</span>
+                    <span>Профіль студії</span>
+                  </>
+                )}
+              </NavLink>
+
+              <NavLink to="/dashboard/masters" className={linkClass}>
+                {({ isActive }) => (
+                  <>
+                    <SidebarLinkIcon isActive={isActive}>
+                      <Users className="h-4.5 w-4.5" />
+                    </SidebarLinkIcon>
+                    <span>Майстри</span>
                   </>
                 )}
               </NavLink>
@@ -192,28 +214,6 @@ export default function Dashboard() {
                       <Clock3 className="h-4.5 w-4.5" />
                     </SidebarLinkIcon>
                     <span>Графік роботи</span>
-                  </>
-                )}
-              </NavLink>
-
-              <NavLink to="/dashboard/bookings" className={linkClass}>
-                {({ isActive }) => (
-                  <>
-                    <SidebarLinkIcon isActive={isActive}>
-                      <CalendarDays className="h-4.5 w-4.5" />
-                    </SidebarLinkIcon>
-                    <span>Записи</span>
-                  </>
-                )}
-              </NavLink>
-
-              <NavLink to="/dashboard/masters" className={linkClass}>
-                {({ isActive }) => (
-                  <>
-                    <SidebarLinkIcon isActive={isActive}>
-                      <Users className="h-4.5 w-4.5" />
-                    </SidebarLinkIcon>
-                    <span>Майстри</span>
                   </>
                 )}
               </NavLink>

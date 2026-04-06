@@ -1,3 +1,4 @@
+// favourites.context.js
 import { createContext, useContext } from "react";
 
 export const FavouritesContext = createContext(null);
