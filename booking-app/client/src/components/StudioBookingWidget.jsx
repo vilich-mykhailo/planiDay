@@ -2,7 +2,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Clock, Check, ChevronRight, Sparkles } from "lucide-react";
+import { Clock, Check, ChevronRight, UserRound, Sparkles, Users } from "lucide-react";
 import Calendar from "./Calendar";
 import BookingCustomerForm from "./BookingCustomerForm";
 function cn(...classes) {
@@ -806,8 +806,14 @@ if (onSuccess) {
   onSuccess({
     studioName: studio.name,
     serviceName: service?.name ?? "",
+    masterName:
+      masterPickMode === MASTER_PICK_MODE.ANY
+        ? "Буде призначено автоматично"
+        : selectedMaster?.name || "—",
     date: selectedDateStr,
     time: selectedTime,
+    price: service?.price != null ? `${service.price} грн` : "—",
+    duration: service?.duration ? `${service.duration} хв` : `${slotDuration} хв`,
     phone: form.phone,
   });
 }
@@ -827,7 +833,9 @@ onCancel?.();
     isDayEnabled;
 
   const timeRowRef = useRef(null);
-
+const mastersSectionRef = useRef(null);
+const calendarSectionRef = useRef(null);
+const timeSectionRef = useRef(null);
   const dateDisplay = selectedDate
     ? selectedDate.toLocaleDateString("uk-UA", {
         weekday: "short",
@@ -837,6 +845,18 @@ onCancel?.();
     : "";
 
   const isSinglePreselected = Boolean(preselectedService?.serviceId);
+
+  function scrollToSection(ref, delay = 180) {
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      ref.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, delay);
+  });
+}
+
 
   return (
     <div className="flex h-full flex-col" data-testid="booking-widget">
@@ -857,72 +877,79 @@ onCancel?.();
             </div>
           ) : (
             <div className="space-y-2.5">
-              {visibleServices.map((service) => {
-                const active = String(service.id) === String(selectedServiceId);
+{visibleServices.map((service) => {
+  const active = String(service.id) === String(selectedServiceId);
 
-                return (
-                  <motion.button
-                    key={service.id}
-                    type="button"
-                    layout
-                    onClick={() => {
-                      if (isSinglePreselected) return;
-                      setSelectedServiceId(service.id);
-                      setMasterPickMode(MASTER_PICK_MODE.ANY);
-                      setSelectedMasterId(ANY_MASTER_ID);
-                      setSelectedDate(null);
-                      setSelectedTime(null);
-                    }}
-                    data-testid={`booking-service-${service.id}`}
-                    className={cn(
-                      "w-full rounded-2xl border p-4 text-left transition-all duration-200",
-                      active
-                        ? "border-emerald-600 bg-gradient-to-r from-emerald-600 to-emerald-700 shadow-lg shadow-emerald-600/10"
-                        : "border-stone-200 bg-white hover:border-amber-200 hover:bg-stone-50",
-                      isSinglePreselected ? "cursor-default" : "",
-                    )}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="min-w-0 flex-1">
-                        <p
-                          className={cn(
-                            "text-sm font-semibold",
-                            active ? "text-white" : "text-stone-800",
-                          )}
-                        >
-                          {service.name}
-                        </p>
+  return (
+    <button
+      key={service.id}
+      type="button"
+onClick={() => {
+  if (isSinglePreselected) return;
+  setSelectedServiceId(service.id);
+  setMasterPickMode(MASTER_PICK_MODE.ANY);
+  setSelectedMasterId(ANY_MASTER_ID);
+  setSelectedDate(null);
+  setSelectedTime(null);
 
-                        <div
-                          className={cn(
-                            "mt-1.5 flex items-center gap-3 text-xs",
-                            active ? "text-white/80" : "text-stone-500",
-                          )}
-                        >
-                          <span className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            {service.duration || slotDuration} хв
-                          </span>
-                          <span className="font-semibold">
-                            {service.price ?? 0} грн
-                          </span>
-                        </div>
-                      </div>
+  scrollToSection(mastersSectionRef);
+}}
+      data-testid={`booking-service-${service.id}`}
+      className={cn(
+        "w-full rounded-2xl border p-4 text-left transition-[border-color,box-shadow,background-color,transform] duration-150",
+        active
+          ? "border-emerald-500 bg-emerald-50 ring-2 ring-emerald-500/15 shadow-[0_8px_24px_rgba(16,185,129,0.10)]"
+          : "border-stone-200 bg-white hover:border-amber-200 hover:bg-stone-50",
+        !isSinglePreselected && "active:scale-[0.995]",
+        isSinglePreselected ? "cursor-default" : "",
+      )}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p
+            className={cn(
+              "text-sm font-semibold transition-colors duration-150",
+              active ? "text-emerald-800" : "text-stone-800",
+            )}
+          >
+            {service.name}
+          </p>
 
-                      {active && (
-                        <div className="ml-3 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-white/20">
-                          <Check className="h-3.5 w-3.5 text-white" />
-                        </div>
-                      )}
-                    </div>
-                  </motion.button>
-                );
-              })}
+          <div
+            className={cn(
+              "mt-1.5 flex items-center gap-3 text-xs transition-colors duration-150",
+              active ? "text-emerald-700" : "text-stone-500",
+            )}
+          >
+            <span className="flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              {service.duration || slotDuration} хв
+            </span>
+
+            <span className="font-semibold">
+              {service.price ?? 0} грн
+            </span>
+          </div>
+        </div>
+
+        <div
+          className={cn(
+            "ml-3 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border transition-all duration-150",
+            active
+              ? "border-emerald-500 bg-emerald-500 text-white"
+              : "border-stone-300 bg-white text-transparent",
+          )}
+        >
+          <Check className="h-3.5 w-3.5" />
+        </div>
+      </div>
+    </button>
+  );
+})}
             </div>
           )}
         </section>
-
-        <section data-testid="booking-masters-section">
+<section ref={mastersSectionRef} data-testid="booking-masters-section">
           <div className="mb-4">
             <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.25em] text-amber-600">
               Крок 2
@@ -933,126 +960,144 @@ onCancel?.();
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <button
-              type="button"
-              onClick={() => {
-                setMasterPickMode(MASTER_PICK_MODE.ANY);
-                setSelectedMasterId(ANY_MASTER_ID);
-                setSelectedDate(null);
-                setSelectedTime(null);
-              }}
-              className={cn(
-                "flex min-h-[88px] items-center gap-3 rounded-2xl border p-4 text-left transition-all duration-200",
-                masterPickMode === MASTER_PICK_MODE.ANY
-                  ? "border-emerald-600 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-lg shadow-emerald-600/10"
-                  : "border-stone-200 bg-white hover:border-amber-200 hover:bg-stone-50",
-              )}
-            >
-              <div
-                className={cn(
-                  "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border text-sm font-bold",
-                  masterPickMode === MASTER_PICK_MODE.ANY
-                    ? "border-white/20 bg-white/15 text-white"
-                    : "border-stone-200 bg-stone-100 text-stone-600",
-                )}
-              >
-                *
-              </div>
+<button
+  type="button"
+onClick={() => {
+  setMasterPickMode(MASTER_PICK_MODE.ANY);
+  setSelectedMasterId(ANY_MASTER_ID);
+  setSelectedDate(null);
+  setSelectedTime(null);
 
-              <div className="min-w-0 flex-1">
-                <p
-                  className={cn(
-                    "truncate text-sm font-semibold",
-                    masterPickMode === MASTER_PICK_MODE.ANY
-                      ? "text-white"
-                      : "text-stone-800",
-                  )}
-                >
-                  Будь-хто вільний
-                </p>
+  scrollToSection(calendarSectionRef);
+}}
+  className={cn(
+    "flex min-h-[88px] items-center gap-3 rounded-2xl border p-4 text-left transition-[border-color,box-shadow,background-color,transform] duration-150",
+    masterPickMode === MASTER_PICK_MODE.ANY
+      ? "border-emerald-500 bg-emerald-50 ring-2 ring-emerald-500/15 shadow-[0_8px_24px_rgba(16,185,129,0.10)]"
+      : "border-stone-200 bg-white hover:border-amber-200 hover:bg-stone-50",
+    "active:scale-[0.995]"
+  )}
+>
+  <div
+    className={cn(
+      "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border text-sm font-bold transition-all duration-150",
+      masterPickMode === MASTER_PICK_MODE.ANY
+        ? "border-emerald-500 bg-emerald-500 text-white"
+        : "border-stone-200 bg-stone-100 text-stone-600"
+    )}
+  >
+      <Users className="h-5 w-5" />
+  </div>
 
-                <p
-                  className={cn(
-                    "mt-1 text-xs",
-                    masterPickMode === MASTER_PICK_MODE.ANY
-                      ? "text-white/80"
-                      : "text-stone-500",
-                  )}
-                >
-                  Підберемо доступного майстра автоматично
-                </p>
-              </div>
+  <div className="min-w-0 flex-1">
+    <p
+      className={cn(
+        "truncate text-sm font-semibold transition-colors duration-150",
+        masterPickMode === MASTER_PICK_MODE.ANY
+          ? "text-emerald-800"
+          : "text-stone-800"
+      )}
+    >
+      Будь-хто вільний
+    </p>
 
-              {masterPickMode === MASTER_PICK_MODE.ANY && (
-                <div className="ml-2 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/20">
-                  <Check className="h-3.5 w-3.5 text-white" />
-                </div>
-              )}
-            </button>
+    <p
+      className={cn(
+        "mt-1 text-xs transition-colors duration-150",
+        masterPickMode === MASTER_PICK_MODE.ANY
+          ? "text-emerald-700"
+          : "text-stone-500"
+      )}
+    >
+      Підберемо доступного майстра автоматично
+    </p>
+  </div>
 
-            <button
-              type="button"
-              onClick={() => {
-                setMasterPickMode(MASTER_PICK_MODE.SPECIFIC);
+  <div
+    className={cn(
+      "ml-2 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-all duration-150",
+      masterPickMode === MASTER_PICK_MODE.ANY
+        ? "border-emerald-500 bg-emerald-500 text-white"
+        : "border-stone-300 bg-white text-transparent"
+    )}
+  >
+    <Check className="h-3.5 w-3.5" />
+  </div>
+</button>
 
-                if (
-                  selectedMasterId === ANY_MASTER_ID &&
-                  availableMasters.length === 1
-                ) {
-                  setSelectedMasterId(String(availableMasters[0].id));
-                }
+<button
+  type="button"
+onClick={() => {
+  setMasterPickMode(MASTER_PICK_MODE.SPECIFIC);
 
-                setSelectedDate(null);
-                setSelectedTime(null);
-              }}
-              className={cn(
-                "flex min-h-[88px] items-center gap-3 rounded-2xl border p-4 text-left transition-all duration-200",
-                masterPickMode === MASTER_PICK_MODE.SPECIFIC
-                  ? "border-emerald-600 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-lg shadow-emerald-600/10"
-                  : "border-stone-200 bg-white hover:border-amber-200 hover:bg-stone-50",
-              )}
-            >
-              <div
-                className={cn(
-                  "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border text-sm font-bold",
-                  masterPickMode === MASTER_PICK_MODE.SPECIFIC
-                    ? "border-white/20 bg-white/15 text-white"
-                    : "border-stone-200 bg-stone-100 text-stone-600",
-                )}
-              >
-                ✓
-              </div>
+  if (
+    selectedMasterId === ANY_MASTER_ID &&
+    availableMasters.length === 1
+  ) {
+    setSelectedMasterId(String(availableMasters[0].id));
+  }
 
-              <div className="min-w-0 flex-1">
-                <p
-                  className={cn(
-                    "truncate text-sm font-semibold",
-                    masterPickMode === MASTER_PICK_MODE.SPECIFIC
-                      ? "text-white"
-                      : "text-stone-800",
-                  )}
-                >
-                  Обрати певного майстра
-                </p>
+  setSelectedDate(null);
+  setSelectedTime(null);
 
-                <p
-                  className={cn(
-                    "mt-1 text-xs",
-                    masterPickMode === MASTER_PICK_MODE.SPECIFIC
-                      ? "text-white/80"
-                      : "text-stone-500",
-                  )}
-                >
-                  Самостійно виберіть спеціаліста
-                </p>
-              </div>
+  if (availableMasters.length === 1) {
+    scrollToSection(calendarSectionRef);
+  }
+}}
+  className={cn(
+    "flex min-h-[88px] items-center gap-3 rounded-2xl border p-4 text-left transition-[border-color,box-shadow,background-color,transform] duration-150",
+    masterPickMode === MASTER_PICK_MODE.SPECIFIC
+      ? "border-emerald-500 bg-emerald-50 ring-2 ring-emerald-500/15 shadow-[0_8px_24px_rgba(16,185,129,0.10)]"
+      : "border-stone-200 bg-white hover:border-amber-200 hover:bg-stone-50",
+    "active:scale-[0.995]"
+  )}
+>
+  <div
+    className={cn(
+      "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border text-sm font-bold transition-all duration-150",
+      masterPickMode === MASTER_PICK_MODE.SPECIFIC
+        ? "border-emerald-500 bg-emerald-500 text-white"
+        : "border-stone-200 bg-stone-100 text-stone-600"
+    )}
+  >
+      <UserRound className="h-5 w-5" />
+  </div>
 
-              {masterPickMode === MASTER_PICK_MODE.SPECIFIC && (
-                <div className="ml-2 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/20">
-                  <Check className="h-3.5 w-3.5 text-white" />
-                </div>
-              )}
-            </button>
+  <div className="min-w-0 flex-1">
+    <p
+      className={cn(
+        "truncate text-sm font-semibold transition-colors duration-150",
+        masterPickMode === MASTER_PICK_MODE.SPECIFIC
+          ? "text-emerald-800"
+          : "text-stone-800"
+      )}
+    >
+      Обрати певного майстра
+    </p>
+
+    <p
+      className={cn(
+        "mt-1 text-xs transition-colors duration-150",
+        masterPickMode === MASTER_PICK_MODE.SPECIFIC
+          ? "text-emerald-700"
+          : "text-stone-500"
+      )}
+    >
+      Самостійно виберіть спеціаліста
+    </p>
+  </div>
+
+  <div
+    className={cn(
+      "ml-2 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-all duration-150",
+      masterPickMode === MASTER_PICK_MODE.SPECIFIC
+        ? "border-emerald-500 bg-emerald-500 text-white"
+        : "border-stone-300 bg-white text-transparent"
+    )}
+  >
+    <Check className="h-3.5 w-3.5" />
+  </div>
+</button>
           </div>
 
           {masterPickMode === MASTER_PICK_MODE.ANY && (
@@ -1077,64 +1122,67 @@ onCancel?.();
                       <button
                         key={item.id}
                         type="button"
-                        onClick={() => {
-                          setSelectedMasterId(String(item.id));
-                          setSelectedDate(null);
-                          setSelectedTime(null);
-                        }}
-                        className={cn(
-                          "flex items-center gap-3 rounded-2xl border p-4 text-left transition-all duration-200",
-                          active
-                            ? "border-emerald-600 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-lg shadow-emerald-600/10"
-                            : "border-stone-200 bg-white hover:border-amber-200 hover:bg-stone-50",
-                        )}
+onClick={() => {
+  setSelectedMasterId(String(item.id));
+  setSelectedDate(null);
+  setSelectedTime(null);
+
+  scrollToSection(calendarSectionRef);
+}}
+className={cn(
+  "flex items-center gap-3 rounded-2xl border p-4 text-left transition-[border-color,box-shadow,background-color,transform] duration-150",
+  active
+    ? "border-emerald-500 bg-emerald-50 ring-2 ring-emerald-500/15 shadow-[0_8px_24px_rgba(16,185,129,0.10)]"
+    : "border-stone-200 bg-white hover:border-amber-200 hover:bg-stone-50",
+  "active:scale-[0.995]"
+)}
                       >
-                        <div
-                          className={cn(
-                            "flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border text-sm font-bold",
-                            active
-                              ? "border-white/20 bg-white/15 text-white"
-                              : "border-stone-200 bg-stone-100 text-stone-600",
-                          )}
-                        >
-                          {item.photoUrl ? (
-                            <img
-                              src={item.photoUrl}
-                              alt={item.name}
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            String(item.name || "M")
-                              .trim()
-                              .slice(0, 1)
-                              .toUpperCase()
-                          )}
-                        </div>
+<div
+  className={cn(
+    "flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border text-sm font-bold transition-all duration-150",
+    active
+      ? "border-emerald-500 bg-white text-emerald-600 shadow-[0_4px_12px_rgba(16,185,129,0.18)]"
+      : "border-stone-200 bg-stone-100 text-stone-600",
+  )}
+>
+  {item.photoUrl ? (
+    <img
+      src={item.photoUrl}
+      alt={item.name}
+      className="h-full w-full object-cover"
+    />
+  ) : (
+    <UserRound className="h-5 w-5" />
+  )}
+</div>
 
                         <div className="min-w-0 flex-1">
-                          <p
-                            className={cn(
-                              "truncate text-sm font-semibold",
-                              active ? "text-white" : "text-stone-800",
-                            )}
-                          >
+<p className={cn(
+  "truncate text-sm font-semibold transition-colors duration-150",
+  active ? "text-emerald-800" : "text-stone-800",
+)}>
                             {item.name || "Майстер"}
                           </p>
 
-                          <p
-                            className={cn(
-                              "mt-1 truncate text-xs",
-                              active ? "text-white/80" : "text-stone-500",
-                            )}
-                          >
+<p className={cn(
+  "mt-1 truncate text-xs transition-colors duration-150",
+  active ? "text-emerald-700" : "text-stone-500",
+)}>
                             {item.role || "Спеціаліст"}
                           </p>
                         </div>
 
                         {active && (
-                          <div className="ml-2 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/20">
-                            <Check className="h-3.5 w-3.5 text-white" />
-                          </div>
+<div
+  className={cn(
+    "ml-2 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-all duration-150",
+    active
+      ? "border-emerald-500 bg-emerald-500 text-white"
+      : "border-stone-300 bg-white text-transparent",
+  )}
+>
+  <Check className="h-3.5 w-3.5" />
+</div>
                         )}
                       </button>
                     );
@@ -1145,7 +1193,7 @@ onCancel?.();
           )}
         </section>
 
-        <section data-testid="booking-calendar-section">
+      <section ref={calendarSectionRef} data-testid="booking-calendar-section">
           <div className="mb-4">
             <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.25em] text-amber-600">
               Крок 3
@@ -1154,16 +1202,18 @@ onCancel?.();
           </div>
 
          <div className="rounded-2xl border border-stone-200 bg-white p-3 shadow-[0_4px_18px_rgba(0,0,0,0.03)] sm:p-4">
-            <Calendar
-              selected={selectedDate}
-              onSelect={(d) => {
-                if (!d) return;
-                d.setHours(0, 0, 0, 0);
-                setSelectedDate(d);
-                setSelectedTime(null);
-              }}
-              disabled={disabledDays}
-            />
+<Calendar
+  selected={selectedDate}
+onSelect={(d) => {
+  if (!d) return;
+  d.setHours(0, 0, 0, 0);
+  setSelectedDate(d);
+  setSelectedTime(null);
+
+  scrollToSection(timeSectionRef);
+}}
+  disabled={disabledDays}
+/>
           </div>
 
           {!selectedMaster && !isAnyMasterSelected && (
@@ -1189,9 +1239,8 @@ onCancel?.();
               </p>
             )}
         </section>
-
         {isDayEnabled && slots.length > 0 && (
-          <section data-testid="booking-time-section">
+         <section ref={timeSectionRef} data-testid="booking-time-section">
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <p className="text-xs font-semibold capitalize text-stone-500">
@@ -1233,8 +1282,8 @@ onCancel?.();
                     data-testid={`booking-time-${time}`}
                     className={cn(
                       "rounded-xl border px-4 py-2.5 text-sm font-semibold transition-all duration-200",
-                      active
-                        ? "border-emerald-600 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-md shadow-emerald-600/15"
+active
+  ? "border border-emerald-500 bg-emerald-50 text-emerald-800 ring-2 ring-emerald-500/15 shadow-[0_8px_24px_rgba(16,185,129,0.10)]"
                         : busy
                           ? "cursor-not-allowed border-stone-200 bg-stone-100 text-stone-400 line-through"
                           : "border-stone-200 bg-white text-stone-800 hover:border-amber-200 hover:bg-stone-50",
@@ -1267,11 +1316,11 @@ onCancel?.();
             onClick={() => setStep("details")}
             data-testid="booking-next-btn"
 className={cn(
-  "flex-1 rounded-2xl py-3 text-sm font-bold transition-all duration-200",
-              canGoNext
-                ? "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white hover:from-emerald-700 hover:to-emerald-800 active:scale-[0.98]"
-                : "cursor-not-allowed bg-stone-200 text-stone-400",
-            )}
+  "flex-1 inline-flex items-center justify-center rounded-2xl py-3 text-sm font-semibold transition active:scale-[0.98]",
+  canGoNext
+    ? "border border-emerald-700 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-sm"
+    : "cursor-not-allowed border border-stone-200 bg-white text-stone-400",
+)}
           >
             <span className="inline-flex items-center gap-2">
               Продовжити

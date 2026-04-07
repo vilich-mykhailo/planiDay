@@ -231,20 +231,20 @@ export default function Calendar({ selected, onSelect, disabled }) {
                 }}
                 className={cn(
                   "relative flex h-11 w-full items-center justify-center rounded-2xl text-xs font-semibold transition-all duration-200 sm:h-12 sm:text-sm",
-                  isSelected
-                    ? "border border-emerald-600 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-[0_10px_24px_rgba(74,93,78,0.20)]"
+isSelected
+   ? "border border-emerald-500 bg-emerald-50 text-emerald-800 ring-2 ring-emerald-500/15 shadow-[0_8px_24px_rgba(16,185,129,0.10)]"
                     : dis
                       ? "cursor-not-allowed border border-stone-200 bg-stone-100 text-stone-400"
                       : isToday
-                        ? "border border-amber-300 bg-amber-50 text-stone-900 hover:bg-amber-100"
+                        ? "border border-amber-300 text-stone-900 hover:bg-amber-100"
                         : "border border-transparent text-stone-800 hover:border-stone-200 hover:bg-stone-50",
                 )}
               >
                 <span>{day.getDate()}</span>
 
-                {isToday && !isSelected && (
+                {/* {isToday && !isSelected && (
                   <span className="absolute bottom-1.5 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.6)]" />
-                )}
+                )} */}
 
                 {dis && inMonth && !isToday && (
                   <span className="pointer-events-none absolute inset-0 flex items-center justify-center">

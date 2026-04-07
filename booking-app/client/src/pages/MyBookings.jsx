@@ -317,7 +317,7 @@ export default function MyBookings() {
 
     return "new";
   }
-  const [tab, setTab] = useState("all");
+  const [tab, setTab] = useState("upcoming");
   const [q, setQ] = useState("");
   const [copiedId, setCopiedId] = useState(null);
   const copyTimerRef = useRef(null);
@@ -518,8 +518,8 @@ function openStudio(booking) {
 }
 
   return (
-    <div className="min-h-screen">
-      <div className="mx-auto max-w-6xl px-2.5 pb-4 pt-18 sm:px-4 sm:pb-8 sm:pt-14 lg:pt-16">
+     <div className="min-h-screen pb-[calc(env(safe-area-inset-bottom)+68px)] sm:pb-0">
+      <div className="mx-auto max-w-6xl px-2.5 pb-4 pt-0 sm:px-4 sm:pb-8 sm:pt-14 lg:pt-16">
         <div className="space-y-3 px-0 pt-2 sm:space-y-3 sm:pt-8 lg:pt-6">
           <section className="overflow-hidden rounded-[24px] border border-stone-200/60 bg-white shadow-[0_4px_20px_-6px_rgba(120,90,60,0.08)] sm:rounded-3xl">
             <div className="h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-70" />
@@ -547,13 +547,6 @@ function openStudio(booking) {
               <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
                   <FilterTab
-                    type="default"
-                    active={tab === "all"}
-                    onClick={() => setTab("all")}
-                  >
-                    Усі ({counters.all})
-                  </FilterTab>
-                  <FilterTab
                     type="success"
                     active={tab === "upcoming"}
                     onClick={() => setTab("upcoming")}
@@ -575,6 +568,13 @@ function openStudio(booking) {
                     onClick={() => setTab("canceled")}
                   >
                     Скасовані ({counters.canceled})
+                  </FilterTab>
+                  <FilterTab
+                    type="default"
+                    active={tab === "all"}
+                    onClick={() => setTab("all")}
+                  >
+                    Усі ({counters.all})
                   </FilterTab>
                 </div>
 
@@ -785,311 +785,320 @@ className={cn(
           )}
         </div>
       </div>
-      {activeBooking && (
-        <div
-          className="fixed inset-0 z-950 flex items-center justify-center bg-stone-950/55 backdrop-blur-[8px] sm:items-center sm:p-4"
-          onClick={() => {
-            setActiveBookingId(null);
-            setCopiedId(null);
-          }}
-        >
-          <div
-            className="relative w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-[28px] border border-white/60 bg-white shadow-[0_30px_90px_rgba(15,23,42,0.24)] sm:max-h-[92vh] sm:rounded-[32px]"
-            onClick={(e) => e.stopPropagation()}
+{activeBooking && (
+  <div
+    className="fixed inset-0 z-[220] flex items-center justify-center bg-stone-950/55 p-4 backdrop-blur-[8px]"
+    onClick={() => {
+      setActiveBookingId(null);
+      setCopiedId(null);
+    }}
+  >
+    <div
+      className="relative w-full max-w-md overflow-hidden rounded-[32px] border border-white/60 bg-white shadow-[0_35px_120px_rgba(15,23,42,0.24)]"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(16,185,129,0.10),transparent_34%),radial-gradient(circle_at_bottom_left,rgba(245,158,11,0.10),transparent_28%)]" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-amber-50/80 via-stone-50/50 to-transparent" />
+      <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-amber-200/20 blur-3xl" />
+      <div className="absolute -bottom-10 -left-10 h-32 w-32 rounded-full bg-emerald-200/15 blur-3xl" />
+
+      <div className="relative px-5 pb-4 pt-2 sm:px-6 sm:pb-5 sm:pt-4">
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={() => {
+              setActiveBookingId(null);
+              setCopiedId(null);
+            }}
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-stone-200/80 bg-white/80 text-stone-400 backdrop-blur transition-all duration-200 hover:bg-stone-100 hover:text-stone-700 active:scale-95"
+            aria-label="Закрити"
           >
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-amber-50/80 to-transparent" />
+            <X className="h-4 w-4" />
+          </button>
+        </div>
 
-            <div className="relative border-b border-stone-100 px-4 py-3 sm:px-5 sm:py-4">
-              <div className="mb-3 flex justify-center sm:hidden">
-                <div className="h-1.5 w-14 rounded-full bg-stone-300" />
-              </div>
+        <div className="mt-2 sm:mt-4 flex justify-center">
+          {(() => {
+            const isCanceled = activeStatus === "canceled";
+            const isConfirmed = activeStatus === "confirmed";
+            const isCompleted = activeStatus === "completed";
 
-              <div className="flex items-center justify-between gap-3">
+            const statusMeta = isCompleted
+              ? {
+                  label: "Завершено",
+                  badge: "info",
+                  dot: "bg-blue-600",
+                  ring: "from-blue-500 to-sky-600",
+                  iconBg: "bg-blue-100 text-blue-700",
+                }
+              : isConfirmed
+                ? {
+                    label: "Підтверджено",
+                    badge: "success",
+                    dot: "bg-emerald-600",
+                    ring: "from-emerald-500 to-emerald-700",
+                    iconBg: "bg-emerald-100 text-emerald-700",
+                  }
+                : isCanceled
+                  ? {
+                      label:
+                        activeBooking?.canceledBy === "owner"
+                          ? "Скасовано студією"
+                          : "Скасовано вами",
+                      badge: "danger",
+                      dot: "bg-red-600",
+                      ring: "from-red-500 to-rose-700",
+                      iconBg: "bg-red-100 text-red-700",
+                    }
+                  : {
+                      label: "Очікує підтвердження",
+                      badge: "warning",
+                      dot: "bg-amber-600",
+                      ring: "from-amber-500 to-orange-600",
+                      iconBg: "bg-amber-100 text-amber-700",
+                    };
+
+            return (
+              <>
+                <div className="relative">
+                  <div className="absolute inset-0 rounded-full bg-amber-300/20 blur-2xl" />
+                  <div
+                    className={cn(
+                      "relative flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br text-white shadow-[0_12px_30px_rgba(15,23,42,0.16)]",
+                      statusMeta.ring,
+                    )}
+                  >
+                    {isCompleted ? (
+                      <CheckCheck className="h-8 w-8" />
+                    ) : isCanceled ? (
+                      <X className="h-8 w-8" />
+                    ) : isConfirmed ? (
+                      <Check className="h-8 w-8" />
+                    ) : (
+                      <Clock className="h-8 w-8" />
+                    )}
+                  </div>
+                </div>
+
+                <div className="sr-only">{statusMeta.label}</div>
+              </>
+            );
+          })()}
+        </div>
+
+        <div className="mt-3 sm:mt-5 text-center">
+          <h2 className="text-[28px] font-black leading-[1.05] tracking-[-0.04em] text-stone-900">
+  {activeService}
+          </h2>
+
+          <div className="mt-3 flex justify-center">
+            {(() => {
+              const isCanceled = activeStatus === "canceled";
+              const isConfirmed = activeStatus === "confirmed";
+              const isCompleted = activeStatus === "completed";
+
+              const statusMeta = isCompleted
+                ? {
+                    label: "Завершено",
+                    badge: "info",
+                    dot: "bg-blue-600",
+                  }
+                : isConfirmed
+                  ? {
+                      label: "Підтверджено",
+                      badge: "success",
+                      dot: "bg-emerald-600",
+                    }
+                  : isCanceled
+                    ? {
+                        label:
+                          activeBooking?.canceledBy === "owner"
+                            ? "Скасовано студією"
+                            : "Скасовано вами",
+                        badge: "danger",
+                        dot: "bg-red-600",
+                      }
+                    : {
+                        label: "Очікує підтвердження",
+                        badge: "warning",
+                        dot: "bg-amber-600",
+                      };
+
+              return (
+                <Badge variant={statusMeta.badge}>
+                  <IconDot className={statusMeta.dot} />
+                  {statusMeta.label}
+                </Badge>
+              );
+            })()}
+          </div>
+        </div>
+
+        <div className="mt-3 sm:mt-4 overflow-hidden rounded-[26px] border border-stone-200/80 bg-white/90 shadow-[0_10px_30px_rgba(15,23,42,0.05)] backdrop-blur">
+          <div className="h-[3px] bg-gradient-to-r from-emerald-500 via-amber-400 to-emerald-500" />
+
+          <div className="space-y-3 p-3.5">
+
+            <div className="rounded-2xl bg-stone-50 p-3.5">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-stone-500 shadow-sm">
+                  <CalendarDays className="h-5 w-5" />
+                </div>
+
                 <div className="min-w-0">
-                  <p className="text-[14px] font-bold uppercase tracking-[0.12em] text-amber-600">
-                    Деталі запису
+                  <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-stone-500">
+                    Дата і час
                   </p>
 
-                  <p className="mt-1 truncate text-sm text-stone-500">
-                    {activeBooking?.createdAt
-                      ? `Створено: ${new Date(activeBooking.createdAt).toLocaleString("uk-UA")}`
-                      : activeTitle}
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-sm font-black text-stone-900">
+                    <span>{formatUA(activeBooking.date) || "—"}</span>
+                    <span className="text-stone-400">•</span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <Clock3 className="h-4 w-4 text-stone-500" />
+                      {activeBooking.time || "—"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              {activeStudioLogo ? (
+                <img
+                  src={activeStudioLogo}
+                  alt={activeTitle}
+                  className="h-11 w-11 shrink-0 rounded-2xl border border-stone-200 object-cover"
+                />
+              ) : (
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-stone-100 text-stone-700">
+                  <Sparkles className="h-5 w-5" />
+                </div>
+              )}
+
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-stone-500">
+                  Студія
+                </p>
+                <button
+                  type="button"
+                  onClick={() => openStudio(activeBooking)}
+                  className="mt-1 text-left text-sm font-black text-stone-900 transition hover:text-emerald-700"
+                >
+                  {activeTitle}
+                </button>
+              </div>
+            </div>
+            
+            {activeAddr && (
+              <div className="flex items-start gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-stone-100 text-stone-700">
+                  <MapPin className="h-5 w-5" />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-stone-500">
+                    Адреса
+                  </p>
+                  <p className="mt-1 text-sm font-black text-stone-900">
+                    {activeAddr}
                   </p>
                 </div>
 
                 <button
                   type="button"
-                  onClick={() => {
-                    setActiveBookingId(null);
-                    setCopiedId(null);
-                  }}
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-stone-500 transition hover:bg-stone-200 hover:text-stone-700 active:scale-95"
-                  aria-label="Закрити"
+                  onClick={() => copyText(activeAddr, activeBooking.id)}
+                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-stone-200 bg-white text-stone-700 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700 active:scale-[0.98]"
+                  aria-label="Скопіювати адресу"
+                  title="Скопіювати адресу"
                 >
-                  <X className="h-5 w-5" />
+                  {copiedId === activeBooking.id ? (
+                    <CheckCheck className="h-4 w-4" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
                 </button>
               </div>
-            </div>
-
-            <div className="max-h-[calc(90vh-64px)] overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
-              <div className="space-y-3">
-                {(() => {
-                  const isCanceled = activeStatus === "canceled";
-                  const isConfirmed = activeStatus === "confirmed";
-                  const isCompleted = activeStatus === "completed";
-
-                  const statusMeta = isCompleted
-                    ? {
-                        label: "Сеанс завершено",
-                        badge: "info",
-                        dot: "bg-blue-600",
-                        ring: "from-blue-500/20 to-blue-50",
-                        iconBg: "bg-blue-100 text-blue-700",
-                      }
-                    : isConfirmed
-                      ? {
-                          label: "Підтверджено",
-                          badge: "success",
-                          dot: "bg-emerald-600",
-                          ring: "from-emerald-500/20 to-emerald-50",
-                          iconBg: "bg-emerald-100 text-emerald-700",
-                        }
-                      : isCanceled
-                        ? {
-                            label:
-                              activeBooking?.canceledBy === "owner"
-                                ? "Скасовано студією"
-                                : "Скасовано вами",
-                            badge: "danger",
-                            dot: "bg-red-600",
-                            ring: "from-red-500/20 to-red-50",
-                            iconBg: "bg-red-100 text-red-700",
-                          }
-                        : {
-                            label: "Очікує підтвердження",
-                            badge: "warning",
-                            dot: "bg-amber-600",
-                            ring: "from-amber-500/20 to-amber-50",
-                            iconBg: "bg-amber-100 text-amber-700",
-                          };
-
-                  return (
-                    <>
-                      <div
-                        className={cn(
-                          "relative overflow-hidden rounded-[28px] border border-stone-200 p-5 sm:p-6",
-                          "bg-gradient-to-br",
-                          statusMeta.ring,
-                        )}
-                      >
-                        <div className="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full bg-white/40 blur-2xl" />
-                        <div className="pointer-events-none absolute -bottom-10 -left-8 h-24 w-24 rounded-full bg-white/30 blur-2xl" />
-
-                        <div className="relative flex flex-col gap-4">
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-stone-500">
-                                Ваш запис
-                              </p>
-
-                              <h3 className="mt-2 text-2xl font-black leading-tight tracking-tight text-stone-900">
-                                {activeService}
-                              </h3>
-
-                              <div className="mt-3 flex flex-wrap items-center gap-2">
-                                <Badge variant={statusMeta.badge}>
-                                  <IconDot className={statusMeta.dot} />
-                                  {statusMeta.label}
-                                </Badge>
-                              </div>
-                            </div>
-
-                            <div
-                              className={cn(
-                                "flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl shadow-sm",
-                                statusMeta.iconBg,
-                              )}
-                            >
-                              {isCompleted ? (
-                                <CheckCheck className="h-7 w-7" />
-                              ) : isCanceled ? (
-                                <X className="h-7 w-7" />
-                              ) : isConfirmed ? (
-                                <Check className="h-7 w-7" />
-                              ) : (
-                                <Clock className="h-7 w-7" />
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/70 bg-white/80 px-4 py-3 backdrop-blur">
-                            <div className="flex min-w-0 items-center gap-3">
-                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-stone-100 text-stone-700">
-                                <CalendarDays className="h-5 w-5" />
-                              </div>
-
-                              <div className="min-w-0">
-                                <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">
-                                  Дата і час
-                                </p>
-
-                                <div className="mt-0.5 flex flex-wrap items-center gap-2 text-sm font-bold text-stone-800">
-                                  <span>{formatUA(activeBooking.date)}</span>
-                                  <span className="text-stone-400">•</span>
-                                  <span className="flex items-center gap-1">
-                                    <Clock3 className="h-4 w-4" />
-                                    {activeBooking.time || "—"}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          {activeAddr && (
-                            <div className="flex items-start justify-between gap-3 rounded-2xl border border-white/70 bg-white/80 px-4 py-3 backdrop-blur">
-                              <div className="flex min-w-0 items-start gap-3">
-                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-stone-100 text-stone-700">
-                                  <MapPin className="h-5 w-5" />
-                                </div>
-
-                                <div className="min-w-0">
-                                  <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">
-                                    Адреса
-                                  </p>
-
-                                  <p className="mt-0.5 text-sm font-bold text-stone-800">
-                                    {activeAddr}
-                                  </p>
-                                </div>
-                              </div>
-
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  copyText(activeAddr, activeBooking.id)
-                                }
-                                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-stone-200 bg-white text-stone-700 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700 active:scale-[0.98]"
-                                aria-label="Скопіювати адресу"
-                                title="Скопіювати адресу"
-                              >
-                                {copiedId === activeBooking.id ? (
-                                  <CheckCheck className="h-4 w-4" />
-                                ) : (
-                                  <Copy className="h-4 w-4" />
-                                )}
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        {/* СТУДІЯ */}
-<div className="rounded-[24px] border border-stone-200 bg-white p-4 shadow-[0_8px_30px_-12px_rgba(15,23,42,0.08)]">
-  <button
-    type="button"
-    onClick={() => openStudio(activeBooking)}
-    className="flex w-full items-center gap-3 rounded-2xl text-left transition hover:bg-stone-50 active:scale-[0.99]"
-  >
-    {activeStudioLogo ? (
-      <img
-        src={activeStudioLogo}
-        alt={activeTitle}
-        className="h-11 w-11 shrink-0 rounded-2xl border border-stone-200 object-cover"
-      />
-    ) : (
-      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50 text-amber-700">
-        <Sparkles className="h-5 w-5" />
-      </div>
-    )}
-
-    <div className="min-w-0">
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">
-        Студія
-      </p>
-      <p className="truncate text-base font-black text-stone-900">
-        {activeTitle}
-      </p>
-    </div>
-  </button>
-
-  <div className="mt-4 rounded-2xl border border-stone-200 bg-stone-50/70 p-3">
+            )}
 
 
-                            <div className="flex items-center gap-3">
-                              <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-stone-200 bg-white text-stone-700">
-                                <UserRound className="h-5 w-5" />
-                              </div>
 
-                              <div className="min-w-0">
-                                <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">
-                                  Майстер
-                                </p>
+            <div className="flex items-start gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-stone-100 text-stone-700">
+                <UserRound className="h-5 w-5" />
+              </div>
 
-                                <p
-                                  className={cn(
-                                    "truncate text-sm font-semibold",
-                                    activeMasterName
-                                      ? "text-stone-800"
-                                      : "text-stone-400 italic",
-                                  )}
-                                >
-                                  {activeMasterName || "Довільний майстер"}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* ТЕЛЕФОН */}
-                        {activePhone && (
-                          <div className="flex h-full flex-col sm:justify-center rounded-[24px] border border-stone-200 bg-white p-4 shadow-[0_8px_30px_-12px_rgba(15,23,42,0.08)]">
-                            {/* Верхній блок */}
-                            <div className="flex items-start justify-between gap-3 sm:block">
-                              {/* Ліва частина */}
-                              <div className="flex items-start gap-3">
-                                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-stone-200 bg-stone-50 text-stone-700">
-                                  <Phone className="h-5 w-5" />
-                                </div>
-
-                                <div className="min-w-0">
-                                  <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">
-                                    Телефон студії
-                                  </p>
-                                  <p className="mt-1 text-sm font-semibold text-stone-800">
-                                    {activePhone}
-                                  </p>
-                                </div>
-                              </div>
-
-                              {/* Кнопка (мобілка — справа) */}
-                              <a
-                                href={`tel:${activePhone}`}
-                                className="inline-flex h-10 shrink-0 items-center gap-2 rounded-xl border border-amber-200 bg-white px-3  text-sm font-semibold text-amber-700 transition hover:bg-amber-100 active:scale-[0.98] sm:hidden"
-                              >
-                                <Phone className="h-4 w-4" />
-                                Дзвінок
-                              </a>
-                            </div>
-
-                            {/* Кнопка (десктоп — знизу, на всю ширину) */}
-                            <a
-                              href={`tel:${activePhone}`}
-                              className="mt-4 hidden h-11 w-full items-center justify-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 text-sm font-semibold text-amber-700 transition hover:bg-amber-100 active:scale-[0.98] sm:flex"
-                            >
-                              <Phone className="h-4 w-4" />
-                              Дзвінок
-                            </a>
-                          </div>
-                        )}
-                      </div>
-                    </>
-                  );
-                })()}
+              <div className="min-w-0">
+                <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-stone-500">
+                  Майстер
+                </p>
+                <p
+                  className={cn(
+                    "mt-1 text-sm font-black",
+                    activeMasterName
+                      ? "text-stone-900"
+                      : "text-stone-400 italic",
+                  )}
+                >
+                  {activeMasterName || "Довільний майстер"}
+                </p>
               </div>
             </div>
+
+            {activePhone && (
+              <div className="flex items-start gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-stone-100 text-stone-700">
+                  <Phone className="h-5 w-5" />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-stone-500">
+                    Телефон
+                  </p>
+                  <p className="mt-1 text-sm font-black text-stone-900">
+                    {activePhone}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
-      )}
+
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          {activePhone ? (
+            <a
+              href={`tel:${activePhone}`}
+              className="group inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-white px-4 text-sm font-bold text-emerald-700 transition-all duration-200 hover:-translate-y-0.5 hover:bg-emerald-50 hover:shadow-[0_12px_28px_rgba(16,185,129,0.10)] active:scale-[0.98]"
+            >
+              <Phone className="h-4 w-4" />
+              Дзвінок
+            </a>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setActiveBookingId(null);
+                setCopiedId(null);
+              }}
+              className="inline-flex h-11 items-center justify-center rounded-2xl border border-stone-200 bg-white px-4 text-sm font-bold text-stone-700 transition-all duration-200 hover:bg-stone-50 active:scale-[0.98]"
+            >
+              Закрити
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => {
+              setActiveBookingId(null);
+              setCopiedId(null);
+            }}
+            className="inline-flex h-11 items-center justify-center rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-700 px-4 text-sm font-bold text-white shadow-[0_14px_34px_rgba(16,185,129,0.24)] transition-all duration-200 hover:-translate-y-0.5 hover:from-emerald-700 hover:to-emerald-800 hover:shadow-[0_18px_40px_rgba(16,185,129,0.30)] active:scale-[0.98]"
+          >
+            Готово
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
       <Modal
         open={cancelConfirmId != null}
         onClose={() => setCancelConfirmId(null)}

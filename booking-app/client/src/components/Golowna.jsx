@@ -8,11 +8,17 @@ import {
   Users,
   CheckCheck,
   ChevronRight,
+  X,
+  Trash2,
+  Check,
+  XCircle,
+  UserRound,
+  Copy,
+  Scissors,
+  Clock3,
 } from "lucide-react";
+import { socket } from "../lib/socket";
 
-// =========================
-// Helpers
-// =========================
 function pad2(n) {
   return String(n).padStart(2, "0");
 }
@@ -31,6 +37,76 @@ function formatDateUA(dateStr) {
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const yyyy = d.getFullYear();
   return `${dd}.${mm}.${yyyy}`;
+}
+
+function renderBookingDate(b) {
+  const raw = b?.date || b?.day;
+  if (!raw) return "—";
+  return formatDateUA(raw) || "—";
+}
+
+function getBookingStatusMeta(booking, nowTs) {
+  const status = booking?.status;
+  const canceledBy = booking?.canceledBy || null;
+
+  const dt = getBookingDateTime(booking);
+  const isArchived = dt ? dt.getTime() < nowTs : false;
+  const isDeleted = status === "deleted";
+  const isCanceled = status === "canceled";
+  const isConfirmed = status === "confirmed";
+
+  if (isDeleted) {
+    return {
+      label: "Видалено",
+      badge: "bg-stone-200 text-stone-700",
+      dot: "bg-stone-500",
+      ring: "from-stone-400/20 to-stone-100",
+      iconBg: "bg-stone-100 text-stone-600",
+      Icon: Trash2,
+    };
+  }
+
+  if (isArchived) {
+    return {
+      label: "Сеанс завершено",
+      badge: "bg-sky-100 text-sky-700",
+      dot: "bg-sky-600",
+      ring: "from-sky-500/20 to-sky-50",
+      iconBg: "bg-sky-100 text-sky-700",
+      Icon: CheckCheck,
+    };
+  }
+
+  if (isConfirmed) {
+    return {
+      label: "Підтверджено",
+      badge: "bg-emerald-100 text-emerald-700",
+      dot: "bg-emerald-600",
+      ring: "from-emerald-500/20 to-emerald-50",
+      iconBg: "bg-emerald-100 text-emerald-700",
+      Icon: Check,
+    };
+  }
+
+  if (isCanceled) {
+    return {
+      label: canceledBy === "client" ? "Скасовано клієнтом" : "Скасовано вами",
+      badge: "bg-red-100 text-red-700",
+      dot: "bg-red-600",
+      ring: "from-red-500/20 to-red-50",
+      iconBg: "bg-red-100 text-red-700",
+      Icon: XCircle,
+    };
+  }
+
+  return {
+    label: "Очікує підтвердження",
+    badge: "bg-[#FFE7D6] text-[#D85A00]",
+    dot: "bg-[#D85A00]",
+    ring: "from-amber-500/20 to-amber-50",
+    iconBg: "bg-amber-100 text-amber-700",
+    Icon: Clock,
+  };
 }
 
 function parseTimeToHHMM(timeStr) {
@@ -111,16 +187,16 @@ function StatCard({ title, value, icon: Icon, accent = "emerald" }) {
           : "bg-emerald-50 text-emerald-700";
 
   return (
-  <div className="group rounded-[22px] border border-stone-200 bg-white p-3 shadow-[0_8px_25px_rgba(0,0,0,0.04)] transition-all duration-200 hover:-translate-y-0.5 hover:border-amber-200 hover:shadow-[0_12px_30px_rgba(0,0,0,0.06)] sm:rounded-[26px] sm:p-5">
+    <div className="group rounded-[22px] border border-stone-200 bg-white p-3 shadow-[0_8px_25px_rgba(0,0,0,0.04)] transition-all duration-200 hover:-translate-y-0.5 hover:border-amber-200 hover:shadow-[0_12px_30px_rgba(0,0,0,0.06)] sm:rounded-[26px] sm:p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-<p className="text-[9px] font-bold uppercase tracking-[0.14em] text-stone-500 sm:text-[10px] sm:tracking-[0.18em]">
-  {title}
-</p>
+          <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-stone-500 sm:text-[10px] sm:tracking-[0.18em]">
+            {title}
+          </p>
 
-<div className="mt-2 text-2xl font-bold tracking-tight text-stone-800 sm:mt-3 sm:text-4xl">
-  {displayValue}
-</div>
+          <div className="mt-2 text-2xl font-bold tracking-tight text-stone-800 sm:mt-3 sm:text-4xl">
+            {displayValue}
+          </div>
         </div>
 
         <div
@@ -136,69 +212,229 @@ function StatCard({ title, value, icon: Icon, accent = "emerald" }) {
   );
 }
 
-function AppointmentCard({ item, todayKey }) {
-  const key = item.date ? String(item.date) : "";
-  const dateLabel = key ? formatDateUA(key) : "—";
-  const isToday = key === todayKey;
-
+function Badge({ children, className = "" }) {
   return (
-    <li className="group rounded-[24px] border border-stone-200 bg-white p-4 shadow-[0_8px_25px_rgba(0,0,0,0.04)] transition-all duration-200 hover:-translate-y-0.5 hover:border-amber-200 hover:shadow-[0_12px_30px_rgba(0,0,0,0.06)] sm:p-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-stone-100 px-2.5 py-1 text-xs font-semibold text-stone-700">
-              <Clock className="h-3.5 w-3.5 text-amber-600" />
-              {item.time}
-            </span>
-
-            <span
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold",
-                isToday
-                  ? "bg-emerald-50 text-emerald-700"
-                  : "bg-amber-50 text-amber-700",
-              )}
-            >
-              <CalendarDays className="h-3.5 w-3.5" />
-              {isToday ? "Сьогодні" : dateLabel}
-            </span>
-          </div>
-
-          <p className="mt-3 text-base font-semibold text-stone-800 sm:text-lg">
-            {item.service}
-          </p>
-
-          <p className="mt-1 truncate text-sm text-stone-500">
-            Клієнт:{" "}
-            <span className="font-semibold text-stone-800">{item.client}</span>
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2 self-start text-xs font-semibold text-stone-400 sm:self-center">
-          Детальніше
-          <ChevronRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
-        </div>
-      </div>
-    </li>
+    <span
+      className={cn(
+        "inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-xs font-semibold",
+        className,
+      )}
+    >
+      {children}
+    </span>
   );
 }
 
-// =========================
-// Page
+function IconDot({ className = "" }) {
+  return <span className={cn("h-1.5 w-1.5 rounded-full", className)} />;
+}
+
+function Modal({
+  open,
+  onClose,
+  title,
+  subtitle,
+  children,
+  footer,
+  size = "md",
+}) {
+  useEffect(() => {
+    if (!open) return;
+
+    const scrollY = window.scrollY;
+
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.left = "0";
+    document.body.style.right = "0";
+    document.body.style.width = "100%";
+
+    const handleEscape = (e) => {
+      if (e.key === "Escape") onClose?.();
+    };
+
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+
+      const y = Math.abs(parseInt(document.body.style.top || "0", 10));
+
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.left = "";
+      document.body.style.right = "";
+      document.body.style.width = "";
+
+      window.scrollTo(0, y);
+    };
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  const sizeClasses = {
+    sm: "sm:max-w-md",
+    md: "sm:max-w-lg lg:max-w-xl",
+    lg: "sm:max-w-xl lg:max-w-2xl",
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[950] flex items-center justify-center bg-stone-900/40 p-4 backdrop-blur-sm sm:p-6"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose?.();
+      }}
+    >
+      <div
+        className={cn(
+          "relative w-full max-h-[90vh] overflow-hidden bg-white shadow-2xl",
+          "animate-in fade-in-0 slide-in-from-bottom duration-200",
+          "rounded-3xl sm:h-auto sm:max-h-[92vh]",
+          sizeClasses[size],
+        )}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-amber-50/80 to-transparent" />
+
+        <div className="relative border-b border-stone-100 px-3 py-2.5 sm:px-5 sm:py-4">
+          <div className="flex items-center justify-between">
+            <p className="text-[14px] font-bold uppercase tracking-[0.12em] text-amber-600">
+              {title}
+            </p>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex h-8 w-8 items-center justify-center rounded-full text-stone-500 transition hover:bg-stone-200 hover:text-stone-700 active:scale-95"
+              aria-label="Закрити"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          {subtitle && <p className="text-[11px] text-stone-500">{subtitle}</p>}
+        </div>
+
+        <div className="max-h-[calc(90vh-64px)] overflow-y-auto px-3 py-3 sm:px-5 sm:py-5">
+          {children}
+        </div>
+
+        {footer && (
+          <div className="border-t border-stone-100 bg-stone-50/50 px-3 py-2.5 sm:px-5 sm:py-4">
+            {footer}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Button({ variant = "secondary", className = "", children, ...props }) {
+  const variants = {
+    primary:
+      "bg-emerald-600 text-white hover:bg-emerald-700 shadow-[0_10px_24px_rgba(5,150,105,0.28)]",
+    secondary:
+      "border border-stone-200 bg-white text-stone-700 hover:bg-stone-50",
+    danger: "border border-red-200 bg-red-50 text-red-700 hover:bg-red-100",
+  };
+
+  return (
+    <button
+      type="button"
+      className={cn(
+        "inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold transition-all duration-200 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50",
+        variants[variant],
+        className,
+      )}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+}
+
+function AppointmentCard({ item, todayKey, nowTs, onOpen }) {
+  const key = item.date ? String(item.date) : "";
+  const dateLabel = key ? formatDateUA(key) : "—";
+  const isToday = key === todayKey;
+  const statusMeta = getBookingStatusMeta(item, nowTs);
+
+  return (
+    <li className="group rounded-[24px] border border-stone-200 bg-white p-4 shadow-[0_8px_25px_rgba(0,0,0,0.04)] transition-all duration-200 hover:-translate-y-0.5 hover:border-amber-200 hover:shadow-[0_12px_30px_rgba(0,0,0,0.06)] sm:p-5">
+      <button
+        type="button"
+        onClick={() => onOpen?.(item.id)}
+        className="block w-full text-left"
+      >
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-stone-100 px-2.5 py-1 text-xs font-semibold text-stone-700">
+                <Clock className="h-3.5 w-3.5 text-amber-600" />
+                {item.time}
+              </span>
+
+              <span
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold",
+                  isToday
+                    ? "bg-emerald-50 text-emerald-700"
+                    : "bg-amber-50 text-amber-700",
+                )}
+              >
+                <CalendarDays className="h-3.5 w-3.5" />
+                {isToday ? "Сьогодні" : dateLabel}
+              </span>
+
+              <Badge className={statusMeta.badge}>
+                <IconDot className={statusMeta.dot} />
+                {statusMeta.label}
+              </Badge>
+            </div>
+
+            <p className="mt-3 text-base font-semibold text-stone-800 sm:text-lg">
+              {item.serviceName || "—"}
+            </p>
+
+            <p className="mt-1 truncate text-sm text-stone-500">
+              Клієнт:{" "}
+              <span className="font-semibold text-stone-800">
+                {item.clientName || "—"}
+              </span>
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 self-start text-xs font-semibold text-stone-400 sm:self-center">
+            Детальніше
+            <ChevronRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+          </div>
+        </div>
+      </button>
+    </li>
+  );
+}
 // =========================
 export default function Golowna() {
-  const { bookings } = useBookings();
-
+  const { bookings, confirmBooking, cancelBooking, loadBookings } = useBookings();
   const [nowTs, setNowTs] = useState(() => Date.now());
-
+  const [detailsId, setDetailsId] = useState(null);
+  const [copiedPhone, setCopiedPhone] = useState(false);
+  const [cancelConfirmId, setCancelConfirmId] = useState(null);
   useEffect(() => {
     const id = setInterval(() => setNowTs(Date.now()), 60_000);
     return () => clearInterval(id);
   }, []);
-
+const [socketState, setSocketState] = useState(
+  socket.connected ? "ok" : "offline",
+);
+const [isRefreshing, setIsRefreshing] = useState(false);
+const [isOnline, setIsOnline] = useState(navigator.onLine);
   const stats = useMemo(() => {
     const list = (bookings || []).filter(
-      (b) => b && b.id && b.status !== "deleted" && b.status !== "canceled",
+      (b) =>
+        b &&
+        b.id &&
+        (b.status === "confirmed" || b.status === "new" || !b.status),
     );
 
     const now = new Date(nowTs);
@@ -272,9 +508,35 @@ export default function Golowna() {
     ];
   }, [bookings, nowTs]);
 
+  const selectedBooking = useMemo(() => {
+    if (detailsId == null) return null;
+    return (bookings || []).find((b) => b.id === detailsId) || null;
+  }, [detailsId, bookings]);
+
+  async function handleCopyPhone(value) {
+    if (!value) return;
+
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopiedPhone(true);
+      window.setTimeout(() => setCopiedPhone(false), 1600);
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = value;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      setCopiedPhone(true);
+      window.setTimeout(() => setCopiedPhone(false), 1600);
+    }
+  }
   const upcomingAppointments = useMemo(() => {
     const list = (bookings || []).filter(
-      (b) => b && b.id && b.status !== "deleted",
+      (b) =>
+        b &&
+        b.id &&
+        (b.status === "confirmed" || b.status === "new" || !b.status),
     );
 
     const upcoming = [];
@@ -288,15 +550,100 @@ export default function Golowna() {
     upcoming.sort((a, c) => a.ts - c.ts);
 
     return upcoming.slice(0, 5).map(({ b }) => ({
-      id: b.id,
+      ...b,
       date: b.date,
       time: parseTimeToHHMM(b.time) || b.time || "—",
-      service: b.serviceName || "—",
-      client: b.clientName || "—",
+      serviceName: b.serviceName || "—",
+      clientName: b.clientName || "—",
     }));
   }, [bookings, nowTs]);
 
   const todayKey = toISODateKey(new Date(nowTs));
+
+useEffect(() => {
+  const handleOnline = () => setIsOnline(true);
+  const handleOffline = () => setIsOnline(false);
+
+  window.addEventListener("online", handleOnline);
+  window.addEventListener("offline", handleOffline);
+
+  return () => {
+    window.removeEventListener("online", handleOnline);
+    window.removeEventListener("offline", handleOffline);
+  };
+}, []);
+
+useEffect(() => {
+  const studioId = localStorage.getItem("studioId");
+
+  const joinStudio = () => {
+    if (studioId) {
+      socket.emit("join:studio", { studioId });
+    }
+    setSocketState("ok");
+  };
+
+  if (socket.connected) {
+    joinStudio();
+  } else {
+    setSocketState("offline");
+  }
+
+  const handleConnect = () => {
+    joinStudio();
+  };
+
+  const handleDisconnect = () => {
+    setSocketState("offline");
+  };
+
+  const handleBookingUpdated = async (payload) => {
+    if (!payload) return;
+    if (String(payload.studioId) !== String(studioId)) return;
+
+    try {
+      setIsRefreshing(true);
+      setSocketState("pending");
+      await loadBookings?.();
+      setSocketState(socket.connected ? "ok" : "offline");
+    } catch (e) {
+      console.error("Failed to reload bookings after socket event:", e);
+      setSocketState("offline");
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  socket.on("connect", handleConnect);
+  socket.on("disconnect", handleDisconnect);
+  socket.on("booking:updated", handleBookingUpdated);
+
+  return () => {
+    socket.off("connect", handleConnect);
+    socket.off("disconnect", handleDisconnect);
+    socket.off("booking:updated", handleBookingUpdated);
+  };
+}, [loadBookings]);
+
+const liveStatusUi =
+  !isOnline || socketState === "offline"
+    ? {
+        text: "Немає інтернету",
+        dotClass: "live-indicator live-indicator--offline",
+        wrapClass: "border-red-200 bg-red-50 text-red-700",
+      }
+    : socketState === "pending" || isRefreshing
+      ? {
+          text: "Оновлення...",
+          dotClass: "live-indicator live-indicator--pending",
+          wrapClass: "border-amber-200 bg-amber-50 text-amber-700",
+        }
+      : {
+          text: "Оновлюється автоматично",
+          dotClass: "live-indicator live-indicator--ok",
+          wrapClass: "border-emerald-200 bg-emerald-50 text-emerald-700",
+        };
+
 
   return (
     <div className="min-h-screen ">
@@ -311,35 +658,35 @@ export default function Golowna() {
                 dashboard студії
               </div>
 
-<h1
-  className="
+              <h1
+                className="
     mt-2 font-bold tracking-tight text-stone-800
     !text-[32px] leading-[1.2]        /* було 26 */
     sm:text-3xl sm:leading-[1.15]    /* трохи менше і на планшеті */
     lg:text-5xl
   "
->
-  <span className="inline-flex items-center gap-2 sm:gap-3">
-    <span>Вітаємо в кабінеті майстра</span>
-    <span className="hidden sm:inline">👋</span>
-  </span>
-</h1>
+              >
+                <span className="inline-flex items-center gap-2 sm:gap-3">
+                  <span>Вітаємо в кабінеті майстра</span>
+                  <span className="hidden sm:inline">👋</span>
+                </span>
+              </h1>
 
-<p
-  className="
+              <p
+                className="
     mt-3 text-stone-600
     text-[13.5px] leading-6        /* мобілка */
     sm:text-base sm:leading-7
   "
->
-  Керуйте студією, послугами та записами в одному теплому,
-  сучасному та зручному просторі.
-</p>
+              >
+                Керуйте студією, послугами та записами в одному теплому,
+                сучасному та зручному просторі.
+              </p>
             </div>
           </div>
         </SectionShell>
 
-     <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
           {stats.map((item) => (
             <StatCard
               key={item.key}
@@ -353,24 +700,36 @@ export default function Golowna() {
 
         <SectionShell>
           <div className="px-5 pb-6 pt-5 sm:px-6 sm:pb-7 sm:pt-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-amber-600">
-                  Розклад
-                </p>
-                <h2 className="mt-2 text-2xl font-bold tracking-tight text-stone-800 sm:text-3xl">
-                  Найближчі записи
-                </h2>
-                <p className="mt-2 text-sm text-stone-500">
-                  Тільки майбутні записи, відсортовані за датою та часом.
-                </p>
-              </div>
+<div className="flex flex-col gap-2">
+  {/* TOP ROW: Розклад + live */}
+  <div className="flex items-center justify-between gap-3">
+    <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-amber-600">
+      Розклад
+    </p>
 
-              <div className="inline-flex items-center gap-2 rounded-full border border-green-300 bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-700">
-                <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
-                Оновлюється автоматично
-              </div>
-            </div>
+    <div className="flex shrink-0 items-center">
+      <div
+        className={cn(
+          "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-semibold sm:text-xs",
+          liveStatusUi.wrapClass,
+        )}
+      >
+        <span className={liveStatusUi.dotClass} />
+        <span className="whitespace-nowrap">{liveStatusUi.text}</span>
+      </div>
+    </div>
+  </div>
+
+  {/* TITLE */}
+  <h2 className="text-2xl font-bold tracking-tight text-stone-800 sm:text-3xl">
+    Найближчі записи
+  </h2>
+
+  {/* SUBTITLE */}
+  <p className="text-sm text-stone-500">
+    Тільки майбутні записи, відсортовані за датою та часом.
+  </p>
+</div>
 
             {upcomingAppointments.length === 0 ? (
               <div className="mt-6 rounded-[24px] border border-stone-200 bg-stone-50 p-8 text-center text-sm text-stone-500">
@@ -383,6 +742,8 @@ export default function Golowna() {
                     key={item.id}
                     item={item}
                     todayKey={todayKey}
+                    nowTs={nowTs}
+                    onOpen={setDetailsId}
                   />
                 ))}
               </ul>
@@ -390,6 +751,267 @@ export default function Golowna() {
           </div>
         </SectionShell>
       </div>
+      <Modal
+        open={detailsId != null && Boolean(selectedBooking)}
+        onClose={() => {
+          setDetailsId(null);
+          setCopiedPhone(false);
+        }}
+        title="Деталі запису"
+        subtitle={
+          selectedBooking?.createdAt
+            ? `Створено: ${new Date(selectedBooking.createdAt).toLocaleString("uk-UA")}`
+            : undefined
+        }
+        size="lg"
+      >
+        {selectedBooking &&
+          (() => {
+            const statusMeta = getBookingStatusMeta(selectedBooking, nowTs);
+            const StatusIcon = statusMeta.Icon;
+            const isCanceled = selectedBooking.status === "canceled";
+            const isConfirmed = selectedBooking.status === "confirmed";
+            const isDeleted = selectedBooking.status === "deleted";
+            const dt = getBookingDateTime(selectedBooking);
+            const isArchived = dt ? dt.getTime() < nowTs : false;
+            const clientName = selectedBooking.clientName || "—";
+            const phone = selectedBooking.clientPhone || "";
+            const service = selectedBooking.serviceName || "—";
+            const time = selectedBooking.time || "—";
+            const masterName =
+              selectedBooking.masterName ||
+              selectedBooking.staffName ||
+              selectedBooking.employeeName ||
+              "—";
+
+            return (
+              <div className="space-y-3">
+                <div
+                  className={cn(
+                    "relative overflow-hidden rounded-[28px] border border-stone-200 p-5 sm:p-6",
+                    "bg-gradient-to-br",
+                    statusMeta.ring,
+                  )}
+                >
+                  <div className="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full bg-white/40 blur-2xl" />
+                  <div className="pointer-events-none absolute -bottom-10 -left-8 h-24 w-24 rounded-full bg-white/30 blur-2xl" />
+
+                  <div className="relative flex flex-col gap-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-stone-500">
+                          <span>Запис</span>
+                        </div>
+
+                        <h3 className="mt-2 text-2xl font-black leading-tight tracking-tight text-stone-900">
+                          {service}
+                        </h3>
+
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                          <Badge className={statusMeta.badge}>
+                            <IconDot className={statusMeta.dot} />
+                            {statusMeta.label}
+                          </Badge>
+                        </div>
+                      </div>
+
+                      <div
+                        className={cn(
+                          "flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl shadow-sm",
+                          statusMeta.iconBg,
+                        )}
+                      >
+                        <StatusIcon className="h-7 w-7" />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-3 rounded-2xl border border-white/70 bg-white/80 px-4 py-3 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-stone-100 text-stone-700">
+                          <CalendarDays className="h-5 w-5" />
+                        </div>
+
+                        <div className="min-w-0">
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">
+                            Дата і час
+                          </p>
+
+                          <div className="mt-0.5 flex flex-wrap items-center gap-2 text-sm font-bold text-stone-800">
+                            <span>{renderBookingDate(selectedBooking)}</span>
+
+                            <span className="text-stone-400">•</span>
+
+                            <span className="flex items-center gap-1">
+                              <Clock3 className="h-4 w-4" />
+                              {time}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                  <div className="rounded-[22px] border border-stone-200 bg-white p-3 shadow-[0_8px_30px_-12px_rgba(15,23,42,0.08)] sm:rounded-[24px] sm:p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50 text-amber-700">
+                        <UserRound className="h-5 w-5" />
+                      </div>
+
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">
+                          Клієнт
+                        </p>
+                        <p className="truncate text-base font-black text-stone-900">
+                          {clientName}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 rounded-2xl border border-stone-200 bg-stone-50/70 p-2.5 sm:mt-4 sm:p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">
+                            Номер телефону
+                          </p>
+                          <p className="mt-1 truncate text-sm font-semibold text-stone-800">
+                            {phone || "—"}
+                          </p>
+                        </div>
+
+                        {phone ? (
+                          <button
+                            type="button"
+                            onClick={() => handleCopyPhone(phone)}
+                            className="inline-flex h-10 shrink-0 items-center gap-2 rounded-xl border border-stone-200 bg-white px-3 text-sm font-semibold text-stone-700 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700 active:scale-[0.98]"
+                          >
+                            {copiedPhone ? (
+                              <>
+                                <CheckCheck className="h-4 w-4" />
+                                Скопійовано
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="h-4 w-4" />
+                                Копіювати
+                              </>
+                            )}
+                          </button>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-[24px] border border-stone-200 bg-white p-4 shadow-[0_8px_30px_-12px_rgba(15,23,42,0.08)]">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-50 text-violet-700">
+                        <Scissors className="h-5 w-5" />
+                      </div>
+
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">
+                          Послуга
+                        </p>
+                        <p className="truncate text-base font-black text-stone-900">
+                          {service}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 rounded-2xl border border-stone-200 bg-stone-50/70 p-3">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-stone-700 border border-stone-200">
+                          <UserRound className="h-5 w-5" />
+                        </div>
+
+                        <div className="min-w-0">
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">
+                            Майстер
+                          </p>
+                          <p className="truncate text-sm font-semibold text-stone-800">
+                            {masterName}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:flex-wrap sm:justify-end">
+                  {!isConfirmed && !isCanceled && !isArchived && !isDeleted && (
+                    <Button
+                      variant="primary"
+                      onClick={async () => {
+                        try {
+                          await confirmBooking(selectedBooking.id);
+                        } catch (e) {
+                          alert(e.message || "Не вдалося підтвердити запис");
+                        }
+                      }}
+                    >
+                      <Check className="h-4 w-4" />
+                      Підтвердити запис
+                    </Button>
+                  )}
+
+                  {!isCanceled && !isArchived && !isDeleted && (
+                    <Button
+                      variant="danger"
+                      onClick={() => setCancelConfirmId(selectedBooking.id)}
+                    >
+                      Скасувати запис
+                    </Button>
+                  )}
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      setDetailsId(null);
+                      setCopiedPhone(false);
+                    }}
+                  >
+                    Закрити
+                  </Button>
+                </div>
+              </div>
+            );
+          })()}
+      </Modal>
+      <Modal
+        open={cancelConfirmId != null}
+        onClose={() => setCancelConfirmId(null)}
+        title="Скасування запису"
+        subtitle="Запис буде позначено як скасований."
+        size="sm"
+        footer={
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button
+              variant="secondary"
+              onClick={() => setCancelConfirmId(null)}
+            >
+              Назад
+            </Button>
+
+            <Button
+              variant="danger"
+              onClick={async () => {
+                try {
+                  await cancelBooking(cancelConfirmId);
+                  setCancelConfirmId(null);
+                  setDetailsId(null);
+                } catch (e) {
+                  alert(e.message || "Не вдалося скасувати запис");
+                }
+              }}
+            >
+              Так, скасувати
+            </Button>
+          </div>
+        }
+      >
+        <div className="text-sm text-stone-500">
+          Підтвердити скасування запису?
+        </div>
+      </Modal>
     </div>
   );
 }

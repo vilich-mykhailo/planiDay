@@ -1,14 +1,11 @@
 @import "tailwindcss";
 @import "./pages//dashboard/Services.css";
 
-
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-
   color-scheme: light;
-
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -17,20 +14,23 @@
 
 html {
   height: 100%;
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
   scrollbar-gutter: stable;
+  overscroll-behavior-y: none;
   background: #f8fafc !important;
 }
 
 body {
   margin: 0;
+  padding: 0;
   min-height: 100dvh;
-
-  /* ✅ ключове: фон BODY */
+  overscroll-behavior-y: none;
   background: #f8fafc !important;
   color: #0f172a;
 }
 
-/* ✅ якщо у тебе інший root id — заміни #root на нього */
 #root {
   min-height: 100dvh;
   background: #f8fafc !important;
@@ -39,8 +39,14 @@ body {
 /* Блокування scroll коли відкритий modal */
 body.modal-open {
   overflow: hidden;
-  touch-action: none; /* важливо для мобільних */
+  touch-action: none;
   padding-right: var(--scrollbar-width, 0px);
+}
+
+/* Блокування scroll коли відкрите меню */
+body.menu-open {
+  overflow: hidden;
+  touch-action: none;
 }
 
 h1 {
@@ -55,34 +61,35 @@ a,
   cursor: pointer;
 }
 
-/* ✅ ВАЖЛИВО: НЕ ПЕРЕБИВАЙ фони на білий */
+/* НЕ перебиваємо фони на білий */
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
-    /* background-color: #ffffff;  <-- прибрали */
   }
+
   a:hover {
     color: #747bff;
   }
+
   button {
     background-color: #f9f9f9;
   }
 }
 
-/* Усі плейсхолдери в формі налаштування студії */
+/* placeholder */
 input::placeholder,
 textarea::placeholder {
-  color: #B1A59A !important;          /* сірий, як у тебе вже був */
-  opacity: 1;                         /* щоб не було прозорості в деяких браузерах */
-  font-weight: 400;                   /* нормальний, не жирний */
+  color: #b1a59a !important;
+  opacity: 1;
+  font-weight: 400;
 }
 
-/* Опціонально: коли фокус — плейсхолдер ховається або стає ще сірішим */
 input:focus::placeholder,
 textarea:focus::placeholder {
-  color: #D1C5B8;                     /* трохи світліший при фокусі */
+  color: #d1c5b8;
 }
 
+/* autofill */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus {
@@ -101,7 +108,7 @@ input:-webkit-autofill:focus {
   }
 }
 
-/* === UNIVERSAL BUTTON HOVER EFFECT === */
+/* UNIVERSAL BUTTON HOVER EFFECT */
 .btn-hover-amber {
   transition: background-color 0.2s ease, border-color 0.2s ease;
 }
@@ -112,11 +119,95 @@ input:-webkit-autofill:focus {
 }
 
 .btn-hover-cancel {
-  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
 }
 
 .btn-hover-cancel:hover {
-  background-color: #ebebeb; /* stone-50 */
-  border-color: #e7e5e4; /* stone-200 */
-  color: #1c1917; /* stone-900 */
+  background-color: #ebebeb;
+  border-color: #e7e5e4;
+  color: #1c1917;
+}
+
+/* live indicator */
+@keyframes live-wave-slow {
+  0% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  70% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes live-wave-fast {
+  0% {
+    transform: scale(1);
+    opacity: 0.65;
+  }
+  70% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.live-indicator {
+  position: relative;
+  display: inline-flex;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+}
+
+.live-indicator::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+}
+
+.live-indicator--ok {
+  background-color: #059669;
+}
+
+.live-indicator--ok::after {
+  background-color: #059669;
+  animation: live-wave-slow 1.8s ease-out infinite;
+}
+
+.live-indicator--pending {
+  background-color: #f59e0b;
+}
+
+.live-indicator--pending::after {
+  background-color: #f59e0b;
+  animation: live-wave-fast 1s ease-out infinite;
+}
+
+.live-indicator--offline {
+  background-color: #dc2626;
+}
+
+.live-indicator--offline::after {
+  background-color: #dc2626;
+  animation: live-wave-slow 2.2s ease-out infinite;
+}
+
+/* mobile bottom bar safe space */
+@media (max-width: 639px) {
+  html,
+  body {
+    min-height: 100dvh;
+  }
+
+
 }

@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { PenLine } from "lucide-react";
+import BookingSuccessModal from "../../components/BookingSuccessModal";
 import {
   MapPin,
   Clock,
@@ -2342,39 +2343,18 @@ onClick={() => paginateHero(1)}
             )}
           </AnimatePresence>
 
-          <AnimatePresence>
-            {successData && (
-              <motion.div
-                initial={{ opacity: 0, y: 40, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 40, scale: 0.95 }}
-                transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                className="fixed bottom-4 left-4 right-4 z-[200] mx-auto max-w-md rounded-2xl border border-stone-200 bg-white p-5 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.15)] sm:bottom-8 sm:left-auto sm:right-8"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100">
-                    <CheckCheck className="h-5 w-5 text-emerald-700" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold text-stone-800">
-                      Запис створено!
-                    </p>
-                    <p className="mt-1 text-xs text-stone-500">
-                      {successData.serviceName} · {successData.date} о{" "}
-                      {successData.time}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setSuccessData(null)}
-                    className="flex h-7 w-7 items-center justify-center rounded-lg text-stone-500 transition-colors duration-200 hover:bg-stone-100"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+<AnimatePresence>
+  {successData && (
+    <BookingSuccessModal
+      bookingDetails={successData}
+      onClose={() => setSuccessData(null)}
+      onViewBookings={() => {
+        setSuccessData(null);
+        navigate("/bookings");
+      }}
+    />
+  )}
+</AnimatePresence>
         </div>
       </div>
     </div>
