@@ -1,11 +1,17 @@
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
-export async function api(path, { method = "GET", body, token } = {}) {
+export async function api(
+  path,
+  { method = "GET", body, token, headers = {} } = {}
+) {
+  const authToken = token || localStorage.getItem("token");
+
   const res = await fetch(`${API_URL}${path}`, {
     method,
     headers: {
       "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+      ...headers,
     },
     body: body ? JSON.stringify(body) : undefined,
   });

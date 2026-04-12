@@ -27,7 +27,8 @@ export default function BookingSuccess() {
   const time = state?.time || null;
   const address = state?.address || null;
   const phone = state?.phone || null;
-
+const successMode = state?.successMode || "create";
+const isReschedule = successMode === "reschedule";
   // Легкий "confetti" ефект через CSS (без canvas)
   useEffect(() => {
     const t = setTimeout(() => {}, 0);
@@ -66,22 +67,26 @@ export default function BookingSuccess() {
               </div>
 
               <div className="min-w-0">
-                <h1 className="!text-2xl sm:!text-3xl md:!text-4xl lg:!text-5xl font-bold text-gray-900">
-                  Ви записані
-                </h1>
+<h1 className="!text-2xl sm:!text-3xl md:!text-4xl lg:!text-5xl font-bold text-gray-900">
+  {isReschedule ? "Запис перенесено" : "Ви записані"}
+</h1>
 
-                <p className="mt-1 text-sm text-gray-600">
-                  {studioName ? (
-                    <>
-                      Студія:{" "}
-                      <span className="font-semibold text-gray-900">
-                        {studioName}
-                      </span>
-                    </>
-                  ) : (
-                    <>Дякуємо! Ваш запис успішно створено.</>
-                  )}
-                </p>
+<p className="mt-1 text-sm text-gray-600">
+  {studioName ? (
+    <>
+      {isReschedule ? "Студія для перенесеного запису: " : "Студія: "}
+      <span className="font-semibold text-gray-900">
+        {studioName}
+      </span>
+    </>
+  ) : (
+    <>
+      {isReschedule
+        ? "Ваш запис успішно перенесено."
+        : "Дякуємо! Ваш запис успішно створено."}
+    </>
+  )}
+</p>
               </div>
             </div>
           </div>
@@ -116,16 +121,20 @@ export default function BookingSuccess() {
                   <div className="flex items-start gap-3 rounded-2xl border bg-gray-50 p-4">
                     <IconClock />
                     <div>
-                      <p className="text-sm text-gray-600">Час запису:</p>
+                  <p className="text-sm text-gray-600">
+  {isReschedule ? "Новий час запису:" : "Час запису:"}
+</p>
                       <p className="font-semibold text-gray-900">{whenText}</p>
                     </div>
                   </div>
                 )}
               </div>
             ) : (
-              <p className="text-gray-600">
-                Майстер звʼяжеться з вами найближчим часом для підтвердження.
-              </p>
+<p className="text-gray-600">
+  {isReschedule
+    ? "Час запису оновлено. Студія побачить зміни найближчим часом."
+    : "Майстер звʼяжеться з вами найближчим часом для підтвердження."}
+</p>
             )}
 
             {phone && (

@@ -6,7 +6,7 @@ import Studios from "./pages/Studios";
 import StudioDetails from "./pages/StudioDetails";
 import BookingSuccess from "./pages/BookingSuccess";
 import Auth from "./pages/Auth";
-
+import Notifications from "./pages/dashboard/Notifications";
 import Dashboard from "./pages/dashboard/Dashboard";
 import StudioSettings from "./pages/dashboard/StudioSettings";
 import Services from "./pages/dashboard/Services";
@@ -78,6 +78,7 @@ export default function App() {
               <Route index element={<Golowna />} />
               <Route path="studio" element={<StudioSettings />} />
               <Route path="services" element={<Services />} />
+              <Route path="notifications" element={<Notifications />} />
               <Route path="schedule" element={<Schedule />} />
               <Route path="bookings" element={<Bookings />} />
               <Route path="masters" element={<Masters />} />

@@ -1,6 +1,8 @@
 // Dashboard.jsx
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { socket } from "../../lib/socket";
+import { useBookings } from "../../context/bookings/useBookings";
 import {
   LayoutDashboard,
   Building2,
@@ -10,7 +12,10 @@ import {
   Users,
   LogOut,
   Sparkles,
+  Bell,
 } from "lucide-react";
+
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
 const linkClass = ({ isActive }) =>
   [
@@ -20,6 +25,10 @@ const linkClass = ({ isActive }) =>
       ? "border-emerald-700 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-[0_10px_24px_rgba(16,185,129,0.22)]"
       : "border-transparent bg-transparent text-stone-600 hover:border-stone-200 hover:bg-stone-50 hover:text-stone-800",
   ].join(" ");
+
+function cn(...classes) {
+  return classes.filter(Boolean).join(" ");
+}
 
 function SkeletonBlock({ className = "" }) {
   return (
@@ -92,9 +101,10 @@ function SidebarLinkIcon({ children, isActive }) {
     <span
       className={[
         "inline-flex h-9 w-9 items-center justify-center rounded-xl border transition-all duration-200",
+        "border-stone-200 bg-white",
         isActive
-          ? "border-white/20 bg-white/10 text-white"
-          : "border-stone-200 bg-white text-stone-500 group-hover:border-stone-300 group-hover:text-stone-700",
+          ? "text-emerald-600" // 👈 зелена іконка
+          : "text-stone-500 group-hover:border-stone-300 group-hover:text-stone-700",
       ].join(" ")}
     >
       {children}
@@ -106,15 +116,120 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
 
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [studioId, setStudioId] = useState(() =>
+    localStorage.getItem("studioId"),
+  );
+
+  const { newBookingsCount = 0 } = useBookings();
+
   useEffect(() => {
     if (!token) {
       navigate("/login-owner", { replace: true });
     }
   }, [token, navigate]);
 
+  const loadUnreadNotifications = useCallback(async () => {
+    const currentToken = localStorage.getItem("token");
+    const currentStudioId = localStorage.getItem("studioId");
+
+    if (!currentToken || !currentStudioId) {
+      setUnreadNotifications(0);
+      setStudioId(currentStudioId || null);
+      return;
+    }
+
+    setStudioId(currentStudioId);
+
+    try {
+      const res = await fetch(
+        `${API_URL}/owner/studio/${currentStudioId}/notifications`,
+        {
+          headers: {
+            Authorization: `Bearer ${currentToken}`,
+          },
+        },
+      );
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        throw new Error(data?.message || "Не вдалося завантажити повідомлення");
+      }
+
+      const items = Array.isArray(data?.notifications)
+        ? data.notifications
+        : [];
+      const unread = items.filter((item) => !item.isRead).length;
+
+      setUnreadNotifications(unread);
+    } catch (e) {
+      console.error("Failed to load unread notifications:", e);
+      setUnreadNotifications(0);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!token) return;
+    loadUnreadNotifications();
+  }, [token, loadUnreadNotifications]);
+
+  useEffect(() => {
+    if (!token) return;
+
+    const currentStudioId = localStorage.getItem("studioId");
+    if (!currentStudioId) return;
+
+    const joinStudio = () => {
+      socket.emit("join:studio", { studioId: currentStudioId });
+    };
+
+    if (socket.connected) {
+      joinStudio();
+    }
+
+    const handleConnect = () => {
+      joinStudio();
+      loadUnreadNotifications();
+    };
+
+    const handleNotificationNew = (payload) => {
+      if (!payload) return;
+      if (String(payload.studioId) !== String(localStorage.getItem("studioId"))) {
+        return;
+      }
+
+      setUnreadNotifications((prev) => prev + 1);
+    };
+
+    const handleNotificationsUpdated = () => {
+      loadUnreadNotifications();
+    };
+
+    const handleAuthChanged = () => {
+      loadUnreadNotifications();
+    };
+
+    socket.on("connect", handleConnect);
+    socket.on("notification:new", handleNotificationNew);
+    socket.on("notifications:updated", handleNotificationsUpdated);
+    window.addEventListener("auth-changed", handleAuthChanged);
+
+    return () => {
+      socket.off("connect", handleConnect);
+      socket.off("notification:new", handleNotificationNew);
+      socket.off("notifications:updated", handleNotificationsUpdated);
+      window.removeEventListener("auth-changed", handleAuthChanged);
+    };
+  }, [token, loadUnreadNotifications]);
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
+    localStorage.removeItem("studioId");
+
+    setUnreadNotifications(0);
+    setStudioId(null);
 
     window.dispatchEvent(new Event("auth-changed"));
     navigate("/login-owner", { replace: true });
@@ -126,7 +241,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen ">
-     <div className="mx-auto w-full max-w-6xl px-0 pt-18 lg:px-4">
+      <div className="mx-auto w-full max-w-6xl px-0 pt-18 lg:px-4">
         <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[220px_minmax(0,1fr)]">
           <aside
             className="
@@ -166,10 +281,53 @@ export default function Dashboard() {
               <NavLink to="/dashboard/bookings" className={linkClass}>
                 {({ isActive }) => (
                   <>
-                    <SidebarLinkIcon isActive={isActive}>
-                      <CalendarDays className="h-4.5 w-4.5" />
-                    </SidebarLinkIcon>
+                    <span className="relative inline-flex">
+                      <SidebarLinkIcon isActive={isActive}>
+                        <CalendarDays className="h-4.5 w-4.5" />
+                      </SidebarLinkIcon>
+
+                      {newBookingsCount > 0 && (
+                        <span
+                          className={cn(
+                            "absolute -right-1 -top-1 inline-flex min-h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 text-[10px] font-bold leading-none shadow-sm",
+isActive
+  ? "border-white bg-red-500 text-white"
+  : "border-white bg-red-500 text-white"
+                          )}
+                        >
+                          {newBookingsCount > 9 ? "9+" : newBookingsCount}
+                        </span>
+                      )}
+                    </span>
+
                     <span>Записи</span>
+                  </>
+                )}
+              </NavLink>
+
+              <NavLink to="/dashboard/notifications" className={linkClass}>
+                {({ isActive }) => (
+                  <>
+                    <span className="relative inline-flex">
+                      <SidebarLinkIcon isActive={isActive}>
+                        <Bell className="h-4.5 w-4.5" />
+                      </SidebarLinkIcon>
+
+                      {unreadNotifications > 0 && (
+                        <span
+                          className={cn(
+                            "absolute -right-1 -top-1 inline-flex min-h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 text-[10px] font-bold leading-none shadow-sm",
+                            isActive
+                              ? "border-white bg-red-500 text-white"
+                              : "border-white bg-red-500 text-white",
+                          )}
+                        >
+                          {unreadNotifications > 9 ? "9+" : unreadNotifications}
+                        </span>
+                      )}
+                    </span>
+
+                    <span className="truncate">Повідомлення</span>
                   </>
                 )}
               </NavLink>
@@ -238,11 +396,11 @@ export default function Dashboard() {
           </aside>
 
           <section
-className="
-  min-h-[200px] overflow-hidden rounded-3xl px-3 py-2 sm:px-4 sm:py-4
-  lg:border lg:border-stone-200/60 lg:bg-white lg:p-6 lg:mb-4 lg:mt-4
-  lg:shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]
-"
+            className="
+              min-h-[200px] overflow-hidden rounded-3xl px-3 py-2 sm:px-4 sm:py-4
+              lg:border lg:border-stone-200/60 lg:bg-white lg:p-6 lg:mb-4 lg:mt-4
+              lg:shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]
+            "
           >
             <Outlet />
           </section>

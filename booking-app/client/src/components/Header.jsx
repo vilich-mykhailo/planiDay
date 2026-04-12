@@ -25,6 +25,7 @@ import {
   Users,
   LogOut,
   Menu,
+  Bell,
   Search,
   X,
   Settings2,
@@ -361,6 +362,11 @@ export default function Header() {
             icon: <CalendarDays className="h-4 w-4" />,
           },
           {
+            to: "/dashboard/notifications",
+            label: "Повідомлення",
+            icon: <Bell className="h-4 w-4" />,
+          },
+          {
             to: "/dashboard/studio",
             label: "Профіль студії",
             icon: <Building2 className="h-4 w-4" />,
@@ -416,6 +422,7 @@ export default function Header() {
     "/dashboard/schedule",
     "/dashboard/bookings",
     "/dashboard/masters",
+    "/dashboard/notifications",
   ];
 
   const isStudioPublicPage = !staticRoutes.includes(location.pathname);

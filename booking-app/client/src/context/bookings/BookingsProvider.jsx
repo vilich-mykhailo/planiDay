@@ -309,29 +309,35 @@ queryClient.setQueryData(["bookings", studioId], (old = []) =>
   );
 
   // ================= VALUE =================
+const newBookingsCount = useMemo(() => {
+  const items = bookingsQuery.data || [];
+  return items.filter((b) => !b.status || b.status === "new").length;
+}, [bookingsQuery.data]);
 
-  const value = useMemo(
-    () => ({
-      bookings: bookingsQuery.data || [],
-      loading: bookingsQuery.isLoading,
-      confirmBooking,
-      cancelBooking,
-      deleteBooking,
-      loadBookings: () =>
-        queryClient.invalidateQueries({
-          queryKey: ["bookings", studioId],
-        }),
-    }),
-    [
-      bookingsQuery.data,
-      bookingsQuery.isLoading,
-      confirmBooking,
-      cancelBooking,
-      deleteBooking,
-      queryClient,
-      studioId,
-    ],
-  );
+const value = useMemo(
+  () => ({
+    bookings: bookingsQuery.data || [],
+    newBookingsCount,
+    loading: bookingsQuery.isLoading,
+    confirmBooking,
+    cancelBooking,
+    deleteBooking,
+    loadBookings: () =>
+      queryClient.invalidateQueries({
+        queryKey: ["bookings", studioId],
+      }),
+  }),
+  [
+    bookingsQuery.data,
+    newBookingsCount,
+    bookingsQuery.isLoading,
+    confirmBooking,
+    cancelBooking,
+    deleteBooking,
+    queryClient,
+    studioId,
+  ],
+);
 
   return (
     <BookingsContext.Provider value={value}>

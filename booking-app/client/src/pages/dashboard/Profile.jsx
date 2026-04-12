@@ -229,8 +229,9 @@ function InfoBadge({ icon, label, value, onEdit }) {
       {/* КНОПКА */}
       {onEdit && (
 <button
+  type="button"
   onClick={onEdit}
-  className="ml-4 inline-flex h-9 items-center justify-center rounded-xl border border-stone-200 bg-white px-3 text-xs font-semibold text-stone-700 btn-hover-amber"
+  className="ml-4 inline-flex min-h-[42px] items-center justify-center rounded-2xl border border-stone-200 bg-white px-4 text-sm font-semibold text-stone-700 transition active:scale-[0.98] btn-hover-amber"
 >
   Змінити
 </button>

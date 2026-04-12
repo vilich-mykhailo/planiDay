@@ -10,6 +10,56 @@ function pad2(n) {
   return String(n).padStart(2, "0");
 }
 
+function formatNotificationDateTime(value) {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "—";
+
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  const hh = String(d.getHours()).padStart(2, "0");
+  const min = String(d.getMinutes()).padStart(2, "0");
+
+  return `${dd}.${mm}.${yyyy} ${hh}:${min}`;
+}
+
+async function createRescheduleNotification({
+  studioId,
+  clientName,
+  serviceName,
+  oldStartAt,
+  newStartAt,
+}) {
+  const oldDate = formatNotificationDateTime(oldStartAt);
+  const newDate = formatNotificationDateTime(newStartAt);
+
+  const created = await prisma.notification.create({
+    data: {
+      studioId,
+      title: "Перенесення запису",
+      message: `Клієнт ${clientName} переніс послугу ${serviceName} з ${oldDate} на ${newDate}`,
+      isRead: false,
+      clientName,
+      serviceName,
+      oldDate,
+      newDate,
+    },
+  });
+
+  io.to(`studio:${studioId}`).emit("notification:new", {
+    id: created.id,
+    studioId: created.studioId,
+    title: created.title,
+    message: created.message,
+    isRead: created.isRead,
+    createdAt: created.createdAt,
+    clientName: created.clientName,
+    serviceName: created.serviceName,
+    oldDate: created.oldDate,
+    newDate: created.newDate,
+  });
+}
+
 function toUiDateTime(startAt) {
   const d = new Date(startAt);
   const date = `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
@@ -165,35 +215,43 @@ router.get("/studio/:studioId", requireAuth, requireOwner, async (req, res) => {
       return res.status(403).json({ message: "Forbidden" });
     }
 
-    const items = await prisma.booking.findMany({
-    where: {
-  studioId,
-  ownerHiddenAt: null,
-},
-      orderBy: { startAt: "asc" },
-      include: {
-        client: { select: { name: true, phone: true } },
-        service: { select: { name: true } },
-        master: { select: { name: true } },
+const items = await prisma.booking.findMany({
+  where: {
+    studioId,
+    ownerHiddenAt: null,
+  },
+  orderBy: { startAt: "asc" },
+  include: {
+    client: { select: { name: true, phone: true } },
+    service: {
+      select: {
+        name: true,
+        price: true,
+        duration: true,
       },
-    });
+    },
+    master: { select: { name: true } },
+  },
+});
 
-    const bookings = items.map((b) => {
-      const { date, time } = toUiDateTime(b.startAt);
+const bookings = items.map((b) => {
+  const { date, time } = toUiDateTime(b.startAt);
 
-      return {
-        id: b.id,
-        date,
-        time,
-        status: uiStatus(b.status),
-        canceledBy: b.canceledBy || null,
-        clientName: b.client?.name || "—",
-        clientPhone: b.client?.phone || "—",
-        serviceName: b.service?.name || "—",
-        masterName: b.master?.name || "",
-        createdAt: b.createdAt,
-      };
-    });
+  return {
+    id: b.id,
+    date,
+    time,
+    status: uiStatus(b.status),
+    canceledBy: b.canceledBy || null,
+    clientName: b.client?.name || "—",
+    clientPhone: b.client?.phone || "—",
+    serviceName: b.service?.name || "—",
+    price: b.service?.price ?? null,
+    duration: b.service?.duration ?? null,
+    masterName: b.master?.name || "",
+    createdAt: b.createdAt,
+  };
+});
 
     res.json({ bookings });
   } catch (e) {
@@ -618,9 +676,10 @@ router.delete("/studio/:studioId/:bookingId", requireAuth, requireOwner, async (
 router.get("/studio/:studioId/busy", async (req, res) => {
   try {
     const { studioId } = req.params;
-    const date = String(req.query.date || "").trim();
-    const masterId = String(req.query.masterId || "").trim();
-    const serviceId = String(req.query.serviceId || "").trim();
+const date = String(req.query.date || "").trim();
+const masterId = String(req.query.masterId || "").trim();
+const serviceId = String(req.query.serviceId || "").trim();
+const excludeBookingId = String(req.query.excludeBookingId || "").trim();
 
     if (!date) {
       return res.status(400).json({ message: "date required" });
@@ -702,19 +761,21 @@ router.get("/studio/:studioId/busy", async (req, res) => {
         return res.json({ busy: [] });
       }
 
-      const bookings = await prisma.booking.findMany({
-        where: {
-          studioId,
-          masterId,
-          status: { not: "CANCELED" },
-          startAt: { lte: dayEnd },
-          endAt: { gte: dayStart },
-        },
-        select: {
-          startAt: true,
-          endAt: true,
-        },
-      });
+const bookings = await prisma.booking.findMany({
+  where: {
+    studioId,
+    masterId,
+    status: { not: "CANCELED" },
+    startAt: { lte: dayEnd },
+    endAt: { gte: dayStart },
+    ...(excludeBookingId ? { id: { not: excludeBookingId } } : {}),
+  },
+  select: {
+    id: true,
+    startAt: true,
+    endAt: true,
+  },
+});
 
       const slots = buildSlotsByMinutes(
         effectiveSchedule.startMin,
@@ -792,20 +853,22 @@ router.get("/studio/:studioId/busy", async (req, res) => {
 
     const serviceDuration = Number(service.duration || slotStep || 60);
 
-    const allBookings = await prisma.booking.findMany({
-      where: {
-        studioId,
-        status: { not: "CANCELED" },
-        startAt: { lte: dayEnd },
-        endAt: { gte: dayStart },
-        masterId: { in: candidateMasters.map((m) => m.id) },
-      },
-      select: {
-        masterId: true,
-        startAt: true,
-        endAt: true,
-      },
-    });
+const allBookings = await prisma.booking.findMany({
+  where: {
+    studioId,
+    status: { not: "CANCELED" },
+    startAt: { lte: dayEnd },
+    endAt: { gte: dayStart },
+    masterId: { in: candidateMasters.map((m) => m.id) },
+    ...(excludeBookingId ? { id: { not: excludeBookingId } } : {}),
+  },
+  select: {
+    id: true,
+    masterId: true,
+    startAt: true,
+    endAt: true,
+  },
+});
 
     const studioSlots = buildSlotsByMinutes(
       studioSchedule.startMin,
@@ -858,6 +921,48 @@ router.get("/studio/:studioId/busy", async (req, res) => {
   } catch (e) {
     console.error(e);
     res.status(500).json({ message: "Load busy failed" });
+  }
+});
+
+// RESCHEDULE BOOKING
+router.patch("/studio/:studioId/:bookingId/reschedule", requireAuth, requireClient, async (req, res) => {
+  try {
+    const { studioId, bookingId } = req.params;
+    const clientId = req.auth.sub;
+    const { newDate, newTime } = req.body;
+
+    const booking = await prisma.booking.findFirst({
+      where: { id: bookingId, studioId, clientId },
+      include: { client: true, service: true }
+    });
+
+    if (!booking) return res.status(404).json({ message: "Booking not found" });
+
+    const oldStartAt = booking.startAt;
+    const startAt = new Date(`${newDate}T${newTime}:00`);
+    const endAt = new Date(startAt.getTime() + (booking.endAt - booking.startAt));
+
+    const updated = await prisma.booking.update({
+      where: { id: bookingId },
+      data: { startAt, endAt },
+    });
+
+    // Створюємо нотифікацію власнику
+    await createRescheduleNotification({
+      studioId: booking.studioId,
+      clientName: booking.client.name,
+      serviceName: booking.service?.name || "Послуга",
+      oldStartAt,
+      newStartAt: startAt,
+    });
+
+    // Відправляємо оновлення через сокет
+    emitBookingUpdated(updated);
+
+    res.json({ booking: updated });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: e?.message || "Reschedule failed" });
   }
 });
 

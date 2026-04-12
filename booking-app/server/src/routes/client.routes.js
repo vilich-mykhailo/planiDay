@@ -5,6 +5,182 @@ import { requireAuth, requireClient } from "../middleware/auth.js";
 
 export const clientRouter = Router();
 
+function pad2(n) {
+  return String(n).padStart(2, "0");
+}
+
+function timeToMinutes(t) {
+  const [hh, mm] = String(t || "00:00")
+    .split(":")
+    .map(Number);
+
+  return (hh || 0) * 60 + (mm || 0);
+}
+
+function minutesToTime(total) {
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  return `${pad2(h)}:${pad2(m)}`;
+}
+
+function weekdayEnumToKey(v) {
+  const s = String(v || "").toUpperCase();
+
+  return (
+    {
+      MON: "mon",
+      TUE: "tue",
+      WED: "wed",
+      THU: "thu",
+      FRI: "fri",
+      SAT: "sat",
+      SUN: "sun",
+    }[s] || null
+  );
+}
+
+function formatLocalDate(date) {
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+}
+
+function combineLocalDateAndTime(dateStr, timeStr) {
+  const [y, m, d] = String(dateStr).split("-").map(Number);
+  const [hh, mm] = String(timeStr || "00:00").split(":").map(Number);
+
+  return new Date(y, (m || 1) - 1, d || 1, hh || 0, mm || 0, 0, 0);
+}
+
+function formatNotificationDateTime(value) {
+  const d = new Date(value);
+
+  return `${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}.${d.getFullYear()} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
+
+function resolveClientDisplayName(client) {
+  if (!client) return "Клієнт";
+
+  const fullName = [client.firstName, client.lastName].filter(Boolean).join(" ").trim();
+  if (fullName) return fullName;
+  if (client.name) return client.name;
+
+  return "Клієнт";
+}
+
+function studioScheduleToMap(scheduleDays = []) {
+  const out = {};
+
+  for (const d of scheduleDays) {
+    const key = weekdayEnumToKey(d.weekday || d.day);
+    if (!key) continue;
+
+    out[key] = {
+      enabled: Boolean(d.enabled),
+      start: minutesToTime(Number(d.startMin || 0)),
+      end: minutesToTime(Number(d.endMin || 0)),
+    };
+  }
+
+  return out;
+}
+
+function exceptionsToList(exceptions = []) {
+  return exceptions.map((item) => ({
+    ...item,
+    date: String(item?.date || "").slice(0, 10),
+    start:
+      item?.startMin == null
+        ? null
+        : minutesToTime(Number(item.startMin || 0)),
+    end:
+      item?.endMin == null
+        ? null
+        : minutesToTime(Number(item.endMin || 0)),
+  }));
+}
+
+function getDayKeyFromDateObj(date) {
+  const map = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+  return map[date.getDay()];
+}
+
+function getScheduleForDate(date, schedule, exceptions = []) {
+  if (!date) return null;
+
+  const iso = formatLocalDate(date);
+
+  const exactException = exceptions.find(
+    (item) => String(item?.date || "").slice(0, 10) === iso,
+  );
+
+  if (exactException) {
+    if (!exactException.enabled) return null;
+
+    return {
+      enabled: true,
+      start: exactException.start,
+      end: exactException.end,
+    };
+  }
+
+  const dayKey = getDayKeyFromDateObj(date);
+  const fallback = schedule?.[dayKey];
+
+  if (!fallback?.enabled) return null;
+
+  return fallback;
+}
+
+function intersectSchedules(a, b) {
+  if (!a?.enabled || !b?.enabled) return null;
+
+  const start = Math.max(timeToMinutes(a.start), timeToMinutes(b.start));
+  const end = Math.min(timeToMinutes(a.end), timeToMinutes(b.end));
+
+  if (end <= start) return null;
+
+  return {
+    enabled: true,
+    start: minutesToTime(start),
+    end: minutesToTime(end),
+  };
+}
+
+function getMasterSchedule(master) {
+  return studioScheduleToMap(master?.scheduleDays || []);
+}
+
+function getMasterExceptions(master) {
+  return exceptionsToList(master?.scheduleExceptions || []);
+}
+
+function resolveMasterDayForDate(date, master) {
+  if (!date || !master) return null;
+
+  const masterSchedule = getMasterSchedule(master);
+  const masterExceptions = getMasterExceptions(master);
+  const iso = formatLocalDate(date);
+
+  const exactException = masterExceptions.find(
+    (item) => String(item?.date || "").slice(0, 10) === iso,
+  );
+
+  if (exactException) {
+    if (!exactException.enabled) return null;
+
+    return {
+      enabled: true,
+      start: exactException.start,
+      end: exactException.end,
+    };
+  }
+
+  if (masterSchedule && Object.keys(masterSchedule).length > 0) {
+    return getScheduleForDate(date, masterSchedule, []);
+  }
+
+  return "__USE_STUDIO_SCHEDULE__";
+}
+
 clientRouter.get("/me", requireAuth, requireClient, async (req, res) => {
   const me = await prisma.clientAccount.findUnique({
     where: { id: req.auth.sub },
@@ -258,13 +434,14 @@ clientRouter.get("/bookings", requireAuth, requireClient, async (req, res) => {
             logoUrl: true,
           },
         },
-        service: {
-          select: {
-            id: true,
-            name: true,
-            price: true,
-          },
-        },
+service: {
+  select: {
+    id: true,
+    name: true,
+    price: true,
+    duration: true,
+  },
+},
         master: {
           select: {
             id: true,
@@ -316,6 +493,7 @@ clientRouter.get("/bookings", requireAuth, requireClient, async (req, res) => {
         serviceName: b.service?.name || "Послуга",
         price: b.service?.price ?? null,
         masterId: b.master?.id || null,
+        duration: b.service?.duration ?? null,
         masterName: b.master?.name || "",
       };
     });
@@ -402,6 +580,7 @@ const payload = {
 
         io.to(`studio:${updated.studioId}`).emit("booking:updated", payload);
         io.to(`client:${updated.clientId}`).emit("booking:updated", payload);
+         
       }
 
       res.json({ booking: updated });
@@ -410,6 +589,388 @@ const payload = {
       res
         .status(500)
         .json({ message: e?.message || "Cancel client booking failed" });
+    }
+  },
+);
+
+clientRouter.patch(
+  "/bookings/:bookingId/reschedule",
+  requireAuth,
+  requireClient,
+  async (req, res) => {
+    try {
+      const clientId = req.auth.sub;
+      const { bookingId } = req.params;
+      const { date, time, serviceId, masterId } = req.body || {};
+
+      if (!date || !time || !serviceId) {
+        return res.status(400).json({
+          message: "Потрібно передати serviceId, date і time",
+        });
+      }
+
+      const booking = await prisma.booking.findFirst({
+        where: {
+          id: bookingId,
+          clientId,
+        },
+        include: {
+          client: {
+            select: {
+              id: true,
+              name: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+          service: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          studio: {
+            select: {
+              id: true,
+              slotDuration: true,
+              scheduleDays: {
+                select: {
+                  day: true,
+                  enabled: true,
+                  startMin: true,
+                  endMin: true,
+                },
+              },
+              scheduleExceptions: {
+                select: {
+                  id: true,
+                  date: true,
+                  enabled: true,
+                  startMin: true,
+                  endMin: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!booking) {
+        return res.status(404).json({ message: "Booking not found" });
+      }
+
+      if (booking.status === "CANCELED") {
+        return res.status(400).json({
+          message: "Скасований запис не можна перенести",
+        });
+      }
+
+      if (new Date(booking.startAt).getTime() < Date.now()) {
+        return res.status(400).json({
+          message: "Минулий запис не можна перенести",
+        });
+      }
+
+      const service = await prisma.service.findFirst({
+        where: {
+          id: serviceId,
+          studioId: booking.studioId,
+        },
+        include: {
+          masters: {
+            select: {
+              masterId: true,
+              master: {
+                select: {
+                  id: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!service) {
+        return res.status(404).json({ message: "Service not found" });
+      }
+
+      let selectedMaster = null;
+
+      if (masterId) {
+        selectedMaster = await prisma.master.findFirst({
+          where: {
+            id: masterId,
+            studioId: booking.studioId,
+          },
+          include: {
+scheduleDays: {
+  select: {
+    day: true,
+    enabled: true,
+    startMin: true,
+    endMin: true,
+  },
+},
+            scheduleExceptions: {
+              select: {
+                id: true,
+                date: true,
+                enabled: true,
+                startMin: true,
+                endMin: true,
+              },
+            },
+          },
+        });
+
+        if (!selectedMaster) {
+          return res.status(404).json({ message: "Master not found" });
+        }
+
+        if (!service.allMasters) {
+          const allowedMasterIds = (service.masters || [])
+            .map((item) => item?.masterId || item?.master?.id)
+            .filter(Boolean)
+            .map(String);
+
+          if (!allowedMasterIds.includes(String(masterId))) {
+            return res.status(400).json({
+              message: "Цей майстер недоступний для вибраної послуги",
+            });
+          }
+        }
+      }
+
+      const bookingDate = combineLocalDateAndTime(date, time);
+
+      if (Number.isNaN(bookingDate.getTime())) {
+        return res.status(400).json({ message: "Некоректна дата або час" });
+      }
+
+      const now = new Date();
+      if (bookingDate.getTime() <= now.getTime()) {
+        return res.status(400).json({
+          message: "Не можна перенести запис у минулий час",
+        });
+      }
+
+      const duration =
+        Number(service.duration) > 0
+          ? Number(service.duration)
+          : Number(booking.studio?.slotDuration) > 0
+            ? Number(booking.studio.slotDuration)
+            : 60;
+
+      const endAt = new Date(bookingDate.getTime() + duration * 60 * 1000);
+
+      const studioSchedule = studioScheduleToMap(
+        booking.studio?.scheduleDays || [],
+      );
+      const studioExceptions = exceptionsToList(
+        booking.studio?.scheduleExceptions || [],
+      );
+
+      const studioDay = getScheduleForDate(
+        bookingDate,
+        studioSchedule,
+        studioExceptions,
+      );
+
+      if (!studioDay?.enabled) {
+        return res.status(400).json({
+          message: "Студія не працює у вибраний час",
+        });
+      }
+
+      const startMin = timeToMinutes(time);
+      const endMin = startMin + duration;
+
+      if (
+        startMin < timeToMinutes(studioDay.start) ||
+        endMin > timeToMinutes(studioDay.end)
+      ) {
+        return res.status(400).json({
+          message: "Час виходить за межі графіка студії",
+        });
+      }
+
+      if (selectedMaster) {
+        const resolvedMasterDay = resolveMasterDayForDate(
+          bookingDate,
+          selectedMaster,
+        );
+
+        if (!resolvedMasterDay) {
+          return res.status(400).json({
+            message: "Майстер недоступний у вибраний день",
+          });
+        }
+
+        const finalMasterDay =
+          resolvedMasterDay === "__USE_STUDIO_SCHEDULE__"
+            ? studioDay
+            : intersectSchedules(studioDay, resolvedMasterDay);
+
+        if (!finalMasterDay?.enabled) {
+          return res.status(400).json({
+            message: "Майстер недоступний у вибраний час",
+          });
+        }
+
+        if (
+          startMin < timeToMinutes(finalMasterDay.start) ||
+          endMin > timeToMinutes(finalMasterDay.end)
+        ) {
+          return res.status(400).json({
+            message: "Час виходить за межі графіка майстра",
+          });
+        }
+      }
+
+      const overlapWhere = {
+        id: { not: bookingId },
+        studioId: booking.studioId,
+        status: { not: "CANCELED" },
+        startAt: { lt: endAt },
+        endAt: { gt: bookingDate },
+        ...(selectedMaster ? { masterId: selectedMaster.id } : {}),
+      };
+
+      const overlapped = await prisma.booking.findFirst({
+        where: overlapWhere,
+        select: {
+          id: true,
+          masterId: true,
+        },
+      });
+
+      if (overlapped) {
+        return res.status(409).json({
+          message: selectedMaster
+            ? "Цей час уже зайнятий у майстра"
+            : "Цей час уже недоступний",
+        });
+      }
+      const oldStartAt = new Date(booking.startAt);
+      const newStartAt = new Date(bookingDate);
+
+      const clientDisplayName = resolveClientDisplayName(booking.client);
+      const oldServiceName = booking.service?.name || "Послуга";
+
+      const notificationMessage =
+        `Клієнт ${clientDisplayName} переніс  послугу ${oldServiceName} ` +
+        `з ${formatNotificationDateTime(oldStartAt)} ` +
+        `на ${formatNotificationDateTime(newStartAt)}`;
+
+      const notificationTitle = "Перенесення запису";
+      const updated = await prisma.booking.update({
+        where: { id: bookingId },
+        data: {
+          serviceId: service.id,
+          masterId: selectedMaster?.id || null,
+          startAt: bookingDate,
+          endAt,
+          status: booking.status === "CONFIRMED" ? "PENDING" : booking.status,
+          canceledBy: null,
+        },
+        include: {
+          studio: {
+            select: {
+              id: true,
+              name: true,
+              phone: true,
+              city: true,
+              street: true,
+              building: true,
+              apartment: true,
+              logoUrl: true,
+            },
+          },
+          service: {
+            select: {
+              id: true,
+              name: true,
+              price: true,
+              duration: true,
+            },
+          },
+          master: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      });
+const notification = await prisma.notification.create({
+  data: {
+    studioId: updated.studioId,
+    clientId: updated.clientId,
+    bookingId: updated.id,
+    type: "BOOKING_RESCHEDULED",
+    title: notificationTitle,
+    message: notificationMessage,
+    clientName: clientDisplayName,
+    serviceName: oldServiceName,
+    oldDate: formatNotificationDateTime(oldStartAt),
+    newDate: formatNotificationDateTime(newStartAt),
+  },
+  select: {
+    id: true,
+    studioId: true,
+    clientId: true,
+    bookingId: true,
+    type: true,
+    title: true,
+    message: true,
+    isRead: true,
+    createdAt: true,
+    clientName: true,
+    serviceName: true,
+    oldDate: true,
+    newDate: true,
+  },
+});
+
+      const io = req.app.get("io");
+
+      if (io) {
+        const payload = {
+          id: updated.id,
+          bookingId: updated.id,
+          status:
+            updated.status === "PENDING"
+              ? "new"
+              : updated.status === "CONFIRMED"
+                ? "confirmed"
+                : updated.status === "CANCELED"
+                  ? "canceled"
+                  : "new",
+          canceledBy: updated.canceledBy || null,
+          startAt: updated.startAt,
+          endAt: updated.endAt,
+          studioId: updated.studioId,
+          clientId: updated.clientId,
+          serviceId: updated.serviceId,
+          masterId: updated.masterId,
+          createdAt: updated.createdAt,
+          updatedAt: updated.updatedAt,
+        };
+
+        io.to(`studio:${updated.studioId}`).emit("booking:updated", payload);
+        io.to(`client:${updated.clientId}`).emit("booking:updated", payload);
+                io.to(`studio:${updated.studioId}`).emit("notification:new", notification);
+      }
+
+      res.json({
+        ok: true,
+        booking: updated,
+      });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({
+        message: e?.message || "Reschedule client booking failed",
+      });
     }
   },
 );

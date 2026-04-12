@@ -27,7 +27,7 @@ model ClientAccount {
   // базові дані
   name  String?
   phone String?
-
+  notifications Notification[]
   // profile (те, що у твоєму Profile.jsx)
   firstName String?
   lastName  String?
@@ -71,7 +71,7 @@ model Studio {
   published Boolean @default(false)
   premium   Boolean @default(false)
   name      String  @default("")
-
+  notifications Notification[]
   category          String            @default("")
   phone             String            @default("")
   description       String            @default("")
@@ -136,7 +136,7 @@ model Booking {
   canceledBy String?
 
   ownerHiddenAt DateTime?
-
+  notifications Notification[]
   serviceId String?
   masterId  String?
 
@@ -163,6 +163,31 @@ enum BookingStatus {
   CONFIRMED
   CANCELED
 }
+
+model Notification {
+  id          String   @id @default(cuid())
+  studioId    String
+  clientId    String?
+  bookingId   String?
+  type        String
+  title       String
+  message     String
+  clientName  String?
+  serviceName String?
+  oldDate     String?
+  newDate     String?
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  studio  Studio         @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  client  ClientAccount? @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  booking Booking?       @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+
+  @@index([studioId, createdAt])
+  @@index([clientId, createdAt])
+  @@index([bookingId])
+}
+
 
 model ServiceCategory {
   id       String @id @default(uuid())

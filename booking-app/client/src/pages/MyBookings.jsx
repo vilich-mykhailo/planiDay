@@ -11,10 +11,14 @@ import {
   Copy,
   CheckCheck,
   X,
-    UserRound,
+  UserRound,
   Check,
   XCircle,
   Clock,
+  RefreshCw,
+  BadgeCheck,
+  Eye,
+  Trash2,
 } from "lucide-react";
 import { useClientBookings } from "../context/bookings/useClientBookings";
 
@@ -317,6 +321,12 @@ export default function MyBookings() {
 
     return "new";
   }
+
+    function canRescheduleBooking(booking) {
+    const status = resolveBookingStatus(booking, nowTs);
+    return status !== "canceled" && status !== "completed";
+  }
+
   const [tab, setTab] = useState("upcoming");
   const [q, setQ] = useState("");
   const [copiedId, setCopiedId] = useState(null);
@@ -478,6 +488,18 @@ const activeStudioLogo = toPublicUrl(
     activeBooking?.studioLogo ||
     "",
 );
+const activePrice =
+  activeBooking?.price ??
+  activeBooking?.servicePrice ??
+  activeBooking?.totalPrice ??
+  null;
+
+const activeDuration =
+  activeBooking?.duration ??
+  activeBooking?.serviceDuration ??
+  activeBooking?.durationMinutes ??
+  null;
+
   function Badge({ variant = "neutral", children, className = "" }) {
     const styles = {
       neutral: "border-stone-200 bg-stone-100 text-stone-600",
@@ -515,6 +537,33 @@ function openStudio(booking) {
   setActiveBookingId(null);
   setCopiedId(null);
   navigate(`/${studioPath}`);
+}
+
+function handleRescheduleClick(booking) {
+  const studioPath =
+    booking?.studioSlug || booking?.studio?.slug || booking?.studioId;
+
+  if (!studioPath) {
+    alert("Не вдалося відкрити студію для перенесення запису");
+    return;
+  }
+
+  setActiveBookingId(null);
+  setCopiedId(null);
+
+  navigate(`/${studioPath}`, {
+    state: {
+      openBooking: true,
+      reschedule: true,
+      bookingId: booking.id,
+      preselectedService: booking?.serviceId
+        ? { serviceId: booking.serviceId }
+        : null,
+      preselectedMasterId: booking?.masterId || null,
+      preselectedDate: booking?.date || null,
+      preselectedTime: booking?.time || null,
+    },
+  });
 }
 
   return (
@@ -697,59 +746,77 @@ function openStudio(booking) {
   </p>
 </button>
 
-                          <div className="mt-4 flex gap-2">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (bookingPast) {
-                                  const studioPath =
-                                    b.studioSlug ||
-                                    b.studio?.slug ||
-                                    b.studioId;
+<div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+  <button
+    type="button"
+    onClick={() => {
+      if (bookingPast) {
+        const studioPath =
+          b.studioSlug || b.studio?.slug || b.studioId;
 
-                                  if (!studioPath) {
-                                    alert(
-                                      "Не вдалося відкрити студію для повторного запису",
-                                    );
-                                    return;
-                                  }
+        if (!studioPath) {
+          alert("Не вдалося відкрити студію для повторного запису");
+          return;
+        }
 
-                                  navigate(`/${studioPath}`, {
-                                    state: {
-                                      openBooking: true,
-                                      rebook: true,
-                                      preselectedService: {
-                                        serviceId: b.serviceId,
-                                      },
-                                      preselectedMasterId: b.masterId || null,
-                                    },
-                                  });
+        navigate(`/${studioPath}`, {
+          state: {
+            openBooking: true,
+            rebook: true,
+            preselectedService: {
+              serviceId: b.serviceId,
+            },
+            preselectedMasterId: b.masterId || null,
+          },
+        });
 
-                                  return;
-                                }
+        return;
+      }
 
-                                setActiveBookingId(b.id);
-                              }}
-className={cn(
-  "inline-flex h-12 flex-1 items-center justify-center rounded-[14px] px-4 text-[15px] font-bold transition-all duration-200 active:scale-[0.98]",
-  statusUi.button,
-)}
-                            >
-                              {bookingPast
-                                ? "Забронювати ще раз"
-                                : "Переглянути"}
-                            </button>
+      setActiveBookingId(b.id);
+    }}
+    className={cn(
+      "inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold transition-all duration-200 active:scale-[0.98]",
+      bookingPast
+        ? "border border-emerald-200 bg-gradient-to-r from-emerald-50 to-emerald-100 text-emerald-700 hover:from-emerald-100 hover:to-emerald-150 shadow-[0_10px_24px_rgba(16,185,129,0.10)]"
+        : "border border-stone-200 bg-white text-stone-700 hover:bg-stone-50 hover:border-stone-300 shadow-sm"
+    )}
+  >
+    {bookingPast ? (
+      <>
+        <RefreshCw className="h-4 w-4" />
+        Забронювати ще раз
+      </>
+    ) : (
+      <>
+        <Eye className="h-4 w-4" />
+        Переглянути
+      </>
+    )}
+  </button>
 
-                            {status !== "canceled" && !bookingPast && (
-                              <button
-                                type="button"
-                                onClick={() => setCancelConfirmId(b.id)}
-                                className="inline-flex h-12 items-center justify-center rounded-[14px] border border-rose-200 bg-rose-50 px-4 text-[14px] font-bold text-rose-700 transition-all duration-200 hover:bg-rose-100 active:scale-[0.96]"
-                              >
-                                Скасувати
-                              </button>
-                            )}
-                          </div>
+  {canRescheduleBooking(b) && (
+    <button
+      type="button"
+      onClick={() => handleRescheduleClick(b)}
+      className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 px-4 text-sm font-bold text-amber-700 shadow-[0_10px_24px_rgba(245,158,11,0.10)] transition-all duration-200 hover:from-amber-100 hover:to-orange-100 active:scale-[0.98]"
+    >
+      <RefreshCw className="h-4 w-4" />
+      Перенести
+    </button>
+  )}
+
+  {status !== "canceled" && !bookingPast && (
+    <button
+      type="button"
+      onClick={() => setCancelConfirmId(b.id)}
+      className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-rose-200 bg-gradient-to-r from-rose-50 to-red-50 px-4 text-sm font-bold text-rose-700 shadow-[0_10px_24px_rgba(244,63,94,0.08)] transition-all duration-200 hover:from-rose-100 hover:to-red-100 active:scale-[0.98]"
+    >
+      <XCircle className="h-4 w-4" />
+      Скасувати
+    </button>
+  )}
+</div>
                         </div>
 
                         <div
@@ -785,6 +852,7 @@ className={cn(
           )}
         </div>
       </div>
+      
 {activeBooking && (
   <div
     className="fixed inset-0 z-[220] flex items-center justify-center bg-stone-950/55 p-4 backdrop-blur-[8px]"
@@ -934,167 +1002,230 @@ className={cn(
           </div>
         </div>
 
-        <div className="mt-3 sm:mt-4 overflow-hidden rounded-[26px] border border-stone-200/80 bg-white/90 shadow-[0_10px_30px_rgba(15,23,42,0.05)] backdrop-blur">
-          <div className="h-[3px] bg-gradient-to-r from-emerald-500 via-amber-400 to-emerald-500" />
+<div className="mt-3 sm:mt-4 overflow-hidden rounded-[28px] border border-stone-200/80 bg-white/95 shadow-[0_14px_40px_rgba(15,23,42,0.06)] backdrop-blur">
+  <div className="h-[3px] bg-gradient-to-r from-emerald-500 via-amber-400 to-emerald-500" />
 
-          <div className="space-y-3 p-3.5">
+  <div className="p-3 sm:p-4">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="rounded-2xl border border-stone-200 bg-stone-50/80 p-3">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-emerald-600 shadow-sm">
+            <CalendarDays className="h-4.5 w-4.5" />
+          </div>
 
-            <div className="rounded-2xl bg-stone-50 p-3.5">
-              <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-stone-500 shadow-sm">
-                  <CalendarDays className="h-5 w-5" />
-                </div>
-
-                <div className="min-w-0">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-stone-500">
-                    Дата і час
-                  </p>
-
-                  <div className="mt-1 flex flex-wrap items-center gap-2 text-sm font-black text-stone-900">
-                    <span>{formatUA(activeBooking.date) || "—"}</span>
-                    <span className="text-stone-400">•</span>
-                    <span className="inline-flex items-center gap-1.5">
-                      <Clock3 className="h-4 w-4 text-stone-500" />
-                      {activeBooking.time || "—"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              {activeStudioLogo ? (
-                <img
-                  src={activeStudioLogo}
-                  alt={activeTitle}
-                  className="h-11 w-11 shrink-0 rounded-2xl border border-stone-200 object-cover"
-                />
-              ) : (
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-stone-100 text-stone-700">
-                  <Sparkles className="h-5 w-5" />
-                </div>
-              )}
-
-              <div className="min-w-0 flex-1">
-                <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-stone-500">
-                  Студія
-                </p>
-                <button
-                  type="button"
-                  onClick={() => openStudio(activeBooking)}
-                  className="mt-1 text-left text-sm font-black text-stone-900 transition hover:text-emerald-700"
-                >
-                  {activeTitle}
-                </button>
-              </div>
-            </div>
-            
-            {activeAddr && (
-              <div className="flex items-start gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-stone-100 text-stone-700">
-                  <MapPin className="h-5 w-5" />
-                </div>
-
-                <div className="min-w-0 flex-1">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-stone-500">
-                    Адреса
-                  </p>
-                  <p className="mt-1 text-sm font-black text-stone-900">
-                    {activeAddr}
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => copyText(activeAddr, activeBooking.id)}
-                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-stone-200 bg-white text-stone-700 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700 active:scale-[0.98]"
-                  aria-label="Скопіювати адресу"
-                  title="Скопіювати адресу"
-                >
-                  {copiedId === activeBooking.id ? (
-                    <CheckCheck className="h-4 w-4" />
-                  ) : (
-                    <Copy className="h-4 w-4" />
-                  )}
-                </button>
-              </div>
-            )}
-
-
-
-            <div className="flex items-start gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-stone-100 text-stone-700">
-                <UserRound className="h-5 w-5" />
-              </div>
-
-              <div className="min-w-0">
-                <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-stone-500">
-                  Майстер
-                </p>
-                <p
-                  className={cn(
-                    "mt-1 text-sm font-black",
-                    activeMasterName
-                      ? "text-stone-900"
-                      : "text-stone-400 italic",
-                  )}
-                >
-                  {activeMasterName || "Довільний майстер"}
-                </p>
-              </div>
-            </div>
-
-            {activePhone && (
-              <div className="flex items-start gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-stone-100 text-stone-700">
-                  <Phone className="h-5 w-5" />
-                </div>
-
-                <div className="min-w-0 flex-1">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-stone-500">
-                    Телефон
-                  </p>
-                  <p className="mt-1 text-sm font-black text-stone-900">
-                    {activePhone}
-                  </p>
-                </div>
-              </div>
-            )}
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-stone-500">
+              Дата
+            </p>
+            <p className="mt-1 text-sm font-black text-stone-900">
+              {formatUA(activeBooking.date) || "—"}
+            </p>
           </div>
         </div>
+      </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          {activePhone ? (
-            <a
-              href={`tel:${activePhone}`}
-              className="group inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-white px-4 text-sm font-bold text-emerald-700 transition-all duration-200 hover:-translate-y-0.5 hover:bg-emerald-50 hover:shadow-[0_12px_28px_rgba(16,185,129,0.10)] active:scale-[0.98]"
-            >
-              <Phone className="h-4 w-4" />
-              Дзвінок
-            </a>
-          ) : (
-            <button
-              type="button"
-              onClick={() => {
-                setActiveBookingId(null);
-                setCopiedId(null);
-              }}
-              className="inline-flex h-11 items-center justify-center rounded-2xl border border-stone-200 bg-white px-4 text-sm font-bold text-stone-700 transition-all duration-200 hover:bg-stone-50 active:scale-[0.98]"
-            >
-              Закрити
-            </button>
-          )}
+      <div className="rounded-2xl border border-stone-200 bg-stone-50/80 p-3">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-amber-600 shadow-sm">
+            <Clock3 className="h-4.5 w-4.5" />
+          </div>
+
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-stone-500">
+              Час
+            </p>
+            <p className="mt-1 text-sm font-black text-stone-900">
+              {activeBooking.time || "—"}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-stone-200 bg-stone-50/80 p-3">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-violet-600 shadow-sm">
+            <BadgeCheck className="h-4.5 w-4.5" />
+          </div>
+
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-stone-500">
+              Ціна
+            </p>
+            <p className="mt-1 text-sm font-black text-stone-900">
+              {activePrice != null ? `${activePrice} грн` : "—"}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-stone-200 bg-stone-50/80 p-3">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-sky-600 shadow-sm">
+            <Clock className="h-4.5 w-4.5" />
+          </div>
+
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-stone-500">
+              Тривалість
+            </p>
+            <p className="mt-1 text-sm font-black text-stone-900">
+              {activeDuration != null ? `${activeDuration} хв` : "—"}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div className="mt-3 space-y-3">
+      <div className="flex items-start gap-3 rounded-2xl border border-stone-200 bg-stone-50/70 p-3">
+        {activeStudioLogo ? (
+          <img
+            src={activeStudioLogo}
+            alt={activeTitle}
+            className="h-10 w-10 shrink-0 rounded-2xl border border-stone-200 object-cover"
+          />
+        ) : (
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-stone-700 shadow-sm">
+            <Sparkles className="h-4.5 w-4.5" />
+          </div>
+        )}
+
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-stone-500">
+            Студія
+          </p>
+          <button
+            type="button"
+            onClick={() => openStudio(activeBooking)}
+            className="mt-1 text-left text-sm font-black text-stone-900 transition hover:text-emerald-700"
+          >
+            {activeTitle}
+          </button>
+        </div>
+      </div>
+
+      {activeAddr && (
+        <div className="flex items-start gap-3 rounded-2xl border border-stone-200 bg-stone-50/70 p-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-stone-700 shadow-sm">
+            <MapPin className="h-4.5 w-4.5" />
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-stone-500">
+              Адреса
+            </p>
+            <p className="mt-1 text-sm font-black text-stone-900 break-words">
+              {activeAddr}
+            </p>
+          </div>
 
           <button
             type="button"
-            onClick={() => {
-              setActiveBookingId(null);
-              setCopiedId(null);
-            }}
-            className="inline-flex h-11 items-center justify-center rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-700 px-4 text-sm font-bold text-white shadow-[0_14px_34px_rgba(16,185,129,0.24)] transition-all duration-200 hover:-translate-y-0.5 hover:from-emerald-700 hover:to-emerald-800 hover:shadow-[0_18px_40px_rgba(16,185,129,0.30)] active:scale-[0.98]"
+            onClick={() => copyText(activeAddr, activeBooking.id)}
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-stone-200 bg-white text-stone-700 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700 active:scale-[0.98]"
+            aria-label="Скопіювати адресу"
+            title="Скопіювати адресу"
           >
-            Готово
+            {copiedId === activeBooking.id ? (
+              <CheckCheck className="h-4 w-4" />
+            ) : (
+              <Copy className="h-4 w-4" />
+            )}
           </button>
         </div>
+      )}
+
+      <div className="flex items-start gap-3 rounded-2xl border border-stone-200 bg-stone-50/70 p-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-stone-700 shadow-sm">
+          <UserRound className="h-4.5 w-4.5" />
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-stone-500">
+            Майстер
+          </p>
+          <p
+            className={cn(
+              "mt-1 text-sm font-black",
+              activeMasterName ? "text-stone-900" : "text-stone-400 italic",
+            )}
+          >
+            {activeMasterName || "Довільний майстер"}
+          </p>
+        </div>
+      </div>
+
+      {activePhone && (
+        <div className="flex items-start gap-3 rounded-2xl border border-stone-200 bg-stone-50/70 p-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-stone-700 shadow-sm">
+            <Phone className="h-4.5 w-4.5" />
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-stone-500">
+              Телефон
+            </p>
+            <p className="mt-1 text-sm font-black text-stone-900">
+              {activePhone}
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  </div>
+</div>
+
+<div
+  className={cn(
+    "mt-4 grid gap-2",
+    canRescheduleBooking(activeBooking)
+      ? "grid-cols-1 sm:grid-cols-3"
+      : "grid-cols-2",
+  )}
+>
+  {activePhone ? (
+    <a
+      href={`tel:${activePhone}`}
+      className="group inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-white px-4 text-sm font-bold text-emerald-700 transition-all duration-200 hover:-translate-y-0.5 hover:bg-emerald-50 hover:shadow-[0_12px_28px_rgba(16,185,129,0.10)] active:scale-[0.98]"
+    >
+      <Phone className="h-4 w-4" />
+      Дзвінок
+    </a>
+  ) : (
+    <button
+      type="button"
+      onClick={() => {
+        setActiveBookingId(null);
+        setCopiedId(null);
+      }}
+      className="inline-flex h-11 items-center justify-center rounded-2xl border border-stone-200 bg-white px-4 text-sm font-bold text-stone-700 transition-all duration-200 hover:bg-stone-50 active:scale-[0.98]"
+    >
+      Закрити
+    </button>
+  )}
+
+  {canRescheduleBooking(activeBooking) && (
+    <button
+      type="button"
+      onClick={() => handleRescheduleClick(activeBooking)}
+      className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 text-sm font-bold text-amber-700 transition-all duration-200 hover:bg-amber-100 active:scale-[0.98]"
+    >
+      <RefreshCw className="h-4 w-4" />
+      Перенести
+    </button>
+  )}
+
+  <button
+    type="button"
+    onClick={() => {
+      setActiveBookingId(null);
+      setCopiedId(null);
+    }}
+    className="inline-flex h-11 items-center justify-center rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-700 px-4 text-sm font-bold text-white shadow-[0_14px_34px_rgba(16,185,129,0.24)] transition-all duration-200 hover:-translate-y-0.5 hover:from-emerald-700 hover:to-emerald-800 hover:shadow-[0_18px_40px_rgba(16,185,129,0.30)] active:scale-[0.98]"
+  >
+    Готово
+  </button>
+</div>
       </div>
     </div>
   </div>

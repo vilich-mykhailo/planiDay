@@ -558,12 +558,9 @@ function buildWeeklyScheduleRows(schedule) {
   }));
 }
 
-
 export default function StudioPublicPage() {
   const { slug } = useParams();
   const location = useLocation();
-  const [bookingOpen, setBookingOpen] = useState(false);
-  const [preselectedMaster, setPreselectedMaster] = useState(null);
   const [studio, setStudio] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -583,20 +580,28 @@ export default function StudioPublicPage() {
   const portfolioRef = useRef(null);
   const detailsRef = useRef(null);
   const navigate = useNavigate();
+  const [rescheduleMode, setRescheduleMode] = useState(false);
+  const [rescheduleBookingId, setRescheduleBookingId] = useState(null);
+  const [preselectedDate, setPreselectedDate] = useState(null);
+  const [preselectedTime, setPreselectedTime] = useState(null);
   const [isFavourite, setIsFavourite] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
-const [heroDirection, setHeroDirection] = useState(0);
+  const [heroDirection, setHeroDirection] = useState(0);
+
   useEffect(() => {
     const navState = location.state;
 
     if (!navState?.openBooking) return;
+    if (!studio) return;
 
-    setBookingOpen(true);
+    setOpenBooking(true);
 
     if (navState.preselectedService?.serviceId) {
       setPreselectedService({
         serviceId: navState.preselectedService.serviceId,
       });
+    } else {
+      setPreselectedService(null);
     }
 
     if (navState.preselectedMasterId) {
@@ -606,11 +611,21 @@ const [heroDirection, setHeroDirection] = useState(0);
           )
         : null;
 
-      setPreselectedMaster(foundMaster || null);
+      setSelectedMaster(foundMaster || null);
     } else {
-      setPreselectedMaster(null);
+      setSelectedMaster(null);
     }
-  }, [location.state, studio?.masters]);
+
+    setRescheduleMode(Boolean(navState.reschedule));
+    setRescheduleBookingId(navState.bookingId || null);
+    setPreselectedDate(navState.preselectedDate || null);
+    setPreselectedTime(navState.preselectedTime || null);
+
+    navigate(location.pathname, {
+      replace: true,
+      state: {},
+    });
+  }, [location.state, location.pathname, navigate, studio]);
 
   useEffect(() => {
     let alive = true;
@@ -792,11 +807,15 @@ const [heroDirection, setHeroDirection] = useState(0);
     setTimeout(() => setCopied(false), 1500);
   }
 
-  function openBookingForService(service) {
-    setPreselectedService({ categoryId: null, serviceId: service.id });
-    setSelectedMaster(null);
-    setOpenBooking(true);
-  }
+function openBookingForService(service) {
+  setPreselectedService({ categoryId: null, serviceId: service.id });
+  setSelectedMaster(null);
+  setRescheduleMode(false);
+  setRescheduleBookingId(null);
+  setPreselectedDate(null);
+  setPreselectedTime(null);
+  setOpenBooking(true);
+}
 
   function scrollToSection(key) {
     setActiveTab(key);
@@ -910,15 +929,15 @@ const [heroDirection, setHeroDirection] = useState(0);
       </div>
     );
   }
-function paginateHero(direction) {
-  if (!heroImages.length) return;
+  function paginateHero(direction) {
+    if (!heroImages.length) return;
 
-  setHeroDirection(direction);
-  setHeroIndex((prev) => {
-    if (direction > 0) return (prev + 1) % heroImages.length;
-    return (prev - 1 + heroImages.length) % heroImages.length;
-  });
-}
+    setHeroDirection(direction);
+    setHeroIndex((prev) => {
+      if (direction > 0) return (prev + 1) % heroImages.length;
+      return (prev - 1 + heroImages.length) % heroImages.length;
+    });
+  }
 
   function handleHeroDragEnd(_, info) {
     const offsetX = info.offset.x;
@@ -945,7 +964,7 @@ function paginateHero(direction) {
       <div className="mx-auto w-full max-w-[1220px] px-0 sm:px-2 md:px-3 lg:px-6">
         <div className="mx-auto w-full max-w-[1120px] pb-0 text-stone-800 sm:pb-20 lg:pb-5">
           <section className="relative">
-           <div className="relative h-[320px] sm:h-[420px] md:h-[480px] lg:h-[520px] overflow-hidden rounded-b-[24px] bg-black sm:mx-[-8px] md:mx-[-12px] lg:mx-0">
+            <div className="relative h-[320px] sm:h-[420px] md:h-[480px] lg:h-[520px] overflow-hidden rounded-b-[24px] bg-black sm:mx-[-8px] md:mx-[-12px] lg:mx-0">
               {heroImages.length > 0 ? (
                 <>
                   <button
@@ -958,27 +977,30 @@ function paginateHero(direction) {
                       className="absolute inset-0"
                       aria-label="Переглянути фото студії"
                     >
-<AnimatePresence initial={false}>
-  <motion.img
-    key={heroImages[heroIndex]}
-    initial={{ x: heroDirection > 0 ? 40 : -40 }}
-    animate={{ x: 0 }}
-    exit={{ x: heroDirection > 0 ? -40 : 40 }}
-    transition={{
-      duration: 0.22,
-      ease: [0.22, 1, 0.36, 1],
-    }}
-    drag="x"
-    dragConstraints={{ left: 0, right: 0 }}
-    dragElastic={0.06}
-    onDragEnd={handleHeroDragEnd}
-    onClick={() => setHeroPreviewIndex(heroIndex)}
-    src={heroImages[heroIndex]}
-    alt={`${name} ${heroIndex + 1}`}
-    className="absolute inset-0 h-full w-full object-cover cursor-grab active:cursor-grabbing touch-pan-y"
-    style={{ backfaceVisibility: "hidden", willChange: "transform" }}
-  />
-</AnimatePresence>
+                      <AnimatePresence initial={false}>
+                        <motion.img
+                          key={heroImages[heroIndex]}
+                          initial={{ x: heroDirection > 0 ? 40 : -40 }}
+                          animate={{ x: 0 }}
+                          exit={{ x: heroDirection > 0 ? -40 : 40 }}
+                          transition={{
+                            duration: 0.22,
+                            ease: [0.22, 1, 0.36, 1],
+                          }}
+                          drag="x"
+                          dragConstraints={{ left: 0, right: 0 }}
+                          dragElastic={0.06}
+                          onDragEnd={handleHeroDragEnd}
+                          onClick={() => setHeroPreviewIndex(heroIndex)}
+                          src={heroImages[heroIndex]}
+                          alt={`${name} ${heroIndex + 1}`}
+                          className="absolute inset-0 h-full w-full object-cover cursor-grab active:cursor-grabbing touch-pan-y"
+                          style={{
+                            backfaceVisibility: "hidden",
+                            willChange: "transform",
+                          }}
+                        />
+                      </AnimatePresence>
                     </div>
                   </button>
 
@@ -986,7 +1008,7 @@ function paginateHero(direction) {
                     <>
                       <button
                         type="button"
-onClick={() => paginateHero(-1)}
+                        onClick={() => paginateHero(-1)}
                         className="hidden sm:block group absolute left-4 top-1/2 z-30 -translate-y-1/2 p-2"
                       >
                         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 backdrop-blur-sm transition-all duration-200 group-hover:bg-white/20">
@@ -996,7 +1018,7 @@ onClick={() => paginateHero(-1)}
 
                       <button
                         type="button"
-onClick={() => paginateHero(1)}
+                        onClick={() => paginateHero(1)}
                         className="hidden sm:block group absolute right-4 top-1/2 z-30 -translate-y-1/2 p-2"
                       >
                         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 backdrop-blur-sm transition-all duration-200 group-hover:bg-white/20">
@@ -1010,10 +1032,10 @@ onClick={() => paginateHero(1)}
                             key={img + idx}
                             type="button"
                             onClick={() => {
-  if (idx === heroIndex) return;
-  setHeroDirection(idx > heroIndex ? 1 : -1);
-  setHeroIndex(idx);
-}}
+                              if (idx === heroIndex) return;
+                              setHeroDirection(idx > heroIndex ? 1 : -1);
+                              setHeroIndex(idx);
+                            }}
                             aria-label={`Перейти до фото ${idx + 1}`}
                             className={cn(
                               "h-2.5 rounded-full transition-all duration-200",
@@ -1095,7 +1117,6 @@ onClick={() => paginateHero(1)}
 
                       <div className="flex flex-col">
                         <div className="flex flex-wrap items-center gap-2">
-
                           {studio?.premium && (
                             <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white">
                               <Crown className="h-3 w-3" />
@@ -1128,9 +1149,7 @@ onClick={() => paginateHero(1)}
                                 )}
                               </button>
                             )}
-                            
                           </div>
-                          
                         )}
 
                         <div className="mt-2 flex items-center gap-3 text-sm">
@@ -1164,11 +1183,15 @@ onClick={() => paginateHero(1)}
                     <div className="hidden lg:block mt-4">
                       <button
                         type="button"
-                        onClick={() => {
-                          setPreselectedService(null);
-                          setSelectedMaster(null);
-                          setOpenBooking(true);
-                        }}
+onClick={() => {
+  setPreselectedService(null);
+  setSelectedMaster(null);
+  setRescheduleMode(false);
+  setRescheduleBookingId(null);
+  setPreselectedDate(null);
+  setPreselectedTime(null);
+  setOpenBooking(true);
+}}
                         className="rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-700 px-7 py-4 text-sm font-bold text-white shadow-[0_10px_25px_rgba(74,93,78,0.22)] transition-all duration-200 hover:from-emerald-700 hover:to-emerald-800"
                       >
                         <span className="flex items-center gap-2 whitespace-nowrap">
@@ -1182,9 +1205,9 @@ onClick={() => paginateHero(1)}
                 {!!description && (
                   <div className="px-2  sm:px-5 lg:px-6">
                     <div className="rounded-[26px] pb-4 px-2 sm:p-6">
-<p className="text-sm leading-5.5 text-stone-600">
-  {description}
-</p>
+                      <p className="text-sm leading-5.5 text-stone-600">
+                        {description}
+                      </p>
                     </div>
                   </div>
                 )}
@@ -1307,7 +1330,7 @@ onClick={() => paginateHero(1)}
                       exit={{ opacity: 0, y: 18 }}
                       transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
                     >
-                     <div className="rounded-[30px] px-0 py-4 pb-18 sm:p-6">
+                      <div className="rounded-[30px] px-0 py-4 pb-18 sm:p-6">
                         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                           <div>
                             <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-amber-600">
@@ -1325,67 +1348,74 @@ onClick={() => paginateHero(1)}
 
                         <div className="grid gap-5 xl:grid-cols-[340px,1fr]">
                           <div className="space-y-5">
-<div className="overflow-hidden rounded-[24px] sm:rounded-[30px] border border-stone-200 bg-white shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
-  <div className="h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-70" />
+                            <div className="overflow-hidden rounded-[24px] sm:rounded-[30px] border border-stone-200 bg-white shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
+                              <div className="h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-70" />
 
-  <div className="p-4 sm:p-6">
-    <div className="text-center">
-      <div className="mx-auto flex h-11 w-11 sm:h-14 sm:w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 shadow-sm">
-        <Star className="h-5 w-5 sm:h-6 sm:w-6 fill-amber-400 text-amber-400" />
-      </div>
+                              <div className="p-4 sm:p-6">
+                                <div className="text-center">
+                                  <div className="mx-auto flex h-11 w-11 sm:h-14 sm:w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 shadow-sm">
+                                    <Star className="h-5 w-5 sm:h-6 sm:w-6 fill-amber-400 text-amber-400" />
+                                  </div>
 
-      <p className="mt-3 sm:mt-4 text-[38px] sm:text-[54px] font-extrabold leading-none tracking-tight text-stone-900">
-        {reviewsSummary.rating.toFixed(1)}
-      </p>
+                                  <p className="mt-3 sm:mt-4 text-[38px] sm:text-[54px] font-extrabold leading-none tracking-tight text-stone-900">
+                                    {reviewsSummary.rating.toFixed(1)}
+                                  </p>
 
-      <div className="mt-2 sm:mt-3 flex items-center justify-center gap-0.5 sm:gap-1">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Star
-            key={i}
-            className={cn(
-              "h-4 w-4 sm:h-5 sm:w-5",
-              i < Math.round(reviewsSummary.rating)
-                ? "fill-amber-400 text-amber-400"
-                : "text-stone-200",
-            )}
-          />
-        ))}
-      </div>
+                                  <div className="mt-2 sm:mt-3 flex items-center justify-center gap-0.5 sm:gap-1">
+                                    {Array.from({ length: 5 }).map((_, i) => (
+                                      <Star
+                                        key={i}
+                                        className={cn(
+                                          "h-4 w-4 sm:h-5 sm:w-5",
+                                          i < Math.round(reviewsSummary.rating)
+                                            ? "fill-amber-400 text-amber-400"
+                                            : "text-stone-200",
+                                        )}
+                                      />
+                                    ))}
+                                  </div>
 
-      <p className="mt-2 sm:mt-3 text-xs sm:text-sm text-stone-500">
-        На основі {reviewsSummary.count} відгуків
-      </p>
-    </div>
+                                  <p className="mt-2 sm:mt-3 text-xs sm:text-sm text-stone-500">
+                                    На основі {reviewsSummary.count} відгуків
+                                  </p>
+                                </div>
 
-    <div className="mt-4 sm:mt-6 space-y-2.5 sm:space-y-3">
-      {[5, 4, 3, 2, 1].map((num) => {
-        const val = reviewsSummary.distribution?.[num] || 0;
-        const total = Math.max(reviewsSummary.count || 1, 1);
-        const width = (val / total) * 100;
+                                <div className="mt-4 sm:mt-6 space-y-2.5 sm:space-y-3">
+                                  {[5, 4, 3, 2, 1].map((num) => {
+                                    const val =
+                                      reviewsSummary.distribution?.[num] || 0;
+                                    const total = Math.max(
+                                      reviewsSummary.count || 1,
+                                      1,
+                                    );
+                                    const width = (val / total) * 100;
 
-        return (
-          <div key={num} className="flex items-center gap-2 sm:gap-3">
-            <div className="flex w-7 sm:w-8 items-center gap-1 text-[11px] sm:text-xs font-semibold text-stone-600">
-              <span>{num}</span>
-              <Star className="h-3 w-3 sm:h-3.5 sm:w-3.5 fill-amber-400 text-amber-400" />
-            </div>
+                                    return (
+                                      <div
+                                        key={num}
+                                        className="flex items-center gap-2 sm:gap-3"
+                                      >
+                                        <div className="flex w-7 sm:w-8 items-center gap-1 text-[11px] sm:text-xs font-semibold text-stone-600">
+                                          <span>{num}</span>
+                                          <Star className="h-3 w-3 sm:h-3.5 sm:w-3.5 fill-amber-400 text-amber-400" />
+                                        </div>
 
-            <div className="h-2 sm:h-2.5 flex-1 overflow-hidden rounded-full bg-stone-100">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-400"
-                style={{ width: `${width}%` }}
-              />
-            </div>
+                                        <div className="h-2 sm:h-2.5 flex-1 overflow-hidden rounded-full bg-stone-100">
+                                          <div
+                                            className="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-400"
+                                            style={{ width: `${width}%` }}
+                                          />
+                                        </div>
 
-            <span className="w-8 sm:w-10 text-right text-[11px] sm:text-xs font-medium text-stone-500">
-              {val}
-            </span>
-          </div>
-        );
-      })}
-    </div>
-  </div>
-</div>
+                                        <span className="w-8 sm:w-10 text-right text-[11px] sm:text-xs font-medium text-stone-500">
+                                          {val}
+                                        </span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            </div>
 
                             {displayedPortfolio.length > 0 && (
                               <div className="overflow-hidden rounded-[30px] border border-stone-200 bg-white shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
@@ -1564,7 +1594,7 @@ onClick={() => paginateHero(1)}
                         ease: [0.22, 1, 0.36, 1],
                       }}
                     >
-                   <div className="rounded-[30px] px-0 py-4 pb-18 sm:p-6">
+                      <div className="rounded-[30px] px-0 py-4 pb-18 sm:p-6">
                         <div className="mb-2">
                           <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.25em] text-amber-600">
                             Наші роботи
@@ -1641,7 +1671,7 @@ onClick={() => paginateHero(1)}
                       exit={{ opacity: 0, y: 18 }}
                       transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
                     >
-                    <div className="rounded-[30px] px-0 py-4 pb-18 sm:p-6">
+                      <div className="rounded-[30px] px-0 py-4 pb-18 sm:p-6">
                         <div className="mb-8">
                           <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-amber-600">
                             Контакти та інформація
@@ -1787,216 +1817,220 @@ onClick={() => paginateHero(1)}
                               </div>
                             </div>
 
-{/* МОБІЛКА / ПЛАНШЕТ */}
-<div className="grid w-full gap-3 border-t border-stone-100 bg-white px-0 py-0 sm:grid-cols-2 sm:px-6 lg:hidden">
-  <div className="relative w-full overflow-hidden rounded-[24px] border border-amber-200/60 bg-gradient-to-br from-white via-amber-50/40 to-stone-50 px-4 py-4 shadow-[0_10px_30px_rgba(120,90,60,0.08)]">
-    <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-amber-200/25 blur-2xl" />
-    <div className="absolute -bottom-6 left-0 h-16 w-16 rounded-full bg-orange-200/20 blur-2xl" />
+                            {/* МОБІЛКА / ПЛАНШЕТ */}
+                            <div className="grid w-full gap-3 border-t border-stone-100 bg-white px-0 py-0 sm:grid-cols-2 sm:px-6 lg:hidden">
+                              <div className="relative w-full overflow-hidden rounded-[24px] border border-amber-200/60 bg-gradient-to-br from-white via-amber-50/40 to-stone-50 px-4 py-4 shadow-[0_10px_30px_rgba(120,90,60,0.08)]">
+                                <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-amber-200/25 blur-2xl" />
+                                <div className="absolute -bottom-6 left-0 h-16 w-16 rounded-full bg-orange-200/20 blur-2xl" />
 
-    <div className="relative z-10 sm:hidden">
-      <div className="flex items-center gap-3">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 shadow-sm">
-          <Star className="h-5 w-5 fill-amber-500 text-amber-500" />
-        </div>
+                                <div className="relative z-10 sm:hidden">
+                                  <div className="flex items-center gap-3">
+                                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 shadow-sm">
+                                      <Star className="h-5 w-5 fill-amber-500 text-amber-500" />
+                                    </div>
 
-        <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-700">
-            Рейтинг
-          </p>
+                                    <div className="min-w-0 flex-1">
+                                      <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-700">
+                                        Рейтинг
+                                      </p>
 
-          <div className="mt-1 flex items-baseline gap-2">
-            <span className="text-[30px] font-extrabold leading-none text-stone-900">
-              {reviewsSummary.rating.toFixed(1)}
-            </span>
-            <span className="text-sm font-medium text-stone-500">
-              ({reviewsSummary.count})
-            </span>
-          </div>
+                                      <div className="mt-1 flex items-baseline gap-2">
+                                        <span className="text-[30px] font-extrabold leading-none text-stone-900">
+                                          {reviewsSummary.rating.toFixed(1)}
+                                        </span>
+                                        <span className="text-sm font-medium text-stone-500">
+                                          ({reviewsSummary.count})
+                                        </span>
+                                      </div>
 
-          <p className="mt-1 text-xs text-stone-500">
-            Висока оцінка клієнтів
-          </p>
-        </div>
-      </div>
-    </div>
+                                      <p className="mt-1 text-xs text-stone-500">
+                                        Висока оцінка клієнтів
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
 
-    <div className="relative z-10 hidden text-center sm:block">
-      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 shadow-sm">
-        <Star className="h-5 w-5 fill-amber-500 text-amber-500" />
-      </div>
+                                <div className="relative z-10 hidden text-center sm:block">
+                                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 shadow-sm">
+                                    <Star className="h-5 w-5 fill-amber-500 text-amber-500" />
+                                  </div>
 
-      <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.22em] text-amber-700">
-        Рейтинг
-      </p>
+                                  <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.22em] text-amber-700">
+                                    Рейтинг
+                                  </p>
 
-      <div className="mt-2 flex items-baseline justify-center gap-2">
-        <span className="text-[34px] font-extrabold leading-none text-stone-900">
-          {reviewsSummary.rating.toFixed(1)}
-        </span>
-        <span className="text-base font-medium text-stone-500">
-          ({reviewsSummary.count})
-        </span>
-      </div>
+                                  <div className="mt-2 flex items-baseline justify-center gap-2">
+                                    <span className="text-[34px] font-extrabold leading-none text-stone-900">
+                                      {reviewsSummary.rating.toFixed(1)}
+                                    </span>
+                                    <span className="text-base font-medium text-stone-500">
+                                      ({reviewsSummary.count})
+                                    </span>
+                                  </div>
 
-      <p className="mt-2 text-sm text-stone-500">
-        Висока оцінка клієнтів
-      </p>
-    </div>
-  </div>
+                                  <p className="mt-2 text-sm text-stone-500">
+                                    Висока оцінка клієнтів
+                                  </p>
+                                </div>
+                              </div>
 
-  <div className="relative w-full overflow-hidden rounded-[24px] border border-emerald-200/60 bg-gradient-to-br from-white via-emerald-50/30 to-stone-50 px-4 py-4 shadow-[0_10px_30px_rgba(120,90,60,0.08)]">
-    <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-emerald-200/25 blur-2xl" />
-    <div className="absolute -bottom-6 left-0 h-16 w-16 rounded-full bg-emerald-100/30 blur-2xl" />
+                              <div className="relative w-full overflow-hidden rounded-[24px] border border-emerald-200/60 bg-gradient-to-br from-white via-emerald-50/30 to-stone-50 px-4 py-4 shadow-[0_10px_30px_rgba(120,90,60,0.08)]">
+                                <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-emerald-200/25 blur-2xl" />
+                                <div className="absolute -bottom-6 left-0 h-16 w-16 rounded-full bg-emerald-100/30 blur-2xl" />
 
-    <div className="relative z-10 sm:hidden">
-      <div className="flex flex-col gap-3">
-        <div className="flex items-start gap-3">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 shadow-sm">
-            <Phone className="h-5 w-5 text-emerald-600" />
-          </div>
+                                <div className="relative z-10 sm:hidden">
+                                  <div className="flex flex-col gap-3">
+                                    <div className="flex items-start gap-3">
+                                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 shadow-sm">
+                                        <Phone className="h-5 w-5 text-emerald-600" />
+                                      </div>
 
-          <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-emerald-700">
-              Телефон
-            </p>
+                                      <div className="min-w-0 flex-1">
+                                        <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-emerald-700">
+                                          Телефон
+                                        </p>
 
-            {studioPhone ? (
-              <>
-                <div className="mt-1 break-all text-[20px] font-extrabold leading-tight text-stone-900">
-                  {studioPhone}
-                </div>
-              </>
-            ) : (
-              <p className="mt-1 text-sm text-stone-400">Не вказано</p>
-            )}
-          </div>
-        </div>
+                                        {studioPhone ? (
+                                          <>
+                                            <div className="mt-1 break-all text-[20px] font-extrabold leading-tight text-stone-900">
+                                              {studioPhone}
+                                            </div>
+                                          </>
+                                        ) : (
+                                          <p className="mt-1 text-sm text-stone-400">
+                                            Не вказано
+                                          </p>
+                                        )}
+                                      </div>
+                                    </div>
 
-        {studioPhone && (
-          <a
-            href={`tel:${studioPhone}`}
-            className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-emerald-200 bg-white px-4 text-sm font-bold text-emerald-700 transition-all duration-150 active:scale-95 active:bg-emerald-50 active:shadow-inner"
-          >
-            Зателефонувати
-          </a>
-        )}
-      </div>
-    </div>
+                                    {studioPhone && (
+                                      <a
+                                        href={`tel:${studioPhone}`}
+                                        className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-emerald-200 bg-white px-4 text-sm font-bold text-emerald-700 transition-all duration-150 active:scale-95 active:bg-emerald-50 active:shadow-inner"
+                                      >
+                                        Зателефонувати
+                                      </a>
+                                    )}
+                                  </div>
+                                </div>
 
-    <div className="relative z-10 hidden text-center sm:block">
-      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 shadow-sm">
-        <Phone className="h-5 w-5 text-emerald-600" />
-      </div>
+                                <div className="relative z-10 hidden text-center sm:block">
+                                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 shadow-sm">
+                                    <Phone className="h-5 w-5 text-emerald-600" />
+                                  </div>
 
-      <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.22em] text-emerald-700">
-        Телефон
-      </p>
+                                  <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.22em] text-emerald-700">
+                                    Телефон
+                                  </p>
 
-      {studioPhone ? (
-        <>
-          <div className="mt-2 break-all text-base font-extrabold text-stone-900">
-            {studioPhone}
-          </div>
+                                  {studioPhone ? (
+                                    <>
+                                      <div className="mt-2 break-all text-base font-extrabold text-stone-900">
+                                        {studioPhone}
+                                      </div>
 
-          <a
-            href={`tel:${studioPhone}`}
-            className="mt-3 inline-flex h-9 items-center justify-center rounded-xl border border-emerald-200 bg-white px-4 text-xs font-bold text-emerald-700 transition-all duration-150 active:translate-y-[1px] active:scale-95 active:bg-emerald-50 active:shadow-inner"
-          >
-            Зателефонувати
-          </a>
-        </>
-      ) : (
-        <p className="mt-2 text-sm text-stone-400">Не вказано</p>
-      )}
-    </div>
-  </div>
+                                      <a
+                                        href={`tel:${studioPhone}`}
+                                        className="mt-3 inline-flex h-9 items-center justify-center rounded-xl border border-emerald-200 bg-white px-4 text-xs font-bold text-emerald-700 transition-all duration-150 active:translate-y-[1px] active:scale-95 active:bg-emerald-50 active:shadow-inner"
+                                      >
+                                        Зателефонувати
+                                      </a>
+                                    </>
+                                  ) : (
+                                    <p className="mt-2 text-sm text-stone-400">
+                                      Не вказано
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
 
-  <div className="relative w-full overflow-hidden rounded-[24px] border border-indigo-200/60 bg-gradient-to-br from-white via-indigo-50/30 to-stone-50 px-4 py-4 shadow-[0_10px_30px_rgba(120,90,60,0.08)]">
-    <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-indigo-200/20 blur-2xl" />
-    <div className="absolute -bottom-6 left-0 h-16 w-16 rounded-full bg-indigo-100/30 blur-2xl" />
+                              <div className="relative w-full overflow-hidden rounded-[24px] border border-indigo-200/60 bg-gradient-to-br from-white via-indigo-50/30 to-stone-50 px-4 py-4 shadow-[0_10px_30px_rgba(120,90,60,0.08)]">
+                                <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-indigo-200/20 blur-2xl" />
+                                <div className="absolute -bottom-6 left-0 h-16 w-16 rounded-full bg-indigo-100/30 blur-2xl" />
 
-    <div className="relative z-10 sm:hidden">
-      <div className="flex items-center gap-3">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-indigo-100 shadow-sm">
-          <Sparkles className="h-5 w-5 text-indigo-600" />
-        </div>
+                                <div className="relative z-10 sm:hidden">
+                                  <div className="flex items-center gap-3">
+                                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-indigo-100 shadow-sm">
+                                      <Sparkles className="h-5 w-5 text-indigo-600" />
+                                    </div>
 
-        <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-indigo-700">
-            Формат
-          </p>
-          <div className="mt-1 text-base font-extrabold leading-tight text-stone-900">
-            Онлайн запис
-          </div>
-          <p className="mt-1 text-xs text-stone-500">
-            Швидко та без дзвінків
-          </p>
-        </div>
-      </div>
-    </div>
+                                    <div className="min-w-0 flex-1">
+                                      <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-indigo-700">
+                                        Формат
+                                      </p>
+                                      <div className="mt-1 text-base font-extrabold leading-tight text-stone-900">
+                                        Онлайн запис
+                                      </div>
+                                      <p className="mt-1 text-xs text-stone-500">
+                                        Швидко та без дзвінків
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
 
-    <div className="relative z-10 hidden text-center sm:block">
-      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-100 shadow-sm">
-        <Sparkles className="h-5 w-5 text-indigo-600" />
-      </div>
+                                <div className="relative z-10 hidden text-center sm:block">
+                                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-100 shadow-sm">
+                                    <Sparkles className="h-5 w-5 text-indigo-600" />
+                                  </div>
 
-      <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.22em] text-indigo-700">
-        Формат
-      </p>
+                                  <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.22em] text-indigo-700">
+                                    Формат
+                                  </p>
 
-      <div className="mt-2 text-base font-extrabold text-stone-900">
-        Онлайн запис
-      </div>
+                                  <div className="mt-2 text-base font-extrabold text-stone-900">
+                                    Онлайн запис
+                                  </div>
 
-      <p className="mt-1 text-xs text-stone-500">
-        Швидко та без дзвінків
-      </p>
-    </div>
-  </div>
+                                  <p className="mt-1 text-xs text-stone-500">
+                                    Швидко та без дзвінків
+                                  </p>
+                                </div>
+                              </div>
 
-  <div className="relative w-full overflow-hidden rounded-[24px] border border-amber-200/60 bg-gradient-to-br from-white via-amber-50/40 to-stone-50 px-4 py-4 shadow-[0_10px_30px_rgba(120,90,60,0.08)]">
-    <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-amber-200/25 blur-2xl" />
-    <div className="absolute -bottom-6 left-0 h-16 w-16 rounded-full bg-orange-200/20 blur-2xl" />
+                              <div className="relative w-full overflow-hidden rounded-[24px] border border-amber-200/60 bg-gradient-to-br from-white via-amber-50/40 to-stone-50 px-4 py-4 shadow-[0_10px_30px_rgba(120,90,60,0.08)]">
+                                <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-amber-200/25 blur-2xl" />
+                                <div className="absolute -bottom-6 left-0 h-16 w-16 rounded-full bg-orange-200/20 blur-2xl" />
 
-    <div className="relative z-10 sm:hidden">
-      <div className="flex items-center gap-3">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 shadow-sm">
-          <Banknote className="h-5 w-5 text-amber-700" />
-        </div>
+                                <div className="relative z-10 sm:hidden">
+                                  <div className="flex items-center gap-3">
+                                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 shadow-sm">
+                                      <Banknote className="h-5 w-5 text-amber-700" />
+                                    </div>
 
-        <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-700">
-            Оплата
-          </p>
-          <div className="mt-1 text-base font-extrabold leading-tight text-stone-900">
-            Без передоплати
-          </div>
-          <p className="mt-1 text-xs text-stone-500">
-            Оплата після візиту
-          </p>
-        </div>
-      </div>
-    </div>
+                                    <div className="min-w-0 flex-1">
+                                      <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-700">
+                                        Оплата
+                                      </p>
+                                      <div className="mt-1 text-base font-extrabold leading-tight text-stone-900">
+                                        Без передоплати
+                                      </div>
+                                      <p className="mt-1 text-xs text-stone-500">
+                                        Оплата після візиту
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
 
-    <div className="relative z-10 hidden text-center sm:block">
-      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 shadow-sm">
-        <Banknote className="h-5 w-5 text-amber-700" />
-      </div>
+                                <div className="relative z-10 hidden text-center sm:block">
+                                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 shadow-sm">
+                                    <Banknote className="h-5 w-5 text-amber-700" />
+                                  </div>
 
-      <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.22em] text-amber-700">
-        Оплата
-      </p>
+                                  <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.22em] text-amber-700">
+                                    Оплата
+                                  </p>
 
-      <div className="mt-2 text-base font-extrabold text-stone-900">
-        Без передоплати
-      </div>
+                                  <div className="mt-2 text-base font-extrabold text-stone-900">
+                                    Без передоплати
+                                  </div>
 
-      <p className="mt-1 text-xs text-stone-500">
-        Оплата після візиту
-      </p>
-    </div>
-  </div>
-</div>
+                                  <p className="mt-1 text-xs text-stone-500">
+                                    Оплата після візиту
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
 
                             {/* ДЕСКТОП — окремий великий графік */}
                             <div className="hidden rounded-[30px] border border-stone-200 bg-white p-5 shadow-[0_10px_35px_rgba(0,0,0,0.04)] sm:p-6 lg:block">
@@ -2260,11 +2294,15 @@ onClick={() => paginateHero(1)}
               <div className="mx-auto max-w-md rounded-[28px] border border-white/60 backdrop-blur-2xl">
                 <button
                   type="button"
-                  onClick={() => {
-                    setPreselectedService(null);
-                    setSelectedMaster(null);
-                    setOpenBooking(true);
-                  }}
+onClick={() => {
+  setPreselectedService(null);
+  setSelectedMaster(null);
+  setRescheduleMode(false);
+  setRescheduleBookingId(null);
+  setPreselectedDate(null);
+  setPreselectedTime(null);
+  setOpenBooking(true);
+}}
                   className="
           flex h-12 w-full items-center justify-center gap-2.5
           rounded-[22px] bg-stone-900 px-5
@@ -2290,10 +2328,15 @@ onClick={() => paginateHero(1)}
               <BookingModal
                 open={openBooking}
                 title={name}
-                onClose={() => {
-                  setOpenBooking(false);
-                  setPreselectedService(null);
-                }}
+onClose={() => {
+  setOpenBooking(false);
+  setPreselectedService(null);
+  setSelectedMaster(null);
+  setRescheduleMode(false);
+  setRescheduleBookingId(null);
+  setPreselectedDate(null);
+  setPreselectedTime(null);
+}}
               >
                 <StudioBookingWidget
                   studio={studio}
@@ -2306,18 +2349,33 @@ onClick={() => paginateHero(1)}
                     selectedMaster?.scheduleExceptions || []
                   }
                   preselectedService={preselectedService}
-                  onCancel={() => {
-                    setOpenBooking(false);
-                    setPreselectedService(null);
-                  }}
-                  onSuccess={(data) => {
-                    setSuccessData({
-                      ...data,
-                      address: fullAddress,
-                      studioName: name,
-                    });
-                    setOpenBooking(false);
-                  }}
+                  isReschedule={rescheduleMode}
+                  rescheduleBookingId={rescheduleBookingId}
+                  preselectedDate={preselectedDate}
+                  preselectedTime={preselectedTime}
+onCancel={() => {
+  setOpenBooking(false);
+  setPreselectedService(null);
+  setSelectedMaster(null);
+  setRescheduleMode(false);
+  setRescheduleBookingId(null);
+  setPreselectedDate(null);
+  setPreselectedTime(null);
+}}
+onSuccess={(data) => {
+  setSuccessData({
+    ...data,
+    address: fullAddress,
+    studioName: name,
+  });
+  setOpenBooking(false);
+  setPreselectedService(null);
+  setSelectedMaster(null);
+  setRescheduleMode(false);
+  setRescheduleBookingId(null);
+  setPreselectedDate(null);
+  setPreselectedTime(null);
+}}
                 />
               </BookingModal>
             )}
@@ -2343,18 +2401,18 @@ onClick={() => paginateHero(1)}
             )}
           </AnimatePresence>
 
-<AnimatePresence>
-  {successData && (
-    <BookingSuccessModal
-      bookingDetails={successData}
-      onClose={() => setSuccessData(null)}
-      onViewBookings={() => {
-        setSuccessData(null);
-        navigate("/bookings");
-      }}
-    />
-  )}
-</AnimatePresence>
+          <AnimatePresence>
+            {successData && (
+              <BookingSuccessModal
+                bookingDetails={successData}
+                onClose={() => setSuccessData(null)}
+                onViewBookings={() => {
+                  setSuccessData(null);
+                  navigate("/bookings");
+                }}
+              />
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </div>

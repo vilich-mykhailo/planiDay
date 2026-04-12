@@ -420,6 +420,7 @@ export default function Golowna() {
   const [detailsId, setDetailsId] = useState(null);
   const [copiedPhone, setCopiedPhone] = useState(false);
   const [cancelConfirmId, setCancelConfirmId] = useState(null);
+  const [visibleAppointmentsCount, setVisibleAppointmentsCount] = useState(5);
   useEffect(() => {
     const id = setInterval(() => setNowTs(Date.now()), 60_000);
     return () => clearInterval(id);
@@ -549,13 +550,13 @@ const [isOnline, setIsOnline] = useState(navigator.onLine);
 
     upcoming.sort((a, c) => a.ts - c.ts);
 
-    return upcoming.slice(0, 5).map(({ b }) => ({
-      ...b,
-      date: b.date,
-      time: parseTimeToHHMM(b.time) || b.time || "—",
-      serviceName: b.serviceName || "—",
-      clientName: b.clientName || "—",
-    }));
+return upcoming.map(({ b }) => ({
+  ...b,
+  date: b.date,
+  time: parseTimeToHHMM(b.time) || b.time || "—",
+  serviceName: b.serviceName || "—",
+  clientName: b.clientName || "—",
+}));
   }, [bookings, nowTs]);
 
   const todayKey = toISODateKey(new Date(nowTs));
@@ -572,6 +573,10 @@ useEffect(() => {
     window.removeEventListener("offline", handleOffline);
   };
 }, []);
+
+useEffect(() => {
+  setVisibleAppointmentsCount(5);
+}, [bookings]);
 
 useEffect(() => {
   const studioId = localStorage.getItem("studioId");
@@ -731,23 +736,38 @@ const liveStatusUi =
   </p>
 </div>
 
-            {upcomingAppointments.length === 0 ? (
-              <div className="mt-6 rounded-[24px] border border-stone-200 bg-stone-50 p-8 text-center text-sm text-stone-500">
-                Немає запланованих записів
-              </div>
-            ) : (
-              <ul className="mt-6 space-y-3">
-                {upcomingAppointments.map((item) => (
-                  <AppointmentCard
-                    key={item.id}
-                    item={item}
-                    todayKey={todayKey}
-                    nowTs={nowTs}
-                    onOpen={setDetailsId}
-                  />
-                ))}
-              </ul>
-            )}
+{upcomingAppointments.length === 0 ? (
+  <div className="mt-6 rounded-[24px] border border-stone-200 bg-stone-50 p-8 text-center text-sm text-stone-500">
+    Немає запланованих записів
+  </div>
+) : (
+  <>
+    <ul className="mt-6 space-y-3">
+      {upcomingAppointments.slice(0, visibleAppointmentsCount).map((item) => (
+        <AppointmentCard
+          key={item.id}
+          item={item}
+          todayKey={todayKey}
+          nowTs={nowTs}
+          onOpen={setDetailsId}
+        />
+      ))}
+    </ul>
+
+    {visibleAppointmentsCount < upcomingAppointments.length && (
+      <div className="mt-4 flex justify-center">
+        <button
+          type="button"
+          onClick={() => setVisibleAppointmentsCount((prev) => prev + 5)}
+          className="inline-flex items-center justify-center rounded-2xl border border-stone-300 bg-white px-5 py-2.5 text-sm font-semibold text-stone-700 transition-all duration-200 hover:bg-stone-100 active:scale-[0.98]"
+        >
+          Показати ще
+        </button>
+      </div>
+    )}
+  </>
+)}
+
           </div>
         </SectionShell>
       </div>

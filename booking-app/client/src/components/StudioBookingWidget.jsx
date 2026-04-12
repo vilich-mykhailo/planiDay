@@ -192,6 +192,10 @@ export default function StudioBookingWidget({
   masterSchedule: masterScheduleProp,
   masterScheduleExceptions: masterScheduleExceptionsProp,
   preselectedService,
+  isReschedule = false,
+  rescheduleBookingId = null,
+  preselectedDate = null,
+  preselectedTime = null,
   onCancel,
   onSuccess,
 }) {
@@ -221,41 +225,52 @@ export default function StudioBookingWidget({
     return [...uncategorized, ...categorized];
   }, [studio]);
 
-  const remountKey = useMemo(() => {
-    const studioKey = studio?.id ?? studio?.slug ?? "no-studio";
-    const masterKey = master?.id ?? "no-master";
-    const preKey = preselectedService?.serviceId ?? "no-pre";
-    const servicesKey = services.map((s) => s.id).join("|");
+const remountKey = useMemo(() => {
+  const studioKey = studio?.id ?? studio?.slug ?? "no-studio";
+  const masterKey = master?.id ?? "no-master";
+  const preKey = preselectedService?.serviceId ?? "no-pre";
+  const servicesKey = services.map((s) => s.id).join("|");
+  const rescheduleKey = isReschedule ? `reschedule-${rescheduleBookingId || "no-id"}` : "create";
+  const dateKey = preselectedDate || "no-date";
+  const timeKey = preselectedTime || "no-time";
 
-    return `${studioKey}::${masterKey}::${preKey}::${servicesKey}`;
-  }, [
-    studio?.id,
-    studio?.slug,
-    master?.id,
-    preselectedService?.serviceId,
-    services,
-  ]);
+  return `${studioKey}::${masterKey}::${preKey}::${servicesKey}::${rescheduleKey}::${dateKey}::${timeKey}`;
+}, [
+  studio?.id,
+  studio?.slug,
+  master?.id,
+  preselectedService?.serviceId,
+  services,
+  isReschedule,
+  rescheduleBookingId,
+  preselectedDate,
+  preselectedTime,
+]);
 
   if (!studio) return null;
 
   return (
-    <StudioBookingWidgetInner
-      key={remountKey}
-      studio={studio}
-      
-      services={services}
-      scheduleProp={scheduleProp}
-      scheduleExceptionsProp={scheduleExceptionsProp}
-      slotDurationProp={slotDurationProp}
-      initialMaster={master}
-      initialMasterScheduleProp={masterScheduleProp}
-      initialMasterScheduleExceptionsProp={masterScheduleExceptionsProp}
-      preselectedService={preselectedService}
-      onCancel={onCancel}
-      onSuccess={onSuccess}
-    />
+<StudioBookingWidgetInner
+  key={remountKey}
+  studio={studio}
+  services={services}
+  scheduleProp={scheduleProp}
+  scheduleExceptionsProp={scheduleExceptionsProp}
+  slotDurationProp={slotDurationProp}
+  initialMaster={master}
+  initialMasterScheduleProp={masterScheduleProp}
+  initialMasterScheduleExceptionsProp={masterScheduleExceptionsProp}
+  preselectedService={preselectedService}
+  isReschedule={isReschedule}
+  rescheduleBookingId={rescheduleBookingId}
+  preselectedDate={preselectedDate}
+  preselectedTime={preselectedTime}
+  onCancel={onCancel}
+  onSuccess={onSuccess}
+/>
   );
 }
+
 
 function StudioBookingWidgetInner({
   studio,
@@ -267,6 +282,10 @@ function StudioBookingWidgetInner({
   initialMasterScheduleProp,
   initialMasterScheduleExceptionsProp,
   preselectedService,
+  isReschedule,
+  rescheduleBookingId,
+  preselectedDate,
+  preselectedTime,
   onCancel,
   onSuccess,
 }) {
@@ -335,7 +354,6 @@ function StudioBookingWidgetInner({
 
     return exists ? wantedId : (visibleServices[0]?.id ?? null);
   }, [visibleServices, preselectedService?.serviceId]);
-
   const [selectedDate, setSelectedDate] = useState(null);
   const [step, setStep] = useState("pick");
   const [selectedServiceId, setSelectedServiceId] = useState(
@@ -350,11 +368,38 @@ function StudioBookingWidgetInner({
     return Array.isArray(studio?.masters) ? studio.masters : [];
   }, [studio?.masters]);
 
+useEffect(() => {
+  if (!isReschedule) return;
+
+  if (preselectedDate) {
+    const [y, m, d] = preselectedDate.split("-").map(Number);
+    const dt = new Date(y, (m || 1) - 1, d || 1);
+    setSelectedDate(dt);
+  }
+
+  if (preselectedTime) {
+    setSelectedTime(preselectedTime);
+  }
+}, [isReschedule, preselectedDate, preselectedTime]);
+
+useEffect(() => {
+  if (!isReschedule) return;
+
+  if (initialMaster?.id) {
+    setMasterPickMode(MASTER_PICK_MODE.SPECIFIC);
+    setSelectedMasterId(String(initialMaster.id));
+  } else {
+    setMasterPickMode(MASTER_PICK_MODE.ANY);
+    setSelectedMasterId(ANY_MASTER_ID);
+  }
+}, [isReschedule, initialMaster?.id]);
+
   const availableMasters = useMemo(() => {
     const service = services.find(
       (s) => String(s.id) === String(selectedServiceId || defaultServiceId),
     );
 
+    
     console.log("selectedServiceId", selectedServiceId);
     console.log("service", service);
     console.log("service.masters", service?.masters);
@@ -642,9 +687,13 @@ useEffect(() => {
     try {
       const token = localStorage.getItem("token");
 
-      const params = new URLSearchParams({
-        date: selectedDateStr,
-      });
+const params = new URLSearchParams({
+  date: selectedDateStr,
+});
+
+if (isReschedule && rescheduleBookingId) {
+  params.set("excludeBookingId", String(rescheduleBookingId));
+}
 
       if (selectedMaster?.id) {
         params.set("masterId", String(selectedMaster.id));
@@ -652,11 +701,11 @@ useEffect(() => {
         params.set("serviceId", String(selectedServiceIdForBusy));
       }
 
-      const busyUrl = `${import.meta.env.VITE_API_URL}/bookings/studio/${studio.id}/busy?${params.toString()}`;
+const busyUrl = `${import.meta.env.VITE_API_URL}/bookings/studio/${studio.id}/busy?${params.toString()}`;
 
-      const res = await fetch(busyUrl, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
+const res = await fetch(busyUrl, {
+  headers: token ? { Authorization: `Bearer ${token}` } : {},
+});
 
       const data = await res.json().catch(() => null);
 
@@ -686,7 +735,14 @@ useEffect(() => {
   return () => {
     alive = false;
   };
-}, [studio?.id, selectedDateStr, selectedMaster?.id, selectedServiceIdForBusy]);
+}, [
+  studio?.id,
+  selectedDateStr,
+  selectedMaster?.id,
+  selectedServiceIdForBusy,
+  isReschedule,
+  rescheduleBookingId,
+]);
 
   const disabledDays = useMemo(() => {
     return (date) => {
@@ -744,13 +800,6 @@ useEffect(() => {
   }, [defaultServiceId]);
 
   async function handleSubmit(e) {
-    console.log("selectedMaster =", selectedMaster);
-console.log("selectedMasterId =", selectedMaster?.id);
-console.log("selectedDateStr =", selectedDateStr);
-console.log("selectedTime =", selectedTime);
-console.log("master scheduleDays =", selectedMaster?.scheduleDays);
-console.log("master schedule =", selectedMaster?.schedule);
-console.log("master scheduleExceptions =", selectedMaster?.scheduleExceptions);
     e.preventDefault();
 
     if (!studio?.id || !selectedDateStr || !dayKey || !isDayEnabled) return;
@@ -773,22 +822,25 @@ console.log("master scheduleExceptions =", selectedMaster?.scheduleExceptions);
         return;
       }
 
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/bookings/studio/${studio.id}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          body: JSON.stringify({
-            serviceId: service.id,
-            masterId: selectedMaster?.id || null,
-            date: selectedDateStr,
-            time: selectedTime,
-          }),
-        },
-      );
+const url = isReschedule
+  ? `${import.meta.env.VITE_API_URL}/client/bookings/${rescheduleBookingId}/reschedule`
+  : `${import.meta.env.VITE_API_URL}/bookings/studio/${studio.id}`;
+
+const method = isReschedule ? "PATCH" : "POST";
+
+const res = await fetch(url, {
+  method,
+  headers: {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  },
+  body: JSON.stringify({
+    serviceId: service.id,
+    masterId: selectedMaster?.id || null,
+    date: selectedDateStr,
+    time: selectedTime,
+  }),
+});
 
 const data = await res.json().catch(() => null);
 
@@ -799,11 +851,12 @@ if (!res.ok) {
 }
 
 await queryClient.invalidateQueries({
-  queryKey: ["bookings", studio.id],
+  queryKey: ["client-bookings"],
 });
 
 if (onSuccess) {
   onSuccess({
+    successMode: isReschedule ? "reschedule" : "create",
     studioName: studio.name,
     serviceName: service?.name ?? "",
     masterName:
@@ -821,7 +874,14 @@ if (onSuccess) {
 onCancel?.();
     } catch (err) {
       console.error(err);
-      alert(String(err?.message || "Не вдалося створити запис"));
+      alert(
+  String(
+    err?.message ||
+      (isReschedule
+        ? "Не вдалося перенести запис"
+        : "Не вдалося створити запис"),
+  ),
+);
     }
   }
 
@@ -1323,7 +1383,7 @@ className={cn(
 )}
           >
             <span className="inline-flex items-center gap-2">
-              Продовжити
+             {isReschedule ? "Перенести запис" : "Продовжити"}
               <Sparkles className="h-4 w-4 opacity-80" />
             </span>
           </button>
