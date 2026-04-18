@@ -353,6 +353,55 @@ function Button({ variant = "secondary", className = "", children, ...props }) {
   );
 }
 
+function SkeletonBlock({ className = "" }) {
+  return (
+    <div
+      className={cn(
+        "animate-pulse rounded-2xl bg-gradient-to-r from-stone-200 via-stone-100 to-stone-200 bg-[length:200%_100%]",
+        className,
+      )}
+    />
+  );
+}
+
+function StatCardSkeleton() {
+  return (
+    <div className="rounded-[22px] border border-stone-200 bg-white p-3 shadow-[0_8px_25px_rgba(0,0,0,0.04)] sm:rounded-[26px] sm:p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <SkeletonBlock className="h-3 w-24 rounded-full" />
+          <SkeletonBlock className="mt-3 h-9 w-20" />
+        </div>
+
+        <SkeletonBlock className="h-11 w-11 rounded-2xl" />
+      </div>
+    </div>
+  );
+}
+
+function AppointmentCardSkeleton() {
+  return (
+    <li className="rounded-[24px] border border-stone-200 bg-white p-4 shadow-[0_8px_25px_rgba(0,0,0,0.04)] sm:p-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <SkeletonBlock className="h-7 w-20 rounded-full" />
+            <SkeletonBlock className="h-7 w-28 rounded-full" />
+            <SkeletonBlock className="h-7 w-36 rounded-full" />
+          </div>
+
+          <SkeletonBlock className="mt-4 h-5 w-52 max-w-full" />
+          <SkeletonBlock className="mt-3 h-4 w-40 max-w-full" />
+        </div>
+
+        <div className="flex items-center gap-2 self-start sm:self-center">
+          <SkeletonBlock className="h-4 w-20" />
+        </div>
+      </div>
+    </li>
+  );
+}
+
 function AppointmentCard({ item, todayKey, nowTs, onOpen }) {
   const key = item.date ? String(item.date) : "";
   const dateLabel = key ? formatDateUA(key) : "—";
@@ -415,21 +464,28 @@ function AppointmentCard({ item, todayKey, nowTs, onOpen }) {
 }
 // =========================
 export default function Golowna() {
-  const { bookings, confirmBooking, cancelBooking, loadBookings } = useBookings();
+const { bookings, confirmBooking, cancelBooking, loading } = useBookings();
   const [nowTs, setNowTs] = useState(() => Date.now());
   const [detailsId, setDetailsId] = useState(null);
   const [copiedPhone, setCopiedPhone] = useState(false);
   const [cancelConfirmId, setCancelConfirmId] = useState(null);
   const [visibleAppointmentsCount, setVisibleAppointmentsCount] = useState(5);
-  useEffect(() => {
+const isInitialLoading = loading;
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [socketState, setSocketState] = useState(
+    socket.connected ? "ok" : "offline",
+  );
+
+const showStatsSkeleton = isInitialLoading;
+const showAppointmentsSkeleton = isInitialLoading;
+
+
+    useEffect(() => {
     const id = setInterval(() => setNowTs(Date.now()), 60_000);
     return () => clearInterval(id);
   }, []);
-const [socketState, setSocketState] = useState(
-  socket.connected ? "ok" : "offline",
-);
-const [isRefreshing, setIsRefreshing] = useState(false);
-const [isOnline, setIsOnline] = useState(navigator.onLine);
+
   const stats = useMemo(() => {
     const list = (bookings || []).filter(
       (b) =>
@@ -550,33 +606,43 @@ const [isOnline, setIsOnline] = useState(navigator.onLine);
 
     upcoming.sort((a, c) => a.ts - c.ts);
 
-return upcoming.map(({ b }) => ({
-  ...b,
-  date: b.date,
-  time: parseTimeToHHMM(b.time) || b.time || "—",
-  serviceName: b.serviceName || "—",
-  clientName: b.clientName || "—",
-}));
+    return upcoming.map(({ b }) => ({
+      ...b,
+      date: b.date,
+      time: parseTimeToHHMM(b.time) || b.time || "—",
+      serviceName: b.serviceName || "—",
+      clientName: b.clientName || "—",
+    }));
   }, [bookings, nowTs]);
 
   const todayKey = toISODateKey(new Date(nowTs));
 
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+const upcomingAppointmentsResetKey = useMemo(
+  () =>
+    upcomingAppointments
+      .map((item) => `${item.id}:${item.date || ""}:${item.time || ""}:${item.status || ""}`)
+      .join("|"),
+  [upcomingAppointments],
+);
 useEffect(() => {
-  const handleOnline = () => setIsOnline(true);
-  const handleOffline = () => setIsOnline(false);
+  const id = window.setTimeout(() => {
+    setVisibleAppointmentsCount(5);
+  }, 0);
 
-  window.addEventListener("online", handleOnline);
-  window.addEventListener("offline", handleOffline);
-
-  return () => {
-    window.removeEventListener("online", handleOnline);
-    window.removeEventListener("offline", handleOffline);
-  };
-}, []);
-
-useEffect(() => {
-  setVisibleAppointmentsCount(5);
-}, [bookings]);
+  return () => window.clearTimeout(id);
+}, [upcomingAppointmentsResetKey]);
 
 useEffect(() => {
   const studioId = localStorage.getItem("studioId");
@@ -588,12 +654,6 @@ useEffect(() => {
     setSocketState("ok");
   };
 
-  if (socket.connected) {
-    joinStudio();
-  } else {
-    setSocketState("offline");
-  }
-
   const handleConnect = () => {
     joinStudio();
   };
@@ -602,22 +662,29 @@ useEffect(() => {
     setSocketState("offline");
   };
 
-  const handleBookingUpdated = async (payload) => {
+  const handleBookingUpdated = (payload) => {
     if (!payload) return;
     if (String(payload.studioId) !== String(studioId)) return;
 
-    try {
-      setIsRefreshing(true);
-      setSocketState("pending");
-      await loadBookings?.();
-      setSocketState(socket.connected ? "ok" : "offline");
-    } catch (e) {
-      console.error("Failed to reload bookings after socket event:", e);
-      setSocketState("offline");
-    } finally {
+    setIsRefreshing(true);
+    setSocketState("pending");
+
+    window.clearTimeout(handleBookingUpdated._t);
+    handleBookingUpdated._t = window.setTimeout(() => {
       setIsRefreshing(false);
-    }
+      setSocketState(socket.connected ? "ok" : "offline");
+    }, 800);
   };
+
+if (socket.connected) {
+  joinStudio();
+} else {
+  const id = window.setTimeout(() => {
+    setSocketState("offline");
+  }, 0);
+
+  return () => window.clearTimeout(id);
+}
 
   socket.on("connect", handleConnect);
   socket.on("disconnect", handleDisconnect);
@@ -627,28 +694,28 @@ useEffect(() => {
     socket.off("connect", handleConnect);
     socket.off("disconnect", handleDisconnect);
     socket.off("booking:updated", handleBookingUpdated);
+    window.clearTimeout(handleBookingUpdated._t);
   };
-}, [loadBookings]);
+}, []);
 
-const liveStatusUi =
-  !isOnline || socketState === "offline"
-    ? {
-        text: "Немає інтернету",
-        dotClass: "live-indicator live-indicator--offline",
-        wrapClass: "border-red-200 bg-red-50 text-red-700",
-      }
-    : socketState === "pending" || isRefreshing
+  const liveStatusUi =
+    !isOnline || socketState === "offline"
       ? {
-          text: "Оновлення...",
-          dotClass: "live-indicator live-indicator--pending",
-          wrapClass: "border-amber-200 bg-amber-50 text-amber-700",
+          text: "Немає інтернету",
+          dotClass: "live-indicator live-indicator--offline",
+          wrapClass: "border-red-200 bg-red-50 text-red-700",
         }
-      : {
-          text: "Оновлюється автоматично",
-          dotClass: "live-indicator live-indicator--ok",
-          wrapClass: "border-emerald-200 bg-emerald-50 text-emerald-700",
-        };
-
+      : socketState === "pending" || isRefreshing
+        ? {
+            text: "Оновлення...",
+            dotClass: "live-indicator live-indicator--pending",
+            wrapClass: "border-amber-200 bg-amber-50 text-amber-700",
+          }
+        : {
+            text: "Оновлюється автоматично",
+            dotClass: "live-indicator live-indicator--ok",
+            wrapClass: "border-emerald-200 bg-emerald-50 text-emerald-700",
+          };
 
   return (
     <div className="min-h-screen ">
@@ -692,82 +759,97 @@ const liveStatusUi =
         </SectionShell>
 
         <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
-          {stats.map((item) => (
-            <StatCard
-              key={item.key}
-              title={item.title}
-              value={item.value}
-              icon={item.icon}
-              accent={item.accent}
-            />
-          ))}
+          {showStatsSkeleton
+            ? Array.from({ length: 4 }).map((_, i) => (
+                <StatCardSkeleton key={i} />
+              ))
+            : stats.map((item) => (
+                <StatCard
+                  key={item.key}
+                  title={item.title}
+                  value={item.value}
+                  icon={item.icon}
+                  accent={item.accent}
+                />
+              ))}
         </div>
 
         <SectionShell>
           <div className="px-5 pb-6 pt-5 sm:px-6 sm:pb-7 sm:pt-6">
-<div className="flex flex-col gap-2">
-  {/* TOP ROW: Розклад + live */}
-  <div className="flex items-center justify-between gap-3">
-    <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-amber-600">
-      Розклад
-    </p>
+            <div className="flex flex-col gap-2">
+              {/* TOP ROW: Розклад + live */}
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-amber-600">
+                  Розклад
+                </p>
 
-    <div className="flex shrink-0 items-center">
-      <div
-        className={cn(
-          "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-semibold sm:text-xs",
-          liveStatusUi.wrapClass,
-        )}
-      >
-        <span className={liveStatusUi.dotClass} />
-        <span className="whitespace-nowrap">{liveStatusUi.text}</span>
-      </div>
-    </div>
-  </div>
+                <div className="flex shrink-0 items-center">
+                  <div
+                    className={cn(
+                      "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-semibold sm:text-xs",
+                      liveStatusUi.wrapClass,
+                    )}
+                  >
+                    <span className={liveStatusUi.dotClass} />
+                    <span className="whitespace-nowrap">
+                      {liveStatusUi.text}
+                    </span>
+                  </div>
+                </div>
+              </div>
 
-  {/* TITLE */}
-  <h2 className="text-2xl font-bold tracking-tight text-stone-800 sm:text-3xl">
-    Найближчі записи
-  </h2>
+              {/* TITLE */}
+              <h2 className="text-2xl font-bold tracking-tight text-stone-800 sm:text-3xl">
+                Найближчі записи
+              </h2>
 
-  {/* SUBTITLE */}
-  <p className="text-sm text-stone-500">
-    Тільки майбутні записи, відсортовані за датою та часом.
-  </p>
-</div>
+              {/* SUBTITLE */}
+              <p className="text-sm text-stone-500">
+                Тільки майбутні записи, відсортовані за датою та часом.
+              </p>
+            </div>
 
-{upcomingAppointments.length === 0 ? (
-  <div className="mt-6 rounded-[24px] border border-stone-200 bg-stone-50 p-8 text-center text-sm text-stone-500">
-    Немає запланованих записів
-  </div>
-) : (
-  <>
-    <ul className="mt-6 space-y-3">
-      {upcomingAppointments.slice(0, visibleAppointmentsCount).map((item) => (
-        <AppointmentCard
-          key={item.id}
-          item={item}
-          todayKey={todayKey}
-          nowTs={nowTs}
-          onOpen={setDetailsId}
-        />
-      ))}
-    </ul>
+            {showAppointmentsSkeleton ? (
+              <ul className="mt-6 space-y-3">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <AppointmentCardSkeleton key={i} />
+                ))}
+              </ul>
+            ) : upcomingAppointments.length === 0 ? (
+              <div className="mt-6 rounded-[24px] border border-stone-200 bg-stone-50 p-8 text-center text-sm text-stone-500">
+                Немає запланованих записів
+              </div>
+            ) : (
+              <>
+                <ul className="mt-6 space-y-3">
+                  {upcomingAppointments
+                    .slice(0, visibleAppointmentsCount)
+                    .map((item) => (
+                      <AppointmentCard
+                        key={item.id}
+                        item={item}
+                        todayKey={todayKey}
+                        nowTs={nowTs}
+                        onOpen={setDetailsId}
+                      />
+                    ))}
+                </ul>
 
-    {visibleAppointmentsCount < upcomingAppointments.length && (
-      <div className="mt-4 flex justify-center">
-        <button
-          type="button"
-          onClick={() => setVisibleAppointmentsCount((prev) => prev + 5)}
-          className="inline-flex items-center justify-center rounded-2xl border border-stone-300 bg-white px-5 py-2.5 text-sm font-semibold text-stone-700 transition-all duration-200 hover:bg-stone-100 active:scale-[0.98]"
-        >
-          Показати ще
-        </button>
-      </div>
-    )}
-  </>
-)}
-
+                {visibleAppointmentsCount < upcomingAppointments.length && (
+                  <div className="mt-4 flex justify-center">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setVisibleAppointmentsCount((prev) => prev + 5)
+                      }
+                      className="inline-flex items-center justify-center rounded-2xl border border-stone-300 bg-white px-5 py-2.5 text-sm font-semibold text-stone-700 transition-all duration-200 hover:bg-stone-100 active:scale-[0.98]"
+                    >
+                      Показати ще
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </SectionShell>
       </div>

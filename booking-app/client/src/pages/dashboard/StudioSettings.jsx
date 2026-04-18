@@ -11,6 +11,7 @@ import {
   ChevronLeft,
   ChevronRight,
   CheckCircle2,
+  AlertTriangle,
 } from "lucide-react";
 import { useStudio } from "../../context/studio/useStudio";
 import { api } from "../../api/http";
@@ -378,117 +379,132 @@ function SkeletonBlock({ className = "" }) {
   );
 }
 
-function StudioSettingsSkeleton() {
+function StudioPreviewSkeleton() {
   return (
-    <div className="mx-auto max-w-6xl min-h-[100svh]">
-      <div className="mb-6">
-        <div className="space-y-3">
-          <SkeletonBlock className="h-8 w-56 rounded-2xl" />
-          <SkeletonBlock className="h-5 w-80 max-w-full" />
-        </div>
+    <section className="overflow-hidden rounded-3xl border border-stone-200/60 bg-white shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]">
+      <div className="relative h-44 bg-stone-50">
+        <SkeletonBlock className="h-full w-full rounded-none" />
 
-        <div className="mt-4 rounded-2xl border border-stone-200 bg-white p-2 shadow-sm">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div className="flex flex-1 gap-2 overflow-x-auto">
-              <SkeletonBlock className="h-10 w-24 shrink-0 rounded-xl" />
-              <SkeletonBlock className="h-10 w-24 shrink-0 rounded-xl" />
-              <SkeletonBlock className="h-10 w-28 shrink-0 rounded-xl" />
-            </div>
+        <div className="absolute -bottom-10 left-3 right-3 flex items-end gap-2">
+          <SkeletonBlock className="h-20 w-20 shrink-0 rounded-[22px]" />
 
-            <SkeletonBlock className="h-12 w-[220px] shrink-0 rounded-2xl" />
+          <div className="min-h-[44px] min-w-0 flex-1 rounded-2xl border border-stone-200 bg-white px-3 py-2 shadow-sm">
+            <SkeletonBlock className="h-5 w-40 max-w-full" />
+            <SkeletonBlock className="mt-2 h-4 w-28 max-w-full" />
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        {/* Left column */}
-        <div className="space-y-6 lg:col-span-5">
-          <section className="overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]">
-            <div className="relative h-44 bg-stone-50">
-              <SkeletonBlock className="h-full w-full rounded-none" />
+      <div className="px-3 pb-3 pt-14">
+        <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+          <SkeletonBlock className="h-3 w-14" />
+          <SkeletonBlock className="mt-2 h-4 w-full" />
+          <SkeletonBlock className="mt-1 h-4 w-4/5" />
 
-              <div className="absolute -bottom-10 left-3 right-3 flex items-end gap-2">
-                <SkeletonBlock className="h-20 w-20 shrink-0 rounded-[22px]" />
-
-                <div className="min-w-0 flex-1 rounded-2xl border border-stone-200 bg-white px-3 py-2 shadow-sm">
-                  <SkeletonBlock className="h-5 w-40 max-w-full" />
-                  <SkeletonBlock className="mt-2 h-4 w-32 max-w-full" />
-                </div>
-              </div>
-            </div>
-
-            <div className="px-3 pb-3 pt-14">
-              <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
-                <SkeletonBlock className="h-3 w-14" />
-                <SkeletonBlock className="mt-2 h-4 w-full" />
-                <SkeletonBlock className="mt-1 h-4 w-4/5" />
-
-                <SkeletonBlock className="mt-4 h-3 w-12" />
-                <SkeletonBlock className="mt-2 h-4 w-full" />
-                <SkeletonBlock className="mt-1 h-4 w-11/12" />
-                <SkeletonBlock className="mt-1 h-4 w-2/3" />
-              </div>
-            </div>
-          </section>
-        </div>
-
-        {/* Right column */}
-        <div className="space-y-6 lg:col-span-7">
-          <section className="overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]">
-            <div className="border-b border-stone-100 px-5 py-4">
-              <SkeletonBlock className="h-6 w-28" />
-              <SkeletonBlock className="mt-2 h-4 w-80 max-w-full" />
-            </div>
-
-            <div className="px-5 py-5">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <SkeletonBlock className="h-4 w-24" />
-                  <SkeletonBlock className="h-12 w-full rounded-2xl" />
-                </div>
-
-                <div className="space-y-2">
-                  <SkeletonBlock className="h-4 w-24" />
-                  <SkeletonBlock className="h-12 w-full rounded-2xl" />
-                </div>
-
-                <div className="space-y-2">
-                  <SkeletonBlock className="h-4 w-32" />
-                  <SkeletonBlock className="h-12 w-full rounded-2xl" />
-                </div>
-
-                <div className="space-y-2">
-                  <SkeletonBlock className="h-4 w-20" />
-                  <SkeletonBlock className="h-12 w-full rounded-2xl" />
-                </div>
-
-                <div className="space-y-2 sm:col-span-2">
-                  <SkeletonBlock className="h-4 w-16" />
-                  <SkeletonBlock className="h-32 w-full rounded-2xl" />
-
-                  <div className="mt-3 rounded-2xl border border-stone-200 bg-stone-50 p-4">
-                    <SkeletonBlock className="h-3 w-24" />
-                    <SkeletonBlock className="mt-2 h-4 w-full" />
-                    <SkeletonBlock className="mt-1 h-4 w-5/6" />
-                    <SkeletonBlock className="mt-1 h-4 w-3/4" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
+          <SkeletonBlock className="mt-4 h-3 w-12" />
+          <SkeletonBlock className="mt-2 h-4 w-full" />
+          <SkeletonBlock className="mt-1 h-4 w-11/12" />
+          <SkeletonBlock className="mt-1 h-4 w-2/3" />
         </div>
       </div>
+    </section>
+  );
+}
 
-      <div className="fixed inset-x-0 bottom-0 z-[60] md:hidden">
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-white via-white/95 to-transparent" />
-        <div className="relative mx-auto max-w-5xl px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-          <div className="flex gap-2">
-            <SkeletonBlock className="h-12 w-1/2 rounded-2xl" />
-            <SkeletonBlock className="h-12 w-1/2 rounded-2xl" />
-          </div>
+function StudioProfileFormSkeleton() {
+  return (
+    <SectionCard
+      title="Профіль"
+      subtitle="Назва, категорія та опис — ключові для довіри клієнтів."
+    >
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <SkeletonBlock className="h-4 w-24" />
+          <SkeletonBlock className="h-12 w-full rounded-2xl" />
+        </div>
+
+        <div className="space-y-2">
+          <SkeletonBlock className="h-4 w-24" />
+          <SkeletonBlock className="h-12 w-full rounded-2xl" />
+        </div>
+
+        <div className="space-y-2">
+          <SkeletonBlock className="h-4 w-32" />
+          <SkeletonBlock className="h-12 w-full rounded-2xl" />
+        </div>
+
+        <div className="space-y-2">
+          <SkeletonBlock className="h-4 w-20" />
+          <SkeletonBlock className="h-12 w-full rounded-2xl" />
+        </div>
+
+        <div className="space-y-2 sm:col-span-2">
+          <SkeletonBlock className="h-4 w-16" />
+          <SkeletonBlock className="h-32 w-full rounded-2xl" />
         </div>
       </div>
-    </div>
+    </SectionCard>
+  );
+}
+
+function StudioLocationFormSkeleton() {
+  return (
+    <SectionCard
+      title="Локація"
+      subtitle="Адреса відображається клієнтам і впливає на пошук."
+    >
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <SkeletonBlock className="h-4 w-20" />
+          <SkeletonBlock className="h-12 w-full rounded-2xl" />
+        </div>
+
+        <div className="space-y-2">
+          <SkeletonBlock className="h-4 w-20" />
+          <SkeletonBlock className="h-12 w-full rounded-2xl" />
+        </div>
+
+        <div className="space-y-2">
+          <SkeletonBlock className="h-4 w-24" />
+          <SkeletonBlock className="h-12 w-full rounded-2xl" />
+        </div>
+
+        <div className="space-y-2">
+          <SkeletonBlock className="h-4 w-28" />
+          <SkeletonBlock className="h-12 w-full rounded-2xl" />
+        </div>
+
+        <div className="sm:col-span-2 rounded-2xl border border-stone-200 bg-stone-50 p-4">
+          <SkeletonBlock className="h-3 w-16" />
+          <SkeletonBlock className="mt-2 h-4 w-full" />
+        </div>
+      </div>
+    </SectionCard>
+  );
+}
+
+function StudioPortfolioSkeleton() {
+  return (
+    <SectionCard
+      title="Портфоліо"
+      subtitle="Додай 4–12 фото робіт — це сильніше за будь-який текст."
+    >
+      <div className="space-y-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <SkeletonBlock className="h-11 w-36 rounded-2xl" />
+          <SkeletonBlock className="h-11 w-28 rounded-2xl" />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-[repeat(auto-fill,minmax(180px,1fr))]">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <SkeletonBlock
+              key={i}
+              className="aspect-square w-full rounded-[22px]"
+            />
+          ))}
+        </div>
+      </div>
+    </SectionCard>
   );
 }
 
@@ -606,9 +622,6 @@ export default function StudioSettings() {
   const [logoPreviewUrl, setLogoPreviewUrl] = useState("");
   const [portfolioPreviewUrls, setPortfolioPreviewUrls] = useState([]);
   const [highlightTone, setHighlightTone] = useState("green");
-
-  const strongHighlightClass =
-    "ring-4 ring-amber-400/40 bg-gradient-to-br from-amber-50 to-orange-100 border-amber-300  animate-pulse";
 
   const highlightClass =
     highlightTone === "green"
@@ -1535,10 +1548,6 @@ function showToast({ type = "success", title, text }) {
     return () => observer.disconnect();
   }, []);
 
-  if (initialLoading) {
-    return <StudioSettingsSkeleton />;
-  }
-
   const categoryLabel = form.category
     ? getCategoryLabel(form.category)
     : "Категорія";
@@ -1673,156 +1682,150 @@ function showToast({ type = "success", title, text }) {
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
           {/* Left column */}
-          {tab === "profile" && (
-            <div className="space-y-6 lg:col-span-5 lg:sticky lg:top-6 self-start">
-              <section className="overflow-hidden rounded-3xl border border-stone-200/60 bg-white shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]">
-                <div
-                  id="studio-field-coverUrl"
-                  className="relative h-44 bg-stone-100"
-                >
-                  {hasCover ? (
-                    <button
-                      type="button"
-                      onClick={pickCoverFromPreview}
-                      className="h-full w-full"
-                    >
-                      <img
-                        src={coverSrc}
-                        alt="Обкладинка"
-                        className="h-full w-full object-cover"
-                        onError={(e) => {
-                          if (!coverPreviewUrl)
-                            e.currentTarget.style.display = "none";
-                        }}
-                      />
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={pickCoverFromPreview}
-                      onKeyDown={onKeyboardPick(pickCoverFromPreview)}
-                      className="flex h-full w-full items-center justify-center gap-2 px-6 text-center text-sm font-medium text-stone-500 transition hover:text-stone-700"
-                      title="Завантажити обкладинку"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Додати обкладинку
-                      {highlightId === "studio-field-coverUrl" && (
-                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-amber-300/20 backdrop-blur-[1px]">
-                          <span className="flex h-full w-full items-center justify-center gap-2 px-6 text-center text-sm font-medium text-stone-500 transition hover:text-stone-700">
-                            <Plus className="h-4 w-4" />
-                            Додати обкладинку
-                          </span>
-                        </div>
-                      )}
-                    </button>
-                  )}
-
-                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/60 via-black/25 to-transparent" />
-
-                  {hasCover && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeImage("coverUrl");
-                      }}
-                      className="absolute right-2 top-2 z-10 grid h-8 w-8 place-items-center rounded-xl border border-stone-200 bg-white/90 text-stone-600 shadow-sm backdrop-blur transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
-                      title="Видалити обкладинку"
-                      aria-label="Remove cover"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  )}
-
-                  <div className="absolute -bottom-10 left-3 right-3 flex min-w-0 items-end gap-2">
-                    <div
-                      id="studio-field-logoUrl"
-                      className={cn(
-                        "relative h-20 w-20 shrink-0 overflow-hidden rounded-[22px] border border-stone-200 bg-white shadow-sm transition-all duration-300",
-                        highlightId === "studio-field-logoUrl" &&
-                          cn(highlightClass, "scale-105"),
-                      )}
-                    >
-                      <button
-                        type="button"
-                        onClick={pickLogoFromPreview}
-                        onKeyDown={onKeyboardPick(pickLogoFromPreview)}
-                        className="relative h-full w-full"
-                        title="Завантажити логотип"
-                      >
-                        {hasLogo ? (
-                          <img
-                            src={logoSrc}
-                            alt="Лого"
-                            className="h-full w-full object-cover"
-                            onError={(e) =>
-                              (e.currentTarget.style.display = "none")
-                            }
-                          />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center text-stone-500">
-                            <span className="flex items-center justify-center ">
-                              <Camera className="h-7 w-7" />
-                            </span>
-                          </div>
-                        )}
-
-                        {/* 🔥 overlay */}
-                        {highlightId === "studio-field-logoUrl" && (
-                          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-amber-300/25 backdrop-blur-[1px]">
-                            <span className="flex items-center justify-center rounded-lg bg-white/90 p-1.5 text-amber-700 shadow">
-                              <Camera className="h-7 w-7" />
-                            </span>
-                          </div>
-                        )}
-                      </button>
-                    </div>
-
-                    <div className="min-h-[44px] min-w-0 rounded-2xl border border-stone-200 bg-white px-3 py-2 shadow-sm">
-                      <p
-                        className="line-clamp-2 w-full min-w-0 break-words text-sm font-bold leading-5 text-stone-800 sm:text-base"
-                        title={form.name.trim() ? form.name : "Назва студії"}
-                      >
-                        {form.name.trim() ? form.name : "Назва студії"}
-                      </p>
-
-                      <p
-                        className="line-clamp-2 w-full min-w-0 break-words text-xs text-stone-500 sm:text-sm"
-                        title={`${categoryLabel} • ${form.city.trim() ? form.city : "Місто"}`}
-                      >
-                        {categoryLabel +
-                          " • " +
-                          (form.city.trim() ? form.city : "Місто")}
-                      </p>
-                    </div>
-                  </div>
+{tab === "profile" && (
+  <div className="space-y-6 lg:col-span-5 lg:sticky lg:top-6 self-start">
+    {initialLoading ? (
+      <StudioPreviewSkeleton />
+    ) : (
+      <section className="overflow-hidden rounded-3xl border border-stone-200/60 bg-white shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]">
+        <div
+          id="studio-field-coverUrl"
+          className="relative h-44 bg-stone-100"
+        >
+          {hasCover ? (
+            <button
+              type="button"
+              onClick={pickCoverFromPreview}
+              className="h-full w-full"
+            >
+              <img
+                src={coverSrc}
+                alt="Обкладинка"
+                className="h-full w-full object-cover"
+                onError={(e) => {
+                  if (!coverPreviewUrl) e.currentTarget.style.display = "none";
+                }}
+              />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={pickCoverFromPreview}
+              onKeyDown={onKeyboardPick(pickCoverFromPreview)}
+              className="flex h-full w-full items-center justify-center gap-2 px-6 text-center text-sm font-medium text-stone-500 transition hover:text-stone-700"
+              title="Завантажити обкладинку"
+            >
+              <Plus className="h-4 w-4" />
+              Додати обкладинку
+              {highlightId === "studio-field-coverUrl" && (
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-amber-300/20 backdrop-blur-[1px]">
+                  <span className="flex h-full w-full items-center justify-center gap-2 px-6 text-center text-sm font-medium text-stone-500 transition hover:text-stone-700">
+                    <Plus className="h-4 w-4" />
+                    Додати обкладинку
+                  </span>
                 </div>
-
-                <div className="px-3 pb-3 pt-14">
-                  <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
-                    <p className="text-xs font-semibold text-stone-500">
-                      Адреса
-                    </p>
-                    <p
-                      className="mt-1 line-clamp-2 break-words text-sm font-semibold text-stone-800"
-                      title={AddressLine}
-                    >
-                      {AddressLine}
-                    </p>
-
-                    <p className="mt-3 text-xs font-semibold text-stone-500">
-                      Опис
-                    </p>
-                    <p className="mt-1 text-sm text-stone-600">
-                      {form.description.trim()
-                        ? form.description.trim()
-                        : "Додай короткий опис: досвід, стиль, стерильність, бренди, гарантії."}
-                    </p>
-                  </div>
-                </div>
-              </section>
-            </div>
+              )}
+            </button>
           )}
+
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/60 via-black/25 to-transparent" />
+
+          {hasCover && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                removeImage("coverUrl");
+              }}
+              className="absolute right-2 top-2 z-10 grid h-8 w-8 place-items-center rounded-xl border border-stone-200 bg-white/90 text-stone-600 shadow-sm backdrop-blur transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+              title="Видалити обкладинку"
+              aria-label="Remove cover"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+
+          <div className="absolute -bottom-10 left-3 right-3 flex min-w-0 items-end gap-2">
+            <div
+              id="studio-field-logoUrl"
+              className={cn(
+                "relative h-20 w-20 shrink-0 overflow-hidden rounded-[22px] border border-stone-200 bg-white shadow-sm transition-all duration-300",
+                highlightId === "studio-field-logoUrl" &&
+                  cn(highlightClass, "scale-105"),
+              )}
+            >
+              <button
+                type="button"
+                onClick={pickLogoFromPreview}
+                onKeyDown={onKeyboardPick(pickLogoFromPreview)}
+                className="relative h-full w-full"
+                title="Завантажити логотип"
+              >
+                {hasLogo ? (
+                  <img
+                    src={logoSrc}
+                    alt="Лого"
+                    className="h-full w-full object-cover"
+                    onError={(e) => (e.currentTarget.style.display = "none")}
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-stone-500">
+                    <span className="flex items-center justify-center">
+                      <Camera className="h-7 w-7" />
+                    </span>
+                  </div>
+                )}
+
+                {highlightId === "studio-field-logoUrl" && (
+                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-amber-300/25 backdrop-blur-[1px]">
+                    <span className="flex items-center justify-center rounded-lg bg-white/90 p-1.5 text-amber-700 shadow">
+                      <Camera className="h-7 w-7" />
+                    </span>
+                  </div>
+                )}
+              </button>
+            </div>
+
+            <div className="min-h-[44px] min-w-0 rounded-2xl border border-stone-200 bg-white px-3 py-2 shadow-sm">
+              <p
+                className="line-clamp-2 w-full min-w-0 break-words text-sm font-bold leading-5 text-stone-800 sm:text-base"
+                title={form.name.trim() ? form.name : "Назва студії"}
+              >
+                {form.name.trim() ? form.name : "Назва студії"}
+              </p>
+
+              <p
+                className="line-clamp-2 w-full min-w-0 break-words text-xs text-stone-500 sm:text-sm"
+                title={`${categoryLabel} • ${form.city.trim() ? form.city : "Місто"}`}
+              >
+                {categoryLabel + " • " + (form.city.trim() ? form.city : "Місто")}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="px-3 pb-3 pt-14">
+          <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+            <p className="text-xs font-semibold text-stone-500">Адреса</p>
+            <p
+              className="mt-1 line-clamp-2 break-words text-sm font-semibold text-stone-800"
+              title={AddressLine}
+            >
+              {AddressLine}
+            </p>
+
+            <p className="mt-3 text-xs font-semibold text-stone-500">Опис</p>
+            <p className="mt-1 text-sm text-stone-600">
+              {form.description.trim()
+                ? form.description.trim()
+                : "Додай короткий опис: досвід, стиль, стерильність, бренди, гарантії."}
+            </p>
+          </div>
+        </div>
+      </section>
+    )}
+  </div>
+)}
 
           {/* Right column */}
           <div
@@ -1832,11 +1835,14 @@ function showToast({ type = "success", title, text }) {
             )}
           >
             <form onSubmit={save} className="space-y-6 ">
-              {tab === "profile" && (
-                <SectionCard
-                  title="Профіль"
-                  subtitle="Назва, категорія та опис — ключові для довіри клієнтів."
-                >
+{tab === "profile" &&
+  (initialLoading ? (
+    <StudioProfileFormSkeleton />
+  ) : (
+    <SectionCard
+      title="Профіль"
+      subtitle="Назва, категорія та опис — ключові для довіри клієнтів."
+    >
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <Field label="Назва студії" error={errors.name}>
                       <input
@@ -1953,13 +1959,16 @@ function showToast({ type = "success", title, text }) {
                     </div>
                   </div>
                 </SectionCard>
-              )}
+              ))}
 
-              {tab === "location" && (
-                <SectionCard
-                  title="Локація"
-                  subtitle="Адреса відображається клієнтам і впливає на пошук."
-                >
+{tab === "location" &&
+  (initialLoading ? (
+    <StudioLocationFormSkeleton />
+  ) : (
+    <SectionCard
+      title="Локація"
+      subtitle="Адреса відображається клієнтам і впливає на пошук."
+    >
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <Field label="Місто">
                       <input
@@ -2015,13 +2024,16 @@ function showToast({ type = "success", title, text }) {
                     </div>
                   </div>
                 </SectionCard>
-              )}
+              ))}
 
-              {tab === "links" && (
-                <SectionCard
-                  title="Портфоліо"
-                  subtitle="Додай 4–12 фото робіт — це сильніше за будь-який текст."
-                >
+{tab === "links" &&
+  (initialLoading ? (
+    <StudioPortfolioSkeleton />
+  ) : (
+    <SectionCard
+      title="Портфоліо"
+      subtitle="Додай 4–12 фото робіт — це сильніше за будь-який текст."
+    >
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div
                       id="studio-field-portfolio"
@@ -2163,7 +2175,7 @@ function showToast({ type = "success", title, text }) {
                     </div>
                   </div>
                 </SectionCard>
-              )}
+              ))}
             </form>
           </div>
         </div>

@@ -1,5 +1,6 @@
 // Schedule.jsx
 import { useMemo, useState, useEffect, useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Clock,
   Sparkles,
@@ -35,6 +36,22 @@ const defaultDay = (enabled = true) => ({
   start: "08:00",
   end: "18:00",
 });
+
+function ExceptionsSkeleton() {
+  return (
+    <div className="space-y-3">
+      {Array.from({ length: 2 }).map((_, i) => (
+        <div
+          key={i}
+          className="rounded-2xl border border-stone-200 bg-white p-4"
+        >
+          <SkeletonBlock className="h-5 w-44" />
+          <SkeletonBlock className="mt-2 h-4 w-36" />
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function CustomSelect({ value, onChange, options, className = "" }) {
   const [open, setOpen] = useState(false);
@@ -390,32 +407,32 @@ function SkeletonBlock({ className = "" }) {
   );
 }
 
-function ScheduleSkeleton() {
+function WorkDaysSkeleton() {
   return (
-    <div className="space-y-6">
-      <div className="mb-8">
-        <SkeletonBlock className="mb-3 h-8 w-44" />
-        <SkeletonBlock className="mb-2 h-12 w-80" />
-        <SkeletonBlock className="h-5 w-96 max-w-full" />
-      </div>
-
-      {[1, 2].map((i) => (
+    <div className="space-y-3">
+      {Array.from({ length: 7 }).map((_, i) => (
         <div
           key={i}
-          className="rounded-3xl border border-stone-200 bg-white p-5"
+          className="rounded-2xl border border-stone-200 bg-white p-4"
         >
-          <div className="mb-4 flex justify-between">
-            <div className="space-y-2">
-              <SkeletonBlock className="h-6 w-40" />
-              <SkeletonBlock className="h-4 w-72 max-w-full" />
+          <div className="grid gap-4 sm:grid-cols-[1fr_260px] sm:items-center">
+            <div className="flex items-center gap-3">
+              <SkeletonBlock className="h-7 w-12 rounded-full" />
+              <div className="min-w-0">
+                <SkeletonBlock className="h-4 w-28" />
+                <SkeletonBlock className="mt-2 h-3 w-20" />
+              </div>
             </div>
-            <SkeletonBlock className="h-10 w-32 rounded-2xl" />
-          </div>
 
-          <div className="space-y-3">
-            {Array.from({ length: i === 1 ? 7 : 1 }).map((_, idx) => (
-              <SkeletonBlock key={idx} className="h-20 w-full rounded-2xl" />
-            ))}
+            <div className="w-full sm:w-[260px]">
+              <div className="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-[20px] border border-stone-200 bg-white px-2.5 py-2">
+                <SkeletonBlock className="h-11 w-full rounded-[14px]" />
+                <div className="flex items-center justify-center">
+                  <span className="block h-px w-3 bg-stone-300" />
+                </div>
+                <SkeletonBlock className="h-11 w-full rounded-[14px]" />
+              </div>
+            </div>
           </div>
         </div>
       ))}
@@ -544,19 +561,18 @@ function createEmptyException() {
 
 export default function Schedule() {
   const { studio } = useStudio();
-  const [initialLoading, setInitialLoading] = useState(true);
+  const queryClient = useQueryClient();
+const studioId = studio?.id ?? null;
+ const storedSchedule = useMemo(() => getDefaultSchedule(), []);
+const storedSlotDuration = 10;
 
-  const storedSchedule = useMemo(() => getDefaultSchedule(), []);
-  const storedSlotDuration = 10;
+const [schedule, setScheduleDraft] = useState(storedSchedule);
+const [slotDuration, setSlotDuration] = useState(storedSlotDuration);
 
-  const [schedule, setScheduleDraft] = useState(storedSchedule);
-  const [slotDuration, setSlotDuration] = useState(storedSlotDuration);
+const [savedSchedule, setSavedSchedule] = useState(storedSchedule);
+const [savedSlotDuration, setSavedSlotDuration] = useState(storedSlotDuration);
 
-  const [savedSchedule, setSavedSchedule] = useState(storedSchedule);
-  const [savedSlotDuration, setSavedSlotDuration] =
-    useState(storedSlotDuration);
-  const [exceptions, setExceptions] = useState([]);
-  const [exceptionsLoading, setExceptionsLoading] = useState(false);
+const [exceptions, setExceptions] = useState([]);
   const [preview, setPreview] = useState({});
   const [saving, setSaving] = useState(false);
 
@@ -568,6 +584,28 @@ export default function Schedule() {
     text: "",
     duration: 2200,
   });
+
+  const scheduleQuery = useQuery({
+  queryKey: ["studio-schedule", studioId],
+  queryFn: () => fetchStudioSchedule(studioId),
+  enabled: Boolean(studioId),
+  staleTime: 1000 * 60 * 10,
+  gcTime: 1000 * 60 * 30,
+  refetchOnMount: false,
+  refetchOnWindowFocus: false,
+  refetchOnReconnect: false,
+});
+
+const exceptionsQuery = useQuery({
+  queryKey: ["studio-schedule-exceptions", studioId],
+  queryFn: () => fetchStudioExceptions(studioId),
+  enabled: Boolean(studioId),
+  staleTime: 1000 * 60 * 10,
+  gcTime: 1000 * 60 * 30,
+  refetchOnMount: false,
+  refetchOnWindowFocus: false,
+  refetchOnReconnect: false,
+});
 
   function showToast({ type = "success", title, text }) {
     const duration = 2200;
@@ -594,91 +632,137 @@ export default function Schedule() {
     );
   }, [savedSchedule, schedule, savedSlotDuration, slotDuration]);
 
-  async function handleSlotDurationChange(nextDuration) {
-    if (!studio?.id) return;
+  async function fetchStudioSchedule(studioId) {
+  if (!studioId) return null;
 
-    const token = localStorage.getItem("token");
+  const token = localStorage.getItem("token");
 
-    setSlotDuration(nextDuration);
+  return api(`/studio/${studioId}/schedule`, {
+    method: "GET",
+    token,
+  });
+}
 
-    try {
-      await api(`/studio/${studio.id}/schedule`, {
-        method: "PATCH",
-        token,
-        body: {
-          schedule,
-          slotDuration: nextDuration,
-        },
-      });
+async function fetchStudioExceptions(studioId) {
+  if (!studioId) return [];
 
-      setSavedSlotDuration(nextDuration);
-      setPreview({});
+  const token = localStorage.getItem("token");
 
-      showToast({
-        type: "success",
-        title: "Крок оновлено",
-        text: "Тривалість слота збережено.",
-      });
-    } catch (err) {
-      console.error(err);
+  const data = await api(`/studio/${studioId}/schedule/exceptions`, {
+    method: "GET",
+    token,
+  });
 
-      setSlotDuration(savedSlotDuration);
+  return Array.isArray(data?.exceptions)
+    ? data.exceptions.map((item) => ({
+        ...item,
+        date: String(item?.date || "").slice(0, 10),
+        isNew: false,
+      }))
+    : [];
+}
 
-      showToast({
-        type: "error",
-        title: "Не вдалося зберегти",
-        text: err?.message || "Сталася помилка під час збереження.",
-      });
-    }
-  }
+async function handleSlotDurationChange(nextDuration) {
+  if (!studioId) return;
 
-  async function toggleDay(dayKey) {
-    if (!studio?.id || saving) return;
+  const token = localStorage.getItem("token");
+  const previous = queryClient.getQueryData(["studio-schedule", studioId]);
 
-    const token = localStorage.getItem("token");
+  setSlotDuration(nextDuration);
 
-    const nextSchedule = {
-      ...schedule,
-      [dayKey]: {
-        ...schedule[dayKey],
-        enabled: !schedule[dayKey].enabled,
+  queryClient.setQueryData(["studio-schedule", studioId], (old) => ({
+    ...(old || {}),
+    schedule,
+    slotDuration: nextDuration,
+  }));
+
+  try {
+    await api(`/studio/${studioId}/schedule`, {
+      method: "PATCH",
+      token,
+      body: {
+        schedule,
+        slotDuration: nextDuration,
       },
-    };
+    });
 
-    setScheduleDraft(nextSchedule);
+    setSavedSlotDuration(nextDuration);
+    setPreview({});
 
-    try {
-      await api(`/studio/${studio.id}/schedule`, {
-        method: "PATCH",
-        token,
-        body: {
-          schedule: nextSchedule,
-          slotDuration,
-        },
-      });
+    showToast({
+      type: "success",
+      title: "Крок оновлено",
+      text: "Тривалість слота збережено.",
+    });
+  } catch (err) {
+    console.error(err);
 
-      setSavedSchedule(nextSchedule);
-      setPreview({});
+    setSlotDuration(savedSlotDuration);
+    queryClient.setQueryData(["studio-schedule", studioId], previous);
 
-      showToast({
-        type: "success",
-        title: nextSchedule[dayKey].enabled
-          ? "День увімкнено"
-          : "День вимкнено",
-        text: "Зміни збережено в розкладі.",
-      });
-    } catch (err) {
-      console.error(err);
-
-      setScheduleDraft(savedSchedule);
-
-      showToast({
-        type: "error",
-        title: "Не вдалося зберегти",
-        text: err?.message || "Сталася помилка під час збереження.",
-      });
-    }
+    showToast({
+      type: "error",
+      title: "Не вдалося зберегти",
+      text: err?.message || "Сталася помилка під час збереження.",
+    });
   }
+}
+
+async function toggleDay(dayKey) {
+  if (!studioId || saving) return;
+
+  const token = localStorage.getItem("token");
+  const previous = queryClient.getQueryData(["studio-schedule", studioId]);
+
+  const nextSchedule = {
+    ...schedule,
+    [dayKey]: {
+      ...schedule[dayKey],
+      enabled: !schedule[dayKey].enabled,
+    },
+  };
+
+  setScheduleDraft(nextSchedule);
+
+  queryClient.setQueryData(["studio-schedule", studioId], (old) => ({
+    ...(old || {}),
+    schedule: nextSchedule,
+    slotDuration,
+  }));
+
+  try {
+    await api(`/studio/${studioId}/schedule`, {
+      method: "PATCH",
+      token,
+      body: {
+        schedule: nextSchedule,
+        slotDuration,
+      },
+    });
+
+    setSavedSchedule(nextSchedule);
+    setPreview({});
+
+    showToast({
+      type: "success",
+      title: nextSchedule[dayKey].enabled
+        ? "День увімкнено"
+        : "День вимкнено",
+      text: "Зміни збережено в розкладі.",
+    });
+  } catch (err) {
+    console.error(err);
+
+    setScheduleDraft(savedSchedule);
+    queryClient.setQueryData(["studio-schedule", studioId], previous);
+
+    showToast({
+      type: "error",
+      title: "Не вдалося зберегти",
+      text: err?.message || "Сталася помилка під час збереження.",
+    });
+  }
+}
 
   function updateTime(day, field, value) {
     setScheduleDraft((prev) => ({
@@ -687,54 +771,62 @@ export default function Schedule() {
     }));
   }
 
-  async function handleTimeCommit(dayKey, field, nextValue) {
-    if (!studio?.id) return;
+async function handleTimeCommit(dayKey, field, nextValue) {
+  if (!studioId) return;
 
-    const token = localStorage.getItem("token");
+  const token = localStorage.getItem("token");
+  const previous = queryClient.getQueryData(["studio-schedule", studioId]);
 
-    const nextSchedule = {
-      ...schedule,
-      [dayKey]: {
-        ...schedule[dayKey],
-        [field]: nextValue,
+  const nextSchedule = {
+    ...schedule,
+    [dayKey]: {
+      ...schedule[dayKey],
+      [field]: nextValue,
+    },
+  };
+
+  setScheduleDraft(nextSchedule);
+
+  queryClient.setQueryData(["studio-schedule", studioId], (old) => ({
+    ...(old || {}),
+    schedule: nextSchedule,
+    slotDuration,
+  }));
+
+  try {
+    await api(`/studio/${studioId}/schedule`, {
+      method: "PATCH",
+      token,
+      body: {
+        schedule: nextSchedule,
+        slotDuration,
       },
-    };
+    });
 
-    setScheduleDraft(nextSchedule);
+    setSavedSchedule(nextSchedule);
+    setSavedSlotDuration(slotDuration);
+    setPreview({});
 
-    try {
-      await api(`/studio/${studio.id}/schedule`, {
-        method: "PATCH",
-        token,
-        body: {
-          schedule: nextSchedule,
-          slotDuration,
-        },
-      });
+    showToast({
+      type: "success",
+      title: "Час оновлено",
+      text: "Зміни збережено в розкладі.",
+    });
+  } catch (err) {
+    console.error(err);
 
-      setSavedSchedule(nextSchedule);
-      setSavedSlotDuration(slotDuration);
-      setPreview({});
+    setScheduleDraft(savedSchedule);
+    queryClient.setQueryData(["studio-schedule", studioId], previous);
 
-      showToast({
-        type: "success",
-        title: "Час оновлено",
-        text: "Зміни збережено в розкладі.",
-      });
-    } catch (err) {
-      console.error(err);
+    showToast({
+      type: "error",
+      title: "Не вдалося зберегти",
+      text: err?.message || "Сталася помилка під час збереження.",
+    });
 
-      setScheduleDraft(savedSchedule);
-
-      showToast({
-        type: "error",
-        title: "Не вдалося зберегти",
-        text: err?.message || "Сталася помилка під час збереження.",
-      });
-
-      throw err;
-    }
+    throw err;
   }
+}
 
   async function deleteExpiredExceptions(studioId, token, list) {
   const expired = (list || []).filter(
@@ -780,64 +872,62 @@ export default function Schedule() {
     setPreview(result);
   }
 
-  async function saveAll() {
-    if (!dirty || saving || !studio?.id) return;
+async function saveAll() {
+  if (!dirty || saving || !studioId) return;
 
-    setSaving(true);
-    try {
-      const token = localStorage.getItem("token");
+  setSaving(true);
 
-      await api(`/studio/${studio.id}/schedule`, {
-        method: "PATCH",
-        token,
-        body: { schedule, slotDuration },
-      });
+  const token = localStorage.getItem("token");
+  const previous = queryClient.getQueryData(["studio-schedule", studioId]);
 
-      const fresh = await api(`/studio/${studio.id}/schedule`, {
-        method: "GET",
-        token,
-      });
+  queryClient.setQueryData(["studio-schedule", studioId], (old) => ({
+    ...(old || {}),
+    schedule,
+    slotDuration,
+  }));
 
-      const nextSchedule = normalizeSchedule(fresh.schedule ?? schedule);
-      const nextDuration =
-        typeof fresh.slotDuration === "number" ? fresh.slotDuration : 15;
+  try {
+    await api(`/studio/${studioId}/schedule`, {
+      method: "PATCH",
+      token,
+      body: { schedule, slotDuration },
+    });
 
-      setScheduleDraft(nextSchedule);
-      setSlotDuration(nextDuration);
+    setSavedSchedule(schedule);
+    setSavedSlotDuration(slotDuration);
+    setPreview({});
 
-      setSavedSchedule(nextSchedule);
-      setSavedSlotDuration(nextDuration);
+    showToast({
+      type: "success",
+      title: "Графік оновлено",
+      text: "Зміни успішно збережено.",
+    });
+  } catch (err) {
+    console.error(err);
 
-      setPreview({});
-      showToast({
-        type: "success",
-        title: "Графік оновлено",
-        text: "Зміни успішно збережено.",
-      });
-    } catch (err) {
-      console.error(err);
+    queryClient.setQueryData(["studio-schedule", studioId], previous);
 
-      const rawMessage = String(err?.message || "").toLowerCase();
+    const rawMessage = String(err?.message || "").toLowerCase();
 
-      const isOffline =
-        !navigator.onLine ||
-        rawMessage.includes("failed to fetch") ||
-        rawMessage.includes("networkerror") ||
-        rawMessage.includes("network error") ||
-        rawMessage.includes("load failed") ||
-        rawMessage.includes("fetch");
+    const isOffline =
+      !navigator.onLine ||
+      rawMessage.includes("failed to fetch") ||
+      rawMessage.includes("networkerror") ||
+      rawMessage.includes("network error") ||
+      rawMessage.includes("load failed") ||
+      rawMessage.includes("fetch");
 
-      showToast({
-        type: "error",
-        title: isOffline ? "Немає інтернету" : "Не вдалося зберегти",
-        text: isOffline
-          ? "Перевірте підключення до інтернету."
-          : err?.message || "Сталася помилка під час збереження.",
-      });
-    } finally {
-      setSaving(false);
-    }
+    showToast({
+      type: "error",
+      title: isOffline ? "Немає інтернету" : "Не вдалося зберегти",
+      text: isOffline
+        ? "Перевірте підключення до інтернету."
+        : err?.message || "Сталася помилка під час збереження.",
+    });
+  } finally {
+    setSaving(false);
   }
+}
 
   function sortExceptions(list) {
     return [...list].sort((a, b) => {
@@ -922,21 +1012,89 @@ export default function Schedule() {
         end: item.enabled ? item.end : null,
       };
 
-      let res;
+ let res;
 
-      if (item.id) {
-        res = await api(`/studio/${studio.id}/schedule/exceptions/${item.id}`, {
-          method: "PATCH",
-          token,
-          body,
-        });
-      } else {
-        res = await api(`/studio/${studio.id}/schedule/exceptions`, {
-          method: "POST",
-          token,
-          body,
-        });
-      }
+if (item.id) {
+  res = await api(`/studio/${studio.id}/schedule/exceptions/${item.id}`, {
+    method: "PATCH",
+    token,
+    body,
+  });
+} else {
+  res = await api(`/studio/${studio.id}/schedule/exceptions`, {
+    method: "POST",
+    token,
+    body,
+  });
+}
+
+queryClient.setQueryData(
+  ["studio-schedule-exceptions", studioId],
+  (old = []) => {
+    const exists = old.some((row) => row.id === res.exception?.id);
+
+    if (exists) {
+      return old.map((row) =>
+        row.id === res.exception?.id
+          ? {
+              ...res.exception,
+              date: String(res.exception?.date || "").slice(0, 10),
+              isNew: false,
+            }
+          : row,
+      );
+    }
+
+    return [
+      ...old,
+      {
+        ...res.exception,
+        date: String(res.exception?.date || "").slice(0, 10),
+        isNew: false,
+      },
+    ];
+  },
+);
+
+setExceptions((prev) => {
+  const next = sortExceptions(
+    prev.map((row, i) =>
+      i === index
+        ? {
+            ...res.exception,
+            date: String(res.exception?.date || "").slice(0, 10),
+            isNew: false,
+          }
+        : row,
+    ),
+  );
+
+  const savedIndex = next.findIndex(
+    (row) =>
+      row.id === res.exception?.id ||
+      (!row.id && row.date === res.exception?.date),
+  );
+
+  const nextKey =
+    savedIndex >= 0
+      ? getExceptionKey(next[savedIndex], savedIndex)
+      : getExceptionKey(res.exception, index);
+
+  setTimeout(() => {
+    setExpandedExceptions((prevExpanded) => {
+      const updated = { ...prevExpanded };
+
+      Object.keys(updated).forEach((k) => {
+        if (k.includes(item.date || "")) delete updated[k];
+      });
+
+      updated[nextKey] = false;
+      return updated;
+    });
+  }, 0);
+
+  return next;
+});
 
       setExceptions((prev) => {
         const next = sortExceptions(
@@ -1008,13 +1166,20 @@ export default function Schedule() {
     const token = localStorage.getItem("token");
 
     try {
-      await api(`/studio/${studio.id}/schedule/exceptions/${item.id}`, {
-        method: "DELETE",
-        token,
-      });
+await api(`/studio/${studio.id}/schedule/exceptions/${item.id}`, {
+  method: "DELETE",
+  token,
+});
 
-      setExceptions((prev) => prev.filter((_, i) => i !== index));
-      setPreview({});
+// 🔥 ОНОВЛЕННЯ КЕШУ
+queryClient.setQueryData(
+  ["studio-schedule-exceptions", studioId],
+  (old = []) => old.filter((row) => row.id !== item.id),
+);
+
+// твій локальний state
+setExceptions((prev) => prev.filter((_, i) => i !== index));
+setPreview({});
 
       showToast({
         type: "success",
@@ -1039,74 +1204,50 @@ export default function Schedule() {
     setPreview({});
   }
 
+  useEffect(() => {
+  if (!scheduleQuery.data) return;
+
+  const nextSchedule = normalizeSchedule(scheduleQuery.data?.schedule);
+  const nextDuration =
+    typeof scheduleQuery.data?.slotDuration === "number"
+      ? scheduleQuery.data.slotDuration
+      : 15;
+
+  setScheduleDraft(nextSchedule);
+  setSlotDuration(nextDuration);
+
+  setSavedSchedule(nextSchedule);
+  setSavedSlotDuration(nextDuration);
+  setPreview({});
+}, [scheduleQuery.data]);
+
 useEffect(() => {
+  if (!exceptionsQuery.data) return;
+
   let alive = true;
 
   (async () => {
-    if (!studio?.id) {
-      setInitialLoading(true);
-      return;
-    }
-
     try {
       const token = localStorage.getItem("token");
-      setExceptionsLoading(true);
-
-      const [data, exceptionsData] = await Promise.all([
-        api(`/studio/${studio.id}/schedule`, {
-          method: "GET",
-          token,
-        }),
-        api(`/studio/${studio.id}/schedule/exceptions`, {
-          method: "GET",
-          token,
-        }),
-      ]);
-
-      const nextSchedule = normalizeSchedule(data?.schedule);
-      const nextDuration =
-        typeof data?.slotDuration === "number" ? data.slotDuration : 15;
-
-      const rawExceptions = Array.isArray(exceptionsData?.exceptions)
-        ? exceptionsData.exceptions.map((item) => ({
-            ...item,
-            date: String(item?.date || "").slice(0, 10),
-            isNew: false,
-          }))
-        : [];
 
       const cleanedExceptions = await deleteExpiredExceptions(
-        studio.id,
+        studioId,
         token,
-        rawExceptions,
+        exceptionsQuery.data,
       );
-
-      const nextExceptions = sortExceptions(cleanedExceptions);
 
       if (!alive) return;
 
-      setScheduleDraft(nextSchedule);
-      setSlotDuration(nextDuration);
-
-      setSavedSchedule(nextSchedule);
-      setSavedSlotDuration(nextDuration);
-
-      setExceptions(nextExceptions);
-      setPreview({});
-      setInitialLoading(false);
-      setExceptionsLoading(false);
+      setExceptions(sortExceptions(cleanedExceptions));
     } catch (e) {
       console.error(e);
 
       if (!alive) return;
 
-      setInitialLoading(false);
-      setExceptionsLoading(false);
-
       showToast({
         type: "error",
         title: "Не вдалося завантажити",
-        text: e?.message || "Помилка завантаження графіка.",
+        text: e?.message || "Помилка завантаження особливих дат.",
       });
     }
   })();
@@ -1115,8 +1256,15 @@ useEffect(() => {
     alive = false;
   };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [studio?.id]);
+}, [exceptionsQuery.data, studioId]);
 
+const initialLoading =
+  scheduleQuery.isLoading && !scheduleQuery.data;
+
+const exceptionsLoading =
+  exceptionsQuery.isLoading && !exceptionsQuery.data;
+
+  
   const [menuOpen, setMenuOpen] = useState(false);
   const [expandedExceptions, setExpandedExceptions] = useState({});
 
@@ -1154,10 +1302,6 @@ useEffect(() => {
     return () => observer.disconnect();
   }, []);
 
-  if (initialLoading) {
-    return <ScheduleSkeleton />;
-  }
-
   const enabledDaysCount = DAYS.filter((d) => schedule[d.key]?.enabled).length;
 
   return (
@@ -1194,96 +1338,98 @@ useEffect(() => {
           subtitle="Увімкни день і задай час початку та завершення."
           badge={`${enabledDaysCount} активн.`}
         >
-          <div className="space-y-3">
-            {DAYS.map((day) => {
-              const config = schedule[day.key];
-              const enabled = config.enabled;
+{initialLoading ? (
+  <WorkDaysSkeleton />
+) : (
+  <div className="space-y-3">
+    {DAYS.map((day) => {
+      const config = schedule[day.key];
+      const enabled = config.enabled;
 
-              return (
+      return (
+        <div
+          key={day.key}
+          className={cn(
+            "rounded-2xl border p-4 transition-all duration-300",
+            enabled
+              ? "border-stone-200 bg-white shadow-[0_6px_18px_rgba(93,64,55,0.04)] hover:border-amber-200"
+              : "border-stone-200/70 bg-stone-50/70",
+          )}
+        >
+          <div className="grid gap-4 sm:grid-cols-[1fr_260px] sm:items-center">
+            <button
+              type="button"
+              onClick={() => toggleDay(day.key)}
+              disabled={saving}
+              className="flex items-center gap-3 text-left disabled:opacity-60"
+            >
+              <Toggle checked={enabled} />
+
+              <div className="min-w-0">
+                <p className="text-[15px] font-bold text-stone-800">
+                  {day.full}
+                </p>
+                <p className="text-xs text-stone-500">
+                  {enabled ? "Робочий день" : "Вихідний"}
+                </p>
+              </div>
+            </button>
+
+            {enabled ? (
+              <div className="w-full sm:w-[260px]">
                 <div
-                  key={day.key}
                   className={cn(
-                    "rounded-2xl border p-4 transition-all duration-300",
-                    enabled
-                      ? "border-stone-200 bg-white shadow-[0_6px_18px_rgba(93,64,55,0.04)] hover:border-amber-200"
-                      : "border-stone-200/70 bg-stone-50/70",
+                    "grid w-full grid-cols-[1fr_auto_1fr] items-center gap-2",
+                    "rounded-[20px] border border-stone-200 bg-white",
+                    "px-2.5 py-2 shadow-[0_6px_20px_rgba(120,90,60,0.06)]",
                   )}
                 >
-                  <div className="grid gap-4 sm:grid-cols-[1fr_260px] sm:items-center">
-                    {/* LEFT */}
-                    <button
-                      type="button"
-                      onClick={() => toggleDay(day.key)}
-                      disabled={saving}
-                      className="flex items-center gap-3 text-left disabled:opacity-60"
-                    >
-                      <Toggle checked={enabled} />
+                  <div className="min-w-0">
+                    <div className="rounded-[14px] border border-stone-200 bg-stone-50">
+                      <TimeSelect
+                        value={config.start}
+                        label="Початок зміни"
+                        dayLabel={day.full}
+                        onChange={(value) =>
+                          updateTime(day.key, "start", value)
+                        }
+                        onCommit={(value) =>
+                          handleTimeCommit(day.key, "start", value)
+                        }
+                      />
+                    </div>
+                  </div>
 
-                      <div className="min-w-0">
-                        <p className="text-[15px] font-bold text-stone-800">
-                          {day.full}
-                        </p>
-                        <p className="text-xs text-stone-500">
-                          {enabled ? "Робочий день" : "Вихідний"}
-                        </p>
-                      </div>
-                    </button>
+                  <div className="flex items-center justify-center">
+                    <span className="block h-px w-3 bg-stone-300" />
+                  </div>
 
-                    {/* RIGHT */}
-                    {enabled ? (
-                      <div className="w-full sm:w-[260px]">
-                        <div
-                          className={cn(
-                            "grid w-full grid-cols-[1fr_auto_1fr] items-center gap-2",
-                            "rounded-[20px] border border-stone-200 bg-white",
-                            "px-2.5 py-2 shadow-[0_6px_20px_rgba(120,90,60,0.06)]",
-                          )}
-                        >
-                          <div className="min-w-0">
-                            <div className="rounded-[14px] border border-stone-200 bg-stone-50">
-                              <TimeSelect
-                                value={config.start}
-                                label="Початок зміни"
-                                dayLabel={day.full}
-                                onChange={(value) =>
-                                  updateTime(day.key, "start", value)
-                                }
-                                onCommit={(value) =>
-                                  handleTimeCommit(day.key, "start", value)
-                                }
-                              />
-                            </div>
-                          </div>
-
-                          <div className="flex items-center justify-center">
-                            <span className="block h-px w-3 bg-stone-300" />
-                          </div>
-
-                          <div className="min-w-0">
-                            <div className="rounded-[14px] border border-stone-200 bg-stone-50">
-                              <TimeSelect
-                                value={config.end}
-                                label="Кінець зміни"
-                                dayLabel={day.full}
-                                onChange={(value) =>
-                                  updateTime(day.key, "end", value)
-                                }
-                                onCommit={(value) =>
-                                  handleTimeCommit(day.key, "end", value)
-                                }
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="hidden sm:block" />
-                    )}
+                  <div className="min-w-0">
+                    <div className="rounded-[14px] border border-stone-200 bg-stone-50">
+                      <TimeSelect
+                        value={config.end}
+                        label="Кінець зміни"
+                        dayLabel={day.full}
+                        onChange={(value) =>
+                          updateTime(day.key, "end", value)
+                        }
+                        onCommit={(value) =>
+                          handleTimeCommit(day.key, "end", value)
+                        }
+                      />
+                    </div>
                   </div>
                 </div>
-              );
-            })}
+              </div>
+            ) : (
+              <div className="hidden sm:block" />
+            )}
           </div>
+        </div>
+      );
+    })}
+  </div>
+)}
         </SectionCard>
 
         <SectionCard
@@ -1301,12 +1447,9 @@ useEffect(() => {
             </Button>
           }
         >
-          {exceptionsLoading ? (
-            <div className="space-y-3">
-              <SkeletonBlock className="h-24 w-full rounded-2xl" />
-              <SkeletonBlock className="h-24 w-full rounded-2xl" />
-            </div>
-          ) : exceptions.length === 0 ? (
+{exceptionsLoading ? (
+  <ExceptionsSkeleton />
+) : exceptions.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-6 text-sm text-stone-500">
               Ще немає особливих дат. Наприклад: Пасха 08:00–12:00 або вихідний
               на конкретну дату.

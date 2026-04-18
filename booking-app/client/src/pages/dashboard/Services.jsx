@@ -1,5 +1,6 @@
 // Services.jsx
 import { useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useStudio } from "../../context/studio/useStudio";
 import { Slider } from "../../components/ui/slider";
 import {
@@ -61,6 +62,39 @@ async function api(path, { method = "GET", body, token } = {}) {
   return data;
 }
 
+async function fetchServicesData(studioId) {
+  if (!studioId) {
+    return {
+      serviceCategories: [],
+      uncategorizedServices: [],
+    };
+  }
+
+  const token = localStorage.getItem("token");
+
+  const servicesData = await api(`/studio/${studioId}/services`, { token });
+
+  return {
+    serviceCategories: Array.isArray(servicesData?.serviceCategories)
+      ? servicesData.serviceCategories
+      : [],
+    uncategorizedServices: Array.isArray(servicesData?.uncategorizedServices)
+      ? servicesData.uncategorizedServices
+      : [],
+  };
+}
+
+async function fetchMastersData(studioId) {
+  if (!studioId) {
+    return [];
+  }
+
+  const token = localStorage.getItem("token");
+  const mastersData = await api(`/studio/${studioId}/masters`, { token });
+
+  return Array.isArray(mastersData?.masters) ? mastersData.masters : [];
+}
+
 function normalizeService(s) {
   const mastersArr = Array.isArray(s?.masters) ? s.masters.map(String) : [];
   const allMasters = s?.allMasters === true || mastersArr.length === 0;
@@ -117,6 +151,44 @@ function MasterChip({ master, checked }) {
           {checked ? "Обрано" : "Доступний"}
         </p>
       </div>
+    </div>
+  );
+}
+
+function ServicesListSkeleton() {
+  return (
+    <div className="space-y-5">
+      {Array.from({ length: 3 }).map((_, i) => (
+        <SectionCard
+          key={i}
+          title={<SkeletonBlock className="h-6 w-40" />}
+          badge={<SkeletonBlock className="h-6 w-28 rounded-full" />}
+          actions={{
+            desktop: <SkeletonBlock className="h-11 w-36 rounded-2xl" />,
+            mobileBottom: <SkeletonBlock className="h-11 w-full rounded-2xl" />,
+          }}
+        >
+          <div className="space-y-3">
+            <div className="rounded-2xl border border-stone-200 bg-white p-4">
+              <SkeletonBlock className="h-5 w-44" />
+              <div className="mt-3 flex flex-wrap gap-3">
+                <SkeletonBlock className="h-4 w-20" />
+                <SkeletonBlock className="h-4 w-16" />
+                <SkeletonBlock className="h-4 w-24" />
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-stone-200 bg-white p-4">
+              <SkeletonBlock className="h-5 w-52" />
+              <div className="mt-3 flex flex-wrap gap-3">
+                <SkeletonBlock className="h-4 w-24" />
+                <SkeletonBlock className="h-4 w-14" />
+                <SkeletonBlock className="h-4 w-28" />
+              </div>
+            </div>
+          </div>
+        </SectionCard>
+      ))}
     </div>
   );
 }
@@ -453,41 +525,41 @@ function DurationSlider({ value, onChange }) {
 
   return (
     <div className="space-y-4">
-<div className="grid grid-cols-2 gap-3">
-  {/* блок з вибраним часом */}
-  <div className="relative min-w-0">
-    <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-400 opacity-20 blur-xl" />
-    <div className="relative flex h-full items-center justify-center gap-2 rounded-2xl border border-amber-200/50 bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-3 sm:gap-3 sm:px-6 sm:py-3">
-      <Clock className="h-4.5 w-4.5 flex-shrink-0 text-amber-600 sm:h-5 sm:w-5" />
-      <span className="truncate text-center text-lg font-bold text-stone-800 sm:text-2xl">
-        {formatDuration(value)}
-      </span>
-    </div>
-  </div>
+      <div className="grid grid-cols-2 gap-3">
+        {/* блок з вибраним часом */}
+        <div className="relative min-w-0">
+          <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-400 opacity-20 blur-xl" />
+          <div className="relative flex h-full items-center justify-center gap-2 rounded-2xl border border-amber-200/50 bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-3 sm:gap-3 sm:px-6 sm:py-3">
+            <Clock className="h-4.5 w-4.5 flex-shrink-0 text-amber-600 sm:h-5 sm:w-5" />
+            <span className="truncate text-center text-lg font-bold text-stone-800 sm:text-2xl">
+              {formatDuration(value)}
+            </span>
+          </div>
+        </div>
 
-  {/* блок +/- */}
-  <div className="flex items-center justify-center gap-2 rounded-2xl border border-stone-200 bg-white px-2.5 py-2 sm:gap-3 sm:px-3">
-    <button
-      type="button"
-      onClick={() => onChange(Math.max(minVal, value - 5))}
-      disabled={value <= minVal}
-      className="flex h-9 w-9 items-center justify-center rounded-full bg-stone-100 text-stone-600 transition-all hover:bg-stone-200 disabled:opacity-40 sm:h-10 sm:w-10"
-    >
-      <span className="text-lg font-bold">−</span>
-    </button>
+        {/* блок +/- */}
+        <div className="flex items-center justify-center gap-2 rounded-2xl border border-stone-200 bg-white px-2.5 py-2 sm:gap-3 sm:px-3">
+          <button
+            type="button"
+            onClick={() => onChange(Math.max(minVal, value - 5))}
+            disabled={value <= minVal}
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-stone-100 text-stone-600 transition-all hover:bg-stone-200 disabled:opacity-40 sm:h-10 sm:w-10"
+          >
+            <span className="text-lg font-bold">−</span>
+          </button>
 
-    <span className="text-xs text-stone-500 sm:text-sm">±5 хв</span>
+          <span className="text-xs text-stone-500 sm:text-sm">±5 хв</span>
 
-    <button
-      type="button"
-      onClick={() => onChange(Math.min(maxVal, value + 5))}
-      disabled={value >= maxVal}
-      className="flex h-9 w-9 items-center justify-center rounded-full bg-stone-100 text-stone-600 transition-all hover:bg-stone-200 disabled:opacity-40 sm:h-10 sm:w-10"
-    >
-      <span className="text-lg font-bold">+</span>
-    </button>
-  </div>
-</div>
+          <button
+            type="button"
+            onClick={() => onChange(Math.min(maxVal, value + 5))}
+            disabled={value >= maxVal}
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-stone-100 text-stone-600 transition-all hover:bg-stone-200 disabled:opacity-40 sm:h-10 sm:w-10"
+          >
+            <span className="text-lg font-bold">+</span>
+          </button>
+        </div>
+      </div>
 
       <div className="px-1 py-2 sm:px-2 sm:py-4">
         <Slider
@@ -535,86 +607,59 @@ function SkeletonBlock({ className = "" }) {
     />
   );
 }
-
-function ServicesSkeleton() {
-  return (
-    <div className="space-y-6">
-      <div className="mb-8">
-        <SkeletonBlock className="mb-3 h-8 w-48" />
-        <SkeletonBlock className="mb-2 h-12 w-80" />
-        <SkeletonBlock className="h-5 w-96 max-w-full" />
-      </div>
-
-      {[1, 2, 3].map((i) => (
-        <div
-          key={i}
-          className="rounded-3xl border border-stone-200 bg-white p-5"
-        >
-          <div className="mb-4 flex justify-between">
-            <SkeletonBlock className="h-6 w-40" />
-            <SkeletonBlock className="h-10 w-32 rounded-2xl" />
-          </div>
-
-          <div className="space-y-3">
-            <SkeletonBlock className="h-20 w-full rounded-2xl" />
-            <SkeletonBlock className="h-20 w-full rounded-2xl" />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
+const EMPTY_ARRAY = [];
 export default function Services() {
   const { studio } = useStudio();
 
-  const [serviceCategories, setServiceCategories] = useState([]);
-  const [uncategorizedServices, setUncategorizedServices] = useState([]);
-  const [mastersLocal, setMastersLocal] = useState([]);
-  const [loading, setLoading] = useState(true);
+const queryClient = useQueryClient();
+const studioId = studio?.id ?? null;
 
-  const masters = mastersLocal;
+const servicesQuery = useQuery({
+  queryKey: ["services", studioId],
+  queryFn: () => fetchServicesData(studioId),
+  enabled: Boolean(studioId),
+  staleTime: 5 * 60 * 1000,
+  refetchOnWindowFocus: false,
+});
 
-  async function refresh() {
-    if (!studio?.id) return;
+const mastersQuery = useQuery({
+  queryKey: ["masters", studioId],
+  queryFn: () => fetchMastersData(studioId),
+  enabled: Boolean(studioId),
+  staleTime: 5 * 60 * 1000,
+  refetchOnWindowFocus: false,
+});
 
-    setLoading(true);
 
-    try {
-      const token = localStorage.getItem("token");
 
-      const [servicesData, mastersData] = await Promise.all([
-        api(`/studio/${studio.id}/services`, { token }),
-        api(`/studio/${studio.id}/masters`, { token }),
-      ]);
+const serviceCategories = servicesQuery.data?.serviceCategories ?? EMPTY_ARRAY;
+const uncategorizedServices =
+  servicesQuery.data?.uncategorizedServices ?? EMPTY_ARRAY;
+const masters = mastersQuery.data ?? EMPTY_ARRAY;
 
-      setServiceCategories(
-        Array.isArray(servicesData?.serviceCategories)
-          ? servicesData.serviceCategories
-          : [],
-      );
+const blocks = useMemo(() => {
+  const unc = {
+    id: UNCATEGORIZED_ID,
+    name: "Без категорії",
+    services: uncategorizedServices.map(normalizeService),
+    _virtual: true,
+  };
 
-      setUncategorizedServices(
-        Array.isArray(servicesData?.uncategorizedServices)
-          ? servicesData.uncategorizedServices
-          : [],
-      );
+  const cats = serviceCategories.map((c) => ({
+    ...c,
+    services: (c.services ?? EMPTY_ARRAY).map(normalizeService),
+  }));
 
-      setMastersLocal(
-        Array.isArray(mastersData?.masters) ? mastersData.masters : [],
-      );
-    } catch (e) {
-      console.error("Failed to load services:", e);
-      alert(e.message || "Не вдалося завантажити послуги");
-    } finally {
-      setLoading(false);
-    }
-  }
+  return [unc, ...cats];
+}, [serviceCategories, uncategorizedServices]);
 
-  useEffect(() => {
-    refresh();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studio?.id]);
+const servicesLoading =
+  servicesQuery.isLoading &&
+  !servicesQuery.data;
+
+const mastersLoading =
+  mastersQuery.isLoading &&
+  !mastersQuery.data;
 
   const [categoryModal, setCategoryModal] = useState({
     open: false,
@@ -638,6 +683,39 @@ export default function Services() {
     allMasters: true,
     masters: [],
   });
+
+async function refreshServices() {
+  if (!studioId) return;
+
+  await queryClient.invalidateQueries({
+    queryKey: ["services", studioId],
+    exact: true,
+  });
+}
+
+async function refreshMasters() {
+  if (!studioId) return;
+
+  await queryClient.invalidateQueries({
+    queryKey: ["masters", studioId],
+    exact: true,
+  });
+}
+
+useEffect(() => {
+  if (!studioId) return;
+
+  const handleFocusRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ["studio-services", studioId] });
+    queryClient.invalidateQueries({ queryKey: ["studio-masters", studioId] });
+  };
+
+  window.addEventListener("focus", handleFocusRefresh);
+
+  return () => {
+    window.removeEventListener("focus", handleFocusRefresh);
+  };
+}, [studioId, queryClient]);
 
   const [newCategoryName, setNewCategoryName] = useState("");
 
@@ -685,7 +763,7 @@ export default function Services() {
       });
 
       setNewCategoryName("");
-      await refresh();
+      await refreshServices();
     } catch (e) {
       console.error(e);
       alert(e.message || "Не вдалося додати категорію");
@@ -717,7 +795,7 @@ export default function Services() {
 
       setCategoryModal({ open: false, catId: null });
       setCategoryDraftName("");
-      await refresh();
+      await refreshServices();
     } catch (e) {
       console.error(e);
       alert(e.message || "Не вдалося оновити категорію");
@@ -735,7 +813,7 @@ export default function Services() {
         token,
       });
 
-      await refresh();
+      await refreshServices();
     } catch (e) {
       console.error(e);
       alert(e.message || "Не вдалося видалити категорію");
@@ -833,7 +911,7 @@ export default function Services() {
       }
 
       closeServiceModal();
-      await refresh();
+     await refreshServices();
     } catch (e) {
       console.error(e);
       alert(e.message || "Не вдалося зберегти послугу");
@@ -849,28 +927,12 @@ export default function Services() {
         token,
       });
 
-      await refresh();
+      await refreshServices();
     } catch (e) {
       console.error(e);
       alert(e.message || "Не вдалося видалити послугу");
     }
   }
-
-  const blocks = useMemo(() => {
-    const unc = {
-      id: UNCATEGORIZED_ID,
-      name: "Без категорії",
-      services: (uncategorizedServices || []).map(normalizeService),
-      _virtual: true,
-    };
-
-    const cats = (serviceCategories || []).map((c) => ({
-      ...c,
-      services: (c.services || []).map(normalizeService),
-    }));
-
-    return [unc, ...cats];
-  }, [serviceCategories, uncategorizedServices]);
 
   const totalServices = blocks.reduce(
     (acc, b) => acc + (b.services?.length || 0),
@@ -878,33 +940,33 @@ export default function Services() {
   );
   const showTips = totalServices === 0;
   const isModalOpen = categoryModal.open || serviceModal.open;
-  if (loading) return <ServicesSkeleton />;
 
   return (
     <div className="min-h-screen">
       <div className="mx-auto max-w-5xl">
         {!isModalOpen && (
-<div className="relative mb-6 overflow-hidden rounded-3xl border border-stone-200/60 bg-white p-5 sm:p-6 shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]">
-  {/* top accent */}
-  <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-60" />
+          <div className="relative mb-6 overflow-hidden rounded-3xl border border-stone-200/60 bg-white p-5 sm:p-6 shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]">
+            {/* top accent */}
+            <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-60" />
 
-  <div className="relative">
-    <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-3 py-1.5">
-      <Sparkles className="h-4 w-4 text-amber-600" />
-      <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-amber-700">
-        Меню студії
-      </span>
-    </div>
+            <div className="relative">
+              <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-3 py-1.5">
+                <Sparkles className="h-4 w-4 text-amber-600" />
+                <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-amber-700">
+                  Меню студії
+                </span>
+              </div>
 
-    <h1 className="text-3xl font-black tracking-tight text-stone-800 sm:text-4xl">
-      Послуги
-    </h1>
+              <h1 className="text-3xl font-black tracking-tight text-stone-800 sm:text-4xl">
+                Послуги
+              </h1>
 
-    <p className="mt-2 max-w-xl text-sm text-stone-600 sm:text-base">
-      Налаштуйте категорії та послуги — саме так їх бачитимуть клієнти під час онлайн-запису.
-    </p>
-  </div>
-</div>
+              <p className="mt-2 max-w-xl text-sm text-stone-600 sm:text-base">
+                Налаштуйте категорії та послуги — саме так їх бачитимуть клієнти
+                під час онлайн-запису.
+              </p>
+            </div>
+          </div>
         )}
 
         <SectionCard
@@ -934,28 +996,55 @@ export default function Services() {
         </SectionCard>
 
         <div className="space-y-5">
-          {blocks.map((cat) => {
-            const isUnc = cat.id === UNCATEGORIZED_ID;
-            const servicesCount = cat.services?.length || 0;
+          {servicesLoading ? (
+            <ServicesListSkeleton />
+          ) : (
+            <div className="space-y-5">
+              {blocks.map((cat) => {
+                const isUnc = cat.id === UNCATEGORIZED_ID;
+                const servicesCount = cat.services?.length || 0;
 
-            return (
-              <SectionCard
-                key={cat.id}
-                title={cat.name}
-                badge={`К-ть послуг: ${servicesCount}`}
-                actions={{
-                  desktop: (
-                    <>
-                      <Button
-                        variant="primary"
-                        size="md"
-                        onClick={() => openAddService(cat.id)}
-                      >
-                        <Plus className="h-4 w-4" />
-                        Додати послугу
-                      </Button>
+                return (
+                  <SectionCard
+                    key={cat.id}
+                    title={cat.name}
+                    badge={`К-ть послуг: ${servicesCount}`}
+                    actions={{
+                      desktop: (
+                        <>
+                          <Button
+                            variant="primary"
+                            size="md"
+                            onClick={() => openAddService(cat.id)}
+                          >
+                            <Plus className="h-4 w-4" />
+                            Додати послугу
+                          </Button>
 
-                      {!isUnc && (
+                          {!isUnc && (
+                            <>
+                              <IconButton
+                                onClick={() => openEditCategory(cat.id)}
+                                title="Редагувати"
+                                className="h-[42px] w-[42px] shrink-0"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </IconButton>
+
+                              <IconButton
+                                variant="danger"
+                                onClick={() => deleteCategory(cat.id)}
+                                title="Видалити"
+                                className="h-[42px] w-[42px] shrink-0"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </IconButton>
+                            </>
+                          )}
+                        </>
+                      ),
+
+                      mobileTop: !isUnc ? (
                         <>
                           <IconButton
                             onClick={() => openEditCategory(cat.id)}
@@ -974,110 +1063,90 @@ export default function Services() {
                             <Trash2 className="h-4 w-4" />
                           </IconButton>
                         </>
-                      )}
-                    </>
-                  ),
+                      ) : null,
 
-                  mobileTop: !isUnc ? (
-                    <>
-                      <IconButton
-                        onClick={() => openEditCategory(cat.id)}
-                        title="Редагувати"
-                        className="h-[42px] w-[42px] shrink-0"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </IconButton>
+                      mobileBottom: (
+                        <Button
+                          variant="primary"
+                          size="md"
+                          onClick={() => openAddService(cat.id)}
+                          className="w-full"
+                        >
+                          <Plus className="h-4 w-4" />
+                          Додати послугу
+                        </Button>
+                      ),
+                    }}
+                  >
+                    {servicesCount === 0 ? (
+                      <div className="rounded-2xl border-2 border-dashed border-stone-200 bg-stone-50/50 p-6 text-center sm:p-8">
+                        <p className="text-sm text-stone-500">
+                          Тут ще немає послуг
+                        </p>
+                        <p className="mt-1 text-xs text-stone-400">
+                          Натисніть "Додати послугу" щоб створити
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {cat.services.map((srv) => (
+                          <div
+                            key={srv.id}
+                            className="group/service rounded-2xl border border-stone-200 bg-white p-3.5 transition-all hover:border-amber-200 hover:shadow-md hover:shadow-amber-500/5 sm:p-4"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0 flex-1">
+                                <h3 className="line-clamp-2 break-words text-sm font-semibold text-stone-800 sm:text-base">
+                                  {srv.name}
+                                </h3>
 
-                      <IconButton
-                        variant="danger"
-                        onClick={() => deleteCategory(cat.id)}
-                        title="Видалити"
-                        className="h-[42px] w-[42px] shrink-0"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </IconButton>
-                    </>
-                  ) : null,
+                                <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-stone-500 sm:text-sm">
+                                  <span className="inline-flex items-center gap-1">
+                                    <Clock className="h-3.5 w-3.5" />
+                                    {formatDuration(srv.duration)}
+                                  </span>
 
-                  mobileBottom: (
-                    <Button
-                      variant="primary"
-                      size="md"
-                      onClick={() => openAddService(cat.id)}
-                      className="w-full"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Додати послугу
-                    </Button>
-                  ),
-                }}
-              >
-                {servicesCount === 0 ? (
-                  <div className="rounded-2xl border-2 border-dashed border-stone-200 bg-stone-50/50 p-6 text-center sm:p-8">
-                    {" "}
-                    <p className="text-sm text-stone-500">
-                      Тут ще немає послуг
-                    </p>
-                    <p className="mt-1 text-xs text-stone-400">
-                      Натисніть "Додати послугу" щоб створити
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {cat.services.map((srv) => (
-                      <div
-                        key={srv.id}
-                        className="group/service rounded-2xl border border-stone-200 bg-white p-3.5 transition-all hover:border-amber-200 hover:shadow-md hover:shadow-amber-500/5 sm:p-4"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0 flex-1">
-                            <h3 className="line-clamp-2 break-words text-sm font-semibold text-stone-800 sm:text-base">
-                              {srv.name}
-                            </h3>
+                                  <span className="font-semibold text-stone-700">
+                                    {srv.price} грн
+                                  </span>
 
-                            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-stone-500 sm:text-sm">
-                              <span className="inline-flex items-center gap-1">
-                                <Clock className="h-3.5 w-3.5" />
-                                {formatDuration(srv.duration)}
-                              </span>
+                                  <span className="inline-flex items-center gap-1">
+                                    <Users className="h-3.5 w-3.5" />
+                                    {resolveServiceMastersText(srv)}
+                                  </span>
+                                </div>
+                              </div>
 
-                              <span className="font-semibold text-stone-700">
-                                {srv.price} грн
-                              </span>
+                              <div className="flex shrink-0 items-center gap-2">
+                                <IconButton
+                                  onClick={() =>
+                                    openEditService(cat.id, srv.id)
+                                  }
+                                  title="Редагувати"
+                                  className="h-11 w-11"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </IconButton>
 
-                              <span className="inline-flex items-center gap-1">
-                                <Users className="h-3.5 w-3.5" />
-                                {resolveServiceMastersText(srv)}
-                              </span>
+                                <IconButton
+                                  variant="danger"
+                                  onClick={() => deleteService(cat.id, srv.id)}
+                                  title="Видалити"
+                                  className="h-11 w-11"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </IconButton>
+                              </div>
                             </div>
                           </div>
-
-                          <div className="flex shrink-0 items-center gap-2">
-                            <IconButton
-                              onClick={() => openEditService(cat.id, srv.id)}
-                              title="Редагувати"
-                              className="h-11 w-11"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </IconButton>
-
-                            <IconButton
-                              variant="danger"
-                              onClick={() => deleteService(cat.id, srv.id)}
-                              title="Видалити"
-                              className="h-11 w-11"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </IconButton>
-                          </div>
-                        </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                )}
-              </SectionCard>
-            );
-          })}
+                    )}
+                  </SectionCard>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {showTips && (
@@ -1163,44 +1232,44 @@ export default function Services() {
         }
       >
         <div className="space-y-6">
-<div className="grid grid-cols-[1fr_130px] gap-3 sm:grid-cols-2">
-  <div className="min-w-0">
-    <label className="mb-2 block text-sm font-medium text-stone-700">
-      Категорія
-    </label>
+          <div className="grid grid-cols-[1fr_130px] gap-3 sm:grid-cols-2">
+            <div className="min-w-0">
+              <label className="mb-2 block text-sm font-medium text-stone-700">
+                Категорія
+              </label>
 
-    <CustomSelect
-      value={serviceDraft.categoryId || UNCATEGORIZED_ID}
-      onChange={(nextValue) =>
-        setServiceDraft((p) => ({ ...p, categoryId: nextValue }))
-      }
-      options={[
-        { value: UNCATEGORIZED_ID, label: "Без категорії" },
-        ...serviceCategories.map((c) => ({
-          value: c.id,
-          label: c.name,
-        })),
-      ]}
-    />
-  </div>
+              <CustomSelect
+                value={serviceDraft.categoryId || UNCATEGORIZED_ID}
+                onChange={(nextValue) =>
+                  setServiceDraft((p) => ({ ...p, categoryId: nextValue }))
+                }
+                options={[
+                  { value: UNCATEGORIZED_ID, label: "Без категорії" },
+                  ...serviceCategories.map((c) => ({
+                    value: c.id,
+                    label: c.name,
+                  })),
+                ]}
+              />
+            </div>
 
-  <div className="min-w-0">
-    <label className="mb-2 block text-sm font-medium text-stone-700">
-      Ціна (грн) *
-    </label>
+            <div className="min-w-0">
+              <label className="mb-2 block text-sm font-medium text-stone-700">
+                Ціна (грн) *
+              </label>
 
-    <input
-      type="number"
-      value={serviceDraft.price}
-      onChange={(e) =>
-        setServiceDraft((p) => ({ ...p, price: e.target.value }))
-      }
-      placeholder="0"
-      min="0"
-      className="w-full rounded-2xl border border-stone-200 px-4 py-3 text-sm font-medium text-stone-800 outline-none transition-all placeholder:text-stone-400 focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10"
-    />
-  </div>
-</div>
+              <input
+                type="number"
+                value={serviceDraft.price}
+                onChange={(e) =>
+                  setServiceDraft((p) => ({ ...p, price: e.target.value }))
+                }
+                placeholder="0"
+                min="0"
+                className="w-full rounded-2xl border border-stone-200 px-4 py-3 text-sm font-medium text-stone-800 outline-none transition-all placeholder:text-stone-400 focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10"
+              />
+            </div>
+          </div>
 
           <div>
             <label className="mb-2 block text-sm font-medium text-stone-700">
@@ -1216,8 +1285,6 @@ export default function Services() {
               className="w-full rounded-xl border border-stone-200 px-3.5 py-2.5 text-sm font-medium text-stone-800 outline-none transition-all placeholder:text-stone-400 focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10 sm:rounded-2xl sm:px-4 sm:py-3"
             />
           </div>
-
-
 
           <div>
             <label className="mb-4 block text-sm font-medium text-stone-700">
@@ -1277,7 +1344,25 @@ export default function Services() {
             </div>
             {!serviceDraft.allMasters && (
               <div className="space-y-2">
-                {masters.length === 0 ? (
+                {mastersLoading ? (
+                  <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="rounded-2xl border border-stone-200 bg-white p-3"
+                      >
+                        <div className="flex items-center gap-3">
+                          <SkeletonBlock className="h-4 w-4 rounded" />
+                          <SkeletonBlock className="h-10 w-10 rounded-full" />
+                          <div className="min-w-0 flex-1">
+                            <SkeletonBlock className="h-4 w-28" />
+                            <SkeletonBlock className="mt-2 h-3 w-16" />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : masters.length === 0 ? (
                   <p className="text-sm text-stone-500">
                     Спочатку додайте майстрів
                   </p>
@@ -1318,7 +1403,7 @@ export default function Services() {
                   </div>
                 )}
 
-                {(serviceDraft.masters || []).length > 0 && (
+                {!mastersLoading && (serviceDraft.masters || []).length > 0 && (
                   <p className="mt-2 text-xs text-stone-500">
                     Обрано:{" "}
                     <span className="font-semibold text-stone-700">

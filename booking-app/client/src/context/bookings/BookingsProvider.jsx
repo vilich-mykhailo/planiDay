@@ -110,93 +110,108 @@ export default function BookingsProvider({ children }) {
 
   // ================= QUERY =================
 
-  const bookingsQuery = useQuery({
-    queryKey: ["bookings", studioId],
-    queryFn: () => fetchBookings(studioId),
-    enabled: Boolean(studioId),
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
-    staleTime: 5000,
-  });
+const bookingsQuery = useQuery({
+  queryKey: ["bookings", studioId],
+  queryFn: () => fetchBookings(studioId),
+  enabled: Boolean(studioId),
+
+  // не тягнути щоразу заново
+  staleTime: 1000 * 60 * 10, // 10 хв
+  gcTime: 1000 * 60 * 30, // кеш 30 хв
+
+  refetchOnMount: false,
+  refetchOnWindowFocus: false,
+  refetchOnReconnect: false,
+});
 
   // ================= SOCKET JOIN =================
 
-useEffect(() => {
-  if (!studioId) return;
+  useEffect(() => {
+    if (!studioId) return;
 
-  const joinStudioRoom = () => {
-    console.log("OWNER auth:join", {
-      studioId,
-      connected: socket.connected,
-    });
+    const joinStudioRoom = () => {
+      if (!socket.connected) return;
 
-    socket.emit("auth:join", {
-  studioId,
-  role: "owner",
-});
-    joinedStudioRef.current = studioId;
-  };
+      if (joinedStudioRef.current === studioId) return;
 
-  if (socket.connected) {
-    joinStudioRoom();
-  }
+      console.log("OWNER auth:join", {
+        studioId,
+        connected: socket.connected,
+      });
 
-  socket.on("connect", joinStudioRoom);
+      socket.emit("auth:join", {
+        studioId,
+        role: "owner",
+      });
 
-  return () => {
-    socket.off("connect", joinStudioRoom);
-  };
-}, [studioId]);
+      joinedStudioRef.current = studioId;
+    };
+
+    if (socket.connected) {
+      joinStudioRoom();
+    }
+
+    socket.on("connect", joinStudioRoom);
+
+    return () => {
+      socket.off("connect", joinStudioRoom);
+
+      if (joinedStudioRef.current === studioId) {
+        joinedStudioRef.current = null;
+      }
+    };
+  }, [studioId]);
 
   // ================= SOCKET LISTENER =================
-useEffect(() => {
-  if (!studioId) return;
 
-  const handler = async (payload) => {
-    console.log("OWNER got booking:updated", payload);
+  useEffect(() => {
+    if (!studioId) return;
 
-    if (!payload) return;
+    const handler = async (payload) => {
+      console.log("OWNER got booking:updated", payload);
 
-    if (
-      payload.studioId &&
-      String(payload.studioId) !== String(studioId)
-    ) {
-      return;
-    }
+      if (!payload) return;
 
-    const bookingId = payload.bookingId || payload.id;
-    const { status, deleted, hiddenForOwner, canceledBy } = payload;
+      if (
+        payload.studioId &&
+        String(payload.studioId) !== String(studioId)
+      ) {
+        return;
+      }
 
-    if ((deleted || hiddenForOwner) && bookingId) {
-      queryClient.setQueryData(["bookings", studioId], (old = []) =>
-        old.filter((b) => b.id !== bookingId),
-      );
-    } else if (bookingId && status) {
-      queryClient.setQueryData(["bookings", studioId], (old = []) =>
-        old.map((b) =>
-          b.id === bookingId
-            ? {
-                ...b,
-                status,
-                canceledBy: canceledBy || b.canceledBy || null,
-              }
-            : b,
-        ),
-      );
-    }
+      const bookingId = payload.bookingId || payload.id;
+      const { status, deleted, hiddenForOwner, canceledBy } = payload;
 
-    await queryClient.refetchQueries({
-      queryKey: ["bookings", studioId],
-      exact: true,
-    });
-  };
+      if ((deleted || hiddenForOwner) && bookingId) {
+        queryClient.setQueryData(["bookings", studioId], (old = []) =>
+          old.filter((b) => b.id !== bookingId),
+        );
+      } else if (bookingId && status) {
+        queryClient.setQueryData(["bookings", studioId], (old = []) =>
+          old.map((b) =>
+            b.id === bookingId
+              ? {
+                  ...b,
+                  status,
+                  canceledBy: canceledBy ?? b.canceledBy ?? null,
+                }
+              : b,
+          ),
+        );
+      }
 
-  socket.on("booking:updated", handler);
+      await queryClient.invalidateQueries({
+        queryKey: ["bookings", studioId],
+        exact: true,
+      });
+    };
 
-  return () => {
-    socket.off("booking:updated", handler);
-  };
-}, [studioId, queryClient]);
+    socket.on("booking:updated", handler);
+
+    return () => {
+      socket.off("booking:updated", handler);
+    };
+  }, [studioId, queryClient]);
 
   // ================= MUTATIONS =================
 
@@ -209,13 +224,13 @@ useEffect(() => {
       const previous =
         queryClient.getQueryData(["bookings", studioId]) || [];
 
-queryClient.setQueryData(["bookings", studioId], (old = []) =>
-  old.map((b) =>
-    b.id === id
-      ? { ...b, status: "canceled", canceledBy: "owner" }
-      : b,
-  ),
-);
+      queryClient.setQueryData(["bookings", studioId], (old = []) =>
+        old.map((b) =>
+          b.id === id
+            ? { ...b, status: "confirmed", canceledBy: null }
+            : b,
+        ),
+      );
 
       return { previous };
     },
@@ -243,7 +258,11 @@ queryClient.setQueryData(["bookings", studioId], (old = []) =>
         queryClient.getQueryData(["bookings", studioId]) || [];
 
       queryClient.setQueryData(["bookings", studioId], (old = []) =>
-        old.map((b) => (b.id === id ? { ...b, status: "canceled" } : b)),
+        old.map((b) =>
+          b.id === id
+            ? { ...b, status: "canceled", canceledBy: "owner" }
+            : b,
+        ),
       );
 
       return { previous };
@@ -308,36 +327,35 @@ queryClient.setQueryData(["bookings", studioId], (old = []) =>
     [deleteMutation],
   );
 
-  // ================= VALUE =================
-const newBookingsCount = useMemo(() => {
-  const items = bookingsQuery.data || [];
-  return items.filter((b) => !b.status || b.status === "new").length;
-}, [bookingsQuery.data]);
+const loadBookings = bookingsQuery.refetch;
 
-const value = useMemo(
-  () => ({
-    bookings: bookingsQuery.data || [],
-    newBookingsCount,
-    loading: bookingsQuery.isLoading,
-    confirmBooking,
-    cancelBooking,
-    deleteBooking,
-    loadBookings: () =>
-      queryClient.invalidateQueries({
-        queryKey: ["bookings", studioId],
-      }),
-  }),
-  [
-    bookingsQuery.data,
-    newBookingsCount,
-    bookingsQuery.isLoading,
-    confirmBooking,
-    cancelBooking,
-    deleteBooking,
-    queryClient,
-    studioId,
-  ],
-);
+  // ================= VALUE =================
+
+  const newBookingsCount = useMemo(() => {
+    const items = bookingsQuery.data || [];
+    return items.filter((b) => !b.status || b.status === "new").length;
+  }, [bookingsQuery.data]);
+
+  const value = useMemo(
+    () => ({
+      bookings: bookingsQuery.data || [],
+      newBookingsCount,
+      loading: bookingsQuery.isLoading,
+      confirmBooking,
+      cancelBooking,
+      deleteBooking,
+      loadBookings,
+    }),
+    [
+      bookingsQuery.data,
+      bookingsQuery.isLoading,
+      newBookingsCount,
+      confirmBooking,
+      cancelBooking,
+      deleteBooking,
+      loadBookings,
+    ],
+  );
 
   return (
     <BookingsContext.Provider value={value}>

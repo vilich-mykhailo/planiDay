@@ -1,6 +1,8 @@
 // Profile.jsx
-// Profile.jsx
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
+
 import {
   Sparkles,
   User,
@@ -12,8 +14,11 @@ import {
   CheckCircle2,
   ShieldCheck,
   X,
-  ChevronRight,
   BadgeCheck,
+  XCircle,
+  LogOut,
+  CircleDashed,
+  ChevronRight,
   Image as ImageIcon,
   LockKeyhole,
   Smartphone,
@@ -35,6 +40,23 @@ function toPublicUrl(v) {
   if (!s) return "";
   if (/^https?:\/\//i.test(s)) return s;
   return PUBLIC ? `${PUBLIC}/${s}` : s;
+}
+
+async function fetchClientProfile() {
+  const token = localStorage.getItem("token");
+  if (!token) return null;
+
+  const data = await api("/client/me", { token });
+
+  return {
+    firstName: data?.firstName || "",
+    lastName: data?.lastName || "",
+    phone: data?.phone || "",
+    email: data?.email || "",
+    birthDate: data?.birthDate ? String(data.birthDate).slice(0, 10) : "",
+    gender: data?.gender || "unknown",
+    photoUrl: data?.photoUrl || "",
+  };
 }
 
 function Input(props) {
@@ -211,7 +233,6 @@ function SectionHeader({ icon, eyebrow, title, subtitle, right }) {
 function InfoBadge({ icon, label, value, onEdit }) {
   return (
     <div className="flex items-center justify-between rounded-2xl border border-stone-200/80 bg-stone-50 px-4 py-3">
-      
       {/* ЛІВА ЧАСТИНА */}
       <div className="min-w-0">
         <div className="flex items-center gap-2 text-stone-500">
@@ -228,13 +249,13 @@ function InfoBadge({ icon, label, value, onEdit }) {
 
       {/* КНОПКА */}
       {onEdit && (
-<button
-  type="button"
-  onClick={onEdit}
-  className="ml-4 inline-flex min-h-[42px] items-center justify-center rounded-2xl border border-stone-200 bg-white px-4 text-sm font-semibold text-stone-700 transition active:scale-[0.98] btn-hover-amber"
->
-  Змінити
-</button>
+        <button
+          type="button"
+          onClick={onEdit}
+          className="ml-4 inline-flex min-h-[42px] items-center justify-center rounded-2xl border border-stone-200 bg-white px-4 text-sm font-semibold text-stone-700 transition active:scale-[0.98] btn-hover-amber"
+        >
+          Змінити
+        </button>
       )}
     </div>
   );
@@ -293,12 +314,14 @@ function EditModal({
           </button>
         </div>
 
-        <div className="px-5 py-5 sm:px-6">
-          {children}
-        </div>
+        <div className="px-5 py-5 sm:px-6">{children}</div>
 
         <div className="flex flex-col-reverse gap-2 border-t border-stone-100 px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
-          <SecondaryButton type="button" onClick={onClose} className="w-full sm:w-auto btn-hover-cancel">
+          <SecondaryButton
+            type="button"
+            onClick={onClose}
+            className="w-full sm:w-auto btn-hover-cancel"
+          >
             Скасувати
           </SecondaryButton>
 
@@ -316,25 +339,103 @@ function EditModal({
   );
 }
 
+function SkeletonBlock({ className = "" }) {
+  return (
+    <div
+      className={cx("animate-pulse rounded-2xl bg-stone-200/80", className)}
+    />
+  );
+}
+
 function ProfileSkeleton() {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen pb-[calc(env(safe-area-inset-bottom)+68px)] sm:pb-0">
       <div className="mx-auto max-w-6xl px-2.5 pb-4 pt-0 sm:px-4 sm:pb-8 sm:pt-14 lg:pt-16">
         <div className="space-y-3 px-0 pt-2 sm:space-y-5 sm:pt-8 lg:pt-6">
           <section className="overflow-hidden rounded-[22px] border border-stone-200/60 bg-white shadow-[0_4px_20px_-6px_rgba(120,90,60,0.08)] sm:rounded-3xl">
-            <div className="h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-70" />
-            <div className="space-y-5 px-3.5 py-5 sm:space-y-6 sm:px-6 sm:py-6 lg:px-8">
-              <div className="h-24 rounded-3xl bg-stone-100 animate-pulse" />
-              <div className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
-                <div className="h-72 rounded-3xl bg-stone-100 animate-pulse" />
-                <div className="h-72 rounded-3xl bg-stone-100 animate-pulse" />
-              </div>
-              <div className="grid gap-4 lg:grid-cols-2">
-                <div className="h-56 rounded-3xl bg-stone-100 animate-pulse" />
-                <div className="h-56 rounded-3xl bg-stone-100 animate-pulse" />
+            <div className="h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-50" />
+
+            <div className="px-3.5 pb-5 pt-5 sm:px-6 sm:pb-4 sm:pt-5 lg:px-8 lg:pt-6">
+              <div className="mb-4 space-y-2.5 sm:mb-4 sm:space-y-2 lg:mb-5">
+                <SkeletonBlock className="hidden h-8 w-40 rounded-full sm:block" />
+                <SkeletonBlock className="h-10 w-[290px] max-w-full rounded-2xl sm:h-14 sm:w-[470px]" />
+                <SkeletonBlock className="h-4 w-full max-w-[680px] rounded-xl sm:h-5" />
               </div>
             </div>
           </section>
+
+          <div className="space-y-4">
+            <section className="overflow-hidden rounded-[28px] border border-white/60 bg-[radial-gradient(circle_at_top_left,_rgba(251,191,36,0.16),_transparent_28%),radial-gradient(circle_at_top_right,_rgba(249,115,22,0.10),_transparent_24%),linear-gradient(135deg,#ffffff_0%,#fffaf5_48%,#fff_100%)] shadow-[0_20px_60px_-24px_rgba(120,90,40,0.22)]">
+              <div className="relative p-4 sm:p-6 lg:p-7">
+                <div className="grid gap-4 lg:grid-cols-[340px_minmax(0,1fr)]">
+                  <div className="rounded-[28px] border border-white/70 bg-white/80 p-4 shadow-[0_10px_30px_-18px_rgba(0,0,0,0.20)] backdrop-blur">
+                    <div className="flex flex-col items-center text-center">
+                      <SkeletonBlock className="h-32 w-32 rounded-[32px]" />
+
+                      <SkeletonBlock className="mt-5 h-6 w-32 rounded-full" />
+
+                      <div className="mt-3 flex items-center justify-center gap-2">
+                        <SkeletonBlock className="h-8 w-40 rounded-xl" />
+                        <SkeletonBlock className="h-9 w-9 rounded-xl" />
+                      </div>
+
+                      <SkeletonBlock className="mt-2 h-4 w-56 rounded-xl" />
+                      <SkeletonBlock className="mt-2 h-4 w-44 rounded-xl" />
+
+                      <div className="mt-5 flex w-full flex-col gap-2 sm:flex-row lg:flex-col">
+                        <SkeletonBlock className="h-12 w-full rounded-2xl" />
+                        <SkeletonBlock className="h-12 w-full rounded-2xl" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-4">
+                    <div className="rounded-[28px] border border-white/70 bg-white/85 p-5 shadow-[0_10px_30px_-18px_rgba(0,0,0,0.18)] backdrop-blur sm:p-6">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="min-w-0">
+                          <SkeletonBlock className="h-3 w-28 rounded-xl" />
+                          <SkeletonBlock className="mt-3 h-8 w-60 rounded-2xl" />
+                          <SkeletonBlock className="mt-3 h-4 w-full max-w-[360px] rounded-xl" />
+                        </div>
+
+                        <SkeletonBlock className="h-10 w-44 rounded-2xl" />
+                      </div>
+
+                      <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                        {Array.from({ length: 4 }).map((_, i) => (
+                          <div
+                            key={i}
+                            className="flex items-center justify-between gap-3 rounded-2xl border border-stone-200 bg-white px-3 py-3"
+                          >
+                            <div className="flex min-w-0 flex-1 items-center gap-3">
+                              <SkeletonBlock className="h-9 w-9 shrink-0 rounded-xl" />
+                              <div className="min-w-0 flex-1">
+                                <SkeletonBlock className="h-3 w-20 rounded-xl" />
+                                <SkeletonBlock className="mt-2 h-4 w-28 rounded-xl" />
+                              </div>
+                            </div>
+
+                            <SkeletonBlock className="h-8 w-20 shrink-0 rounded-xl" />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section className="overflow-hidden rounded-[28px] border border-red-100 bg-white shadow-[0_14px_40px_-24px_rgba(239,68,68,0.26)]">
+              <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                <div className="min-w-0">
+                  <SkeletonBlock className="h-6 w-40 rounded-xl" />
+                  <SkeletonBlock className="mt-2 h-4 w-64 rounded-xl" />
+                </div>
+
+                <SkeletonBlock className="h-12 w-full rounded-2xl sm:w-[220px]" />
+              </div>
+            </section>
+          </div>
         </div>
       </div>
     </div>
@@ -342,6 +443,18 @@ function ProfileSkeleton() {
 }
 
 export default function Profile() {
+  const queryClient = useQueryClient();
+
+const profileQuery = useQuery({
+  queryKey: ["client-profile"],
+  queryFn: fetchClientProfile,
+  staleTime: 1000 * 60 * 10,
+  gcTime: 1000 * 60 * 30,
+  refetchOnMount: false,
+  refetchOnWindowFocus: false,
+  refetchOnReconnect: false,
+});
+  const navigate = useNavigate();
   const [profile, setProfile] = useState({
     firstName: "",
     lastName: "",
@@ -385,7 +498,7 @@ export default function Profile() {
   });
 
   const [isSaved, setIsSaved] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const loading = profileQuery.isLoading && !profileQuery.data;
   const [saving, setSaving] = useState(false);
   const [apiError, setApiError] = useState("");
 
@@ -398,15 +511,23 @@ export default function Profile() {
     title: "",
     message: "",
   });
-const [toast, setToast] = useState({
-  id: 0,
-  open: false,
-  type: "success",
-  title: "",
-  text: "",
-  duration: 2600,
-});
+  const [toast, setToast] = useState({
+    id: 0,
+    open: false,
+    type: "success",
+    title: "",
+    text: "",
+    duration: 2600,
+  });
   const fileRef = useRef(null);
+
+function handleLogout() {
+  queryClient.removeQueries({ queryKey: ["client-profile"] });
+  localStorage.removeItem("token");
+  localStorage.removeItem("role");
+  window.dispatchEvent(new Event("auth-changed"));
+  navigate("/login", { replace: true });
+}
 
   const initials = useMemo(() => {
     const a = (profile.firstName || "").trim().slice(0, 1).toUpperCase();
@@ -415,23 +536,23 @@ const [toast, setToast] = useState({
   }, [profile.firstName, profile.lastName]);
 
   const photoSrc = photoPreviewUrl || toPublicUrl(profile.photoUrl);
-const isProfileComplete = useMemo(() => {
-  return Boolean(
-    initialProfile.firstName.trim() &&
-      initialProfile.lastName.trim() &&
+  const isProfileComplete = useMemo(() => {
+    return Boolean(
+      initialProfile.firstName.trim() &&
       initialProfile.birthDate &&
       initialProfile.gender &&
       initialProfile.gender !== "unknown" &&
-      initialProfile.photoUrl
-  );
-}, [
-  initialProfile.firstName,
-  initialProfile.lastName,
-  initialProfile.birthDate,
-  initialProfile.gender,
-  initialProfile.photoUrl,
-]);
-  const fullName = `${profile.firstName || ""} ${profile.lastName || ""}`.trim();
+      initialProfile.photoUrl,
+    );
+  }, [
+    initialProfile.firstName,
+
+    initialProfile.birthDate,
+    initialProfile.gender,
+    initialProfile.photoUrl,
+  ]);
+  const fullName =
+    `${profile.firstName || ""} ${profile.lastName || ""}`.trim();
 
   const genderLabel = useMemo(() => {
     if (profile.gender === "female") return "Жіноча";
@@ -451,7 +572,7 @@ const isProfileComplete = useMemo(() => {
     );
   }, [initialProfile, profile, photoFile]);
 
-  React.useEffect(() => {
+    React.useEffect(() => {
     if (!photoFile) {
       setPhotoPreviewUrl("");
       return;
@@ -462,6 +583,15 @@ const isProfileComplete = useMemo(() => {
 
     return () => URL.revokeObjectURL(url);
   }, [photoFile]);
+
+
+  useEffect(() => {
+  if (!profileQuery.data) return;
+
+  setProfile(profileQuery.data);
+  setInitialProfile(profileQuery.data);
+  setIsSaved(true);
+}, [profileQuery.data]);
 
   const updateProfile = (patch) => {
     setProfile((p) => ({ ...p, ...patch }));
@@ -476,24 +606,24 @@ const isProfileComplete = useMemo(() => {
   }
 
   function showToast({ type = "success", title, text }) {
-  const duration = 2600;
+    const duration = 2600;
 
-  setToast({
-    id: Date.now(),
-    open: true,
-    type,
-    title,
-    text,
-    duration,
-  });
+    setToast({
+      id: Date.now(),
+      open: true,
+      type,
+      title,
+      text,
+      duration,
+    });
 
-  clearTimeout(showToast._t);
-  showToast._t = setTimeout(() => {
-    setToast((prev) => ({ ...prev, open: false }));
-  }, duration);
-}
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => {
+      setToast((prev) => ({ ...prev, open: false }));
+    }, duration);
+  }
 
-    function openEditModal(type) {
+  function openEditModal(type) {
     setDraft({
       firstName: profile.firstName || "",
       lastName: profile.lastName || "",
@@ -538,15 +668,30 @@ const isProfileComplete = useMemo(() => {
         body.gender = draft.gender;
       }
 
-      // коли зробиш бекенд для phone/email — тут теж просто додаси:
-      // if (modal.type === "phone") { ... }
-      // if (modal.type === "email") { ... }
+const updatedRaw = await api("/client/me", {
+  method: "PATCH",
+  token,
+  body,
+});
 
-      await api("/client/me", {
-        method: "PATCH",
-        token,
-        body,
-      });
+const updated = {
+  firstName: updatedRaw?.firstName || "",
+  lastName: updatedRaw?.lastName || "",
+  phone: updatedRaw?.phone || "",
+  email: updatedRaw?.email || "",
+  birthDate: updatedRaw?.birthDate
+    ? String(updatedRaw.birthDate).slice(0, 10)
+    : "",
+  gender: updatedRaw?.gender || "unknown",
+  photoUrl: updatedRaw?.photoUrl || "",
+};
+
+queryClient.setQueryData(["client-profile"], updated);
+
+setProfile(updated);
+setInitialProfile(updated);
+setIsSaved(true);
+closeEditModal();
 
       const nextState = {
         ...profile,
@@ -573,25 +718,23 @@ const isProfileComplete = useMemo(() => {
       setIsSaved(true);
       closeEditModal();
       showToast({
-  type: "success",
-  title: "Збережено",
-  text: "Дані профілю оновлено",
-});
+        type: "success",
+        title: "Збережено",
+        text: "Дані профілю оновлено",
+      });
     } catch (e) {
-     const raw = String(e?.message || "").toLowerCase();
+      const raw = String(e?.message || "").toLowerCase();
 
-const isOffline =
-  !navigator.onLine ||
-  raw.includes("failed to fetch") ||
-  raw.includes("network");
+      const isOffline =
+        !navigator.onLine ||
+        raw.includes("failed to fetch") ||
+        raw.includes("network");
 
-showToast({
-  type: "error",
-  title: isOffline ? "Немає підключення" : "Помилка",
-  text: isOffline
-    ? "Перевірте інтернет"
-    : "Не вдалося зберегти зміни",
-});
+      showToast({
+        type: "error",
+        title: isOffline ? "Немає підключення" : "Помилка",
+        text: isOffline ? "Перевірте інтернет" : "Не вдалося зберегти зміни",
+      });
     } finally {
       setSaving(false);
     }
@@ -624,12 +767,12 @@ async function onPickPhoto(file) {
     setPhotoFile(file);
 
     const token = localStorage.getItem("token");
-    const previousPhotoKey = profile.photoUrl || "";
+    const previousPhotoKey = String(profile.photoUrl || "").trim();
 
     const out = await uploadClientPhoto(file, token);
-    const nextPhotoKey = out.key || "";
+    const nextPhotoKey = out?.key || "";
 
-    await api("/client/me", {
+    const updatedRaw = await api("/client/me", {
       method: "PATCH",
       token,
       body: {
@@ -641,22 +784,38 @@ async function onPickPhoto(file) {
       },
     });
 
-    const nextState = {
-      ...profile,
-      photoUrl: nextPhotoKey,
+    const updated = {
+      firstName: updatedRaw?.firstName || "",
+      lastName: updatedRaw?.lastName || "",
+      phone: updatedRaw?.phone || "",
+      email: updatedRaw?.email || "",
+      birthDate: updatedRaw?.birthDate
+        ? String(updatedRaw.birthDate).slice(0, 10)
+        : "",
+      gender: updatedRaw?.gender || "unknown",
+      photoUrl: updatedRaw?.photoUrl || "",
     };
 
-    setProfile(nextState);
-    setInitialProfile(nextState);
+    queryClient.setQueryData(["client-profile"], updated);
+
+    setProfile(updated);
+    setInitialProfile(updated);
     setPhotoFile(null);
+    setPhotoPreviewUrl("");
     setPendingDeletePhotoKey("");
     setIsSaved(true);
-showToast({
-  type: "success",
-  title: "Фото оновлено",
-  text: "Нове фото профілю збережено",
-});
-    if (previousPhotoKey && previousPhotoKey !== nextPhotoKey) {
+
+    showToast({
+      type: "success",
+      title: "Фото оновлено",
+      text: "Нове фото профілю збережено",
+    });
+
+    if (
+      previousPhotoKey &&
+      previousPhotoKey !== nextPhotoKey &&
+      !/^https?:\/\//i.test(previousPhotoKey)
+    ) {
       try {
         await deleteFromR2(previousPhotoKey);
       } catch (err) {
@@ -666,20 +825,20 @@ showToast({
   } catch (e) {
     console.error(e);
     setPhotoFile(null);
-  const raw = String(e?.message || "").toLowerCase();
+    setPhotoPreviewUrl("");
 
-const isOffline =
-  !navigator.onLine ||
-  raw.includes("failed to fetch") ||
-  raw.includes("network");
+    const raw = String(e?.message || "").toLowerCase();
 
-showToast({
-  type: "error",
-  title: isOffline ? "Немає підключення" : "Помилка",
-  text: isOffline
-    ? "Перевірте інтернет"
-    : "Не вдалося оновити фото",
-});
+    const isOffline =
+      !navigator.onLine ||
+      raw.includes("failed to fetch") ||
+      raw.includes("network");
+
+    showToast({
+      type: "error",
+      title: isOffline ? "Немає підключення" : "Помилка",
+      text: isOffline ? "Перевірте інтернет" : "Не вдалося оновити фото",
+    });
   } finally {
     setSaving(false);
   }
@@ -695,7 +854,7 @@ async function removePhoto() {
 
     const token = localStorage.getItem("token");
 
-    await api("/client/me", {
+    const updatedRaw = await api("/client/me", {
       method: "PATCH",
       token,
       body: {
@@ -707,22 +866,33 @@ async function removePhoto() {
       },
     });
 
-    const nextState = {
-      ...profile,
-      photoUrl: "",
+    const updated = {
+      firstName: updatedRaw?.firstName || "",
+      lastName: updatedRaw?.lastName || "",
+      phone: updatedRaw?.phone || "",
+      email: updatedRaw?.email || "",
+      birthDate: updatedRaw?.birthDate
+        ? String(updatedRaw.birthDate).slice(0, 10)
+        : "",
+      gender: updatedRaw?.gender || "unknown",
+      photoUrl: updatedRaw?.photoUrl || "",
     };
+
+    queryClient.setQueryData(["client-profile"], updated);
 
     setPhotoFile(null);
     setPhotoPreviewUrl("");
-    setProfile(nextState);
-    setInitialProfile(nextState);
+    setProfile(updated);
+    setInitialProfile(updated);
     setPendingDeletePhotoKey("");
     setIsSaved(true);
-showToast({
-  type: "success",
-  title: "Фото видалено",
-  text: "Фото профілю успішно видалено",
-});
+
+    showToast({
+      type: "success",
+      title: "Фото видалено",
+      text: "Фото профілю успішно видалено",
+    });
+
     if (currentPhotoKey && !/^https?:\/\//i.test(currentPhotoKey)) {
       try {
         await deleteFromR2(currentPhotoKey);
@@ -734,18 +904,16 @@ showToast({
     console.error(e);
     const raw = String(e?.message || "").toLowerCase();
 
-const isOffline =
-  !navigator.onLine ||
-  raw.includes("failed to fetch") ||
-  raw.includes("network");
+    const isOffline =
+      !navigator.onLine ||
+      raw.includes("failed to fetch") ||
+      raw.includes("network");
 
-showToast({
-  type: "error",
-  title: isOffline ? "Немає підключення" : "Помилка",
-  text: isOffline
-    ? "Перевірте інтернет"
-    : "Не вдалося видалити фото",
-});
+    showToast({
+      type: "error",
+      title: isOffline ? "Немає підключення" : "Помилка",
+      text: isOffline ? "Перевірте інтернет" : "Не вдалося видалити фото",
+    });
   } finally {
     setSaving(false);
   }
@@ -795,24 +963,28 @@ async function saveProfile(e) {
 
     const token = localStorage.getItem("token");
 
-    let nextPhotoKey = profile.photoUrl || "";
+    let nextPhotoKey = String(profile.photoUrl || "").trim();
     const deletesAfterSave = [];
 
     if (photoFile) {
-      const previousPhotoKey = profile.photoUrl || "";
+      const previousPhotoKey = String(profile.photoUrl || "").trim();
       const out = await uploadClientPhoto(photoFile, token);
-      nextPhotoKey = out.key;
+      nextPhotoKey = out?.key || "";
 
-      if (previousPhotoKey && previousPhotoKey !== out.key) {
+      if (
+        previousPhotoKey &&
+        previousPhotoKey !== nextPhotoKey &&
+        !/^https?:\/\//i.test(previousPhotoKey)
+      ) {
         deletesAfterSave.push(previousPhotoKey);
       }
     }
 
-    if (pendingDeletePhotoKey) {
+    if (pendingDeletePhotoKey && !/^https?:\/\//i.test(pendingDeletePhotoKey)) {
       deletesAfterSave.push(pendingDeletePhotoKey);
     }
 
-    await api("/client/me", {
+    const updatedRaw = await api("/client/me", {
       method: "PATCH",
       token,
       body: {
@@ -824,20 +996,28 @@ async function saveProfile(e) {
       },
     });
 
-    const nextState = {
-      ...profile,
-      photoUrl: nextPhotoKey,
+    const updated = {
+      firstName: updatedRaw?.firstName || "",
+      lastName: updatedRaw?.lastName || "",
+      phone: updatedRaw?.phone || "",
+      email: updatedRaw?.email || "",
+      birthDate: updatedRaw?.birthDate
+        ? String(updatedRaw.birthDate).slice(0, 10)
+        : "",
+      gender: updatedRaw?.gender || "unknown",
+      photoUrl: updatedRaw?.photoUrl || "",
     };
 
-    setProfile(nextState);
-    setInitialProfile(nextState);
+    queryClient.setQueryData(["client-profile"], updated);
+
+    setProfile(updated);
+    setInitialProfile(updated);
     setPhotoFile(null);
+    setPhotoPreviewUrl("");
     setPendingDeletePhotoKey("");
     setIsSaved(true);
 
-    const uniqDeletes = Array.from(new Set(deletesAfterSave))
-      .filter(Boolean)
-      .filter((k) => !/^https?:\/\//i.test(k));
+    const uniqDeletes = Array.from(new Set(deletesAfterSave)).filter(Boolean);
 
     for (const key of uniqDeletes) {
       try {
@@ -846,26 +1026,27 @@ async function saveProfile(e) {
         console.error(err);
       }
     }
+
     showToast({
-  type: "success",
-  title: "Збережено",
-  text: "Профіль оновлено",
-});
+      type: "success",
+      title: "Збережено",
+      text: "Профіль оновлено",
+    });
   } catch (e) {
-   const raw = String(e?.message || "").toLowerCase();
+    console.error(e);
 
-const isOffline =
-  !navigator.onLine ||
-  raw.includes("failed to fetch") ||
-  raw.includes("network");
+    const raw = String(e?.message || "").toLowerCase();
 
-showToast({
-  type: "error",
-  title: isOffline ? "Немає підключення" : "Помилка",
-  text: isOffline
-    ? "Перевірте інтернет"
-    : "Не вдалося зберегти профіль",
-});
+    const isOffline =
+      !navigator.onLine ||
+      raw.includes("failed to fetch") ||
+      raw.includes("network");
+
+    showToast({
+      type: "error",
+      title: isOffline ? "Немає підключення" : "Помилка",
+      text: isOffline ? "Перевірте інтернет" : "Не вдалося зберегти профіль",
+    });
   } finally {
     setSaving(false);
   }
@@ -902,58 +1083,12 @@ showToast({
     setIsSaved(false);
   }
 
-  React.useEffect(() => {
-    let isMounted = true;
-    const start = Date.now();
-
-    (async () => {
-      try {
-        setLoading(true);
-        setApiError("");
-
-        const token = localStorage.getItem("token");
-        const data = await api("/client/me", { token });
-
-        if (!isMounted) return;
-
-        const next = {
-          firstName: data.firstName || "",
-          lastName: data.lastName || "",
-          phone: data.phone || "",
-          email: data.email || "",
-          birthDate: data.birthDate ? String(data.birthDate).slice(0, 10) : "",
-          gender: data.gender || "unknown",
-          photoUrl: data.photoUrl || "",
-        };
-
-        setProfile(next);
-        setInitialProfile(next);
-        setIsSaved(true);
-
-        const elapsed = Date.now() - start;
-        const delay = Math.max(300 - elapsed, 0);
-
-        setTimeout(() => {
-          if (isMounted) setLoading(false);
-        }, delay);
-      } catch (e) {
-        if (!isMounted) return;
-        setApiError(e.message || "Не вдалося завантажити профіль");
-        setLoading(false);
-      }
-    })();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
   if (loading) {
     return <ProfileSkeleton />;
   }
 
   return (
-  <div className="min-h-screen pb-[calc(env(safe-area-inset-bottom)+68px)] sm:pb-0">
+    <div className="min-h-screen pb-[calc(env(safe-area-inset-bottom)+68px)] sm:pb-0">
       <div className="mx-auto max-w-6xl px-2.5 pb-4 pt-0 sm:px-4 sm:pb-8 sm:pt-14 lg:pt-16">
         <div className="space-y-3 px-0 pt-2 sm:space-y-5 sm:pt-8 lg:pt-6">
           {/* ЗАЛИШЕНО БЕЗ ЗМІН */}
@@ -982,363 +1117,461 @@ showToast({
           </section>
 
           {/* НОВА СТРУКТУРА */}
-<div className="space-y-4">
-  <SectionCard>
-              <div className="relative overflow-hidden">
-                <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-br from-amber-200 via-orange-100 to-white" />
+          {/* НОВИЙ ДИЗАЙН */}
+          <div className="space-y-4">
+            <SectionCard className="overflow-hidden border-0 bg-transparent shadow-none">
+              <div className="relative overflow-hidden rounded-[32px] border border-white/60 bg-[radial-gradient(circle_at_top_left,_rgba(251,191,36,0.22),_transparent_28%),radial-gradient(circle_at_top_right,_rgba(249,115,22,0.16),_transparent_24%),linear-gradient(135deg,#ffffff_0%,#fffaf5_48%,#fff_100%)] shadow-[0_20px_60px_-24px_rgba(120,90,40,0.22)]">
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(245,158,11,0.06)_1px,transparent_1px),linear-gradient(to_bottom,rgba(245,158,11,0.06)_1px,transparent_1px)] bg-[size:22px_22px] opacity-40" />
+                <div className="absolute -left-16 top-10 h-40 w-40 rounded-full bg-amber-200/30 blur-3xl" />
+                <div className="absolute -right-12 top-0 h-44 w-44 rounded-full bg-orange-200/30 blur-3xl" />
 
-                <div className="relative px-4 pb-5 pt-6 sm:px-6 sm:pt-7">
-                  <div className="flex flex-col items-center text-center">
-                    <div className="relative">
-<button
-  type="button"
-  onClick={() => fileRef.current?.click()}
-  className="relative grid h-28 w-28 place-items-center overflow-hidden rounded-[30px] border-4 border-white bg-white shadow-[0_14px_35px_rgba(0,0,0,0.10)] transition hover:scale-[1.02]"
-  disabled={saving}
->
-                        {photoSrc ? (
-                          <img
-                            src={photoSrc}
-                            alt="avatar"
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <span className="text-3xl font-black text-stone-700">
-                            {initials}
-                          </span>
-                        )}
-                      </button>
+                <div className="relative p-4 sm:p-6 lg:p-7">
+                  <div className="grid gap-4 lg:grid-cols-[340px_minmax(0,1fr)]">
+                    {/* ЛІВА КОЛОНКА */}
+                    <div className="rounded-[28px] border border-white/70 bg-white/80 p-4 shadow-[0_10px_30px_-18px_rgba(0,0,0,0.20)] backdrop-blur">
+                      <div className="flex flex-col items-center text-center">
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={() => fileRef.current?.click()}
+                            className="group relative grid h-32 w-32 place-items-center overflow-hidden rounded-[32px] border border-white bg-white shadow-[0_16px_40px_rgba(0,0,0,0.12)] transition duration-200 hover:scale-[1.02]"
+                            disabled={saving}
+                          >
+                            {photoSrc ? (
+                              <img
+                                src={photoSrc}
+                                alt="avatar"
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-4xl font-black tracking-[-0.05em] text-stone-700">
+                                {initials}
+                              </span>
+                            )}
 
-<button
-  type="button"
-  onClick={() => fileRef.current?.click()}
-   className="absolute -bottom-2 -right-2 flex h-10 w-10 items-center justify-center rounded-2xl border-4 border-white bg-amber-500 text-white shadow-lg transition hover:bg-amber-600 active:scale-95 disabled:opacity-50"
-  disabled={saving}
->
-                        <Camera className="h-4 w-4" />
-                      </button>
+                            <div className="absolute inset-0 bg-stone-900/0 transition group-hover:bg-stone-900/10" />
+                          </button>
+                        </div>
+
+                        <input
+                          ref={fileRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            e.target.value = "";
+                            onPickPhoto(file);
+                          }}
+                        />
+
+                        <div className="mt-5">
+                          <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-amber-700">
+                            <ShieldCheck className="h-3.5 w-3.5" />
+                            Профіль клієнта
+                          </div>
+
+                          <div className="mt-3 flex items-center justify-center gap-2">
+                            <h2 className="text-[24px] font-black tracking-[-0.04em] text-stone-900">
+                              {fullName || "Ваш профіль"}
+                            </h2>
+
+                            <button
+                              type="button"
+                              onClick={() => openEditModal("name")}
+                              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-stone-200 bg-white text-stone-700 transition hover:-translate-y-0.5 hover:border-amber-200 hover:bg-amber-50 hover:text-amber-700"
+                              title="Змінити ім’я та прізвище"
+                            >
+                              <PencilLine className="h-4 w-4" />
+                            </button>
+                          </div>
+
+                          <p className="mt-2 text-sm leading-6 text-stone-500">
+                            Тут можна швидко оновити фото, особисті дані та
+                            контакти.
+                          </p>
+                        </div>
+
+                        <div className="mt-5 flex w-full flex-col gap-2 sm:flex-row lg:flex-col">
+                          <SecondaryButton
+                            type="button"
+                            onClick={() => fileRef.current?.click()}
+                            className="w-full sm:flex-1 rounded-2xl border border-stone-300 bg-white text-stone-800
+             hover:-translate-y-[1px] hover:border-amber-200 hover:bg-amber-50 hover:text-amber-700
+             active:scale-[0.98] transition"
+                            disabled={saving}
+                          >
+                            <ImageIcon className="h-4 w-4" />
+                            {saving ? "Оновлення..." : "Оновити фото"}
+                          </SecondaryButton>
+
+                          {(profile.photoUrl || photoFile) && (
+                            <GhostDangerButton
+                              type="button"
+                              onClick={removePhoto}
+                              className="w-full sm:flex-1 rounded-2xl border-red-200 bg-red-50 text-red-600 hover:bg-red-100"
+                              disabled={saving}
+                            >
+                              <X className="h-4 w-4" />
+                              {saving ? "Видалення..." : "Видалити фото"}
+                            </GhostDangerButton>
+                          )}
+                        </div>
+                      </div>
                     </div>
 
-<input
-  ref={fileRef}
-  type="file"
-  accept="image/*"
-  className="hidden"
-  onChange={(e) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    onPickPhoto(file);
-  }}
-/>
+                    {/* ПРАВА КОЛОНКА */}
+                    <div className="flex flex-col gap-4">
+                      <div className="rounded-[28px] border border-white/70 bg-white/85 p-5 shadow-[0_10px_30px_-18px_rgba(0,0,0,0.18)] backdrop-blur sm:p-6">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                          <div>
+                            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-stone-500">
+                              Особисті дані
+                            </p>
+                            <h3 className="mt-2 text-[26px] font-black leading-none tracking-[-0.04em] text-stone-900">
+                              Керуйте профілем
+                            </h3>
+                            <p className="mt-3 max-w-xl text-sm leading-6 text-stone-600">
+                              Оновлюйте ключову інформацію в одному місці.
+                            </p>
+                          </div>
 
-<div className="mt-5 flex items-center justify-center gap-2">
-  <h2 className="text-xl font-black tracking-[-0.03em] text-stone-900">
-    {fullName || "Ваш профіль"}
-  </h2>
+                          <div
+                            className={cx(
+                              "inline-flex w-fit items-center gap-2 rounded-2xl px-3 py-2 text-sm font-semibold border",
+                              isProfileComplete
+                                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                : "border-amber-200 bg-amber-50 text-amber-700",
+                            )}
+                          >
+                            {isProfileComplete ? (
+                              <BadgeCheck className="h-4 w-4" />
+                            ) : (
+                              <CircleDashed className="h-4 w-4" />
+                            )}
 
-<button
-  type="button"
-  onClick={() => openEditModal("name")}
-  className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-stone-200 bg-white text-stone-700 btn-hover-amber"
-  title="Змінити ім’я та прізвище"
->
-  <PencilLine className="h-4 w-4" />
-</button>
-</div>
+                            {isProfileComplete
+                              ? "Профіль заповнено"
+                              : "Профіль не завершено"}
+                          </div>
+                        </div>
 
-                    <p className="mt-1 text-sm text-stone-500">
-                      Керуйте особистими даними та контактами
-                    </p>
+                        <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                          {[
+                            {
+                              label: "Телефон",
+                              value: profile.phone || "Не вказано",
+                              icon: <Phone className="h-4 w-4" />,
+                              type: "phone",
+                            },
+                            {
+                              label: "Email",
+                              value: profile.email || "Не вказано",
+                              icon: <Mail className="h-4 w-4" />,
+                              type: "email",
+                            },
+                            {
+                              label: "Стать",
+                              value: genderLabel,
+                              icon: <VenusAndMars className="h-4 w-4" />,
+                              type: "gender",
+                            },
+                            {
+                              label: "Дата народження",
+                              value: profile.birthDate || "Не вказано",
+                              icon: <CalendarDays className="h-4 w-4" />,
+                              type: "birthDate",
+                            },
+                          ].map((item) => (
+                            <button
+                              key={item.type}
+                              type="button"
+                              onClick={() => openEditModal(item.type)}
+                              className="group flex items-center justify-between gap-3 rounded-2xl border border-stone-200 bg-white px-3 py-3 text-left transition hover:border-amber-200 hover:bg-amber-50/60"
+                            >
+                              {/* ЛІВА ЧАСТИНА */}
+                              <div className="flex items-center gap-3 min-w-0">
+                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-stone-100 text-stone-600 transition group-hover:bg-amber-100 group-hover:text-amber-700">
+                                  {item.icon}
+                                </div>
 
-<div className="mt-4 flex w-full flex-row gap-2">
-  <SecondaryButton
-    type="button"
-    onClick={() => fileRef.current?.click()}
-    className="flex-1"
-    disabled={saving}
-  >
-    <ImageIcon className="h-4 w-4" />
-    {saving ? "Оновлення..." : "Оновити фото"}
-  </SecondaryButton>
+                                <div className="min-w-0">
+                                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-stone-500">
+                                    {item.label}
+                                  </p>
+                                  <p className="truncate text-sm font-semibold text-stone-900">
+                                    {item.value}
+                                  </p>
+                                </div>
+                              </div>
 
-  {(profile.photoUrl || photoFile) && (
-    <GhostDangerButton
-      type="button"
-      onClick={removePhoto}
-      className="flex-1"
-      disabled={saving}
-    >
-      <X className="h-4 w-4" />
-      {saving ? "Видалення..." : "Видалити фото"}
-    </GhostDangerButton>
-  )}
-</div>
+                              {/* КНОПКА */}
+                              <span className="shrink-0 rounded-xl border border-stone-200 bg-white px-3 py-1 text-xs font-semibold text-stone-600 transition group-hover:border-amber-200 group-hover:bg-amber-100 group-hover:text-amber-800">
+                                Змінити
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-
-
-<div className="mt-6 grid gap-3 sm:grid-cols-2">
-  <InfoBadge
-    icon={<Phone className="h-4 w-4" />}
-    label="Телефон"
-    value={profile.phone}
-    onEdit={() => openEditModal("phone")}
-  />
-
-  <InfoBadge
-    icon={<Mail className="h-4 w-4" />}
-    label="Email"
-    value={profile.email}
-    onEdit={() => openEditModal("email")}
-  />
-
-  <InfoBadge
-    icon={<VenusAndMars className="h-4 w-4" />}
-    label="Стать"
-    value={genderLabel}
-    onEdit={() => openEditModal("gender")}
-  />
-
-  <InfoBadge
-    icon={<CalendarDays className="h-4 w-4" />}
-    label="Дата народження"
-    value={profile.birthDate}
-    onEdit={() => openEditModal("birthDate")}
-  />
-</div>
                 </div>
               </div>
             </SectionCard>
 
-          </div>
+<div className="lg:hidden sm:hidden">
+            <SectionCard className="overflow-hidden border border-red-100 bg-white shadow-[0_14px_40px_-24px_rgba(239,68,68,0.26)]">
+              <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                <div className="min-w-0">
+                  <h3 className="text-lg font-black tracking-[-0.03em] text-stone-900">
+                    Вийти з акаунта
+                  </h3>
 
+                  <p className="mt-1 text-sm leading-6 text-stone-500">
+                    Завершіть поточну сесію на цьому пристрої.
+                  </p>
+                </div>
+
+                <GhostDangerButton
+                  type="button"
+                  onClick={handleLogout}
+                  className="min-w-[220px] rounded-2xl border-red-200 bg-red-50 text-red-600 hover:bg-red-100"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Вийти
+                </GhostDangerButton>
+              </div>
+            </SectionCard>
+            </div>
+          </div>
         </div>
       </div>
-<EditModal
-  open={modal.open && modal.type === "name"}
-  title="Змінити ім’я та прізвище"
-  onClose={closeEditModal}
-  onSave={saveModalChanges}
-  saveDisabled={!draft.firstName.trim() || !draft.lastName.trim()}
-  saving={saving}
->
-  <div className="grid gap-4 sm:grid-cols-2">
-    <FormField label="Ім’я">
-      <Input
-        value={draft.firstName}
-        onChange={(e) =>
-          setDraft((p) => ({ ...p, firstName: e.target.value }))
-        }
-        placeholder="Наприклад, Михайло"
-      />
-    </FormField>
+      <EditModal
+        open={modal.open && modal.type === "name"}
+        title="Змінити ім’я та прізвище"
+        onClose={closeEditModal}
+        onSave={saveModalChanges}
+        saveDisabled={!draft.firstName.trim()}
+        saving={saving}
+      >
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField label="Ім’я">
+            <Input
+              value={draft.firstName}
+              onChange={(e) =>
+                setDraft((p) => ({ ...p, firstName: e.target.value }))
+              }
+              placeholder="Наприклад, Михайло"
+            />
+          </FormField>
 
-    <FormField label="Прізвище">
-      <Input
-        value={draft.lastName}
-        onChange={(e) =>
-          setDraft((p) => ({ ...p, lastName: e.target.value }))
-        }
-        placeholder="Наприклад, Петренко"
-      />
-    </FormField>
-  </div>
-</EditModal>
+          <FormField label="Прізвище">
+            <Input
+              value={draft.lastName}
+              onChange={(e) =>
+                setDraft((p) => ({ ...p, lastName: e.target.value }))
+              }
+              placeholder="Наприклад, Петренко"
+            />
+          </FormField>
+        </div>
+      </EditModal>
 
-<EditModal
-  open={modal.open && modal.type === "gender"}
-  title="Змінити стать"
-  onClose={closeEditModal}
-  onSave={saveModalChanges}
-  saveDisabled={!draft.gender}
-  saving={saving}
->
-  <FormField label="Стать">
-    <Select
-      value={draft.gender}
-      onChange={(e) =>
-        setDraft((p) => ({ ...p, gender: e.target.value }))
-      }
-    >
-      <option value="unknown">Не вказано</option>
-      <option value="female">Жіноча</option>
-      <option value="male">Чоловіча</option>
-      <option value="other">Інше</option>
-    </Select>
-  </FormField>
-</EditModal>
+      <EditModal
+        open={modal.open && modal.type === "gender"}
+        title="Змінити стать"
+        onClose={closeEditModal}
+        onSave={saveModalChanges}
+        saveDisabled={!draft.gender}
+        saving={saving}
+      >
+        <FormField label="Стать">
+          <Select
+            value={draft.gender}
+            onChange={(e) =>
+              setDraft((p) => ({ ...p, gender: e.target.value }))
+            }
+          >
+            <option value="unknown">Не вказано</option>
+            <option value="female">Жіноча</option>
+            <option value="male">Чоловіча</option>
+            <option value="other">Інше</option>
+          </Select>
+        </FormField>
+      </EditModal>
 
-<EditModal
-  open={modal.open && modal.type === "birthDate"}
-  title="Змінити дату народження"
-  onClose={closeEditModal}
-  onSave={saveModalChanges}
-  saveDisabled={!draft.birthDate}
-  saving={saving}
->
-  <FormField label="Дата народження">
-    <Input
-      type="date"
-      value={draft.birthDate}
-      onChange={(e) =>
-        setDraft((p) => ({ ...p, birthDate: e.target.value }))
-      }
-    />
-  </FormField>
-</EditModal>
+      <EditModal
+        open={modal.open && modal.type === "birthDate"}
+        title="Змінити дату народження"
+        onClose={closeEditModal}
+        onSave={saveModalChanges}
+        saveDisabled={!draft.birthDate}
+        saving={saving}
+      >
+        <FormField label="Дата народження">
+          <Input
+            type="date"
+            value={draft.birthDate}
+            onChange={(e) =>
+              setDraft((p) => ({ ...p, birthDate: e.target.value }))
+            }
+          />
+        </FormField>
+      </EditModal>
 
-<EditModal
-  open={modal.open && modal.type === "phone"}
-  title="Змінити номер телефону"
-  onClose={closeEditModal}
-  onSave={closeEditModal}
-  saveDisabled={!draft.phone.trim()}
-  saving={false}
->
-  <div className="space-y-4">
-    <FormField label="Новий номер">
-      <Input
-        value={draft.phone}
-        onChange={(e) =>
-          setDraft((p) => ({ ...p, phone: e.target.value }))
-        }
-        placeholder="+380..."
-      />
-    </FormField>
+      <EditModal
+        open={modal.open && modal.type === "phone"}
+        title="Змінити номер телефону"
+        onClose={closeEditModal}
+        onSave={closeEditModal}
+        saveDisabled={!draft.phone.trim()}
+        saving={false}
+      >
+        <div className="space-y-4">
+          <FormField label="Новий номер">
+            <Input
+              value={draft.phone}
+              onChange={(e) =>
+                setDraft((p) => ({ ...p, phone: e.target.value }))
+              }
+              placeholder="+380..."
+            />
+          </FormField>
 
-    <p className="text-sm leading-6 text-stone-500">
-      Тут можна підключити твою існуючу логіку підтвердження через SMS-код.
-    </p>
-  </div>
-</EditModal>
+          <p className="text-sm leading-6 text-stone-500">
+            Тут можна підключити твою існуючу логіку підтвердження через
+            SMS-код.
+          </p>
+        </div>
+      </EditModal>
 
-<EditModal
-  open={modal.open && modal.type === "email"}
-  title="Змінити email"
-  onClose={closeEditModal}
-  onSave={closeEditModal}
-  saveDisabled={!draft.email.trim()}
-  saving={false}
->
-  <div className="space-y-4">
-    <FormField label="Нова пошта">
-      <Input
-        value={draft.email}
-        onChange={(e) =>
-          setDraft((p) => ({ ...p, email: e.target.value }))
-        }
-        placeholder="email@domain.com"
-      />
-    </FormField>
+      <EditModal
+        open={modal.open && modal.type === "email"}
+        title="Змінити email"
+        onClose={closeEditModal}
+        onSave={closeEditModal}
+        saveDisabled={!draft.email.trim()}
+        saving={false}
+      >
+        <div className="space-y-4">
+          <FormField label="Нова пошта">
+            <Input
+              value={draft.email}
+              onChange={(e) =>
+                setDraft((p) => ({ ...p, email: e.target.value }))
+              }
+              placeholder="email@domain.com"
+            />
+          </FormField>
 
-    <p className="text-sm leading-6 text-stone-500">
-      Тут можна підключити твою існуючу логіку підтвердження через email-код або лист.
-    </p>
-  </div>
-</EditModal>
-{/* Toast */}
-<div
-  className={cx(
-    "fixed inset-x-0 top-[calc(12px+env(safe-area-inset-top))] z-[120] flex justify-center px-4 pointer-events-none",
-    "md:top-auto md:bottom-5 md:justify-start md:px-5",
-  )}
->
-  <div className="w-full max-w-[1400px]">
-    <div
-      className={cx(
-        "pointer-events-auto transition-all duration-200 ease-out",
-        toast.open
-          ? "translate-y-0 scale-100 opacity-100"
-          : "-translate-y-2 scale-[0.98] opacity-0 md:translate-y-2",
-      )}
-    >
+          <p className="text-sm leading-6 text-stone-500">
+            Тут можна підключити твою існуючу логіку підтвердження через
+            email-код або лист.
+          </p>
+        </div>
+      </EditModal>
+      {/* Toast */}
       <div
         className={cx(
-          "relative w-fit max-w-[85vw] overflow-hidden rounded-2xl border bg-white shadow-[0_16px_40px_rgba(15,23,42,0.12)]",
-          toast.type === "success" && "border-emerald-200",
-          toast.type === "error" && "border-red-200",
-          toast.type === "warning" && "border-amber-200",
+          "fixed inset-x-0 top-[calc(12px+env(safe-area-inset-top))] z-[120] flex justify-center px-4 pointer-events-none",
+          "md:top-auto md:bottom-5 md:justify-start md:px-5",
         )}
       >
-        <div className="flex items-start gap-3 px-4 py-3.5">
+        <div className="w-full max-w-[1400px]">
           <div
             className={cx(
-              "mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white",
-              toast.type === "success" && "bg-emerald-600",
-              toast.type === "error" && "bg-red-500",
-              toast.type === "warning" && "bg-amber-500",
+              "transition-all duration-200 ease-out",
+              toast.open
+                ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
+                : "pointer-events-none -translate-y-2 scale-[0.98] opacity-0 md:translate-y-2",
             )}
           >
-            {toast.type === "success" && (
-              <CheckCircle2 className="h-4.5 w-4.5" />
-            )}
-            {toast.type === "error" && <X className="h-4.5 w-4.5" />}
-            {toast.type === "warning" && (
-              <AlertTriangle className="h-4.5 w-4.5" />
-            )}
+            <div
+              className={cx(
+                "relative w-fit max-w-[85vw] overflow-hidden rounded-2xl border bg-white shadow-[0_16px_40px_rgba(15,23,42,0.12)]",
+                toast.type === "success" && "border-emerald-200",
+                toast.type === "error" && "border-red-200",
+                toast.type === "warning" && "border-amber-200",
+              )}
+            >
+              <div className="flex items-start gap-3 px-4 py-3.5">
+                <div
+                  className={cx(
+                    "mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white",
+                    toast.type === "success" && "bg-emerald-600",
+                    toast.type === "error" && "bg-red-500",
+                    toast.type === "warning" && "bg-amber-500",
+                  )}
+                >
+                  {toast.type === "success" && (
+                    <CheckCircle2 className="h-4.5 w-4.5" />
+                  )}
+                  {toast.type === "error" && <X className="h-4.5 w-4.5" />}
+                  {toast.type === "warning" && (
+                    <AlertTriangle className="h-4.5 w-4.5" />
+                  )}
+                </div>
+
+                <div className="min-w-0">
+                  <p className="whitespace-nowrap text-[14px] font-semibold text-stone-900">
+                    {toast.title}
+                  </p>
+
+                  {toast.text && (
+                    <p className="mt-0.5 text-[13px] text-stone-500">
+                      {toast.text}
+                    </p>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setToast((prev) => ({ ...prev, open: false }))}
+                  className="ml-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-stone-400 transition hover:bg-stone-100 hover:text-stone-700"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div
+                className={cx(
+                  "h-[2px] w-full",
+                  toast.type === "success" && "bg-emerald-100",
+                  toast.type === "error" && "bg-red-100",
+                  toast.type === "warning" && "bg-amber-100",
+                )}
+              >
+                <div
+                  key={toast.id}
+                  className={cx(
+                    "h-full w-full origin-left",
+                    toast.type === "success" && "bg-emerald-600",
+                    toast.type === "error" && "bg-red-500",
+                    toast.type === "warning" && "bg-amber-500",
+                  )}
+                  style={{
+                    animation: `toastbar ${toast.duration}ms linear forwards`,
+                  }}
+                />
+              </div>
+            </div>
           </div>
-
-          <div className="min-w-0">
-            <p className="whitespace-nowrap text-[14px] font-semibold text-stone-900">
-              {toast.title}
-            </p>
-
-            {toast.text && (
-              <p className="mt-0.5 text-[13px] text-stone-500">
-                {toast.text}
-              </p>
-            )}
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setToast((prev) => ({ ...prev, open: false }))}
-            className="ml-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-stone-400 transition hover:bg-stone-100 hover:text-stone-700"
-          >
-            <X className="h-4 w-4" />
-          </button>
         </div>
 
-        <div
-          className={cx(
-            "h-[2px] w-full",
-            toast.type === "success" && "bg-emerald-100",
-            toast.type === "error" && "bg-red-100",
-            toast.type === "warning" && "bg-amber-100",
-          )}
-        >
-          <div
-            key={toast.id}
-            className={cx(
-              "h-full w-full origin-left",
-              toast.type === "success" && "bg-emerald-600",
-              toast.type === "error" && "bg-red-500",
-              toast.type === "warning" && "bg-amber-500",
-            )}
-            style={{
-              animation: `toastbar ${toast.duration}ms linear forwards`,
-            }}
-          />
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <style>{`
+        <style>{`
     @keyframes toastbar {
       from { transform: scaleX(1); }
       to { transform: scaleX(0); }
     }
   `}</style>
-</div>
+      </div>
       {errorModal.open && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-stone-900/40 px-4">
           <div className="w-full max-w-md rounded-3xl border border-stone-200 bg-white p-6 shadow-[0_24px_80px_rgba(93,64,55,0.18)]">
             <h3 className="text-lg font-bold text-stone-800">
               {errorModal.title}
             </h3>
-            <p className="mt-2 text-sm text-stone-600">
-              {errorModal.message}
-            </p>
+            <p className="mt-2 text-sm text-stone-600">{errorModal.message}</p>
             <div className="mt-5 flex justify-end">
               <PrimaryButton
                 type="button"

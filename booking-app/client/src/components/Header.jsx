@@ -30,6 +30,7 @@ import {
   X,
   Settings2,
 } from "lucide-react";
+import { api } from "../api/http";
 import { useStudio } from "../context/studio/useStudio";
 
 const PUBLIC = import.meta.env.VITE_R2_PUBLIC_BASE_URL;
@@ -196,12 +197,20 @@ export default function Header() {
   const role = useRole();
   const { studio } = useStudio();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
-
+  const [clientProfile, setClientProfile] = useState({
+    firstName: "",
+    lastName: "",
+    photoUrl: "",
+  });
   const studioName = studio?.name?.trim() || "";
   const studioLogo = toPublicUrl(studio?.logoUrl);
   const showOwnerIdentity = role === "owner";
   const showClientBottomBar = role === "client" && isMobile;
-
+  const clientFullName = `${clientProfile.firstName || ""} ${clientProfile.lastName || ""}`.trim();
+  const clientPhoto = toPublicUrl(clientProfile.photoUrl);
+  const clientInitials =
+    `${(clientProfile.firstName || "").trim().slice(0, 1)}${(clientProfile.lastName || "").trim().slice(0, 1)}`
+      .toUpperCase() || "U";
   const handleLogout = useCallback(() => {
     const currentRole = localStorage.getItem("role") || role;
 
@@ -237,6 +246,55 @@ export default function Header() {
     };
   }, [open]);
 
+    useEffect(() => {
+    let ignore = false;
+
+    async function loadClientProfile() {
+      if (role !== "client") {
+        setClientProfile({
+          firstName: "",
+          lastName: "",
+          photoUrl: "",
+        });
+        return;
+      }
+
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        const data = await api("/client/me", { token });
+
+        if (ignore) return;
+
+        setClientProfile({
+          firstName: data?.firstName || "",
+          lastName: data?.lastName || "",
+          photoUrl: data?.photoUrl || "",
+        });
+      } catch (e) {
+        if (ignore) return;
+        setClientProfile({
+          firstName: "",
+          lastName: "",
+          photoUrl: "",
+        });
+      }
+    }
+
+    loadClientProfile();
+
+    const onAuthChanged = () => {
+      loadClientProfile();
+    };
+
+    window.addEventListener("auth-changed", onAuthChanged);
+
+    return () => {
+      ignore = true;
+      window.removeEventListener("auth-changed", onAuthChanged);
+    };
+  }, [role]);
 
   const desktopItems = useMemo(() => {
     if (role === "client") {
@@ -319,7 +377,7 @@ export default function Header() {
     if (role === "client") {
       return {
         title: "Меню",
-        subtitle: "Клієнтський режим",
+        subtitle: "КАБІНЕТ КЛІЄНТА",
         links: [
           {
             to: "/",
@@ -516,31 +574,41 @@ export default function Header() {
                 <div className="flex items-start justify-between gap-3 pt-1.5 sm:pt-2">
                   <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
                     <div className="relative">
-                      <div className="grid h-10 w-10 place-items-center overflow-hidden rounded-[18px] bg-gradient-to-br from-emerald-600 to-emerald-700 text-sm font-extrabold text-white sm:h-12 sm:w-12 sm:rounded-[20px] sm:text-base">
-                        {showOwnerIdentity && studioLogo ? (
-                          <img
-                            src={studioLogo}
-                            alt={studioName || "Лого студії"}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          "P"
-                        )}
-                      </div>
+<div className="grid h-10 w-10 place-items-center overflow-hidden rounded-[18px] bg-gradient-to-br from-emerald-600 to-emerald-700 text-sm font-extrabold text-white sm:h-12 sm:w-12 sm:rounded-[20px] sm:text-base">
+  {showOwnerIdentity && studioLogo ? (
+    <img
+      src={studioLogo}
+      alt={studioName || "Лого студії"}
+      className="h-full w-full object-cover"
+    />
+  ) : role === "client" && clientPhoto ? (
+    <img
+      src={clientPhoto}
+      alt={clientFullName || "Фото користувача"}
+      className="h-full w-full object-cover"
+    />
+  ) : role === "client" ? (
+    clientInitials
+  ) : (
+    "P"
+  )}
+</div>
 
                       <span className="absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full border-2 border-white bg-emerald-500 sm:h-4 sm:w-4" />
                     </div>
 
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-extrabold tracking-tight text-stone-900">
-                        {showOwnerIdentity && studioName ? (
-                          studioName
-                        ) : (
-                          <>
-                            Plani<span className="text-amber-600">Day</span>
-                          </>
-                        )}
-                      </p>
+<p className="truncate text-sm font-extrabold tracking-tight text-stone-900">
+  {showOwnerIdentity && studioName ? (
+    studioName
+  ) : role === "client" && clientFullName ? (
+    clientFullName
+  ) : (
+    <>
+      Plani<span className="text-amber-600">Day</span>
+    </>
+  )}
+</p>
 
                       <p className="mt-0.5 truncate text-[11px] font-medium text-stone-500 sm:text-xs">
                         {mobileItems.subtitle || "Меню"}

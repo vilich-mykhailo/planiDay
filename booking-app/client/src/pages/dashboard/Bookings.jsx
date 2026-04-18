@@ -489,53 +489,14 @@ function BookingCardSkeleton() {
   );
 }
 
-function BookingsSkeleton() {
-  return (
-    <div className="space-y-6">
-      <div className="mb-8">
-        <SkeletonBlock className="mb-3 h-8 w-44" />
-        <SkeletonBlock className="mb-2 h-12 w-64" />
-        <SkeletonBlock className="h-5 w-96 max-w-full" />
-      </div>
-
-      <div className="flex gap-2">
-        <SkeletonBlock className="h-11 w-28 rounded-2xl" />
-        <SkeletonBlock className="h-11 w-28 rounded-2xl" />
-      </div>
-
-      <div className="rounded-3xl border border-stone-200 bg-white p-4">
-        <div className="flex flex-wrap gap-2">
-          <SkeletonBlock className="h-10 w-20 rounded-full" />
-          <SkeletonBlock className="h-10 w-24 rounded-full" />
-          <SkeletonBlock className="h-10 w-36 rounded-full" />
-          <SkeletonBlock className="h-10 w-28 rounded-full" />
-        </div>
-      </div>
-
-      <div className="space-y-6">
-        {Array.from({ length: 2 }).map((_, groupIndex) => (
-          <section key={groupIndex} className="space-y-3">
-            <SkeletonBlock className="h-6 w-32 rounded-lg" />
-            <div className="space-y-3">
-              <BookingCardSkeleton />
-              <BookingCardSkeleton />
-            </div>
-          </section>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export default function Bookings() {
-  const {
-    bookings,
-    confirmBooking,
-    cancelBooking,
-    deleteBooking,
-    loadBookings,
-    loading,
-  } = useBookings();
+const {
+  bookings,
+  confirmBooking,
+  cancelBooking,
+  deleteBooking,
+  loading,
+} = useBookings();
 
   const [confirmId, setConfirmId] = useState(null);
   const [cancelConfirmId, setCancelConfirmId] = useState(null);
@@ -553,6 +514,15 @@ export default function Bookings() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [copiedPhone, setCopiedPhone] = useState(false);
   const [expandedCalendarCards, setExpandedCalendarCards] = useState({});
+const [showLoadingSkeleton, setShowLoadingSkeleton] = useState(false);
+
+useEffect(() => {
+  const timer = window.setTimeout(() => {
+    setShowLoadingSkeleton(Boolean(loading));
+  }, loading ? 300 : 0);
+
+  return () => window.clearTimeout(timer);
+}, [loading]);
 
   useEffect(() => {
     if (detailsId == null && calendarDayKey == null) return;
@@ -578,52 +548,60 @@ export default function Bookings() {
     };
   }, [detailsId, calendarDayKey]);
 
-  useEffect(() => {
-    const studioId = localStorage.getItem("studioId");
-    const userId = localStorage.getItem("userId");
+useEffect(() => {
+  const studioId = localStorage.getItem("studioId");
+  const userId = localStorage.getItem("userId");
+  let offlineTimerId = null;
 
-    const joinRooms = () => {
-      if (userId) socket.emit("auth:join", { userId, studioId, role: "owner" });
-      if (studioId) socket.emit("join:studio", { studioId });
-      setSocketState("ok");
-    };
+  const joinRooms = () => {
+    if (userId) socket.emit("auth:join", { userId, studioId, role: "owner" });
+    if (studioId) socket.emit("join:studio", { studioId });
+    setSocketState("ok");
+  };
 
-    if (socket.connected) {
-      joinRooms();
-    } else {
-      // Обертаємо у таймаут, щоб уникнути синхронного setState
-      setTimeout(() => setSocketState("offline"), 0);
-    }
+  const handleConnect = () => joinRooms();
+  const handleDisconnect = () => setSocketState("offline");
 
-    const handleConnect = () => joinRooms();
-    const handleDisconnect = () => setSocketState("offline");
+  const handleBookingUpdated = (payload) => {
+    if (!payload || String(payload.studioId) !== String(studioId)) return;
 
-    const handleBookingUpdated = async (payload) => {
-      if (!payload || String(payload.studioId) !== String(studioId)) return;
-      setIsRefreshing(true);
-      setSocketState("pending");
-      await loadBookings();
-      setSocketState(socket.connected ? "ok" : "offline");
+    setIsRefreshing(true);
+    setSocketState("pending");
+
+    window.clearTimeout(handleBookingUpdated._t);
+    handleBookingUpdated._t = window.setTimeout(() => {
       setIsRefreshing(false);
-    };
+      setSocketState(socket.connected ? "ok" : "offline");
+    }, 800);
+  };
 
-    const handleNotificationNew = (payload) => {
-      if (!payload || String(payload.studioId) !== String(studioId)) return;
-      console.log("Нове повідомлення:", payload);
-    };
+  const handleNotificationNew = (payload) => {
+    if (!payload || String(payload.studioId) !== String(studioId)) return;
+    console.log("Нове повідомлення:", payload);
+  };
 
-    socket.on("connect", handleConnect);
-    socket.on("disconnect", handleDisconnect);
-    socket.on("booking:updated", handleBookingUpdated);
-    socket.on("notification:new", handleNotificationNew);
+  if (socket.connected) {
+    joinRooms();
+  } else {
+    offlineTimerId = window.setTimeout(() => {
+      setSocketState("offline");
+    }, 0);
+  }
 
-    return () => {
-      socket.off("connect", handleConnect);
-      socket.off("disconnect", handleDisconnect);
-      socket.off("booking:updated", handleBookingUpdated);
-      socket.off("notification:new", handleNotificationNew);
-    };
-  }, [loadBookings]);
+  socket.on("connect", handleConnect);
+  socket.on("disconnect", handleDisconnect);
+  socket.on("booking:updated", handleBookingUpdated);
+  socket.on("notification:new", handleNotificationNew);
+
+  return () => {
+    socket.off("connect", handleConnect);
+    socket.off("disconnect", handleDisconnect);
+    socket.off("booking:updated", handleBookingUpdated);
+    socket.off("notification:new", handleNotificationNew);
+    window.clearTimeout(handleBookingUpdated._t);
+    window.clearTimeout(offlineTimerId);
+  };
+}, []);
 
   async function handleCopyPhone(value) {
     if (!value) return;
@@ -903,9 +881,6 @@ export default function Bookings() {
     };
   }, [socketState, isRefreshing]);
 
-  if (loading) {
-    return <BookingsSkeleton />;
-  }
 
   async function handleDelete(id) {
     const snap =
@@ -920,10 +895,6 @@ export default function Bookings() {
     }
 
     await deleteBooking(id);
-  }
-
-  if (loading) {
-    return <BookingsSkeleton />;
   }
 
   return (
@@ -1005,58 +976,66 @@ export default function Bookings() {
               </div>
             }
           >
-            <div className="flex flex-wrap items-center gap-2">
-              {[
-                { key: "all", label: "Усі" },
-                { key: "new", label: "Нові" },
-                { key: "confirmed", label: "Підтверджені" },
-                { key: "canceled", label: "Скасовані" },
-                { key: "deleted", label: "Видалені" },
-                { key: "archive", label: "Архів" },
-              ].map((x) => (
-                <Pill
-                  key={x.key}
-                  active={filter === x.key}
-                  count={filterCounts[x.key] ?? 0}
-                  onClick={() => setFilter(x.key)}
-                >
-                  {x.label}
-                </Pill>
-              ))}
-            </div>
+<div className="flex flex-wrap items-center gap-2">
+  {[
+    { key: "all", label: "Усі" },
+    { key: "new", label: "Нові" },
+    { key: "confirmed", label: "Підтверджені" },
+    { key: "canceled", label: "Скасовані" },
+    { key: "deleted", label: "Видалені" },
+    { key: "archive", label: "Архів" },
+  ].map((x) => (
+    <Pill
+      key={x.key}
+      active={filter === x.key}
+      count={filterCounts[x.key] ?? 0}
+      onClick={() => setFilter(x.key)}
+    >
+      {x.label}
+    </Pill>
+  ))}
+</div>
           </SectionCard>
         )}
 
         {/* Content */}
-        {tab === "list" ? (
-          keys.length === 0 ? (
-            <SectionCard
-              title="Порожньо"
-              subtitle="У цій вкладці записів немає"
-            >
-              <div className="rounded-2xl border-2 border-dashed border-stone-200 bg-stone-50/50 p-8 text-center">
-                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-stone-100">
-                  <CalendarDays className="h-6 w-6 text-stone-400" />
-                </div>
-                <p className="text-sm text-stone-500">
-                  Немає записів у цій вкладці
-                </p>
-                <p className="mt-1 text-xs text-stone-400">
-                  Змініть фільтр або дочекайтесь нових бронювань
-                </p>
-              </div>
-            </SectionCard>
-          ) : (
-            <div className="space-y-2">
-              {keys.map((key) => {
-                const isCollapsed = collapsedGroups.has(key);
-                const items = grouped.map[key] || [];
+{tab === "list" ? (
+  showLoadingSkeleton ? (
+    <SectionCard title="Записи" subtitle="Завантажуємо дані...">
+      <div className="space-y-3">
+        <BookingCardSkeleton />
+        <BookingCardSkeleton />
+        <BookingCardSkeleton />
+      </div>
+    </SectionCard>
+  ) : loading ? null : keys.length === 0 ? (
+    <SectionCard
+      title="Порожньо"
+      subtitle="У цій вкладці записів немає"
+    >
+      <div className="rounded-2xl border-2 border-dashed border-stone-200 bg-stone-50/50 p-8 text-center">
+        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-stone-100">
+          <CalendarDays className="h-6 w-6 text-stone-400" />
+        </div>
+        <p className="text-sm text-stone-500">
+          Немає записів у цій вкладці
+        </p>
+        <p className="mt-1 text-xs text-stone-400">
+          Змініть фільтр або дочекайтесь нових бронювань
+        </p>
+      </div>
+    </SectionCard>
+  ) : (
+    <div className="space-y-2">
+      {keys.map((key) => {
+        const isCollapsed = collapsedGroups.has(key);
+        const items = grouped.map[key] || [];
 
-                return (
-                  <section
-                    key={key}
-                    className="overflow-hidden rounded-[28px] border border-stone-200/70 bg-white shadow-[0_8px_28px_rgba(15,23,42,0.05)]"
-                  >
+        return (
+          <section
+            key={key}
+            className="overflow-hidden rounded-[28px] border border-stone-200/70 bg-white shadow-[0_8px_28px_rgba(15,23,42,0.05)]"
+          >
                     <button
                       type="button"
                       onClick={() => toggleGroup(key)}
@@ -1263,57 +1242,77 @@ export default function Bookings() {
                         })}
                       </div>
                     )}
-                  </section>
-                );
-              })}
-            </div>
-          )
-        ) : (
-          <SectionCard
-            title="Календар записів"
-            subtitle="Натисни на день, щоб переглянути записи."
-            actions={
-              <div className="flex w-full items-center justify-center gap-2 sm:w-auto sm:justify-end">
-                <IconButton
-                  onClick={() =>
-                    setActiveMonth(
-                      new Date(
-                        activeMonth.getFullYear(),
-                        activeMonth.getMonth() - 1,
-                        1,
-                      ),
-                    )
-                  }
-                  title="Попередній місяць"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </IconButton>
+                           </section>
+        );
+      })}
+    </div>
+  )
+) : showLoadingSkeleton ? (
+  <SectionCard
+    title="Календар записів"
+    subtitle="Завантажуємо дані..."
+    badge={monthLabelUA(activeMonth)}
+  >
+    <div className="grid grid-cols-7 gap-1.5 text-[11px] font-semibold text-stone-500 sm:gap-2 sm:text-xs">
+      {["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"].map((x) => (
+        <div key={x} className="px-1 text-center">
+          {x}
+        </div>
+      ))}
+    </div>
 
-                <Button
-                  variant="primary"
-                  onClick={() => setActiveMonth(startOfMonth(new Date()))}
-                >
-                  Сьогодні
-                </Button>
+    <div className="mt-2 grid grid-cols-7 gap-1.5 sm:gap-2">
+      {Array.from({ length: 42 }).map((_, i) => (
+        <SkeletonBlock key={i} className="aspect-square rounded-[20px]" />
+      ))}
+    </div>
+  </SectionCard>
+) : (
+  <SectionCard
+    title="Календар записів"
+    subtitle="Натисни на день, щоб переглянути записи."
+    actions={
+      <div className="flex w-full items-center justify-center gap-2 sm:w-auto sm:justify-end">
+        <IconButton
+          onClick={() =>
+            setActiveMonth(
+              new Date(
+                activeMonth.getFullYear(),
+                activeMonth.getMonth() - 1,
+                1,
+              ),
+            )
+          }
+          title="Попередній місяць"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </IconButton>
 
-                <IconButton
-                  onClick={() =>
-                    setActiveMonth(
-                      new Date(
-                        activeMonth.getFullYear(),
-                        activeMonth.getMonth() + 1,
-                        1,
-                      ),
-                    )
-                  }
-                  title="Наступний місяць"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </IconButton>
-              </div>
-            }
-            badge={monthLabelUA(activeMonth)}
-          >
+        <Button
+          variant="primary"
+          onClick={() => setActiveMonth(startOfMonth(new Date()))}
+        >
+          Сьогодні
+        </Button>
+
+        <IconButton
+          onClick={() =>
+            setActiveMonth(
+              new Date(
+                activeMonth.getFullYear(),
+                activeMonth.getMonth() + 1,
+                1,
+              ),
+            )
+          }
+          title="Наступний місяць"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </IconButton>
+      </div>
+    }
+    badge={monthLabelUA(activeMonth)}
+  >
             <div className="grid grid-cols-7 gap-1.5 text-[11px] font-semibold text-stone-500 sm:gap-2 sm:text-xs">
               {["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"].map((x) => (
                 <div key={x} className="px-1 text-center">

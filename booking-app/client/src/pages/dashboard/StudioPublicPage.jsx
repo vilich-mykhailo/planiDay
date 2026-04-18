@@ -558,12 +558,135 @@ function buildWeeklyScheduleRows(schedule) {
   }));
 }
 
+function SkeletonBlock({ className = "" }) {
+  return (
+    <div
+      className={cn("animate-pulse rounded-2xl bg-stone-200/80", className)}
+    />
+  );
+}
+
+function StudioPublicPageSkeleton() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-stone-50 via-amber-50/30 to-orange-50/20 text-stone-800">
+      <div className="mx-auto w-full max-w-[1220px] px-0 sm:px-2 md:px-3 lg:px-6">
+        <div className="mx-auto w-full max-w-[1120px] pb-0 text-stone-800 sm:pb-20 lg:pb-5">
+          <section className="relative">
+            <div className="relative h-[320px] overflow-hidden rounded-b-[24px] bg-stone-200 sm:mx-[-8px] sm:h-[420px] md:mx-[-12px] md:h-[480px] lg:mx-0 lg:h-[520px]">
+              <SkeletonBlock className="h-full w-full rounded-none" />
+
+              <div className="absolute inset-x-0 top-0 flex items-center justify-between px-4 pb-4 pt-4 sm:px-6">
+                <SkeletonBlock className="h-12 w-12 rounded-2xl bg-white/40" />
+                <div className="flex items-center gap-2.5">
+                  <SkeletonBlock className="h-12 w-12 rounded-2xl bg-white/40" />
+                  <SkeletonBlock className="h-12 w-12 rounded-2xl bg-white/40" />
+                </div>
+              </div>
+            </div>
+
+            <div className="relative z-10 -mt-14 w-full sm:-mt-16 sm:px-2 md:px-3 lg:mx-auto lg:max-w-[1240px] lg:px-6">
+              <SectionShell>
+                <div className="px-4 pb-4 pt-4 sm:px-5 md:px-5 sm:pb-6 lg:px-6">
+                  <div className="flex items-start justify-between gap-6">
+                    <div className="flex items-center gap-4">
+                      <SkeletonBlock className="h-16 w-16 shrink-0 rounded-2xl sm:h-20 sm:w-20" />
+
+                      <div className="flex min-w-0 flex-col">
+                        <SkeletonBlock className="h-6 w-24 rounded-full" />
+                        <SkeletonBlock className="mt-3 h-8 w-48 max-w-full rounded-2xl sm:h-10 sm:w-72" />
+                        <SkeletonBlock className="mt-3 h-4 w-56 max-w-full rounded-xl" />
+                        <div className="mt-3 flex items-center gap-3">
+                          <SkeletonBlock className="h-4 w-28 rounded-xl" />
+                          <SkeletonBlock className="h-6 w-28 rounded-full" />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="hidden lg:block mt-4">
+                      <SkeletonBlock className="h-14 w-56 rounded-2xl" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="px-2 pb-4 sm:px-5 lg:px-6">
+                  <div className="rounded-[26px] px-2 sm:p-6">
+                    <SkeletonBlock className="h-4 w-full rounded-xl" />
+                    <SkeletonBlock className="mt-2 h-4 w-[92%] rounded-xl" />
+                    <SkeletonBlock className="mt-2 h-4 w-[72%] rounded-xl" />
+                  </div>
+                </div>
+
+                <div className="border-t border-stone-100 bg-white/95 backdrop-blur-xl">
+                  <div className="mx-auto max-w-[900px] px-4">
+                    <div className="flex justify-center gap-6 py-4">
+                      <SkeletonBlock className="h-5 w-20 rounded-xl" />
+                      <SkeletonBlock className="h-5 w-20 rounded-xl" />
+                      <SkeletonBlock className="h-5 w-20 rounded-xl" />
+                      <SkeletonBlock className="h-5 w-20 rounded-xl" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="px-4 pt-0 sm:px-2 md:px-3 lg:px-6">
+                  <section className="scroll-mt-28">
+                    <div className="rounded-[30px] px-0 py-4 pb-18 sm:p-6">
+                      <div className="mb-5">
+                        <SkeletonBlock className="h-3 w-28 rounded-xl" />
+                        <SkeletonBlock className="mt-3 h-8 w-56 rounded-2xl" />
+                      </div>
+
+                      <SkeletonBlock className="mb-6 h-12 w-full rounded-2xl" />
+
+                      <div className="space-y-4">
+                        {Array.from({ length: 4 }).map((_, idx) => (
+                          <div
+                            key={idx}
+                            className="rounded-[28px] border border-stone-200 bg-white p-5 shadow-[0_8px_24px_rgba(0,0,0,0.04)]"
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="min-w-0 flex-1">
+                                <SkeletonBlock className="h-5 w-40 rounded-xl" />
+                                <SkeletonBlock className="mt-2 h-4 w-[85%] rounded-xl" />
+
+                                <div className="mt-3 flex flex-wrap items-center gap-3">
+                                  <SkeletonBlock className="h-7 w-20 rounded-full" />
+                                  <SkeletonBlock className="h-7 w-24 rounded-full" />
+                                </div>
+                              </div>
+
+                              <SkeletonBlock className="h-10 w-32 rounded-xl" />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </section>
+                </div>
+              </SectionShell>
+            </div>
+          </section>
+
+          <div className="fixed inset-x-0 bottom-0 z-40 lg:hidden">
+            <div className="relative px-3 pb-[calc(env(safe-area-inset-bottom)+12px)]">
+              <div className="mx-auto max-w-md rounded-[28px]">
+                <SkeletonBlock className="h-12 w-full rounded-[22px]" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function StudioPublicPage() {
   const { slug } = useParams();
   const location = useLocation();
   const [studio, setStudio] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [heroImageLoading, setHeroImageLoading] = useState(true);
   const [error, setError] = useState("");
+  const [loadedHeroSrc, setLoadedHeroSrc] = useState("");
   const [heroPreviewIndex, setHeroPreviewIndex] = useState(null);
   const [heroIndex, setHeroIndex] = useState(0);
   const [openBooking, setOpenBooking] = useState(false);
@@ -587,6 +710,7 @@ export default function StudioPublicPage() {
   const [isFavourite, setIsFavourite] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const [heroDirection, setHeroDirection] = useState(0);
+  const [showHeroLoader, setShowHeroLoader] = useState(false);
 
   useEffect(() => {
     const navState = location.state;
@@ -722,10 +846,50 @@ export default function StudioPublicPage() {
     return arr.filter((url, index, self) => self.indexOf(url) === index);
   }, [coverUrl, portfolio]);
 
-  useEffect(() => {
-    setHeroIndex(0);
-    setHeroPreviewIndex(null);
-  }, [slug, heroImages.length]);
+useEffect(() => {
+  setHeroIndex(0);
+  setHeroPreviewIndex(null);
+}, [slug]);
+
+useEffect(() => {
+  const nextSrc = heroImages[heroIndex];
+
+  if (!nextSrc) {
+    setLoadedHeroSrc("");
+    setHeroImageLoading(false);
+    setShowHeroLoader(false);
+    return;
+  }
+
+  setHeroImageLoading(true);
+  setLoadedHeroSrc("");
+  setShowHeroLoader(false);
+
+  const loaderTimer = setTimeout(() => {
+    setShowHeroLoader(true);
+  }, 150);
+
+  const img = new Image();
+  img.src = nextSrc;
+
+  img.onload = () => {
+    clearTimeout(loaderTimer);
+    setLoadedHeroSrc(nextSrc);
+    setHeroImageLoading(false);
+    setShowHeroLoader(false);
+  };
+
+  img.onerror = () => {
+    clearTimeout(loaderTimer);
+    setLoadedHeroSrc("");
+    setHeroImageLoading(false);
+    setShowHeroLoader(false);
+  };
+
+  return () => {
+    clearTimeout(loaderTimer);
+  };
+}, [heroIndex, heroImages]);
 
   const filteredUncategorizedServices = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -908,13 +1072,7 @@ function openBookingForService(service) {
   }
 
   if (loading) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center px-4">
-        <div className="rounded-2xl border border-stone-200 bg-white px-6 py-4 text-sm text-stone-500 shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
-          Завантаження студії...
-        </div>
-      </div>
-    );
+    return <StudioPublicPageSkeleton />;
   }
 
   if (!studio) {
@@ -964,7 +1122,7 @@ function openBookingForService(service) {
       <div className="mx-auto w-full max-w-[1220px] px-0 sm:px-2 md:px-3 lg:px-6">
         <div className="mx-auto w-full max-w-[1120px] pb-0 text-stone-800 sm:pb-20 lg:pb-5">
           <section className="relative">
-            <div className="relative h-[320px] sm:h-[420px] md:h-[480px] lg:h-[520px] overflow-hidden rounded-b-[24px] bg-black sm:mx-[-8px] md:mx-[-12px] lg:mx-0">
+            <div className="relative h-[320px] sm:h-[420px] md:h-[480px] lg:h-[520px] overflow-hidden rounded-b-[24px] bg-stone-100 sm:mx-[-8px] md:mx-[-12px] lg:mx-0">
               {heroImages.length > 0 ? (
                 <>
                   <button
@@ -977,30 +1135,52 @@ function openBookingForService(service) {
                       className="absolute inset-0"
                       aria-label="Переглянути фото студії"
                     >
-                      <AnimatePresence initial={false}>
-                        <motion.img
-                          key={heroImages[heroIndex]}
-                          initial={{ x: heroDirection > 0 ? 40 : -40 }}
-                          animate={{ x: 0 }}
-                          exit={{ x: heroDirection > 0 ? -40 : 40 }}
-                          transition={{
-                            duration: 0.22,
-                            ease: [0.22, 1, 0.36, 1],
-                          }}
-                          drag="x"
-                          dragConstraints={{ left: 0, right: 0 }}
-                          dragElastic={0.06}
-                          onDragEnd={handleHeroDragEnd}
-                          onClick={() => setHeroPreviewIndex(heroIndex)}
-                          src={heroImages[heroIndex]}
-                          alt={`${name} ${heroIndex + 1}`}
-                          className="absolute inset-0 h-full w-full object-cover cursor-grab active:cursor-grabbing touch-pan-y"
-                          style={{
-                            backfaceVisibility: "hidden",
-                            willChange: "transform",
-                          }}
-                        />
-                      </AnimatePresence>
+<AnimatePresence initial={false}>
+  <motion.div
+    key={heroIndex}
+    initial={{ x: heroDirection > 0 ? 40 : -40 }}
+    animate={{ x: 0 }}
+    exit={{ x: heroDirection > 0 ? -40 : 40 }}
+    transition={{
+      duration: 0.22,
+      ease: [0.22, 1, 0.36, 1],
+    }}
+    drag="x"
+    dragConstraints={{ left: 0, right: 0 }}
+    dragElastic={0.06}
+    onDragEnd={handleHeroDragEnd}
+    onClick={() => setHeroPreviewIndex(heroIndex)}
+    className="absolute inset-0 cursor-grab touch-pan-y active:cursor-grabbing"
+    style={{
+      backfaceVisibility: "hidden",
+      willChange: "transform",
+    }}
+  >
+    <div className="relative h-full w-full overflow-hidden bg-gradient-to-br from-stone-200 via-stone-100 to-amber-50">
+{loadedHeroSrc ? (
+  <img
+    src={loadedHeroSrc}
+    alt={`${name} ${heroIndex + 1}`}
+    className="absolute inset-0 h-full w-full object-cover"
+    draggable="false"
+  />
+) : (
+  <div className="absolute inset-0 bg-gradient-to-br from-stone-200 via-stone-100 to-amber-50" />
+)}
+
+{showHeroLoader && (
+  <div className="absolute inset-0 z-10 flex items-center justify-center bg-stone-100/80">
+    <div className="flex flex-col items-center gap-3 rounded-2xl bg-white px-4 py-3 shadow-sm">
+      <div className="h-8 w-8 animate-spin rounded-full border-2 border-stone-300 border-t-emerald-600" />
+      <span className="text-xs font-semibold text-stone-600">
+        Завантаження фото...
+      </span>
+    </div>
+  </div>
+)}
+    </div>
+  </motion.div>
+</AnimatePresence>
                     </div>
                   </button>
 

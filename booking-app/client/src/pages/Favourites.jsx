@@ -52,8 +52,86 @@ function cn(...classes) {
   return classes.filter(Boolean).join(" ");
 }
 
+function SkeletonPulse({ className = "" }) {
+  return (
+    <div
+      className={cn("animate-pulse rounded-2xl bg-stone-200/80", className)}
+    />
+  );
+}
+
+function FavouriteCardSkeleton() {
+  return (
+    <div className="overflow-hidden rounded-[24px] border border-stone-200/80 bg-white shadow-[0_10px_26px_rgba(15,23,42,0.07)] sm:rounded-[30px]">
+      <div className="relative h-40 overflow-hidden bg-stone-100">
+        <SkeletonPulse className="h-full w-full rounded-none" />
+
+        <div className="absolute left-4 bottom-4 z-30">
+          <SkeletonPulse className="h-14 w-14 rounded-2xl bg-white/70" />
+        </div>
+
+        <div className="absolute left-4 top-4 z-20">
+          <SkeletonPulse className="h-8 w-28 rounded-full bg-white/60" />
+        </div>
+
+        <div className="absolute right-4 top-4 z-20">
+          <SkeletonPulse className="h-10 w-10 rounded-full bg-white/80" />
+        </div>
+
+        <div className="absolute inset-x-0 bottom-0 z-20 p-4">
+          <div className="pl-[72px]">
+            <SkeletonPulse className="h-6 w-40 rounded-xl bg-white/70" />
+            <SkeletonPulse className="mt-2 h-4 w-48 rounded-xl bg-white/50" />
+          </div>
+        </div>
+      </div>
+
+      <div className="relative flex flex-1 flex-col p-5">
+        <div className="absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-stone-200 to-transparent" />
+        <div className="mt-auto">
+          <SkeletonPulse className="h-12 w-full rounded-[18px]" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FavouritesSkeleton() {
+  return (
+    <div className="min-h-screen pb-[calc(env(safe-area-inset-bottom)+68px)] sm:pb-0">
+      <div className="mx-auto max-w-6xl px-2.5 pb-4 pt-0 sm:px-4 sm:pb-8 sm:pt-14 lg:pt-16">
+        <div className="space-y-3 px-0 pt-2 sm:space-y-5 sm:pt-8 lg:pt-6">
+          <section className="overflow-hidden rounded-[24px] border border-stone-200/60 bg-white shadow-[0_4px_20px_-6px_rgba(120,90,60,0.08)] sm:rounded-3xl">
+            <div className="h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-40" />
+
+            <div className="px-4 pb-7 pt-7 sm:px-6 sm:pb-4 sm:pt-5 lg:px-8 lg:pt-6">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <div className="space-y-3 sm:space-y-2">
+                  <SkeletonPulse className="hidden h-8 w-36 rounded-full sm:block" />
+                  <SkeletonPulse className="h-10 w-[280px] max-w-full rounded-2xl sm:h-14 sm:w-[360px]" />
+                  <SkeletonPulse className="h-4 w-[420px] max-w-full rounded-xl" />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <div className="grid gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <FavouriteCardSkeleton key={i} />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Favourites() {
-  const { favourites, toggleFavourite } = useFavourites();
+  const { favourites, toggleFavourite, loading } = useFavourites();
+
+  if (loading) {
+    return <FavouritesSkeleton />;
+  }
 
   if (!favourites || favourites.length === 0) {
     return (

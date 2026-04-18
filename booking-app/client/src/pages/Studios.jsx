@@ -6,6 +6,7 @@ import {
   useLocation,
 } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   Sparkles,
   Search,
@@ -172,11 +173,162 @@ function FilterChip({ children, onClick }) {
   );
 }
 
+function SkeletonPulse({ className = "" }) {
+  return (
+    <div
+      className={cn("animate-pulse rounded-2xl bg-stone-200/80", className)}
+    />
+  );
+}
+
+function StudioCardSkeleton() {
+  return (
+    <div className="overflow-hidden rounded-[24px] border border-stone-200/70 bg-white shadow-[0_10px_26px_rgba(15,23,42,0.07)] sm:rounded-[30px]">
+      <div className="relative h-56 overflow-hidden">
+        <SkeletonPulse className="h-full w-full rounded-none" />
+
+        <div className="absolute right-4 top-4">
+          <SkeletonPulse className="h-8 w-20 rounded-full" />
+        </div>
+
+        <div className="absolute inset-x-0 bottom-0 p-4">
+          <div className="flex items-end gap-3">
+            <SkeletonPulse className="h-16 w-16 shrink-0 rounded-[20px] bg-white/80" />
+
+            <div className="min-w-0 flex-1 pb-1">
+              <SkeletonPulse className="h-6 w-40 rounded-xl bg-white/80" />
+              <SkeletonPulse className="mt-2 h-4 w-56 max-w-full rounded-xl bg-white/70" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-1 flex-col p-5">
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <SkeletonPulse className="h-4 w-full rounded-xl" />
+            <SkeletonPulse className="h-4 w-[92%] rounded-xl" />
+            <SkeletonPulse className="h-4 w-[70%] rounded-xl" />
+          </div>
+
+          <div className="space-y-2">
+            <SkeletonPulse className="h-3 w-28 rounded-xl" />
+
+            <div className="flex flex-wrap gap-2">
+              <SkeletonPulse className="h-8 w-24 rounded-full" />
+              <SkeletonPulse className="h-8 w-28 rounded-full" />
+              <SkeletonPulse className="h-8 w-20 rounded-full" />
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-auto pt-4">
+          <div className="rounded-2xl border border-stone-200/80 bg-stone-50/80 px-3 py-3">
+            <div className="flex items-start gap-2.5">
+              <SkeletonPulse className="h-8 w-8 shrink-0 rounded-xl bg-white" />
+
+              <div className="min-w-0 flex-1">
+                <SkeletonPulse className="h-3 w-24 rounded-xl" />
+                <SkeletonPulse className="mt-2 h-4 w-32 rounded-xl" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="pt-5">
+          <div className="flex items-center gap-3">
+            <SkeletonPulse className="h-12 w-full rounded-[18px]" />
+            <SkeletonPulse className="h-12 w-12 shrink-0 rounded-[18px]" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StudiosSkeleton() {
+  return (
+    <div className="min-h-screen pb-[calc(env(safe-area-inset-bottom)+68px)] sm:pb-0">
+      <div className="mx-auto max-w-6xl px-2.5 pb-4 pt-0 sm:px-4 sm:pb-8 sm:pt-14 lg:pt-16">
+        <div className="space-y-3 px-0 pt-2 sm:space-y-5 sm:pt-8 lg:pt-6">
+          <section className="overflow-hidden rounded-[24px] border border-stone-200/60 bg-white shadow-[0_4px_20px_-6px_rgba(120,90,60,0.08)] sm:rounded-3xl">
+            <div className="h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-40" />
+
+            <div className="px-4 pb-7 pt-7 sm:px-6 sm:pb-4 sm:pt-5 lg:px-8 lg:pt-6">
+              <div className="mb-5 space-y-3 sm:mb-4 sm:space-y-2 lg:mb-5">
+                <SkeletonPulse className="hidden h-8 w-36 rounded-full sm:block" />
+                <SkeletonPulse className="h-10 w-[280px] max-w-full rounded-2xl sm:h-14 sm:w-[420px]" />
+                <SkeletonPulse className="h-4 w-[320px] max-w-full rounded-xl" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-[1.2fr_0.9fr_0.9fr_0.9fr]">
+                <SkeletonPulse className="h-[72px] rounded-[22px]" />
+                <SkeletonPulse className="h-[72px] rounded-[22px]" />
+                <SkeletonPulse className="h-[72px] rounded-[22px]" />
+                <SkeletonPulse className="h-[72px] rounded-[22px]" />
+              </div>
+
+              <div className="mt-2.5 flex flex-col gap-2 sm:mt-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-wrap gap-2">
+                  <SkeletonPulse className="h-7 w-24 rounded-full" />
+                  <SkeletonPulse className="h-7 w-28 rounded-full" />
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <SkeletonPulse className="h-11 w-32 rounded-[18px]" />
+                  <SkeletonPulse className="h-11 w-36 rounded-[18px]" />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <div className="grid gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <StudioCardSkeleton key={i} />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+async function fetchStudios() {
+  const res = await fetch(`${import.meta.env.VITE_API_URL}/client/`);
+  const data = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    throw new Error(data?.message || `Load failed (${res.status})`);
+  }
+
+  const list = Array.isArray(data?.studios) ? data.studios : [];
+
+  return list.map((s) => ({
+    ...s,
+    slug: s.slug || s.id,
+    coverUrl: toPublicUrl(s.coverUrl),
+    logoUrl: toPublicUrl(s.logoUrl),
+  }));
+}
+
 export default function Studios() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [studios, setStudios] = useState([]);
-  const [shouldRestoreScroll, setShouldRestoreScroll] = useState(false);
-  const [loading, setLoading] = useState(false);
+const studiosQuery = useQuery({
+  queryKey: ["studios"],
+  queryFn: fetchStudios,
+  staleTime: 1000 * 60 * 10,
+  gcTime: 1000 * 60 * 30,
+  refetchOnMount: false,
+  refetchOnWindowFocus: false,
+  refetchOnReconnect: false,
+});
+
+const studios = useMemo(() => {
+  return Array.isArray(studiosQuery.data) ? studiosQuery.data : [];
+}, [studiosQuery.data]);
+const [shouldRestoreScroll, setShouldRestoreScroll] = useState(() => {
+  return sessionStorage.getItem("restore-studios-scroll") === "1";
+});
   const [q, setQ] = useState(() => searchParams.get("q") || "");
   const [city, setCity] = useState(() => searchParams.get("city") || "");
   const [category, setCategory] = useState(
@@ -203,12 +355,8 @@ export default function Studios() {
   const navigate = useNavigate();
   const location = useLocation();
   const [hasSearched, setHasSearched] = useState(false);
-  useEffect(() => {
-    const flag = sessionStorage.getItem("restore-studios-scroll") === "1";
-    if (flag) {
-      setShouldRestoreScroll(true);
-    }
-  }, []);
+
+
 
   useEffect(() => {
     if (!shouldRestoreScroll) return;
@@ -238,61 +386,6 @@ export default function Studios() {
       clearTimeout(timeout);
     };
   }, [shouldRestoreScroll, studios.length]);
-
-  useEffect(() => {
-    const shouldRestore =
-      sessionStorage.getItem("restore-studios-scroll") === "1";
-    const savedY = sessionStorage.getItem("studios-scroll-y");
-
-    if (!shouldRestore || !savedY) return;
-
-    const restore = () => {
-      window.scrollTo(0, Number(savedY));
-      sessionStorage.removeItem("restore-studios-scroll");
-    };
-
-    const id = requestAnimationFrame(() => {
-      requestAnimationFrame(restore);
-    });
-
-    return () => cancelAnimationFrame(id);
-  }, [studios.length]);
-
-  useEffect(() => {
-    let alive = true;
-
-    async function loadStudios() {
-      setLoading(true);
-      try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/client/`);
-        const data = await res.json().catch(() => null);
-
-        if (!res.ok)
-          throw new Error(data?.message || `Load failed (${res.status})`);
-
-        const list = Array.isArray(data?.studios) ? data.studios : [];
-
-        const normalized = list.map((s) => ({
-          ...s,
-          slug: s.slug || s.id,
-          coverUrl: toPublicUrl(s.coverUrl),
-          logoUrl: toPublicUrl(s.logoUrl),
-        }));
-
-        if (alive) setStudios(normalized);
-      } catch (e) {
-        console.error(e);
-        if (alive) setStudios([]);
-      } finally {
-        if (alive) setLoading(false);
-      }
-    }
-
-    loadStudios();
-    return () => {
-      alive = false;
-    };
-  }, []);
 
   useEffect(() => {
     const params = {};
@@ -533,6 +626,12 @@ export default function Studios() {
     setIsApplying(false);
   }
 
+const isInitialLoading = studiosQuery.isLoading && !studiosQuery.data;
+
+if (isInitialLoading) {
+  return <StudiosSkeleton />;
+}
+
   return (
      <div className="min-h-screen pb-[calc(env(safe-area-inset-bottom)+68px)] sm:pb-0">
       <div className="mx-auto max-w-6xl px-2.5 pb-4 pt-0 sm:px-4 sm:pb-8 sm:pt-14 lg:pt-16">
@@ -652,19 +751,19 @@ export default function Studios() {
           </section>
 
           <div className="flex items-center gap-2 text-sm text-stone-500">
-            {loading && (
-              <span className="rounded-full border border-stone-200 bg-stone-100 px-2 py-0.5 text-xs text-stone-600">
-                Завантаження...
-              </span>
-            )}
+{studiosQuery.isFetching && (
+  <span className="rounded-full border border-stone-200 bg-stone-100 px-2 py-0.5 text-xs text-stone-600">
+    Завантаження...
+  </span>
+)}
 
-            {hasPendingChanges && !loading && (
+{hasPendingChanges && !studiosQuery.isFetching && (
               <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
                 Натисніть “Знайти”
               </span>
             )}
 
-            {!hasPendingChanges && hasSearched && !loading && (
+          {!hasPendingChanges && hasSearched && !studiosQuery.isFetching && (
               <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
                 Знайдено: {filtered.length}
               </span>

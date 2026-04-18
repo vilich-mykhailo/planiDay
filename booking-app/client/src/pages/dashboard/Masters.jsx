@@ -1,5 +1,6 @@
 // Masters.jsx
 import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Sparkles,
   Plus,
@@ -389,53 +390,32 @@ function MasterSkeletonRow() {
   );
 }
 
-function MastersSkeleton() {
+function MastersListSkeleton() {
   return (
-    <div className="space-y-6">
-      <div className="mb-8">
-        <SkeletonBlock className="mb-3 h-8 w-40" />
-        <SkeletonBlock className="mb-2 h-12 w-48" />
-        <SkeletonBlock className="h-5 w-96 max-w-full" />
-      </div>
-
-      <div className="rounded-3xl border border-stone-200 bg-white p-5">
-        <div className="mb-4 flex justify-between">
-          <div className="space-y-2">
-            <SkeletonBlock className="h-6 w-40" />
-            <SkeletonBlock className="h-4 w-80 max-w-full" />
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <SkeletonBlock className="h-24 w-full rounded-3xl" />
-          <SkeletonBlock className="h-12 w-full rounded-2xl" />
-          <SkeletonBlock className="h-12 w-full rounded-2xl" />
-          <SkeletonBlock className="h-28 w-full rounded-2xl" />
-          <SkeletonBlock className="h-12 w-40 rounded-2xl" />
-        </div>
-      </div>
-
-      <div className="rounded-3xl border border-stone-200 bg-white p-5">
-        <div className="mb-4 space-y-2">
-          <SkeletonBlock className="h-6 w-40" />
-          <SkeletonBlock className="h-4 w-72 max-w-full" />
-        </div>
-
-        <div className="space-y-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <MasterSkeletonRow key={i} />
-          ))}
-        </div>
-      </div>
+    <div className="space-y-3">
+      {Array.from({ length: 3 }).map((_, i) => (
+        <MasterSkeletonRow key={i} />
+      ))}
     </div>
   );
 }
 
 export default function Masters() {
   const { studio } = useStudio();
+const queryClient = useQueryClient();
+const studioId = studio?.id ?? null;
+const mastersQuery = useQuery({
+  queryKey: ["masters", studioId],
+  queryFn: () => fetchMasters(studioId),
+  enabled: Boolean(studioId),
 
-  const [mastersLocal, setMastersLocal] = useState([]);
-  const [loading, setLoading] = useState(true);
+  staleTime: 1000 * 60 * 10, // 10 хв
+  gcTime: 1000 * 60 * 30, // кеш 30 хв
+
+  refetchOnMount: false,
+  refetchOnWindowFocus: false,
+  refetchOnReconnect: false,
+});
   const [adding, setAdding] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [exceptionsMaster, setExceptionsMaster] = useState(null);
@@ -444,28 +424,45 @@ export default function Masters() {
   const [exceptionsLoading, setExceptionsLoading] = useState(false);
   const [expandedExceptions, setExpandedExceptions] = useState({});
 
-  async function refreshMasters() {
-    if (!studio?.id) return;
+  async function syncMastersRelatedQueries() {
+  if (!studioId) return;
 
-    setLoading(true);
-    try {
-      const token = localStorage.getItem("token");
+  await Promise.all([
+    queryClient.invalidateQueries({
+      queryKey: ["masters", studioId],
+      exact: true,
+    }),
+    queryClient.invalidateQueries({
+      queryKey: ["services", studioId],
+      exact: true,
+    }),
+  ]);
+}
 
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/studio/${studio.id}/masters`,
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
+async function fetchMasters(studioId) {
+  if (!studioId) return [];
 
-      const data = await res.json().catch(() => null);
-      if (!res.ok) {
-        throw new Error(data?.message || `Load masters failed (${res.status})`);
-      }
+  const token = localStorage.getItem("token");
 
-      setMastersLocal(Array.isArray(data?.masters) ? data.masters : []);
-    } finally {
-      setLoading(false);
-    }
+  const res = await fetch(
+    `${import.meta.env.VITE_API_URL}/studio/${studioId}/masters`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+
+  const data = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    throw new Error(data?.message || `Load masters failed (${res.status})`);
   }
+
+  return Array.isArray(data?.masters) ? data.masters : [];
+}
+
+
 
   async function deleteMasterPhoto(studioId, key) {
     if (!key) return;
@@ -495,12 +492,9 @@ export default function Masters() {
     photoUrl: "",
   });
 
-  useEffect(() => {
-    refreshMasters();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studio?.id]);
 
-  const masters = mastersLocal;
+const masters = mastersQuery.data || [];
+const loading = mastersQuery.isLoading;
 
   const [form, setForm] = useState({
     name: "",
@@ -606,8 +600,22 @@ export default function Masters() {
         return;
       }
 
-      if (data?.master) setMastersLocal((prev) => [data.master, ...prev]);
-      else await refreshMasters();
+if (data?.master) {
+  queryClient.setQueryData(["masters", studioId], (old = []) => [
+    data.master,
+    ...old,
+  ]);
+} else {
+  await queryClient.invalidateQueries({
+    queryKey: ["masters", studioId],
+    exact: true,
+  });
+}
+
+await queryClient.invalidateQueries({
+  queryKey: ["services", studioId],
+  exact: true,
+});
 
       if (form.photoUrl?.startsWith("blob:")) {
         URL.revokeObjectURL(form.photoUrl);
@@ -658,7 +666,14 @@ setAddOpen(false);
         }
       }
 
-      setMastersLocal((prev) => prev.filter((m) => m.id !== id));
+queryClient.setQueryData(["masters", studioId], (old = []) =>
+  old.filter((m) => m.id !== id),
+);
+
+await queryClient.invalidateQueries({
+  queryKey: ["services", studioId],
+  exact: true,
+});
     } catch (e) {
       console.error(e);
       alert("Помилка при видаленні майстра");
@@ -1028,16 +1043,27 @@ async function openMasterExceptions(master) {
       URL.revokeObjectURL(editDraft.photoUrl);
     }
 
-    closeEdit();
-    await refreshMasters();
+if (data?.master) {
+  queryClient.setQueryData(["masters", studioId], (old = []) =>
+    old.map((m) => (m.id === data.master.id ? data.master : m)),
+  );
+} else {
+  await queryClient.invalidateQueries({
+    queryKey: ["masters", studioId],
+    exact: true,
+  });
+}
+
+closeEdit();
+
+await queryClient.invalidateQueries({
+  queryKey: ["services", studioId],
+  exact: true,
+});
   }
 
   const total = masters.length;
   const [photoBroken, setPhotoBroken] = useState(false);
-
-  if (loading) {
-    return <MastersSkeleton />;
-  }
 
   return (
     <div className="min-h-screen">
@@ -1203,105 +1229,105 @@ async function openMasterExceptions(master) {
           }
           badge={`К-ть майстрів: ${total}`}
         >
-          {total === 0 ? (
-            <div className="rounded-2xl border-2 border-dashed border-stone-200 bg-stone-50/50 p-8 text-center">
-              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-stone-100">
-                <Plus className="h-6 w-6 text-stone-400" />
+{loading ? (
+  <MastersListSkeleton />
+) : total === 0 ? (
+  <div className="rounded-2xl border-2 border-dashed border-stone-200 bg-stone-50/50 p-8 text-center">
+    <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-stone-100">
+      <Plus className="h-6 w-6 text-stone-400" />
+    </div>
+    <p className="text-sm text-stone-500">Поки що немає майстрів</p>
+    <p className="mt-1 text-xs text-stone-400">
+      Додай першого майстра зверху
+    </p>
+  </div>
+) : (
+  <div className="space-y-3">
+    {masters.map((m) => (
+      <div
+        key={m.id}
+        className="group rounded-2xl border border-stone-200 bg-white p-4 transition-all hover:border-amber-200 hover:shadow-md hover:shadow-amber-500/5"
+      >
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0 flex-1">
+            <div className="flex min-w-0 items-start gap-3">
+              <Avatar name={m.name} photoUrl={m.photoUrl} size="sm" />
+
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-semibold text-stone-800">
+                  {m.name}
+                </p>
+
+                {m.role ? (
+                  <p className="mt-1 truncate text-sm font-medium text-stone-600">
+                    {m.role}
+                  </p>
+                ) : (
+                  <p className="mt-1 text-sm text-stone-400">
+                    Спеціалізація не вказана
+                  </p>
+                )}
+
+                {m.bio ? (
+                  <p className="mt-1 line-clamp-2 break-words text-sm text-stone-500">
+                    {m.bio}
+                  </p>
+                ) : (
+                  <p className="mt-1 text-sm text-stone-400">
+                    Без опису
+                  </p>
+                )}
               </div>
-              <p className="text-sm text-stone-500">Поки що немає майстрів</p>
-              <p className="mt-1 text-xs text-stone-400">
-                Додай першого майстра зверху
-              </p>
             </div>
-          ) : (
-            <div className="space-y-3">
-              {masters.map((m) => (
-                <div
-                  key={m.id}
-                  className="group rounded-2xl border border-stone-200 bg-white p-4 transition-all hover:border-amber-200 hover:shadow-md hover:shadow-amber-500/5"
-                >
-                  <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex min-w-0 items-start gap-3">
-                        <Avatar name={m.name} photoUrl={m.photoUrl} size="sm" />
+          </div>
 
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate font-semibold text-stone-800">
-                            {m.name}
-                          </p>
+          <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row lg:w-auto lg:shrink-0">
+            <Button
+              variant="accent"
+              className="
+                h-11 w-full
+                sm:flex-[3]
+                lg:flex-none lg:w-auto lg:min-w-[170px]
+                justify-center
+              "
+              onClick={() => openMasterExceptions(m)}
+            >
+              <CalendarDays className="h-4 w-4" />
+              Особливі дати
+            </Button>
 
-                          {m.role ? (
-                            <p className="mt-1 truncate text-sm font-medium text-stone-600">
-                              {m.role}
-                            </p>
-                          ) : (
-                            <p className="mt-1 text-sm text-stone-400">
-                              Спеціалізація не вказана
-                            </p>
-                          )}
+            <div className="flex w-full gap-2 sm:contents">
+              <IconButton
+                className="
+                  h-11 w-1/2
+                  sm:flex-[1]
+                  lg:flex-none lg:w-11
+                "
+                onClick={() => openEdit(m)}
+                title="Редагувати"
+              >
+                <Pencil className="h-4 w-4" />
+              </IconButton>
 
-                          {m.bio ? (
-                            <p className="mt-1 line-clamp-2 break-words text-sm text-stone-500">
-                              {m.bio}
-                            </p>
-                          ) : (
-                            <p className="mt-1 text-sm text-stone-400">
-                              Без опису
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row lg:w-auto lg:shrink-0">
-                      {/* Особливі дати */}
-                      <Button
-                        variant="accent"
-                        className="
-      h-11 w-full
-      sm:flex-[3]
-      lg:flex-none lg:w-auto lg:min-w-[170px]
-      justify-center
-    "
-                        onClick={() => openMasterExceptions(m)}
-                      >
-                        <CalendarDays className="h-4 w-4" />
-                        Особливі дати
-                      </Button>
-
-                      {/* Mobile row (2 кнопки по 50%) */}
-                      <div className="flex w-full gap-2 sm:contents">
-                        <IconButton
-                          className="
-        h-11 w-1/2
-        sm:flex-[1]
-        lg:flex-none lg:w-11
-      "
-                          onClick={() => openEdit(m)}
-                          title="Редагувати"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </IconButton>
-
-                        <IconButton
-                          className="
-        h-11 w-1/2
-        sm:flex-[1]
-        lg:flex-none lg:w-11
-      "
-                          variant="danger"
-                          onClick={() => deleteMaster(m)}
-                          title="Видалити"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </IconButton>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+              <IconButton
+                className="
+                  h-11 w-1/2
+                  sm:flex-[1]
+                  lg:flex-none lg:w-11
+                "
+                variant="danger"
+                onClick={() => deleteMaster(m)}
+                title="Видалити"
+              >
+                <Trash2 className="h-4 w-4" />
+              </IconButton>
             </div>
-          )}
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+)}
         </SectionCard>
 
         {/* Edit modal */}
@@ -1447,12 +1473,19 @@ async function openMasterExceptions(master) {
             </div>
           }
         >
-          {exceptionsLoading ? (
-            <div className="space-y-3">
-              <SkeletonBlock className="h-24 w-full rounded-2xl" />
-              <SkeletonBlock className="h-24 w-full rounded-2xl" />
-            </div>
-          ) : masterExceptions.length === 0 ? (
+{exceptionsLoading ? (
+  <div className="space-y-3">
+    {Array.from({ length: 2 }).map((_, i) => (
+      <div
+        key={i}
+        className="rounded-2xl border border-stone-200 bg-white p-4"
+      >
+        <SkeletonBlock className="h-5 w-44" />
+        <SkeletonBlock className="mt-2 h-4 w-36" />
+      </div>
+    ))}
+  </div>
+) : masterExceptions.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-6 text-sm text-stone-500">
               Немає особливих дат для цього майстра.
             </div>
