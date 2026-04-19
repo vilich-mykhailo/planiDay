@@ -469,7 +469,7 @@ function Button({
     <button
       type="button"
       className={cn(
-        "inline-flex items-center justify-center gap-2 font-semibold transition-all duration-200",
+        "inline-flex items-center justify-center gap-2 font-semibold ",
         "active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50",
         variants[variant],
         sizes[size],
@@ -586,7 +586,7 @@ function DurationSlider({ value, onChange }) {
             onClick={() => onChange(preset.value)}
             className={cn(
               preset.value === 180 ? "hidden sm:inline-flex" : "inline-flex",
-              "items-center justify-center rounded-xl px-3 py-2 text-xs font-medium transition-all duration-200 sm:px-4 sm:text-sm",
+              "items-center justify-center rounded-xl px-3 py-2 text-xs font-medium  sm:px-4 sm:text-sm",
               value === preset.value
                 ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md"
                 : "bg-stone-100 text-stone-600 hover:bg-stone-200",
@@ -608,6 +608,49 @@ function SkeletonBlock({ className = "" }) {
   );
 }
 const EMPTY_ARRAY = [];
+
+function CategoryFilters({
+  value,
+  onChange,
+  categories,
+}) {
+  const items = [
+    { id: "all", label: "Усі" },
+    { id: UNCATEGORIZED_ID, label: "Без категорії" },
+    ...categories.map((cat) => ({
+      id: cat.id,
+      label: cat.name,
+    })),
+  ];
+
+  return (
+    <div className="mb-6">
+      <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+        {items.map((item) => {
+          const active = String(value) === String(item.id);
+
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => onChange(item.id)}
+className={cn(
+  "shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold ",
+  "border", // завжди є border!
+  active
+    ? "border-transparent bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-md shadow-emerald-500/25"
+    : "border-stone-200 bg-white text-stone-600 hover:border-stone-300 hover:bg-stone-50"
+)}
+            >
+              {item.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function Services() {
   const { studio } = useStudio();
 
@@ -666,7 +709,7 @@ const mastersLoading =
     catId: null,
   });
   const [categoryDraftName, setCategoryDraftName] = useState("");
-
+const [activeCategoryFilter, setActiveCategoryFilter] = useState("all");
   const [serviceModal, setServiceModal] = useState({
     open: false,
     mode: "add",
@@ -941,6 +984,11 @@ useEffect(() => {
   const showTips = totalServices === 0;
   const isModalOpen = categoryModal.open || serviceModal.open;
 
+const filteredBlocks = useMemo(() => {
+  if (activeCategoryFilter === "all") return blocks;
+  return blocks.filter((block) => String(block.id) === String(activeCategoryFilter));
+}, [blocks, activeCategoryFilter]);
+
   return (
     <div className="min-h-screen">
       <div className="mx-auto max-w-5xl">
@@ -994,106 +1042,107 @@ useEffect(() => {
             </Button>
           </div>
         </SectionCard>
+<CategoryFilters
+  value={activeCategoryFilter}
+  onChange={setActiveCategoryFilter}
+  categories={serviceCategories}
+/>
 
-        <div className="space-y-5">
-          {servicesLoading ? (
-            <ServicesListSkeleton />
-          ) : (
-            <div className="space-y-5">
-              {blocks.map((cat) => {
-                const isUnc = cat.id === UNCATEGORIZED_ID;
-                const servicesCount = cat.services?.length || 0;
+<div className="space-y-5">
+  {servicesLoading ? (
+    <ServicesListSkeleton />
+  ) : (
+    <div className="space-y-5">
+      {filteredBlocks.map((cat) => {
+        const isUnc = cat.id === UNCATEGORIZED_ID;
+        const servicesCount = cat.services?.length || 0;
 
-                return (
-                  <SectionCard
-                    key={cat.id}
-                    title={cat.name}
-                    badge={`К-ть послуг: ${servicesCount}`}
-                    actions={{
-                      desktop: (
-                        <>
-                          <Button
-                            variant="primary"
-                            size="md"
-                            onClick={() => openAddService(cat.id)}
-                          >
-                            <Plus className="h-4 w-4" />
-                            Додати послугу
-                          </Button>
-
-                          {!isUnc && (
-                            <>
-                              <IconButton
-                                onClick={() => openEditCategory(cat.id)}
-                                title="Редагувати"
-                                className="h-[42px] w-[42px] shrink-0"
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </IconButton>
-
-                              <IconButton
-                                variant="danger"
-                                onClick={() => deleteCategory(cat.id)}
-                                title="Видалити"
-                                className="h-[42px] w-[42px] shrink-0"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </IconButton>
-                            </>
-                          )}
-                        </>
-                      ),
-
-                      mobileTop: !isUnc ? (
-                        <>
-                          <IconButton
-                            onClick={() => openEditCategory(cat.id)}
-                            title="Редагувати"
-                            className="h-[42px] w-[42px] shrink-0"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </IconButton>
-
-                          <IconButton
-                            variant="danger"
-                            onClick={() => deleteCategory(cat.id)}
-                            title="Видалити"
-                            className="h-[42px] w-[42px] shrink-0"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </IconButton>
-                        </>
-                      ) : null,
-
-                      mobileBottom: (
-                        <Button
-                          variant="primary"
-                          size="md"
-                          onClick={() => openAddService(cat.id)}
-                          className="w-full"
-                        >
-                          <Plus className="h-4 w-4" />
-                          Додати послугу
-                        </Button>
-                      ),
-                    }}
+        return (
+          <SectionCard
+            key={cat.id}
+            title={cat.name}
+            badge={`К-ть послуг: ${servicesCount}`}
+            actions={{
+              desktop: (
+                <>
+                  <Button
+                    variant="primary"
+                    size="md"
+                    onClick={() => openAddService(cat.id)}
                   >
-                    {servicesCount === 0 ? (
-                      <div className="rounded-2xl border-2 border-dashed border-stone-200 bg-stone-50/50 p-6 text-center sm:p-8">
-                        <p className="text-sm text-stone-500">
-                          Тут ще немає послуг
-                        </p>
-                        <p className="mt-1 text-xs text-stone-400">
-                          Натисніть "Додати послугу" щоб створити
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {cat.services.map((srv) => (
-                          <div
-                            key={srv.id}
-                            className="group/service rounded-2xl border border-stone-200 bg-white p-3.5 transition-all hover:border-amber-200 hover:shadow-md hover:shadow-amber-500/5 sm:p-4"
-                          >
+                    <Plus className="h-4 w-4" />
+                    Додати послугу
+                  </Button>
+
+                  {!isUnc && (
+                    <>
+                      <IconButton
+                        onClick={() => openEditCategory(cat.id)}
+                        title="Редагувати"
+                        className="h-[42px] w-[42px] shrink-0"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </IconButton>
+
+                      <IconButton
+                        variant="danger"
+                        onClick={() => deleteCategory(cat.id)}
+                        title="Видалити"
+                        className="h-[42px] w-[42px] shrink-0"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </IconButton>
+                    </>
+                  )}
+                </>
+              ),
+              mobileTop: !isUnc ? (
+                <>
+                  <IconButton
+                    onClick={() => openEditCategory(cat.id)}
+                    title="Редагувати"
+                    className="h-[42px] w-[42px] shrink-0"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </IconButton>
+
+                  <IconButton
+                    variant="danger"
+                    onClick={() => deleteCategory(cat.id)}
+                    title="Видалити"
+                    className="h-[42px] w-[42px] shrink-0"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </IconButton>
+                </>
+              ) : null,
+              mobileBottom: (
+                <Button
+                  variant="primary"
+                  size="md"
+                  onClick={() => openAddService(cat.id)}
+                  className="w-full"
+                >
+                  <Plus className="h-4 w-4" />
+                  Додати послугу
+                </Button>
+              ),
+            }}
+          >
+            {servicesCount === 0 ? (
+              <div className="rounded-2xl border-2 border-dashed border-stone-200 bg-stone-50/50 p-6 text-center sm:p-8">
+                <p className="text-sm text-stone-500">Тут ще немає послуг</p>
+                <p className="mt-1 text-xs text-stone-400">
+                  Натисніть "Додати послугу" щоб створити
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {cat.services.map((srv) => (
+                  <div
+                    key={srv.id}
+                    className="group/service rounded-2xl border border-stone-200 bg-white p-3.5 transition-all hover:border-amber-200 hover:shadow-md hover:shadow-amber-500/5 sm:p-4"
+                  >
                             <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0 flex-1">
                                 <h3 className="line-clamp-2 break-words text-sm font-semibold text-stone-800 sm:text-base">

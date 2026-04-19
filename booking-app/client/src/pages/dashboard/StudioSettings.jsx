@@ -140,7 +140,7 @@ function Button({
     <button
       type="button"
       className={cn(
-        "inline-flex items-center justify-center gap-2 font-semibold transition-all duration-200",
+        "inline-flex items-center justify-center gap-2 font-semibold ",
         "active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50",
         variants[variant],
         sizes[size],
@@ -1630,7 +1630,7 @@ function showToast({ type = "success", title, text }) {
                     type="button"
                     onClick={() => setTabUrl(t.id)}
                     className={cn(
-                      "shrink-0 whitespace-nowrap rounded-xl px-3 py-2 text-[13px] font-semibold transition sm:px-4 sm:py-2.5 sm:text-sm",
+                      "shrink-0 whitespace-nowrap rounded-xl px-3 py-2 text-[13px] font-semibold  sm:px-4 sm:py-2.5 sm:text-sm",
                       tab === t.id
                         ? "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white"
                         : "bg-white text-stone-600 hover:bg-stone-50",

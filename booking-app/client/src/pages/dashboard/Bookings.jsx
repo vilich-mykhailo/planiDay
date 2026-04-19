@@ -181,6 +181,8 @@ function SectionCard({
   children,
   className = "",
 }) {
+  const hasHeader = Boolean(title || subtitle || badge || actions);
+
   return (
     <section
       className={cn(
@@ -190,33 +192,43 @@ function SectionCard({
         className,
       )}
     >
-      <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-60" />
+      {hasHeader && (
+        <>
+          <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-60" />
 
-      <div className="border-b border-stone-100 px-5 py-4">
-        {/* TOP ROW */}
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h2 className="!text-[26px] font-bold tracking-tight text-stone-800">
-                {title}
-              </h2>
+          <div className="border-b border-stone-100 px-5 py-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                {(title || badge) && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    {title && (
+                      <h2 className="text-[26px] font-bold tracking-tight text-stone-800">
+                        {title}
+                      </h2>
+                    )}
 
-              {badge && (
-                <span className="inline-flex items-center rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
-                  {badge}
-                </span>
+                    {badge && (
+                      <span className="inline-flex items-center rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
+                        {badge}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {subtitle && (
+                  <p className="mt-2 text-sm text-stone-500">{subtitle}</p>
+                )}
+              </div>
+
+              {actions && (
+                <div className="flex w-full items-center justify-center sm:w-auto sm:justify-end">
+                  {actions}
+                </div>
               )}
             </div>
           </div>
-
-          {actions && (
-            <div className="flex items-center shrink-0">{actions}</div>
-          )}
-        </div>
-
-        {/* SUBTITLE */}
-        {subtitle && <p className="text-sm text-stone-500">{subtitle}</p>}
-      </div>
+        </>
+      )}
 
       <div className="p-5">{children}</div>
     </section>
@@ -250,7 +262,7 @@ function Button({
     <button
       type="button"
       className={cn(
-        "inline-flex items-center justify-center gap-2 font-semibold transition-all duration-200",
+        "inline-flex items-center justify-center gap-2 font-semibold ",
         "active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50",
         variants[variant],
         sizes[size],
@@ -323,7 +335,7 @@ function Pill({ active, count, children, onClick }) {
       type="button"
       onClick={onClick}
       className={cn(
-        "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold transition active:scale-[0.98]",
+        "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold ",
         active
           ? "border-emerald-700 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-sm"
           : "border-stone-200 bg-white text-stone-600 hover:border-stone-300 hover:bg-stone-50",
@@ -391,6 +403,8 @@ function Modal({
     lg: "sm:max-w-xl lg:max-w-2xl",
   };
 
+  const hasHeader = Boolean(title || subtitle);
+
   return (
     <div
       className="fixed inset-0 z-[950] flex items-center justify-center bg-stone-950/55 p-4 backdrop-blur-[8px] sm:p-6"
@@ -402,43 +416,38 @@ function Modal({
         className={cn(
           "relative w-full max-h-[90vh] overflow-hidden rounded-[32px] border border-white/60 bg-white shadow-[0_35px_120px_rgba(15,23,42,0.24)]",
           "animate-in fade-in-0 zoom-in-[0.98] slide-in-from-bottom-3 duration-200",
-          "sm:max-h-[92vh]",
           sizeClasses[size],
         )}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* background glow */}
+        {/* background */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(16,185,129,0.08),transparent_34%),radial-gradient(circle_at_bottom_left,rgba(245,158,11,0.10),transparent_28%)]" />
         <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-amber-50/70 via-orange-50/40 to-transparent" />
-        <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-amber-200/20 blur-3xl" />
-        <div className="absolute -bottom-10 -left-10 h-32 w-32 rounded-full bg-emerald-200/15 blur-3xl" />
 
-        {/* header */}
-        <div className="relative border-b border-stone-100/80 px-4 py-3 sm:px-5 sm:py-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
+        {/* header (тільки якщо є title) */}
+        {hasHeader && (
+          <div className="relative border-b border-stone-100/80 px-4 py-3 sm:px-5 sm:py-4">
+            {title && (
               <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-amber-600">
                 {title}
               </p>
+            )}
 
-              {subtitle && (
-                <p className="mt-1 text-sm text-stone-500">{subtitle}</p>
-              )}
-            </div>
-
-            <button
-              type="button"
-              onClick={onClose}
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-stone-200/80 bg-white/80 text-stone-400 backdrop-blur transition-all duration-200 hover:bg-stone-100 hover:text-stone-700 active:scale-95"
-              aria-label="Закрити"
-            >
-              <X className="h-4 w-4" />
-            </button>
+            {subtitle && (
+              <p className="mt-1 text-sm text-stone-500">{subtitle}</p>
+            )}
           </div>
-        </div>
+        )}
 
         {/* content */}
-        <div className="relative max-h-[calc(90vh-76px)] overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
+        <div
+          className={cn(
+            "relative overflow-y-auto px-4 sm:px-5",
+            hasHeader
+              ? "max-h-[calc(90vh-76px)] py-4 sm:py-5"
+              : "max-h-[calc(90vh-52px)] py-5 sm:py-6",
+          )}
+        >
           {children}
         </div>
 
@@ -452,6 +461,7 @@ function Modal({
     </div>
   );
 }
+
 function SkeletonBlock({ className = "" }) {
   return (
     <div
@@ -930,7 +940,7 @@ useEffect(() => {
                 type="button"
                 onClick={() => setTab("list")}
                 className={cn(
-                  "inline-flex items-center gap-2 rounded-xl px-3 py-2 text-[13px] font-semibold transition sm:px-4 sm:py-2.5 sm:text-sm",
+                  "inline-flex items-center gap-2 rounded-xl px-3 py-2 text-[13px] font-semibold  sm:px-4 sm:py-2.5 sm:text-sm",
                   tab === "list"
                     ? "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-[0_10px_24px_rgba(74,93,78,0.18)]"
                     : "text-stone-600 hover:bg-stone-50",
@@ -944,7 +954,7 @@ useEffect(() => {
                 type="button"
                 onClick={() => setTab("calendar")}
                 className={cn(
-                  "inline-flex items-center gap-2 rounded-xl px-3 py-2 text-[13px] font-semibold transition sm:px-4 sm:py-2.5 sm:text-sm",
+                  "inline-flex items-center gap-2 rounded-xl px-3 py-2 text-[13px] font-semibold  sm:px-4 sm:py-2.5 sm:text-sm",
                   tab === "calendar"
                     ? "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white "
                     : "text-stone-600 hover:bg-stone-50",
@@ -1268,252 +1278,246 @@ useEffect(() => {
     </div>
   </SectionCard>
 ) : (
-  <SectionCard
-    title="Календар записів"
-    subtitle="Натисни на день, щоб переглянути записи."
-    actions={
-      <div className="flex w-full items-center justify-center gap-2 sm:w-auto sm:justify-end">
-        <IconButton
-          onClick={() =>
-            setActiveMonth(
-              new Date(
-                activeMonth.getFullYear(),
-                activeMonth.getMonth() - 1,
-                1,
-              ),
-            )
-          }
-          title="Попередній місяць"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </IconButton>
-
-        <Button
-          variant="primary"
-          onClick={() => setActiveMonth(startOfMonth(new Date()))}
-        >
-          Сьогодні
-        </Button>
-
-        <IconButton
-          onClick={() =>
-            setActiveMonth(
-              new Date(
-                activeMonth.getFullYear(),
-                activeMonth.getMonth() + 1,
-                1,
-              ),
-            )
-          }
-          title="Наступний місяць"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </IconButton>
-      </div>
+<SectionCard>
+<div className="mb-5 flex items-center justify-between">
+  {/* Ліва стрілка */}
+  <IconButton
+    onClick={() =>
+      setActiveMonth(
+        new Date(
+          activeMonth.getFullYear(),
+          activeMonth.getMonth() - 1,
+          1,
+        ),
+      )
     }
-    badge={monthLabelUA(activeMonth)}
+    title="Попередній місяць"
+    className="h-10 w-10 shrink-0"
   >
-            <div className="grid grid-cols-7 gap-1.5 text-[11px] font-semibold text-stone-500 sm:gap-2 sm:text-xs">
-              {["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"].map((x) => (
-                <div key={x} className="px-1 text-center">
-                  {x}
-                </div>
-              ))}
+    <ChevronLeft className="h-5 w-5" />
+  </IconButton>
+
+  {/* Місяць */}
+  <h3 className="text-[22px] sm:text-[24px] font-extrabold tracking-tight text-stone-900 capitalize text-center">
+    {monthLabelUA(activeMonth)}
+  </h3>
+
+  {/* Права стрілка */}
+  <IconButton
+    onClick={() =>
+      setActiveMonth(
+        new Date(
+          activeMonth.getFullYear(),
+          activeMonth.getMonth() + 1,
+          1,
+        ),
+      )
+    }
+    title="Наступний місяць"
+    className="h-10 w-10 shrink-0"
+  >
+    <ChevronRight className="h-5 w-5" />
+  </IconButton>
+</div>
+
+  <div className="grid grid-cols-7 gap-1.5 text-[11px] font-semibold text-stone-500 sm:gap-2 sm:text-xs">
+    {["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"].map((x) => (
+      <div key={x} className="px-1 text-center">
+        {x}
+      </div>
+    ))}
+  </div>
+
+  <div className="mt-2 grid grid-cols-7 gap-1.5 sm:gap-2">
+    {(() => {
+      const start = startOfCalendarGrid(activeMonth);
+      const totalDays = 42;
+      const todayKey = toISODateKey(new Date());
+
+      return Array.from({ length: totalDays }).map((_, i) => {
+        const day = addDays(start, i);
+        const key = toISODateKey(day);
+
+        const isInMonth = day.getMonth() === activeMonth.getMonth();
+        const isToday = key === todayKey;
+        const isPastDay = key < todayKey;
+
+        const bucket = bookingsByDateKey.get(key);
+        const count = bucket?.count ?? 0;
+        const newCount = bucket?.newCount ?? 0;
+
+        return (
+          <button
+            key={key}
+            type="button"
+            onClick={() => count > 0 && setCalendarDayKey(key)}
+            disabled={count === 0}
+            title={count > 0 ? `Записів: ${count}` : "Немає записів"}
+className={cn(
+  "relative aspect-square rounded-[12px] border p-2 transition-all duration-200 active:scale-[0.98] sm:aspect-auto sm:p-3",
+              isInMonth ? "bg-white" : "bg-stone-50/60",
+              count > 0
+                ? "cursor-pointer"
+                : "cursor-default opacity-70",
+              isToday && "ring-2 ring-emerald-500/20",
+              isPastDay
+                ? "border-stone-200 bg-stone-100 text-stone-400 opacity-80 hover:opacity-90"
+                : newCount > 0
+                  ? "border-amber-200 bg-amber-50 shadow-sm hover:border-amber-300 hover:shadow-md"
+                  : count > 0
+                    ? "border-stone-200 hover:border-stone-300 hover:shadow-sm"
+                    : "border-stone-100",
+            )}
+          >
+            <div className="flex h-full flex-col items-center justify-center sm:hidden">
+              <span
+                className={cn(
+                  "text-sm font-semibold",
+                  isInMonth ? "text-stone-800" : "text-stone-400",
+                  isPastDay && "text-stone-400",
+                )}
+              >
+                {day.getDate()}
+              </span>
+
+              {count > 0 && (
+                <span
+                  className={cn(
+                    "mt-1 inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-semibold",
+                    isPastDay
+                      ? "bg-stone-300 text-stone-500"
+                      : newCount > 0
+                        ? "bg-amber-500 text-white"
+                        : "bg-emerald-700 text-white",
+                  )}
+                >
+                  {count}
+                </span>
+              )}
             </div>
 
-            <div className="mt-2 grid grid-cols-7 gap-1.5 sm:gap-2">
-              {(() => {
-                const start = startOfCalendarGrid(activeMonth);
-                const totalDays = 42;
-                const todayKey = toISODateKey(new Date());
+            <div className="hidden sm:flex items-start justify-between gap-2">
+              <span
+                className={cn(
+                  "text-sm font-semibold",
+                  isInMonth ? "text-stone-800" : "text-stone-400",
+                  isPastDay && "text-stone-400",
+                )}
+              >
+                {day.getDate()}
+              </span>
 
-                return Array.from({ length: totalDays }).map((_, i) => {
-                  const day = addDays(start, i);
-                  const key = toISODateKey(day);
-
-                  const isInMonth = day.getMonth() === activeMonth.getMonth();
-                  const isToday = key === todayKey;
-                  const isPastDay = key < todayKey;
-
-                  const bucket = bookingsByDateKey.get(key);
-                  const count = bucket?.count ?? 0;
-                  const newCount = bucket?.newCount ?? 0;
-
-                  return (
-                    <button
-                      key={key}
-                      type="button"
-                      onClick={() => count > 0 && setCalendarDayKey(key)}
-                      disabled={count === 0}
-                      title={count > 0 ? `Записів: ${count}` : "Немає записів"}
-                      className={cn(
-                        "relative aspect-square rounded-[20px] border p-2 transition-all duration-200 active:scale-[0.98] sm:aspect-auto sm:p-3",
-                        isInMonth ? "bg-white" : "bg-stone-50/60",
-                        count > 0
-                          ? "cursor-pointer"
-                          : "cursor-default opacity-70",
-                        isToday && "ring-2 ring-emerald-500/20",
-                        isPastDay
-                          ? "border-stone-200 bg-stone-100 text-stone-400 opacity-80 hover:opacity-90"
-                          : newCount > 0
-                            ? "border-amber-200 bg-amber-50 shadow-sm hover:border-amber-300 hover:shadow-md"
-                            : count > 0
-                              ? "border-stone-200 hover:border-stone-300 hover:shadow-sm"
-                              : "border-stone-100",
-                      )}
-                    >
-                      <div className="flex h-full flex-col items-center justify-center sm:hidden">
-                        <span
-                          className={cn(
-                            "text-sm font-semibold",
-                            isInMonth ? "text-stone-800" : "text-stone-400",
-                            isPastDay && "text-stone-400",
-                          )}
-                        >
-                          {day.getDate()}
-                        </span>
-
-                        {count > 0 && (
-                          <span
-                            className={cn(
-                              "mt-1 inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-semibold",
-                              isPastDay
-                                ? "bg-stone-300 text-stone-500"
-                                : newCount > 0
-                                  ? "bg-amber-500 text-white"
-                                  : "bg-emerald-700 text-white",
-                            )}
-                          >
-                            {count}
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="hidden sm:flex items-start justify-between gap-2">
-                        <span
-                          className={cn(
-                            "text-sm font-semibold",
-                            isInMonth ? "text-stone-800" : "text-stone-400",
-                            isPastDay && "text-stone-400",
-                          )}
-                        >
-                          {day.getDate()}
-                        </span>
-
-                        {count > 0 && (
-                          <span
-                            className={cn(
-                              "inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-semibold",
-                              isPastDay
-                                ? "bg-stone-300 text-stone-500"
-                                : newCount > 0
-                                  ? "bg-amber-500 text-white"
-                                  : "bg-emerald-700 text-white",
-                            )}
-                          >
-                            {count}
-                          </span>
-                        )}
-                      </div>
-                    </button>
-                  );
-                });
-              })()}
+              {count > 0 && (
+                <span
+                  className={cn(
+                    "inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-semibold",
+                    isPastDay
+                      ? "bg-stone-300 text-stone-500"
+                      : newCount > 0
+                        ? "bg-amber-500 text-white"
+                        : "bg-emerald-700 text-white",
+                  )}
+                >
+                  {count}
+                </span>
+              )}
             </div>
+          </button>
+        );
+      });
+    })()}
+  </div>
 
-            <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-stone-500">
-              <span className="inline-flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-emerald-700" />Є записи
-              </span>
-              <span className="inline-flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-amber-500" />Є нові
-                записи
-              </span>
-              <span className="inline-flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-stone-400" />
-                Минулі дні
-              </span>
-            </div>
-          </SectionCard>
+  <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-stone-500">
+    <span className="inline-flex items-center gap-2">
+      <span className="h-2 w-2 rounded-full bg-emerald-700" />
+      Є записи
+    </span>
+    <span className="inline-flex items-center gap-2">
+      <span className="h-2 w-2 rounded-full bg-amber-500" />
+      Є нові записи
+    </span>
+    <span className="inline-flex items-center gap-2">
+      <span className="h-2 w-2 rounded-full bg-stone-400" />
+      Минулі дні
+    </span>
+  </div>
+</SectionCard>
         )}
 
         {/* Delete confirm */}
-        <Modal
-          open={confirmId != null}
-          onClose={() => setConfirmId(null)}
-          title="Підтвердження видалення"
-          subtitle="Цю дію не можна скасувати"
-          size="sm"
-          footer={
-            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <Button
-                variant="secondary"
-                onClick={() => setConfirmId(null)}
-                className="w-full sm:w-auto"
-              >
-                Назад
-              </Button>
+<Modal
+  open={confirmId != null}
+  onClose={() => setConfirmId(null)}
+  size="sm"
+  footer={
+    <div className="flex gap-2 justify-end">
+      <Button
+        variant="secondary"
+        onClick={() => setConfirmId(null)}
+        className="w-full sm:w-auto"
+      >
+        Назад
+      </Button>
 
-              <button
-                type="button"
-                onClick={async () => {
-                  try {
-                    await handleDelete(confirmId);
-                    setConfirmId(null);
-                  } catch (e) {
-                    alert(e.message || "Не вдалося видалити запис");
-                  }
-                }}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-red-600 to-rose-700 px-4 py-2.5 text-sm font-bold text-white shadow-[0_14px_34px_rgba(220,38,38,0.24)] transition-all duration-200 hover:from-red-700 hover:to-rose-800 active:scale-[0.98] sm:w-auto"
-              >
-                <Trash2 className="h-4 w-4" />
-                Так, видалити
-              </button>
-            </div>
+      <button
+        type="button"
+        onClick={async () => {
+          try {
+            await handleDelete(confirmId);
+            setConfirmId(null);
+          } catch (e) {
+            alert(e.message || "Не вдалося видалити запис");
           }
-        >
-          <div className="space-y-4">
-            <div className="flex justify-center">
-              <div className="relative">
-                <div className="absolute inset-0 rounded-full bg-red-300/30 blur-2xl" />
-                <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-red-500 to-rose-700 text-white shadow-[0_16px_36px_rgba(220,38,38,0.22)]">
-                  <Trash2 className="h-7 w-7" />
-                </div>
-              </div>
-            </div>
+        }}
+        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-red-600 to-rose-700 px-4 py-2.5 text-sm font-bold text-white shadow-[0_14px_34px_rgba(220,38,38,0.24)] transition-all duration-200 hover:from-red-700 hover:to-rose-800 active:scale-[0.98] sm:w-auto"
+      >
+        <Trash2 className="h-4 w-4" />
+        Так, видалити
+      </button>
+    </div>
+  }
+>
+  <div className="space-y-4">
+    <div className="flex justify-center">
+      <div className="relative">
+        <div className="absolute inset-0 rounded-full bg-red-300/30 blur-2xl" />
+        <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-red-500 to-rose-700 text-white shadow-[0_16px_36px_rgba(220,38,38,0.22)]">
+          <Trash2 className="h-7 w-7" />
+        </div>
+      </div>
+    </div>
 
-            <div className="text-center">
-              <h3 className="text-xl font-black tracking-tight text-stone-900">
-                Видалити запис?
-              </h3>
-            </div>
+    <div className="text-center">
+      <h3 className="text-xl font-black tracking-tight text-stone-900">
+        Видалити запис?
+      </h3>
+    </div>
 
-            <div className="rounded-2xl border border-red-200 bg-gradient-to-r from-red-50 to-rose-50 p-3.5">
-              <div className="flex items-start gap-3">
-                <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-red-600 shadow-sm">
-                  <AlertTriangle className="h-4.5 w-4.5" />
-                </div>
+    <div className="rounded-2xl border border-red-200 bg-gradient-to-r from-red-50 to-rose-50 p-3.5">
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-red-600 shadow-sm">
+          <AlertTriangle className="h-4.5 w-4.5" />
+        </div>
 
-                <div className="min-w-0">
-                  <p className="text-sm font-bold text-red-700">Увага</p>
-                  <p className="mt-1 text-xs leading-5 text-red-600/90">
-                    Видалений запис не можна буде повернути назад.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </Modal>
+        <div className="min-w-0">
+          <p className="text-sm font-bold text-red-700">Увага</p>
+          <p className="mt-1 text-xs leading-5 text-red-600/90">
+            Видалений запис не можна буде повернути назад.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</Modal>
 
         {/* Cancel confirm */}
         <Modal
           open={cancelConfirmId != null}
           onClose={() => setCancelConfirmId(null)}
-          title="Підтвердження скасування"
-          subtitle="Запис отримає статус скасованого"
           size="sm"
           footer={
-            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+           <div className="flex gap-2 justify-end">
               <Button
                 variant="secondary"
                 onClick={() => setCancelConfirmId(null)}
@@ -1581,689 +1585,572 @@ useEffect(() => {
 
         {/* Details */}
         {/* Details */}
-        {selectedBooking && detailsId != null && (
-          <div
-            className="fixed inset-0 z-[220] flex items-center justify-center bg-stone-950/55 p-4 backdrop-blur-[8px]"
-            onClick={() => {
-              setDetailsId(null);
-              setCopiedPhone(false);
-            }}
-          >
-            <div
-              className="relative w-full max-w-md overflow-hidden rounded-[32px] border border-white/60 bg-white shadow-[0_35px_120px_rgba(15,23,42,0.24)]"
-              onClick={(e) => e.stopPropagation()}
+{selectedBooking && detailsId != null && (() => {
+  const isCanceled = selectedBooking.status === "canceled";
+  const isConfirmed = selectedBooking.status === "confirmed";
+  const isDeleted = selectedBooking.status === "deleted";
+  const dt = getBookingDateTime(selectedBooking);
+  const isArchived = dt ? dt.getTime() < nowTs : false;
+
+  const statusMeta = isDeleted
+    ? {
+        label: "Видалено",
+        dot: "bg-stone-300",
+        top: "from-stone-500 to-stone-700",
+      }
+    : isArchived
+      ? {
+          label: "Завершено",
+          dot: "bg-sky-300",
+          top: "from-sky-500 to-blue-600",
+        }
+      : isConfirmed
+        ? {
+            label: "Підтверджено",
+            dot: "bg-emerald-300",
+            top: "from-emerald-500 to-emerald-600",
+          }
+        : isCanceled
+          ? {
+              label:
+                selectedBooking.canceledBy === "client"
+                  ? "Скасовано клієнтом"
+                  : "Скасовано вами",
+              dot: "bg-red-300",
+              top: "from-rose-500 to-red-600",
+            }
+          : {
+              label: "Очікує підтвердження",
+              dot: "bg-amber-300",
+              top: "from-amber-500 to-orange-500",
+            };
+
+  const clientName = selectedBooking.clientName || "—";
+  const phone = selectedBooking.clientPhone || "";
+  const service = selectedBooking.serviceName || "Послуга";
+  const time = selectedBooking.time || "—";
+  const price =
+    selectedBooking.price ??
+    selectedBooking.servicePrice ??
+    selectedBooking.totalPrice ??
+    null;
+
+  const duration =
+    selectedBooking.duration ??
+    selectedBooking.serviceDuration ??
+    selectedBooking.durationMinutes ??
+    null;
+
+  const masterName =
+    selectedBooking.masterName ||
+    selectedBooking.staffName ||
+    selectedBooking.employeeName ||
+    "Довільний майстер";
+
+  return (
+    <div
+      className="fixed inset-0 z-[220] flex items-center justify-center bg-black/55 p-3 backdrop-blur-[7px] sm:p-4"
+      onClick={() => {
+        setDetailsId(null);
+        setCopiedPhone(false);
+      }}
+    >
+      <div
+        className="relative w-full max-w-[420px] overflow-hidden rounded-[30px] bg-[#f3f3f3] shadow-[0_35px_100px_rgba(0,0,0,0.28)]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div
+          className={cn(
+            "relative overflow-hidden px-5 pb-5 pt-4 text-white",
+            "bg-gradient-to-b",
+            statusMeta.top,
+          )}
+        >
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_28%)]" />
+
+          <div className="relative flex items-start justify-between gap-3">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/18 px-3 py-1 text-[13px] font-semibold backdrop-blur-sm">
+              <span className={cn("h-2 w-2 rounded-full", statusMeta.dot)} />
+              {statusMeta.label}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setDetailsId(null);
+                setCopiedPhone(false);
+              }}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/20 bg-white/8 text-white/90 transition hover:bg-white/16"
+              aria-label="Закрити"
             >
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(16,185,129,0.10),transparent_34%),radial-gradient(circle_at_bottom_left,rgba(245,158,11,0.10),transparent_28%)]" />
-              <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-amber-50/80 via-stone-50/50 to-transparent" />
-              <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-amber-200/20 blur-3xl" />
-              <div className="absolute -bottom-10 -left-10 h-32 w-32 rounded-full bg-emerald-200/15 blur-3xl" />
+              <X className="h-4 w-4" />
+            </button>
+          </div>
 
-              {(() => {
-                const isCanceled = selectedBooking.status === "canceled";
-                const isConfirmed = selectedBooking.status === "confirmed";
-                const isDeleted = selectedBooking.status === "deleted";
-                console.log("selectedBooking modal:", selectedBooking);
-                const dt = getBookingDateTime(selectedBooking);
-                const isArchived = dt ? dt.getTime() < nowTs : false;
+          <div className="relative mt-4">
+            <h2 className="text-[20px] font-extrabold leading-tight tracking-[-0.03em]">
+              {service}
+            </h2>
 
-                const statusMeta = isDeleted
-                  ? {
-                      label: "Видалено",
-                      badge: "neutral",
-                      dot: "bg-stone-500",
-                      ring: "from-stone-500 to-stone-700",
-                    }
-                  : isArchived
-                    ? {
-                        label: "Завершено",
-                        badge: "info",
-                        dot: "bg-blue-600",
-                        ring: "from-blue-500 to-sky-600",
-                      }
-                    : isConfirmed
-                      ? {
-                          label: "Підтверджено",
-                          badge: "success",
-                          dot: "bg-emerald-600",
-                          ring: "from-emerald-500 to-emerald-700",
-                        }
-                      : isCanceled
-                        ? {
-                            label:
-                              selectedBooking.canceledBy === "client"
-                                ? "Скасовано клієнтом"
-                                : "Скасовано вами",
-                            badge: "danger",
-                            dot: "bg-red-600",
-                            ring: "from-red-500 to-rose-700",
-                          }
-                        : {
-                            label: "Очікує підтвердження",
-                            badge: "warning",
-                            dot: "bg-amber-600",
-                            ring: "from-amber-500 to-orange-600",
-                          };
+            <p className="mt-1 text-sm font-medium text-white/85">
+              {renderBookingDate(selectedBooking) || "—"}
+            </p>
+          </div>
 
-                const clientName = selectedBooking.clientName || "—";
-                const phone = selectedBooking.clientPhone || "";
-                const service = selectedBooking.serviceName || "—";
-                const time = selectedBooking.time || "—";
-                const price =
-                  selectedBooking.price ??
-                  selectedBooking.servicePrice ??
-                  selectedBooking.totalPrice ??
-                  null;
+          <div className="relative mt-4 flex flex-wrap gap-2">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/14 px-3 py-2 text-sm font-bold">
+              <Clock3 className="h-4 w-4" />
+              {time}
+            </div>
 
-                const duration =
-                  selectedBooking.duration ??
-                  selectedBooking.serviceDuration ??
-                  selectedBooking.durationMinutes ??
-                  null;
-                const masterName =
-                  selectedBooking.masterName ||
-                  selectedBooking.staffName ||
-                  selectedBooking.employeeName ||
-                  "—";
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/14 px-3 py-2 text-sm font-bold">
+              <BadgeCheck className="h-4 w-4" />
+              {price != null ? `${price} грн` : "—"}
+            </div>
 
-                return (
-                  <div className="relative px-5 pb-4 pt-2 sm:px-6 sm:pb-5 sm:pt-4">
-                    <div className="flex justify-end">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setDetailsId(null);
-                          setCopiedPhone(false);
-                        }}
-                        className="flex h-9 w-9 items-center justify-center rounded-full border border-stone-200/80 bg-white/80 text-stone-400 backdrop-blur transition-all duration-200 hover:bg-stone-100 hover:text-stone-700 active:scale-95"
-                        aria-label="Закрити"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </div>
-
-                    <div className="mt-2 sm:mt-4 flex justify-center">
-                      <div className="relative">
-                        <div className="absolute inset-0 rounded-full bg-amber-300/20 blur-2xl" />
-                        <div
-                          className={cn(
-                            "relative flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br text-white shadow-[0_12px_30px_rgba(15,23,42,0.16)]",
-                            statusMeta.ring,
-                          )}
-                        >
-                          {isDeleted ? (
-                            <Trash2 className="h-8 w-8" />
-                          ) : isArchived ? (
-                            <CheckCheck className="h-8 w-8" />
-                          ) : isCanceled ? (
-                            <X className="h-8 w-8" />
-                          ) : isConfirmed ? (
-                            <Check className="h-8 w-8" />
-                          ) : (
-                            <Clock className="h-8 w-8" />
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 sm:mt-5 text-center">
-                      <h2 className="text-[28px] font-black leading-[1.05] tracking-[-0.04em] text-stone-900">
-                        {service}
-                      </h2>
-
-                      <div className="mt-3 flex justify-center">
-                        <Badge variant={statusMeta.badge}>
-                          <IconDot className={statusMeta.dot} />
-                          {statusMeta.label}
-                        </Badge>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 sm:mt-4 overflow-hidden rounded-[28px] border border-stone-200/80 bg-white/95 shadow-[0_14px_40px_rgba(15,23,42,0.06)] backdrop-blur">
-                      <div className="h-[3px] bg-gradient-to-r from-emerald-500 via-amber-400 to-emerald-500" />
-
-                      <div className="p-3 sm:p-4">
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                          <div className="rounded-2xl border border-stone-200 bg-stone-50/80 p-3">
-                            <div className="flex items-start gap-3">
-                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-emerald-600 shadow-sm">
-                                <CalendarDays className="h-4.5 w-4.5" />
-                              </div>
-
-                              <div className="min-w-0">
-                                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-stone-500">
-                                  Дата
-                                </p>
-                                <p className="mt-1 text-sm font-black text-stone-900">
-                                  {renderBookingDate(selectedBooking) || "—"}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="rounded-2xl border border-stone-200 bg-stone-50/80 p-3">
-                            <div className="flex items-start gap-3">
-                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-amber-600 shadow-sm">
-                                <Clock3 className="h-4.5 w-4.5" />
-                              </div>
-
-                              <div className="min-w-0">
-                                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-stone-500">
-                                  Час
-                                </p>
-                                <p className="mt-1 text-sm font-black text-stone-900">
-                                  {time || "—"}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="rounded-2xl border border-stone-200 bg-stone-50/80 p-3">
-                            <div className="flex items-start gap-3">
-                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-violet-600 shadow-sm">
-                                <BadgeCheck className="h-4.5 w-4.5" />
-                              </div>
-
-                              <div className="min-w-0">
-                                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-stone-500">
-                                  Ціна
-                                </p>
-                                <p className="mt-1 text-sm font-black text-stone-900">
-                                  {price != null ? `${price} грн` : "—"}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="rounded-2xl border border-stone-200 bg-stone-50/80 p-3">
-                            <div className="flex items-start gap-3">
-                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-sky-600 shadow-sm">
-                                <Clock className="h-4.5 w-4.5" />
-                              </div>
-
-                              <div className="min-w-0">
-                                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-stone-500">
-                                  Тривалість
-                                </p>
-                                <p className="mt-1 text-sm font-black text-stone-900">
-                                  {duration != null ? `${duration} хв` : "—"}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="mt-3 space-y-3">
-                          <div className="rounded-2xl border border-stone-200 bg-stone-50/70 p-3">
-                            <div className="flex items-start gap-3">
-                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-stone-700 shadow-sm">
-                                <UserRound className="h-4.5 w-4.5" />
-                              </div>
-
-                              <div className="min-w-0 flex-1">
-                                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-stone-500">
-                                  Клієнт
-                                </p>
-                                <p className="mt-1 text-sm font-black text-stone-900 break-words">
-                                  {clientName}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="rounded-2xl border border-stone-200 bg-stone-50/70 p-3">
-                            <div className="flex items-start gap-3">
-                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-stone-700 shadow-sm">
-                                <Phone className="h-4.5 w-4.5" />
-                              </div>
-
-                              <div className="min-w-0 flex-1">
-                                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-stone-500">
-                                  Телефон клієнта
-                                </p>
-                                <p className="mt-1 text-sm font-black text-stone-900 break-all">
-                                  {phone || "—"}
-                                </p>
-                              </div>
-
-                              {phone ? (
-                                <button
-                                  type="button"
-                                  onClick={() => handleCopyPhone(phone)}
-                                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-stone-200 bg-white text-stone-700 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700 active:scale-[0.98]"
-                                  aria-label="Скопіювати телефон"
-                                  title="Скопіювати телефон"
-                                >
-                                  {copiedPhone ? (
-                                    <CheckCheck className="h-4 w-4" />
-                                  ) : (
-                                    <Copy className="h-4 w-4" />
-                                  )}
-                                </button>
-                              ) : null}
-                            </div>
-                          </div>
-
-                          <div className="rounded-2xl border border-stone-200 bg-stone-50/70 p-3">
-                            <div className="flex items-start gap-3">
-                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-stone-700 shadow-sm">
-                                <Scissors className="h-4.5 w-4.5" />
-                              </div>
-
-                              <div className="min-w-0 flex-1">
-                                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-stone-500">
-                                  Майстер
-                                </p>
-                                <p className="mt-1 text-sm font-black text-stone-900 break-words">
-                                  {masterName}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 grid grid-cols-2 gap-2">
-                      {phone ? (
-                        <a
-                          href={`tel:${phone}`}
-                          className="group inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-white px-4 text-sm font-bold text-emerald-700 transition-all duration-200 hover:-translate-y-0.5 hover:bg-emerald-50 hover:shadow-[0_12px_28px_rgba(16,185,129,0.10)] active:scale-[0.98]"
-                        >
-                          <Phone className="h-4 w-4" />
-                          Дзвінок
-                        </a>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setDetailsId(null);
-                            setCopiedPhone(false);
-                          }}
-                          className="inline-flex h-11 items-center justify-center rounded-2xl border border-stone-200 bg-white px-4 text-sm font-bold text-stone-700 transition-all duration-200 hover:bg-stone-50 active:scale-[0.98]"
-                        >
-                          Закрити
-                        </button>
-                      )}
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setDetailsId(null);
-                          setCopiedPhone(false);
-                        }}
-                        className="inline-flex h-11 items-center justify-center rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-700 px-4 text-sm font-bold text-white shadow-[0_14px_34px_rgba(16,185,129,0.24)] transition-all duration-200 hover:-translate-y-0.5 hover:from-emerald-700 hover:to-emerald-800 hover:shadow-[0_18px_40px_rgba(16,185,129,0.30)] active:scale-[0.98]"
-                      >
-                        Готово
-                      </button>
-                    </div>
-                  </div>
-                );
-              })()}
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/14 px-3 py-2 text-sm font-bold">
+              <Clock className="h-4 w-4" />
+              {duration != null ? `${duration} хв` : "—"}
             </div>
           </div>
-        )}
-
-        {/* Calendar day bookings */}
-        {calendarDayKey && (
-          <div
-            className="fixed inset-0 z-[220] flex items-center justify-center bg-stone-950/55 p-4 backdrop-blur-[8px]"
-            onClick={() => {
-              setCalendarDayKey(null);
-              setExpandedCalendarCards({});
-            }}
-          >
-            <div
-              className="relative w-full max-w-xl overflow-hidden rounded-[32px] border border-white/60 bg-white shadow-[0_35px_120px_rgba(15,23,42,0.24)]"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(16,185,129,0.10),transparent_34%),radial-gradient(circle_at_bottom_left,rgba(245,158,11,0.10),transparent_28%)]" />
-              <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-amber-50/80 via-stone-50/50 to-transparent" />
-              <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-amber-200/20 blur-3xl" />
-              <div className="absolute -bottom-10 -left-10 h-32 w-32 rounded-full bg-emerald-200/15 blur-3xl" />
-
-              <div className="relative px-5 pb-4 pt-2 sm:px-6 sm:pb-5 sm:pt-4">
-                <div className="flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCalendarDayKey(null);
-                      setExpandedCalendarCards({});
-                    }}
-                    className="flex h-9 w-9 items-center justify-center rounded-full border border-stone-200/80 bg-white/80 text-stone-400 backdrop-blur transition-all duration-200 hover:bg-stone-100 hover:text-stone-700 active:scale-95"
-                    aria-label="Закрити"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-
-                <div className="mt-2 sm:mt-4 flex justify-center">
-                  <div className="relative">
-                    <div className="absolute inset-0 rounded-full bg-amber-300/20 blur-2xl" />
-                    <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-700 text-white shadow-[0_12px_30px_rgba(15,23,42,0.16)]">
-                      <CalendarDays className="h-8 w-8" />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-3 sm:mt-5 text-center">
-                  <h2 className="text-[28px] font-black leading-[1.05] tracking-[-0.04em] text-stone-900">
-                    Записи на {formatDateUA(calendarDayKey)}
-                  </h2>
-
-                  <div className="mt-3 flex justify-center">
-                    <Badge variant="success">
-                      <IconDot className="bg-emerald-600" />
-                      Всього:{" "}
-                      {bookingsByDateKey.get(calendarDayKey)?.count ?? 0}
-                    </Badge>
-                  </div>
-                </div>
-
-                <div className="mt-3 sm:mt-4 max-h-[68vh] overflow-y-auto rounded-[26px] border border-stone-200/80 bg-white/90 shadow-[0_10px_30px_rgba(15,23,42,0.05)] backdrop-blur">
-                  <div className="h-[3px] bg-gradient-to-r from-emerald-500 via-amber-400 to-emerald-500" />
-
-                  <div className="space-y-3 p-3.5">
-                    {(bookingsByDateKey.get(calendarDayKey)?.items || []).map(
-                      (b) => {
-                        const isCanceled = b.status === "canceled";
-                        const isConfirmed = b.status === "confirmed";
-                        const isDeleted = b.status === "deleted";
-                        const dt = getBookingDateTime(b);
-                        const isArchived = dt ? dt.getTime() < nowTs : false;
-                        const isExpanded = !!expandedCalendarCards[b.id];
-
-                        const statusMeta = isDeleted
-                          ? {
-                              label: "Видалено",
-                              badge: "neutral",
-                              dot: "bg-stone-500",
-                              ring: "from-stone-500 to-stone-700",
-                              card: "bg-stone-50",
-                            }
-                          : isArchived
-                            ? {
-                                label: "Завершено",
-                                badge: "info",
-                                dot: "bg-blue-600",
-                                ring: "from-blue-500 to-sky-600",
-                                card: "bg-blue-50/60",
-                              }
-                            : isConfirmed
-                              ? {
-                                  label: "Підтверджено",
-                                  badge: "success",
-                                  dot: "bg-emerald-600",
-                                  ring: "from-emerald-500 to-emerald-700",
-                                  card: "bg-emerald-50/60",
-                                }
-                              : isCanceled
-                                ? {
-                                    label:
-                                      b.canceledBy === "client"
-                                        ? "Скасовано клієнтом"
-                                        : "Скасовано вами",
-                                    badge: "danger",
-                                    dot: "bg-red-600",
-                                    ring: "from-red-500 to-rose-700",
-                                    card: "bg-red-50/60",
-                                  }
-                                : {
-                                    label: "Очікує підтвердження",
-                                    badge: "warning",
-                                    dot: "bg-amber-600",
-                                    ring: "from-amber-500 to-orange-600",
-                                    card: "bg-amber-50/70",
-                                  };
-
-                        const masterName =
-                          b.masterName ||
-                          b.staffName ||
-                          b.employeeName ||
-                          "Довільний майстер";
-
-                        return (
-                          <div
-                            key={b.id}
-                            className="overflow-hidden rounded-[24px] border border-stone-200 bg-white shadow-[0_8px_30px_-12px_rgba(15,23,42,0.08)]"
-                          >
-                            <div className={cn("p-4 sm:p-5", statusMeta.card)}>
-                              <div className="flex items-start justify-between gap-3">
-                                <div className="min-w-0">
-                                  <div className="flex flex-wrap items-center gap-2">
-                                    <h3 className="text-lg font-black tracking-tight text-stone-900">
-                                      {b.serviceName || "Послуга"}
-                                    </h3>
-
-                                    <Badge variant={statusMeta.badge}>
-                                      <IconDot className={statusMeta.dot} />
-                                      {statusMeta.label}
-                                    </Badge>
-                                  </div>
-
-                                  <div className="mt-2 flex flex-wrap items-center gap-2 text-sm font-bold text-stone-800">
-                                    <span>{formatDateUA(calendarDayKey)}</span>
-                                    <span className="text-stone-400">•</span>
-                                    <span className="inline-flex items-center gap-1.5">
-                                      <Clock3 className="h-4 w-4 text-stone-500" />
-                                      {b.time || "—"}
-                                    </span>
-                                  </div>
-
-                                  <p className="mt-2 text-sm text-stone-600">
-                                    Клієнт:{" "}
-                                    <span className="font-semibold text-stone-800">
-                                      {b.clientName || "—"}
-                                    </span>
-                                  </p>
-                                </div>
-
-                                <div
-                                  className={cn(
-                                    "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br text-white shadow-[0_10px_24px_rgba(15,23,42,0.14)]",
-                                    statusMeta.ring,
-                                  )}
-                                >
-                                  {isDeleted ? (
-                                    <Trash2 className="h-5 w-5" />
-                                  ) : isArchived ? (
-                                    <CheckCheck className="h-5 w-5" />
-                                  ) : isCanceled ? (
-                                    <X className="h-5 w-5" />
-                                  ) : isConfirmed ? (
-                                    <Check className="h-5 w-5" />
-                                  ) : (
-                                    <Clock className="h-5 w-5" />
-                                  )}
-                                </div>
-                              </div>
-
-                              <div className="mt-4">
-                                <button
-                                  type="button"
-                                  onClick={() => toggleCalendarCard(b.id)}
-                                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm font-bold text-stone-700 transition hover:bg-stone-50 active:scale-[0.98]"
-                                >
-                                  {isExpanded ? (
-                                    <>
-                                      <ChevronUp className="h-4 w-4" />
-                                      Сховати деталі
-                                    </>
-                                  ) : (
-                                    <>
-                                      <ChevronDown className="h-4 w-4" />
-                                      Розгорнути деталі
-                                    </>
-                                  )}
-                                </button>
-                              </div>
-                            </div>
-
-                            {isExpanded && (
-                              <div className="border-t border-stone-100 p-4 sm:p-5">
-                                <div className="space-y-3">
-                                  {(b.price != null || b.duration != null) && (
-  <div className="grid grid-cols-2 gap-2">
-    
-    {b.price != null && (
-      <div className="flex items-center gap-2 rounded-xl bg-stone-50 px-3 py-2">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white border border-stone-200 text-stone-500">
-          <BadgeCheck className="h-4 w-4" />
         </div>
 
-        <div className="leading-tight">
-          <p className="text-[10px] font-semibold uppercase text-stone-500">
-            Ціна
-          </p>
-          <p className="text-sm font-bold text-stone-900">
-            {b.price} грн
-          </p>
-        </div>
-      </div>
-    )}
+        <div className="px-4 pb-4 pt-4 sm:px-5">
+          <div className="rounded-[24px] bg-[#ececec] p-3">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-stone-700">
+                <UserRound className="h-5 w-5" />
+              </div>
 
-    {b.duration != null && (
-      <div className="flex items-center gap-2 rounded-xl bg-stone-50 px-3 py-2">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white border border-stone-200 text-stone-500">
-          <Clock3 className="h-4 w-4" />
-        </div>
+              <div className="min-w-0 flex-1">
+                <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-stone-500">
+                  Клієнт
+                </span>
 
-        <div className="leading-tight">
-          <p className="text-[10px] font-semibold uppercase text-stone-500">
-            Тривалість
-          </p>
-          <p className="text-sm font-bold text-stone-900">
-            {b.duration} хв
-          </p>
-        </div>
-      </div>
-    )}
-
-  </div>
-)}
-                                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                                    
-                                    <div className="flex items-start gap-3 rounded-2xl bg-stone-50 p-3.5">
-                                      
-                                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-stone-700 shadow-sm">
-                                        <UserRound className="h-5 w-5" />
-                                      </div>
-
-                                      <div className="min-w-0">
-                                        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-stone-500">
-                                          Клієнт
-                                        </p>
-                                        <p className="mt-1 text-sm font-black text-stone-900">
-                                          {b.clientName || "—"}
-                                        </p>
-                                      </div>
-                                    </div>
-
-                                    <div className="flex items-start gap-3 rounded-2xl bg-stone-50 p-3.5">
-                                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-stone-700 shadow-sm">
-                                        <Scissors className="h-5 w-5" />
-                                      </div>
-
-                                      <div className="min-w-0">
-                                        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-stone-500">
-                                          Майстер
-                                        </p>
-                                        <p className="mt-1 text-sm font-black text-stone-900">
-                                          {masterName}
-                                        </p>
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  {b.clientPhone && (
-                                    <div className="flex items-start gap-3 rounded-2xl bg-stone-50 p-3.5">
-                                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-stone-700 shadow-sm">
-                                        <Phone className="h-5 w-5" />
-                                      </div>
-
-                                      <div className="min-w-0 flex-1">
-                                        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-stone-500">
-                                          Телефон клієнта
-                                        </p>
-                                        <p className="mt-1 text-sm font-black text-stone-900">
-                                          {b.clientPhone}
-                                        </p>
-                                      </div>
-                                    </div>
-                                  )}
-
-                              <div className="mt-4 flex items-center justify-end gap-2 flex-wrap">
-                                    {!isConfirmed &&
-                                      !isCanceled &&
-                                      !isArchived &&
-                                      !isDeleted && (
-                                        <Button
-                                          variant="primary"
-                                          onClick={async () => {
-                                            try {
-                                              await confirmBooking(b.id);
-                                            } catch (e) {
-                                              alert(
-                                                e.message ||
-                                                  "Не вдалося підтвердити запис",
-                                              );
-                                            }
-                                          }}
-                                          className="w-full h-10 px-4 rounded-full flex items-center gap-2 text-sm font-semibold sm:w-auto"
-                                        >
-                                          <Check className="h-4 w-4" />
-                                          Підтвердити
-                                        </Button>
-                                      )}
-
-                                    {!isCanceled ? (
-                                      <button
-                                        type="button"
-                                        onClick={() => setCancelConfirmId(b.id)}
-                                        disabled={
-                                          isCanceled || isArchived || isDeleted
-                                        }
-                                        className="h-10 px-4 rounded-full flex items-center gap-2 text-sm font-semibold
-                                          border border-rose-200 bg-white text-rose-600
-                                          transition-all duration-200
-                                          hover:bg-rose-50 hover:border-rose-300
-                                          active:scale-[0.98]
-                                          disabled:opacity-50"
-                                      >
-                                        <XCircle className="h-4 w-4" />
-                                        Скасувати
-                                      </button>
-                                    ) : (
-                                      <Button
-                                        variant="danger"
-                                        onClick={() => setConfirmId(b.id)}
-                                        disabled={isArchived || isDeleted}
-                                        className="w-full sm:w-auto"
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                        Видалити запис
-                                      </Button>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      },
-                    )}
-
-                    {(bookingsByDateKey.get(calendarDayKey)?.count ?? 0) ===
-                      0 && (
-                      <div className="rounded-2xl border border-stone-200 bg-stone-50/50 p-6 text-center text-sm text-stone-500">
-                        На цей день записів немає.
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <p className="truncate text-[15px] font-extrabold text-stone-900">
+                  {clientName}
+                </p>
               </div>
             </div>
           </div>
+
+          <div className="mt-3 rounded-[22px] bg-[#ececec] px-4 py-3">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#dfdcdc] text-stone-700 font-bold">
+                {masterName?.[0] || "—"}
+              </div>
+
+              <div className="flex flex-col min-w-0">
+                <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-stone-500">
+                  Майстер
+                </span>
+
+                <span className="truncate text-[15px] font-extrabold text-stone-900">
+                  {masterName}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-3 rounded-[22px] bg-[#ececec] px-4 py-3">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-stone-700">
+                <Phone className="h-5 w-5" />
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-stone-500">
+                  Телефон клієнта
+                </span>
+
+                <p className="truncate text-[15px] font-extrabold text-stone-900">
+                  {phone || "—"}
+                </p>
+              </div>
+
+              {phone ? (
+                <button
+                  type="button"
+                  onClick={() => handleCopyPhone(phone)}
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-stone-200 bg-[#f4f4f4] text-stone-500 transition hover:border-emerald-200 hover:text-emerald-700"
+                  aria-label="Скопіювати телефон"
+                  title="Скопіювати телефон"
+                >
+                  {copiedPhone ? (
+                    <CheckCheck className="h-4 w-4" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                </button>
+              ) : (
+                <div className="h-10 w-10 shrink-0 rounded-2xl border border-stone-200 bg-[#f4f4f4]" />
+              )}
+            </div>
+          </div>
+
+<div className="mt-8 grid grid-cols-2 gap-3">
+  <button
+    type="button"
+    onClick={() => {
+      if (phone) window.location.href = `tel:${phone}`;
+    }}
+    disabled={!phone}
+className={cn(
+  "inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold transition-all duration-200 active:scale-[0.98]",
+  phone
+    ? "border border-emerald-200 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-[0_10px_24px_rgba(16,185,129,0.22)] hover:from-emerald-700 hover:to-emerald-800"
+    : "cursor-not-allowed border border-stone-200 bg-stone-100 text-stone-300 shadow-none",
+)}
+  >
+    <Phone className="h-4 w-4" />
+    Дзвінок
+  </button>
+
+  <button
+    type="button"
+    onClick={() => {
+      setDetailsId(null);
+      setCopiedPhone(false);
+    }}
+    className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-stone-200 bg-white px-4 text-sm font-bold text-stone-700 shadow-sm transition-all duration-200 hover:border-stone-300 hover:bg-stone-50 active:scale-[0.98]"
+  >
+    Закрити
+  </button>
+</div>
+        </div>
+      </div>
+    </div>
+  );
+})()}
+
+        {/* Calendar day bookings */}
+{calendarDayKey && (() => {
+  const dayItems = bookingsByDateKey.get(calendarDayKey)?.items || [];
+  const totalCount = bookingsByDateKey.get(calendarDayKey)?.count ?? 0;
+
+  return (
+    <div
+      className="fixed inset-0 z-[220] flex items-center justify-center bg-black/55 p-3 backdrop-blur-[7px] sm:p-4"
+onClick={() => {
+  setCalendarDayKey(null);
+  setExpandedCalendarCards({});
+}}
+    >
+      <div
+        className="relative w-full max-w-[460px] overflow-hidden rounded-[30px] bg-[#f3f3f3] shadow-[0_35px_100px_rgba(0,0,0,0.28)]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="relative overflow-hidden bg-gradient-to-b from-emerald-500 to-emerald-700 px-5 pb-5 pt-4 text-white">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_28%)]" />
+
+
+          <div className="relative mt-2 flex justify-center">
+            <div className="relative">
+              <div className="absolute inset-0 rounded-full bg-white/20 blur-2xl" />
+              <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-white/14 text-white shadow-[0_12px_30px_rgba(15,23,42,0.16)] backdrop-blur-sm">
+                <CalendarDays className="h-8 w-8" />
+              </div>
+            </div>
+          </div>
+
+          <div className="relative mt-4 text-center">
+            <h2 className="text-[24px] font-extrabold leading-tight tracking-[-0.03em]">
+              Записи на {formatDateUA(calendarDayKey)}
+            </h2>
+
+            <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-white/14 px-3 py-2 text-sm font-bold">
+              <BadgeCheck className="h-4 w-4" />
+              Всього записів: {totalCount}
+            </div>
+          </div>
+        </div>
+
+        <div className="px-4 pb-0 pt-4 sm:px-5">
+          <div className="max-h-[52vh] space-y-3 overflow-y-auto pr-1">
+            {dayItems.length > 0 ? (
+              dayItems.map((b) => {
+                
+                const isCanceled = b.status === "canceled";
+                const isConfirmed = b.status === "confirmed";
+                const isDeleted = b.status === "deleted";
+                const dt = getBookingDateTime(b);
+                
+                const isArchived = dt ? dt.getTime() < nowTs : false;
+                const actions = [];
+
+if (!isConfirmed && !isCanceled && !isArchived && !isDeleted) {
+  actions.push("confirm");
+}
+
+if (!isCanceled) {
+  actions.push("cancel");
+}
+
+if (isCanceled && !isArchived && !isDeleted) {
+  actions.push("delete");
+}
+
+const actionsCount = actions.length;
+const isExpanded = !!expandedCalendarCards[b.id];
+                const statusUi = getStatusUi(
+                  isDeleted
+                    ? "deleted"
+                    : isCanceled
+                      ? "canceled"
+                      : isConfirmed
+                        ? "confirmed"
+                        : "new",
+                  isArchived,
+                  b.canceledBy,
+                );
+
+                const masterName =
+                  b.masterName ||
+                  b.staffName ||
+                  b.employeeName ||
+                  "Довільний майстер";
+
+                const price =
+                  b.price ??
+                  b.servicePrice ??
+                  b.totalPrice ??
+                  null;
+
+                const duration =
+                  b.duration ??
+                  b.serviceDuration ??
+                  b.durationMinutes ??
+                  null;
+
+                return (
+<div
+  key={b.id}
+  className="overflow-hidden rounded-[24px] border border-stone-200 bg-white shadow-[0_8px_30px_-12px_rgba(15,23,42,0.08)]"
+>
+  <div className="p-4">
+    <div className="flex items-start justify-between gap-3">
+      <div
+        className={cn(
+          "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-bold",
+          statusUi.badge,
         )}
+      >
+        <statusUi.icon className="h-3.5 w-3.5" />
+        {statusUi.text}
+      </div>
+
+      <button
+        type="button"
+        onClick={() => toggleCalendarCard(b.id)}
+        className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-xl px-3 text-sm font-bold text-stone-700 transition hover:bg-stone-200 active:scale-[0.98]"
+      >
+        {isExpanded ? (
+          <>
+            <ChevronUp className="h-4 w-4" />
+            Сховати
+          </>
+        ) : (
+          <>
+            <ChevronDown className="h-4 w-4" />
+            Розгорнути
+          </>
+        )}
+      </button>
+    </div>
+
+    <h3 className="mt-3 text-[17px] font-black leading-[1.15] tracking-[-0.03em] text-stone-900">
+      {b.serviceName || "Послуга"}
+    </h3>
+
+    <div className="mt-2 flex flex-wrap items-center gap-2 text-sm font-semibold text-stone-700">
+      <span className="inline-flex items-center gap-1.5">
+        <Clock3 className="h-4 w-4 text-stone-500" />
+        {b.time || "—"}
+      </span>
+
+      {price != null && (
+        <>
+          <span className="text-stone-300">•</span>
+          <span>{price} грн</span>
+        </>
+      )}
+
+      {duration != null && (
+        <>
+          <span className="text-stone-300">•</span>
+          <span>{duration} хв</span>
+        </>
+      )}
+    </div>
+  </div>
+
+<div
+  className={cn(
+    "grid transition-all duration-300 ease-out",
+    isExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
+  )}
+>
+  <div className="overflow-hidden">
+    <div className="border-t border-stone-100 bg-stone-50/40 p-4">
+      <div className="grid grid-cols-2 gap-2">
+        <div className="flex items-center gap-3 rounded-2xl bg-white px-3 py-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-stone-50 text-stone-700 shadow-sm">
+            <UserRound className="h-4 w-4" />
+          </div>
+
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-stone-500">
+              Клієнт
+            </p>
+            <p className="truncate text-sm font-bold text-stone-900">
+              {b.clientName || "—"}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 rounded-2xl bg-white px-3 py-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-stone-50 text-stone-700 shadow-sm">
+            <Scissors className="h-4 w-4" />
+          </div>
+
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-stone-500">
+              Майстер
+            </p>
+            <p className="truncate text-sm font-bold text-stone-900">
+              {masterName}
+            </p>
+          </div>
+        </div>
+      </div>
+
+{b.clientPhone && (
+  <div className="mt-2 flex items-center gap-3 rounded-2xl bg-white px-3 py-3">
+    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-stone-50 text-stone-700 shadow-sm">
+      <Phone className="h-4 w-4" />
+    </div>
+
+    <div className="min-w-0 flex-1">
+      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-stone-500">
+        Телефон
+      </p>
+      <p className="truncate text-sm font-bold text-stone-900">
+        {b.clientPhone}
+      </p>
+    </div>
+
+    <button
+      type="button"
+      onClick={() => handleCopyPhone(b.clientPhone)}
+      className={cn(
+        "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border bg-white shadow-sm transition-all duration-200 active:scale-[0.95]",
+        copiedPhone
+          ? "border-emerald-200 bg-emerald-50 text-emerald-600"
+          : "border-stone-200 text-stone-500 hover:border-emerald-200 hover:text-emerald-700 hover:bg-emerald-50/60",
+      )}
+      aria-label="Скопіювати телефон"
+      title="Скопіювати телефон"
+    >
+      {copiedPhone ? (
+        <CheckCheck className="h-4 w-4" />
+      ) : (
+        <Copy className="h-4 w-4" />
+      )}
+    </button>
+  </div>
+)}
+
+<div
+  className={cn(
+    "mt-3 gap-2",
+    actionsCount === 1 ? "flex justify-end" : "grid grid-cols-2",
+  )}
+>
+  {!isConfirmed && !isCanceled && !isArchived && !isDeleted && (
+    <button
+      type="button"
+      onClick={async () => {
+        try {
+          await confirmBooking(b.id);
+        } catch (e) {
+          alert(e.message || "Не вдалося підтвердити запис");
+        }
+      }}
+      className={cn(
+        "inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-600 to-emerald-700 px-4 text-sm font-bold text-white shadow-[0_12px_28px_rgba(16,185,129,0.22)] transition-all duration-200 hover:from-emerald-700 hover:to-emerald-800 active:scale-[0.98]",
+        actionsCount > 1 ? "w-full" : "min-w-[160px]",
+      )}
+    >
+      <Check className="h-4 w-4" />
+      Підтвердити
+    </button>
+  )}
+
+  {!isCanceled && (
+    <button
+      type="button"
+onClick={() => {
+  setCancelConfirmId(b.id);
+}}
+      disabled={isCanceled || isArchived || isDeleted}
+      className={cn(
+        "inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-rose-200 bg-gradient-to-r from-rose-50 to-red-50 px-4 text-sm font-bold text-rose-700 shadow-[0_10px_24px_rgba(244,63,94,0.08)] transition-all duration-200 hover:from-rose-100 hover:to-red-100 active:scale-[0.98] disabled:opacity-50",
+        actionsCount > 1 ? "w-full" : "min-w-[160px]",
+      )}
+    >
+      <XCircle className="h-4 w-4" />
+      Скасувати
+    </button>
+  )}
+
+  {isCanceled && !isArchived && !isDeleted && (
+    <button
+      type="button"
+onClick={() => {
+  setConfirmId(b.id);
+}}
+      className={cn(
+        "inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-red-200 bg-white px-4 text-sm font-bold text-red-600 transition-all duration-200 hover:bg-red-50 hover:border-red-300 active:scale-[0.98]",
+        actionsCount > 1 ? "w-full" : "min-w-[160px]",
+      )}
+    >
+      <Trash2 className="h-4 w-4" />
+      Видалити
+    </button>
+  )}
+</div>
+    </div>
+  </div>
+</div>
+</div>
+                );
+              })
+            ) : (
+              <div className="rounded-2xl border border-stone-200 bg-stone-50/50 p-6 text-center text-sm text-stone-500">
+                На цей день записів немає.
+              </div>
+            )}
+          </div>
+
+          <div className="mt-4 -mx-4 border-t border-stone-200 bg-stone-50/80 px-4 pb-4 pt-4 sm:-mx-5 sm:px-5 sm:pb-5">
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => {
+  setCalendarDayKey(null);
+  setExpandedCalendarCards({});
+}}
+                className="flex-1 inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-stone-200 bg-white text-sm font-bold text-stone-700 shadow-sm transition-all duration-200 hover:border-stone-300 hover:bg-stone-50 active:scale-[0.98]"
+              >
+                Закрити
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+})()}
       </div>
     </div>
   );
