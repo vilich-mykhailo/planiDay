@@ -42,7 +42,6 @@ export default function TimeSelect({
 
   const [hour, minute] = draftValue.split(":");
   const isChanged = draftValue !== initialValue;
-
   const selectedLabel = useMemo(() => `${hour}:${minute}`, [hour, minute]);
 
   function handleOpen() {
@@ -119,8 +118,8 @@ export default function TimeSelect({
         type="button"
         onClick={handleOpen}
         className={cn(
-          "flex h-9 w-full items-center justify-center rounded-[14px] bg-transparent px-3 text-sm font-semibold text-stone-800 outline-none transition-all",
-          "hover:bg-white/70 focus-visible:ring-2 focus-visible:ring-amber-400/30",
+          "flex h-9 w-full items-center justify-center rounded-[14px] bg-transparent px-3 text-sm font-semibold text-[var(--color-ink)] outline-none transition-all",
+          "hover:bg-white/70 focus-visible:ring-2 focus-visible:ring-[rgba(180,140,108,0.22)]",
           className,
         )}
       >
@@ -140,36 +139,31 @@ export default function TimeSelect({
             ref={panelRef}
             onClick={(e) => e.stopPropagation()}
             className={cn(
-              "relative z-10 w-[320px] max-w-[92vw]",
-              "overflow-hidden rounded-[24px] border border-stone-200 bg-white",
-              "shadow-[0_24px_70px_rgba(0,0,0,0.18)]",
+              "relative z-10 w-[320px] max-w-[92vw] overflow-hidden rounded-[24px] border border-[var(--color-cream)] bg-white shadow-[0_24px_70px_rgba(27,27,27,0.18)]",
               "animate-in fade-in zoom-in-95 duration-200",
             )}
           >
-            <div className="border-b border-stone-100 bg-gradient-to-b from-amber-50/70 to-white px-4 py-3">
-              {/* день */}
+            <div className="border-b border-[var(--color-cream)] bg-gradient-to-b from-[var(--color-pending-bg)] to-white px-4 py-3">
               {dayLabel && (
-                <p className="text-center text-sm font-semibold text-stone-500">
+                <p className="text-center text-sm font-semibold text-[var(--color-caramel)]">
                   {dayLabel}
                 </p>
               )}
 
-              {/* тип (початок / кінець) */}
               {label && (
-                <p className="mt-1 text-center text-[11px] font-bold uppercase tracking-[0.14em] text-amber-600">
+                <p className="mt-1 text-center text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-forest)]">
                   {label}
                 </p>
               )}
 
-              {/* вибраний час */}
-              <p className="mt-1 text-center text-xl font-black text-stone-800">
+              <p className="mt-1 text-center text-xl font-black text-[var(--color-ink)]">
                 {selectedLabel}
               </p>
             </div>
 
             <div className="grid grid-cols-[1fr_auto_1fr] items-stretch gap-0 p-3">
               <div>
-                <p className="mb-2 px-2 text-[11px] font-bold uppercase tracking-wide text-stone-500">
+                <p className="mb-2 px-2 text-[11px] font-bold uppercase tracking-wide text-[var(--color-caramel)]">
                   Години
                 </p>
 
@@ -187,8 +181,8 @@ export default function TimeSelect({
                           className={cn(
                             "flex h-10 w-full items-center justify-center rounded-2xl text-sm font-semibold transition-all",
                             active
-                              ? "bg-gradient-to-r from-amber-400 to-orange-400 text-white shadow-[0_10px_24px_rgba(251,146,60,0.28)]"
-                              : "text-stone-700 hover:bg-stone-50",
+                              ? "bg-[var(--color-ink)] text-white shadow-[var(--shadow-button)]"
+                              : "text-[var(--color-ink)] hover:bg-[var(--color-cream)]",
                           )}
                         >
                           {h}
@@ -199,10 +193,10 @@ export default function TimeSelect({
                 </div>
               </div>
 
-              <div className="mx-2 w-px bg-stone-100" />
+              <div className="mx-2 w-px bg-[var(--color-cream)]" />
 
               <div>
-                <p className="mb-2 px-2 text-[11px] font-bold uppercase tracking-wide text-stone-500">
+                <p className="mb-2 px-2 text-[11px] font-bold uppercase tracking-wide text-[var(--color-caramel)]">
                   Хвилини
                 </p>
 
@@ -220,8 +214,8 @@ export default function TimeSelect({
                           className={cn(
                             "flex h-10 w-full items-center justify-center rounded-2xl text-sm font-semibold transition-all",
                             active
-                              ? "bg-gradient-to-r from-amber-400 to-orange-400 text-white shadow-[0_10px_24px_rgba(251,146,60,0.28)]"
-                              : "text-stone-700 hover:bg-stone-50",
+                              ? "bg-[var(--color-ink)] text-white shadow-[var(--shadow-button)]"
+                              : "text-[var(--color-ink)] hover:bg-[var(--color-cream)]",
                           )}
                         >
                           {m}
@@ -233,12 +227,12 @@ export default function TimeSelect({
               </div>
             </div>
 
-            <div className="border-t border-stone-100 bg-stone-50/50 p-4">
+            <div className="border-t border-[var(--color-cream)] bg-[var(--color-cream)]/60 p-4">
               <div className="flex gap-2">
                 <button
                   type="button"
                   onClick={handleClose}
-                  className="flex-1 rounded-2xl border border-stone-200 bg-white py-2.5 text-sm font-semibold text-stone-700 transition hover:bg-stone-50 active:scale-[0.98]"
+                  className="flex-1 rounded-2xl border border-[var(--color-cream)] bg-white py-2.5 text-sm font-semibold text-[var(--color-ink)] transition hover:bg-[var(--color-cream)] active:scale-[0.98]"
                 >
                   Скасувати
                 </button>
@@ -250,8 +244,8 @@ export default function TimeSelect({
                   className={cn(
                     "flex-1 rounded-2xl py-2.5 text-sm font-bold transition-all duration-200",
                     isChanged && !submitting
-                      ? "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white hover:from-emerald-700 hover:to-emerald-800 active:scale-[0.97]"
-                      : "cursor-not-allowed bg-stone-100 text-stone-400",
+                      ? "bg-[var(--color-forest)] text-white hover:bg-[var(--color-forest-dark)] active:scale-[0.97]"
+                      : "cursor-not-allowed bg-[var(--color-cream)] text-[var(--color-caramel)]",
                   )}
                 >
                   {submitting ? "Збереження..." : "Готово"}

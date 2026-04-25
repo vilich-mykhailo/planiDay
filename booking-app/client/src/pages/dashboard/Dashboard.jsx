@@ -1,6 +1,6 @@
 // Dashboard.jsx
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { socket } from "../../lib/socket";
 import { useBookings } from "../../context/bookings/useBookings";
 import {
@@ -20,10 +20,10 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
 const linkClass = ({ isActive }) =>
   [
     "group relative flex items-center gap-3 rounded-2xl border px-3.5 py-3 text-sm font-semibold transition-all duration-200",
-    "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-amber-400/10",
+    "focus-visible:outline-none focus-visible:ring-4",
     isActive
-      ? "border-emerald-700 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-[0_10px_24px_rgba(16,185,129,0.22)]"
-      : "border-transparent bg-transparent text-stone-600 hover:border-stone-200 hover:bg-stone-50 hover:text-stone-800",
+      ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white shadow-[var(--shadow-button)] focus-visible:ring-[color:var(--color-sand)]/30"
+      : "border-transparent bg-transparent text-[var(--color-forest)] hover:border-[var(--color-mist)] hover:bg-[var(--color-cream)] hover:text-[var(--color-ink)] focus-visible:ring-[color:var(--color-sand)]/30",
   ].join(" ");
 
 function cn(...classes) {
@@ -33,7 +33,7 @@ function cn(...classes) {
 function SkeletonBlock({ className = "" }) {
   return (
     <div
-      className={`animate-pulse rounded-xl bg-stone-200/60 ${className}`}
+      className={`animate-pulse rounded-xl bg-[color:var(--color-mist)]/80 ${className}`}
       aria-hidden="true"
     />
   );
@@ -45,20 +45,20 @@ function NavItemSkeleton() {
 
 function DashboardSkeleton() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-stone-50 via-amber-50/30 to-orange-50/20">
+    <div className="min-h-screen ">
       <div className="mx-auto max-w-6xl px-4 pt-24 md:pt-22">
         <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[220px_minmax(0,1fr)]">
           <aside
             className="
               hidden lg:block
-              relative top-auto h-fit overflow-hidden rounded-3xl border border-stone-200/60 bg-white p-4
-              shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]
+              relative top-auto h-fit overflow-hidden rounded-3xl border border-[var(--color-mist)] bg-white p-4
+              shadow-[var(--shadow-soft)]
               md:sticky lg:top-[88px]
             "
           >
-            <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-60" />
+            <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[var(--color-ink)] via-[var(--color-forest)] to-[var(--color-caramel)]" />
 
-            <div className="mb-4 border-b border-stone-100 px-2 pb-4 pt-2 text-center">
+            <div className="mb-4 border-b border-[var(--color-mist)] px-2 pb-4 pt-2 text-center">
               <SkeletonBlock className="mx-auto h-8 w-24 rounded-full" />
               <SkeletonBlock className="mx-auto mt-3 h-7 w-40 rounded-xl" />
             </div>
@@ -71,7 +71,7 @@ function DashboardSkeleton() {
               <NavItemSkeleton />
               <NavItemSkeleton />
 
-              <div className="mt-3 border-t border-stone-100 pt-3">
+              <div className="mt-3 border-t border-[var(--color-mist)] pt-3">
                 <SkeletonBlock className="h-12 w-full rounded-2xl" />
               </div>
             </nav>
@@ -79,8 +79,8 @@ function DashboardSkeleton() {
 
           <section
             className="
-              min-h-[200px] overflow-hidden rounded-3xl border border-stone-200/60 bg-white p-6
-              shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]
+              min-h-[200px] overflow-hidden rounded-3xl border border-[var(--color-mist)] bg-white p-6
+              shadow-[var(--shadow-soft)]
             "
           >
             <div className="space-y-4">
@@ -101,15 +101,43 @@ function SidebarLinkIcon({ children, isActive }) {
     <span
       className={[
         "inline-flex h-9 w-9 items-center justify-center rounded-xl border transition-all duration-200",
-        "border-stone-200 bg-white",
         isActive
-          ? "text-emerald-600" // 👈 зелена іконка
-          : "text-stone-500 group-hover:border-stone-300 group-hover:text-stone-700",
+          ? "border-white/10 bg-white/10 text-[var(--color-sand)]"
+          : "border-[var(--color-mist)] bg-white text-[var(--color-forest)] group-hover:border-[var(--color-forest)] group-hover:text-[var(--color-ink)]",
       ].join(" ")}
     >
       {children}
     </span>
   );
+}
+
+function pad2(n) {
+  return String(n).padStart(2, "0");
+}
+
+function parseTimeToHHMM(timeStr) {
+  const t = String(timeStr || "").trim();
+  if (!t) return null;
+
+  const cleaned = t.replace(".", ":");
+  const m = cleaned.match(/^(\d{1,2}):(\d{2})$/);
+  if (!m) return null;
+
+  const hh = Math.min(23, Math.max(0, Number(m[1])));
+  const mm = Math.min(59, Math.max(0, Number(m[2])));
+  return `${pad2(hh)}:${pad2(mm)}`;
+}
+
+function getBookingDateTime(booking) {
+  const dateStr = booking?.date;
+  const timeStr = parseTimeToHHMM(booking?.time);
+
+  if (!dateStr || !timeStr) return null;
+
+  const dt = new Date(`${dateStr}T${timeStr}:00`);
+  if (Number.isNaN(dt.getTime())) return null;
+
+  return dt;
 }
 
 export default function Dashboard() {
@@ -121,7 +149,21 @@ export default function Dashboard() {
     localStorage.getItem("studioId"),
   );
 
-  const { newBookingsCount = 0 } = useBookings();
+  const { bookings = [] } = useBookings();
+
+  const newBookingsCount = useMemo(() => {
+    const nowTs = Date.now();
+
+    return bookings.filter((booking) => {
+      if (!booking?.id) return false;
+      if (booking.status && booking.status !== "new") return false;
+
+      const dt = getBookingDateTime(booking);
+      if (!dt) return false;
+
+      return dt.getTime() >= nowTs;
+    }).length;
+  }, [bookings]);
 
   useEffect(() => {
     if (!token) {
@@ -240,28 +282,37 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen ">
+    <div
+      className="min-h-screen"
+      style={{
+        
+        backgroundImage:
+          "radial-gradient(circle at top left, rgba(180,140,108,0.18), transparent 30%), radial-gradient(circle at bottom right, rgba(50,78,41,0.12), transparent 30%)",
+      }}
+    >
       <div className="mx-auto w-full max-w-6xl px-0 pt-18 lg:px-4">
         <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[220px_minmax(0,1fr)]">
           <aside
             className="
               hidden lg:block
-              relative top-auto h-fit overflow-hidden rounded-3xl border border-stone-200/60 bg-white p-3
-              shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]
+              relative top-auto h-fit overflow-hidden rounded-3xl
+              border border-[var(--color-mist)]
+              bg-white p-3
+              shadow-[var(--shadow-soft-hover)]
               lg:sticky lg:top-[88px]
             "
           >
-            <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-60" />
+            <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[var(--color-ink)] via-[var(--color-forest)] to-[var(--color-caramel)]" />
 
-            <div className="mb-2 border-b border-stone-100 px-1 pb-1 pt-1 text-center">
-              <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-3 py-1.5">
-                <Sparkles className="h-3.5 w-3.5 text-amber-600" />
-                <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-amber-700">
+            <div className="mb-2 border-b border-[var(--color-mist)] px-1 pb-3 pt-2 text-center">
+              <div className="inline-flex items-center gap-2 rounded-full border border-[var(--color-sand)] bg-[var(--color-cream)] px-3 py-1.5">
+                <Sparkles className="h-3.5 w-3.5 text-[var(--color-forest)]" />
+                <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-forest)]">
                   Кабінет
                 </span>
               </div>
 
-              <h2 className="mt-3 text-lg font-bold tracking-tight text-stone-800">
+              <h2 className="mt-3 text-lg font-bold tracking-tight text-[var(--color-ink)]">
                 Панель керування
               </h2>
             </div>
@@ -290,9 +341,9 @@ export default function Dashboard() {
                         <span
                           className={cn(
                             "absolute -right-1 -top-1 inline-flex min-h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 text-[10px] font-bold leading-none shadow-sm",
-isActive
-  ? "border-white bg-red-500 text-white"
-  : "border-white bg-red-500 text-white"
+                            isActive
+                              ? "border-[var(--color-ink)] bg-[var(--color-caramel)] text-white"
+                              : "border-white bg-[var(--color-ink)] text-white",
                           )}
                         >
                           {newBookingsCount > 9 ? "9+" : newBookingsCount}
@@ -318,8 +369,8 @@ isActive
                           className={cn(
                             "absolute -right-1 -top-1 inline-flex min-h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 text-[10px] font-bold leading-none shadow-sm",
                             isActive
-                              ? "border-white bg-red-500 text-white"
-                              : "border-white bg-red-500 text-white",
+                              ? "border-[var(--color-ink)] bg-[var(--color-caramel)] text-white"
+                              : "border-white bg-[var(--color-forest)] text-white",
                           )}
                         >
                           {unreadNotifications > 9 ? "9+" : unreadNotifications}
@@ -376,16 +427,19 @@ isActive
                 )}
               </NavLink>
 
-              <div className="mt-3 border-t border-stone-100 pt-3">
+              <div className="mt-3 border-t border-[var(--color-mist)] pt-3">
                 <button
                   type="button"
                   onClick={handleLogout}
                   className="
-                    inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-red-200
-                    bg-gradient-to-r from-red-50 to-rose-50 px-4 py-3 text-sm font-semibold text-red-600
-                    transition-all duration-200 hover:from-red-100 hover:to-rose-100
+                    inline-flex w-full items-center justify-center gap-2 rounded-2xl
+                    border border-[var(--color-sand)]
+                    bg-[var(--color-cream)]
+                    px-4 py-3 text-sm font-semibold text-[var(--color-forest)]
+                    transition-all duration-200
+                    hover:bg-[var(--color-ink)] hover:text-white
                     active:scale-[0.98]
-                    focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-500/10
+                    focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--color-sand)]/30
                   "
                 >
                   <LogOut className="h-4 w-4" />
@@ -398,8 +452,8 @@ isActive
           <section
             className="
               min-h-[200px] overflow-hidden rounded-3xl px-3 py-2 sm:px-4 sm:py-4
-              lg:border lg:border-stone-200/60 lg:bg-white lg:p-6 lg:mb-4 lg:mt-4
-              lg:shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]
+              lg:mb-4 lg:mt-4 lg:border lg:border-[var(--color-mist)] lg:bg-white lg:p-6
+              lg:shadow-[var(--shadow-soft)]
             "
           >
             <Outlet />

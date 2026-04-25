@@ -1,5 +1,4 @@
-// Schedule.jsx
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Clock,
@@ -37,13 +36,22 @@ const defaultDay = (enabled = true) => ({
   end: "18:00",
 });
 
+function SkeletonBlock({ className = "" }) {
+  return (
+    <div
+      className={cn("animate-pulse rounded-xl bg-[var(--color-cream)]", className)}
+      aria-hidden="true"
+    />
+  );
+}
+
 function ExceptionsSkeleton() {
   return (
     <div className="space-y-3">
       {Array.from({ length: 2 }).map((_, i) => (
         <div
           key={i}
-          className="rounded-2xl border border-stone-200 bg-white p-4"
+          className="rounded-2xl border border-[var(--color-cream)] bg-white p-4"
         >
           <SkeletonBlock className="h-5 w-44" />
           <SkeletonBlock className="mt-2 h-4 w-36" />
@@ -62,7 +70,6 @@ function CustomSelect({ value, onChange, options, className = "" }) {
     left: 0,
     width: 0,
   });
-
   const rootRef = useRef(null);
 
   const selected = options.find((opt) => String(opt.value) === String(value));
@@ -74,12 +81,10 @@ function CustomSelect({ value, onChange, options, className = "" }) {
     const dropdownHeight = 260;
     const spaceBelow = window.innerHeight - rect.bottom;
     const spaceAbove = rect.top;
-
     const shouldOpenUp =
       spaceBelow < dropdownHeight && spaceAbove > dropdownHeight;
 
     setOpenUp(shouldOpenUp);
-
     setMenuPosition({
       left: rect.left,
       width: rect.width,
@@ -140,24 +145,23 @@ function CustomSelect({ value, onChange, options, className = "" }) {
         type="button"
         onClick={toggleOpen}
         className={cn(
-          "group flex w-full min-w-[170px] items-center justify-between",
-          "rounded-[18px] border px-4 py-3 text-left text-sm font-semibold outline-none transition-all duration-200",
+          "group flex w-full min-w-[170px] items-center justify-between rounded-[18px] border px-4 py-3 text-left text-sm font-semibold outline-none transition-all duration-200",
           open
-            ? "border-amber-400 bg-white shadow-[0_10px_30px_rgba(251,146,60,0.18)] ring-2 ring-amber-400/20"
-            : "border-stone-200 bg-stone-50 hover:border-stone-300 hover:bg-white",
+            ? "border-[var(--color-caramel)] bg-white shadow-[0_10px_30px_rgba(180,140,108,0.18)] ring-2 ring-[rgba(180,140,108,0.18)]"
+            : "border-[var(--color-cream)] bg-[var(--color-cream)] hover:border-[var(--color-mist)] hover:bg-white",
         )}
         aria-haspopup="listbox"
         aria-expanded={open}
       >
-        <span className="truncate text-stone-800">
+        <span className="truncate text-[var(--color-ink)]">
           {selected?.label || "Оберіть"}
         </span>
 
         <ChevronDown
           className={cn(
-            "h-4 w-4 flex-shrink-0 text-stone-400 transition-all duration-200",
-            "group-hover:text-stone-600",
-            open && "rotate-180 text-amber-500",
+            "h-4 w-4 flex-shrink-0 text-[var(--color-caramel)] transition-all duration-200",
+            "group-hover:text-[var(--color-ink)]",
+            open && "rotate-180 text-[var(--color-forest)]",
           )}
         />
       </button>
@@ -165,7 +169,7 @@ function CustomSelect({ value, onChange, options, className = "" }) {
       {open && (
         <div
           className={cn(
-            "fixed z-[200] overflow-hidden rounded-[20px] border border-stone-200 bg-white shadow-[0_24px_70px_rgba(0,0,0,0.18)] animate-in fade-in zoom-in-95 duration-150",
+            "fixed z-[200] overflow-hidden rounded-[20px] border border-[var(--color-cream)] bg-white shadow-[0_24px_70px_rgba(27,27,27,0.18)] animate-in fade-in zoom-in-95 duration-150",
             openUp ? "origin-bottom" : "origin-top",
           )}
           style={{
@@ -190,8 +194,8 @@ function CustomSelect({ value, onChange, options, className = "" }) {
                   className={cn(
                     "flex w-full items-center justify-between px-4 py-3 text-left text-sm transition-colors",
                     isActive
-                      ? "bg-amber-50 text-amber-700"
-                      : "text-stone-700 hover:bg-stone-50",
+                      ? "bg-[var(--color-pending-bg)] text-[var(--color-forest)]"
+                      : "text-[var(--color-ink)] hover:bg-[var(--color-cream)]",
                   )}
                   role="option"
                   aria-selected={isActive}
@@ -217,29 +221,6 @@ function minutesToTime(total) {
   const h = Math.floor(total / 60);
   const m = total % 60;
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-}
-
-function getScheduleForDate(date, weeklySchedule, exceptions) {
-  const iso = new Date(date).toISOString().slice(0, 10);
-
-  const exact = exceptions.find((item) => item.date === iso);
-  if (exact) {
-    if (!exact.enabled) return null;
-
-    return {
-      enabled: true,
-      start: exact.start,
-      end: exact.end,
-    };
-  }
-
-  const jsDay = new Date(date).getDay(); // 0 = Sun
-  const map = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
-  const key = map[jsDay];
-  const fallback = weeklySchedule[key];
-
-  if (!fallback?.enabled) return null;
-  return fallback;
 }
 
 function getDefaultSchedule() {
@@ -294,30 +275,30 @@ function SectionCard({
   return (
     <section
       className={cn(
-        "group relative overflow-hidden rounded-3xl border border-stone-200/60 bg-white",
-        "shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)] hover:shadow-[0_8px_32px_-4px_rgba(120,90,60,0.12)]",
-        "transition-all duration-300",
+        "group relative overflow-hidden rounded-3xl border border-[var(--color-cream)] bg-white shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-soft-hover)] transition-all duration-300",
         className,
       )}
     >
-      <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-60" />
+      <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[var(--color-forest)] via-[var(--color-caramel)] to-[var(--color-ink)] opacity-70" />
 
-      <div className="flex flex-col gap-3 border-b border-stone-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 border-b border-[var(--color-cream)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <h2 className="text-lg font-bold tracking-tight text-stone-800">
+            <h2 className="text-lg font-bold tracking-tight text-[var(--color-ink)]">
               {title}
             </h2>
 
             {badge && (
-              <span className="inline-flex items-center rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
+              <span className="inline-flex items-center rounded-full border border-[var(--color-sand)] bg-[var(--color-pending-bg)] px-2.5 py-0.5 text-xs font-semibold text-[var(--color-forest)]">
                 {badge}
               </span>
             )}
           </div>
 
           {subtitle && (
-            <p className="mt-0.5 text-sm text-stone-500">{subtitle}</p>
+            <p className="mt-0.5 text-sm text-[var(--color-caramel)]">
+              {subtitle}
+            </p>
           )}
         </div>
 
@@ -338,12 +319,13 @@ function Button({
 }) {
   const variants = {
     primary:
-      "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white hover:shadow-emerald-500/35 hover:from-emerald-700 hover:to-emerald-800",
+      "bg-[var(--color-ink)] text-white hover:bg-[var(--color-ink-soft)] shadow-[var(--shadow-button)]",
     secondary:
-      "bg-white border border-stone-200 text-stone-700 hover:bg-stone-50 hover:border-stone-300",
+      "bg-white border border-[var(--color-cream)] text-[var(--color-ink)] hover:bg-[var(--color-cream)] hover:border-[var(--color-mist)]",
     danger:
-      "bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 text-red-600 hover:from-red-100 hover:to-rose-100",
-    ghost: "text-stone-600 hover:bg-stone-100",
+      "border border-[var(--color-danger-border)] bg-[var(--color-danger-bg)] text-[var(--color-danger)] hover:border-[var(--color-danger)] hover:bg-[rgba(213,92,82,0.12)]",
+    ghost:
+      "text-[var(--color-caramel)] hover:bg-[var(--color-cream)] hover:text-[var(--color-ink)]",
   };
 
   const sizes = {
@@ -356,8 +338,7 @@ function Button({
     <button
       type="button"
       className={cn(
-        "inline-flex items-center justify-center gap-2 font-semibold transition-all duration-200",
-        "active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50",
+        "inline-flex items-center justify-center gap-2 font-semibold transition-all duration-200 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50",
         variants[variant],
         sizes[size],
         className,
@@ -375,8 +356,8 @@ function Toggle({ checked }) {
       className={cn(
         "relative inline-flex h-7 w-12 items-center rounded-full transition-all duration-300",
         checked
-          ? "bg-gradient-to-r from-emerald-500 to-emerald-600 shadow-[0_8px_18px_rgba(16,185,129,0.28)]"
-          : "bg-stone-200",
+         ? "bg-gradient-to-r from-[#9fb29a] to-[#7f9a78] shadow-[0_8px_18px_rgba(127,154,120,0.24)]"
+          : "bg-[var(--color-mist)]",
       )}
       aria-hidden="true"
     >
@@ -392,18 +373,9 @@ function Toggle({ checked }) {
 
 function Chip({ children }) {
   return (
-    <span className="inline-flex items-center rounded-full border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 px-3 py-1.5 text-xs font-semibold text-amber-700 shadow-sm">
+    <span className="inline-flex items-center rounded-full border border-[var(--color-sand)] bg-[var(--color-pending-bg)] px-3 py-1.5 text-xs font-semibold text-[var(--color-forest)] shadow-sm">
       {children}
     </span>
-  );
-}
-
-function SkeletonBlock({ className = "" }) {
-  return (
-    <div
-      className={cn("animate-pulse rounded-xl bg-stone-200/60", className)}
-      aria-hidden="true"
-    />
   );
 }
 
@@ -413,7 +385,7 @@ function WorkDaysSkeleton() {
       {Array.from({ length: 7 }).map((_, i) => (
         <div
           key={i}
-          className="rounded-2xl border border-stone-200 bg-white p-4"
+          className="rounded-2xl border border-[var(--color-cream)] bg-white p-4"
         >
           <div className="grid gap-4 sm:grid-cols-[1fr_260px] sm:items-center">
             <div className="flex items-center gap-3">
@@ -425,10 +397,10 @@ function WorkDaysSkeleton() {
             </div>
 
             <div className="w-full sm:w-[260px]">
-              <div className="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-[20px] border border-stone-200 bg-white px-2.5 py-2">
+              <div className="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-[20px] border border-[var(--color-cream)] bg-white px-2.5 py-2">
                 <SkeletonBlock className="h-11 w-full rounded-[14px]" />
                 <div className="flex items-center justify-center">
-                  <span className="block h-px w-3 bg-stone-300" />
+                  <span className="block h-px w-3 bg-[var(--color-mist)]" />
                 </div>
                 <SkeletonBlock className="h-11 w-full rounded-[14px]" />
               </div>
@@ -457,28 +429,28 @@ function Toast({ toast }) {
       >
         <div
           className={cn(
-            "relative overflow-hidden rounded-[24px] border bg-white/95 backdrop-blur-xl shadow-[0_18px_50px_rgba(93,64,55,0.16)]",
+            "relative overflow-hidden rounded-[24px] border bg-white/95 backdrop-blur-xl shadow-[0_18px_50px_rgba(27,27,27,0.16)]",
             toast.type === "success"
-              ? "border-emerald-200 ring-1 ring-emerald-100"
-              : "border-red-200 ring-1 ring-red-100",
+              ? "border-[var(--color-sand)] ring-1 ring-[var(--color-confirmed-bg)]"
+              : "border-[var(--color-danger-border)] ring-1 ring-[rgba(213,92,82,0.10)]",
           )}
         >
           <div
             className={cn(
               "absolute inset-x-0 top-0 h-1",
               toast.type === "success"
-                ? "bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600"
-                : "bg-gradient-to-r from-red-300 via-red-400 to-rose-500",
+                ? "bg-gradient-to-r from-[var(--color-forest)] via-[var(--color-forest)] to-[var(--color-caramel)]"
+                : "bg-gradient-to-r from-[var(--color-danger-border)] via-[var(--color-danger)] to-[var(--color-danger-dark)]",
             )}
           />
 
           <div className="relative flex items-start gap-3 px-4 py-4 sm:px-5">
             <div
               className={cn(
-                "mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border shadow-[0_8px_22px_rgba(93,64,55,0.10)]",
+                "mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border shadow-[0_8px_22px_rgba(27,27,27,0.08)]",
                 toast.type === "success"
-                  ? "border-emerald-200 bg-emerald-50 text-emerald-600"
-                  : "border-red-200 bg-red-50 text-red-500",
+                  ? "border-[var(--color-sand)] bg-[var(--color-confirmed-bg)] text-[var(--color-forest)]"
+                  : "border-[var(--color-danger-border)] bg-[var(--color-danger-bg)] text-[var(--color-danger)]",
               )}
             >
               {toast.type === "success" ? (
@@ -489,22 +461,24 @@ function Toast({ toast }) {
             </div>
 
             <div className="min-w-0 flex-1">
-              <p className="mt-2 text-[15px] font-black leading-5 text-stone-800">
+              <p className="mt-2 text-[15px] font-black leading-5 text-[var(--color-ink)]">
                 {toast.title ||
                   (toast.type === "success" ? "Збережено" : "Помилка")}
               </p>
-              <p className="mt-1 text-sm leading-5 text-stone-500">
+              <p className="mt-1 text-sm leading-5 text-[var(--color-caramel)]">
                 {toast.text}
               </p>
             </div>
           </div>
 
-          <div className="h-[3px] w-full bg-stone-100">
+          <div className="h-[3px] w-full bg-[var(--color-cream)]">
             <div
               key={toast.id}
               className={cn(
                 "h-full w-full origin-left",
-                toast.type === "success" ? "bg-emerald-400" : "bg-red-400",
+                toast.type === "success"
+                  ? "bg-[var(--color-forest)]"
+                  : "bg-[var(--color-danger)]",
               )}
               style={{
                 animation: `toastbar ${toast.duration}ms linear forwards`,
@@ -523,6 +497,7 @@ function Toast({ toast }) {
     </>
   );
 }
+
 function dateToInputValue(date = new Date()) {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, "0");
@@ -562,19 +537,20 @@ function createEmptyException() {
 export default function Schedule() {
   const { studio } = useStudio();
   const queryClient = useQueryClient();
-const studioId = studio?.id ?? null;
- const storedSchedule = useMemo(() => getDefaultSchedule(), []);
-const storedSlotDuration = 10;
+  const studioId = studio?.id ?? null;
+  const storedSchedule = useMemo(() => getDefaultSchedule(), []);
+  const storedSlotDuration = 10;
 
-const [schedule, setScheduleDraft] = useState(storedSchedule);
-const [slotDuration, setSlotDuration] = useState(storedSlotDuration);
-
-const [savedSchedule, setSavedSchedule] = useState(storedSchedule);
-const [savedSlotDuration, setSavedSlotDuration] = useState(storedSlotDuration);
-
-const [exceptions, setExceptions] = useState([]);
+  const [schedule, setScheduleDraft] = useState(storedSchedule);
+  const [slotDuration, setSlotDuration] = useState(storedSlotDuration);
+  const [savedSchedule, setSavedSchedule] = useState(storedSchedule);
+  const [savedSlotDuration, setSavedSlotDuration] = useState(storedSlotDuration);
+  const [exceptions, setExceptions] = useState([]);
   const [preview, setPreview] = useState({});
   const [saving, setSaving] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const toastTimeoutRef = useRef(null);
+  const [expandedExceptions, setExpandedExceptions] = useState({});
 
   const [toast, setToast] = useState({
     id: 0,
@@ -585,45 +561,78 @@ const [exceptions, setExceptions] = useState([]);
     duration: 2200,
   });
 
-  const scheduleQuery = useQuery({
-  queryKey: ["studio-schedule", studioId],
-  queryFn: () => fetchStudioSchedule(studioId),
-  enabled: Boolean(studioId),
-  staleTime: 1000 * 60 * 10,
-  gcTime: 1000 * 60 * 30,
-  refetchOnMount: false,
-  refetchOnWindowFocus: false,
-  refetchOnReconnect: false,
-});
+  async function fetchStudioSchedule(targetStudioId) {
+    if (!targetStudioId) return null;
 
-const exceptionsQuery = useQuery({
-  queryKey: ["studio-schedule-exceptions", studioId],
-  queryFn: () => fetchStudioExceptions(studioId),
-  enabled: Boolean(studioId),
-  staleTime: 1000 * 60 * 10,
-  gcTime: 1000 * 60 * 30,
-  refetchOnMount: false,
-  refetchOnWindowFocus: false,
-  refetchOnReconnect: false,
-});
+    const token = localStorage.getItem("token");
 
-  function showToast({ type = "success", title, text }) {
-    const duration = 2200;
+    return api(`/studio/${targetStudioId}/schedule`, {
+      method: "GET",
+      token,
+    });
+  }
 
-    setToast({
-      id: Date.now(),
-      open: true,
-      type,
-      title,
-      text,
-      duration,
+  async function fetchStudioExceptions(targetStudioId) {
+    if (!targetStudioId) return [];
+
+    const token = localStorage.getItem("token");
+    const data = await api(`/studio/${targetStudioId}/schedule/exceptions`, {
+      method: "GET",
+      token,
     });
 
-    clearTimeout(showToast._t);
-    showToast._t = setTimeout(() => {
-      setToast((prev) => ({ ...prev, open: false }));
-    }, duration);
+    return Array.isArray(data?.exceptions)
+      ? data.exceptions.map((item) => ({
+          ...item,
+          date: String(item?.date || "").slice(0, 10),
+          isNew: false,
+        }))
+      : [];
   }
+
+  const scheduleQuery = useQuery({
+    queryKey: ["studio-schedule", studioId],
+    queryFn: () => fetchStudioSchedule(studioId),
+    enabled: Boolean(studioId),
+    staleTime: 1000 * 60 * 10,
+    gcTime: 1000 * 60 * 30,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  });
+
+  const exceptionsQuery = useQuery({
+    queryKey: ["studio-schedule-exceptions", studioId],
+    queryFn: () => fetchStudioExceptions(studioId),
+    enabled: Boolean(studioId),
+    staleTime: 1000 * 60 * 10,
+    gcTime: 1000 * 60 * 30,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  });
+
+  
+const showToast = useCallback(({ type = "success", title, text }) => {
+  const duration = 2200;
+
+  setToast({
+    id: Date.now(),
+    open: true,
+    type,
+    title,
+    text,
+    duration,
+  });
+
+  if (toastTimeoutRef.current) {
+    clearTimeout(toastTimeoutRef.current);
+  }
+
+  toastTimeoutRef.current = setTimeout(() => {
+    setToast((prev) => ({ ...prev, open: false }));
+  }, duration);
+}, []);
 
   const dirty = useMemo(() => {
     return (
@@ -632,137 +641,107 @@ const exceptionsQuery = useQuery({
     );
   }, [savedSchedule, schedule, savedSlotDuration, slotDuration]);
 
-  async function fetchStudioSchedule(studioId) {
-  if (!studioId) return null;
+  async function handleSlotDurationChange(nextDuration) {
+    if (!studioId) return;
 
-  const token = localStorage.getItem("token");
+    const token = localStorage.getItem("token");
+    const previous = queryClient.getQueryData(["studio-schedule", studioId]);
 
-  return api(`/studio/${studioId}/schedule`, {
-    method: "GET",
-    token,
-  });
-}
+    setSlotDuration(nextDuration);
 
-async function fetchStudioExceptions(studioId) {
-  if (!studioId) return [];
+    queryClient.setQueryData(["studio-schedule", studioId], (old) => ({
+      ...(old || {}),
+      schedule,
+      slotDuration: nextDuration,
+    }));
 
-  const token = localStorage.getItem("token");
+    try {
+      await api(`/studio/${studioId}/schedule`, {
+        method: "PATCH",
+        token,
+        body: {
+          schedule,
+          slotDuration: nextDuration,
+        },
+      });
 
-  const data = await api(`/studio/${studioId}/schedule/exceptions`, {
-    method: "GET",
-    token,
-  });
+      setSavedSlotDuration(nextDuration);
+      setPreview({});
 
-  return Array.isArray(data?.exceptions)
-    ? data.exceptions.map((item) => ({
-        ...item,
-        date: String(item?.date || "").slice(0, 10),
-        isNew: false,
-      }))
-    : [];
-}
+      showToast({
+        type: "success",
+        title: "Крок оновлено",
+        text: "Тривалість слота збережено.",
+      });
+    } catch (err) {
+      console.error(err);
 
-async function handleSlotDurationChange(nextDuration) {
-  if (!studioId) return;
+      setSlotDuration(savedSlotDuration);
+      queryClient.setQueryData(["studio-schedule", studioId], previous);
 
-  const token = localStorage.getItem("token");
-  const previous = queryClient.getQueryData(["studio-schedule", studioId]);
-
-  setSlotDuration(nextDuration);
-
-  queryClient.setQueryData(["studio-schedule", studioId], (old) => ({
-    ...(old || {}),
-    schedule,
-    slotDuration: nextDuration,
-  }));
-
-  try {
-    await api(`/studio/${studioId}/schedule`, {
-      method: "PATCH",
-      token,
-      body: {
-        schedule,
-        slotDuration: nextDuration,
-      },
-    });
-
-    setSavedSlotDuration(nextDuration);
-    setPreview({});
-
-    showToast({
-      type: "success",
-      title: "Крок оновлено",
-      text: "Тривалість слота збережено.",
-    });
-  } catch (err) {
-    console.error(err);
-
-    setSlotDuration(savedSlotDuration);
-    queryClient.setQueryData(["studio-schedule", studioId], previous);
-
-    showToast({
-      type: "error",
-      title: "Не вдалося зберегти",
-      text: err?.message || "Сталася помилка під час збереження.",
-    });
+      showToast({
+        type: "error",
+        title: "Не вдалося зберегти",
+        text: err?.message || "Сталася помилка під час збереження.",
+      });
+    }
   }
-}
 
-async function toggleDay(dayKey) {
-  if (!studioId || saving) return;
+  async function toggleDay(dayKey) {
+    if (!studioId || saving) return;
 
-  const token = localStorage.getItem("token");
-  const previous = queryClient.getQueryData(["studio-schedule", studioId]);
+    const token = localStorage.getItem("token");
+    const previous = queryClient.getQueryData(["studio-schedule", studioId]);
 
-  const nextSchedule = {
-    ...schedule,
-    [dayKey]: {
-      ...schedule[dayKey],
-      enabled: !schedule[dayKey].enabled,
-    },
-  };
-
-  setScheduleDraft(nextSchedule);
-
-  queryClient.setQueryData(["studio-schedule", studioId], (old) => ({
-    ...(old || {}),
-    schedule: nextSchedule,
-    slotDuration,
-  }));
-
-  try {
-    await api(`/studio/${studioId}/schedule`, {
-      method: "PATCH",
-      token,
-      body: {
-        schedule: nextSchedule,
-        slotDuration,
+    const nextSchedule = {
+      ...schedule,
+      [dayKey]: {
+        ...schedule[dayKey],
+        enabled: !schedule[dayKey].enabled,
       },
-    });
+    };
 
-    setSavedSchedule(nextSchedule);
-    setPreview({});
+    setScheduleDraft(nextSchedule);
 
-    showToast({
-      type: "success",
-      title: nextSchedule[dayKey].enabled
-        ? "День увімкнено"
-        : "День вимкнено",
-      text: "Зміни збережено в розкладі.",
-    });
-  } catch (err) {
-    console.error(err);
+    queryClient.setQueryData(["studio-schedule", studioId], (old) => ({
+      ...(old || {}),
+      schedule: nextSchedule,
+      slotDuration,
+    }));
 
-    setScheduleDraft(savedSchedule);
-    queryClient.setQueryData(["studio-schedule", studioId], previous);
+    try {
+      await api(`/studio/${studioId}/schedule`, {
+        method: "PATCH",
+        token,
+        body: {
+          schedule: nextSchedule,
+          slotDuration,
+        },
+      });
 
-    showToast({
-      type: "error",
-      title: "Не вдалося зберегти",
-      text: err?.message || "Сталася помилка під час збереження.",
-    });
+      setSavedSchedule(nextSchedule);
+      setPreview({});
+
+      showToast({
+        type: "success",
+        title: nextSchedule[dayKey].enabled
+          ? "День увімкнено"
+          : "День вимкнено",
+        text: "Зміни збережено в розкладі.",
+      });
+    } catch (err) {
+      console.error(err);
+
+      setScheduleDraft(savedSchedule);
+      queryClient.setQueryData(["studio-schedule", studioId], previous);
+
+      showToast({
+        type: "error",
+        title: "Не вдалося зберегти",
+        text: err?.message || "Сталася помилка під час збереження.",
+      });
+    }
   }
-}
 
   function updateTime(day, field, value) {
     setScheduleDraft((prev) => ({
@@ -771,81 +750,81 @@ async function toggleDay(dayKey) {
     }));
   }
 
-async function handleTimeCommit(dayKey, field, nextValue) {
-  if (!studioId) return;
+  async function handleTimeCommit(dayKey, field, nextValue) {
+    if (!studioId) return;
 
-  const token = localStorage.getItem("token");
-  const previous = queryClient.getQueryData(["studio-schedule", studioId]);
+    const token = localStorage.getItem("token");
+    const previous = queryClient.getQueryData(["studio-schedule", studioId]);
 
-  const nextSchedule = {
-    ...schedule,
-    [dayKey]: {
-      ...schedule[dayKey],
-      [field]: nextValue,
-    },
-  };
-
-  setScheduleDraft(nextSchedule);
-
-  queryClient.setQueryData(["studio-schedule", studioId], (old) => ({
-    ...(old || {}),
-    schedule: nextSchedule,
-    slotDuration,
-  }));
-
-  try {
-    await api(`/studio/${studioId}/schedule`, {
-      method: "PATCH",
-      token,
-      body: {
-        schedule: nextSchedule,
-        slotDuration,
+    const nextSchedule = {
+      ...schedule,
+      [dayKey]: {
+        ...schedule[dayKey],
+        [field]: nextValue,
       },
-    });
+    };
 
-    setSavedSchedule(nextSchedule);
-    setSavedSlotDuration(slotDuration);
-    setPreview({});
+    setScheduleDraft(nextSchedule);
 
-    showToast({
-      type: "success",
-      title: "Час оновлено",
-      text: "Зміни збережено в розкладі.",
-    });
-  } catch (err) {
-    console.error(err);
+    queryClient.setQueryData(["studio-schedule", studioId], (old) => ({
+      ...(old || {}),
+      schedule: nextSchedule,
+      slotDuration,
+    }));
 
-    setScheduleDraft(savedSchedule);
-    queryClient.setQueryData(["studio-schedule", studioId], previous);
-
-    showToast({
-      type: "error",
-      title: "Не вдалося зберегти",
-      text: err?.message || "Сталася помилка під час збереження.",
-    });
-
-    throw err;
-  }
-}
-
-  async function deleteExpiredExceptions(studioId, token, list) {
-  const expired = (list || []).filter(
-    (item) => item?.id && isPastExceptionDate(item.date),
-  );
-
-  if (!expired.length) return list || [];
-
-  await Promise.allSettled(
-    expired.map((item) =>
-      api(`/studio/${studioId}/schedule/exceptions/${item.id}`, {
-        method: "DELETE",
+    try {
+      await api(`/studio/${studioId}/schedule`, {
+        method: "PATCH",
         token,
-      }),
-    ),
-  );
+        body: {
+          schedule: nextSchedule,
+          slotDuration,
+        },
+      });
 
-  return (list || []).filter((item) => !isPastExceptionDate(item.date));
-}
+      setSavedSchedule(nextSchedule);
+      setSavedSlotDuration(slotDuration);
+      setPreview({});
+
+      showToast({
+        type: "success",
+        title: "Час оновлено",
+        text: "Зміни збережено в розкладі.",
+      });
+    } catch (err) {
+      console.error(err);
+
+      setScheduleDraft(savedSchedule);
+      queryClient.setQueryData(["studio-schedule", studioId], previous);
+
+      showToast({
+        type: "error",
+        title: "Не вдалося зберегти",
+        text: err?.message || "Сталася помилка під час збереження.",
+      });
+
+      throw err;
+    }
+  }
+
+  async function deleteExpiredExceptions(targetStudioId, token, list) {
+    const expired = (list || []).filter(
+      (item) => item?.id && isPastExceptionDate(item.date),
+    );
+
+    if (!expired.length) return list || [];
+
+    await Promise.allSettled(
+      expired.map((item) =>
+        api(`/studio/${targetStudioId}/schedule/exceptions/${item.id}`, {
+          method: "DELETE",
+          token,
+        }),
+      ),
+    );
+
+    return (list || []).filter((item) => !isPastExceptionDate(item.date));
+  }
 
   function generateSlots() {
     const result = {};
@@ -872,62 +851,61 @@ async function handleTimeCommit(dayKey, field, nextValue) {
     setPreview(result);
   }
 
-async function saveAll() {
-  if (!dirty || saving || !studioId) return;
+  async function saveAll() {
+    if (!dirty || saving || !studioId) return;
 
-  setSaving(true);
+    setSaving(true);
 
-  const token = localStorage.getItem("token");
-  const previous = queryClient.getQueryData(["studio-schedule", studioId]);
+    const token = localStorage.getItem("token");
+    const previous = queryClient.getQueryData(["studio-schedule", studioId]);
 
-  queryClient.setQueryData(["studio-schedule", studioId], (old) => ({
-    ...(old || {}),
-    schedule,
-    slotDuration,
-  }));
+    queryClient.setQueryData(["studio-schedule", studioId], (old) => ({
+      ...(old || {}),
+      schedule,
+      slotDuration,
+    }));
 
-  try {
-    await api(`/studio/${studioId}/schedule`, {
-      method: "PATCH",
-      token,
-      body: { schedule, slotDuration },
-    });
+    try {
+      await api(`/studio/${studioId}/schedule`, {
+        method: "PATCH",
+        token,
+        body: { schedule, slotDuration },
+      });
 
-    setSavedSchedule(schedule);
-    setSavedSlotDuration(slotDuration);
-    setPreview({});
+      setSavedSchedule(schedule);
+      setSavedSlotDuration(slotDuration);
+      setPreview({});
 
-    showToast({
-      type: "success",
-      title: "Графік оновлено",
-      text: "Зміни успішно збережено.",
-    });
-  } catch (err) {
-    console.error(err);
+      showToast({
+        type: "success",
+        title: "Графік оновлено",
+        text: "Зміни успішно збережено.",
+      });
+    } catch (err) {
+      console.error(err);
 
-    queryClient.setQueryData(["studio-schedule", studioId], previous);
+      queryClient.setQueryData(["studio-schedule", studioId], previous);
 
-    const rawMessage = String(err?.message || "").toLowerCase();
+      const rawMessage = String(err?.message || "").toLowerCase();
+      const isOffline =
+        !navigator.onLine ||
+        rawMessage.includes("failed to fetch") ||
+        rawMessage.includes("networkerror") ||
+        rawMessage.includes("network error") ||
+        rawMessage.includes("load failed") ||
+        rawMessage.includes("fetch");
 
-    const isOffline =
-      !navigator.onLine ||
-      rawMessage.includes("failed to fetch") ||
-      rawMessage.includes("networkerror") ||
-      rawMessage.includes("network error") ||
-      rawMessage.includes("load failed") ||
-      rawMessage.includes("fetch");
-
-    showToast({
-      type: "error",
-      title: isOffline ? "Немає інтернету" : "Не вдалося зберегти",
-      text: isOffline
-        ? "Перевірте підключення до інтернету."
-        : err?.message || "Сталася помилка під час збереження.",
-    });
-  } finally {
-    setSaving(false);
+      showToast({
+        type: "error",
+        title: isOffline ? "Немає інтернету" : "Не вдалося зберегти",
+        text: isOffline
+          ? "Перевірте підключення до інтернету."
+          : err?.message || "Сталася помилка під час збереження.",
+      });
+    } finally {
+      setSaving(false);
+    }
   }
-}
 
   function sortExceptions(list) {
     return [...list].sort((a, b) => {
@@ -935,6 +913,24 @@ async function saveAll() {
       const bd = b.date || "";
       return ad.localeCompare(bd);
     });
+  }
+
+  function getExceptionKey(item, index) {
+    return item.id || `${item.date || "new"}-${index}`;
+  }
+
+  function toggleExceptionExpanded(key) {
+    setExpandedExceptions((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  }
+
+  function setExceptionExpanded(key, value) {
+    setExpandedExceptions((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
   }
 
   function addExceptionRow() {
@@ -1012,89 +1008,37 @@ async function saveAll() {
         end: item.enabled ? item.end : null,
       };
 
- let res;
+      const res = item.id
+        ? await api(`/studio/${studio.id}/schedule/exceptions/${item.id}`, {
+            method: "PATCH",
+            token,
+            body,
+          })
+        : await api(`/studio/${studio.id}/schedule/exceptions`, {
+            method: "POST",
+            token,
+            body,
+          });
 
-if (item.id) {
-  res = await api(`/studio/${studio.id}/schedule/exceptions/${item.id}`, {
-    method: "PATCH",
-    token,
-    body,
-  });
-} else {
-  res = await api(`/studio/${studio.id}/schedule/exceptions`, {
-    method: "POST",
-    token,
-    body,
-  });
-}
-
-queryClient.setQueryData(
-  ["studio-schedule-exceptions", studioId],
-  (old = []) => {
-    const exists = old.some((row) => row.id === res.exception?.id);
-
-    if (exists) {
-      return old.map((row) =>
-        row.id === res.exception?.id
-          ? {
-              ...res.exception,
-              date: String(res.exception?.date || "").slice(0, 10),
-              isNew: false,
-            }
-          : row,
-      );
-    }
-
-    return [
-      ...old,
-      {
-        ...res.exception,
-        date: String(res.exception?.date || "").slice(0, 10),
-        isNew: false,
-      },
-    ];
-  },
-);
-
-setExceptions((prev) => {
-  const next = sortExceptions(
-    prev.map((row, i) =>
-      i === index
-        ? {
+      queryClient.setQueryData(
+        ["studio-schedule-exceptions", studioId],
+        (old = []) => {
+          const exists = old.some((row) => row.id === res.exception?.id);
+          const normalized = {
             ...res.exception,
             date: String(res.exception?.date || "").slice(0, 10),
             isNew: false,
+          };
+
+          if (exists) {
+            return old.map((row) =>
+              row.id === res.exception?.id ? normalized : row,
+            );
           }
-        : row,
-    ),
-  );
 
-  const savedIndex = next.findIndex(
-    (row) =>
-      row.id === res.exception?.id ||
-      (!row.id && row.date === res.exception?.date),
-  );
-
-  const nextKey =
-    savedIndex >= 0
-      ? getExceptionKey(next[savedIndex], savedIndex)
-      : getExceptionKey(res.exception, index);
-
-  setTimeout(() => {
-    setExpandedExceptions((prevExpanded) => {
-      const updated = { ...prevExpanded };
-
-      Object.keys(updated).forEach((k) => {
-        if (k.includes(item.date || "")) delete updated[k];
-      });
-
-      updated[nextKey] = false;
-      return updated;
-    });
-  }, 0);
-
-  return next;
-});
+          return [...old, normalized];
+        },
+      );
 
       setExceptions((prev) => {
         const next = sortExceptions(
@@ -1102,6 +1046,7 @@ setExceptions((prev) => {
             i === index
               ? {
                   ...res.exception,
+                  date: String(res.exception?.date || "").slice(0, 10),
                   isNew: false,
                 }
               : row,
@@ -1166,20 +1111,18 @@ setExceptions((prev) => {
     const token = localStorage.getItem("token");
 
     try {
-await api(`/studio/${studio.id}/schedule/exceptions/${item.id}`, {
-  method: "DELETE",
-  token,
-});
+      await api(`/studio/${studio.id}/schedule/exceptions/${item.id}`, {
+        method: "DELETE",
+        token,
+      });
 
-// 🔥 ОНОВЛЕННЯ КЕШУ
-queryClient.setQueryData(
-  ["studio-schedule-exceptions", studioId],
-  (old = []) => old.filter((row) => row.id !== item.id),
-);
+      queryClient.setQueryData(
+        ["studio-schedule-exceptions", studioId],
+        (old = []) => old.filter((row) => row.id !== item.id),
+      );
 
-// твій локальний state
-setExceptions((prev) => prev.filter((_, i) => i !== index));
-setPreview({});
+      setExceptions((prev) => prev.filter((_, i) => i !== index));
+      setPreview({});
 
       showToast({
         type: "success",
@@ -1205,21 +1148,20 @@ setPreview({});
   }
 
   useEffect(() => {
-  if (!scheduleQuery.data) return;
+    if (!scheduleQuery.data) return;
 
-  const nextSchedule = normalizeSchedule(scheduleQuery.data?.schedule);
-  const nextDuration =
-    typeof scheduleQuery.data?.slotDuration === "number"
-      ? scheduleQuery.data.slotDuration
-      : 15;
+    const nextSchedule = normalizeSchedule(scheduleQuery.data?.schedule);
+    const nextDuration =
+      typeof scheduleQuery.data?.slotDuration === "number"
+        ? scheduleQuery.data.slotDuration
+        : 15;
 
-  setScheduleDraft(nextSchedule);
-  setSlotDuration(nextDuration);
-
-  setSavedSchedule(nextSchedule);
-  setSavedSlotDuration(nextDuration);
-  setPreview({});
-}, [scheduleQuery.data]);
+    setScheduleDraft(nextSchedule);
+    setSlotDuration(nextDuration);
+    setSavedSchedule(nextSchedule);
+    setSavedSlotDuration(nextDuration);
+    setPreview({});
+  }, [scheduleQuery.data]);
 
 useEffect(() => {
   if (!exceptionsQuery.data) return;
@@ -1237,7 +1179,6 @@ useEffect(() => {
       );
 
       if (!alive) return;
-
       setExceptions(sortExceptions(cleanedExceptions));
     } catch (e) {
       console.error(e);
@@ -1255,36 +1196,7 @@ useEffect(() => {
   return () => {
     alive = false;
   };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [exceptionsQuery.data, studioId]);
-
-const initialLoading =
-  scheduleQuery.isLoading && !scheduleQuery.data;
-
-const exceptionsLoading =
-  exceptionsQuery.isLoading && !exceptionsQuery.data;
-
-  
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [expandedExceptions, setExpandedExceptions] = useState({});
-
-  function getExceptionKey(item, index) {
-    return item.id || `${item.date || "new"}-${index}`;
-  }
-
-  function toggleExceptionExpanded(key) {
-    setExpandedExceptions((prev) => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
-  }
-
-  function setExceptionExpanded(key, value) {
-    setExpandedExceptions((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
-  }
+}, [exceptionsQuery.data, studioId, showToast]);
 
   useEffect(() => {
     const syncMenuState = () => {
@@ -1302,134 +1214,128 @@ const exceptionsLoading =
     return () => observer.disconnect();
   }, []);
 
+  const initialLoading = scheduleQuery.isLoading && !scheduleQuery.data;
+  const exceptionsLoading = exceptionsQuery.isLoading && !exceptionsQuery.data;
   const enabledDaysCount = DAYS.filter((d) => schedule[d.key]?.enabled).length;
 
   return (
-    <div className="min-h-screen ">
+    <div className="min-h-screen">
       <Toast toast={toast} />
 
       <div className="mx-auto max-w-5xl space-y-6">
-        {/* Header */}
-<div className="relative mb-6 overflow-hidden rounded-3xl border border-stone-200/60 bg-white p-5 sm:p-6 shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]">
-  {/* top accent */}
-  <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-60" />
+        <div className="relative mb-6 overflow-hidden rounded-3xl border border-[var(--color-cream)] bg-white p-5 shadow-[var(--shadow-soft)] sm:p-6">
+          <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[var(--color-forest)] via-[var(--color-caramel)] to-[var(--color-ink)] opacity-70" />
 
-  <div className="relative">
-    <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-3 py-1.5">
-      <Sparkles className="h-4 w-4 text-amber-600" />
-      <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-amber-700">
-        Графік студії
-      </span>
-    </div>
+          <div className="relative">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[var(--color-sand)] bg-[var(--color-pending-bg)] px-3 py-1.5">
+              <Sparkles className="h-4 w-4 text-[var(--color-forest)]" />
+              <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-forest)]">
+                Графік студії
+              </span>
+            </div>
 
-    <h1 className="text-3xl font-black tracking-tight text-stone-800 sm:text-4xl">
-      Графік роботи
-    </h1>
+            <h1 className="text-3xl font-black tracking-tight text-[var(--color-ink)] sm:text-4xl">
+              Графік роботи
+            </h1>
 
-    <p className="mt-2 max-w-xl text-sm text-stone-600 sm:text-base">
-      Налаштуйте робочі дні, години роботи та крок запису в зручному форматі.
-    </p>
-  </div>
-</div>
+            <p className="mt-2 max-w-xl text-sm text-[var(--color-caramel)] sm:text-base">
+              Налаштуйте робочі дні, години роботи та крок запису в зручному
+              форматі.
+            </p>
+          </div>
+        </div>
 
-        {/* Work days */}
         <SectionCard
           title="Робочі дні"
           subtitle="Увімкни день і задай час початку та завершення."
           badge={`${enabledDaysCount} активн.`}
         >
-{initialLoading ? (
-  <WorkDaysSkeleton />
-) : (
-  <div className="space-y-3">
-    {DAYS.map((day) => {
-      const config = schedule[day.key];
-      const enabled = config.enabled;
+          {initialLoading ? (
+            <WorkDaysSkeleton />
+          ) : (
+            <div className="space-y-3">
+              {DAYS.map((day) => {
+                const config = schedule[day.key];
+                const enabled = config.enabled;
 
-      return (
-        <div
-          key={day.key}
-          className={cn(
-            "rounded-2xl border p-4 transition-all duration-300",
-            enabled
-              ? "border-stone-200 bg-white shadow-[0_6px_18px_rgba(93,64,55,0.04)] hover:border-amber-200"
-              : "border-stone-200/70 bg-stone-50/70",
+                return (
+                  <div
+                    key={day.key}
+                    className={cn(
+                      "rounded-2xl border p-4 transition-all duration-300",
+                      enabled
+                        ? "border-[var(--color-cream)] bg-white shadow-[0_6px_18px_rgba(27,27,27,0.05)] hover:border-[var(--color-sand)]"
+                        : "border-[var(--color-cream)] bg-[var(--color-cream)]",
+                    )}
+                  >
+                    <div className="grid gap-4 sm:grid-cols-[1fr_260px] sm:items-center">
+                      <button
+                        type="button"
+                        onClick={() => toggleDay(day.key)}
+                        disabled={saving}
+                        className="flex items-center gap-3 text-left disabled:opacity-60"
+                      >
+                        <Toggle checked={enabled} />
+
+                        <div className="min-w-0">
+                          <p className="text-[15px] font-bold text-[var(--color-ink)]">
+                            {day.full}
+                          </p>
+                          <p className="text-xs text-[var(--color-caramel)]">
+                            {enabled ? "Робочий день" : "Вихідний"}
+                          </p>
+                        </div>
+                      </button>
+
+                      {enabled ? (
+                        <div className="w-full sm:w-[260px]">
+                          <div className="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-[20px] border border-[var(--color-cream)] bg-white px-2.5 py-2 shadow-[0_6px_20px_rgba(27,27,27,0.06)]">
+                            <div className="min-w-0">
+                             <div className="rounded-[14px] border border-[var(--color-cream)] bg-white transition-all duration-200 hover:bg-[var(--color-cream)]">
+                                <TimeSelect
+                                  value={config.start}
+                                  label="Початок зміни"
+                                  dayLabel={day.full}
+                                  onChange={(value) =>
+                                    updateTime(day.key, "start", value)
+                                  }
+                                  onCommit={(value) =>
+                                    handleTimeCommit(day.key, "start", value)
+                                  }
+                                />
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-center">
+                              <span className="block h-px w-3 bg-[var(--color-mist)]" />
+                            </div>
+
+                            <div className="min-w-0">
+                              <div className="rounded-[14px] border border-[var(--color-cream)] bg-white transition-all duration-200 hover:bg-[var(--color-cream)]">
+                                <TimeSelect
+                                  value={config.end}
+                                  label="Кінець зміни"
+                                  dayLabel={day.full}
+                                  onChange={(value) =>
+                                    updateTime(day.key, "end", value)
+                                  }
+                                  onCommit={(value) =>
+                                    handleTimeCommit(day.key, "end", value)
+                                  }
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="hidden sm:block" />
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           )}
-        >
-          <div className="grid gap-4 sm:grid-cols-[1fr_260px] sm:items-center">
-            <button
-              type="button"
-              onClick={() => toggleDay(day.key)}
-              disabled={saving}
-              className="flex items-center gap-3 text-left disabled:opacity-60"
-            >
-              <Toggle checked={enabled} />
-
-              <div className="min-w-0">
-                <p className="text-[15px] font-bold text-stone-800">
-                  {day.full}
-                </p>
-                <p className="text-xs text-stone-500">
-                  {enabled ? "Робочий день" : "Вихідний"}
-                </p>
-              </div>
-            </button>
-
-            {enabled ? (
-              <div className="w-full sm:w-[260px]">
-                <div
-                  className={cn(
-                    "grid w-full grid-cols-[1fr_auto_1fr] items-center gap-2",
-                    "rounded-[20px] border border-stone-200 bg-white",
-                    "px-2.5 py-2 shadow-[0_6px_20px_rgba(120,90,60,0.06)]",
-                  )}
-                >
-                  <div className="min-w-0">
-                    <div className="rounded-[14px] border border-stone-200 bg-stone-50">
-                      <TimeSelect
-                        value={config.start}
-                        label="Початок зміни"
-                        dayLabel={day.full}
-                        onChange={(value) =>
-                          updateTime(day.key, "start", value)
-                        }
-                        onCommit={(value) =>
-                          handleTimeCommit(day.key, "start", value)
-                        }
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-center">
-                    <span className="block h-px w-3 bg-stone-300" />
-                  </div>
-
-                  <div className="min-w-0">
-                    <div className="rounded-[14px] border border-stone-200 bg-stone-50">
-                      <TimeSelect
-                        value={config.end}
-                        label="Кінець зміни"
-                        dayLabel={day.full}
-                        onChange={(value) =>
-                          updateTime(day.key, "end", value)
-                        }
-                        onCommit={(value) =>
-                          handleTimeCommit(day.key, "end", value)
-                        }
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="hidden sm:block" />
-            )}
-          </div>
-        </div>
-      );
-    })}
-  </div>
-)}
         </SectionCard>
 
         <SectionCard
@@ -1440,17 +1346,17 @@ const exceptionsLoading =
             <Button
               variant="primary"
               onClick={addExceptionRow}
-              className="w-full sm:w-auto sm:shrink-0 whitespace-nowrap justify-center"
+              className="w-full justify-center whitespace-nowrap sm:w-auto sm:shrink-0"
             >
               <CalendarDays className="h-4 w-4" />
               Додати дату
             </Button>
           }
         >
-{exceptionsLoading ? (
-  <ExceptionsSkeleton />
-) : exceptions.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-6 text-sm text-stone-500">
+          {exceptionsLoading ? (
+            <ExceptionsSkeleton />
+          ) : exceptions.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-[var(--color-mist)] bg-[var(--color-cream)] px-4 py-6 text-sm text-[var(--color-caramel)]">
               Ще немає особливих дат. Наприклад: Пасха 08:00–12:00 або вихідний
               на конкретну дату.
             </div>
@@ -1464,7 +1370,7 @@ const exceptionsLoading =
                 return (
                   <div
                     key={exceptionKey}
-                    className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-[0_6px_18px_rgba(93,64,55,0.04)] transition-all duration-300"
+                    className="overflow-hidden rounded-2xl border border-[var(--color-cream)] bg-white shadow-[0_6px_18px_rgba(27,27,27,0.05)] transition-all duration-300"
                   >
                     <button
                       type="button"
@@ -1473,39 +1379,39 @@ const exceptionsLoading =
                       }
                       className={cn(
                         "flex w-full items-start justify-between gap-3 p-4 text-left transition-colors",
-                        !item.isNew && "hover:bg-stone-50/80",
+                        !item.isNew && "hover:bg-[var(--color-cream)]",
                       )}
                     >
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-[15px] font-bold text-stone-800">
+                          <p className="text-[15px] font-bold text-[var(--color-ink)]">
                             {item.date
                               ? formatExceptionDate(item.date)
                               : "Нова особлива дата"}
                           </p>
 
-                          <div className="rounded-full border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                          <div className="rounded-full border border-[var(--color-sand)] bg-[var(--color-pending-bg)] px-3 py-1 text-xs font-semibold text-[var(--color-forest)]">
                             {item.enabled ? "Особливий графік" : "Вихідний"}
                           </div>
                         </div>
 
-                        <p className="mt-1 text-xs text-stone-500">
+                        <p className="mt-1 text-xs text-[var(--color-caramel)]">
                           {exceptionSubtitle(item)}
                         </p>
                       </div>
 
                       <div className="flex items-center gap-2">
                         {!item.isNew && (
-                          <span className="hidden text-xs font-medium text-stone-400 sm:inline">
+                          <span className="hidden text-xs font-medium text-[var(--color-caramel)] sm:inline">
                             {isExpanded ? "Згорнути" : "Розгорнути"}
                           </span>
                         )}
 
                         {!item.isNew &&
                           (isExpanded ? (
-                            <ChevronUp className="h-5 w-5 shrink-0 text-stone-400" />
+                            <ChevronUp className="h-5 w-5 shrink-0 text-[var(--color-caramel)]" />
                           ) : (
-                            <ChevronDown className="h-5 w-5 shrink-0 text-stone-400" />
+                            <ChevronDown className="h-5 w-5 shrink-0 text-[var(--color-caramel)]" />
                           ))}
                       </div>
                     </button>
@@ -1517,9 +1423,8 @@ const exceptionsLoading =
                       )}
                     >
                       <div className="overflow-hidden">
-                        <div className="border-t border-stone-100 px-4 pb-4 pt-4">
+                        <div className="border-t border-[var(--color-cream)] px-4 pb-4 pt-4">
                           <div className="grid gap-3 sm:grid-cols-2 sm:items-end">
-                            {" "}
                             <div>
                               <DatePicker
                                 label="Дата"
@@ -1529,37 +1434,35 @@ const exceptionsLoading =
                                 }
                               />
                             </div>
+
                             <div>
-                              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-stone-500">
+                              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[var(--color-caramel)]">
                                 Статус
                               </label>
                               <button
                                 type="button"
                                 onClick={() =>
-                                  updateException(
-                                    index,
-                                    "enabled",
-                                    !item.enabled,
-                                  )
+                                  updateException(index, "enabled", !item.enabled)
                                 }
-                                className="flex h-[50px] w-full items-center gap-3 rounded-2xl border border-stone-200 bg-stone-50 px-4 transition-all duration-200 hover:border-stone-300 hover:bg-white"
+                                className="flex h-[50px] w-full items-center gap-3 rounded-2xl border border-[var(--color-cream)] bg-[var(--color-cream)] px-4 transition-all duration-200 hover:border-[var(--color-mist)] hover:bg-white"
                               >
                                 <div className="shrink-0">
                                   <Toggle checked={item.enabled} />
                                 </div>
 
-                                <span className="whitespace-nowrap text-sm font-semibold text-stone-700">
+                                <span className="whitespace-nowrap text-sm font-semibold text-[var(--color-ink)]">
                                   {item.enabled ? "Робочий день" : "Вихідний"}
                                 </span>
                               </button>
                             </div>
+
                             {item.enabled ? (
                               <div className="grid gap-2 sm:grid-cols-2">
                                 <div className="min-w-0">
-                                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-stone-500">
+                                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[var(--color-caramel)]">
                                     Початок
                                   </label>
-                                  <div className="rounded-[16px] border border-stone-200 bg-stone-50">
+                                  <div className="rounded-[16px] border border-[var(--color-cream)] bg-[var(--color-cream)]">
                                     <TimeSelect
                                       value={item.start}
                                       label="Початок"
@@ -1575,10 +1478,10 @@ const exceptionsLoading =
                                 </div>
 
                                 <div className="min-w-0">
-                                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-stone-500">
+                                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[var(--color-caramel)]">
                                     Завершення
                                   </label>
-                                  <div className="rounded-[16px] border border-stone-200 bg-stone-50">
+                                  <div className="rounded-[16px] border border-[var(--color-cream)] bg-[var(--color-cream)]">
                                     <TimeSelect
                                       value={item.end}
                                       label="Завершення"
@@ -1595,17 +1498,18 @@ const exceptionsLoading =
                               </div>
                             ) : (
                               <div className="flex items-center">
-                                <div className="w-full rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
+                                <div className="w-full rounded-2xl border border-[var(--color-danger-border)] bg-[var(--color-danger-bg)] px-4 py-3 text-sm font-semibold text-[var(--color-danger)]">
                                   У цей день студія не працює
                                 </div>
                               </div>
                             )}
+
                             <div className="flex gap-2 lg:justify-end">
                               <Button
                                 variant="secondary"
                                 onClick={() => saveException(item, index)}
                                 disabled={!item.date}
-                                className="flex-1 h-[50px] lg:flex-none"
+                                className="h-[50px] flex-1 lg:flex-none"
                               >
                                 Зберегти
                               </Button>
@@ -1613,7 +1517,7 @@ const exceptionsLoading =
                               <Button
                                 variant="danger"
                                 onClick={() => removeException(item, index)}
-                                className="flex-1 h-[50px] lg:flex-none"
+                                className="h-[50px] flex-1 lg:flex-none"
                               >
                                 <Trash2 className="h-4 w-4" />
                                 Видалити
@@ -1630,7 +1534,6 @@ const exceptionsLoading =
           )}
         </SectionCard>
 
-        {/* Slot settings */}
         <SectionCard
           title="Налаштування слотів"
           subtitle="Це тривалість одного запису — крок між доступними часами."
@@ -1639,7 +1542,7 @@ const exceptionsLoading =
             <Button
               variant="primary"
               onClick={generateSlots}
-              className="w-full sm:w-auto sm:shrink-0 whitespace-nowrap justify-center"
+              className="w-full justify-center whitespace-nowrap sm:w-auto sm:shrink-0"
             >
               <CalendarDays className="h-4 w-4" />
               Згенерувати слоти
@@ -1648,7 +1551,7 @@ const exceptionsLoading =
         >
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-stone-700">
+              <label className="block text-sm font-medium text-[var(--color-ink)]">
                 Тривалість слота
               </label>
 
@@ -1664,14 +1567,12 @@ const exceptionsLoading =
               />
             </div>
 
-            <div className="rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-3 text-sm text-amber-800 shadow-sm">
-              Поточний крок:{" "}
-              <span className="font-bold">{slotDuration} хв</span>
+            <div className="rounded-2xl border border-[var(--color-sand)] bg-[var(--color-pending-bg)] px-4 py-3 text-sm text-[var(--color-ink)] shadow-sm">
+              Поточний крок: <span className="font-bold">{slotDuration} хв</span>
             </div>
           </div>
         </SectionCard>
 
-        {/* Preview */}
         {Object.keys(preview).length > 0 && (
           <SectionCard
             title="Перевірка графіка"
@@ -1684,11 +1585,11 @@ const exceptionsLoading =
                 preview[day.key] ? (
                   <div key={day.key} className="space-y-2">
                     <div className="flex items-center justify-between gap-3">
-                      <p className="text-sm font-bold text-stone-800">
+                      <p className="text-sm font-bold text-[var(--color-ink)]">
                         {day.full}
                       </p>
 
-                      <span className="text-xs text-stone-500">
+                      <span className="text-xs text-[var(--color-caramel)]">
                         {preview[day.key].length} слот(и)
                       </span>
                     </div>
@@ -1706,26 +1607,25 @@ const exceptionsLoading =
         )}
       </div>
 
-      {/* Desktop save bar */}
       <div className="fixed bottom-6 left-1/2 z-[80] hidden -translate-x-1/2 md:block">
         <div
           className={cn(
-            "relative overflow-hidden rounded-[28px] border border-amber-200 bg-white/95 px-5 py-4 shadow-[0_24px_80px_rgba(31,42,34,0.18)] ring-1 ring-amber-100 backdrop-blur-xl transition-all duration-200",
+            "relative overflow-hidden rounded-[28px] border border-[var(--color-sand)] bg-white/95 px-5 py-4 shadow-[0_24px_80px_rgba(27,27,27,0.18)] ring-1 ring-[var(--color-pending-bg)] backdrop-blur-xl transition-all duration-200",
             dirty
               ? "translate-y-0 scale-100 opacity-100"
               : "pointer-events-none translate-y-4 scale-[0.98] opacity-0",
           )}
         >
-          <div className="pointer-events-none absolute left-4 right-4 top-0 h-1 rounded-full bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500" />
+          <div className="pointer-events-none absolute left-4 right-4 top-0 h-1 rounded-full bg-gradient-to-r from-[var(--color-forest)] via-[var(--color-caramel)] to-[var(--color-ink)]" />
           <div className="flex items-center gap-4">
             <div className="flex min-w-0 items-center gap-3 pr-2">
-              <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-r from-amber-100 to-orange-100 shadow-[0_8px_20px_rgba(226,154,84,0.20)]">
-                <span className="absolute inline-flex h-3 w-3 rounded-full bg-orange-400 opacity-75 animate-ping" />
-                <span className="relative inline-flex h-3 w-3 rounded-full bg-orange-500" />
+              <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-pending-bg)] shadow-[0_8px_20px_rgba(180,140,108,0.20)]">
+                <span className="absolute inline-flex h-3 w-3 animate-ping rounded-full bg-[var(--color-caramel)] opacity-75" />
+                <span className="relative inline-flex h-3 w-3 rounded-full bg-[var(--color-forest)]" />
               </div>
 
               <div className="min-w-0">
-                <p className="text-[16px] font-black leading-none text-stone-800">
+                <p className="text-[16px] font-black leading-none text-[var(--color-ink)]">
                   Маєте незбережені зміни
                 </p>
               </div>
@@ -1754,7 +1654,6 @@ const exceptionsLoading =
         </div>
       </div>
 
-      {/* Mobile save bar */}
       <div
         className={cn(
           "fixed inset-x-0 bottom-0 z-[80] transition-all duration-300 md:hidden",
@@ -1766,8 +1665,8 @@ const exceptionsLoading =
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-white via-white/95 to-transparent" />
 
         <div className="relative mx-auto max-w-5xl px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-          <div className="relative overflow-hidden rounded-[26px] border border-amber-200 bg-white/95 px-4 py-4 shadow-[0_24px_80px_rgba(31,42,34,0.18)] ring-1 ring-amber-100 backdrop-blur-xl">
-            <div className="pointer-events-none absolute left-4 right-4 top-0 h-1 rounded-full bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500" />
+          <div className="relative overflow-hidden rounded-[26px] border border-[var(--color-sand)] bg-white/95 px-4 py-4 shadow-[0_24px_80px_rgba(27,27,27,0.18)] ring-1 ring-[var(--color-pending-bg)] backdrop-blur-xl">
+            <div className="pointer-events-none absolute left-4 right-4 top-0 h-1 rounded-full bg-gradient-to-r from-[var(--color-forest)] via-[var(--color-caramel)] to-[var(--color-ink)]" />
             <div className="flex gap-2">
               <Button
                 variant="secondary"

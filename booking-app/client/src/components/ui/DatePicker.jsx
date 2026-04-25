@@ -48,7 +48,6 @@ function getMonthMatrix(viewDate) {
 
   const startWeekDay = (firstDay.getDay() + 6) % 7;
   const daysInMonth = lastDay.getDate();
-
   const prevMonthLastDay = new Date(year, month, 0).getDate();
 
   const cells = [];
@@ -103,7 +102,6 @@ export default function DatePicker({
   const [openUp, setOpenUp] = useState(false);
 
   const rootRef = useRef(null);
-
   const selectedDate = useMemo(() => parseDate(value), [value]);
   const [viewDate, setViewDate] = useState(() => selectedDate || new Date());
 
@@ -114,12 +112,10 @@ export default function DatePicker({
     const dropdownHeight = 380;
     const spaceBelow = window.innerHeight - rect.bottom;
     const spaceAbove = rect.top;
-
     const shouldOpenUp =
       spaceBelow < dropdownHeight && spaceAbove > dropdownHeight;
 
     setOpenUp(shouldOpenUp);
-
     setMenuPosition({
       left: rect.left,
       width: rect.width,
@@ -168,7 +164,7 @@ export default function DatePicker({
       window.removeEventListener("resize", handleUpdate);
       window.removeEventListener("scroll", handleUpdate, true);
     };
-  }, [open]);
+  }, [open, selectedDate]);
 
   const weeks = useMemo(() => getMonthMatrix(viewDate), [viewDate]);
   const today = new Date();
@@ -181,7 +177,7 @@ export default function DatePicker({
   return (
     <div ref={rootRef} className={cn("relative w-full", className)}>
       {label && (
-        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-stone-500">
+        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[var(--color-caramel)]">
           {label}
         </label>
       )}
@@ -192,12 +188,12 @@ export default function DatePicker({
         className={cn(
           "group flex h-[50px] w-full items-center justify-between gap-3 rounded-2xl border px-4 text-left transition-all duration-200",
           open
-            ? "border-amber-400 bg-white ring-2 ring-amber-400/20 shadow-[0_12px_30px_rgba(251,146,60,0.16)]"
-            : "border-stone-200 bg-stone-50 hover:border-stone-300 hover:bg-white",
+            ? "border-[var(--color-caramel)] bg-white ring-2 ring-[rgba(180,140,108,0.18)] shadow-[0_12px_30px_rgba(180,140,108,0.16)]"
+            : "border-[var(--color-cream)] bg-[var(--color-cream)] hover:border-[var(--color-mist)] hover:bg-white",
         )}
       >
         <div className="min-w-0">
-          <div className="text-sm font-semibold text-stone-800">
+          <div className="text-sm font-semibold text-[var(--color-ink)]">
             {value ? formatDate(value) : placeholder}
           </div>
         </div>
@@ -206,8 +202,8 @@ export default function DatePicker({
           className={cn(
             "flex h-9 w-9 items-center justify-center rounded-xl border transition-all duration-200",
             open
-              ? "border-amber-200 bg-amber-50 text-amber-600"
-              : "border-stone-200 bg-white text-stone-500 group-hover:text-stone-700",
+              ? "border-[var(--color-sand)] bg-[var(--color-pending-bg)] text-[var(--color-forest)]"
+              : "border-[var(--color-cream)] bg-white text-[var(--color-caramel)] group-hover:text-[var(--color-ink)]",
           )}
         >
           <CalendarDays className="h-4 w-4" />
@@ -217,7 +213,7 @@ export default function DatePicker({
       {open && (
         <div
           className={cn(
-            "fixed z-[220] overflow-hidden rounded-[24px] border border-stone-200 bg-white shadow-[0_24px_70px_rgba(0,0,0,0.18)]",
+            "fixed z-[220] overflow-hidden rounded-[24px] border border-[var(--color-cream)] bg-white shadow-[0_24px_70px_rgba(27,27,27,0.18)]",
             openUp ? "origin-bottom" : "origin-top",
           )}
           style={{
@@ -227,7 +223,7 @@ export default function DatePicker({
             width: Math.max(menuPosition.width, 280),
           }}
         >
-          <div className="border-b border-stone-100 bg-gradient-to-r from-stone-50 to-orange-50/40 px-3 py-3">
+          <div className="border border-[var(--color-cream)] bg-gradient-to-br from-white via-[var(--color-cream)] to-white px-3 py-1">
             <div className="flex items-center justify-between gap-2">
               <button
                 type="button"
@@ -240,12 +236,12 @@ export default function DatePicker({
                     ),
                   )
                 }
-                className="flex h-10 w-10 items-center justify-center rounded-2xl border border-stone-200 bg-white text-stone-600 transition hover:border-stone-300 hover:bg-stone-50"
+                className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[var(--color-cream)] bg-white text-[var(--color-ink)] transition hover:border-[var(--color-mist)] hover:bg-[var(--color-cream)]"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
 
-              <div className="text-sm font-black capitalize tracking-tight text-stone-800">
+              <div className="text-sm font-black capitalize tracking-tight text-[var(--color-ink)]">
                 {monthLabel}
               </div>
 
@@ -260,7 +256,7 @@ export default function DatePicker({
                     ),
                   )
                 }
-                className="flex h-10 w-10 items-center justify-center rounded-2xl border border-stone-200 bg-white text-stone-600 transition hover:border-stone-300 hover:bg-stone-50"
+                className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[var(--color-cream)] bg-white text-[var(--color-ink)] transition hover:border-[var(--color-mist)] hover:bg-[var(--color-cream)]"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
@@ -272,7 +268,7 @@ export default function DatePicker({
               {WEEK_DAYS.map((day) => (
                 <div
                   key={day}
-                  className="flex h-7 items-center justify-center text-xs font-bold uppercase tracking-wide text-stone-400"
+                  className="flex h-7 items-center justify-center text-xs font-bold uppercase tracking-wide text-[var(--color-caramel)]"
                 >
                   {day}
                 </div>
@@ -283,7 +279,8 @@ export default function DatePicker({
               {weeks.map((week, weekIndex) => (
                 <div key={weekIndex} className="grid grid-cols-7 gap-1">
                   {week.map(({ date, currentMonth }) => {
-                    const selected = selectedDate && isSameDay(date, selectedDate);
+                    const selected =
+                      selectedDate && isSameDay(date, selectedDate);
                     const isToday = isSameDay(date, today);
 
                     return (
@@ -298,12 +295,12 @@ export default function DatePicker({
                         className={cn(
                           "relative flex h-9 items-center justify-center rounded-2xl text-sm font-semibold transition-all duration-200",
                           selected
-                            ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-[0_10px_24px_rgba(251,146,60,0.28)]"
+                            ? "bg-[var(--color-ink)] text-white shadow-[var(--shadow-button)]"
                             : currentMonth
-                              ? "text-stone-800 hover:bg-stone-100"
-                              : "text-stone-300 hover:bg-stone-50",
+                              ? "text-[var(--color-ink)] hover:bg-[var(--color-cream)]"
+                              : "text-[var(--color-caramel)]/50 hover:bg-[var(--color-cream)]",
                           isToday && !selected
-                            ? "ring-2 ring-amber-300/60 bg-amber-50 text-amber-700"
+                            ? "bg-[var(--color-cream)] text-[var(--color-forest)]"
                             : "",
                         )}
                       >
@@ -315,28 +312,7 @@ export default function DatePicker({
               ))}
             </div>
 
-            <div className="mt-3 flex items-center justify-between gap-2 border-t border-stone-100 pt-3">
-              <button
-                type="button"
-                onClick={() => onChange?.("")}
-                className="rounded-xl px-3 py-2 text-sm font-semibold text-stone-500 transition hover:bg-stone-100 hover:text-stone-700"
-              >
-                Очистити
-              </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  const now = new Date();
-                  setViewDate(now);
-                  onChange?.(toInputValue(now));
-                  setOpen(false);
-                }}
-                className="rounded-xl bg-gradient-to-r from-amber-100 to-orange-100 px-3 py-2 text-sm font-bold text-amber-700 transition hover:from-amber-200 hover:to-orange-200"
-              >
-                Сьогодні
-              </button>
-            </div>
           </div>
         </div>
       )}

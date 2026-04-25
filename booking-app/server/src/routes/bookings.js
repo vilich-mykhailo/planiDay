@@ -218,7 +218,6 @@ router.get("/studio/:studioId", requireAuth, requireOwner, async (req, res) => {
 const items = await prisma.booking.findMany({
   where: {
     studioId,
-    ownerHiddenAt: null,
   },
   orderBy: { startAt: "asc" },
   include: {
@@ -651,19 +650,11 @@ router.delete("/studio/:studioId/:bookingId", requireAuth, requireOwner, async (
       return res.status(404).json({ message: "Booking not found" });
     }
 
-    const updated = await prisma.booking.update({
+    await prisma.booking.delete({
       where: { id: bookingId },
-      data: {
-        ownerHiddenAt: new Date(),
-      },
-      select: {
-        id: true,
-        clientId: true,
-        studioId: true,
-      },
     });
 
-    emitBookingUpdated(updated, { hiddenForOwner: true });
+    emitBookingDeleted(booking);
 
     res.json({ ok: true });
   } catch (e) {

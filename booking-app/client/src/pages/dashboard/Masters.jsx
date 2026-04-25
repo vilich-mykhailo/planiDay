@@ -1,4 +1,3 @@
-// Masters.jsx
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -66,40 +65,35 @@ function SectionCard({
   return (
     <section
       className={cn(
-        "group relative overflow-hidden rounded-3xl border border-stone-200/60 bg-white",
-        "shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)] hover:shadow-[0_8px_32px_-4px_rgba(120,90,60,0.12)]",
-        "transition-all duration-300",
+        "group relative overflow-hidden rounded-3xl border bg-white transition-all duration-300",
+        "border-[var(--color-cream)] shadow-[0_4px_24px_-4px_rgba(27,27,27,0.10)] hover:shadow-[0_8px_32px_-4px_rgba(27,27,27,0.14)]",
         className,
       )}
     >
-      <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-60" />
+      <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[var(--color-forest)] via-[var(--color-forest)] to-[var(--color-ink)] opacity-70" />
 
-      <div className="border-b border-stone-100 px-5 py-4">
+      <div className="border-b border-[var(--color-cream)] px-5 py-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-3">
-              <h2 className="text-lg font-bold tracking-tight text-stone-800">
+              <h2 className="text-lg font-bold tracking-tight text-[var(--color-ink)]">
                 {title}
               </h2>
 
               {badge && (
-                <span className="shrink-0 inline-flex items-center rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-3 py-1 text-xs font-semibold text-amber-700">
+                <span className="shrink-0 inline-flex items-center rounded-full bg-[var(--color-cream)] px-3 py-1 text-xs font-semibold text-[var(--color-ink)]">
                   {badge}
                 </span>
               )}
             </div>
 
             {subtitle && (
-              <p className="mt-1.5 text-sm text-stone-500">
-                {subtitle}
-              </p>
+              <p className="mt-1.5 text-sm text-[var(--color-caramel)]">{subtitle}</p>
             )}
           </div>
 
           {actions && (
-            <div className="w-full md:w-auto md:shrink-0">
-              {actions}
-            </div>
+            <div className="w-full md:w-auto md:shrink-0">{actions}</div>
           )}
         </div>
       </div>
@@ -111,11 +105,8 @@ function SectionCard({
 
 function isExceptionValid(item) {
   if (!item.date) return false;
-
-  if (!item.enabled) return true; // вихідний → можна зберігати
-
+  if (!item.enabled) return true;
   if (!item.start || !item.end) return false;
-
   return item.start < item.end;
 }
 
@@ -128,14 +119,14 @@ function Button({
 }) {
   const variants = {
     primary:
-      "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white  hover:shadow-emerald-500/35 hover:from-emerald-700 hover:to-emerald-800",
+      "bg-[var(--color-ink)] text-white hover:bg-[var(--border-hover-primary)] shadow-[0_10px_24px_rgba(27,27,27,0.22)]",
     secondary:
-      "bg-white border border-stone-200 text-stone-700 hover:bg-stone-50 hover:border-stone-300",
+      "bg-white border border-[var(--color-cream)] text-[var(--color-ink)] hover:bg-[var(--border-hover-primary)]",
     danger:
       "bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 text-red-600 hover:from-red-100 hover:to-rose-100",
     accent:
-      "border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 text-amber-700 shadow-sm hover:border-amber-300 hover:from-amber-100 hover:to-orange-100",
-    ghost: "text-stone-600 hover:bg-stone-100",
+      "border border-[var(--color-forest)] bg-[var(--border-hover-primary)] text-[var(--color-ink)] shadow-sm hover:bg-[var(--color-forest)] hover:text-white",
+    ghost: "text-[var(--color-ink)] hover:bg-[var(--border-hover-primary)]",
   };
 
   const sizes = {
@@ -148,7 +139,7 @@ function Button({
     <button
       type="button"
       className={cn(
-        "inline-flex items-center justify-center gap-2 font-semibold ",
+        "inline-flex items-center justify-center gap-2 font-semibold",
         "active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50",
         variants[variant],
         sizes[size],
@@ -169,14 +160,14 @@ function IconButton({
 }) {
   const variants = {
     primary:
-      "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white hover:shadow-emerald-500/35 hover:from-emerald-700 hover:to-emerald-800",
+      "bg-[var(--color-ink)] text-white hover:bg-[var(--border-hover-primary)] shadow-[0_10px_24px_rgba(27,27,27,0.22)]",
     secondary:
-      "bg-white border border-stone-200 text-stone-700 hover:bg-stone-50 hover:border-stone-300",
+      "bg-white border border-[var(--color-cream)] text-[var(--color-ink)] hover:bg-[var(--color-cream)]",
     danger:
       "bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 text-red-600 hover:from-red-100 hover:to-rose-100",
     accent:
-      "border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 text-amber-700 shadow-sm hover:border-amber-300 hover:from-amber-100 hover:to-orange-100",
-    ghost: "text-stone-600 hover:bg-stone-100",
+      "border border-[var(--color-forest)] bg-[var(--color-cream)] text-[var(--color-ink)] shadow-sm hover:bg-[var(--border-hover-primary)] hover:text-white",
+    ghost: "text-[var(--color-ink)] hover:bg-[var(--border-hover-primary)]",
   };
 
   return (
@@ -234,7 +225,7 @@ function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-stone-900/40 p-4 backdrop-blur-sm sm:p-6"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-[var(--color-bg)]/45 p-4 backdrop-blur-sm sm:p-6"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose?.();
       }}
@@ -247,23 +238,23 @@ function Modal({
         )}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-amber-50/80 to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-[var(--color-cream)]/90 to-transparent" />
 
-        <div className="relative border-b border-stone-100 px-6 py-5">
+        <div className="relative border-b border-[var(--color-cream)] px-6 py-5">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-amber-600">
+              <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[var(--color-forest)]">
                 {title}
               </p>
               {subtitle && (
-                <p className="mt-1 text-sm text-stone-500">{subtitle}</p>
+                <p className="mt-1 text-sm text-[var(--color-caramel)]">{subtitle}</p>
               )}
             </div>
 
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl p-2 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600"
+              className="rounded-xl p-2 text-[var(--color-caramel)] transition-colors hover:bg-[var(--color-cream)] hover:text-[var(--color-ink)]"
               aria-label="Закрити"
             >
               <X className="h-5 w-5" />
@@ -276,7 +267,7 @@ function Modal({
         </div>
 
         {footer && (
-          <div className="border-t border-stone-100 bg-stone-50/50 px-6 py-4">
+          <div className="border-t border-[var(--color-cream)] bg-[var(--color-sand)] px-6 py-4">
             {footer}
           </div>
         )}
@@ -296,7 +287,7 @@ function Avatar({ name, photoUrl, size = "md", className = "" }) {
   return (
     <div
       className={cn(
-        "flex shrink-0 items-center justify-center overflow-hidden border-2 border-amber-100 bg-gradient-to-br from-amber-50 to-orange-50 shadow-sm",
+        "flex shrink-0 items-center justify-center overflow-hidden border-2 border-[var(--color-cream)] bg-gradient-to-br from-[var(--color-cream)] to-[var(--color-sand)] shadow-sm",
         sizes[size],
         className,
       )}
@@ -310,8 +301,10 @@ function Avatar({ name, photoUrl, size = "md", className = "" }) {
             e.currentTarget.style.display = "none";
           }}
         />
+      ) : initials ? (
+        <span className="font-bold text-[var(--color-forest)]">{initials}</span>
       ) : (
-        <Camera className="h-6 w-6 text-amber-500" />
+        <Camera className="h-6 w-6 text-[var(--color-forest)]" />
       )}
     </div>
   );
@@ -320,7 +313,7 @@ function Avatar({ name, photoUrl, size = "md", className = "" }) {
 function SkeletonBlock({ className = "" }) {
   return (
     <div
-      className={cn("animate-pulse rounded-xl bg-stone-200/60", className)}
+      className={cn("animate-pulse rounded-xl bg-[var(--color-cream)]", className)}
       aria-hidden="true"
     />
   );
@@ -370,20 +363,20 @@ async function deleteExpiredMasterExceptions(masterId, list) {
 
 function MasterSkeletonRow() {
   return (
-    <div className="rounded-2xl border border-stone-200 bg-white p-4">
+    <div className="rounded-2xl border border-[var(--color-cream)] bg-white p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
-          <div className="h-12 w-12 animate-pulse rounded-2xl bg-stone-200" />
+          <div className="h-12 w-12 animate-pulse rounded-2xl bg-[var(--color-cream)]" />
           <div className="w-full min-w-0">
-            <div className="h-4 w-40 animate-pulse rounded bg-stone-200" />
-            <div className="mt-2 h-3 w-52 animate-pulse rounded bg-stone-200" />
-            <div className="mt-2 h-3 w-64 animate-pulse rounded bg-stone-200" />
+            <div className="h-4 w-40 animate-pulse rounded bg-[var(--color-cream)]" />
+            <div className="mt-2 h-3 w-52 animate-pulse rounded bg-[var(--color-cream)]" />
+            <div className="mt-2 h-3 w-64 animate-pulse rounded bg-[var(--color-cream)]" />
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-2 sm:flex">
-          <div className="h-10 w-28 animate-pulse rounded-2xl bg-stone-200" />
-          <div className="h-10 w-28 animate-pulse rounded-2xl bg-stone-200" />
+          <div className="h-10 w-28 animate-pulse rounded-2xl bg-[var(--color-cream)]" />
+          <div className="h-10 w-28 animate-pulse rounded-2xl bg-[var(--color-cream)]" />
         </div>
       </div>
     </div>
@@ -402,20 +395,18 @@ function MastersListSkeleton() {
 
 export default function Masters() {
   const { studio } = useStudio();
-const queryClient = useQueryClient();
-const studioId = studio?.id ?? null;
-const mastersQuery = useQuery({
-  queryKey: ["masters", studioId],
-  queryFn: () => fetchMasters(studioId),
-  enabled: Boolean(studioId),
-
-  staleTime: 1000 * 60 * 10, // 10 хв
-  gcTime: 1000 * 60 * 30, // кеш 30 хв
-
-  refetchOnMount: false,
-  refetchOnWindowFocus: false,
-  refetchOnReconnect: false,
-});
+  const queryClient = useQueryClient();
+  const studioId = studio?.id ?? null;
+  const mastersQuery = useQuery({
+    queryKey: ["masters", studioId],
+    queryFn: () => fetchMasters(studioId),
+    enabled: Boolean(studioId),
+    staleTime: 1000 * 60 * 10,
+    gcTime: 1000 * 60 * 30,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  });
   const [adding, setAdding] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [exceptionsMaster, setExceptionsMaster] = useState(null);
@@ -425,51 +416,49 @@ const mastersQuery = useQuery({
   const [expandedExceptions, setExpandedExceptions] = useState({});
 
   async function syncMastersRelatedQueries() {
-  if (!studioId) return;
+    if (!studioId) return;
 
-  await Promise.all([
-    queryClient.invalidateQueries({
-      queryKey: ["masters", studioId],
-      exact: true,
-    }),
-    queryClient.invalidateQueries({
-      queryKey: ["services", studioId],
-      exact: true,
-    }),
-  ]);
-}
-
-async function fetchMasters(studioId) {
-  if (!studioId) return [];
-
-  const token = localStorage.getItem("token");
-
-  const res = await fetch(
-    `${import.meta.env.VITE_API_URL}/studio/${studioId}/masters`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    },
-  );
-
-  const data = await res.json().catch(() => null);
-
-  if (!res.ok) {
-    throw new Error(data?.message || `Load masters failed (${res.status})`);
+    await Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: ["masters", studioId],
+        exact: true,
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ["services", studioId],
+        exact: true,
+      }),
+    ]);
   }
 
-  return Array.isArray(data?.masters) ? data.masters : [];
-}
+  async function fetchMasters(currentStudioId) {
+    if (!currentStudioId) return [];
 
+    const token = localStorage.getItem("token");
 
+    const res = await fetch(
+      `${import.meta.env.VITE_API_URL}/studio/${currentStudioId}/masters`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
 
-  async function deleteMasterPhoto(studioId, key) {
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      throw new Error(data?.message || `Load masters failed (${res.status})`);
+    }
+
+    return Array.isArray(data?.masters) ? data.masters : [];
+  }
+
+  async function deleteMasterPhoto(currentStudioId, key) {
     if (!key) return;
     const token = localStorage.getItem("token");
 
     const res = await fetch(
-      `${import.meta.env.VITE_API_URL}/media/studio/${studioId}/master-photo`,
+      `${import.meta.env.VITE_API_URL}/media/studio/${currentStudioId}/master-photo`,
       {
         method: "DELETE",
         headers: {
@@ -492,9 +481,8 @@ async function fetchMasters(studioId) {
     photoUrl: "",
   });
 
-
-const masters = mastersQuery.data || [];
-const loading = mastersQuery.isLoading;
+  const masters = mastersQuery.data || [];
+  const loading = mastersQuery.isLoading;
 
   const [form, setForm] = useState({
     name: "",
@@ -591,8 +579,8 @@ const loading = mastersQuery.isLoading;
         if (photoKey) {
           try {
             await deleteMasterPhoto(studio.id, photoKey);
-          } catch (e) {
-            console.warn("Rollback delete failed:", e);
+          } catch (error) {
+            console.warn("Rollback delete failed:", error);
           }
         }
 
@@ -600,37 +588,37 @@ const loading = mastersQuery.isLoading;
         return;
       }
 
-if (data?.master) {
-  queryClient.setQueryData(["masters", studioId], (old = []) => [
-    data.master,
-    ...old,
-  ]);
-} else {
-  await queryClient.invalidateQueries({
-    queryKey: ["masters", studioId],
-    exact: true,
-  });
-}
+      if (data?.master) {
+        queryClient.setQueryData(["masters", studioId], (old = []) => [
+          data.master,
+          ...old,
+        ]);
+      } else {
+        await queryClient.invalidateQueries({
+          queryKey: ["masters", studioId],
+          exact: true,
+        });
+      }
 
-await queryClient.invalidateQueries({
-  queryKey: ["services", studioId],
-  exact: true,
-});
+      await queryClient.invalidateQueries({
+        queryKey: ["services", studioId],
+        exact: true,
+      });
 
       if (form.photoUrl?.startsWith("blob:")) {
         URL.revokeObjectURL(form.photoUrl);
       }
 
-setForm({
-  name: "",
-  role: "",
-  bio: "",
-  photoUrl: "",
-  photoKey: null,
-  photoFile: null,
-});
-setPhotoBroken(false);
-setAddOpen(false);
+      setForm({
+        name: "",
+        role: "",
+        bio: "",
+        photoUrl: "",
+        photoKey: null,
+        photoFile: null,
+      });
+      setPhotoBroken(false);
+      setAddOpen(false);
     } finally {
       setAdding(false);
     }
@@ -661,21 +649,21 @@ setAddOpen(false);
       if (key) {
         try {
           await deleteMasterPhoto(studio.id, key);
-        } catch (e) {
-          console.warn("Photo delete from R2 failed:", e);
+        } catch (error) {
+          console.warn("Photo delete from R2 failed:", error);
         }
       }
 
-queryClient.setQueryData(["masters", studioId], (old = []) =>
-  old.filter((m) => m.id !== id),
-);
+      queryClient.setQueryData(["masters", studioId], (old = []) =>
+        old.filter((m) => m.id !== id),
+      );
 
-await queryClient.invalidateQueries({
-  queryKey: ["services", studioId],
-  exact: true,
-});
-    } catch (e) {
-      console.error(e);
+      await queryClient.invalidateQueries({
+        queryKey: ["services", studioId],
+        exact: true,
+      });
+    } catch (error) {
+      console.error(error);
       alert("Помилка при видаленні майстра");
     }
   }
@@ -718,54 +706,52 @@ await queryClient.invalidateQueries({
     }).format(date);
   }
 
-async function openMasterExceptions(master) {
-  if (!studio?.id || !master?.id) return;
+  async function openMasterExceptions(master) {
+    if (!studio?.id || !master?.id) return;
 
-  setExceptionsMaster(master);
-  setExceptionsModalOpen(true);
-  setExceptionsLoading(true);
-  setExpandedExceptions({});
+    setExceptionsMaster(master);
+    setExceptionsModalOpen(true);
+    setExceptionsLoading(true);
+    setExpandedExceptions({});
 
-  try {
-    const token = localStorage.getItem("token");
+    try {
+      const token = localStorage.getItem("token");
 
-    const res = await fetch(
-      `${import.meta.env.VITE_API_URL}/studio/masters/${master.id}/schedule/exceptions`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/studio/masters/${master.id}/schedule/exceptions`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         },
-      },
-    );
-
-    const data = await res.json().catch(() => null);
-
-    if (!res.ok) {
-      throw new Error(
-        data?.message || "Не вдалося завантажити особливі дати",
       );
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        throw new Error(data?.message || "Не вдалося завантажити особливі дати");
+      }
+
+      const rawExceptions = Array.isArray(data?.exceptions)
+        ? data.exceptions.map((item) => ({
+            ...item,
+            date: String(item?.date || "").slice(0, 10),
+            isNew: false,
+          }))
+        : [];
+
+      const cleanedExceptions = await deleteExpiredMasterExceptions(
+        master.id,
+        rawExceptions,
+      );
+
+      setMasterExceptions(sortExceptions(cleanedExceptions));
+    } catch (error) {
+      alert(error?.message || "Помилка завантаження");
+    } finally {
+      setExceptionsLoading(false);
     }
-
-    const rawExceptions = Array.isArray(data?.exceptions)
-      ? data.exceptions.map((item) => ({
-          ...item,
-          date: String(item?.date || "").slice(0, 10),
-          isNew: false,
-        }))
-      : [];
-
-    const cleanedExceptions = await deleteExpiredMasterExceptions(
-      master.id,
-      rawExceptions,
-    );
-
-    setMasterExceptions(sortExceptions(cleanedExceptions));
-  } catch (e) {
-    alert(e?.message || "Помилка завантаження");
-  } finally {
-    setExceptionsLoading(false);
   }
-}
 
   function addExceptionRow() {
     const newItem = createEmptyException();
@@ -899,12 +885,6 @@ async function openMasterExceptions(master) {
     setMasterExceptions((prev) => prev.filter((_, i) => i !== index));
   }
 
-  function exceptionSubtitle(item) {
-    if (!item?.date) return "Нова особлива дата";
-    if (!item.enabled) return `${formatExceptionDate(item.date)} • Вихідний`;
-    return `${formatExceptionDate(item.date)} • ${item.start}–${item.end}`;
-  }
-
   function openEdit(master) {
     setEditMaster(master);
 
@@ -933,8 +913,8 @@ async function openMasterExceptions(master) {
     if (uploadedNewButCancelled) {
       try {
         await deleteMasterPhoto(studio.id, draftKey);
-      } catch (e) {
-        console.warn("Cancel cleanup delete failed:", e);
+      } catch (error) {
+        console.warn("Cancel cleanup delete failed:", error);
       }
     }
 
@@ -971,11 +951,11 @@ async function openMasterExceptions(master) {
   }
 
   const inputBaseClass =
-    "w-full rounded-2xl border border-stone-200 bg-white px-4 py-3 " +
-    "text-sm font-medium text-stone-700 outline-none transition-all " +
-    "placeholder:text-stone-400 " +
-    "hover:bg-stone-50 hover:border-stone-300 " +
-    "focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10 focus:text-stone-800";
+    "w-full rounded-2xl border border-[var(--color-cream)] bg-white px-4 py-3 " +
+    "text-sm font-medium text-[var(--color-ink)] outline-none transition-all " +
+    "placeholder:text-[var(--color-caramel)] " +
+    "hover:bg-[var(--color-cream)] " +
+    "focus:border-[var(--color-forest)] focus:ring-4 focus:ring-[var(--color-forest)]/10 focus:text-[var(--color-ink)]";
 
   async function saveEdit() {
     const name = String(editDraft.name || "").trim();
@@ -1023,8 +1003,8 @@ async function openMasterExceptions(master) {
       if (editDraft.photoFile && nextKey) {
         try {
           await deleteMasterPhoto(studio.id, nextKey);
-        } catch (e) {
-          console.warn("Rollback delete failed:", e);
+        } catch (error) {
+          console.warn("Rollback delete failed:", error);
         }
       }
       alert(data?.message || `Update failed (${res.status})`);
@@ -1034,8 +1014,8 @@ async function openMasterExceptions(master) {
     if (shouldDeletePrev) {
       try {
         await deleteMasterPhoto(studio.id, prevKey);
-      } catch (e) {
-        console.warn("Old photo delete failed:", e);
+      } catch (error) {
+        console.warn("Old photo delete failed:", error);
       }
     }
 
@@ -1043,183 +1023,173 @@ async function openMasterExceptions(master) {
       URL.revokeObjectURL(editDraft.photoUrl);
     }
 
-if (data?.master) {
-  queryClient.setQueryData(["masters", studioId], (old = []) =>
-    old.map((m) => (m.id === data.master.id ? data.master : m)),
-  );
-} else {
-  await queryClient.invalidateQueries({
-    queryKey: ["masters", studioId],
-    exact: true,
-  });
-}
+    if (data?.master) {
+      queryClient.setQueryData(["masters", studioId], (old = []) =>
+        old.map((m) => (m.id === data.master.id ? data.master : m)),
+      );
+    } else {
+      await queryClient.invalidateQueries({
+        queryKey: ["masters", studioId],
+        exact: true,
+      });
+    }
 
-closeEdit();
+    closeEdit();
 
-await queryClient.invalidateQueries({
-  queryKey: ["services", studioId],
-  exact: true,
-});
+    await queryClient.invalidateQueries({
+      queryKey: ["services", studioId],
+      exact: true,
+    });
   }
 
   const total = masters.length;
   const [photoBroken, setPhotoBroken] = useState(false);
-
+const neutralButtonClass =
+  "inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]";
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen ">
       <div className="mx-auto max-w-5xl space-y-6">
-        {/* Header */}
-<div className="relative overflow-hidden rounded-3xl border border-stone-200/60 bg-white p-5 sm:p-6 shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]">
-  {/* top accent */}
-  <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-60" />
+        <div className="relative overflow-hidden rounded-3xl border border-[var(--color-cream)] bg-white p-5 shadow-[0_4px_24px_-4px_rgba(27,27,27,0.10)] sm:p-6">
+          <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[var(--color-forest)] via-[var(--color-forest)] to-[var(--color-ink)] opacity-70" />
 
-  {/* content */}
-  <div className="relative">
-    <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-3 py-1.5">
-      <Sparkles className="h-4 w-4 text-amber-600" />
-      <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-amber-700">
-        Команда студії
-      </span>
-    </div>
+          <div className="relative">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-[var(--color-cream)] px-3 py-1.5">
+              <Sparkles className="h-4 w-4 text-[var(--color-forest)]" />
+              <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-ink)]">
+                Команда студії
+              </span>
+            </div>
 
-    <h1 className="text-3xl font-black tracking-tight text-stone-800 sm:text-4xl">
-      Майстри
-    </h1>
+            <h1 className="text-3xl font-black tracking-tight text-[var(--color-ink)] sm:text-4xl">
+              Майстри
+            </h1>
 
-    <p className="mt-2 max-w-xl text-sm text-stone-600 sm:text-base">
-      Додай майстрів, щоб привʼязувати їх до послуг, графіка та записів клієнтів.
-    </p>
-  </div>
-</div>
+            <p className="mt-2 max-w-xl text-sm text-[var(--color-caramel)] sm:text-base">
+              Додай майстрів, щоб привʼязувати їх до послуг, графіка та записів клієнтів.
+            </p>
+          </div>
+        </div>
 
-        {/* Add master */}
-<SectionCard
-  title="Новий майстер"
-  subtitle="Фото, імʼя та короткий опис — як у професійних профілях."
-  actions={
-    <Button
-      variant={addOpen ? "secondary" : "primary"}
-      onClick={() => setAddOpen((prev) => !prev)}
-      className="w-full justify-center md:w-auto"
-    >
-      <Plus className="h-4 w-4" />
-      {addOpen ? "Сховати форму" : "Додати майстра"}
-
-      {addOpen ? (
-        <ChevronUp className="h-4 w-4" />
-      ) : (
-        <ChevronDown className="h-4 w-4" />
-      )}
-    </Button>
-  }
+        <SectionCard
+          title="Новий майстер"
+          subtitle="Фото, імʼя та короткий опис — як у професійних профілях."
+          actions={
+<Button
+  onClick={() => setAddOpen((prev) => !prev)}
+  className={cn(neutralButtonClass, "w-full justify-center md:w-auto")}
 >
-  <div
-    className={cn(
-      "grid transition-all duration-300 ease-out",
-      addOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
-    )}
-  >
-    <div className="overflow-hidden">
-      <div className="pt-1">
-        <form onSubmit={addMaster} className="space-y-5">
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-3 sm:gap-4">
-              <div className="relative">
-                <Avatar
-                  name={form.name || "Фото"}
-                  photoUrl={!photoBroken ? form.photoUrl : ""}
-                  size="md"
-                  className="h-16 w-16 rounded-2xl sm:h-20 sm:w-20 sm:rounded-[22px]"
-                />
-              </div>
+  <Plus className="h-4 w-4" />
+  {addOpen ? "Сховати форму" : "Додати майстра"}
+  {addOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+</Button>
+          }
+        >
+          <div
+            className={cn(
+              "grid transition-all duration-300 ease-out",
+              addOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
+            )}
+          >
+            <div className="overflow-hidden">
+              <div className="pt-1">
+                <form onSubmit={addMaster} className="space-y-5">
+                  <div className="flex flex-col gap-4">
+                    <div className="flex items-center gap-3 sm:gap-4">
+                      <div className="relative">
+                        <Avatar
+                          name={form.name || "Фото"}
+                          photoUrl={!photoBroken ? form.photoUrl : ""}
+                          size="md"
+                          className="h-16 w-16 rounded-2xl sm:h-20 sm:w-20 sm:rounded-[22px]"
+                        />
+                      </div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                <label className="cursor-pointer">
-                  <span className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-700 px-4 py-2.5 text-sm font-semibold text-white transition-all hover:from-emerald-700 hover:to-emerald-800">
-                    <Plus className="h-4 w-4" />
-                    Додати фото
-                  </span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handlePickPhoto}
-                    className="hidden"
-                  />
-                </label>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <label className="cursor-pointer">
+                          <span className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[var(--color-forest)] px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-[var(--color-forest-dark)]">
+                            <Plus className="h-4 w-4" />
+                            Додати фото
+                          </span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handlePickPhoto}
+                            className="hidden"
+                          />
+                        </label>
 
-                {form.photoUrl && (
-                  <Button variant="danger" onClick={removePhoto}>
-                    <Trash2 className="h-4 w-4" />
-                    Видалити
-                  </Button>
-                )}
+                        {form.photoUrl && (
+                          <Button variant="danger" onClick={removePhoto}>
+                            <Trash2 className="h-4 w-4" />
+                            Видалити
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-[var(--color-ink)]">
+                      Імʼя
+                    </label>
+                    <input
+                      name="name"
+                      placeholder="Напр. Наталія"
+                      value={form.name}
+                      onChange={handleChange}
+                      className={inputBaseClass}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-[var(--color-ink)]">
+                      Посада / Спеціалізація
+                    </label>
+                    <input
+                      name="role"
+                      value={form.role}
+                      onChange={handleChange}
+                      className={inputBaseClass}
+                      placeholder="Напр. Стиліст або Барбер"
+                    />
+                    <p className="mt-1 text-xs text-[var(--color-caramel)]">
+                      Вкажіть посаду чи спеціалізацію.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-[var(--color-ink)]">
+                      Опис
+                    </label>
+                    <textarea
+                      name="bio"
+                      placeholder="Напр. 6 років досвіду, спеціалізація: фарбування, укладки..."
+                      value={form.bio}
+                      onChange={handleChange}
+                      rows={4}
+                      className={cn(inputBaseClass, "resize-none")}
+                    />
+                    <p className="mt-1 text-xs text-[var(--color-caramel)]">
+                      Коротко і по суті (2–4 речення).
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      disabled={adding || !String(form.name || "").trim()}
+                    >
+                      <Check className="h-4 w-4" />
+                      {adding ? "Додаємо..." : "Додати майстра"}
+                    </Button>
+                  </div>
+                </form>
               </div>
             </div>
           </div>
+        </SectionCard>
 
-          <div>
-            <label className="mb-2 block text-sm font-medium text-stone-700">
-              Імʼя
-            </label>
-            <input
-              name="name"
-              placeholder="Напр. Наталія"
-              value={form.name}
-              onChange={handleChange}
-              className={inputBaseClass}
-            />
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-medium text-stone-700">
-              Посада / Спеціалізація
-            </label>
-            <input
-              name="role"
-              value={form.role}
-              onChange={handleChange}
-              className={inputBaseClass}
-              placeholder="Напр. Стиліст або Барбер"
-            />
-            <p className="mt-1 text-xs text-stone-500">
-              Вкажіть посаду чи спеціалізацію.
-            </p>
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-medium text-stone-700">
-              Опис
-            </label>
-            <textarea
-              name="bio"
-              placeholder="Напр. 6 років досвіду, спеціалізація: фарбування, укладки..."
-              value={form.bio}
-              onChange={handleChange}
-              rows={4}
-              className={cn(inputBaseClass, "resize-none")}
-            />
-            <p className="mt-1 text-xs text-stone-500">
-              Коротко і по суті (2–4 речення).
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Button
-              type="submit"
-              variant="primary"
-              disabled={adding || !String(form.name || "").trim()}
-            >
-              <Check className="h-4 w-4" />
-              {adding ? "Додаємо..." : "Додати майстра"}
-            </Button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-</SectionCard>
-
-        {/* List */}
         <SectionCard
           title="Список майстрів"
           subtitle={
@@ -1229,108 +1199,93 @@ await queryClient.invalidateQueries({
           }
           badge={`К-ть майстрів: ${total}`}
         >
-{loading ? (
-  <MastersListSkeleton />
-) : total === 0 ? (
-  <div className="rounded-2xl border-2 border-dashed border-stone-200 bg-stone-50/50 p-8 text-center">
-    <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-stone-100">
-      <Plus className="h-6 w-6 text-stone-400" />
-    </div>
-    <p className="text-sm text-stone-500">Поки що немає майстрів</p>
-    <p className="mt-1 text-xs text-stone-400">
-      Додай першого майстра зверху
-    </p>
-  </div>
-) : (
-  <div className="space-y-3">
-    {masters.map((m) => (
-      <div
-        key={m.id}
-        className="group rounded-2xl border border-stone-200 bg-white p-4 transition-all hover:border-amber-200 hover:shadow-md hover:shadow-amber-500/5"
-      >
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="min-w-0 flex-1">
-            <div className="flex min-w-0 items-start gap-3">
-              <Avatar name={m.name} photoUrl={m.photoUrl} size="sm" />
-
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-semibold text-stone-800">
-                  {m.name}
-                </p>
-
-                {m.role ? (
-                  <p className="mt-1 truncate text-sm font-medium text-stone-600">
-                    {m.role}
-                  </p>
-                ) : (
-                  <p className="mt-1 text-sm text-stone-400">
-                    Спеціалізація не вказана
-                  </p>
-                )}
-
-                {m.bio ? (
-                  <p className="mt-1 line-clamp-2 break-words text-sm text-stone-500">
-                    {m.bio}
-                  </p>
-                ) : (
-                  <p className="mt-1 text-sm text-stone-400">
-                    Без опису
-                  </p>
-                )}
+          {loading ? (
+            <MastersListSkeleton />
+          ) : total === 0 ? (
+            <div className="rounded-2xl border-2 border-dashed border-[var(--color-cream)] bg-[var(--color-sand)] p-8 text-center">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-cream)]">
+                <Plus className="h-6 w-6 text-[var(--color-forest)]" />
               </div>
+              <p className="text-sm text-[var(--color-ink)]">Поки що немає майстрів</p>
+              <p className="mt-1 text-xs text-[var(--color-caramel)]">
+                Додай першого майстра зверху
+              </p>
             </div>
-          </div>
+          ) : (
+            <div className="space-y-3">
+              {masters.map((m) => (
+                <div
+                  key={m.id}
+                  className="group rounded-2xl border border-[var(--color-cream)] bg-white p-4 transition-all  hover:shadow-md hover:shadow-black/5"
+                >
+<div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+  {/* ЛІВА ЧАСТИНА */}
+  <div className="min-w-0 flex-1">
+    <div className="flex min-w-0 items-start gap-3">
+      <Avatar name={m.name} photoUrl={m.photoUrl} size="sm" />
 
-          <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row lg:w-auto lg:shrink-0">
-            <Button
-              variant="accent"
-              className="
-                h-11 w-full
-                sm:flex-[3]
-                lg:flex-none lg:w-auto lg:min-w-[170px]
-                justify-center
-              "
-              onClick={() => openMasterExceptions(m)}
-            >
-              <CalendarDays className="h-4 w-4" />
-              Особливі дати
-            </Button>
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-semibold text-[var(--color-ink)]">
+          {m.name}
+        </p>
 
-            <div className="flex w-full gap-2 sm:contents">
-              <IconButton
-                className="
-                  h-11 w-1/2
-                  sm:flex-[1]
-                  lg:flex-none lg:w-11
-                "
-                onClick={() => openEdit(m)}
-                title="Редагувати"
-              >
-                <Pencil className="h-4 w-4" />
-              </IconButton>
+        {m.role ? (
+          <p className="mt-1 truncate text-sm font-medium text-[var(--color-caramel)]">
+            {m.role}
+          </p>
+        ) : (
+          <p className="mt-1 text-sm text-[var(--color-caramel)]">
+            Спеціалізація не вказана
+          </p>
+        )}
 
-              <IconButton
-                className="
-                  h-11 w-1/2
-                  sm:flex-[1]
-                  lg:flex-none lg:w-11
-                "
-                variant="danger"
-                onClick={() => deleteMaster(m)}
-                title="Видалити"
-              >
-                <Trash2 className="h-4 w-4" />
-              </IconButton>
-            </div>
-          </div>
-        </div>
+        {m.bio ? (
+          <p className="mt-1 line-clamp-2 break-words text-sm text-[var(--color-caramel)]">
+            {m.bio}
+          </p>
+        ) : (
+          <p className="mt-1 text-sm text-[var(--color-caramel)]">
+            Без опису
+          </p>
+        )}
       </div>
-    ))}
+    </div>
   </div>
-)}
+
+  {/* КНОПКИ */}
+  <div className="mt-2 flex w-full justify-end gap-2 md:mt-0 md:w-auto">
+<Button
+  onClick={() => openMasterExceptions(m)}
+  className={cn(neutralButtonClass, "flex-1 min-w-0 max-w-[200px]")}
+>
+  <CalendarDays className="h-4 w-4 shrink-0" />
+  <span className="truncate">Особливі дати</span>
+</Button>
+
+<IconButton
+  className={cn(neutralButtonClass, "w-[48px] shrink-0 px-0")}
+  onClick={() => openEdit(m)}
+  title="Редагувати"
+>
+  <Pencil className="h-4 w-4" />
+</IconButton>
+
+<IconButton
+  className={cn(neutralButtonClass, "w-[48px] shrink-0 px-0")}
+  onClick={() => deleteMaster(m)}
+  title="Видалити"
+>
+  <Trash2 className="h-4 w-4" />
+</IconButton>
+
+  </div>
+</div>
+                </div>
+              ))}
+            </div>
+          )}
         </SectionCard>
 
-        {/* Edit modal */}
         <Modal
           open={Boolean(editMaster)}
           onClose={closeEdit}
@@ -1342,7 +1297,6 @@ await queryClient.invalidateQueries({
               <Button variant="secondary" onClick={closeEdit}>
                 Скасувати
               </Button>
-
               <Button
                 variant="primary"
                 onClick={saveEdit}
@@ -1362,14 +1316,14 @@ await queryClient.invalidateQueries({
                   photoUrl={editDraft.photoUrl}
                   size="md"
                 />
-                <div className="absolute -bottom-2 -right-2 rounded-xl border border-amber-200 bg-white p-2 shadow-sm">
-                  <Camera className="h-4 w-4 text-amber-600" />
+                <div className="absolute -bottom-2 -right-2 rounded-xl border border-[var(--color-cream)] bg-white p-2 shadow-sm">
+                  <Camera className="h-4 w-4 text-[var(--color-forest)]" />
                 </div>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
                 <label className="cursor-pointer">
-                  <span className="inline-flex items-center justify-center gap-2 rounded-2xl border border-stone-200 bg-white px-4 py-2.5 text-sm font-semibold text-stone-700 transition hover:bg-stone-50">
+                  <span className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[var(--color-cream)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--color-ink)] transition hover:bg-[var(--color-cream)]">
                     <Pencil className="h-4 w-4" />
                     Змінити фото
                   </span>
@@ -1406,7 +1360,7 @@ await queryClient.invalidateQueries({
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-stone-700">
+              <label className="mb-2 block text-sm font-medium text-[var(--color-ink)]">
                 Імʼя
               </label>
               <input
@@ -1420,7 +1374,7 @@ await queryClient.invalidateQueries({
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-stone-700">
+              <label className="mb-2 block text-sm font-medium text-[var(--color-ink)]">
                 Посада / Спеціалізація
               </label>
               <input
@@ -1434,7 +1388,7 @@ await queryClient.invalidateQueries({
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-stone-700">
+              <label className="mb-2 block text-sm font-medium text-[var(--color-ink)]">
                 Опис
               </label>
               <textarea
@@ -1449,6 +1403,7 @@ await queryClient.invalidateQueries({
             </div>
           </div>
         </Modal>
+
         <Modal
           open={exceptionsModalOpen}
           onClose={() => {
@@ -1459,41 +1414,50 @@ await queryClient.invalidateQueries({
           }}
           title={`Особливі дати — ${exceptionsMaster?.name || ""}`}
           subtitle="Керуйте індивідуальним графіком майстра на конкретні дати."
-          size="lg"
+          size="md"
           footer={
             <div className="flex justify-end">
-              <Button
-                variant="primary"
-                onClick={addExceptionRow}
-                className="w-full sm:w-auto sm:shrink-0 whitespace-nowrap justify-center"
-              >
-                <CalendarDays className="h-4 w-4" />
-                Додати ще дату
-              </Button>
+<Button
+  onClick={addExceptionRow}
+  className={cn(neutralButtonClass, "w-full justify-center whitespace-nowrap sm:w-auto sm:shrink-0")}
+>
+  <CalendarDays className="h-4 w-4" />
+  Додати особливу дату
+</Button>
             </div>
           }
         >
-{exceptionsLoading ? (
-  <div className="space-y-3">
-    {Array.from({ length: 2 }).map((_, i) => (
-      <div
-        key={i}
-        className="rounded-2xl border border-stone-200 bg-white p-4"
-      >
-        <SkeletonBlock className="h-5 w-44" />
-        <SkeletonBlock className="mt-2 h-4 w-36" />
-      </div>
-    ))}
-  </div>
-) : masterExceptions.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-6 text-sm text-stone-500">
-              Немає особливих дат для цього майстра.
+          {exceptionsLoading ? (
+            <div className="space-y-3">
+              {Array.from({ length: 2 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="rounded-2xl border border-[var(--color-cream)] bg-white p-4"
+                >
+                  <SkeletonBlock className="h-5 w-44" />
+                  <SkeletonBlock className="mt-2 h-4 w-36" />
+                </div>
+              ))}
             </div>
+          ) : masterExceptions.length === 0 ? (
+<div className="rounded-2xl border border-dashed border-[var(--color-cream)] bg-[var(--color-cream)] px-4 py-8 text-center">
+  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm">
+    <CalendarDays className="h-6 w-6 text-[var(--color-forest)]" />
+  </div>
+
+  <p className="text-sm font-semibold text-[var(--color-ink)]">
+    Немає особливих дат
+  </p>
+
+<p className="mt-1 text-xs text-[var(--color-caramel)]">
+  Тут ви можете додати вихідні, відпустку, лікарняні або інші дні, коли майстер не працює. <br />
+  У ці дні він не буде доступний для запису клієнтами.
+</p>
+</div>
           ) : (
             <div className="space-y-3">
               {masterExceptions.map((item, index) => {
                 const isValid = isExceptionValid(item);
-
                 const exceptionKey = getExceptionKey(item, index);
                 const isExpanded =
                   item.isNew || expandedExceptions[exceptionKey] === true;
@@ -1501,7 +1465,7 @@ await queryClient.invalidateQueries({
                 return (
                   <div
                     key={exceptionKey}
-                    className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-[0_6px_18px_rgba(93,64,55,0.04)]"
+                    className="overflow-hidden rounded-2xl border border-[var(--color-cream)] bg-white shadow-[0_6px_18px_rgba(27,27,27,0.04)]"
                   >
                     <button
                       type="button"
@@ -1515,39 +1479,35 @@ await queryClient.invalidateQueries({
                       }}
                       className={cn(
                         "flex w-full items-start justify-between gap-3 p-4 text-left transition-colors",
-                        !item.isNew && "hover:bg-stone-50/80",
+                        !item.isNew && "hover:bg-[var(--color-cream)]",
                       )}
                     >
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-[15px] font-bold text-stone-800">
+                          <p className="text-[15px] font-bold text-[var(--color-ink)]">
                             {item.date
                               ? formatExceptionDate(item.date)
                               : "Нова особлива дата"}
                           </p>
 
-                          <div className="rounded-full border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                          <div className="rounded-full  px-3 py-1 text-xs font-semibold text-[var(--color-ink)]">
                             {item.enabled ? "Особливий графік" : "Вихідний"}
                           </div>
                         </div>
-
-                        <p className="mt-1 text-xs text-stone-500">
-                          {exceptionSubtitle(item)}
-                        </p>
                       </div>
 
                       <div className="flex shrink-0 items-center gap-2">
                         {!item.isNew && (
-                          <span className="hidden text-xs font-medium text-stone-400 sm:inline">
+                          <span className="hidden text-xs font-medium text-[var(--color-caramel)] sm:inline">
                             {isExpanded ? "Згорнути" : "Розгорнути"}
                           </span>
                         )}
 
                         {!item.isNew &&
                           (isExpanded ? (
-                            <ChevronUp className="h-5 w-5 shrink-0 text-stone-400" />
+                            <ChevronUp className="h-5 w-5 shrink-0 text-[var(--color-caramel)]" />
                           ) : (
-                            <ChevronDown className="h-5 w-5 shrink-0 text-stone-400" />
+                            <ChevronDown className="h-5 w-5 shrink-0 text-[var(--color-caramel)]" />
                           ))}
                       </div>
                     </button>
@@ -1559,70 +1519,60 @@ await queryClient.invalidateQueries({
                       )}
                     >
                       <div className="overflow-hidden">
-                        <div className="border-t border-stone-100 px-4 pb-4 pt-4">
+                        <div className="border-t border-[var(--color-cream)] px-4 pb-4 pt-4">
                           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:items-end">
-                            <div>
-                              <div className="min-w-0">
-                                <div className="col-span-1 sm:col-span-1">
-                                  <DatePicker
-                                    label="Дата"
-                                    value={item.date}
-                                    onChange={(value) =>
-                                      updateException(index, "date", value)
-                                    }
-                                  />
-                                </div>
-                              </div>
+                            <div className="min-w-0">
+                              <DatePicker
+                                label="Дата"
+                                value={item.date}
+                                onChange={(value) =>
+                                  updateException(index, "date", value)
+                                }
+                              />
                             </div>
 
                             <div className="col-span-1 sm:col-span-1">
-                              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-stone-500">
+                              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[var(--color-caramel)]">
                                 Статус
                               </label>
 
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  updateException(
-                                    index,
-                                    "enabled",
-                                    !item.enabled,
-                                  )
-                                }
-                                className="flex h-[50px] w-full items-center gap-3 rounded-2xl border border-stone-200 bg-stone-50 px-4 transition-all duration-200 hover:border-stone-300 hover:bg-white"
-                              >
-                                <span
-                                  className={cn(
-                                    "relative inline-flex h-7 w-12 items-center rounded-full transition-all duration-300",
-                                    item.enabled
-                                      ? "bg-gradient-to-r from-emerald-500 to-emerald-600"
-                                      : "bg-stone-200",
-                                  )}
-                                >
-                                  <span
-                                    className={cn(
-                                      "inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-300",
-                                      item.enabled
-                                        ? "translate-x-6"
-                                        : "translate-x-1",
-                                    )}
-                                  />
-                                </span>
+<button
+  type="button"
+  onClick={() =>
+    updateException(index, "enabled", !item.enabled)
+  }
+  className="flex h-[50px] w-full items-center gap-3 rounded-2xl border border-[var(--color-cream)] bg-white px-4 transition-all duration-200 hover:bg-[var(--color-cream)] focus:border-[var(--color-forest)] focus:ring-4 focus:ring-[var(--color-forest)]/10"
+>
+  <span
+    className={cn(
+      "relative inline-flex h-7 w-12 items-center rounded-full transition-all duration-300",
+      item.enabled
+        ? "bg-gradient-to-r from-[#9fb29a] to-[#7f9a78]"
+        : "bg-[var(--color-mist)]",
+    )}
+  >
+    <span
+      className={cn(
+        "inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-300",
+        item.enabled ? "translate-x-6" : "translate-x-1",
+      )}
+    />
+  </span>
 
-                                <span className="text-sm font-semibold text-stone-700 whitespace-nowrap">
-                                  {item.enabled ? "Робочий день" : "Вихідний"}
-                                </span>
-                              </button>
+  <span className="whitespace-nowrap text-sm font-semibold text-[var(--color-ink)]">
+    {item.enabled ? "Робочий день" : "Вихідний"}
+  </span>
+</button>
                             </div>
 
                             {item.enabled ? (
-                              <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 sm:col-span-2">
+                              <div className="grid grid-cols-2 gap-2 sm:col-span-2">
                                 <div className="min-w-0">
-                                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-stone-500">
+                                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[var(--color-caramel)]">
                                     Початок
                                   </label>
 
-                                  <div className="rounded-[16px] flex items-center border border-stone-200 bg-stone-50 h-[50px] overflow-hidden">
+                                 <div className="flex h-[50px] items-center overflow-hidden rounded-2xl border border-[var(--color-cream)] bg-white px-2 transition-all hover:bg-[var(--color-cream)] focus-within:ring-4 focus-within:ring-[var(--color-forest)]/10">
                                     <TimeSelect
                                       value={item.start}
                                       label="Початок"
@@ -1638,10 +1588,10 @@ await queryClient.invalidateQueries({
                                 </div>
 
                                 <div className="min-w-0">
-                                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-stone-500">
+                                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[var(--color-caramel)]">
                                     Завершення
                                   </label>
-                                  <div className="rounded-[16px] flex items-center border border-stone-200 bg-stone-50 h-[50px] overflow-hidden">
+                                  <div className="flex h-[50px] items-center overflow-hidden rounded-2xl border border-[var(--color-cream)] bg-white px-2 transition-all hover:bg-[var(--color-cream)] focus-within:border-[var(--color-forest)] focus-within:ring-4 focus-within:ring-[var(--color-forest)]/10">
                                     <TimeSelect
                                       value={item.end}
                                       label="Завершення"
@@ -1657,34 +1607,35 @@ await queryClient.invalidateQueries({
                                 </div>
                               </div>
                             ) : (
-                              <div className="sm:col-span-2 flex items-center">
-                                <div className="w-full rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
-                                  У цей день майстер не працює
-                                </div>
+                              <div className="flex items-center sm:col-span-2">
+<div className="w-full text-center rounded-2xl border border-[#e8b7b0]  px-4 py-3 text-sm font-semibold text-[#b6463f]">
+  У цей день майстер не працюватиме
+</div>
                               </div>
                             )}
 
-                            <div className="grid grid-cols-2 gap-2 sm:flex sm:col-span-2">
-                              {" "}
+                            <div className="grid grid-cols-2 gap-2 sm:col-span-2 sm:flex">
+<Button
+  onClick={() => saveException(item, index)}
+  disabled={!isValid}
+  className={cn(
+    "inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold text-white",
+    "bg-gradient-to-r from-[#9fb29a] to-[#7f9a78]",
+    " transition-all duration-200 active:scale-[0.98]",
+    "hover:from-[#8fa88a] hover:to-[#6f8c69] hover:border-[#7f9a78] ",
+    !isValid &&
+      "cursor-not-allowed  bg-[var(--color-cream)] text-[var(--color-caramel)] shadow-none hover:from-[var(--color-cream)] hover:to-[var(--color-cream)] hover:border-[var(--color-cream)]",
+  )}
+>
+  <Check className="h-4 w-4" />
+  Зберегти
+</Button>
                               <Button
-                                variant={isValid ? "primary" : "secondary"}
-                                onClick={() => saveException(item, index)}
-                                disabled={!isValid}
-                                className={cn(
-                                  "h-[50px] w-full justify-center",
-                                  !isValid &&
-                                    "bg-stone-100 text-stone-400 border-stone-200 cursor-not-allowed",
-                                )}
-                              >
-                                <Check className="h-4 w-4" />
-                                Зберегти
-                              </Button>
-                              <Button
-                                variant="danger"
+                               
                                 onClick={() => removeException(item, index)}
-                                className="h-[50px] w-full text-center justify-center"
+                                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
                               >
-                                <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4 text-[#b96b61]" />
                                 Видалити
                               </Button>
                             </div>

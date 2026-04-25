@@ -79,10 +79,10 @@ function useRole() {
 const navLinkBase =
   "inline-flex items-center gap-2 rounded-2xl px-3.5 py-2.5 text-sm font-semibold transition-all duration-200";
 
-const navLinkActive =
-  "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white";
+const navLinkActive = "bg-[var(--color-ink)] text-white";
 
-const navLinkIdle = "text-stone-600 hover:bg-stone-50 hover:text-stone-800";
+const navLinkIdle =
+  "text-[var(--color-caramel)] hover:bg-[var(--color-cream)] hover:text-[var(--color-ink)]";
 
 function HeaderLink({ to, children, icon, onClick }) {
   return (
@@ -110,10 +110,10 @@ function ButtonLink({
 }) {
   const styles =
     variant === "primary"
-      ? "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-lg shadow-emerald-500/20 hover:from-emerald-700 hover:to-emerald-800"
-      : "border border-stone-200 bg-white text-stone-700 hover:bg-stone-50 hover:text-stone-800";
+      ? "bg-[var(--color-ink)] text-white shadow-[var(--shadow-button)] hover:bg-[var(--color-ink-soft)]"
+      : "border border-[var(--color-cream)] bg-white text-[var(--color-ink)] hover:bg-[var(--color-cream)]";
 
-  const disabledStyles = "opacity-50 pointer-events-none cursor-not-allowed";
+  const disabledStyles = "pointer-events-none cursor-not-allowed opacity-50";
 
   return (
     <Link
@@ -140,8 +140,8 @@ function MobileNavIcon({ children, active }) {
       className={cx(
         "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-all duration-200 sm:h-11 sm:w-11 sm:rounded-2xl",
         active
-          ? "border-emerald-500/20 bg-white/12 text-white"
-          : "border-stone-200 bg-white text-stone-500 shadow-[0_2px_8px_rgba(28,25,23,0.04)]",
+          ? "border-white/15 bg-white/12 text-white"
+          : "border-[var(--color-cream)] bg-white text-[var(--color-caramel)] shadow-[0_2px_8px_rgba(27,27,27,0.04)]",
       )}
     >
       {children}
@@ -157,7 +157,7 @@ function MobileBottomLink({ to, label, icon }) {
       className={({ isActive }) =>
         cx(
           "flex flex-1 flex-col items-center justify-center gap-[2px] px-1 py-1 transition-all duration-200",
-          isActive ? "text-amber-500" : "text-stone-500",
+          isActive ? "text-[var(--color-forest)]" : "text-[var(--color-caramel)]",
         )
       }
     >
@@ -167,8 +167,8 @@ function MobileBottomLink({ to, label, icon }) {
             className={cx(
               "flex h-9 w-9 items-center justify-center rounded-2xl transition-all duration-200",
               isActive
-                ? "scale-105 bg-amber-500 text-white shadow-[0_6px_16px_rgba(251,191,36,0.35)]"
-                : "text-stone-500",
+                ? "scale-105 bg-[var(--color-ink)] text-white shadow-[var(--shadow-button)]"
+                : "text-[var(--color-caramel)]",
             )}
           >
             {icon}
@@ -177,7 +177,9 @@ function MobileBottomLink({ to, label, icon }) {
           <span
             className={cx(
               "text-[9px] leading-none",
-              isActive ? "text-amber-500" : "text-stone-500 opacity-80",
+              isActive
+                ? "text-[var(--color-forest)]"
+                : "text-[var(--color-caramel)] opacity-80",
             )}
           >
             {label}
@@ -202,6 +204,7 @@ export default function Header() {
     lastName: "",
     photoUrl: "",
   });
+
   const studioName = studio?.name?.trim() || "";
   const studioLogo = toPublicUrl(studio?.logoUrl);
   const showOwnerIdentity = role === "owner";
@@ -211,6 +214,7 @@ export default function Header() {
   const clientInitials =
     `${(clientProfile.firstName || "").trim().slice(0, 1)}${(clientProfile.lastName || "").trim().slice(0, 1)}`
       .toUpperCase() || "U";
+
   const handleLogout = useCallback(() => {
     const currentRole = localStorage.getItem("role") || role;
 
@@ -246,7 +250,7 @@ export default function Header() {
     };
   }, [open]);
 
-    useEffect(() => {
+  useEffect(() => {
     let ignore = false;
 
     async function loadClientProfile() {
@@ -272,7 +276,7 @@ export default function Header() {
           lastName: data?.lastName || "",
           photoUrl: data?.photoUrl || "",
         });
-      } catch (e) {
+      } catch {
         if (ignore) return;
         setClientProfile({
           firstName: "",
@@ -492,27 +496,21 @@ export default function Header() {
       {!showClientBottomBar && (
         <header className="fixed left-0 right-0 top-2 z-[60] sm:top-3">
           <div className="mx-auto max-w-6xl px-3 sm:px-4">
-            <div
-              className="
-                overflow-hidden rounded-[22px] border border-stone-200/70 bg-white/90
-                shadow-[0_10px_30px_rgba(93,64,55,0.08)] backdrop-blur-md
-                sm:rounded-[28px]
-              "
-            >
-              <div className="h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-70" />
+            <div className="overflow-hidden rounded-[22px] border border-[var(--color-cream)] bg-white/90 shadow-[0_10px_30px_rgba(27,27,27,0.08)] backdrop-blur-md sm:rounded-[28px]">
+              <div className="h-[2px] bg-gradient-to-r from-[var(--color-forest)] via-[var(--color-caramel)] to-[var(--color-ink)] opacity-70" />
 
               <div className="flex h-14 items-center justify-between gap-2 px-2.5 sm:h-16 sm:gap-3 sm:px-4">
                 <Link
                   to="/"
-                  className="flex min-w-0 items-center gap-2 rounded-2xl px-1.5 py-1 transition hover:bg-stone-50 sm:px-2 sm:py-1.5"
+                  className="flex min-w-0 items-center gap-2 rounded-2xl px-1.5 py-1 transition hover:bg-[var(--color-cream)] sm:px-2 sm:py-1.5"
                   aria-label="Planiday"
                 >
-                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-700 text-xs font-extrabold text-white shadow-[0_8px_20px_rgba(74,93,78,0.22)] sm:h-9 sm:w-9 sm:text-sm">
+                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-2xl bg-[var(--color-ink)] text-xs font-extrabold text-white shadow-[var(--shadow-button)] sm:h-9 sm:w-9 sm:text-sm">
                     P
                   </span>
 
-                  <span className="truncate text-sm font-extrabold tracking-tight text-stone-800 sm:text-base">
-                    Plani<span className="text-amber-600">Day</span>
+                  <span className="truncate text-sm font-extrabold tracking-tight text-[var(--color-ink)] sm:text-base">
+                    Plani<span className="text-[var(--color-caramel)]">Day</span>
                   </span>
                 </Link>
 
@@ -529,7 +527,7 @@ export default function Header() {
                 <button
                   type="button"
                   onClick={() => setOpen((v) => !v)}
-                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-stone-200/80 bg-white/90 text-stone-800 shadow-[0_4px_16px_rgba(28,25,23,0.06)] transition-all duration-200 hover:bg-stone-50 active:scale-[0.97] sm:h-11 sm:w-11 sm:rounded-2xl lg:hidden"
+                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[var(--color-cream)] bg-white/90 text-[var(--color-ink)] shadow-[0_4px_16px_rgba(27,27,27,0.06)] transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.97] sm:h-11 sm:w-11 sm:rounded-2xl lg:hidden"
                   aria-label="Menu"
                   aria-expanded={open}
                 >
@@ -555,7 +553,7 @@ export default function Header() {
         >
           <div
             className={cx(
-              "absolute inset-0 bg-stone-950/45 backdrop-blur-[6px] transition-opacity duration-300",
+              "absolute inset-0 bg-[rgba(5,5,5,0.45)] backdrop-blur-[6px] transition-opacity duration-300",
               open ? "opacity-100" : "opacity-0",
             )}
             onClick={() => setOpen(false)}
@@ -568,49 +566,49 @@ export default function Header() {
             )}
           >
             <div className="flex h-full flex-col">
-              <div className="relative border-b border-stone-200/80 px-3 pb-3 pt-3 sm:px-4 sm:pb-4 sm:pt-4">
-                <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-emerald-500 via-amber-400 to-emerald-600 opacity-90" />
+              <div className="relative border-b border-[var(--color-cream)] px-3 pb-3 pt-3 sm:px-4 sm:pb-4 sm:pt-4">
+                <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[var(--color-forest)] via-[var(--color-caramel)] to-[var(--color-ink)] opacity-90" />
 
                 <div className="flex items-start justify-between gap-3 pt-1.5 sm:pt-2">
                   <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
                     <div className="relative">
-<div className="grid h-10 w-10 place-items-center overflow-hidden rounded-[18px] bg-gradient-to-br from-emerald-600 to-emerald-700 text-sm font-extrabold text-white sm:h-12 sm:w-12 sm:rounded-[20px] sm:text-base">
-  {showOwnerIdentity && studioLogo ? (
-    <img
-      src={studioLogo}
-      alt={studioName || "Лого студії"}
-      className="h-full w-full object-cover"
-    />
-  ) : role === "client" && clientPhoto ? (
-    <img
-      src={clientPhoto}
-      alt={clientFullName || "Фото користувача"}
-      className="h-full w-full object-cover"
-    />
-  ) : role === "client" ? (
-    clientInitials
-  ) : (
-    "P"
-  )}
-</div>
+                      <div className="grid h-10 w-10 place-items-center overflow-hidden rounded-[18px] bg-[var(--color-ink)] text-sm font-extrabold text-white sm:h-12 sm:w-12 sm:rounded-[20px] sm:text-base">
+                        {showOwnerIdentity && studioLogo ? (
+                          <img
+                            src={studioLogo}
+                            alt={studioName || "Лого студії"}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : role === "client" && clientPhoto ? (
+                          <img
+                            src={clientPhoto}
+                            alt={clientFullName || "Фото користувача"}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : role === "client" ? (
+                          clientInitials
+                        ) : (
+                          "P"
+                        )}
+                      </div>
 
-                      <span className="absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full border-2 border-white bg-emerald-500 sm:h-4 sm:w-4" />
+                      <span className="absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full border-2 border-white bg-[var(--color-forest)] sm:h-4 sm:w-4" />
                     </div>
 
                     <div className="min-w-0">
-<p className="truncate text-sm font-extrabold tracking-tight text-stone-900">
-  {showOwnerIdentity && studioName ? (
-    studioName
-  ) : role === "client" && clientFullName ? (
-    clientFullName
-  ) : (
-    <>
-      Plani<span className="text-amber-600">Day</span>
-    </>
-  )}
-</p>
+                      <p className="truncate text-sm font-extrabold tracking-tight text-[var(--color-ink)]">
+                        {showOwnerIdentity && studioName ? (
+                          studioName
+                        ) : role === "client" && clientFullName ? (
+                          clientFullName
+                        ) : (
+                          <>
+                            Plani<span className="text-[var(--color-caramel)]">Day</span>
+                          </>
+                        )}
+                      </p>
 
-                      <p className="mt-0.5 truncate text-[11px] font-medium text-stone-500 sm:text-xs">
+                      <p className="mt-0.5 truncate text-[11px] font-medium text-[var(--color-caramel)] sm:text-xs">
                         {mobileItems.subtitle || "Меню"}
                       </p>
                     </div>
@@ -619,19 +617,19 @@ export default function Header() {
                   <button
                     type="button"
                     onClick={() => setOpen(false)}
-                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-stone-200 bg-white text-stone-700 transition hover:bg-stone-50 active:scale-[0.98] sm:h-10 sm:w-10 sm:rounded-2xl"
+                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--color-cream)] bg-white text-[var(--color-ink)] transition hover:bg-[var(--color-cream)] active:scale-[0.98] sm:h-10 sm:w-10 sm:rounded-2xl"
                     aria-label="Закрити меню"
                   >
                     <X className="h-4 w-4 sm:h-5 sm:w-5" />
                   </button>
                 </div>
 
-                <div className="mt-3 rounded-[20px] border border-stone-200/80 bg-gradient-to-br from-stone-50 via-white to-stone-50 p-3 text-center shadow-[0_8px_24px_rgba(28,25,23,0.04)] sm:mt-4 sm:rounded-[24px] sm:p-4">
-                  <div className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-amber-700">
+                <div className="mt-3 rounded-[20px] border border-[var(--color-cream)] bg-gradient-to-br from-[var(--color-cream)] via-white to-[var(--color-cream)] p-3 text-center shadow-[0_8px_24px_rgba(27,27,27,0.04)] sm:mt-4 sm:rounded-[24px] sm:p-4">
+                  <div className="inline-flex items-center rounded-full bg-[var(--color-pending-bg)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--color-forest)]">
                     {mobileItems.subtitle || "Режим"}
                   </div>
 
-                  <h2 className="mt-2 text-lg font-bold leading-tight tracking-[-0.03em] text-stone-900 sm:text-[20px]">
+                  <h2 className="mt-2 text-lg font-bold leading-tight tracking-[-0.03em] text-[var(--color-ink)] sm:text-[20px]">
                     {mobileItems.title || "Меню"}
                   </h2>
                 </div>
@@ -652,8 +650,8 @@ export default function Header() {
                         cx(
                           "group relative flex items-center gap-3 overflow-hidden rounded-[18px] border px-3 py-3 transition-all duration-300 ease-out sm:rounded-[22px] sm:py-3.5",
                           isActive
-                            ? "border-amber-400/70 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white"
-                            : "border-transparent text-stone-700 hover:-translate-y-[1px] hover:border-amber-300/70 hover:bg-gradient-to-r hover:from-stone-100 hover:via-white hover:to-stone-100 hover:text-stone-900 hover:shadow-[0_10px_24px_rgba(28,25,23,0.08)] active:scale-[0.99]",
+                            ? "border-[var(--color-sand)] bg-[var(--color-ink)] text-white"
+                            : "border-transparent text-[var(--color-ink)] hover:-translate-y-[1px] hover:border-[var(--color-sand)] hover:bg-gradient-to-r hover:from-[var(--color-cream)] hover:via-white hover:to-[var(--color-cream)] hover:shadow-[0_10px_24px_rgba(27,27,27,0.08)] active:scale-[0.99]",
                         )
                       }
                     >
@@ -666,9 +664,7 @@ export default function Header() {
                             )}
                           />
 
-                          <MobileNavIcon active={isActive}>
-                            {i.icon}
-                          </MobileNavIcon>
+                          <MobileNavIcon active={isActive}>{i.icon}</MobileNavIcon>
 
                           <div className="min-w-0 flex-1">
                             <div className="truncate text-sm font-semibold">
@@ -682,7 +678,7 @@ export default function Header() {
                 </nav>
               </div>
 
-              <div className="border-t border-stone-200/80 bg-white/70 p-2.5 backdrop-blur-xl sm:p-3">
+              <div className="border-t border-[var(--color-cream)] bg-white/70 p-2.5 backdrop-blur-xl sm:p-3">
                 {mobileItems.logout ? (
                   <button
                     type="button"
@@ -690,7 +686,7 @@ export default function Header() {
                       handleLogout();
                       setOpen(false);
                     }}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-[18px] border border-red-200 bg-gradient-to-r from-red-50 to-rose-50 px-4 py-2.5 text-sm font-semibold text-red-600 transition-all duration-200 hover:from-red-100 hover:to-rose-100 active:scale-[0.99] sm:rounded-[20px] sm:py-3"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-[18px] border border-[var(--color-danger-border)] bg-[var(--color-danger-bg)] px-4 py-2.5 text-sm font-semibold text-[var(--color-danger)] transition-all duration-200 hover:bg-[rgba(213,92,82,0.12)] active:scale-[0.99] sm:rounded-[20px] sm:py-3"
                   >
                     <LogOut className="h-4 w-4" />
                     Вийти
@@ -726,15 +722,9 @@ export default function Header() {
 
       {showClientBottomBar && (
         <div className="fixed inset-x-0 bottom-0 z-[80] sm:hidden">
-  <div className="mx-auto max-w-6xl px-2 pb-[calc(env(safe-area-inset-bottom)+6px)]">
-          <div className="
-  overflow-hidden rounded-[26px]
-  border border-white/40
-  bg-white/80
-  backdrop-blur-2xl
-  shadow-[0_-20px_50px_rgba(0,0,0,0.18)]
-">
-      <div className="grid grid-cols-4 gap-1 px-1.5 py-1">
+          <div className="mx-auto max-w-6xl px-2 pb-[calc(env(safe-area-inset-bottom)+6px)]">
+            <div className="overflow-hidden rounded-[26px] border border-white/40 bg-white/80 backdrop-blur-2xl shadow-[0_-20px_50px_rgba(0,0,0,0.18)]">
+              <div className="grid grid-cols-4 gap-1 px-1.5 py-1">
                 {mobileItems.links.map((item) => (
                   <MobileBottomLink
                     key={item.to}

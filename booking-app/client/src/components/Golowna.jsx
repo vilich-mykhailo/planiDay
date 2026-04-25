@@ -1,5 +1,4 @@
-// Golowna.jsx
-import { useMemo, useState, useEffect } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useBookings } from "../context/bookings/useBookings";
 import {
   Sparkles,
@@ -7,15 +6,20 @@ import {
   Clock,
   Users,
   CheckCheck,
+  ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  AlertTriangle,
   X,
   Trash2,
   Check,
   XCircle,
   UserRound,
   Copy,
-  Scissors,
   Clock3,
+  Banknote,
+  Timer,
+  Phone,
 } from "lucide-react";
 import { socket } from "../lib/socket";
 
@@ -30,6 +34,28 @@ function toISODateKey(d) {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+function formatDateFullUA(dateStr) {
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return "—";
+
+  const months = [
+    "січня",
+    "лютого",
+    "березня",
+    "квітня",
+    "травня",
+    "червня",
+    "липня",
+    "серпня",
+    "вересня",
+    "жовтня",
+    "листопада",
+    "грудня",
+  ];
+
+  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}р.`;
+}
+
 function formatDateUA(dateStr) {
   const d = new Date(dateStr);
   if (Number.isNaN(d.getTime())) return "—";
@@ -39,16 +65,9 @@ function formatDateUA(dateStr) {
   return `${dd}.${mm}.${yyyy}`;
 }
 
-function renderBookingDate(b) {
-  const raw = b?.date || b?.day;
-  if (!raw) return "—";
-  return formatDateUA(raw) || "—";
-}
-
 function getBookingStatusMeta(booking, nowTs) {
   const status = booking?.status;
   const canceledBy = booking?.canceledBy || null;
-
   const dt = getBookingDateTime(booking);
   const isArchived = dt ? dt.getTime() < nowTs : false;
   const isDeleted = status === "deleted";
@@ -58,10 +77,9 @@ function getBookingStatusMeta(booking, nowTs) {
   if (isDeleted) {
     return {
       label: "Видалено",
-      badge: "bg-stone-200 text-stone-700",
-      dot: "bg-stone-500",
-      ring: "from-stone-400/20 to-stone-100",
-      iconBg: "bg-stone-100 text-stone-600",
+      badge: "badge-theme-neutral",
+      dot: "bg-[var(--color-caramel)]",
+      iconBg: "status-theme-archived",
       Icon: Trash2,
     };
   }
@@ -69,43 +87,43 @@ function getBookingStatusMeta(booking, nowTs) {
   if (isArchived) {
     return {
       label: "Сеанс завершено",
-      badge: "bg-sky-100 text-sky-700",
-      dot: "bg-sky-600",
-      ring: "from-sky-500/20 to-sky-50",
-      iconBg: "bg-sky-100 text-sky-700",
+      badge: "badge-theme-archived",
+      dot: "bg-[var(--color-caramel)]",
+      iconBg: "status-theme-archived",
       Icon: CheckCheck,
+      text: "text-[var(--color-archived-dark)]",
     };
   }
 
   if (isConfirmed) {
     return {
       label: "Підтверджено",
-      badge: "bg-emerald-100 text-emerald-700",
-      dot: "bg-emerald-600",
-      ring: "from-emerald-500/20 to-emerald-50",
-      iconBg: "bg-emerald-100 text-emerald-700",
+      badge: "badge-theme-success",
+      dot: "bg-[var(--color-buttom-ok)]",
+      iconBg: "status-theme-success",
       Icon: Check,
+      text: "text-[var(--color-confirmed-dark)]",
     };
   }
 
   if (isCanceled) {
     return {
       label: canceledBy === "client" ? "Скасовано клієнтом" : "Скасовано вами",
-      badge: "bg-red-100 text-red-700",
-      dot: "bg-red-600",
-      ring: "from-red-500/20 to-red-50",
-      iconBg: "bg-red-100 text-red-700",
+      badge: "badge-theme-danger",
+      dot: "bg-[var(--color-danger)]",
+      iconBg: "status-theme-danger",
       Icon: XCircle,
+      text: "text-[var(--color-canceled-dark)]",
     };
   }
 
   return {
-    label: "Очікує підтвердження",
-    badge: "bg-[#FFE7D6] text-[#D85A00]",
-    dot: "bg-[#D85A00]",
-    ring: "from-amber-500/20 to-amber-50",
-    iconBg: "bg-amber-100 text-amber-700",
+    label: "Очікує ваше підтвердження",
+    badge: "badge-theme-warning",
+    dot: "bg-[var(--color-dot-wait)]",
+    iconBg: "status-theme-warning",
     Icon: Clock,
+    text: "text-[var(--color-pending-dark)]",
   };
 }
 
@@ -157,18 +175,10 @@ function formatCompactNumber(num) {
   return "999k+";
 }
 
-// =========================
-// UI
-// =========================
 function SectionShell({ children, className = "" }) {
   return (
-    <div
-      className={cn(
-        "overflow-hidden rounded-[30px] border border-stone-200/60 bg-white shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)]",
-        className,
-      )}
-    >
-      <div className="h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-70" />
+    <div className={cn("ui-shell", className)}>
+      <div className="ui-shell-line" />
       {children}
     </div>
   );
@@ -179,22 +189,22 @@ function StatCard({ title, value, icon: Icon, accent = "emerald" }) {
 
   const iconTone =
     accent === "amber"
-      ? "bg-amber-50 text-amber-700"
+      ? "bg-[var(--color-pending-bg)] text-[var(--color-caramel)]"
       : accent === "blue"
-        ? "bg-sky-50 text-sky-700"
+        ? "bg-[var(--color-archived-bg)] text-[var(--color-ink)]"
         : accent === "rose"
-          ? "bg-rose-50 text-rose-700"
-          : "bg-emerald-50 text-emerald-700";
+          ? "bg-[var(--color-danger-bg)] text-[var(--color-danger)]"
+          : "bg-[var(--color-confirmed-bg)] text-[var(--color-forest)]";
 
   return (
-    <div className="group rounded-[22px] border border-stone-200 bg-white p-3 shadow-[0_8px_25px_rgba(0,0,0,0.04)] transition-all duration-200 hover:-translate-y-0.5 hover:border-amber-200 hover:shadow-[0_12px_30px_rgba(0,0,0,0.06)] sm:rounded-[26px] sm:p-5">
+    <div className="group rounded-[22px] border border-[var(--color-cream)] bg-gradient-to-br from-white via-[var(--color-cream)] to-white p-3 shadow-[0_10px_28px_rgba(27,27,27,0.06)] transition-all duration-300 hover:shadow-[0_14px_34px_rgba(27,27,27,0.10)] sm:rounded-[26px] sm:p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-stone-500 sm:text-[10px] sm:tracking-[0.18em]">
+         <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-[var(--color-primary-buttom)] sm:text-[10px] sm:tracking-[0.18em]">
             {title}
           </p>
 
-          <div className="mt-2 text-2xl font-bold tracking-tight text-stone-800 sm:mt-3 sm:text-4xl">
+          <div className="ui-title-section mt-2 text-2xl sm:mt-3 sm:text-4xl">
             {displayValue}
           </div>
         </div>
@@ -216,7 +226,7 @@ function Badge({ children, className = "" }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-xs font-semibold",
+        "inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs font-semibold",
         className,
       )}
     >
@@ -229,15 +239,7 @@ function IconDot({ className = "" }) {
   return <span className={cn("h-1.5 w-1.5 rounded-full", className)} />;
 }
 
-function Modal({
-  open,
-  onClose,
-  title,
-  subtitle,
-  children,
-  footer,
-  size = "md",
-}) {
+function Modal({ open, onClose, children, footer, size = "md" }) {
   useEffect(() => {
     if (!open) return;
 
@@ -280,47 +282,25 @@ function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-[950] flex items-center justify-center bg-stone-900/40 p-4 backdrop-blur-sm sm:p-6"
+      className="fixed inset-0 z-[950] flex items-center justify-center bg-[rgba(5,5,5,0.40)] p-4 backdrop-blur-sm sm:p-6"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose?.();
       }}
     >
       <div
         className={cn(
-          "relative w-full max-h-[90vh] overflow-hidden bg-white shadow-2xl",
+          "relative w-full max-h-[90vh] overflow-hidden rounded-3xl bg-white shadow-2xl",
           "animate-in fade-in-0 slide-in-from-bottom duration-200",
-          "rounded-3xl sm:h-auto sm:max-h-[92vh]",
           sizeClasses[size],
         )}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-amber-50/80 to-transparent" />
-
-        <div className="relative border-b border-stone-100 px-3 py-2.5 sm:px-5 sm:py-4">
-          <div className="flex items-center justify-between">
-            <p className="text-[14px] font-bold uppercase tracking-[0.12em] text-amber-600">
-              {title}
-            </p>
-
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex h-8 w-8 items-center justify-center rounded-full text-stone-500 transition hover:bg-stone-200 hover:text-stone-700 active:scale-95"
-              aria-label="Закрити"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-
-          {subtitle && <p className="text-[11px] text-stone-500">{subtitle}</p>}
-        </div>
-
-        <div className="max-h-[calc(90vh-64px)] overflow-y-auto px-3 py-3 sm:px-5 sm:py-5">
+        <div className="max-h-[calc(90vh-72px)] overflow-y-auto px-4 py-6 sm:px-5 sm:py-7">
           {children}
         </div>
 
         {footer && (
-          <div className="border-t border-stone-100 bg-stone-50/50 px-3 py-2.5 sm:px-5 sm:py-4">
+          <div className="border-soft border-t bg-white px-4 py-4 sm:px-5">
             {footer}
           </div>
         )}
@@ -331,11 +311,9 @@ function Modal({
 
 function Button({ variant = "secondary", className = "", children, ...props }) {
   const variants = {
-    primary:
-      "bg-emerald-600 text-white hover:bg-emerald-700 shadow-[0_10px_24px_rgba(5,150,105,0.28)]",
-    secondary:
-      "border border-stone-200 bg-white text-stone-700 hover:bg-stone-50",
-    danger: "border border-red-200 bg-red-50 text-red-700 hover:bg-red-100",
+    primary: "btn-theme-primary",
+    secondary: "btn-theme-secondary border",
+    danger: "btn-theme-danger border",
   };
 
   return (
@@ -353,11 +331,24 @@ function Button({ variant = "secondary", className = "", children, ...props }) {
   );
 }
 
+function formatDateLongUA(dateStr) {
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return "—";
+
+  const formatted = d.toLocaleDateString("uk-UA", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
+  return formatted.replace(" р.", "р.");
+}
+
 function SkeletonBlock({ className = "" }) {
   return (
     <div
       className={cn(
-        "animate-pulse rounded-2xl bg-gradient-to-r from-stone-200 via-stone-100 to-stone-200 bg-[length:200%_100%]",
+        "animate-pulse rounded-2xl bg-[linear-gradient(90deg,var(--surface-card-alt),var(--surface-card-strong),var(--surface-card-alt))] bg-[length:200%_100%]",
         className,
       )}
     />
@@ -366,7 +357,7 @@ function SkeletonBlock({ className = "" }) {
 
 function StatCardSkeleton() {
   return (
-    <div className="rounded-[22px] border border-stone-200 bg-white p-3 shadow-[0_8px_25px_rgba(0,0,0,0.04)] sm:rounded-[26px] sm:p-5">
+    <div className="bg-card-theme border-soft rounded-[22px] border p-3 shadow-[0_8px_25px_rgba(27,27,27,0.04)] sm:rounded-[26px] sm:p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <SkeletonBlock className="h-3 w-24 rounded-full" />
@@ -381,7 +372,7 @@ function StatCardSkeleton() {
 
 function AppointmentCardSkeleton() {
   return (
-    <li className="rounded-[24px] border border-stone-200 bg-white p-4 shadow-[0_8px_25px_rgba(0,0,0,0.04)] sm:p-5">
+    <li className="bg-card-theme border-soft rounded-[24px] border p-4 shadow-[0_8px_25px_rgba(27,27,27,0.04)] sm:p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -408,8 +399,13 @@ function AppointmentCard({ item, todayKey, nowTs, onOpen }) {
   const isToday = key === todayKey;
   const statusMeta = getBookingStatusMeta(item, nowTs);
 
+  const isCanceled = item.status === "canceled";
+  const isConfirmed = item.status === "confirmed";
+  const dt = getBookingDateTime(item);
+  const isArchived = dt ? dt.getTime() < nowTs : false;
+
   return (
-    <li className="group rounded-[24px] border border-stone-200 bg-white p-4 shadow-[0_8px_25px_rgba(0,0,0,0.04)] transition-all duration-200 hover:-translate-y-0.5 hover:border-amber-200 hover:shadow-[0_12px_30px_rgba(0,0,0,0.06)] sm:p-5">
+    <li className="ui-card ui-card-hover group p-4 sm:p-5">
       <button
         type="button"
         onClick={() => onOpen?.(item.id)}
@@ -418,42 +414,52 @@ function AppointmentCard({ item, todayKey, nowTs, onOpen }) {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-stone-100 px-2.5 py-1 text-xs font-semibold text-stone-700">
-                <Clock className="h-3.5 w-3.5 text-amber-600" />
-                {item.time}
-              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                <span
+                  className={cn(
+                    "inline-flex items-center justify-center gap-2 px-2.5 py-1 text-xs font-semibold rounded-2xl border border-[var(--border-soft)] bg-white shadow-sm transition-all duration-200 ",
+                    statusMeta.text,
+                  )}
+                >
+                  <Clock className="h-3.5 w-3.5" />
+                  {item.time}
+                </span>
 
-              <span
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold",
-                  isToday
-                    ? "bg-emerald-50 text-emerald-700"
-                    : "bg-amber-50 text-amber-700",
-                )}
-              >
-                <CalendarDays className="h-3.5 w-3.5" />
-                {isToday ? "Сьогодні" : dateLabel}
-              </span>
+                <span
+                  className={cn(
+                    "inline-flex items-center justify-center gap-2 px-2.5 py-1 text-xs font-semibold rounded-2xl border border-[var(--border-soft)] bg-white shadow-sm transition-all duration-200 ",
+                    statusMeta.text,
+                  )}
+                >
+                  <CalendarDays className="h-3.5 w-3.5" />
+                  {isToday ? "Сьогодні" : dateLabel}
+                </span>
 
-              <Badge className={statusMeta.badge}>
-                <IconDot className={statusMeta.dot} />
-                {statusMeta.label}
-              </Badge>
+                <span
+                  className={cn(
+                    "inline-flex items-center justify-center gap-2 px-2.5 py-1 text-xs font-semibold rounded-2xl border border-[var(--border-soft)] bg-white shadow-sm transition-all duration-200 ",
+                    statusMeta.text,
+                  )}
+                >
+                  <IconDot className={statusMeta.dot} />
+                  {statusMeta.label}
+                </span>
+              </div>
             </div>
 
-            <p className="mt-3 text-base font-semibold text-stone-800 sm:text-lg">
+            <p className="ui-title-section mt-3 text-base sm:text-lg">
               {item.serviceName || "—"}
             </p>
 
-            <p className="mt-1 truncate text-sm text-stone-500">
+            <p className="ui-text-muted mt-1 truncate text-sm">
               Клієнт:{" "}
-              <span className="font-semibold text-stone-800">
+              <span className="ui-title-section font-semibold">
                 {item.clientName || "—"}
               </span>
             </p>
           </div>
 
-          <div className="flex items-center gap-2 self-start text-xs font-semibold text-stone-400 sm:self-center">
+          <div className="text-label flex items-center gap-2 self-start text-xs font-semibold sm:self-center">
             Детальніше
             <ChevronRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
           </div>
@@ -462,26 +468,36 @@ function AppointmentCard({ item, todayKey, nowTs, onOpen }) {
     </li>
   );
 }
-// =========================
+
+function updateCalendarScrollState(el, setHasScroll, setShowScrollHint) {
+  if (!el) return;
+
+  const isScrollable = el.scrollHeight > el.clientHeight;
+  const isAtBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 12;
+
+  setHasScroll(isScrollable);
+  setShowScrollHint(isScrollable && !isAtBottom);
+}
+
 export default function Golowna() {
-const { bookings, confirmBooking, cancelBooking, loading } = useBookings();
+  const { bookings, confirmBooking, cancelBooking, loading } = useBookings();
   const [nowTs, setNowTs] = useState(() => Date.now());
   const [detailsId, setDetailsId] = useState(null);
   const [copiedPhone, setCopiedPhone] = useState(false);
   const [cancelConfirmId, setCancelConfirmId] = useState(null);
+  const [showDetailsScrollHint, setShowDetailsScrollHint] = useState(true);
+  const [showScrollHint, setShowScrollHint] = useState(true);
+  const [hasScroll, setHasScroll] = useState(false);
+  const calendarScrollRef = useRef(null);
   const [visibleAppointmentsCount, setVisibleAppointmentsCount] = useState(5);
-const isInitialLoading = loading;
+  const isInitialLoading = loading;
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [socketState, setSocketState] = useState(
     socket.connected ? "ok" : "offline",
   );
 
-const showStatsSkeleton = isInitialLoading;
-const showAppointmentsSkeleton = isInitialLoading;
-
-
-    useEffect(() => {
+  useEffect(() => {
     const id = setInterval(() => setNowTs(Date.now()), 60_000);
     return () => clearInterval(id);
   }, []);
@@ -496,10 +512,8 @@ const showAppointmentsSkeleton = isInitialLoading;
 
     const now = new Date(nowTs);
     const todayKey = toISODateKey(now);
-
     const weekStart = startOfWeekMonday(now);
     const weekEnd = addDays(weekStart, 7);
-
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
@@ -588,6 +602,7 @@ const showAppointmentsSkeleton = isInitialLoading;
       window.setTimeout(() => setCopiedPhone(false), 1600);
     }
   }
+
   const upcomingAppointments = useMemo(() => {
     const list = (bookings || []).filter(
       (b) =>
@@ -629,128 +644,133 @@ const showAppointmentsSkeleton = isInitialLoading;
       window.removeEventListener("offline", handleOffline);
     };
   }, []);
-const upcomingAppointmentsResetKey = useMemo(
-  () =>
-    upcomingAppointments
-      .map((item) => `${item.id}:${item.date || ""}:${item.time || ""}:${item.status || ""}`)
-      .join("|"),
-  [upcomingAppointments],
-);
-useEffect(() => {
-  const id = window.setTimeout(() => {
-    setVisibleAppointmentsCount(5);
-  }, 0);
 
-  return () => window.clearTimeout(id);
-}, [upcomingAppointmentsResetKey]);
+  const upcomingAppointmentsResetKey = useMemo(
+    () =>
+      upcomingAppointments
+        .map(
+          (item) =>
+            `${item.id}:${item.date || ""}:${item.time || ""}:${item.status || ""}`,
+        )
+        .join("|"),
+    [upcomingAppointments],
+  );
 
-useEffect(() => {
-  const studioId = localStorage.getItem("studioId");
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      setVisibleAppointmentsCount(5);
+    }, 0);
 
-  const joinStudio = () => {
-    if (studioId) {
-      socket.emit("join:studio", { studioId });
+    return () => window.clearTimeout(id);
+  }, [upcomingAppointmentsResetKey]);
+
+  useEffect(() => {
+    const studioId = localStorage.getItem("studioId");
+
+    const joinStudio = () => {
+      if (studioId) {
+        socket.emit("join:studio", { studioId });
+      }
+      setSocketState("ok");
+    };
+
+    const handleConnect = () => {
+      joinStudio();
+    };
+
+    const handleDisconnect = () => {
+      setSocketState("offline");
+    };
+
+    const handleBookingUpdated = (payload) => {
+      if (!payload) return;
+      if (String(payload.studioId) !== String(studioId)) return;
+
+      setIsRefreshing(true);
+      setSocketState("pending");
+
+      window.clearTimeout(handleBookingUpdated._t);
+      handleBookingUpdated._t = window.setTimeout(() => {
+        setIsRefreshing(false);
+        setSocketState(socket.connected ? "ok" : "offline");
+      }, 800);
+    };
+
+    if (socket.connected) {
+      joinStudio();
+    } else {
+      const id = window.setTimeout(() => {
+        setSocketState("offline");
+      }, 0);
+
+      return () => window.clearTimeout(id);
     }
-    setSocketState("ok");
+
+    socket.on("connect", handleConnect);
+    socket.on("disconnect", handleDisconnect);
+    socket.on("booking:updated", handleBookingUpdated);
+
+    return () => {
+      socket.off("connect", handleConnect);
+      socket.off("disconnect", handleDisconnect);
+      socket.off("booking:updated", handleBookingUpdated);
+      window.clearTimeout(handleBookingUpdated._t);
+    };
+  }, []);
+
+const liveStatusUi = useMemo(() => {
+  const base =
+    "inline-flex items-center gap-2 rounded-full border border-[var(--border-soft)] bg-white px-3 py-1.5 text-[13px] font-semibold shadow-[var(--shadow-card)]";
+
+  if (!isOnline || socketState === "offline") {
+    return {
+      text: "Немає інтернету",
+      dotClass:
+        "h-2 w-2 rounded-full bg-[var(--color-canceled)] shadow-[0_0_0_3px_var(--color-canceled-light)] animate-[pulse-soft_1.8s_ease-in-out_infinite]",
+      wrapClass: `${base} text-[var(--color-canceled-dark)]`,
+    };
+  }
+
+  if (socketState === "pending" || isRefreshing) {
+    return {
+      text: "Оновлення...",
+      dotClass:
+        "h-2 w-2 rounded-full bg-[var(--color-pending)] shadow-[0_0_0_3px_var(--color-pending-light)] animate-[pulse-soft_1.8s_ease-in-out_infinite]",
+      wrapClass: `${base} text-[var(--color-pending-dark)]`,
+    };
+  }
+
+  return {
+    text: "Оновлюється автоматично",
+    dotClass:
+      "h-2 w-2 rounded-full bg-[var(--color-confirmed)] shadow-[0_0_0_3px_var(--color-confirmed-light)] animate-[pulse-soft_1.8s_ease-in-out_infinite]",
+    wrapClass: `${base} text-[var(--color-confirmed-dark)]`,
   };
-
-  const handleConnect = () => {
-    joinStudio();
-  };
-
-  const handleDisconnect = () => {
-    setSocketState("offline");
-  };
-
-  const handleBookingUpdated = (payload) => {
-    if (!payload) return;
-    if (String(payload.studioId) !== String(studioId)) return;
-
-    setIsRefreshing(true);
-    setSocketState("pending");
-
-    window.clearTimeout(handleBookingUpdated._t);
-    handleBookingUpdated._t = window.setTimeout(() => {
-      setIsRefreshing(false);
-      setSocketState(socket.connected ? "ok" : "offline");
-    }, 800);
-  };
-
-if (socket.connected) {
-  joinStudio();
-} else {
-  const id = window.setTimeout(() => {
-    setSocketState("offline");
-  }, 0);
-
-  return () => window.clearTimeout(id);
-}
-
-  socket.on("connect", handleConnect);
-  socket.on("disconnect", handleDisconnect);
-  socket.on("booking:updated", handleBookingUpdated);
-
-  return () => {
-    socket.off("connect", handleConnect);
-    socket.off("disconnect", handleDisconnect);
-    socket.off("booking:updated", handleBookingUpdated);
-    window.clearTimeout(handleBookingUpdated._t);
-  };
-}, []);
-
-  const liveStatusUi =
-    !isOnline || socketState === "offline"
-      ? {
-          text: "Немає інтернету",
-          dotClass: "live-indicator live-indicator--offline",
-          wrapClass: "border-red-200 bg-red-50 text-red-700",
-        }
-      : socketState === "pending" || isRefreshing
-        ? {
-            text: "Оновлення...",
-            dotClass: "live-indicator live-indicator--pending",
-            wrapClass: "border-amber-200 bg-amber-50 text-amber-700",
-          }
-        : {
-            text: "Оновлюється автоматично",
-            dotClass: "live-indicator live-indicator--ok",
-            wrapClass: "border-emerald-200 bg-emerald-50 text-emerald-700",
-          };
+}, [isOnline, socketState, isRefreshing]);
 
   return (
-    <div className="min-h-screen ">
-      <div className="mx-auto w-full max-w-[1200px] space-y-6 ">
+    <div className="">
+      <div className="mx-auto w-full max-w-[1200px] space-y-3">
         <SectionShell>
           <div className="relative overflow-hidden px-5 pb-6 pt-6 sm:px-7 sm:pb-7 sm:pt-7">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(245,158,11,0.10),transparent_22%),radial-gradient(circle_at_left,rgba(16,185,129,0.08),transparent_24%)]" />
+            <div className="absolute inset-0" />
 
             <div className="relative z-10">
-              <div className="inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-amber-700">
-                <Sparkles className="h-3.5 w-3.5" />
-                dashboard студії
-              </div>
+                          <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-[var(--color-cream)] px-3 py-1.5">
+              <Sparkles className="h-4 w-4 text-[var(--color-forest)]" />
+              <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-ink)]">
+                 dashboard студії
+              </span>
+            </div>
+             
 
-              <h1
-                className="
-    mt-2 font-bold tracking-tight text-stone-800
-    !text-[32px] leading-[1.2]        /* було 26 */
-    sm:text-3xl sm:leading-[1.15]    /* трохи менше і на планшеті */
-    lg:text-5xl
-  "
-              >
+              <h1 className="ui-title-hero mt-2 !text-[32px] leading-[1.2] sm:text-3xl sm:leading-[1.15] lg:text-5xl">
                 <span className="inline-flex items-center gap-2 sm:gap-3">
                   <span>Вітаємо в кабінеті майстра</span>
-                  <span className="hidden sm:inline">👋</span>
                 </span>
               </h1>
 
-              <p
-                className="
-    mt-3 text-stone-600
-    text-[13.5px] leading-6        /* мобілка */
-    sm:text-base sm:leading-7
-  "
-              >
+              <p className="ui-text-muted mt-3 text-[13.5px] leading-6 sm:text-base sm:leading-7">
                 Керуйте студією, послугами та записами в одному теплому,
                 сучасному та зручному просторі.
               </p>
@@ -759,7 +779,7 @@ if (socket.connected) {
         </SectionShell>
 
         <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
-          {showStatsSkeleton
+          {isInitialLoading
             ? Array.from({ length: 4 }).map((_, i) => (
                 <StatCardSkeleton key={i} />
               ))
@@ -777,46 +797,46 @@ if (socket.connected) {
         <SectionShell>
           <div className="px-5 pb-6 pt-5 sm:px-6 sm:pb-7 sm:pt-6">
             <div className="flex flex-col gap-2">
-              {/* TOP ROW: Розклад + live */}
               <div className="flex items-center justify-between gap-3">
-                <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-amber-600">
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-700 sm:text-xs sm:tracking-[0.22em]">
                   Розклад
                 </p>
 
-                <div className="flex shrink-0 items-center">
-                  <div
-                    className={cn(
-                      "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-semibold sm:text-xs",
-                      liveStatusUi.wrapClass,
-                    )}
-                  >
-                    <span className={liveStatusUi.dotClass} />
-                    <span className="whitespace-nowrap">
-                      {liveStatusUi.text}
-                    </span>
-                  </div>
-                </div>
+<div
+  className={cn(
+    "inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-[11px] font-semibold shadow-sm sm:text-xs",
+    liveStatusUi.wrapClass,
+  )}
+>
+  <span
+    className={cn(
+      "h-2 w-2 rounded-full shadow-[0_0_0_3px_rgba(255,255,255,0.9)]",
+      liveStatusUi.dotClass,
+    )}
+  />
+  <span className="whitespace-nowrap">{liveStatusUi.text}</span>
+</div>
+
+
               </div>
 
-              {/* TITLE */}
-              <h2 className="text-2xl font-bold tracking-tight text-stone-800 sm:text-3xl">
+              <h2 className="ui-title-section text-2xl sm:text-3xl">
                 Найближчі записи
               </h2>
 
-              {/* SUBTITLE */}
-              <p className="text-sm text-stone-500">
+              <p className="ui-text-muted text-sm">
                 Тільки майбутні записи, відсортовані за датою та часом.
               </p>
             </div>
 
-            {showAppointmentsSkeleton ? (
+            {isInitialLoading ? (
               <ul className="mt-6 space-y-3">
                 {Array.from({ length: 5 }).map((_, i) => (
                   <AppointmentCardSkeleton key={i} />
                 ))}
               </ul>
             ) : upcomingAppointments.length === 0 ? (
-              <div className="mt-6 rounded-[24px] border border-stone-200 bg-stone-50 p-8 text-center text-sm text-stone-500">
+              <div className="ui-empty-panel mt-6 p-8 text-center text-sm">
                 Немає запланованих записів
               </div>
             ) : (
@@ -842,7 +862,7 @@ if (socket.connected) {
                       onClick={() =>
                         setVisibleAppointmentsCount((prev) => prev + 5)
                       }
-                      className="inline-flex items-center justify-center rounded-2xl border border-stone-300 bg-white px-5 py-2.5 text-sm font-semibold text-stone-700 transition-all duration-200 hover:bg-stone-100 active:scale-[0.98]"
+                      className="ui-button-secondary inline-flex items-center justify-center rounded-2xl px-5 py-2.5 text-sm font-semibold transition-all duration-200 active:scale-[0.98]"
                     >
                       Показати ще
                     </button>
@@ -853,265 +873,421 @@ if (socket.connected) {
           </div>
         </SectionShell>
       </div>
-      <Modal
-        open={detailsId != null && Boolean(selectedBooking)}
-        onClose={() => {
-          setDetailsId(null);
-          setCopiedPhone(false);
-        }}
-        title="Деталі запису"
-        subtitle={
-          selectedBooking?.createdAt
-            ? `Створено: ${new Date(selectedBooking.createdAt).toLocaleString("uk-UA")}`
-            : undefined
-        }
-        size="lg"
-      >
-        {selectedBooking &&
-          (() => {
-            const statusMeta = getBookingStatusMeta(selectedBooking, nowTs);
-            const StatusIcon = statusMeta.Icon;
-            const isCanceled = selectedBooking.status === "canceled";
-            const isConfirmed = selectedBooking.status === "confirmed";
-            const isDeleted = selectedBooking.status === "deleted";
-            const dt = getBookingDateTime(selectedBooking);
-            const isArchived = dt ? dt.getTime() < nowTs : false;
-            const clientName = selectedBooking.clientName || "—";
-            const phone = selectedBooking.clientPhone || "";
-            const service = selectedBooking.serviceName || "—";
-            const time = selectedBooking.time || "—";
-            const masterName =
-              selectedBooking.masterName ||
-              selectedBooking.staffName ||
-              selectedBooking.employeeName ||
-              "—";
 
-            return (
-              <div className="space-y-3">
+      {selectedBooking &&
+        detailsId != null &&
+        (() => {
+          const isCanceled = selectedBooking.status === "canceled";
+          const isConfirmed = selectedBooking.status === "confirmed";
+          const isDeleted = selectedBooking.status === "deleted";
+          const dt = getBookingDateTime(selectedBooking);
+          const isArchived = dt ? dt.getTime() < nowTs : false;
+
+          const statusMeta = isArchived
+            ? {
+                label: "Завершено",
+                top: "from-[var(--color-archived-light)] to-white",
+                Icon: CheckCheck,
+                iconColor: "text-[var(--color-archived-dark)]",
+                pillText: "text-[var(--color-archived-dark)]",
+                accent: "text-[var(--color-archived)]",
+              }
+            : isConfirmed
+              ? {
+                  label: "Підтверджено",
+                  top: "from-[var(--color-confirmed-light)] to-white",
+                  Icon: Check,
+                  iconColor: "text-[var(--color-confirmed-dark)]",
+                  pillText: "text-[var(--color-confirmed-dark)]",
+                  accent: "text-[var(--color-confirmed)]",
+                }
+              : isCanceled
+                ? {
+                    label:
+                      selectedBooking.canceledBy === "client"
+                        ? "Скасовано клієнтом"
+                        : "Скасовано вами",
+                    top: "from-[var(--color-canceled-light)] to-white",
+                    Icon: XCircle,
+                    iconColor: "text-[var(--color-canceled-dark)]",
+                    pillText: "text-[var(--color-canceled-dark)]",
+                    accent: "text-[var(--color-canceled)]",
+                  }
+                : {
+                    label: "Очікує підтвердження",
+                    top: "from-[var(--color-pending-light)] to-white",
+                    Icon: Clock,
+                    iconColor: "text-[var(--color-pending-dark)]",
+                    pillText: "text-[var(--color-pending-dark)]",
+                    accent: "text-[var(--color-pending)]",
+                  };
+
+          const StatusIcon = statusMeta.Icon;
+          const clientName = selectedBooking.clientName || "—";
+          const phone = selectedBooking.clientPhone || "";
+          const service = selectedBooking.serviceName || "Послуга";
+          const time = selectedBooking.time || "—";
+
+          const price =
+            selectedBooking.price ??
+            selectedBooking.servicePrice ??
+            selectedBooking.totalPrice ??
+            null;
+
+          const duration =
+            selectedBooking.duration ??
+            selectedBooking.serviceDuration ??
+            selectedBooking.durationMinutes ??
+            null;
+
+          const masterName =
+            selectedBooking.masterName ||
+            selectedBooking.staffName ||
+            selectedBooking.employeeName ||
+            "Довільний майстер";
+
+          return (
+            <div
+              className="fixed inset-0 z-[220] flex items-end justify-center bg-[var(--color-bg)]/45 p-0 backdrop-blur-[7px] sm:items-center sm:p-4"
+              onClick={() => {
+                setDetailsId(null);
+                setCopiedPhone(false);
+                setShowDetailsScrollHint?.(true);
+              }}
+            >
+              <div
+                className={cn(
+                  "relative flex w-full flex-col overflow-hidden bg-white",
+                  "h-[100dvh] rounded-none border-0 shadow-none",
+                  "sm:h-auto sm:max-h-[80vh] sm:max-w-[420px] sm:rounded-[34px] sm:border sm:border-[var(--color-cream)] sm:shadow-[0_35px_100px_rgba(27,27,27,0.18)]",
+                )}
+                onClick={(e) => e.stopPropagation()}
+              >
                 <div
                   className={cn(
-                    "relative overflow-hidden rounded-[28px] border border-stone-200 p-5 sm:p-6",
-                    "bg-gradient-to-br",
-                    statusMeta.ring,
+                    "relative px-5 pb-5 pt-[max(16px,env(safe-area-inset-top))] sm:pt-5",
+                    "bg-gradient-to-b",
+                    statusMeta.top,
                   )}
                 >
-                  <div className="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full bg-white/40 blur-2xl" />
-                  <div className="pointer-events-none absolute -bottom-10 -left-8 h-24 w-24 rounded-full bg-white/30 blur-2xl" />
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.22),transparent_30%)]" />
 
-                  <div className="relative flex flex-col gap-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-stone-500">
-                          <span>Запис</span>
-                        </div>
+                  <div className="relative flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDetailsId(null);
+                        setCopiedPhone(false);
+                        setShowDetailsScrollHint?.(true);
+                      }}
+                      className="sm:hidden inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-[var(--color-ink)] shadow-[0_4px_18px_rgba(27,27,27,0.08)]"
+                      aria-label="Назад"
+                    >
+                      <ChevronLeft className="h-5 w-5" />
+                    </button>
 
-                        <h3 className="mt-2 text-2xl font-black leading-tight tracking-tight text-stone-900">
-                          {service}
-                        </h3>
+                    <div className="w-11 sm:hidden" />
 
-                        <div className="mt-3 flex flex-wrap items-center gap-2">
-                          <Badge className={statusMeta.badge}>
-                            <IconDot className={statusMeta.dot} />
-                            {statusMeta.label}
-                          </Badge>
-                        </div>
-                      </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDetailsId(null);
+                        setCopiedPhone(false);
+                        setShowDetailsScrollHint?.(true);
+                      }}
+                      className="hidden sm:inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-[var(--color-ink)] shadow-[0_4px_18px_rgba(27,27,27,0.08)] transition hover:bg-[var(--color-cream)]"
+                      aria-label="Закрити"
+                    >
+                      <ChevronLeft className="h-5 w-5" />
+                    </button>
+                  </div>
 
-                      <div
-                        className={cn(
-                          "flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl shadow-sm",
-                          statusMeta.iconBg,
-                        )}
-                      >
-                        <StatusIcon className="h-7 w-7" />
-                      </div>
+                  <div className="mt-2 flex justify-center">
+                    <div className="inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-[13px] font-semibold shadow-[0_4px_18px_rgba(27,27,27,0.06)] backdrop-blur">
+                      <StatusIcon
+                        className={cn("h-4 w-4", statusMeta.iconColor)}
+                      />
+                      <span className={statusMeta.pillText}>
+                        {statusMeta.label}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="relative mt-5 text-center">
+                    <h2 className="text-[24px] font-black leading-tight tracking-[-0.03em] text-[var(--color-ink)]">
+                      {service}
+                    </h2>
+                    <p className="mt-1 text-sm font-medium text-[var(--color-ink-soft)]">
+                      {formatDateLongUA(selectedBooking?.date)}
+                    </p>
+                  </div>
+
+                  <div className="relative mt-4 grid grid-cols-3 gap-2">
+                    <div className="inline-flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-[22px] bg-white px-3 py-2 text-sm font-semibold shadow-sm">
+                      <Clock3 className={cn("h-4 w-4", statusMeta.iconColor)} />
+                      <span className="text-[var(--color-ink)]">{time}</span>
                     </div>
 
-                    <div className="flex flex-col gap-3 rounded-2xl border border-white/70 bg-white/80 px-4 py-3 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
-                      <div className="flex min-w-0 items-center gap-3">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-stone-100 text-stone-700">
-                          <CalendarDays className="h-5 w-5" />
-                        </div>
+                    <div className="inline-flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-[22px] bg-white px-3 py-2 text-sm font-semibold shadow-sm">
+                      <Banknote
+                        className={cn("h-4 w-4", statusMeta.iconColor)}
+                      />
+                      <span className="text-[var(--color-ink)]">
+                        {price != null ? `${price} грн` : "—"}
+                      </span>
+                    </div>
 
-                        <div className="min-w-0">
-                          <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">
-                            Дата і час
-                          </p>
+                    <div className="inline-flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-[22px] bg-white px-3 py-2 text-sm font-semibold shadow-sm">
+                      <Timer className={cn("h-4 w-4", statusMeta.iconColor)} />
+                      <span className="text-[var(--color-ink)]">
+                        {duration != null ? `${duration} хв` : "—"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
 
-                          <div className="mt-0.5 flex flex-wrap items-center gap-2 text-sm font-bold text-stone-800">
-                            <span>{renderBookingDate(selectedBooking)}</span>
+                <div className="relative flex min-h-0 flex-1 flex-col px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-1 sm:px-5 sm:pb-5">
+                  <div
+                    className="calendar-day-scroll min-h-0 flex-1 overflow-y-auto pb-16 sm:pb-6"
+                    onScroll={(e) => {
+                      const el = e.currentTarget;
+                      const isScrollable = el.scrollHeight > el.clientHeight;
+                      const isAtBottom =
+                        el.scrollTop + el.clientHeight >= el.scrollHeight - 12;
 
-                            <span className="text-stone-400">•</span>
+                      setHasScroll?.(isScrollable);
+                      setShowScrollHint?.(isScrollable && !isAtBottom);
+                    }}
+                  >
+                    <div className="space-y-3">
+                      <div className="rounded-[26px] border border-[#e6ebe3]  from-[#f6faf4] via-[#edf4ea] to-[#fbfdf9] p-4 shadow-[0_8px_24px_rgba(120,140,120,0.08)]">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-[var(--color-ink)] shadow-sm">
+                            <UserRound className="h-5 w-5" />
+                          </div>
 
-                            <span className="flex items-center gap-1">
-                              <Clock3 className="h-4 w-4" />
-                              {time}
+                          <div className="min-w-0 flex-1">
+                            <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-caramel)]">
+                              Клієнт
                             </span>
+                            <p className="truncate text-[15px] font-extrabold text-[var(--color-ink)]">
+                              {clientName}
+                            </p>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-                  <div className="rounded-[22px] border border-stone-200 bg-white p-3 shadow-[0_8px_30px_-12px_rgba(15,23,42,0.08)] sm:rounded-[24px] sm:p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50 text-amber-700">
-                        <UserRound className="h-5 w-5" />
-                      </div>
+                      <div className="rounded-[26px] border border-[#e6ebe3]  from-[#f6faf4] via-[#edf4ea] to-[#fbfdf9] p-4 shadow-[0_8px_24px_rgba(120,140,120,0.08)]">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white font-bold text-[var(--color-ink)] shadow-sm">
+                            {masterName?.[0] || "—"}
+                          </div>
 
-                      <div className="min-w-0">
-                        <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">
-                          Клієнт
-                        </p>
-                        <p className="truncate text-base font-black text-stone-900">
-                          {clientName}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 rounded-2xl border border-stone-200 bg-stone-50/70 p-2.5 sm:mt-4 sm:p-3">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">
-                            Номер телефону
-                          </p>
-                          <p className="mt-1 truncate text-sm font-semibold text-stone-800">
-                            {phone || "—"}
-                          </p>
+                          <div className="min-w-0 flex-1">
+                            <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-caramel)]">
+                              Майстер
+                            </span>
+                            <p className="truncate text-[15px] font-extrabold text-[var(--color-ink)]">
+                              {masterName}
+                            </p>
+                          </div>
                         </div>
+                      </div>
 
-                        {phone ? (
-                          <button
-                            type="button"
-                            onClick={() => handleCopyPhone(phone)}
-                            className="inline-flex h-10 shrink-0 items-center gap-2 rounded-xl border border-stone-200 bg-white px-3 text-sm font-semibold text-stone-700 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700 active:scale-[0.98]"
-                          >
-                            {copiedPhone ? (
-                              <>
+                      <div className="rounded-[26px] border border-[#e6ebe3]  from-[#f6faf4] via-[#edf4ea] to-[#fbfdf9] p-4 ">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-[var(--color-ink)] shadow-sm">
+                            <Phone className="h-5 w-5" />
+                          </div>
+
+                          <div className="min-w-0 flex-1">
+                            <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-caramel)]">
+                              Телефон клієнта
+                            </span>
+                            <p className="truncate text-[15px] font-extrabold text-[var(--color-ink)]">
+                              {phone || "—"}
+                            </p>
+                          </div>
+
+                          {phone ? (
+                            <button
+                              type="button"
+                              onClick={() => handleCopyPhone(phone)}
+                              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-[var(--color-ink)] shadow-sm transition hover:bg-[var(--color-cream)]"
+                              aria-label="Скопіювати телефон"
+                              title="Скопіювати телефон"
+                            >
+                              {copiedPhone ? (
                                 <CheckCheck className="h-4 w-4" />
-                                Скопійовано
-                              </>
-                            ) : (
-                              <>
+                              ) : (
                                 <Copy className="h-4 w-4" />
-                                Копіювати
-                              </>
-                            )}
-                          </button>
-                        ) : null}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="rounded-[24px] border border-stone-200 bg-white p-4 shadow-[0_8px_30px_-12px_rgba(15,23,42,0.08)]">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-50 text-violet-700">
-                        <Scissors className="h-5 w-5" />
-                      </div>
-
-                      <div className="min-w-0">
-                        <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">
-                          Послуга
-                        </p>
-                        <p className="truncate text-base font-black text-stone-900">
-                          {service}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 rounded-2xl border border-stone-200 bg-stone-50/70 p-3">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-stone-700 border border-stone-200">
-                          <UserRound className="h-5 w-5" />
-                        </div>
-
-                        <div className="min-w-0">
-                          <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">
-                            Майстер
-                          </p>
-                          <p className="truncate text-sm font-semibold text-stone-800">
-                            {masterName}
-                          </p>
+                              )}
+                            </button>
+                          ) : (
+                            <div className="h-10 w-10 shrink-0 rounded-2xl bg-white" />
+                          )}
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-                <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:flex-wrap sm:justify-end">
-                  {!isConfirmed && !isCanceled && !isArchived && !isDeleted && (
-                    <Button
-                      variant="primary"
-                      onClick={async () => {
-                        try {
-                          await confirmBooking(selectedBooking.id);
-                        } catch (e) {
-                          alert(e.message || "Не вдалося підтвердити запис");
-                        }
+
+
+                  {!isConfirmed && !isCanceled && !isArchived && !isDeleted ? (
+                    <>
+<button
+  type="button"
+  onClick={async () => {
+    try {
+      await confirmBooking(selectedBooking.id);
+    } catch (e) {
+      alert(e.message || "Не вдалося підтвердити запис");
+    }
+  }}
+  className={cn(
+    "mt-5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold text-white",
+    "bg-gradient-to-r from-[#9fb29a] to-[#7f9a78]",
+    "shadow-[0_10px_24px_rgba(127,154,120,0.25)]",
+    "transition-all duration-200 active:scale-[0.98]",
+    "hover:from-[#8fa88a] hover:to-[#6f8c69]"
+  )}
+>
+  <Check className="h-4 w-4" />
+  Підтвердити запис
+</button>
+
+                      <div className="mt-3 grid grid-cols-2 gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setCancelConfirmId(selectedBooking.id)}
+                          className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98],
+"
+                        >
+                          <XCircle className="h-4 w-4" />
+                          Скасувати
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDetailsId(null);
+                            setCopiedPhone(false);
+                            setShowDetailsScrollHint?.(true);
+                          }}
+                          className="ui-button-secondary inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold shadow-sm transition-all duration-200 active:scale-[0.98]"
+                        >
+                          Закрити
+                        </button>
+                      </div>
+                    </>
+                  ) : !isCanceled && !isArchived && !isDeleted ? (
+                    <div className="mt-8 grid grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setCancelConfirmId(selectedBooking.id)}
+                        className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
+                      >
+                        <XCircle className="h-4 w-4" />
+                        Скасувати
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDetailsId(null);
+                          setCopiedPhone(false);
+                          setShowDetailsScrollHint?.(true);
+                        }}
+                        className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
+                      >
+                        Закрити
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDetailsId(null);
+                        setCopiedPhone(false);
+                        setShowDetailsScrollHint?.(true);
                       }}
+                      className="ui-button-secondary mt-8 inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold shadow-sm transition-all duration-200 active:scale-[0.98]"
                     >
-                      <Check className="h-4 w-4" />
-                      Підтвердити запис
-                    </Button>
+                      Закрити
+                    </button>
                   )}
-
-                  {!isCanceled && !isArchived && !isDeleted && (
-                    <Button
-                      variant="danger"
-                      onClick={() => setCancelConfirmId(selectedBooking.id)}
-                    >
-                      Скасувати запис
-                    </Button>
-                  )}
-                  <Button
-                    variant="secondary"
-                    onClick={() => {
-                      setDetailsId(null);
-                      setCopiedPhone(false);
-                    }}
-                  >
-                    Закрити
-                  </Button>
                 </div>
               </div>
-            );
-          })()}
-      </Modal>
+            </div>
+          );
+        })()}
       <Modal
         open={cancelConfirmId != null}
         onClose={() => setCancelConfirmId(null)}
-        title="Скасування запису"
-        subtitle="Запис буде позначено як скасований."
         size="sm"
         footer={
-          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <div className="flex justify-end gap-2">
             <Button
               variant="secondary"
               onClick={() => setCancelConfirmId(null)}
+              className="w-full sm:w-auto"
             >
               Назад
             </Button>
 
-            <Button
-              variant="danger"
+            <button
+              type="button"
               onClick={async () => {
                 try {
                   await cancelBooking(cancelConfirmId);
                   setCancelConfirmId(null);
-                  setDetailsId(null);
                 } catch (e) {
                   alert(e.message || "Не вдалося скасувати запис");
                 }
               }}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-danger)] px-4 py-2.5 text-sm font-bold text-white shadow-[0_14px_34px_rgba(213,92,82,0.28)] transition-all duration-200 hover:bg-[var(--color-danger-dark)] active:scale-[0.98] sm:w-auto"
             >
+              <XCircle className="h-4 w-4" />
               Так, скасувати
-            </Button>
+            </button>
           </div>
         }
       >
-        <div className="text-sm text-stone-500">
-          Підтвердити скасування запису?
+        <div className="space-y-4">
+          <div className="flex justify-center">
+            <div className="relative">
+              <div className="absolute inset-0 rounded-full bg-[var(--color-forest)]/70 blur-2xl" />
+              <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--color-windows-cancel)] text-white ">
+                <XCircle className="h-7 w-7" />
+              </div>
+            </div>
+          </div>
+
+          <div className="text-center">
+            <h3 className="text-xl font-black tracking-tight text-[var(--color-ink)]">
+              Скасувати запис?
+            </h3>
+            <p className="mt-2 text-sm leading-6 text-[var(--color-caramel)]">
+              Запис залишиться в системі, але буде позначений як скасований і
+              більше не вважатиметься активним.
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-[var(--color-cream)] bg-[var(--color-cream)] p-3.5">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-[var(--color-delete)] shadow-sm">
+                <AlertTriangle className="h-4.5 w-4.5" />
+              </div>
+
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-[var(--color-ink)]">
+                  Після скасування
+                </p>
+                <p className="mt-1 text-xs leading-5 text-[var(--color-ink)]">
+                  Клієнт отримає статус скасованого.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </Modal>
     </div>
