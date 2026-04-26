@@ -354,16 +354,16 @@ function Toggle({ checked }) {
   return (
     <span
       className={cn(
-        "relative inline-flex h-7 w-12 items-center rounded-full transition-all duration-300",
+        "relative inline-flex h-7 w-12 items-center rounded-full ",
         checked
-         ? "bg-gradient-to-r from-[#9fb29a] to-[#7f9a78] shadow-[0_8px_18px_rgba(127,154,120,0.24)]"
+          ? "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]"
           : "bg-[var(--color-mist)]",
       )}
       aria-hidden="true"
     >
       <span
         className={cn(
-          "inline-block h-5 w-5 transform rounded-full bg-white shadow-[0_2px_10px_rgba(0,0,0,0.18)] transition-transform duration-300",
+          "inline-block h-5 w-5 transform rounded-full bg-white transition-transform duration-300",
           checked ? "translate-x-6" : "translate-x-1",
         )}
       />
@@ -445,20 +445,20 @@ function Toast({ toast }) {
           />
 
           <div className="relative flex items-start gap-3 px-4 py-4 sm:px-5">
-            <div
-              className={cn(
-                "mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border shadow-[0_8px_22px_rgba(27,27,27,0.08)]",
-                toast.type === "success"
-                  ? "border-[var(--color-sand)] bg-[var(--color-confirmed-bg)] text-[var(--color-forest)]"
-                  : "border-[var(--color-danger-border)] bg-[var(--color-danger-bg)] text-[var(--color-danger)]",
-              )}
-            >
-              {toast.type === "success" ? (
-                <Check className="h-5 w-5" />
-              ) : (
-                <XCircle className="h-5 w-5" />
-              )}
-            </div>
+<div
+  className={cn(
+    "mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full shadow-[0_8px_22px_rgba(27,27,27,0.08)]",
+    toast.type === "success"
+      ? "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))] text-white"
+      : "border border-[var(--color-danger-border)] bg-[var(--color-danger-bg)] text-[var(--color-danger)]",
+  )}
+>
+  {toast.type === "success" ? (
+    <Check className="h-5 w-5" />
+  ) : (
+    <XCircle className="h-5 w-5" />
+  )}
+</div>
 
             <div className="min-w-0 flex-1">
               <p className="mt-2 text-[15px] font-black leading-5 text-[var(--color-ink)]">
@@ -1268,285 +1268,335 @@ useEffect(() => {
                         : "border-[var(--color-cream)] bg-[var(--color-cream)]",
                     )}
                   >
-                    <div className="grid gap-4 sm:grid-cols-[1fr_260px] sm:items-center">
+<div className="grid gap-4 sm:grid-cols-[1fr_260px] sm:items-center">
+  <button
+    type="button"
+    onClick={() => toggleDay(day.key)}
+    disabled={saving}
+    className="flex items-center gap-3 text-left disabled:opacity-60"
+  >
+    <Toggle checked={enabled} />
+
+    <div className="min-w-0">
+      <p className="text-[15px] font-bold text-[var(--color-ink)]">
+        {day.full}
+      </p>
+      <p className="text-xs text-[var(--color-caramel)]">
+        {enabled ? "Робочий день" : "Вихідний"}
+      </p>
+    </div>
+  </button>
+
+ <div className={cn("w-full sm:w-[260px]", !enabled && "hidden sm:invisible")}>
+    <div className="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-[20px] border border-[var(--color-cream)] bg-white px-2.5 py-2 shadow-[0_6px_20px_rgba(27,27,27,0.06)]">
+      <div className="min-w-0">
+        <div className="rounded-[14px] border border-[var(--color-cream)] bg-white transition-all duration-200 hover:bg-[var(--color-cream)]">
+          <TimeSelect
+            value={config.start}
+            label="Початок зміни"
+            dayLabel={day.full}
+            onChange={(value) => updateTime(day.key, "start", value)}
+            onCommit={(value) =>
+              handleTimeCommit(day.key, "start", value)
+            }
+          />
+        </div>
+      </div>
+
+      <div className="flex items-center justify-center">
+        <span className="block h-px w-3 bg-[var(--color-mist)]" />
+      </div>
+
+      <div className="min-w-0">
+        <div className="rounded-[14px] border border-[var(--color-cream)] bg-white transition-all duration-200 hover:bg-[var(--color-cream)]">
+          <TimeSelect
+            value={config.end}
+            label="Кінець зміни"
+            dayLabel={day.full}
+            onChange={(value) => updateTime(day.key, "end", value)}
+            onCommit={(value) =>
+              handleTimeCommit(day.key, "end", value)
+            }
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </SectionCard>
+
+<SectionCard
+  title="Особливі дати"
+  subtitle="Задай інший графік для конкретної дати: свято, скорочений день або вихідний."
+  badge={`К-ть днів: ${exceptions.length}`}
+  actions={
+<Button
+  onClick={addExceptionRow}
+  className={cn(
+    "w-full justify-center whitespace-nowrap sm:w-auto sm:shrink-0",
+    "inline-flex h-11 items-center gap-2 rounded-2xl px-4 text-sm font-bold text-white",
+    "transition-all duration-200 active:scale-[0.98]",
+
+    "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
+
+    "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]",
+  )}
+>
+  <CalendarDays className="h-4 w-4" />
+  Додати особливу дату
+</Button>
+  }
+>
+  {exceptionsLoading ? (
+    <ExceptionsSkeleton />
+  ) : exceptions.length === 0 ? (
+<div className="rounded-2xl border-2 border-dashed border-[var(--color-caramel)]/40 bg-[var(--color-cream)] p-6 text-center sm:p-8">
+  <div className="mb-3 flex items-center justify-center">
+    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/70">
+      <CalendarDays className="h-7 w-7 text-[var(--color-caramel)]" />
+    </div>
+  </div>
+
+  <p className="text-sm font-medium text-[var(--color-caramel)]">
+    Немає особливих дат
+  </p>
+
+  <p className="mt-1 text-xs text-[var(--color-caramel)]/80">
+    Тут ви можете додати свята, скорочені дні або вихідні. <br />
+    У ці дні студія працюватиме за окремим графіком.
+  </p>
+</div>
+  ) : (
+    <div className="space-y-3">
+      {exceptions.map((item, index) => {
+        const exceptionKey = getExceptionKey(item, index);
+        const isExpanded =
+          item.isNew || expandedExceptions[exceptionKey] === true;
+        const isValid = Boolean(item.date);
+
+        return (
+          <div
+            key={exceptionKey}
+            className="overflow-hidden rounded-2xl border border-[var(--color-cream)] bg-white shadow-[0_6px_18px_rgba(27,27,27,0.04)]"
+          >
+            <button
+              type="button"
+              onClick={() =>
+                !item.isNew && toggleExceptionExpanded(exceptionKey)
+              }
+              className={cn(
+                "flex w-full items-start justify-between gap-3 p-4 text-left transition-colors",
+                !item.isNew && "hover:bg-[var(--color-cream)]",
+              )}
+            >
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-[15px] font-bold text-[var(--color-ink)]">
+                    {item.date
+                      ? formatExceptionDate(item.date)
+                      : "Нова особлива дата"}
+                  </p>
+
+                  <div className="rounded-full px-3 py-1 text-xs font-semibold text-[var(--color-ink)]">
+                    {item.enabled ? "Особливий графік" : "Вихідний"}
+                  </div>
+                </div>
+
+                <p className="mt-1 text-xs text-[var(--color-caramel)]">
+                  {exceptionSubtitle(item)}
+                </p>
+              </div>
+
+              <div className="flex shrink-0 items-center gap-2">
+                {!item.isNew && (
+                  <span className="hidden text-xs font-medium text-[var(--color-caramel)] sm:inline">
+                    {isExpanded ? "Згорнути" : "Розгорнути"}
+                  </span>
+                )}
+
+                {!item.isNew &&
+                  (isExpanded ? (
+                    <ChevronUp className="h-5 w-5 shrink-0 text-[var(--color-caramel)]" />
+                  ) : (
+                    <ChevronDown className="h-5 w-5 shrink-0 text-[var(--color-caramel)]" />
+                  ))}
+              </div>
+            </button>
+
+            <div
+              className={cn(
+                "grid transition-all duration-300 ease-out",
+                isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+              )}
+            >
+              <div className="overflow-hidden">
+                <div className="border-t border-[var(--color-cream)] px-4 pb-4 pt-4">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:items-end">
+                    <div className="min-w-0">
+                      <DatePicker
+                        label="Дата"
+                        value={item.date}
+                        onChange={(value) =>
+                          updateException(index, "date", value)
+                        }
+                      />
+                    </div>
+
+                    <div className="col-span-1 sm:col-span-1">
+                      <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[var(--color-caramel)]">
+                        Статус
+                      </label>
+
                       <button
                         type="button"
-                        onClick={() => toggleDay(day.key)}
-                        disabled={saving}
-                        className="flex items-center gap-3 text-left disabled:opacity-60"
+                        onClick={() =>
+                          updateException(index, "enabled", !item.enabled)
+                        }
+                        className="flex h-[50px] w-full items-center gap-3 rounded-2xl border border-[var(--color-cream)] bg-white px-4 transition-all duration-200 hover:bg-[var(--color-cream)] focus:border-[var(--color-forest)] focus:ring-4 focus:ring-[var(--color-forest)]/10"
                       >
-                        <Toggle checked={enabled} />
+<span
+  className={cn(
+    "relative inline-flex h-7 w-12 items-center rounded-full ",
+    item.enabled
+      ? "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]"
+      : "bg-[var(--color-mist)]",
+  )}
+>
+  <span
+    className={cn(
+      "inline-block h-5 w-5 transform rounded-full bg-white transition-transform duration-300",
+      item.enabled ? "translate-x-6" : "translate-x-1",
+    )}
+  />
+</span>
+
+                        <span className="whitespace-nowrap text-sm font-semibold text-[var(--color-ink)]">
+                          {item.enabled ? "Робочий день" : "Вихідний"}
+                        </span>
+                      </button>
+                    </div>
+
+                    {item.enabled ? (
+                      <div className="grid grid-cols-2 gap-2 sm:col-span-2">
+                        <div className="min-w-0">
+                          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[var(--color-caramel)]">
+                            Початок
+                          </label>
+
+                          <div className="flex h-[50px] items-center overflow-hidden rounded-2xl border border-[var(--color-cream)] bg-white px-2 transition-all hover:bg-[var(--color-cream)] focus-within:ring-4 focus-within:ring-[var(--color-forest)]/10">
+                            <TimeSelect
+                              value={item.start}
+                              label="Початок"
+                              dayLabel={item.date || "Особлива дата"}
+                              onChange={(value) =>
+                                updateException(index, "start", value)
+                              }
+                              onCommit={(value) =>
+                                updateException(index, "start", value)
+                              }
+                            />
+                          </div>
+                        </div>
 
                         <div className="min-w-0">
-                          <p className="text-[15px] font-bold text-[var(--color-ink)]">
-                            {day.full}
-                          </p>
-                          <p className="text-xs text-[var(--color-caramel)]">
-                            {enabled ? "Робочий день" : "Вихідний"}
-                          </p>
-                        </div>
-                      </button>
+                          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[var(--color-caramel)]">
+                            Завершення
+                          </label>
 
-                      {enabled ? (
-                        <div className="w-full sm:w-[260px]">
-                          <div className="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-[20px] border border-[var(--color-cream)] bg-white px-2.5 py-2 shadow-[0_6px_20px_rgba(27,27,27,0.06)]">
-                            <div className="min-w-0">
-                             <div className="rounded-[14px] border border-[var(--color-cream)] bg-white transition-all duration-200 hover:bg-[var(--color-cream)]">
-                                <TimeSelect
-                                  value={config.start}
-                                  label="Початок зміни"
-                                  dayLabel={day.full}
-                                  onChange={(value) =>
-                                    updateTime(day.key, "start", value)
-                                  }
-                                  onCommit={(value) =>
-                                    handleTimeCommit(day.key, "start", value)
-                                  }
-                                />
-                              </div>
-                            </div>
-
-                            <div className="flex items-center justify-center">
-                              <span className="block h-px w-3 bg-[var(--color-mist)]" />
-                            </div>
-
-                            <div className="min-w-0">
-                              <div className="rounded-[14px] border border-[var(--color-cream)] bg-white transition-all duration-200 hover:bg-[var(--color-cream)]">
-                                <TimeSelect
-                                  value={config.end}
-                                  label="Кінець зміни"
-                                  dayLabel={day.full}
-                                  onChange={(value) =>
-                                    updateTime(day.key, "end", value)
-                                  }
-                                  onCommit={(value) =>
-                                    handleTimeCommit(day.key, "end", value)
-                                  }
-                                />
-                              </div>
-                            </div>
+                          <div className="flex h-[50px] items-center overflow-hidden rounded-2xl border border-[var(--color-cream)] bg-white px-2 transition-all hover:bg-[var(--color-cream)] focus-within:ring-4 focus-within:ring-[var(--color-forest)]/10">
+                            <TimeSelect
+                              value={item.end}
+                              label="Завершення"
+                              dayLabel={item.date || "Особлива дата"}
+                              onChange={(value) =>
+                                updateException(index, "end", value)
+                              }
+                              onCommit={(value) =>
+                                updateException(index, "end", value)
+                              }
+                            />
                           </div>
                         </div>
-                      ) : (
-                        <div className="hidden sm:block" />
-                      )}
-                    </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center sm:col-span-2">
+                        <div className="w-full rounded-2xl border border-[#e8b7b0] px-4 py-3 text-center text-sm font-semibold text-[#b6463f]">
+                          У цей день студія не працюватиме
+                        </div>
+                      </div>
+                    )}
+
+<div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end sm:col-span-2">
+<Button
+  onClick={() => saveException(item, index)}
+  disabled={!isValid}
+  className={cn(
+    "w-full sm:w-auto",
+    "inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold text-white",
+    "transition-all duration-200 active:scale-[0.98]",
+
+    // 👉 nude-green
+    "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
+
+    // 👉 hover
+    "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]",
+
+    // 👉 disabled
+    !isValid &&
+      "cursor-not-allowed bg-[var(--color-cream)] text-[var(--color-caramel)] hover:from-[var(--color-cream)] hover:to-[var(--color-cream)]"
+  )}
+>
+  <Check className="h-4 w-4" />
+  Зберегти
+</Button>
+
+  <Button
+    onClick={() => removeException(item, index)}
+    className={cn(
+      "w-full sm:w-auto",
+      "inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
+    )}
+  >
+    <Trash2 className="h-4 w-4 text-[#b96b61]" />
+    Видалити
+  </Button>
+</div>
                   </div>
-                );
-              })}
+                </div>
+              </div>
             </div>
-          )}
-        </SectionCard>
-
-        <SectionCard
-          title="Особливі дати"
-          subtitle="Задай інший графік для конкретної дати: свято, скорочений день або вихідний."
-          badge={`К-ть днів: ${exceptions.length}`}
-          actions={
-            <Button
-              variant="primary"
-              onClick={addExceptionRow}
-              className="w-full justify-center whitespace-nowrap sm:w-auto sm:shrink-0"
-            >
-              <CalendarDays className="h-4 w-4" />
-              Додати дату
-            </Button>
-          }
-        >
-          {exceptionsLoading ? (
-            <ExceptionsSkeleton />
-          ) : exceptions.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-[var(--color-mist)] bg-[var(--color-cream)] px-4 py-6 text-sm text-[var(--color-caramel)]">
-              Ще немає особливих дат. Наприклад: Пасха 08:00–12:00 або вихідний
-              на конкретну дату.
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {exceptions.map((item, index) => {
-                const exceptionKey = getExceptionKey(item, index);
-                const isExpanded =
-                  item.isNew || expandedExceptions[exceptionKey] === true;
-
-                return (
-                  <div
-                    key={exceptionKey}
-                    className="overflow-hidden rounded-2xl border border-[var(--color-cream)] bg-white shadow-[0_6px_18px_rgba(27,27,27,0.05)] transition-all duration-300"
-                  >
-                    <button
-                      type="button"
-                      onClick={() =>
-                        !item.isNew && toggleExceptionExpanded(exceptionKey)
-                      }
-                      className={cn(
-                        "flex w-full items-start justify-between gap-3 p-4 text-left transition-colors",
-                        !item.isNew && "hover:bg-[var(--color-cream)]",
-                      )}
-                    >
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-[15px] font-bold text-[var(--color-ink)]">
-                            {item.date
-                              ? formatExceptionDate(item.date)
-                              : "Нова особлива дата"}
-                          </p>
-
-                          <div className="rounded-full border border-[var(--color-sand)] bg-[var(--color-pending-bg)] px-3 py-1 text-xs font-semibold text-[var(--color-forest)]">
-                            {item.enabled ? "Особливий графік" : "Вихідний"}
-                          </div>
-                        </div>
-
-                        <p className="mt-1 text-xs text-[var(--color-caramel)]">
-                          {exceptionSubtitle(item)}
-                        </p>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        {!item.isNew && (
-                          <span className="hidden text-xs font-medium text-[var(--color-caramel)] sm:inline">
-                            {isExpanded ? "Згорнути" : "Розгорнути"}
-                          </span>
-                        )}
-
-                        {!item.isNew &&
-                          (isExpanded ? (
-                            <ChevronUp className="h-5 w-5 shrink-0 text-[var(--color-caramel)]" />
-                          ) : (
-                            <ChevronDown className="h-5 w-5 shrink-0 text-[var(--color-caramel)]" />
-                          ))}
-                      </div>
-                    </button>
-
-                    <div
-                      className={cn(
-                        "grid transition-all duration-300 ease-out",
-                        isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
-                      )}
-                    >
-                      <div className="overflow-hidden">
-                        <div className="border-t border-[var(--color-cream)] px-4 pb-4 pt-4">
-                          <div className="grid gap-3 sm:grid-cols-2 sm:items-end">
-                            <div>
-                              <DatePicker
-                                label="Дата"
-                                value={item.date}
-                                onChange={(value) =>
-                                  updateException(index, "date", value)
-                                }
-                              />
-                            </div>
-
-                            <div>
-                              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[var(--color-caramel)]">
-                                Статус
-                              </label>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  updateException(index, "enabled", !item.enabled)
-                                }
-                                className="flex h-[50px] w-full items-center gap-3 rounded-2xl border border-[var(--color-cream)] bg-[var(--color-cream)] px-4 transition-all duration-200 hover:border-[var(--color-mist)] hover:bg-white"
-                              >
-                                <div className="shrink-0">
-                                  <Toggle checked={item.enabled} />
-                                </div>
-
-                                <span className="whitespace-nowrap text-sm font-semibold text-[var(--color-ink)]">
-                                  {item.enabled ? "Робочий день" : "Вихідний"}
-                                </span>
-                              </button>
-                            </div>
-
-                            {item.enabled ? (
-                              <div className="grid gap-2 sm:grid-cols-2">
-                                <div className="min-w-0">
-                                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[var(--color-caramel)]">
-                                    Початок
-                                  </label>
-                                  <div className="rounded-[16px] border border-[var(--color-cream)] bg-[var(--color-cream)]">
-                                    <TimeSelect
-                                      value={item.start}
-                                      label="Початок"
-                                      dayLabel={item.date || "Особлива дата"}
-                                      onChange={(value) =>
-                                        updateException(index, "start", value)
-                                      }
-                                      onCommit={(value) =>
-                                        updateException(index, "start", value)
-                                      }
-                                    />
-                                  </div>
-                                </div>
-
-                                <div className="min-w-0">
-                                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[var(--color-caramel)]">
-                                    Завершення
-                                  </label>
-                                  <div className="rounded-[16px] border border-[var(--color-cream)] bg-[var(--color-cream)]">
-                                    <TimeSelect
-                                      value={item.end}
-                                      label="Завершення"
-                                      dayLabel={item.date || "Особлива дата"}
-                                      onChange={(value) =>
-                                        updateException(index, "end", value)
-                                      }
-                                      onCommit={(value) =>
-                                        updateException(index, "end", value)
-                                      }
-                                    />
-                                  </div>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="flex items-center">
-                                <div className="w-full rounded-2xl border border-[var(--color-danger-border)] bg-[var(--color-danger-bg)] px-4 py-3 text-sm font-semibold text-[var(--color-danger)]">
-                                  У цей день студія не працює
-                                </div>
-                              </div>
-                            )}
-
-                            <div className="flex gap-2 lg:justify-end">
-                              <Button
-                                variant="secondary"
-                                onClick={() => saveException(item, index)}
-                                disabled={!item.date}
-                                className="h-[50px] flex-1 lg:flex-none"
-                              >
-                                Зберегти
-                              </Button>
-
-                              <Button
-                                variant="danger"
-                                onClick={() => removeException(item, index)}
-                                className="h-[50px] flex-1 lg:flex-none"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                                Видалити
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </SectionCard>
+          </div>
+        );
+      })}
+    </div>
+  )}
+</SectionCard>
 
         <SectionCard
           title="Налаштування слотів"
           subtitle="Це тривалість одного запису — крок між доступними часами."
           className="relative z-20"
           actions={
-            <Button
-              variant="primary"
-              onClick={generateSlots}
-              className="w-full justify-center whitespace-nowrap sm:w-auto sm:shrink-0"
-            >
-              <CalendarDays className="h-4 w-4" />
-              Згенерувати слоти
-            </Button>
+<Button
+  onClick={generateSlots}
+  className={cn(
+    "w-full sm:w-auto sm:shrink-0 justify-center",
+    "inline-flex h-11 items-center gap-2 rounded-2xl px-4 text-sm font-bold text-white",
+    "transition-all duration-200 active:scale-[0.98]",
+
+    "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
+
+    "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]"
+  )}
+>
+  <CalendarDays className="h-4 w-4" />
+  Згенерувати слоти
+</Button>
           }
         >
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -1567,9 +1617,9 @@ useEffect(() => {
               />
             </div>
 
-            <div className="rounded-2xl border border-[var(--color-sand)] bg-[var(--color-pending-bg)] px-4 py-3 text-sm text-[var(--color-ink)] shadow-sm">
-              Поточний крок: <span className="font-bold">{slotDuration} хв</span>
-            </div>
+<div className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)]">
+  Поточний крок: <span className="font-black">{slotDuration} хв</span>
+</div>
           </div>
         </SectionCard>
 
@@ -1641,14 +1691,27 @@ useEffect(() => {
                 Скасувати
               </Button>
 
-              <Button
-                variant="primary"
-                onClick={saveAll}
-                disabled={!dirty || saving}
-                className="min-w-[160px]"
-              >
-                {saving ? "Збереження..." : "Зберегти"}
-              </Button>
+<Button
+  onClick={saveAll}
+  disabled={!dirty || saving}
+  className={cn(
+    "min-w-[160px]",
+    "inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold text-white",
+    "transition-all duration-200 active:scale-[0.98]",
+
+    // 👉 nude-green
+    "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
+
+    // 👉 hover
+    "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]",
+
+    // 👉 disabled
+    (!dirty || saving) &&
+      "cursor-not-allowed bg-[var(--color-cream)] text-[var(--color-caramel)] hover:from-[var(--color-cream)] hover:to-[var(--color-cream)]"
+  )}
+>
+  {saving ? "Збереження..." : "Зберегти"}
+</Button>
             </div>
           </div>
         </div>
@@ -1677,14 +1740,27 @@ useEffect(() => {
                 Скасувати
               </Button>
 
-              <Button
-                variant="primary"
-                onClick={saveAll}
-                disabled={!dirty || saving}
-                className="flex-1"
-              >
-                {saving ? "Збереження..." : "Зберегти"}
-              </Button>
+<Button
+  onClick={saveAll}
+  disabled={!dirty || saving}
+  className={cn(
+    "flex-1",
+    "inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold text-white",
+    "transition-all duration-200 active:scale-[0.98]",
+
+    // 👉 nude-green
+    "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
+
+    // 👉 hover
+    "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]",
+
+    // 👉 disabled
+    (!dirty || saving) &&
+      "cursor-not-allowed bg-[var(--color-cream)] text-[var(--color-caramel)] hover:from-[var(--color-cream)] hover:to-[var(--color-cream)]"
+  )}
+>
+  {saving ? "Збереження..." : "Зберегти"}
+</Button>
             </div>
           </div>
         </div>

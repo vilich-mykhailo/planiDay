@@ -32,6 +32,8 @@ import {
 } from "lucide-react";
 import { api } from "../api/http";
 import { useStudio } from "../context/studio/useStudio";
+import { socket } from "../lib/socket";
+import { useBookings } from "../context/bookings/useBookings";
 
 const PUBLIC = import.meta.env.VITE_R2_PUBLIC_BASE_URL;
 
@@ -79,10 +81,11 @@ function useRole() {
 const navLinkBase =
   "inline-flex items-center gap-2 rounded-2xl px-3.5 py-2.5 text-sm font-semibold transition-all duration-200";
 
-const navLinkActive = "bg-[var(--color-ink)] text-white";
+const navLinkActive =
+  "border-transparent text-white bg-gradient-to-r from-[#8FA887] via-[#86A17D] to-[#7F9A78] shadow-[0_10px_24px_rgba(127,154,120,0.24)]";
 
 const navLinkIdle =
-  "text-[var(--color-caramel)] hover:bg-[var(--color-cream)] hover:text-[var(--color-ink)]";
+  "border-transparent text-[var(--color-ink)] hover:bg-[#F3F5EF] active:scale-[0.99]";
 
 function HeaderLink({ to, children, icon, onClick }) {
   return (
@@ -140,8 +143,8 @@ function MobileNavIcon({ children, active }) {
       className={cx(
         "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-all duration-200 sm:h-11 sm:w-11 sm:rounded-2xl",
         active
-          ? "border-white/15 bg-white/12 text-white"
-          : "border-[var(--color-cream)] bg-white text-[var(--color-caramel)] shadow-[0_2px_8px_rgba(27,27,27,0.04)]",
+          ? "border-white/40 bg-white/20 text-white"
+          : "border-[var(--color-cream)] bg-white text-[#7f9a78] shadow-[0_2px_8px_rgba(27,27,27,0.04)]"
       )}
     >
       {children}
@@ -154,21 +157,16 @@ function MobileBottomLink({ to, label, icon }) {
     <NavLink
       to={to}
       end={to === "/"}
-      className={({ isActive }) =>
-        cx(
-          "flex flex-1 flex-col items-center justify-center gap-[2px] px-1 py-1 transition-all duration-200",
-          isActive ? "text-[var(--color-forest)]" : "text-[var(--color-caramel)]",
-        )
-      }
+      className="flex flex-1 flex-col items-center justify-center gap-[3px] px-1 py-1 "
     >
       {({ isActive }) => (
         <>
           <span
             className={cx(
-              "flex h-9 w-9 items-center justify-center rounded-2xl transition-all duration-200",
-              isActive
-                ? "scale-105 bg-[var(--color-ink)] text-white shadow-[var(--shadow-button)]"
-                : "text-[var(--color-caramel)]",
+              "flex h-9 w-9 items-center justify-center rounded-2xl",
+isActive
+  ? "border-transparent text-white bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]"
+  : "border-transparent text-[var(--color-caramel)] hover:bg-[var(--color-cream)]",
             )}
           >
             {icon}
@@ -176,9 +174,9 @@ function MobileBottomLink({ to, label, icon }) {
 
           <span
             className={cx(
-              "text-[9px] leading-none",
+              "text-[9px] leading-none transition-colors duration-200",
               isActive
-                ? "text-[var(--color-forest)]"
+                ? "font-semibold text-[var(--color-primary-buttom)]"
                 : "text-[var(--color-caramel)] opacity-80",
             )}
           >
@@ -194,9 +192,12 @@ export default function Header() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const [nowTs, setNowTs] = useState(() => Date.now());
   const isLogin = location.pathname === "/login";
   const isOwnerLogin = location.pathname === "/login-owner";
   const role = useRole();
+  const { bookings = [] } = useBookings();
+const [unreadNotifications, setUnreadNotifications] = useState(0);
   const { studio } = useStudio();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
   const [clientProfile, setClientProfile] = useState({
@@ -214,7 +215,28 @@ export default function Header() {
   const clientInitials =
     `${(clientProfile.firstName || "").trim().slice(0, 1)}${(clientProfile.lastName || "").trim().slice(0, 1)}`
       .toUpperCase() || "U";
+      useEffect(() => {
+  const id = window.setInterval(() => {
+    setNowTs(Date.now());
+  }, 60_000);
 
+  return () => window.clearInterval(id);
+}, []);
+
+const newBookingsCount = useMemo(() => {
+  return bookings.filter((booking) => {
+    if (!booking?.id) return false;
+    if (booking.status && booking.status !== "new") return false;
+
+    const dt = new Date(
+      `${booking.date}T${String(booking.time || "").replace(".", ":")}:00`,
+    );
+
+    if (Number.isNaN(dt.getTime())) return false;
+
+    return dt.getTime() >= nowTs;
+  }).length;
+}, [bookings, nowTs]);
   const handleLogout = useCallback(() => {
     const currentRole = localStorage.getItem("role") || role;
 
@@ -229,6 +251,47 @@ export default function Header() {
 
     navigate("/login", { replace: true });
   }, [navigate, role]);
+
+  useEffect(() => {
+  if (role !== "owner") return;
+
+  async function loadUnreadNotifications() {
+    const token = localStorage.getItem("token");
+    const studioId = localStorage.getItem("studioId");
+    if (!token || !studioId) return;
+
+    try {
+      const data = await api(`/owner/studio/${studioId}/notifications`, {
+        token,
+      });
+
+      const items = Array.isArray(data?.notifications)
+        ? data.notifications
+        : [];
+
+      setUnreadNotifications(items.filter((item) => !item.isRead).length);
+    } catch {
+      setUnreadNotifications(0);
+    }
+  }
+
+  loadUnreadNotifications();
+
+  const handleNew = (payload) => {
+    if (String(payload?.studioId) !== String(localStorage.getItem("studioId"))) return;
+    setUnreadNotifications((prev) => prev + 1);
+  };
+
+  const handleUpdated = () => loadUnreadNotifications();
+
+  socket.on("notification:new", handleNew);
+  socket.on("notifications:updated", handleUpdated);
+
+  return () => {
+    socket.off("notification:new", handleNew);
+    socket.off("notifications:updated", handleUpdated);
+  };
+}, [role]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -345,14 +408,15 @@ export default function Header() {
       return {
         links: [],
         actions: (
-          <div className="hidden items-center gap-2 lg:flex">
-            <ButtonLink
-              to="/dashboard/studio"
-              icon={<Settings2 className="h-4 w-4" />}
-            >
-              Керувати студією
-            </ButtonLink>
-          </div>
+<div className="hidden items-center gap-2 lg:flex">
+  <ButtonLink
+    to="/dashboard/studio"
+    icon={<Settings2 className="h-4 w-4" />}
+    className="bg-[var(--color-primary-buttom)] text-white hover:bg-[var(--color-primary-buttom)]/90"
+  >
+    Керувати студією
+  </ButtonLink>
+</div>
         ),
       };
     }
@@ -561,136 +625,150 @@ export default function Header() {
 
           <aside
             className={cx(
-              "absolute right-0 top-0 h-dvh w-[84%] max-w-[320px] overflow-hidden border-l border-white/20 bg-[rgba(255,255,255,0.96)] backdrop-blur-2xl shadow-[0_24px_80px_rgba(0,0,0,0.22)] transition-transform duration-300 ease-out sm:w-[88%] sm:max-w-[360px]",
+              "absolute right-0 top-0 h-dvh w-[76%] max-w-[280px] overflow-hidden border-l border-white/20 bg-[rgba(255,255,255,0.96)] backdrop-blur-2xl shadow-[0_24px_80px_rgba(0,0,0,0.22)] transition-transform duration-300 ease-out sm:w-[88%] sm:max-w-[360px]",
               open ? "translate-x-0" : "translate-x-full",
             )}
           >
             <div className="flex h-full flex-col">
-              <div className="relative border-b border-[var(--color-cream)] px-3 pb-3 pt-3 sm:px-4 sm:pb-4 sm:pt-4">
-                <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[var(--color-forest)] via-[var(--color-caramel)] to-[var(--color-ink)] opacity-90" />
+<div className="relative border-b border-[var(--color-cream)] bg-white px-3 pb-2.5 pt-2.5 sm:px-4 sm:pb-3 sm:pt-3">
+  <div className="relative overflow-hidden rounded-[22px] bg-gradient-to-br from-[#3f815f] via-[#78a982] to-[#d9ead2] p-3.5 text-white shadow-[0_14px_40px_rgba(50,78,41,0.22)] sm:p-4">
+    
+    {/* glow */}
+    <div className="pointer-events-none absolute -right-8 -top-10 h-32 w-32 rounded-full bg-white/20 blur-3xl" />
+    <div className="pointer-events-none absolute right-4 top-4 h-20 w-28 rotate-[-18deg] rounded-full bg-white/12 blur-sm" />
 
-                <div className="flex items-start justify-between gap-3 pt-1.5 sm:pt-2">
-                  <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
-                    <div className="relative">
-                      <div className="grid h-10 w-10 place-items-center overflow-hidden rounded-[18px] bg-[var(--color-ink)] text-sm font-extrabold text-white sm:h-12 sm:w-12 sm:rounded-[20px] sm:text-base">
-                        {showOwnerIdentity && studioLogo ? (
-                          <img
-                            src={studioLogo}
-                            alt={studioName || "Лого студії"}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : role === "client" && clientPhoto ? (
-                          <img
-                            src={clientPhoto}
-                            alt={clientFullName || "Фото користувача"}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : role === "client" ? (
-                          clientInitials
-                        ) : (
-                          "P"
-                        )}
-                      </div>
+    <div className="relative flex items-start justify-between gap-2.5">
+      
+      <div className="flex min-w-0 items-center gap-2.5">
+        
+        {/* avatar */}
+        <div className="relative shrink-0">
+          <div className="grid h-10 w-10 place-items-center overflow-hidden rounded-xl border-2 border-white bg-[var(--color-ink)] text-sm font-extrabold text-white shadow-md">
+            {showOwnerIdentity && studioLogo ? (
+              <img src={studioLogo} className="h-full w-full object-cover" />
+            ) : role === "client" && clientPhoto ? (
+              <img src={clientPhoto} className="h-full w-full object-cover" />
+            ) : role === "client" ? (
+              clientInitials
+            ) : (
+              "P"
+            )}
+          </div>
 
-                      <span className="absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full border-2 border-white bg-[var(--color-forest)] sm:h-4 sm:w-4" />
-                    </div>
+          <span className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full border-2 border-white bg-[#7fbd87]" />
+        </div>
 
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-extrabold tracking-tight text-[var(--color-ink)]">
-                        {showOwnerIdentity && studioName ? (
-                          studioName
-                        ) : role === "client" && clientFullName ? (
-                          clientFullName
-                        ) : (
-                          <>
-                            Plani<span className="text-[var(--color-caramel)]">Day</span>
-                          </>
-                        )}
-                      </p>
+        {/* text */}
+        <div className="min-w-0">
+          <p className="truncate text-base font-extrabold leading-tight">
+            {showOwnerIdentity && studioName
+              ? studioName
+              : role === "client" && clientFullName
+              ? clientFullName
+              : "PlaniDay"}
+          </p>
 
-                      <p className="mt-0.5 truncate text-[11px] font-medium text-[var(--color-caramel)] sm:text-xs">
-                        {mobileItems.subtitle || "Меню"}
-                      </p>
-                    </div>
-                  </div>
+          <p className="truncate text-[11px] text-white/80">
+            {mobileItems.subtitle || "Меню"}
+          </p>
+        </div>
+      </div>
 
-                  <button
-                    type="button"
-                    onClick={() => setOpen(false)}
-                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--color-cream)] bg-white text-[var(--color-ink)] transition hover:bg-[var(--color-cream)] active:scale-[0.98] sm:h-10 sm:w-10 sm:rounded-2xl"
-                    aria-label="Закрити меню"
-                  >
-                    <X className="h-4 w-4 sm:h-5 sm:w-5" />
-                  </button>
-                </div>
+      {/* close */}
+      <button
+        onClick={() => setOpen(false)}
+        className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white/85 text-[var(--color-ink)] shadow-sm transition hover:bg-white active:scale-[0.97]"
+      >
+        <X className="h-4 w-4" />
+      </button>
+    </div>
 
-                <div className="mt-3 rounded-[20px] border border-[var(--color-cream)] bg-gradient-to-br from-[var(--color-cream)] via-white to-[var(--color-cream)] p-3 text-center shadow-[0_8px_24px_rgba(27,27,27,0.04)] sm:mt-4 sm:rounded-[24px] sm:p-4">
-                  <div className="inline-flex items-center rounded-full bg-[var(--color-pending-bg)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--color-forest)]">
-                    {mobileItems.subtitle || "Режим"}
-                  </div>
-
-                  <h2 className="mt-2 text-lg font-bold leading-tight tracking-[-0.03em] text-[var(--color-ink)] sm:text-[20px]">
-                    {mobileItems.title || "Меню"}
-                  </h2>
-                </div>
-              </div>
+    {/* badge */}
+    <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1.5 backdrop-blur">
+      <LayoutDashboard className="h-3.5 w-3.5 text-white" />
+      <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white">
+        {mobileItems.subtitle || "Панель"}
+      </span>
+    </div>
+  </div>
+</div>
 
               <div className="flex-1 overflow-y-auto px-2.5 py-3 sm:px-3 sm:py-4">
                 <nav className="space-y-0.5 sm:space-y-1">
                   {mobileItems.links.map((i) => (
-                    <NavLink
-                      key={i.to}
-                      to={i.to}
-                      end={i.to === "/dashboard"}
-                      onClick={() => {
-                        i.onClick?.();
-                        setOpen(false);
-                      }}
-                      className={({ isActive }) =>
-                        cx(
-                          "group relative flex items-center gap-3 overflow-hidden rounded-[18px] border px-3 py-3 transition-all duration-300 ease-out sm:rounded-[22px] sm:py-3.5",
-                          isActive
-                            ? "border-[var(--color-sand)] bg-[var(--color-ink)] text-white"
-                            : "border-transparent text-[var(--color-ink)] hover:-translate-y-[1px] hover:border-[var(--color-sand)] hover:bg-gradient-to-r hover:from-[var(--color-cream)] hover:via-white hover:to-[var(--color-cream)] hover:shadow-[0_10px_24px_rgba(27,27,27,0.08)] active:scale-[0.99]",
-                        )
-                      }
-                    >
-                      {({ isActive }) => (
-                        <>
-                          <span
-                            className={cx(
-                              "absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full transition-all duration-200 sm:h-7",
-                              isActive ? "bg-white" : "bg-transparent",
-                            )}
-                          />
+<NavLink
+  key={i.to}
+  to={i.to}
+  end={i.to === "/dashboard"}
+  onClick={() => {
+    i.onClick?.();
+    setOpen(false);
+  }}
+  className={({ isActive }) =>
+    cx(
+      "group relative flex items-center gap-3 overflow-hidden rounded-[18px] border px-3 py-3 transition-all duration-300 ease-out sm:rounded-[22px] sm:py-3.5",
+isActive
+  ? "border-transparent text-white bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]"
+  : "border-transparent text-[var(--color-caramel)] hover:bg-[var(--color-cream)]"
+    )
+  }
+>
+  {({ isActive }) => {
+    const badgeCount =
+      i.to === "/dashboard/bookings"
+        ? newBookingsCount
+        : i.to === "/dashboard/notifications"
+          ? unreadNotifications
+          : 0;
 
-                          <MobileNavIcon active={isActive}>{i.icon}</MobileNavIcon>
+    return (
+      <>
+        <span
+          className={cx(
+            "absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full transition-all duration-200 sm:h-7",
+            isActive ? "bg-white" : "bg-transparent",
+          )}
+        />
 
-                          <div className="min-w-0 flex-1">
-                            <div className="truncate text-sm font-semibold">
-                              {i.label}
-                            </div>
-                          </div>
-                        </>
-                      )}
-                    </NavLink>
+        <MobileNavIcon active={isActive}>{i.icon}</MobileNavIcon>
+
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-sm font-semibold">{i.label}</div>
+        </div>
+
+        {badgeCount > 0 && (
+          <span
+            className={cx(
+              "ml-auto mr-1.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold",
+isActive
+  ? "bg-[var(--color-danger)] text-white"
+  : "bg-[var(--color-danger)] text-white",
+            )}
+          >
+            {badgeCount > 9 ? "9+" : badgeCount}
+          </span>
+        )}
+      </>
+    );
+  }}
+</NavLink>
                   ))}
                 </nav>
               </div>
 
               <div className="border-t border-[var(--color-cream)] bg-white/70 p-2.5 backdrop-blur-xl sm:p-3">
                 {mobileItems.logout ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      handleLogout();
-                      setOpen(false);
-                    }}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-[18px] border border-[var(--color-danger-border)] bg-[var(--color-danger-bg)] px-4 py-2.5 text-sm font-semibold text-[var(--color-danger)] transition-all duration-200 hover:bg-[rgba(213,92,82,0.12)] active:scale-[0.99] sm:rounded-[20px] sm:py-3"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    Вийти
-                  </button>
+<button
+  type="button"
+  onClick={() => {
+    handleLogout();
+    setOpen(false);
+  }}
+  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
+>
+  <LogOut className="h-4 w-4 text-[var(--color-danger)]" />
+  Вийти
+</button>
                 ) : (
                   <div className="grid grid-cols-1 gap-2">
                     <ButtonLink

@@ -15,6 +15,7 @@ import {
   Info,
   MapPin, 
   FileText,
+  XCircle,
 } from "lucide-react";
 import { useStudio } from "../../context/studio/useStudio";
 import { api } from "../../api/http";
@@ -629,23 +630,24 @@ export default function StudioSettings() {
     duration: 3000,
   });
 
-  function showToast({ type = "success", title, text }) {
-    const duration = 2600;
+function showToast({ type = "success", title, text }) {
+  const safeType = type === "warning" ? "error" : type;
+  const duration = 2600;
 
-    setToast({
-      id: Date.now(),
-      open: true,
-      type,
-      title,
-      text,
-      duration,
-    });
+  setToast({
+    id: Date.now(),
+    open: true,
+    type: safeType,
+    title,
+    text,
+    duration,
+  });
 
-    clearTimeout(showToast._t);
-    showToast._t = setTimeout(() => {
-      setToast((prev) => ({ ...prev, open: false }));
-    }, duration);
-  }
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => {
+    setToast((prev) => ({ ...prev, open: false }));
+  }, duration);
+}
 
   const [errorModal, setErrorModal] = useState({
     open: false,
@@ -1509,8 +1511,8 @@ export default function StudioSettings() {
     : "Категорія";
 
   return (
-    <div className="min-h-screen">
-      <div className="mx-auto min-h-[100svh] max-w-6xl">
+    <div className="h-full">
+      <div className="mx-auto h-full max-w-6xl">
         <input
           ref={coverInputRef}
           type="file"
@@ -1593,11 +1595,11 @@ export default function StudioSettings() {
               </div>
 
               {profile.percent !== 100 && (
-                <div className="mx-auto flex w-fit max-w-full shrink-0 items-center gap-3 rounded-2xl border border-[var(--color-sand)] bg-gradient-to-r from-[var(--color-pending-bg)] via-[var(--color-sand)] to-[var(--color-pending-bg)] px-3 py-2 sm:mx-0 sm:w-auto sm:min-w-[220px] sm:justify-between">
+                <div className="mx-auto flex w-fit max-w-full shrink-0 items-center gap-3 rounded-2xl border border-[var(--color-sand)] bg-[var(--color-cream)] px-3 py-2 sm:mx-0 sm:w-auto sm:min-w-[220px] sm:justify-between">
                   <div className="flex items-center gap-3">
                     <div className="relative flex h-10 w-10 items-center justify-center rounded-2xl bg-white shadow-sm">
                       <span className="absolute inline-flex h-3 w-3 animate-ping rounded-full bg-[var(--color-caramel)] opacity-75" />
-                      <span className="relative inline-flex h-3 w-3 rounded-full bg-[var(--color-forest)]" />
+                      <span className="relative inline-flex h-3 w-3 rounded-full bg-[var(--color-buttom-ok)]" />
                     </div>
 
                     <div>
@@ -1976,9 +1978,14 @@ export default function StudioSettings() {
 <label
   id="studio-field-portfolio-add"
   className={cn(
-    "inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-semibold text-white transition-all duration-200 active:scale-[0.98]",
-    "bg-gradient-to-r from-[#9fb29a] to-[#7f9a78]",
-    "hover:from-[#8fa88a] hover:to-[#6f8c69]",
+    "inline-flex cursor-pointer items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-semibold text-white transition-all duration-200 active:scale-[0.98]",
+
+    // 👉 gradient через nude-green
+    "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
+
+    // 👉 hover
+    "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]",
+
     highlightId === "studio-field-portfolio-add" && highlightClass,
   )}
 >
@@ -2012,9 +2019,18 @@ export default function StudioSettings() {
 
                           <div className="mt-4">
                             {!hasAnyPortfolio ? (
-                              <div className="rounded-2xl border border-[var(--color-cream)] bg-[var(--color-cream)] p-4 text-sm text-[var(--color-caramel)]">
-                                Додай фото робіт — це найсильніший доказ якості.
-                              </div>
+<div className="rounded-2xl border-2 border-dashed border-[var(--color-caramel)]/40 bg-[var(--color-cream)] p-4 text-sm text-center">
+  <div className="mb-3 flex items-center justify-center">
+    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/70">
+      <Camera className="h-5 w-5 text-[var(--color-caramel)]" />
+    </div>
+  </div>
+
+  <p className="text-[var(--color-caramel)] leading-relaxed">
+    Додай фото робіт — це{" "}
+    <span className="font-semibold">найсильніший доказ якості</span>.
+  </p>
+</div>
                             ) : (
                               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-[repeat(auto-fill,minmax(180px,1fr))]">
                                 {portfolioItems.map((item, idx) => {
@@ -2024,14 +2040,12 @@ export default function StudioSettings() {
 
                                   return (
                                     <div key={item.key} className="relative">
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          setPortfolioPreview({ open: true, src })
-                                        }
-                                        className="group block w-full overflow-hidden rounded-[22px] border border-[var(--color-cream)] bg-[var(--color-cream)] transition hover:shadow-[0_10px_24px_rgba(27,27,27,0.10)]"
-                                        style={{ aspectRatio: "1 / 1" }}
-                                      >
+<button
+  type="button"
+  onClick={() => setPortfolioPreview({ open: true, src })}
+  className="group relative block w-full overflow-hidden rounded-[22px] border border-[var(--color-cream)] bg-[var(--color-cream)] transition hover:shadow-[0_10px_24px_rgba(27,27,27,0.10)]"
+  style={{ aspectRatio: "1 / 1" }}
+>
                                         <img
                                           src={src}
                                           alt={`work ${idx + 1}`}
@@ -2106,92 +2120,87 @@ export default function StudioSettings() {
           </div>
         </div>
 
-        <div
-          className={cn(
-            "fixed left-1/2 top-[calc(12px+env(safe-area-inset-top))] z-[120] -translate-x-1/2 transition-all duration-200 ease-out",
-            "md:bottom-5 md:left-5 md:top-auto md:translate-x-0",
-            toast.open
-              ? "translate-y-0 scale-100 opacity-100"
-              : "pointer-events-none -translate-y-2 scale-[0.98] opacity-0 md:translate-y-2",
-          )}
-          role="status"
-          aria-live="polite"
-        >
-          <div
-            className={cn(
-              "relative w-fit max-w-[85vw] overflow-hidden rounded-2xl border bg-white shadow-[0_16px_40px_rgba(27,27,27,0.12)]",
-              toast.type === "success" && "border-[var(--color-sand)]",
-              toast.type === "error" && "border-[var(--color-danger-border)]",
-              toast.type === "warning" && "border-[var(--color-sand)]",
-            )}
-          >
-            <div className="flex items-start gap-3 px-4 py-3.5">
-              <div
-                className={cn(
-                  "mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white",
-                  toast.type === "success" && "bg-[var(--color-forest)]",
-                  toast.type === "error" && "bg-[var(--color-danger)]",
-                  toast.type === "warning" && "bg-[var(--color-caramel)]",
-                )}
-              >
-                {toast.type === "success" && (
-                  <CheckCircle2 className="h-4.5 w-4.5" />
-                )}
-                {toast.type === "error" && <X className="h-4.5 w-4.5" />}
-                {toast.type === "warning" && <AlertTriangle className="h-4.5 w-4.5" />}
-              </div>
+<div
+  className={cn(
+    "fixed z-[90] transition-all duration-300",
+    "left-1/2 top-[calc(1rem+env(safe-area-inset-top))] w-[calc(100%-2rem)] max-w-[430px] -translate-x-1/2",
+    "md:bottom-6 md:left-6 md:top-auto md:w-auto md:min-w-[300px] md:max-w-[360px] md:translate-x-0",
+    toast.open
+      ? "translate-y-0 opacity-100"
+      : "pointer-events-none -translate-y-2 opacity-0 md:translate-y-2",
+  )}
+  role="status"
+  aria-live="polite"
+>
+  <div
+    className={cn(
+      "relative overflow-hidden rounded-[24px] border bg-white/95 backdrop-blur-xl shadow-[0_18px_50px_rgba(27,27,27,0.16)]",
+      toast.type === "success"
+        ? "border-[var(--color-sand)] ring-1 ring-[var(--color-confirmed-bg)]"
+        : "border-[var(--color-danger-border)] ring-1 ring-[rgba(213,92,82,0.10)]",
+    )}
+  >
+    <div
+      className={cn(
+        "absolute inset-x-0 top-0 h-1",
+        toast.type === "success"
+          ? "bg-gradient-to-r from-[var(--color-forest)] via-[var(--color-forest)] to-[var(--color-caramel)]"
+          : "bg-gradient-to-r from-[var(--color-danger-border)] via-[var(--color-danger)] to-[var(--color-danger-dark)]",
+      )}
+    />
 
-              <div className="min-w-0">
-                <p className="whitespace-nowrap text-[14px] font-semibold text-[var(--color-ink)]">
-                  {toast.title}
-                </p>
+    <div className="relative flex items-start gap-3 px-4 py-4 sm:px-5">
+      <div
+        className={cn(
+          "mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full shadow-[0_8px_22px_rgba(27,27,27,0.08)]",
+          toast.type === "success"
+            ? "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))] text-white"
+            : "border border-[var(--color-danger-border)] bg-[var(--color-danger-bg)] text-[var(--color-danger)]",
+        )}
+      >
+        {toast.type === "success" ? (
+          <Check className="h-5 w-5" />
+        ) : (
+          <XCircle className="h-5 w-5" />
+        )}
+      </div>
 
-                {toast.text && (
-                  <p className="mt-0.5 text-[13px] text-[var(--color-caramel)]">
-                    {toast.text}
-                  </p>
-                )}
-              </div>
+      <div className="min-w-0 flex-1">
+        <p className="mt-2 text-[15px] font-black leading-5 text-[var(--color-ink)]">
+          {toast.title || (toast.type === "success" ? "Збережено" : "Помилка")}
+        </p>
 
-              <button
-                type="button"
-                onClick={() => setToast((prev) => ({ ...prev, open: false }))}
-                className="ml-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[var(--color-caramel)] transition hover:bg-[var(--color-cream)] hover:text-[var(--color-ink)]"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
+        {toast.text && (
+          <p className="mt-1 text-sm leading-5 text-[var(--color-caramel)]">
+            {toast.text}
+          </p>
+        )}
+      </div>
+    </div>
 
-            <div
-              className={cn(
-                "h-[2px] w-full",
-                toast.type === "success" && "bg-[var(--color-confirmed-bg)]",
-                toast.type === "error" && "bg-[var(--color-danger-bg)]",
-                toast.type === "warning" && "bg-[var(--color-pending-bg)]",
-              )}
-            >
-              <div
-                key={toast.id}
-                className={cn(
-                  "h-full w-full origin-left",
-                  toast.type === "success" && "bg-[var(--color-forest)]",
-                  toast.type === "error" && "bg-[var(--color-danger)]",
-                  toast.type === "warning" && "bg-[var(--color-caramel)]",
-                )}
-                style={{
-                  animation: `toastbar ${toast.duration}ms linear forwards`,
-                }}
-              />
-            </div>
-          </div>
+    <div className="h-[3px] w-full bg-[var(--color-cream)]">
+      <div
+        key={toast.id}
+        className={cn(
+          "h-full w-full origin-left",
+          toast.type === "success"
+            ? "bg-[var(--color-forest)]"
+            : "bg-[var(--color-danger)]",
+        )}
+        style={{
+          animation: `toastbar ${toast.duration}ms linear forwards`,
+        }}
+      />
+    </div>
+  </div>
 
-          <style>{`
-            @keyframes toastbar {
-              from { transform: scaleX(1); }
-              to { transform: scaleX(0); }
-            }
-          `}</style>
-        </div>
+  <style>{`
+    @keyframes toastbar {
+      from { transform: scaleX(1); }
+      to   { transform: scaleX(0); }
+    }
+  `}</style>
+</div>
 
         {portfolioPreview.open && (
           <div
@@ -2254,22 +2263,36 @@ export default function StudioSettings() {
 
               <div className="flex items-center gap-2">
                 <Button
-                  variant="secondary"
+                  
                   onClick={resetChanges}
                   disabled={!dirty || saving}
-                  className="flex-1"
+                  className="flex-1 inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
                 >
                   Скасувати
                 </Button>
 
-                <Button
-                  variant="primary"
-                  onClick={save}
-                  disabled={!canSave}
-                  className="flex-1"
-                >
-                  {saving ? "Збереження..." : "Зберегти"}
-                </Button>
+<Button
+  variant="primary"
+  onClick={save}
+  disabled={!canSave}
+  className={cn(
+    "flex-1",
+    "inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold text-white",
+    "active:scale-[0.98]",
+
+    // 👉 nude-green
+    "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
+
+    // 👉 hover
+    "hover:from-[rgba(var(--color-nude-green-500_hover),1)] hover:to-[rgba(var(--color-nude-green-600_hover),1)]",
+
+    // 👉 disabled
+    !canSave &&
+      "cursor-not-allowed bg-[var(--color-cream)] text-[var(--color-caramel)] hover:from-[var(--color-cream)] hover:to-[var(--color-cream)]"
+  )}
+>
+  {saving ? "Збереження..." : "Зберегти"}
+</Button>
               </div>
             </div>
           </div>
@@ -2286,39 +2309,46 @@ export default function StudioSettings() {
           >
             <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[var(--color-forest)] via-[var(--color-caramel)] to-[var(--color-ink)]" />
 
-            <div className="flex items-center gap-4">
-              <div className="flex min-w-0 items-center gap-3 pr-2">
-                <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-pending-bg)] shadow-[0_8px_20px_rgba(180,140,108,0.20)]">
-                  <span className="absolute inline-flex h-3 w-3 animate-ping rounded-full bg-[var(--color-caramel)] opacity-75" />
-                  <span className="relative inline-flex h-3 w-3 rounded-full bg-[var(--color-forest)]" />
-                </div>
+<div className="flex items-center gap-2">
+  <Button
+    onClick={resetChanges}
+    disabled={!dirty || saving}
+    className={cn(
+      "w-[160px]", // 👈 однакова ширина
+      "inline-flex h-11 items-center justify-center gap-2 rounded-2xl",
+      "border border-[var(--border-soft)] bg-white",
+      "text-sm font-bold text-[var(--color-ink)]",
+      "shadow-sm transition-all duration-200",
+      "hover:bg-[var(--color-cream)] active:scale-[0.98]",
+      "disabled:opacity-60 disabled:cursor-not-allowed"
+    )}
+  >
+    Скасувати
+  </Button>
 
-                <div className="min-w-0">
-                  <p className="text-[17px] font-black leading-none text-[var(--color-ink)]">
-                    Маєте незбережені зміни
-                  </p>
-                </div>
-              </div>
+  <Button
+    onClick={save}
+    disabled={!canSave}
+    className={cn(
+      "w-[160px]", // 👈 однакова ширина
+      "inline-flex h-11 items-center justify-center gap-2 rounded-2xl",
+      "text-sm font-bold text-white",
+      "transition-all duration-200 active:scale-[0.98]",
 
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="secondary"
-                  onClick={resetChanges}
-                  disabled={!dirty || saving}
-                >
-                  Скасувати
-                </Button>
+      // nude-green
+      "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
 
-                <Button
-                  variant="primary"
-                  onClick={save}
-                  disabled={!canSave}
-                  className="min-w-[160px]"
-                >
-                  {saving ? "Збереження..." : "Зберегти"}
-                </Button>
-              </div>
-            </div>
+      // hover
+      "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]",
+
+      // disabled
+      !canSave &&
+        "cursor-not-allowed bg-[var(--color-cream)] text-[var(--color-caramel)] hover:from-[var(--color-cream)] hover:to-[var(--color-cream)]"
+    )}
+  >
+    {saving ? "Збереження..." : "Зберегти"}
+  </Button>
+</div>
           </div>
         </div>
 

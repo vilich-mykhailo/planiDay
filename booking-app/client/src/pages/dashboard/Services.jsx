@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useStudio } from "../../context/studio/useStudio";
 import { Slider } from "../../components/ui/slider";
@@ -9,10 +9,13 @@ import {
   Trash2,
   Users,
   Check,
-  Scissors ,
+  Scissors,
   X,
+  ArrowLeft,
   Sparkles,
   ChevronDown,
+  Banknote ,
+  Minus,
 } from "lucide-react";
 
 const UNCATEGORIZED_ID = "__uncategorized__";
@@ -146,9 +149,7 @@ function MasterChip({ master, checked }) {
         <p
           className={cn(
             "text-xs transition-colors",
-            checked
-              ? "text-[var(--color-ink)]"
-              : "text-[var(--color-caramel)]",
+            checked ? "text-[var(--color-ink)]" : "text-[var(--color-caramel)]",
           )}
         >
           {checked ? "Обрано" : "Доступний"}
@@ -161,7 +162,10 @@ function MasterChip({ master, checked }) {
 function SkeletonBlock({ className = "" }) {
   return (
     <div
-      className={cn("animate-pulse rounded-xl bg-[var(--color-cream)]", className)}
+      className={cn(
+        "animate-pulse rounded-xl bg-[var(--color-cream)]",
+        className,
+      )}
     />
   );
 }
@@ -346,90 +350,46 @@ function Modal({
   children,
   footer,
   size = "md",
+  mobileFullscreen = false,
+  mobileBackLabel = "Назад",
 }) {
-  useEffect(() => {
-    if (open) {
-      document.body.style.overflow = "hidden";
-
-      const handleEscape = (e) => {
-        if (e.key === "Escape") onClose?.();
-      };
-
-      document.addEventListener("keydown", handleEscape);
-
-      return () => {
-        document.body.style.overflow = "";
-        document.removeEventListener("keydown", handleEscape);
-      };
-    }
-
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [open, onClose]);
-
   if (!open) return null;
 
-  const sizeClasses = {
-    sm: "max-w-md",
-    md: "max-w-xl",
-    lg: "max-w-2xl",
-  };
-
   return (
-    <div
-      className="fixed inset-0 z-[9999] bg-[var(--color-bg)]/40 p-3 backdrop-blur-sm sm:p-6"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose?.();
-      }}
-    >
-      <div className="flex h-full w-full items-center justify-center overflow-hidden">
-        <div
-          className={cn(
-            "relative flex w-full max-h-[calc(100vh-24px)] flex-col overflow-hidden rounded-[26px] bg-white shadow-2xl",
-            "animate-in fade-in-0 zoom-in-95 duration-200",
-            sizeClasses[size],
-          )}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-[var(--color-cream)]/80 to-transparent" />
+    <div className="fixed inset-0 z-999 flex items-end justify-center bg-black/30 backdrop-blur-sm sm:items-center sm:p-4">
+<div
+  className={cn(
+    "relative flex w-full flex-col overflow-hidden bg-white shadow-2xl",
+    "sm:rounded-3xl sm:border sm:border-white/60",
 
-          <div className="relative shrink-0 border-b border-[var(--color-cream)] px-4 py-3 sm:px-5">
-            <div className="relative flex items-center justify-center">
-              <div className="min-w-0">
-                <h3 className="text-center text-base font-bold uppercase text-[var(--color-ink)] sm:text-lg">
-                  {title}
-                </h3>
+    mobileFullscreen
+      ? "h-[100dvh] max-h-[100dvh] rounded-none sm:h-auto sm:max-h-[90vh] sm:rounded-3xl"
+      : "max-h-[90vh] rounded-t-3xl",
 
-                {subtitle && (
-                  <p className="mx-auto mt-1 max-w-[260px] text-center text-sm text-[var(--color-caramel)]">
-                    {subtitle}
-                  </p>
-                )}
-              </div>
+    size === "sm" && "sm:max-w-md",
+    size === "md" && "sm:max-w-xl",
+    size === "lg" && "sm:max-w-3xl",
+  )}
+>
+<button
+  type="button"
+  onClick={onClose}
+  className="absolute left-4 top-4 z-30 inline-flex items-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white/90 px-3 py-2 text-sm font-bold text-[var(--color-ink)] shadow-sm backdrop-blur transition-all hover:bg-[var(--color-cream)] active:scale-[0.98]"
+>
+  <ArrowLeft className="h-4 w-4" />
+  Назад
+</button>
 
-              <button
-                type="button"
-                onClick={() => onClose?.()}
-                className="absolute right-0 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-xl text-[var(--color-caramel)] transition-colors hover:bg-[var(--color-cream)] hover:text-[var(--color-ink)] sm:h-9 sm:w-9"
-                aria-label="Закрити"
-              >
-                <X className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
-              </button>
-            </div>
-          </div>
+  <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6">
+    {children}
+  </div>
 
-          <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-5">
-            {children}
-          </div>
-
-          {footer && (
-            <div className="shrink-0 border-t border-[var(--color-cream)] bg-[var(--color-sand)] px-4 py-3 sm:px-5">
-              {footer}
-            </div>
-          )}
-        </div>
-      </div>
+  {footer && (
+    <div className="shrink-0 border-t border-[var(--border-soft)] bg-white px-4 py-3 sm:px-6 sm:py-4">
+      {footer}
+    </div>
+  )}
+</div>
     </div>
   );
 }
@@ -444,10 +404,10 @@ function Button({
   const variants = {
     primary:
       "inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-smduration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]",
-  secondary:
-    " bg-white text-[var(--color-ink)] shadow-sm hover:bg-[var(--color-cream)]",
-  danger:
-    "bg-white text-[var(--color-canceled)] shadow-sm hover:bg-[var(--color-cream)]",
+    secondary:
+      " bg-white text-[var(--color-ink)] shadow-sm hover:bg-[var(--color-cream)]",
+    danger:
+      "bg-white text-[var(--color-canceled)] shadow-sm hover:bg-[var(--color-cream)]",
     ghost: "text-[var(--color-caramel)] hover:bg-[var(--color-cream)]",
   };
 
@@ -480,14 +440,13 @@ function IconButton({
   children,
   ...props
 }) {
-  
   const variants = {
     primary:
       "inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]",
-  secondary:
-    " bg-white text-[var(--color-ink)] shadow-sm hover:bg-[var(--color-cream)]",
-  danger:
-    "bg-white text-[var(--color-canceled)] shadow-sm hover:bg-[var(--color-cream)]",
+    secondary:
+      " bg-white text-[var(--color-ink)] shadow-sm hover:bg-[var(--color-cream)]",
+    danger:
+      "bg-white text-[var(--color-canceled)] shadow-sm hover:bg-[var(--color-cream)]",
     ghost: "text-[var(--color-caramel)] hover:bg-[var(--color-cream)]",
   };
 
@@ -508,7 +467,8 @@ function IconButton({
 
 function DurationSlider({ value, onChange }) {
   const minVal = 5;
-  const maxVal = 720;
+  const sliderMax = 240; // тільки для слайдера
+  const absoluteMax = 24 * 60; // для кнопок (+ / -)
   const step = 5;
 
   const presets = [
@@ -518,6 +478,7 @@ function DurationSlider({ value, onChange }) {
     { label: "1.5 год", value: 90 },
     { label: "2 год", value: 120 },
     { label: "3 год", value: 180 },
+    { label: "4 год", value: 240 },
   ];
 
   return (
@@ -533,28 +494,31 @@ function DurationSlider({ value, onChange }) {
           </div>
         </div>
 
-        <div className="flex items-center justify-center gap-2 rounded-2xl border border-[var(--color-cream)] bg-white px-2.5 py-2 sm:gap-3 sm:px-3">
-          <button
-            type="button"
-            onClick={() => onChange(Math.max(minVal, value - 5))}
-            disabled={value <= minVal}
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-cream)] text-[var(--color-caramel)] transition-all hover:bg-[var(--color-sand)] disabled:opacity-40 sm:h-10 sm:w-10"
-          >
-            <span className="text-lg font-bold">−</span>
-          </button>
+        <div className="flex flex-col items-center gap-2">
+          {/* ± 5 хв */}
+          <div className="inline-flex items-center justify-center gap-2 bg-white px-2 py-1.5 sm:gap-3 sm:px-3 sm:py-2">
+            <button
+              type="button"
+              onClick={() => onChange(Math.max(minVal, value - 5))}
+              disabled={value <= minVal}
+              className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--border-soft)] bg-white text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98] disabled:opacity-40"
+            >
+              <Minus className="h-5 w-5" />
+            </button>
 
-          <span className="text-xs text-[var(--color-caramel)] sm:text-sm">
-            ±5 хв
-          </span>
+            <span className="min-w-[56px] text-center text-xs font-semibold text-[var(--color-caramel)] sm:text-sm">
+              ± 5 хв
+            </span>
 
-          <button
-            type="button"
-            onClick={() => onChange(Math.min(maxVal, value + 5))}
-            disabled={value >= maxVal}
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-cream)] text-[var(--color-caramel)] transition-all hover:bg-[var(--color-sand)] disabled:opacity-40 sm:h-10 sm:w-10"
-          >
-            <span className="text-lg font-bold">+</span>
-          </button>
+            <button
+              type="button"
+              onClick={() => onChange(Math.min(absoluteMax, value + 5))}
+              disabled={value >= absoluteMax}
+              className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--border-soft)] bg-white text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98] disabled:opacity-40"
+            >
+              <Plus className="h-5 w-5" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -563,7 +527,7 @@ function DurationSlider({ value, onChange }) {
           value={[value]}
           onValueChange={([v]) => onChange(v)}
           min={minVal}
-          max={maxVal}
+          max={sliderMax}
           step={step}
           className="w-full"
         />
@@ -573,10 +537,10 @@ function DurationSlider({ value, onChange }) {
             5 хв
           </span>
           <span className="text-[11px] text-[var(--color-caramel)] sm:text-xs">
-            6 год
+            2 год
           </span>
           <span className="text-[11px] text-[var(--color-caramel)] sm:text-xs">
-            12 год
+            4 год
           </span>
         </div>
       </div>
@@ -588,17 +552,26 @@ function DurationSlider({ value, onChange }) {
             type="button"
             onClick={() => onChange(preset.value)}
             className={cn(
-              preset.value === 180 ? "hidden sm:inline-flex" : "inline-flex",
-              "items-center justify-center rounded-xl px-3 py-2 text-xs font-medium sm:px-4 sm:text-sm",
+              [180, 240].includes(preset.value)
+                ? "hidden sm:inline-flex"
+                : "inline-flex",
+              "items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] px-2 py-2 text-sm font-bold shadow-sm transition-all duration-200 active:scale-[0.98]",
+
               value === preset.value
-                ? "bg-[var(--color-ink)] text-white shadow-md"
-                : "bg-[var(--color-cream)] text-[var(--color-caramel)] hover:bg-[var(--color-sand)]",
+                ? "border-transparent bg-[var(--color-ink)] text-white"
+                : "bg-white text-[var(--color-ink)] hover:bg-[var(--color-cream)]",
             )}
           >
             {preset.label}
           </button>
         ))}
       </div>
+      <p className="mt-2 text-center text-xs text-[var(--color-caramel)]/80 sm:text-sm">
+        Тривалість послуги більша ніж 4 год? <br />
+        Натискай{" "}
+        <span className="font-semibold text-[var(--color-ink)]">+ 5хв</span>,
+        щоб збільшити тривалість
+      </p>
     </div>
   );
 }
@@ -620,19 +593,19 @@ function CategoryFilters({ value, onChange, categories }) {
           const active = String(value) === String(item.id);
 
           return (
-<button
-  key={item.id}
-  type="button"
-  onClick={() => onChange(item.id)}
-  className={cn(
-    "inline-flex h-9 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-2xl border border-[var(--border-soft)] px-4 text-sm font-bold shadow-sm transition-all duration-200 active:scale-[0.98]",
-    active
-      ? "bg-[var(--color-primary-buttom)] text-white hover:bg-[var(--color-primary-buttom)]"
-      : "bg-white text-[var(--color-ink)] hover:bg-[var(--color-cream)]",
-  )}
->
-  {item.label}
-</button>
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => onChange(item.id)}
+              className={cn(
+                "inline-flex h-9 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-2xl border border-[var(--border-soft)] px-4 text-sm font-bold shadow-sm transition-all duration-200 active:scale-[0.98]",
+                active
+                  ? "bg-[var(--color-primary-buttom)] text-white hover:bg-[var(--color-primary-buttom)]"
+                  : "bg-white text-[var(--color-ink)] hover:bg-[var(--color-cream)]",
+              )}
+            >
+              {item.label}
+            </button>
           );
         })}
       </div>
@@ -644,7 +617,7 @@ export default function Services() {
   const { studio } = useStudio();
   const queryClient = useQueryClient();
   const studioId = studio?.id ?? null;
-
+  const mastersRef = useRef(null);
   const servicesQuery = useQuery({
     queryKey: ["services", studioId],
     queryFn: () => fetchServicesData(studioId),
@@ -661,7 +634,8 @@ export default function Services() {
     refetchOnWindowFocus: false,
   });
 
-  const serviceCategories = servicesQuery.data?.serviceCategories ?? EMPTY_ARRAY;
+  const serviceCategories =
+    servicesQuery.data?.serviceCategories ?? EMPTY_ARRAY;
   const uncategorizedServices =
     servicesQuery.data?.uncategorizedServices ?? EMPTY_ARRAY;
   const masters = mastersQuery.data ?? EMPTY_ARRAY;
@@ -950,7 +924,10 @@ export default function Services() {
     }
   }
 
-  const totalServices = blocks.reduce((acc, b) => acc + (b.services?.length || 0), 0);
+  const totalServices = blocks.reduce(
+    (acc, b) => acc + (b.services?.length || 0),
+    0,
+  );
   const showTips = totalServices === 0;
   const isModalOpen = categoryModal.open || serviceModal.open;
 
@@ -1002,24 +979,25 @@ export default function Services() {
               onKeyDown={(e) => e.key === "Enter" && addCategory()}
             />
 
-<Button
-  onClick={addCategory}
-  disabled={!newCategoryName.trim() || !studio?.id}
-  className={cn(
-    "whitespace-nowrap inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm hover:bg-[var(--color-cream)]",
+            <Button
+              onClick={addCategory}
+              disabled={!newCategoryName.trim() || !studio?.id}
+              className={cn(
+                "whitespace-nowrap inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] active:scale-[0.98] hover:bg-[var(--color-cream)]",
 
-    // active (коли можна натиснути)
-    newCategoryName.trim() && studio?.id &&
-      "border-transparent bg-gradient-to-r from-[#9fb29a] to-[#7f9a78] text-white hover:from-[#8fa88a] hover:to-[#6f8c69]",
+                // 👉 active (CTA стиль через nude-green)
+                newCategoryName.trim() &&
+                  studio?.id &&
+                  "border-transparent text-white bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))] hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]",
 
-    // disabled
-    (!newCategoryName.trim() || !studio?.id) &&
-      "cursor-not-allowed opacity-50 hover:bg-white"
-  )}
->
-  <Plus className="h-4 w-4" />
-  Додати категорію
-</Button>
+                // 👉 disabled
+                (!newCategoryName.trim() || !studio?.id) &&
+                  "cursor-not-allowed opacity-50 hover:bg-white",
+              )}
+            >
+              <Plus className="h-4 w-4" />
+              Додати категорію
+            </Button>
           </div>
         </SectionCard>
 
@@ -1046,14 +1024,23 @@ export default function Services() {
                     actions={{
                       desktop: (
                         <>
-<Button
-  size="md"
-  onClick={() => openAddService(cat.id)}
-  className="bg-gradient-to-r from-[#9fb29a] to-[#7f9a78] text-white hover:from-[#8fa88a] hover:to-[#6f8c69]"
->
-  <Plus className="h-4 w-4" />
-  Додати послугу
-</Button>
+                          <Button
+                            size="md"
+                            onClick={() => openAddService(cat.id)}
+                            className={cn(
+                              "cursor-pointer inline-flex items-center justify-center gap-2 rounded-2xl font-semibold text-white",
+                              "transition-all duration-200 active:scale-[0.98]",
+
+                              // 👉 gradient через nude-green
+                              "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
+
+                              // 👉 hover
+                              "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]",
+                            )}
+                          >
+                            <Plus className="h-4 w-4" />
+                            Додати послугу
+                          </Button>
 
                           {!isUnc && (
                             <>
@@ -1101,7 +1088,16 @@ export default function Services() {
 <Button
   size="md"
   onClick={() => openAddService(cat.id)}
-  className="w-full h-11 bg-gradient-to-r from-[#9fb29a] to-[#7f9a78] text-white hover:from-[#8fa88a] hover:to-[#6f8c69]"
+  className={cn(
+    "w-full h-11 inline-flex items-center justify-center gap-2 rounded-2xl font-semibold text-white",
+    "transition-all duration-200 active:scale-[0.98]",
+
+    // 👉 nude-green
+    "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
+
+    // 👉 hover
+    "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]"
+  )}
 >
   <Plus className="h-4 w-4" />
   Додати послугу
@@ -1110,22 +1106,25 @@ export default function Services() {
                     }}
                   >
                     {servicesCount === 0 ? (
+                      <div className="rounded-2xl border-2 border-dashed border-[var(--color-caramel)]/40 bg-[var(--color-cream)] p-6 text-center sm:p-8">
+                        <div className="mb-3 flex items-center justify-center">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/70">
+                            <Scissors className="h-7 w-7 text-[var(--color-caramel)]" />
+                          </div>
+                        </div>
 
-<div className="rounded-2xl border-2 border-dashed border-[var(--color-caramel)]/40 bg-[var(--color-cream)] p-6 text-center sm:p-8">
-  <div className="mb-3 flex items-center justify-center">
-    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/70">
-      <Scissors className="h-5 w-5 text-[var(--color-caramel)]" />
-    </div>
-  </div>
+                        <p className="text-sm font-medium text-[var(--color-caramel)]">
+                          Тут ще немає послуг
+                        </p>
 
-  <p className="text-sm font-medium text-[var(--color-caramel)]">
-    Тут ще немає послуг
-  </p>
-
-  <p className="mt-1 text-xs text-[var(--color-caramel)]/80">
-    Натисніть <span className="font-semibold">«Додати послугу»</span>, щоб створити
-  </p>
-</div>
+                        <p className="mt-1 text-xs text-[var(--color-caramel)]/80">
+                          Натисніть{" "}
+                          <span className="font-semibold">
+                            «Додати послугу»
+                          </span>
+                         
+                        </p>
+                      </div>
                     ) : (
                       <div className="space-y-3">
                         {cat.services.map((srv) => (
@@ -1139,26 +1138,29 @@ export default function Services() {
                                   {srv.name}
                                 </h3>
 
-                                <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--color-caramel)] sm:text-sm">
-                                  <span className="inline-flex items-center gap-1">
-                                    <Clock className="h-3.5 w-3.5" />
-                                    {formatDuration(srv.duration)}
-                                  </span>
+<div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--color-caramel)] sm:text-sm">
+  <span className="inline-flex items-center gap-1">
+    <Clock className="h-3.5 w-3.5" />
+    {formatDuration(srv.duration)}
+  </span>
 
-                                  <span className="font-semibold text-[var(--color-ink)]">
-                                    {srv.price} грн
-                                  </span>
+  <span className="inline-flex items-center gap-1 font-semibold text-[var(--color-ink)]">
+    <Banknote className="h-3.5 w-3.5" />
+    {srv.price} грн
+  </span>
 
-                                  <span className="inline-flex items-center gap-1">
-                                    <Users className="h-3.5 w-3.5" />
-                                    {resolveServiceMastersText(srv)}
-                                  </span>
-                                </div>
+  <span className="inline-flex w-full items-center gap-1">
+    <Users className="h-3.5 w-3.5" />
+    {resolveServiceMastersText(srv)}
+  </span>
+</div>
                               </div>
 
                               <div className="flex shrink-0 items-center gap-2">
                                 <IconButton
-                                  onClick={() => openEditService(cat.id, srv.id)}
+                                  onClick={() =>
+                                    openEditService(cat.id, srv.id)
+                                  }
                                   title="Редагувати"
                                   className="h-11 w-11"
                                 >
@@ -1187,85 +1189,135 @@ export default function Services() {
         </div>
 
         {showTips && (
-          <div className="mt-8 rounded-3xl border border-[var(--color-cream)] bg-[var(--color-sand)] p-6">
-            <h2 className="mb-3 text-lg font-bold text-[var(--color-ink)]">
-              💡 Як організувати послуги
-            </h2>
+          <div className="mt-8 rounded-3xl border border-[var(--color-sand)] bg-[var(--color-cream)] p-6">
+            <div className="mb-3 flex items-center gap-2">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/70">
+                <Sparkles className="h-4 w-4 text-[var(--color-caramel)]" />
+              </div>
 
-            <ul className="space-y-2 text-sm text-[var(--color-caramel)]">
+              <h2 className="text-sm font-bold text-[var(--color-caramel)]">
+                Як організувати послуги
+              </h2>
+            </div>
+
+            <ul className="space-y-2 text-sm text-[var(--color-caramel)] leading-relaxed">
               <li>
-                • Створіть <strong>категорії</strong> для групування схожих
-                послуг
+                Створіть <span className="font-semibold">категорії</span> для
+                групування схожих послуг
               </li>
-              <li>• Наприклад: "Вії", "Брови", "Манікюр"</li>
-              <li>• Послуги без категорії відображаються окремим блоком</li>
+              <li>Наприклад: «Вії», «Брови», «Манікюр»</li>
+              <li>Послуги без категорії відображаються окремим блоком</li>
             </ul>
           </div>
         )}
       </div>
 
-      <Modal
-        open={categoryModal.open}
-        onClose={() => setCategoryModal({ open: false, catId: null })}
-        title="Редагування категорії"
-        size="sm"
-        footer={
-          <div className="flex justify-end gap-2">
+<Modal
+  open={categoryModal.open}
+  onClose={() => setCategoryModal({ open: false, catId: null })}
+  title=""
+  subtitle=""
+  size="sm"
+  footer={
+    <div className="flex w-full items-center justify-end gap-2">
+      <Button
+        onClick={() => setCategoryModal({ open: false, catId: null })}
+        className="h-11 flex-1 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98] sm:flex-none"
+      >
+        Скасувати
+      </Button>
+
+      <Button
+        onClick={saveCategoryName}
+        disabled={!categoryDraftName.trim()}
+        className={cn(
+          "inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold text-white transition-all duration-200 active:scale-[0.98] sm:flex-none",
+          "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
+          "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]",
+          !categoryDraftName.trim() &&
+            "cursor-not-allowed bg-[var(--color-cream)] text-[var(--color-caramel)] hover:from-[var(--color-cream)] hover:to-[var(--color-cream)]"
+        )}
+      >
+        <Check className="h-4 w-4" />
+        Зберегти
+      </Button>
+    </div>
+  }
+>
+  <button
+    type="button"
+    onClick={() => setCategoryModal({ open: false, catId: null })}
+    className="absolute left-4 top-4 z-30 inline-flex items-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white/90 px-3 py-2 text-sm font-bold text-[var(--color-ink)] shadow-sm backdrop-blur transition-all hover:bg-[var(--color-cream)] active:scale-[0.98]"
+  >
+    <ArrowLeft className="h-4 w-4" />
+    Назад
+  </button>
+
+  <div className="space-y-5 pt-10">
+    <div className="flex justify-center">
+      <div className="relative">
+        <div className="absolute inset-0 rounded-full bg-[var(--color-forest)]/60 blur-2xl" />
+        <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--color-primary-buttom)] text-white shadow-sm">
+          <Pencil className="h-6 w-6" />
+        </div>
+      </div>
+    </div>
+
+    <div className="text-center">
+      <h3 className="text-xl font-black tracking-tight text-[var(--color-ink)]">
+        Редагування категорії
+      </h3>
+
+      <p className="mt-2 text-sm text-[var(--color-caramel)]">
+        Введіть нову назву категорії
+      </p>
+    </div>
+
+    <div>
+      <label className="mb-2 block text-sm font-medium text-[var(--color-ink)]">
+        Назва категорії
+      </label>
+
+      <input
+        value={categoryDraftName}
+        onChange={(e) => setCategoryDraftName(e.target.value)}
+        className="w-full rounded-2xl border border-[var(--color-cream)] px-4 py-3 text-sm font-medium text-[var(--color-ink)] outline-none transition-all placeholder:text-[var(--color-caramel)] focus:border-[var(--color-forest)] focus:ring-4 focus:ring-[var(--color-forest)]/10"
+        placeholder="Введіть назву..."
+      />
+    </div>
+  </div>
+</Modal>
+
+<Modal
+  open={serviceModal.open}
+  onClose={closeServiceModal}
+  title=""
+  subtitle=""
+  size="lg"
+  mobileFullscreen
+  mobileBackLabel="Назад"
+  footer={
+          <div className="flex w-full items-center justify-end gap-2">
             <Button
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
-              onClick={() => setCategoryModal({ open: false, catId: null })}
+              onClick={closeServiceModal}
+              className="flex-1 sm:flex-none rounded-2xl h-11 border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
             >
               Скасувати
             </Button>
 
-<Button
-  onClick={saveCategoryName}
-  disabled={!categoryDraftName.trim()}
-  className={cn(
-    "bg-gradient-to-r from-[#9fb29a] to-[#7f9a78] text-white hover:from-[#8fa88a] hover:to-[#6f8c69]",
-    !categoryDraftName.trim() &&
-      "bg-[var(--color-cream)] text-[var(--color-caramel)] hover:from-[var(--color-cream)] hover:to-[var(--color-cream)]"
-  )}
->
-  <Check className="h-4 w-4" />
-  Зберегти
-</Button>
-          </div>
-        }
-      >
-        <div>
-          <label className="mb-2 block text-sm font-medium text-[var(--color-ink)]">
-            Назва категорії
-          </label>
-
-          <input
-            value={categoryDraftName}
-            onChange={(e) => setCategoryDraftName(e.target.value)}
-            className="w-full rounded-xl border border-[var(--color-cream)] px-3 py-2.5 text-sm font-medium text-[var(--color-ink)] outline-none transition-all placeholder:text-[var(--color-caramel)] focus:border-[var(--color-forest)] focus:ring-4 focus:ring-[var(--color-forest)]/10"
-            placeholder="Введіть назву..."
-          />
-        </div>
-      </Modal>
-
-      <Modal
-        open={serviceModal.open}
-        onClose={closeServiceModal}
-        title={
-          serviceModal.mode === "add" ? "Нова послуга" : "Редагування послуги"
-        }
-        subtitle="Заповніть деталі послуги"
-        size="lg"
-        footer={
-          <div className="flex justify-end gap-2">
-            <Button 
-             onClick={closeServiceModal}>
-              Скасувати
-            </Button>
-
             <Button
-              variant="primary"
               onClick={saveService}
               disabled={!canSaveServiceDraft(serviceDraft)}
+              className={cn(
+                "inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold text-white transition-all duration-200 active:scale-[0.98] sm:flex-none",
+
+                "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
+
+                "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]",
+
+                !canSaveServiceDraft(serviceDraft) &&
+                  "cursor-not-allowed bg-[var(--color-cream)] text-[var(--color-caramel)] hover:from-[var(--color-cream)] hover:to-[var(--color-cream)]",
+              )}
             >
               <Check className="h-4 w-4" />
               Зберегти
@@ -1273,6 +1325,31 @@ export default function Services() {
           </div>
         }
       >
+        <div className="space-y-6">
+  <div className="space-y-4 pt-2">
+    <div className="flex justify-center">
+      <div className="relative">
+        <div className="absolute inset-0 rounded-full bg-[var(--color-forest)]/60 blur-2xl" />
+        <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--color-primary-buttom)] text-white shadow-sm">
+          <Scissors className="h-7 w-7" />
+        </div>
+      </div>
+    </div>
+
+    <div className="text-center">
+      <h3 className="text-xl font-black tracking-tight text-[var(--color-ink)]">
+        {serviceModal.mode === "add"
+          ? "Нова послуга"
+          : "Редагування послуги"}
+      </h3>
+
+      <p className="mt-2 text-sm leading-6 text-[var(--color-caramel)]">
+        Заповніть деталі послуги
+      </p>
+    </div>
+  </div>
+
+  {/* далі твоя форма */}
         <div className="space-y-6">
           <div className="grid grid-cols-[1fr_130px] gap-3 sm:grid-cols-2">
             <div className="min-w-0">
@@ -1339,10 +1416,12 @@ export default function Services() {
             />
           </div>
 
-          <div className="rounded-2xl border border-[var(--color-cream)] bg-[var(--color-cream)] p-3.5 sm:p-4">
+          <div className="rounded-2xl border border-[var(--color-cream)] bg-[var(--color-cream-secon)] p-3.5 sm:p-4">
             <div className="mb-3 flex items-center gap-2">
               <Users className="h-5 w-5 text-[var(--color-caramel)]" />
-              <span className="font-medium text-[var(--color-ink)]">Виконавці</span>
+              <span className="font-medium text-[var(--color-ink)]">
+                Виконавці
+              </span>
             </div>
 
             <div className="mb-4 flex flex-wrap gap-2">
@@ -1356,10 +1435,11 @@ export default function Services() {
                   }))
                 }
                 className={cn(
-                  "rounded-xl px-3 py-2 text-sm font-medium transition-all sm:px-4",
+                  "inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold shadow-sm transition-all duration-200 active:scale-[0.98]",
+
                   serviceDraft.allMasters
-                    ? "border-2 border-[var(--color-ink)] bg-[var(--color-ink)] text-white"
-                    : "border border-[var(--color-cream)] bg-white text-[var(--color-caramel)] hover:bg-[var(--color-sand)]",
+                    ? "border-transparent bg-[var(--color-ink)] text-white"
+                    : "border border-[var(--border-soft)] bg-white text-[var(--color-ink)] hover:bg-[var(--color-cream)]",
                 )}
               >
                 Всі майстри
@@ -1367,18 +1447,26 @@ export default function Services() {
 
               <button
                 type="button"
-                onClick={() =>
+                onClick={() => {
                   setServiceDraft((p) => ({
                     ...p,
                     allMasters: false,
                     masters: [],
-                  }))
-                }
+                  }));
+
+                  // даємо React час відрендерити блок
+                  setTimeout(() => {
+                    mastersRef.current?.scrollIntoView({
+                      behavior: "smooth",
+                      block: "start",
+                    });
+                  }, 100);
+                }}
                 className={cn(
-                  "rounded-xl px-4 py-2 text-sm font-medium transition-all",
+                  "inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold shadow-sm transition-all duration-200 active:scale-[0.98]",
                   !serviceDraft.allMasters
-                    ? "border-2 border-[var(--color-ink)] bg-[var(--color-ink)] text-white"
-                    : "border border-[var(--color-cream)] bg-white text-[var(--color-caramel)] hover:bg-[var(--color-sand)]",
+                    ? "border-transparent bg-[var(--color-ink)] text-white"
+                    : "border border-[var(--border-soft)] bg-white text-[var(--color-ink)] hover:bg-[var(--color-cream)]",
                 )}
               >
                 Обрати майстрів
@@ -1386,13 +1474,13 @@ export default function Services() {
             </div>
 
             {!serviceDraft.allMasters && (
-              <div className="space-y-2">
+              <div ref={mastersRef} className="space-y-2">
                 {mastersLoading ? (
                   <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                     {Array.from({ length: 4 }).map((_, i) => (
                       <div
                         key={i}
-                        className="rounded-2xl border border-[var(--color-cream)] bg-white p-3"
+                        className="rounded-2xl border border-[var(--border-soft)] bg-white p-3 shadow-sm"
                       >
                         <div className="flex items-center gap-3">
                           <SkeletonBlock className="h-4 w-4 rounded" />
@@ -1406,9 +1494,9 @@ export default function Services() {
                     ))}
                   </div>
                 ) : masters.length === 0 ? (
-                  <p className="text-sm text-[var(--color-caramel)]">
+                  <div className="rounded-2xl border border-[var(--border-soft)] bg-white px-4 py-3 text-sm font-medium text-[var(--color-caramel)] shadow-sm">
                     Спочатку додайте майстрів
-                  </p>
+                  </div>
                 ) : (
                   <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                     {masters.map((m) => {
@@ -1419,10 +1507,10 @@ export default function Services() {
                         <label
                           key={id}
                           className={cn(
-                            "flex cursor-pointer items-center gap-3 rounded-2xl border p-3 transition-all",
+                            "group flex cursor-pointer items-center gap-3 rounded-2xl border bg-white p-3 shadow-sm transition-all duration-200 active:scale-[0.99]",
                             checked
                               ? "border-[var(--color-ink)] bg-[var(--color-cream)]"
-                              : "border-[var(--color-cream)] bg-white hover:bg-[var(--color-cream)]",
+                              : "border-[var(--border-soft)] hover:bg-[var(--color-cream)]",
                           )}
                         >
                           <input
@@ -1436,7 +1524,7 @@ export default function Services() {
 
                               setServiceDraft((p) => ({ ...p, masters: next }));
                             }}
-                            className="h-4 w-4 rounded border-[var(--color-mist)] text-[var(--color-ink)] focus:ring-[var(--color-ink)]"
+                            className="h-4 w-4 rounded border-[var(--border-soft)] text-[var(--color-ink)] focus:ring-[var(--color-ink)]"
                           />
 
                           <MasterChip master={m} checked={checked} />
@@ -1448,6 +1536,7 @@ export default function Services() {
               </div>
             )}
           </div>
+        </div>
         </div>
       </Modal>
     </div>

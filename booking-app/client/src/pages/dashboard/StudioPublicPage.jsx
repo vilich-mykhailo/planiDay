@@ -329,16 +329,18 @@ function ServiceRow({ service, onBook }) {
       <button
         type="button"
         onClick={() => onBook(service)}
-        className="
-inline-flex h-9 sm:h-10 items-center justify-center gap-2
-rounded-xl px-3 sm:px-4 text-xs sm:text-sm font-bold
-bg-gradient-to-r from-emerald-600 to-emerald-700 text-white
-shadow-[0_10px_24px_rgba(74,93,78,0.25)]
-transition-all duration-200
-hover:scale-[1.03] hover:shadow-lg
-active:scale-95
-whitespace-nowrap
-"
+        className={cn(
+          "inline-flex h-9 sm:h-10 items-center justify-center gap-2",
+          "rounded-xl px-3 sm:px-4 text-xs sm:text-sm font-bold text-white",
+          "active:scale-95",
+          "whitespace-nowrap",
+
+          // 👉 nude-green
+          "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
+
+          // 👉 hover
+          "hover:scale-[1.03] hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]",
+        )}
       >
         Забронювати
       </button>
@@ -846,50 +848,50 @@ export default function StudioPublicPage() {
     return arr.filter((url, index, self) => self.indexOf(url) === index);
   }, [coverUrl, portfolio]);
 
-useEffect(() => {
-  setHeroIndex(0);
-  setHeroPreviewIndex(null);
-}, [slug]);
+  useEffect(() => {
+    setHeroIndex(0);
+    setHeroPreviewIndex(null);
+  }, [slug]);
 
-useEffect(() => {
-  const nextSrc = heroImages[heroIndex];
+  useEffect(() => {
+    const nextSrc = heroImages[heroIndex];
 
-  if (!nextSrc) {
+    if (!nextSrc) {
+      setLoadedHeroSrc("");
+      setHeroImageLoading(false);
+      setShowHeroLoader(false);
+      return;
+    }
+
+    setHeroImageLoading(true);
     setLoadedHeroSrc("");
-    setHeroImageLoading(false);
     setShowHeroLoader(false);
-    return;
-  }
 
-  setHeroImageLoading(true);
-  setLoadedHeroSrc("");
-  setShowHeroLoader(false);
+    const loaderTimer = setTimeout(() => {
+      setShowHeroLoader(true);
+    }, 150);
 
-  const loaderTimer = setTimeout(() => {
-    setShowHeroLoader(true);
-  }, 150);
+    const img = new Image();
+    img.src = nextSrc;
 
-  const img = new Image();
-  img.src = nextSrc;
+    img.onload = () => {
+      clearTimeout(loaderTimer);
+      setLoadedHeroSrc(nextSrc);
+      setHeroImageLoading(false);
+      setShowHeroLoader(false);
+    };
 
-  img.onload = () => {
-    clearTimeout(loaderTimer);
-    setLoadedHeroSrc(nextSrc);
-    setHeroImageLoading(false);
-    setShowHeroLoader(false);
-  };
+    img.onerror = () => {
+      clearTimeout(loaderTimer);
+      setLoadedHeroSrc("");
+      setHeroImageLoading(false);
+      setShowHeroLoader(false);
+    };
 
-  img.onerror = () => {
-    clearTimeout(loaderTimer);
-    setLoadedHeroSrc("");
-    setHeroImageLoading(false);
-    setShowHeroLoader(false);
-  };
-
-  return () => {
-    clearTimeout(loaderTimer);
-  };
-}, [heroIndex, heroImages]);
+    return () => {
+      clearTimeout(loaderTimer);
+    };
+  }, [heroIndex, heroImages]);
 
   const filteredUncategorizedServices = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -971,15 +973,15 @@ useEffect(() => {
     setTimeout(() => setCopied(false), 1500);
   }
 
-function openBookingForService(service) {
-  setPreselectedService({ categoryId: null, serviceId: service.id });
-  setSelectedMaster(null);
-  setRescheduleMode(false);
-  setRescheduleBookingId(null);
-  setPreselectedDate(null);
-  setPreselectedTime(null);
-  setOpenBooking(true);
-}
+  function openBookingForService(service) {
+    setPreselectedService({ categoryId: null, serviceId: service.id });
+    setSelectedMaster(null);
+    setRescheduleMode(false);
+    setRescheduleBookingId(null);
+    setPreselectedDate(null);
+    setPreselectedTime(null);
+    setOpenBooking(true);
+  }
 
   function scrollToSection(key) {
     setActiveTab(key);
@@ -1135,52 +1137,52 @@ function openBookingForService(service) {
                       className="absolute inset-0"
                       aria-label="Переглянути фото студії"
                     >
-<AnimatePresence initial={false}>
-  <motion.div
-    key={heroIndex}
-    initial={{ x: heroDirection > 0 ? 40 : -40 }}
-    animate={{ x: 0 }}
-    exit={{ x: heroDirection > 0 ? -40 : 40 }}
-    transition={{
-      duration: 0.22,
-      ease: [0.22, 1, 0.36, 1],
-    }}
-    drag="x"
-    dragConstraints={{ left: 0, right: 0 }}
-    dragElastic={0.06}
-    onDragEnd={handleHeroDragEnd}
-    onClick={() => setHeroPreviewIndex(heroIndex)}
-    className="absolute inset-0 cursor-grab touch-pan-y active:cursor-grabbing"
-    style={{
-      backfaceVisibility: "hidden",
-      willChange: "transform",
-    }}
-  >
-    <div className="relative h-full w-full overflow-hidden bg-gradient-to-br from-stone-200 via-stone-100 to-amber-50">
-{loadedHeroSrc ? (
-  <img
-    src={loadedHeroSrc}
-    alt={`${name} ${heroIndex + 1}`}
-    className="absolute inset-0 h-full w-full object-cover"
-    draggable="false"
-  />
-) : (
-  <div className="absolute inset-0 bg-gradient-to-br from-stone-200 via-stone-100 to-amber-50" />
-)}
+                      <AnimatePresence initial={false}>
+                        <motion.div
+                          key={heroIndex}
+                          initial={{ x: heroDirection > 0 ? 40 : -40 }}
+                          animate={{ x: 0 }}
+                          exit={{ x: heroDirection > 0 ? -40 : 40 }}
+                          transition={{
+                            duration: 0.22,
+                            ease: [0.22, 1, 0.36, 1],
+                          }}
+                          drag="x"
+                          dragConstraints={{ left: 0, right: 0 }}
+                          dragElastic={0.06}
+                          onDragEnd={handleHeroDragEnd}
+                          onClick={() => setHeroPreviewIndex(heroIndex)}
+                          className="absolute inset-0 cursor-grab touch-pan-y active:cursor-grabbing"
+                          style={{
+                            backfaceVisibility: "hidden",
+                            willChange: "transform",
+                          }}
+                        >
+                          <div className="relative h-full w-full overflow-hidden bg-gradient-to-br from-stone-200 via-stone-100 to-amber-50">
+                            {loadedHeroSrc ? (
+                              <img
+                                src={loadedHeroSrc}
+                                alt={`${name} ${heroIndex + 1}`}
+                                className="absolute inset-0 h-full w-full object-cover"
+                                draggable="false"
+                              />
+                            ) : (
+                              <div className="absolute inset-0 bg-gradient-to-br from-stone-200 via-stone-100 to-amber-50" />
+                            )}
 
-{showHeroLoader && (
-  <div className="absolute inset-0 z-10 flex items-center justify-center bg-stone-100/80">
-    <div className="flex flex-col items-center gap-3 rounded-2xl bg-white px-4 py-3 shadow-sm">
-      <div className="h-8 w-8 animate-spin rounded-full border-2 border-stone-300 border-t-emerald-600" />
-      <span className="text-xs font-semibold text-stone-600">
-        Завантаження фото...
-      </span>
-    </div>
-  </div>
-)}
-    </div>
-  </motion.div>
-</AnimatePresence>
+                            {showHeroLoader && (
+                              <div className="absolute inset-0 z-10 flex items-center justify-center bg-stone-100/80">
+                                <div className="flex flex-col items-center gap-3 rounded-2xl bg-white px-4 py-3 shadow-sm">
+                                <div className="h-8 w-8 animate-spin rounded-full border-2 border-stone-300 border-t-[var(--color-forest)]" />
+                                  <span className="text-xs font-semibold text-stone-600">
+                                    Завантаження фото...
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </motion.div>
+                      </AnimatePresence>
                     </div>
                   </button>
 
@@ -1361,24 +1363,33 @@ function openBookingForService(service) {
                     </div>
 
                     <div className="hidden lg:block mt-4">
-                      <button
-                        type="button"
-onClick={() => {
-  setPreselectedService(null);
-  setSelectedMaster(null);
-  setRescheduleMode(false);
-  setRescheduleBookingId(null);
-  setPreselectedDate(null);
-  setPreselectedTime(null);
-  setOpenBooking(true);
-}}
-                        className="rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-700 px-7 py-4 text-sm font-bold text-white shadow-[0_10px_25px_rgba(74,93,78,0.22)] transition-all duration-200 hover:from-emerald-700 hover:to-emerald-800"
-                      >
-                        <span className="flex items-center gap-2 whitespace-nowrap">
-                          Забронювати онлайн
-                          <Sparkles className="h-4 w-4 opacity-75" />
-                        </span>
-                      </button>
+<button
+  type="button"
+  onClick={() => {
+    setPreselectedService(null);
+    setSelectedMaster(null);
+    setRescheduleMode(false);
+    setRescheduleBookingId(null);
+    setPreselectedDate(null);
+    setPreselectedTime(null);
+    setOpenBooking(true);
+  }}
+  className={cn(
+    "rounded-2xl px-7 py-4 text-sm font-bold text-white",
+    "transition-all duration-200 active:scale-[0.98]",
+
+    // 👉 nude-green
+    "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
+
+    // 👉 hover
+    "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]"
+  )}
+>
+  <span className="flex items-center gap-2 whitespace-nowrap">
+    Забронювати онлайн
+    <Sparkles className="h-4 w-4 opacity-75" />
+  </span>
+</button>
                     </div>
                   </div>
                 </div>
@@ -2474,24 +2485,26 @@ onClick={() => {
               <div className="mx-auto max-w-md rounded-[28px] border border-white/60 backdrop-blur-2xl">
                 <button
                   type="button"
-onClick={() => {
-  setPreselectedService(null);
-  setSelectedMaster(null);
-  setRescheduleMode(false);
-  setRescheduleBookingId(null);
-  setPreselectedDate(null);
-  setPreselectedTime(null);
-  setOpenBooking(true);
-}}
-                  className="
-          flex h-12 w-full items-center justify-center gap-2.5
-          rounded-[22px] bg-stone-900 px-5
-          text-sm font-semibold text-white
-          shadow-[0_8px_20px_rgba(15,23,42,0.22)]
-          transition-all duration-200
-          active:scale-[0.985]
-          bg-gradient-to-r from-emerald-600 to-emerald-700
-        "
+                  onClick={() => {
+                    setPreselectedService(null);
+                    setSelectedMaster(null);
+                    setRescheduleMode(false);
+                    setRescheduleBookingId(null);
+                    setPreselectedDate(null);
+                    setPreselectedTime(null);
+                    setOpenBooking(true);
+                  }}
+                  className={cn(
+                    "flex h-12 w-full items-center justify-center gap-2.5",
+                    "rounded-[22px] px-5 text-sm font-semibold text-white",
+                    "transition-all duration-200 active:scale-[0.985]",
+
+                    // 👉 nude-green
+                    "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
+
+                    // 👉 hover
+                    "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]",
+                  )}
                 >
                   <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/10">
                     <Sparkles className="h-4 w-4 opacity-90" />
@@ -2508,15 +2521,15 @@ onClick={() => {
               <BookingModal
                 open={openBooking}
                 title={name}
-onClose={() => {
-  setOpenBooking(false);
-  setPreselectedService(null);
-  setSelectedMaster(null);
-  setRescheduleMode(false);
-  setRescheduleBookingId(null);
-  setPreselectedDate(null);
-  setPreselectedTime(null);
-}}
+                onClose={() => {
+                  setOpenBooking(false);
+                  setPreselectedService(null);
+                  setSelectedMaster(null);
+                  setRescheduleMode(false);
+                  setRescheduleBookingId(null);
+                  setPreselectedDate(null);
+                  setPreselectedTime(null);
+                }}
               >
                 <StudioBookingWidget
                   studio={studio}
@@ -2533,29 +2546,29 @@ onClose={() => {
                   rescheduleBookingId={rescheduleBookingId}
                   preselectedDate={preselectedDate}
                   preselectedTime={preselectedTime}
-onCancel={() => {
-  setOpenBooking(false);
-  setPreselectedService(null);
-  setSelectedMaster(null);
-  setRescheduleMode(false);
-  setRescheduleBookingId(null);
-  setPreselectedDate(null);
-  setPreselectedTime(null);
-}}
-onSuccess={(data) => {
-  setSuccessData({
-    ...data,
-    address: fullAddress,
-    studioName: name,
-  });
-  setOpenBooking(false);
-  setPreselectedService(null);
-  setSelectedMaster(null);
-  setRescheduleMode(false);
-  setRescheduleBookingId(null);
-  setPreselectedDate(null);
-  setPreselectedTime(null);
-}}
+                  onCancel={() => {
+                    setOpenBooking(false);
+                    setPreselectedService(null);
+                    setSelectedMaster(null);
+                    setRescheduleMode(false);
+                    setRescheduleBookingId(null);
+                    setPreselectedDate(null);
+                    setPreselectedTime(null);
+                  }}
+                  onSuccess={(data) => {
+                    setSuccessData({
+                      ...data,
+                      address: fullAddress,
+                      studioName: name,
+                    });
+                    setOpenBooking(false);
+                    setPreselectedService(null);
+                    setSelectedMaster(null);
+                    setRescheduleMode(false);
+                    setRescheduleBookingId(null);
+                    setPreselectedDate(null);
+                    setPreselectedTime(null);
+                  }}
                 />
               </BookingModal>
             )}

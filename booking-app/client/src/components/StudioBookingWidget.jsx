@@ -956,10 +956,10 @@ onClick={() => {
 }}
       data-testid={`booking-service-${service.id}`}
       className={cn(
-        "w-full rounded-2xl border p-4 text-left transition-[border-color,box-shadow,background-color,transform] duration-150",
-        active
-          ? "border-emerald-500 bg-emerald-50 ring-2 ring-emerald-500/15 shadow-[0_8px_24px_rgba(16,185,129,0.10)]"
-          : "border-stone-200 bg-white hover:border-amber-200 hover:bg-stone-50",
+        "w-full rounded-2xl border p-4 text-left ",
+active
+  ? "border border-transparent text-white bg-gradient-to-r from-[rgba(var(--color-nude-green-500),1)] to-[rgba(var(--color-nude-green-600),1)] ring-2 ring-[rgba(var(--color-nude-green-500),0.25)]"
+  : "border-stone-200 bg-white hover:border-[var(--color-cream)] hover:bg-[var(--color-cream)]",
         !isSinglePreselected && "active:scale-[0.995]",
         isSinglePreselected ? "cursor-default" : "",
       )}
@@ -969,7 +969,7 @@ onClick={() => {
           <p
             className={cn(
               "text-sm font-semibold transition-colors duration-150",
-              active ? "text-emerald-800" : "text-stone-800",
+           active ? "text-white" : "text-stone-800",
             )}
           >
             {service.name}
@@ -978,7 +978,7 @@ onClick={() => {
           <div
             className={cn(
               "mt-1.5 flex items-center gap-3 text-xs transition-colors duration-150",
-              active ? "text-emerald-700" : "text-stone-500",
+              active ? "text-white/80" : "text-stone-500"
             )}
           >
             <span className="flex items-center gap-1">
@@ -996,8 +996,8 @@ onClick={() => {
           className={cn(
             "ml-3 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border transition-all duration-150",
             active
-              ? "border-emerald-500 bg-emerald-500 text-white"
-              : "border-stone-300 bg-white text-transparent",
+  ? "border-white bg-white text-[rgb(var(--color-nude-green-600))]"
+  : "border-stone-300 bg-white text-transparent",
           )}
         >
           <Check className="h-3.5 w-3.5" />
@@ -1032,18 +1032,18 @@ onClick={() => {
 }}
   className={cn(
     "flex min-h-[88px] items-center gap-3 rounded-2xl border p-4 text-left transition-[border-color,box-shadow,background-color,transform] duration-150",
-    masterPickMode === MASTER_PICK_MODE.ANY
-      ? "border-emerald-500 bg-emerald-50 ring-2 ring-emerald-500/15 shadow-[0_8px_24px_rgba(16,185,129,0.10)]"
-      : "border-stone-200 bg-white hover:border-amber-200 hover:bg-stone-50",
+masterPickMode === MASTER_PICK_MODE.ANY
+  ? "border border-transparent text-white bg-gradient-to-r from-[rgba(var(--color-nude-green-500),1)] to-[rgba(var(--color-nude-green-600),1)] ring-2 ring-[rgba(var(--color-nude-green-500),0.25)]"
+  : "border-stone-200 bg-white hover:border-[var(--color-cream)] hover:bg-[var(--color-cream)]",
     "active:scale-[0.995]"
   )}
 >
   <div
     className={cn(
       "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border text-sm font-bold transition-all duration-150",
-      masterPickMode === MASTER_PICK_MODE.ANY
-        ? "border-emerald-500 bg-emerald-500 text-white"
-        : "border-stone-200 bg-stone-100 text-stone-600"
+masterPickMode === MASTER_PICK_MODE.ANY
+  ? "border-white bg-white text-[rgb(var(--color-nude-green-600))]"
+  : "border-stone-200 bg-stone-100 text-stone-600"
     )}
   >
       <Users className="h-5 w-5" />
@@ -1053,9 +1053,7 @@ onClick={() => {
     <p
       className={cn(
         "truncate text-sm font-semibold transition-colors duration-150",
-        masterPickMode === MASTER_PICK_MODE.ANY
-          ? "text-emerald-800"
-          : "text-stone-800"
+masterPickMode === MASTER_PICK_MODE.ANY ? "text-white" : "text-stone-800"
       )}
     >
       Будь-хто вільний
@@ -1064,9 +1062,7 @@ onClick={() => {
     <p
       className={cn(
         "mt-1 text-xs transition-colors duration-150",
-        masterPickMode === MASTER_PICK_MODE.ANY
-          ? "text-emerald-700"
-          : "text-stone-500"
+masterPickMode === MASTER_PICK_MODE.ANY ? "text-white/80" : "text-stone-500"
       )}
     >
       Підберемо доступного майстра автоматично
@@ -1076,9 +1072,9 @@ onClick={() => {
   <div
     className={cn(
       "ml-2 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-all duration-150",
-      masterPickMode === MASTER_PICK_MODE.ANY
-        ? "border-emerald-500 bg-emerald-500 text-white"
-        : "border-stone-300 bg-white text-transparent"
+masterPickMode === MASTER_PICK_MODE.ANY
+  ? "border-white bg-white text-[rgb(var(--color-nude-green-600))]"
+  : "border-stone-300 bg-white text-transparent"
     )}
   >
     <Check className="h-3.5 w-3.5" />
@@ -1087,28 +1083,28 @@ onClick={() => {
 
 <button
   type="button"
-onClick={() => {
-  setMasterPickMode(MASTER_PICK_MODE.SPECIFIC);
+  onClick={() => {
+    setMasterPickMode(MASTER_PICK_MODE.SPECIFIC);
 
-  if (
-    selectedMasterId === ANY_MASTER_ID &&
-    availableMasters.length === 1
-  ) {
-    setSelectedMasterId(String(availableMasters[0].id));
-  }
+    if (
+      selectedMasterId === ANY_MASTER_ID &&
+      availableMasters.length === 1
+    ) {
+      setSelectedMasterId(String(availableMasters[0].id));
+    }
 
-  setSelectedDate(null);
-  setSelectedTime(null);
+    setSelectedDate(null);
+    setSelectedTime(null);
 
-  if (availableMasters.length === 1) {
-    scrollToSection(calendarSectionRef);
-  }
-}}
+    if (availableMasters.length === 1) {
+      scrollToSection(calendarSectionRef);
+    }
+  }}
   className={cn(
     "flex min-h-[88px] items-center gap-3 rounded-2xl border p-4 text-left transition-[border-color,box-shadow,background-color,transform] duration-150",
     masterPickMode === MASTER_PICK_MODE.SPECIFIC
-      ? "border-emerald-500 bg-emerald-50 ring-2 ring-emerald-500/15 shadow-[0_8px_24px_rgba(16,185,129,0.10)]"
-      : "border-stone-200 bg-white hover:border-amber-200 hover:bg-stone-50",
+      ? "border border-transparent text-white bg-gradient-to-r from-[rgba(var(--color-nude-green-500),1)] to-[rgba(var(--color-nude-green-600),1)] ring-2 ring-[rgba(var(--color-nude-green-500),0.25)]"
+      : "border-stone-200 bg-white hover:border-[var(--color-cream)] hover:bg-[var(--color-cream)]",
     "active:scale-[0.995]"
   )}
 >
@@ -1116,11 +1112,11 @@ onClick={() => {
     className={cn(
       "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border text-sm font-bold transition-all duration-150",
       masterPickMode === MASTER_PICK_MODE.SPECIFIC
-        ? "border-emerald-500 bg-emerald-500 text-white"
+        ? "border-white bg-white text-[rgb(var(--color-nude-green-600))]"
         : "border-stone-200 bg-stone-100 text-stone-600"
     )}
   >
-      <UserRound className="h-5 w-5" />
+    <UserRound className="h-5 w-5" />
   </div>
 
   <div className="min-w-0 flex-1">
@@ -1128,7 +1124,7 @@ onClick={() => {
       className={cn(
         "truncate text-sm font-semibold transition-colors duration-150",
         masterPickMode === MASTER_PICK_MODE.SPECIFIC
-          ? "text-emerald-800"
+          ? "text-white"
           : "text-stone-800"
       )}
     >
@@ -1139,7 +1135,7 @@ onClick={() => {
       className={cn(
         "mt-1 text-xs transition-colors duration-150",
         masterPickMode === MASTER_PICK_MODE.SPECIFIC
-          ? "text-emerald-700"
+          ? "text-white/80"
           : "text-stone-500"
       )}
     >
@@ -1151,7 +1147,7 @@ onClick={() => {
     className={cn(
       "ml-2 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-all duration-150",
       masterPickMode === MASTER_PICK_MODE.SPECIFIC
-        ? "border-emerald-500 bg-emerald-500 text-white"
+        ? "border-white bg-white text-[rgb(var(--color-nude-green-600))]"
         : "border-stone-300 bg-white text-transparent"
     )}
   >
@@ -1191,9 +1187,9 @@ onClick={() => {
 }}
 className={cn(
   "flex items-center gap-3 rounded-2xl border p-4 text-left transition-[border-color,box-shadow,background-color,transform] duration-150",
-  active
-    ? "border-emerald-500 bg-emerald-50 ring-2 ring-emerald-500/15 shadow-[0_8px_24px_rgba(16,185,129,0.10)]"
-    : "border-stone-200 bg-white hover:border-amber-200 hover:bg-stone-50",
+active
+  ? "border border-transparent text-white bg-gradient-to-r from-[rgba(var(--color-nude-green-500),1)] to-[rgba(var(--color-nude-green-600),1)] ring-2 ring-[rgba(var(--color-nude-green-500),0.25)]"
+  : "border-stone-200 bg-white hover:border-[var(--color-cream)] hover:bg-[var(--color-cream)]",
   "active:scale-[0.995]"
 )}
                       >
@@ -1201,8 +1197,8 @@ className={cn(
   className={cn(
     "flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border text-sm font-bold transition-all duration-150",
     active
-      ? "border-emerald-500 bg-white text-emerald-600 shadow-[0_4px_12px_rgba(16,185,129,0.18)]"
-      : "border-stone-200 bg-stone-100 text-stone-600",
+      ? " bg-white text-emerald-600 shadow-[0_4px_12px_rgba(16,185,129,0.18)]"
+      : "bg-stone-100 text-stone-600",
   )}
 >
   {item.photoUrl ? (
@@ -1219,14 +1215,14 @@ className={cn(
                         <div className="min-w-0 flex-1">
 <p className={cn(
   "truncate text-sm font-semibold transition-colors duration-150",
-  active ? "text-emerald-800" : "text-stone-800",
+active ? "text-white" : "text-stone-800",
 )}>
                             {item.name || "Майстер"}
                           </p>
 
 <p className={cn(
   "mt-1 truncate text-xs transition-colors duration-150",
-  active ? "text-emerald-700" : "text-stone-500",
+ active ? "text-white/80" : "text-stone-500",
 )}>
                             {item.role || "Спеціаліст"}
                           </p>
@@ -1236,9 +1232,9 @@ className={cn(
 <div
   className={cn(
     "ml-2 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-all duration-150",
-    active
-      ? "border-emerald-500 bg-emerald-500 text-white"
-      : "border-stone-300 bg-white text-transparent",
+active
+  ? "border-white bg-white text-[rgb(var(--color-nude-green-600))]"
+  : "border-stone-300 bg-white text-transparent",
   )}
 >
   <Check className="h-3.5 w-3.5" />
@@ -1341,12 +1337,12 @@ onSelect={(d) => {
                     disabled={busy}
                     data-testid={`booking-time-${time}`}
                     className={cn(
-                      "rounded-xl border px-4 py-2.5 text-sm font-semibold transition-all duration-200",
+                      "rounded-xl border px-4 py-2.5 text-sm font-semibold",
 active
-  ? "border border-emerald-500 bg-emerald-50 text-emerald-800 ring-2 ring-emerald-500/15 shadow-[0_8px_24px_rgba(16,185,129,0.10)]"
-                        : busy
-                          ? "cursor-not-allowed border-stone-200 bg-stone-100 text-stone-400 line-through"
-                          : "border-stone-200 bg-white text-stone-800 hover:border-amber-200 hover:bg-stone-50",
+  ? "border border-transparent text-white bg-gradient-to-r from-[rgba(var(--color-nude-green-500),1)] to-[rgba(var(--color-nude-green-600),1)] ring-2 ring-[rgba(var(--color-nude-green-500),0.25)]"
+  : busy
+    ? "cursor-not-allowed border-stone-200 bg-stone-100 text-stone-400 line-through"
+    : "border-stone-200 bg-white text-stone-800 hover:border-[var(--color-cream)] hover:bg-[var(--color-cream)]",
                     )}
                     title={busy ? "Зайнято" : ""}
                   >
@@ -1376,9 +1372,9 @@ active
             onClick={() => setStep("details")}
             data-testid="booking-next-btn"
 className={cn(
-  "flex-1 inline-flex items-center justify-center rounded-2xl py-3 text-sm font-semibold transition active:scale-[0.98]",
+  "flex-1 inline-flex items-center justify-center rounded-[22px] py-3 text-sm font-semibold active:scale-[0.98]",
   canGoNext
-    ? "border border-emerald-700 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-sm"
+    ? "border border-transparent text-white bg-gradient-to-r from-[rgba(var(--color-nude-green-500),1)] to-[rgba(var(--color-nude-green-600),1)]"
     : "cursor-not-allowed border border-stone-200 bg-white text-stone-400",
 )}
           >
@@ -1392,7 +1388,7 @@ className={cn(
             type="button"
             onClick={onCancel}
             data-testid="booking-cancel-btn"
-            className="rounded-2xl border border-stone-200 bg-white px-6 py-3.5 text-sm font-bold text-stone-800 transition-colors duration-200 hover:bg-stone-50 active:scale-[0.98]"
+            className="rounded-[22px] border border-stone-200 bg-white px-6 py-3.5 text-sm font-bold text-stone-800 transition-colors duration-200 hover:bg-stone-50 active:scale-[0.98]"
           >
             Скасувати
           </button>

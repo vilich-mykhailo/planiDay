@@ -17,6 +17,9 @@ import {
   XCircle,
   Clock,
   RefreshCw,
+  ChevronLeft,
+UserRound,
+Scissors,
   Eye,
   Timer,
 } from "lucide-react";
@@ -95,34 +98,36 @@ function FilterTab({ active, children, type = "default", onClick }) {
 
 function EmptyState() {
   return (
-    <div className="rounded-[28px] border border-[var(--color-cream)] bg-white p-8 shadow-[0_10px_40px_rgba(27,27,27,0.06)] sm:p-10">
-      <div className="mx-auto max-w-xl text-center">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[22px] border border-[var(--color-cream)] bg-gradient-to-br from-[var(--color-cream)] to-[var(--color-sand)] shadow-sm">
-          <CalendarDays className="h-8 w-8 text-[var(--color-caramel)]" />
-        </div>
-
-        <h3 className="mt-5 text-xl font-black tracking-tight text-[var(--color-ink)] sm:text-2xl">
-          Поки що немає записів
-        </h3>
-
-        <p className="mt-2 text-sm leading-6 text-[var(--color-caramel)] sm:text-[15px]">
-          Коли ви запишетесь у студію, тут зʼявляться всі бронювання — майбутні,
-          минулі та скасовані.
-        </p>
-      </div>
+<div className="rounded-[28px] border-2 border-dashed border-[var(--color-caramel)]/40 bg-[var(--color-cream)] p-8 text-center sm:p-10">
+  <div className="mx-auto max-w-xl">
+    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-[22px] bg-white/70">
+      <CalendarDays className="h-8 w-8 text-[var(--color-caramel)]" />
     </div>
+
+    <h3 className="text-xl font-black tracking-tight text-[var(--color-caramel)] sm:text-2xl">
+      Поки що немає записів
+    </h3>
+
+    <p className="mt-2 text-sm leading-6 text-[var(--color-caramel)]/80 sm:text-[15px]">
+      Коли ви запишетесь у студію, тут зʼявляться всі бронювання — майбутні,
+      минулі та скасовані.
+    </p>
+  </div>
+</div>
   );
 }
 
 function getStatusUi(status, canceledBy = null) {
-  if (status === "canceled") {
+  const base =
+    "bg-white border border-[var(--border-soft)] shadow-[var(--shadow-card)]";
+
+  if (status === "completed" || status === "past") {
     return {
-      text: canceledBy === "owner" ? "Скасовано студією" : "Скасовано вами",
-      icon: XCircle,
-      badge:
-        "border border-[var(--color-danger-border)] bg-[var(--color-danger-bg)] text-[var(--color-danger)]",
-      side: "border-[var(--color-danger-border)]",
-      time: "text-[var(--color-danger)]",
+      text: "Завершено",
+      icon: CheckCheck,
+      badge: `${base} text-[var(--color-archived-dark)]`,
+      side: "border-[var(--color-archived-light)]",
+      time: "text-[var(--color-archived)]",
     };
   }
 
@@ -130,31 +135,28 @@ function getStatusUi(status, canceledBy = null) {
     return {
       text: "Підтверджено",
       icon: Check,
-      badge:
-        "border border-[var(--color-sand)] bg-[var(--color-confirmed-bg)] text-[var(--color-forest)]",
-      side: "border-[var(--color-sand)]",
-      time: "text-[var(--color-forest)]",
+      badge: `${base} text-[var(--color-confirmed-dark)]`,
+      side: "border-[var(--color-confirmed-light)]",
+      time: "text-[var(--color-confirmed)]",
     };
   }
 
-  if (status === "completed" || status === "past") {
+  if (status === "canceled") {
     return {
-      text: "Завершено",
-      icon: CheckCheck,
-      badge:
-        "border border-[var(--color-sand)] bg-[var(--color-archived-bg)] text-[var(--color-ink)]",
-      side: "border-[var(--color-sand)]",
-      time: "text-[var(--color-caramel)]",
+      text: canceledBy === "owner" ? "Скасовано студією" : "Скасовано вами",
+      icon: XCircle,
+      badge: `${base} text-[var(--color-canceled-dark)]`,
+      side: "border-[var(--color-canceled-light)]",
+      time: "text-[var(--color-canceled)]",
     };
   }
 
   return {
     text: "Очікуємо підтвердження",
     icon: Clock,
-    badge:
-      "border border-[var(--color-sand)] bg-[var(--color-pending-bg)] text-[var(--color-forest)]",
-    side: "border-[var(--color-sand)]",
-    time: "text-[var(--color-caramel)]",
+    badge: `${base} text-[var(--color-pending-dark)]`,
+    side: "border-[var(--color-pending-light)]",
+    time: "text-[var(--color-pending)]",
   };
 }
 
@@ -478,17 +480,29 @@ export default function MyBookings() {
       "Не має значення",
     ].includes(String(activeMasterName).trim());
 
-  useEffect(() => {
-    if (!activeBooking) {
-      document.body.style.overflow = "";
-      return;
-    }
+useEffect(() => {
+  if (!activeBooking) return;
 
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [activeBooking]);
+  const scrollY = window.scrollY;
+
+  document.body.style.position = "fixed";
+  document.body.style.top = `-${scrollY}px`;
+  document.body.style.left = "0";
+  document.body.style.right = "0";
+  document.body.style.width = "100%";
+  document.body.style.overflow = "hidden";
+
+  return () => {
+    document.body.style.position = "";
+    document.body.style.top = "";
+    document.body.style.left = "";
+    document.body.style.right = "";
+    document.body.style.width = "";
+    document.body.style.overflow = "";
+
+    window.scrollTo(0, scrollY);
+  };
+}, [activeBooking]);
 
   const normalized = useMemo(() => {
     const list = Array.isArray(bookings) ? bookings : [];
@@ -797,155 +811,137 @@ export default function MyBookings() {
                 );
 
                 return (
-                  <div
-                    key={rowId}
-                    className="rounded-[28px] border border-[var(--color-cream)] bg-white p-3.5 shadow-[0_10px_30px_rgba(27,27,27,0.06)] sm:p-4"
-                  >
-                    <div className="grid grid-cols-[1fr_auto] gap-3">
-                      <div className="min-w-0">
-                        <div
-                          className={cn(
-                            "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-bold",
-                            statusUi.badge,
-                          )}
-                        >
-                          <statusUi.icon className="h-3.5 w-3.5" />
-                          {statusUi.text}
-                        </div>
+<div
+  key={rowId}
+  className={cn(
+    "rounded-[28px] border border-[var(--color-cream)] bg-white p-3.5 shadow-[0_10px_30px_rgba(27,27,27,0.06)] transition-all duration-200 hover:border-[var(--border-hover-primary)] hover:shadow-[0_14px_34px_rgba(27,27,27,0.10)] sm:p-4",
+    bookingPast && "bg-[var(--color-sand)]",
+  )}
+>
+  <div className="relative grid grid-cols-[1fr_auto] gap-3">
+    <div className="min-w-0">
+<div
+  className={cn(
+    "inline-flex items-center justify-center gap-2 rounded-2xl border px-2.5 py-1.5 text-xs font-semibold shadow-sm",
+    statusUi.badge,
+  )}
+>
+  <statusUi.icon className={cn("h-3.5 w-3.5", statusUi.textColor)} />
+  <span className={statusUi.textColor}>{statusUi.text}</span>
+</div>
 
-                        <h3 className="mt-3 line-clamp-2 text-[18px] font-black leading-[1.05] tracking-[-0.03em] text-[var(--color-ink)]">
-                          {service}
-                        </h3>
+      <h3 className="mt-3 line-clamp-2 text-[18px] font-black leading-[1.05] tracking-[-0.03em] text-[var(--color-ink)]">
+        {service}
+      </h3>
 
-                        {!!b.masterName && (
-                          <p className="mt-1 text-[13px] text-[var(--color-caramel)]">
-                            майстер:{" "}
-                            <span className="font-medium text-[var(--color-ink)]">
-                              {b.masterName}
-                            </span>
-                          </p>
-                        )}
+      <button
+        type="button"
+        onClick={() => openStudio(b)}
+        className="mt-4 flex min-w-0 items-center gap-2 rounded-2xl text-left transition hover:bg-[var(--color-cream)] active:scale-[0.99]"
+      >
+        {studioLogo ? (
+          <img
+            src={studioLogo}
+            alt={title}
+            className="h-8 w-8 shrink-0 rounded-full border border-[var(--color-cream)] object-cover"
+          />
+        ) : (
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--color-cream)] bg-[var(--color-cream)]">
+            <Sparkles className="h-4 w-4 text-[var(--color-forest)]" />
+          </div>
+        )}
 
-                        <button
-                          type="button"
-                          onClick={() => openStudio(b)}
-                          className="mt-3 flex min-w-0 items-center gap-2 rounded-2xl text-left transition hover:bg-[var(--color-cream)] active:scale-[0.99]"
-                        >
-                          {studioLogo ? (
-                            <img
-                              src={studioLogo}
-                              alt={title}
-                              className="h-8 w-8 shrink-0 rounded-full border border-[var(--color-cream)] object-cover"
-                            />
-                          ) : (
-                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--color-cream)] bg-[var(--color-cream)]">
-                              <Sparkles className="h-4 w-4 text-[var(--color-caramel)]" />
-                            </div>
-                          )}
+        <p className="truncate text-[15px] font-medium text-[var(--color-ink)]">
+          {title}
+        </p>
+      </button>
 
-                          <p className="truncate text-[15px] font-medium text-[var(--color-ink)]">
-                            {title}
-                          </p>
-                        </button>
 
-                        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (bookingPast) {
-                                const studioPath =
-                                  b.studioSlug || b.studio?.slug || b.studioId;
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+        <button
+          type="button"
+          onClick={() => {
+            if (bookingPast) {
+              const studioPath = b.studioSlug || b.studio?.slug || b.studioId;
 
-                                if (!studioPath) {
-                                  alert("Не вдалося відкрити студію для повторного запису");
-                                  return;
-                                }
+              if (!studioPath) {
+                alert("Не вдалося відкрити студію для повторного запису");
+                return;
+              }
 
-                                navigate(`/${studioPath}`, {
-                                  state: {
-                                    openBooking: true,
-                                    rebook: true,
-                                    preselectedService: {
-                                      serviceId: b.serviceId,
-                                    },
-                                    preselectedMasterId: b.masterId || null,
-                                  },
-                                });
+              navigate(`/${studioPath}`, {
+                state: {
+                  openBooking: true,
+                  rebook: true,
+                  preselectedService: { serviceId: b.serviceId },
+                  preselectedMasterId: b.masterId || null,
+                },
+              });
 
-                                return;
-                              }
+              return;
+            }
 
-                              setActiveBookingId(b.id);
-                            }}
-                            className={cn(
-                              "inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold transition-all duration-200 active:scale-[0.98]",
-                              bookingPast
-                                ? "border border-[var(--color-sand)] bg-[var(--color-confirmed-bg)] text-[var(--color-forest)] shadow-[0_10px_24px_rgba(50,78,41,0.10)] hover:bg-[var(--color-pending-bg)]"
-                                : "border border-[var(--color-cream)] bg-white text-[var(--color-ink)] hover:bg-[var(--color-cream)] hover:border-[var(--color-mist)] shadow-sm",
-                            )}
-                          >
-                            {bookingPast ? (
-                              <>
-                                <RefreshCw className="h-4 w-4" />
-                                Забронювати ще раз
-                              </>
-                            ) : (
-                              <>
-                                <Eye className="h-4 w-4" />
-                                Переглянути
-                              </>
-                            )}
-                          </button>
+            setActiveBookingId(b.id);
+          }}
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
+        >
+          {bookingPast ? (
+            <>
+              <RefreshCw className="h-4 w-4" />
+              Забронювати ще раз
+            </>
+          ) : (
+            <>
+              <Eye className="h-4 w-4" />
+              Переглянути
+            </>
+          )}
+        </button>
 
-                          {canRescheduleBooking(b) && (
-                            <button
-                              type="button"
-                              onClick={() => handleRescheduleClick(b)}
-                              className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--color-sand)] bg-[var(--color-pending-bg)] px-4 text-sm font-bold text-[var(--color-forest)] shadow-[0_10px_24px_rgba(180,140,108,0.10)] transition-all duration-200 hover:bg-[var(--color-sand)] active:scale-[0.98]"
-                            >
-                              <RefreshCw className="h-4 w-4" />
-                              Перенести
-                            </button>
-                          )}
+        {canRescheduleBooking(b) && (
+          <button
+            type="button"
+            onClick={() => handleRescheduleClick(b)}
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Перенести
+          </button>
+        )}
 
-                          {status !== "canceled" && !bookingPast && (
-                            <button
-                              type="button"
-                              onClick={() => setCancelConfirmId(b.id)}
-                              className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--color-danger-border)] bg-[var(--color-danger-bg)] px-4 text-sm font-bold text-[var(--color-danger)] shadow-[0_10px_24px_rgba(213,92,82,0.08)] transition-all duration-200 hover:bg-[rgba(213,92,82,0.12)] active:scale-[0.98]"
-                            >
-                              <XCircle className="h-4 w-4" />
-                              Скасувати
-                            </button>
-                          )}
-                        </div>
-                      </div>
+        {status !== "canceled" && !bookingPast && (
+          <button
+            type="button"
+            onClick={() => setCancelConfirmId(b.id)}
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
+          >
+            <XCircle className="h-4 w-4" />
+            Скасувати
+          </button>
+        )}
+      </div>
+    </div>
 
-                      <div
-                        className={cn(
-                          "flex min-w-[72px] flex-col items-center justify-center border-l pl-3 text-center",
-                          statusUi.side,
-                        )}
-                      >
-                        <span className="text-[14px] font-medium capitalize text-[var(--color-caramel)]">
-                          {monthLabel}
-                        </span>
+    <div
+      className={cn(
+        "relative flex min-w-[78px] flex-col items-center justify-center border-l pl-3 text-center",
+        statusUi.side,
+      )}
+    >
+      <span className="text-[14px] font-medium capitalize text-[var(--color-caramel)]">
+        {monthLabel}
+      </span>
 
-                        <span className="mt-1 text-[28px] font-light leading-none tracking-[-0.05em] text-[var(--color-ink)]">
-                          {dayLabel}
-                        </span>
+      <span className="mt-1 text-[28px] font-light leading-none tracking-[-0.05em] text-[var(--color-ink)]">
+        {dayLabel}
+      </span>
 
-                        <span
-                          className={cn(
-                            "mt-2 text-[16px] font-semibold",
-                            statusUi.time,
-                          )}
-                        >
-                          {timeLabel}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+      <span className={cn("mt-2 text-[16px] font-semibold", statusUi.time)}>
+        {timeLabel}
+      </span>
+    </div>
+  </div>
+</div>
                 );
               })}
             </div>
@@ -953,232 +949,264 @@ export default function MyBookings() {
         </div>
       </div>
 
-      {activeBooking &&
-        (() => {
-          const isCanceled = activeStatus === "canceled";
-          const isConfirmed = activeStatus === "confirmed";
-          const isCompleted = activeStatus === "completed";
+{activeBooking &&
+  (() => {
+    const isCanceled = activeStatus === "canceled";
+    const isConfirmed = activeStatus === "confirmed";
+    const isCompleted = activeStatus === "completed";
 
-          const statusMeta = isCompleted
-            ? {
-                label: "Завершено",
-                top: "from-[var(--color-caramel)] to-[var(--color-ink)]",
-                Icon: CheckCheck,
-                iconColor: "text-[var(--color-caramel)]",
-              }
-            : isConfirmed
-              ? {
-                  label: "Підтверджено",
-                  top: "from-[var(--color-forest)] to-[var(--color-forest-dark)]",
-                  Icon: Check,
-                  iconColor: "text-[var(--color-forest)]",
-                }
-              : isCanceled
-                ? {
-                    label:
-                      activeBooking?.canceledBy === "owner"
-                        ? "Скасовано студією"
-                        : "Скасовано вами",
-                    top: "from-[var(--color-danger)] to-[var(--color-danger-dark)]",
-                    Icon: XCircle,
-                    iconColor: "text-[var(--color-danger)]",
-                  }
-                : {
-                    label: "Очікуємо підтвердження",
-                    top: "from-[var(--color-caramel)] to-[var(--color-ink)]",
-                    Icon: Clock,
-                    iconColor: "text-[var(--color-caramel)]",
-                  };
+    const statusMeta = isCompleted
+      ? {
+          label: "Завершено",
+          top: "from-[var(--color-archived-light)] to-white",
+          Icon: CheckCheck,
+          iconColor: "text-[var(--color-archived-dark)]",
+          pillText: "text-[var(--color-archived-dark)]",
+        }
+      : isConfirmed
+        ? {
+            label: "Підтверджено",
+            top: "from-[var(--color-confirmed-light)] to-white",
+            Icon: Check,
+            iconColor: "text-[var(--color-confirmed-dark)]",
+            pillText: "text-[var(--color-confirmed-dark)]",
+          }
+        : isCanceled
+          ? {
+              label:
+                activeBooking?.canceledBy === "owner"
+                  ? "Скасовано студією"
+                  : "Скасовано вами",
+              top: "from-[var(--color-canceled-light)] to-white",
+              Icon: XCircle,
+              iconColor: "text-[var(--color-canceled-dark)]",
+              pillText: "text-[var(--color-canceled-dark)]",
+            }
+          : {
+              label: "Очікуємо підтвердження",
+              top: "from-[var(--color-pending-light)] to-white",
+              Icon: Clock,
+              iconColor: "text-[var(--color-pending-dark)]",
+              pillText: "text-[var(--color-pending-dark)]",
+            };
 
-          const StatusIcon = statusMeta.Icon;
+    const StatusIcon = statusMeta.Icon;
 
-          return (
-            <div
-              className="fixed inset-0 z-[220] flex items-center justify-center bg-black/55 p-3 backdrop-blur-[7px] sm:p-4"
-              onClick={() => {
-                setActiveBookingId(null);
-                setCopiedId(null);
-              }}
-            >
-              <div
-                className="relative w-full max-w-[420px] overflow-hidden rounded-[30px] bg-[var(--color-cream)] shadow-[0_35px_100px_rgba(0,0,0,0.28)]"
-                onClick={(e) => e.stopPropagation()}
+    return (
+      <div
+        className="fixed inset-0 z-[220] flex items-end justify-center bg-[var(--color-bg)]/45 p-0 backdrop-blur-[7px] sm:items-center sm:p-4"
+        onClick={() => {
+          setActiveBookingId(null);
+          setCopiedId(null);
+        }}
+      >
+        <div
+          className={cn(
+            "relative flex w-full flex-col overflow-hidden bg-white",
+            "h-[100dvh] rounded-none border-0 shadow-none",
+            "sm:h-auto sm:max-h-[76vh] sm:max-w-[420px] sm:rounded-[34px] sm:border sm:border-[var(--color-cream)] sm:shadow-[0_35px_100px_rgba(27,27,27,0.18)]",
+          )}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div
+            className={cn(
+              "relative bg-gradient-to-b px-5 pb-5 pt-[max(16px,env(safe-area-inset-top))] sm:pt-5",
+              statusMeta.top,
+            )}
+          >
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.22),transparent_30%)]" />
+
+            <div className="relative flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveBookingId(null);
+                  setCopiedId(null);
+                }}
+                className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-[var(--color-ink)] shadow-[0_4px_18px_rgba(27,27,27,0.08)] transition hover:bg-[var(--color-cream)]"
+                aria-label="Назад"
               >
-                <div
-                  className={cn(
-                    "relative overflow-hidden bg-gradient-to-b px-5 pb-5 pt-4 text-white",
-                    statusMeta.top,
-                  )}
-                >
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_28%)]" />
+                <ChevronLeft className="h-5 w-5" />
+              </button>
 
-                  <div className="relative flex items-start justify-between gap-3">
-                    <div className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-[13px] font-semibold shadow-sm">
-                      <StatusIcon className={cn("h-4 w-4", statusMeta.iconColor)} />
-                      <span className="text-[var(--color-ink)]">{statusMeta.label}</span>
-                    </div>
+              <div className="w-11" />
+            </div>
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActiveBookingId(null);
-                        setCopiedId(null);
-                      }}
-                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/20 bg-white/8 text-white/90 transition hover:bg-white/16"
-                      aria-label="Закрити"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
+            <div className="relative mt-4 flex justify-center">
+              <div className="inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-[13px] font-semibold shadow-[0_4px_18px_rgba(27,27,27,0.06)] backdrop-blur">
+                <StatusIcon className={cn("h-4 w-4", statusMeta.iconColor)} />
+                <span className={statusMeta.pillText}>{statusMeta.label}</span>
+              </div>
+            </div>
 
-                  <div className="relative mt-4">
-                    <h2 className="text-[20px] font-extrabold leading-tight tracking-[-0.03em]">
-                      {activeService || "Послуга"}
-                    </h2>
+            <div className="relative mt-5 text-center">
+              <h2 className="text-[24px] font-black leading-tight tracking-[-0.03em] text-[var(--color-ink)]">
+                {activeService || "Послуга"}
+              </h2>
 
-                    <p className="mt-1 text-sm font-medium text-white/85">
-                      {formatUA(activeBooking.date) || "—"}
-                    </p>
-                  </div>
+              <p className="mt-1 text-sm font-medium text-[var(--color-ink-soft)]">
+                {formatUA(activeBooking.date) || "—"}
+              </p>
+            </div>
 
-                  <div className="relative mt-4 flex flex-wrap gap-2">
-                    <div className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-sm font-semibold shadow-sm">
-                      <Clock3 className="h-4 w-4 text-[var(--color-caramel)]" />
-                      <span className="text-[var(--color-ink)]">
-                        {activeBooking.time || "—"}
+            <div className="relative mt-4 grid grid-cols-3 gap-2">
+              <div className="inline-flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-[22px] bg-white px-3 py-2 text-sm font-semibold shadow-sm">
+                <Clock3 className={cn("h-4 w-4", statusMeta.iconColor)} />
+                <span className="text-[var(--color-ink)]">
+                  {activeBooking.time || "—"}
+                </span>
+              </div>
+
+              <div className="inline-flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-[22px] bg-white px-3 py-2 text-sm font-semibold shadow-sm">
+                <Banknote className={cn("h-4 w-4", statusMeta.iconColor)} />
+                <span className="text-[var(--color-ink)]">
+                  {activePrice != null ? `${activePrice} грн` : "—"}
+                </span>
+              </div>
+
+              <div className="inline-flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-[22px] bg-white px-3 py-2 text-sm font-semibold shadow-sm">
+                <Timer className={cn("h-4 w-4", statusMeta.iconColor)} />
+                <span className="text-[var(--color-ink)]">
+                  {activeDuration != null ? `${activeDuration} хв` : "—"}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="relative flex min-h-0 flex-1 flex-col px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-4 sm:px-5 sm:pb-5">
+            <div className="min-h-0 flex-1 overflow-y-auto pb-16 sm:pb-6">
+              <div className="space-y-3">
+                <div className="rounded-[26px] border border-[#e6ebe3] p-4 shadow-[0_8px_24px_rgba(120,140,120,0.08)]">
+                  <div className="flex items-center gap-3">
+                    {activeStudioLogo ? (
+                      <img
+                        src={activeStudioLogo}
+                        alt={activeTitle}
+                        className="h-12 w-12 shrink-0 rounded-2xl object-cover shadow-sm"
+                      />
+                    ) : (
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-[var(--color-ink)] shadow-sm">
+                        <Sparkles className="h-5 w-5" />
+                      </div>
+                    )}
+
+                    <div className="min-w-0 flex-1">
+                      <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-caramel)]">
+                        Студія
                       </span>
-                    </div>
 
-                    <div className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-sm font-semibold shadow-sm">
-                      <Banknote className="h-4 w-4 text-[var(--color-forest)]" />
-                      <span className="text-[var(--color-ink)]">
-                        {activePrice != null ? `${activePrice} грн` : "—"}
-                      </span>
-                    </div>
-
-                    <div className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-sm font-semibold shadow-sm">
-                      <Timer className="h-4 w-4 text-[var(--color-caramel)]" />
-                      <span className="text-[var(--color-ink)]">
-                        {activeDuration != null ? `${activeDuration} хв` : "—"}
-                      </span>
+                      <button
+                        type="button"
+                        onClick={() => openStudio(activeBooking)}
+                        className="block truncate text-left text-[15px] font-extrabold text-[var(--color-ink)] transition hover:text-[var(--color-forest)]"
+                      >
+                        {activeTitle || "Студія"}
+                      </button>
                     </div>
                   </div>
                 </div>
 
-                <div className="px-4 pb-4 pt-4 sm:px-5">
-                  <div className="rounded-[24px] bg-white p-3">
-                    <div className="flex items-center gap-3">
-                      {activeStudioLogo ? (
-                        <img
-                          src={activeStudioLogo}
-                          alt={activeTitle}
-                          className="h-11 w-11 shrink-0 rounded-2xl object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-ink)] text-white">
-                          <Sparkles className="h-5 w-5" />
-                        </div>
-                      )}
-
-                      <div className="min-w-0 flex-1">
-                        <button
-                          type="button"
-                          onClick={() => openStudio(activeBooking)}
-                          className="block truncate text-left text-[15px] font-extrabold text-[var(--color-ink)] transition hover:text-[var(--color-forest)]"
-                        >
-                          {activeTitle || "Студія"}
-                        </button>
-
-                        <div className="mt-0.5 flex items-start gap-1 text-[13px] text-[var(--color-caramel)]">
-                          <MapPin className="mt-[2px] h-3.5 w-3.5 shrink-0" />
-                          <span className="line-clamp-1">
-                            {activeAddr || "Адресу не вказано"}
-                          </span>
-                        </div>
-                      </div>
-
-                      {activeAddr ? (
-                        <button
-                          type="button"
-                          onClick={() => copyText(activeAddr, activeBooking.id)}
-                          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[var(--color-cream)] bg-[var(--color-cream)] text-[var(--color-caramel)] transition hover:border-[var(--color-sand)] hover:text-[var(--color-forest)]"
-                          aria-label="Скопіювати адресу"
-                          title="Скопіювати адресу"
-                        >
-                          {copiedId === activeBooking.id ? (
-                            <CheckCheck className="h-4 w-4" />
-                          ) : (
-                            <Copy className="h-4 w-4" />
-                          )}
-                        </button>
-                      ) : (
-                        <div className="h-10 w-10 shrink-0 rounded-2xl border border-[var(--color-cream)] bg-[var(--color-cream)]" />
-                      )}
+                <div className="rounded-[26px] border border-[#e6ebe3] p-4 shadow-[0_8px_24px_rgba(120,140,120,0.08)]">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-[var(--color-ink)] shadow-sm">
+                      <MapPin className="h-5 w-5" />
                     </div>
-                  </div>
 
-                  <div className="mt-3 rounded-[22px] bg-white px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      {isAnyMasterSelected ? (
-                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--color-cream)] font-bold text-[var(--color-caramel)]">
-                          ?
-                        </div>
-                      ) : activeMasterPhoto ? (
-                        <img
-                          src={activeMasterPhoto}
-                          alt={activeMasterName}
-                          className="h-12 w-12 rounded-2xl object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--color-cream)] font-bold text-[var(--color-ink)]">
-                          {activeMasterName?.[0] || "—"}
-                        </div>
-                      )}
-
-                      <div className="flex flex-col">
-                        <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-caramel)]">
-                          Майстер
-                        </span>
-
-                        <span className="text-[15px] font-extrabold text-[var(--color-ink)]">
-                          {isAnyMasterSelected ? "Будь-який майстер" : activeMasterName}
-                        </span>
-                      </div>
+                    <div className="min-w-0 flex-1">
+                      <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-caramel)]">
+                        Адреса
+                      </span>
+                      <p className="truncate text-[15px] font-extrabold text-[var(--color-ink)]">
+                        {activeAddr || "Адресу не вказано"}
+                      </p>
                     </div>
+
+                    {activeAddr ? (
+                      <button
+                        type="button"
+                        onClick={() => copyText(activeAddr, activeBooking.id)}
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-[var(--color-ink)] shadow-sm transition hover:bg-[var(--color-cream)]"
+                        aria-label="Скопіювати адресу"
+                        title="Скопіювати адресу"
+                      >
+                        {copiedId === activeBooking.id ? (
+                          <CheckCheck className="h-4 w-4" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
+                      </button>
+                    ) : (
+                      <div className="h-10 w-10 shrink-0 rounded-2xl bg-white" />
+                    )}
                   </div>
+                </div>
 
-                  <div className="mt-4 grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => handleRescheduleClick(activeBooking)}
-                      disabled={!canRescheduleBooking(activeBooking)}
-                      className={cn(
-                        "inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold transition-all duration-200 active:scale-[0.98]",
-                        canRescheduleBooking(activeBooking)
-                          ? "border border-[var(--color-sand)] bg-[var(--color-pending-bg)] text-[var(--color-forest)] shadow-[0_10px_24px_rgba(180,140,108,0.10)] hover:bg-[var(--color-sand)]"
-                          : "cursor-not-allowed border border-[var(--color-cream)] bg-[var(--color-cream)] text-[var(--color-caramel)] shadow-none",
-                      )}
-                    >
-                      <RefreshCw className="h-4 w-4" />
-                      Перенести
-                    </button>
+                <div className="rounded-[26px] border border-[#e6ebe3] p-4 shadow-[0_8px_24px_rgba(120,140,120,0.08)]">
+                  <div className="flex items-center gap-3">
+                    {isAnyMasterSelected ? (
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white font-bold text-[var(--color-caramel)] shadow-sm">
+                        ?
+                      </div>
+                    ) : activeMasterPhoto ? (
+                      <img
+                        src={activeMasterPhoto}
+                        alt={activeMasterName}
+                        className="h-12 w-12 shrink-0 rounded-2xl object-cover shadow-sm"
+                      />
+                    ) : (
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white font-bold text-[var(--color-ink)] shadow-sm">
+                        {activeMasterName?.[0] || "—"}
+                      </div>
+                    )}
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActiveBookingId(null);
-                        setCopiedId(null);
-                      }}
-                      className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--color-cream)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:border-[var(--color-mist)] hover:bg-[var(--color-cream)] active:scale-[0.98]"
-                    >
-                      Закрити
-                    </button>
+                    <div className="min-w-0 flex-1">
+                      <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-caramel)]">
+                        Майстер
+                      </span>
+
+                      <p className="truncate text-[15px] font-extrabold text-[var(--color-ink)]">
+                        {isAnyMasterSelected
+                          ? "Будь-який майстер"
+                          : activeMasterName}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          );
-        })()}
+
+            <div className="mt-4 grid grid-cols-2 gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => handleRescheduleClick(activeBooking)}
+                disabled={!canRescheduleBooking(activeBooking)}
+                className={cn(
+                  "inline-flex h-12 items-center justify-center gap-2 rounded-[22px] px-4 text-sm font-bold transition-all duration-200 active:scale-[0.98]",
+                  canRescheduleBooking(activeBooking)
+                    ? "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))] text-white hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]"
+                    : "cursor-not-allowed bg-[var(--color-cream)] text-[var(--color-caramel)] shadow-none",
+                )}
+              >
+                <RefreshCw className="h-4 w-4" />
+                Перенести
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveBookingId(null);
+                  setCopiedId(null);
+                }}
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-[22px] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
+              >
+                Закрити
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  })()}
 
       <Modal
         open={cancelConfirmId != null}

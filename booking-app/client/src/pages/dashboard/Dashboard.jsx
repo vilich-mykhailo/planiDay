@@ -19,11 +19,11 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
 const linkClass = ({ isActive }) =>
   [
-    "group relative flex items-center gap-3 rounded-2xl border px-3.5 py-3 text-sm font-semibold transition-all duration-200",
-    "focus-visible:outline-none focus-visible:ring-4",
-    isActive
-      ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white shadow-[var(--shadow-button)] focus-visible:ring-[color:var(--color-sand)]/30"
-      : "border-transparent bg-transparent text-[var(--color-forest)] hover:border-[var(--color-mist)] hover:bg-[var(--color-cream)] hover:text-[var(--color-ink)] focus-visible:ring-[color:var(--color-sand)]/30",
+    "group relative flex items-center gap-3 overflow-hidden rounded-[18px] border px-3 py-3 text-sm font-semibold transition-all duration-300 ease-out",
+    "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--color-sand)]/30",
+isActive
+  ? "border-transparent text-white bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]"
+  : "border-transparent text-[var(--color-caramel)] hover:bg-[var(--color-cream)]",
   ].join(" ");
 
 function cn(...classes) {
@@ -47,7 +47,8 @@ function DashboardSkeleton() {
   return (
     <div className="min-h-screen ">
       <div className="mx-auto max-w-6xl px-4 pt-24 md:pt-22">
-        <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[220px_minmax(0,1fr)]">
+      <div className="grid min-h-[calc(100vh-72px)] grid-cols-1 items-start gap-2 lg:grid-cols-[240px_minmax(0,1fr)] lg:items-start">
+
           <aside
             className="
               hidden lg:block
@@ -99,12 +100,12 @@ function DashboardSkeleton() {
 function SidebarLinkIcon({ children, isActive }) {
   return (
     <span
-      className={[
-        "inline-flex h-9 w-9 items-center justify-center rounded-xl border transition-all duration-200",
+      className={cn(
+        "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border bg-white transition-all duration-200",
         isActive
-          ? "border-white/10 bg-white/10 text-[var(--color-sand)]"
-          : "border-[var(--color-mist)] bg-white text-[var(--color-forest)] group-hover:border-[var(--color-forest)] group-hover:text-[var(--color-ink)]",
-      ].join(" ")}
+          ? "border-[#9fb29a] text-[#7f9a78]"
+          : "border-[var(--color-cream)] text-[#9fb29a] shadow-[0_2px_8px_rgba(27,27,27,0.04)]",
+      )}
     >
       {children}
     </span>
@@ -237,7 +238,9 @@ export default function Dashboard() {
 
     const handleNotificationNew = (payload) => {
       if (!payload) return;
-      if (String(payload.studioId) !== String(localStorage.getItem("studioId"))) {
+      if (
+        String(payload.studioId) !== String(localStorage.getItem("studioId"))
+      ) {
         return;
       }
 
@@ -285,23 +288,24 @@ export default function Dashboard() {
     <div
       className="min-h-screen"
       style={{
-        
         backgroundImage:
           "radial-gradient(circle at top left, rgba(180,140,108,0.18), transparent 30%), radial-gradient(circle at bottom right, rgba(50,78,41,0.12), transparent 30%)",
       }}
     >
       <div className="mx-auto w-full max-w-6xl px-0 pt-18 lg:px-4">
-        <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[220px_minmax(0,1fr)]">
-          <aside
-            className="
-              hidden lg:block
-              relative top-auto h-fit overflow-hidden rounded-3xl
-              border border-[var(--color-mist)]
-              bg-white p-3
-              shadow-[var(--shadow-soft-hover)]
-              lg:sticky lg:top-[88px]
-            "
-          >
+       <div className="grid min-h-[calc(100vh-72px)] grid-cols-1 items-start gap-2 lg:grid-cols-[240px_minmax(0,1fr)] lg:items-start">
+
+<aside
+  className="
+    hidden lg:block
+    relative h-fit overflow-hidden rounded-3xl
+    border border-[var(--color-mist)]
+    bg-white p-3
+    shadow-[var(--shadow-soft-hover)]
+    lg:sticky lg:top-[88px] lg:mt-4
+  "
+>
+
             <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[var(--color-ink)] via-[var(--color-forest)] to-[var(--color-caramel)]" />
 
             <div className="mb-2 border-b border-[var(--color-mist)] px-1 pb-3 pt-2 text-center">
@@ -321,9 +325,17 @@ export default function Dashboard() {
               <NavLink to="/dashboard" end className={linkClass}>
                 {({ isActive }) => (
                   <>
+                    <span
+                      className={cn(
+                        "absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full transition-all duration-200",
+                        isActive ? "bg-white" : "bg-transparent",
+                      )}
+                    />
+
                     <SidebarLinkIcon isActive={isActive}>
                       <LayoutDashboard className="h-4.5 w-4.5" />
                     </SidebarLinkIcon>
+
                     <span>Головна</span>
                   </>
                 )}
@@ -332,26 +344,31 @@ export default function Dashboard() {
               <NavLink to="/dashboard/bookings" className={linkClass}>
                 {({ isActive }) => (
                   <>
-                    <span className="relative inline-flex">
-                      <SidebarLinkIcon isActive={isActive}>
-                        <CalendarDays className="h-4.5 w-4.5" />
-                      </SidebarLinkIcon>
-
-                      {newBookingsCount > 0 && (
-                        <span
-                          className={cn(
-                            "absolute -right-1 -top-1 inline-flex min-h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 text-[10px] font-bold leading-none shadow-sm",
-                            isActive
-                              ? "border-[var(--color-ink)] bg-[var(--color-caramel)] text-white"
-                              : "border-white bg-[var(--color-ink)] text-white",
-                          )}
-                        >
-                          {newBookingsCount > 9 ? "9+" : newBookingsCount}
-                        </span>
+                    <span
+                      className={cn(
+                        "absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full transition-all duration-200",
+                        isActive ? "bg-white" : "bg-transparent",
                       )}
-                    </span>
+                    />
 
-                    <span>Записи</span>
+                    <SidebarLinkIcon isActive={isActive}>
+                      <CalendarDays className="h-4.5 w-4.5" />
+                    </SidebarLinkIcon>
+
+                    <span className="flex-1">Записи</span>
+
+                    {newBookingsCount > 0 && (
+                      <span
+className={cn(
+  "ml-auto inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold",
+  isActive
+    ? "bg-[var(--color-danger)] text-white "
+    : "bg-[var(--color-danger)] text-white "
+)}
+                      >
+                        {newBookingsCount > 9 ? "9+" : newBookingsCount}
+                      </span>
+                    )}
                   </>
                 )}
               </NavLink>
@@ -359,26 +376,30 @@ export default function Dashboard() {
               <NavLink to="/dashboard/notifications" className={linkClass}>
                 {({ isActive }) => (
                   <>
-                    <span className="relative inline-flex">
-                      <SidebarLinkIcon isActive={isActive}>
-                        <Bell className="h-4.5 w-4.5" />
-                      </SidebarLinkIcon>
-
-                      {unreadNotifications > 0 && (
-                        <span
-                          className={cn(
-                            "absolute -right-1 -top-1 inline-flex min-h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 text-[10px] font-bold leading-none shadow-sm",
-                            isActive
-                              ? "border-[var(--color-ink)] bg-[var(--color-caramel)] text-white"
-                              : "border-white bg-[var(--color-forest)] text-white",
-                          )}
-                        >
-                          {unreadNotifications > 9 ? "9+" : unreadNotifications}
-                        </span>
+                       <span
+                      className={cn(
+                        "absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full transition-all duration-200",
+                        isActive ? "bg-white" : "bg-transparent",
                       )}
-                    </span>
+                    />
 
-                    <span className="truncate">Повідомлення</span>
+                    <SidebarLinkIcon isActive={isActive}>
+                      <Bell className="h-4.5 w-4.5" />
+                    </SidebarLinkIcon>
+                    <span className="flex-1 truncate">Повідомлення</span>
+
+                          {unreadNotifications > 0 && (
+                      <span
+                        className={cn(
+                          "ml-auto inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold",
+                          isActive
+                      ? "bg-[var(--color-danger)] text-white "
+    : "bg-[var(--color-danger)] text-white "
+                        )}
+                      >
+                        {unreadNotifications > 9 ? "9+" : unreadNotifications}
+                      </span>
+                    )}
                   </>
                 )}
               </NavLink>
@@ -386,6 +407,13 @@ export default function Dashboard() {
               <NavLink to="/dashboard/studio" className={linkClass}>
                 {({ isActive }) => (
                   <>
+                    <span
+                      className={cn(
+                        "absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full transition-all duration-200",
+                        isActive ? "bg-white" : "bg-transparent",
+                      )}
+                    />
+
                     <SidebarLinkIcon isActive={isActive}>
                       <Building2 className="h-4.5 w-4.5" />
                     </SidebarLinkIcon>
@@ -397,6 +425,13 @@ export default function Dashboard() {
               <NavLink to="/dashboard/masters" className={linkClass}>
                 {({ isActive }) => (
                   <>
+                    <span
+                      className={cn(
+                        "absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full transition-all duration-200",
+                        isActive ? "bg-white" : "bg-transparent",
+                      )}
+                    />
+
                     <SidebarLinkIcon isActive={isActive}>
                       <Users className="h-4.5 w-4.5" />
                     </SidebarLinkIcon>
@@ -408,6 +443,19 @@ export default function Dashboard() {
               <NavLink to="/dashboard/services" className={linkClass}>
                 {({ isActive }) => (
                   <>
+                    <span
+                      className={cn(
+                        "absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full transition-all duration-200",
+                        isActive ? "bg-white" : "bg-transparent",
+                      )}
+                    />
+                    <span
+                      className={cn(
+                        "absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full transition-all duration-200",
+                        isActive ? "bg-white" : "bg-transparent",
+                      )}
+                    />
+
                     <SidebarLinkIcon isActive={isActive}>
                       <BriefcaseBusiness className="h-4.5 w-4.5" />
                     </SidebarLinkIcon>
@@ -419,6 +467,13 @@ export default function Dashboard() {
               <NavLink to="/dashboard/schedule" className={linkClass}>
                 {({ isActive }) => (
                   <>
+                    <span
+                      className={cn(
+                        "absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full transition-all duration-200",
+                        isActive ? "bg-white" : "bg-transparent",
+                      )}
+                    />
+
                     <SidebarLinkIcon isActive={isActive}>
                       <Clock3 className="h-4.5 w-4.5" />
                     </SidebarLinkIcon>
@@ -431,18 +486,9 @@ export default function Dashboard() {
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="
-                    inline-flex w-full items-center justify-center gap-2 rounded-2xl
-                    border border-[var(--color-sand)]
-                    bg-[var(--color-cream)]
-                    px-4 py-3 text-sm font-semibold text-[var(--color-forest)]
-                    transition-all duration-200
-                    hover:bg-[var(--color-ink)] hover:text-white
-                    active:scale-[0.98]
-                    focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--color-sand)]/30
-                  "
+                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
                 >
-                  <LogOut className="h-4 w-4" />
+                  <LogOut className="h-4 w-4 text-[var(--color-danger)]" />
                   Вихід
                 </button>
               </div>
@@ -451,10 +497,10 @@ export default function Dashboard() {
 
           <section
             className="
-              min-h-[200px] overflow-hidden rounded-3xl px-3 py-2 sm:px-4 sm:py-4
-              lg:mb-4 lg:mt-4 lg:border lg:border-[var(--color-mist)] lg:bg-white lg:p-6
-              lg:shadow-[var(--shadow-soft)]
-            "
+    self-start overflow-hidden rounded-3xl px-3 py-2 sm:px-4 sm:py-4
+    lg:mb-4 lg:mt-4 lg:border lg:border-[var(--color-mist)] lg:bg-white lg:p-6
+    lg:shadow-[var(--shadow-soft)]
+  "
           >
             <Outlet />
           </section>

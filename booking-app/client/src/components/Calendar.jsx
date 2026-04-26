@@ -230,14 +230,14 @@ export default function Calendar({ selected, onSelect, disabled }) {
                   if (!dis) onSelect?.(day);
                 }}
                 className={cn(
-                  "relative flex h-11 w-full items-center justify-center rounded-2xl text-xs font-semibold transition-all duration-200 sm:h-12 sm:text-sm",
+                  "relative flex h-11 w-full items-center justify-center rounded-2xl text-xs font-semibold sm:h-12 sm:text-sm",
 isSelected
-   ? "border border-emerald-500 bg-emerald-50 text-emerald-800 ring-2 ring-emerald-500/15 shadow-[0_8px_24px_rgba(16,185,129,0.10)]"
-                    : dis
-                      ? "cursor-not-allowed border border-stone-200 bg-stone-100 text-stone-400"
-                      : isToday
-                        ? "border border-amber-300 text-stone-900 hover:bg-amber-100"
-                        : "border border-transparent text-stone-800 hover:border-stone-200 hover:bg-stone-50",
+  ? "border border-transparent text-white bg-gradient-to-r from-[rgba(var(--color-nude-green-500),1)] to-[rgba(var(--color-nude-green-600),1)] ring-2 ring-[rgba(var(--color-nude-green-500),0.25)]"
+  : dis
+    ? "cursor-not-allowed border border-stone-200 bg-stone-100 text-stone-400"
+    : isToday
+      ? "border border-amber-300 text-stone-900 hover:bg-amber-100"
+      : "border border-transparent text-stone-800 hover:border-stone-200 hover:bg-stone-50",
                 )}
               >
                 <span>{day.getDate()}</span>

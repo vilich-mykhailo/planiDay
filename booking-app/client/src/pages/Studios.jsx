@@ -717,12 +717,19 @@ if (isInitialLoading) {
                     type="button"
                     onClick={handleApply}
                     disabled={!hasPendingChanges || isApplying || isLoadingMore}
-                    className={cn(
-                      "flex h-11 flex-1 items-center justify-center gap-2 rounded-[18px] px-4 text-sm font-bold transition-all duration-200 active:scale-95 sm:h-auto sm:rounded-2xl sm:px-5 sm:py-3",
-                      !hasPendingChanges || isApplying
-                        ? "cursor-not-allowed border border-stone-200 bg-stone-100 text-stone-400 shadow-none"
-                        : "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-[0_10px_24px_rgba(74,93,78,0.22)] hover:from-emerald-700 hover:to-emerald-800 hover:shadow-md",
-                    )}
+className={cn(
+  "flex h-11 flex-1 items-center justify-center gap-2 rounded-[18px] px-4 text-sm font-bold active:scale-95 sm:h-auto sm:rounded-2xl sm:px-5 sm:py-3",
+  !hasPendingChanges || isApplying
+    ? "cursor-not-allowed border border-[var(--color-cream)] bg-[var(--color-cream)] text-[var(--color-caramel)]"
+    : [
+        // 👉 nude-green
+        "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
+        "text-white",
+
+        // 👉 hover
+        "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]"
+      ].join(" ")
+)}
                   >
                     {isApplying ? (
                       <>

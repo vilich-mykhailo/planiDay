@@ -18,6 +18,7 @@ import {
   Image as ImageIcon,
   PencilLine,
   AlertTriangle,
+  Trash2,
 } from "lucide-react";
 import { api } from "../../api/http";
 
@@ -137,16 +138,17 @@ function PrimaryButton({ children, ...props }) {
   );
 }
 
-function SecondaryButton({ children, ...props }) {
+function SecondaryButton({ children, className, ...props }) {
   return (
     <button
       {...props}
       className={cx(
-        "inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[18px] border px-4 py-3 text-sm font-bold transition-all duration-200 active:scale-[0.98]",
-        props.disabled
-          ? "cursor-not-allowed border-[var(--color-mist)] bg-[var(--color-cream)] text-[color:var(--color-caramel)]/70"
-          : "border-[var(--color-mist)] bg-white text-[var(--color-ink)] hover:border-[var(--color-sand)] hover:bg-[var(--color-cream)] hover:shadow-sm",
-        props.className,
+        "inline-flex min-h-[48px] items-center justify-center gap-2",
+        "rounded-2xl border border-[var(--border-soft)] bg-white px-4 py-3",
+        "text-sm font-bold text-[var(--color-ink)] shadow-sm",
+        "transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]",
+        props.disabled && "cursor-not-allowed opacity-60",
+        className
       )}
     >
       {children}
@@ -154,16 +156,17 @@ function SecondaryButton({ children, ...props }) {
   );
 }
 
-function GhostDangerButton({ children, ...props }) {
+function GhostDangerButton({ children, className, ...props }) {
   return (
     <button
       {...props}
       className={cx(
-        "inline-flex min-h-[46px] items-center justify-center gap-2 rounded-[18px] border px-4 py-3 text-sm font-bold transition-all duration-200 active:scale-[0.98]",
-        props.disabled
-          ? "cursor-not-allowed border-[var(--color-mist)] bg-[var(--color-cream)] text-[color:var(--color-caramel)]/70"
-          : "border-[var(--color-danger-border)] bg-[var(--color-danger-bg)] text-[var(--color-danger)] hover:bg-[color:var(--color-danger-bg)]/80 hover:shadow-sm",
-        props.className,
+        "inline-flex min-h-[48px] w-full items-center justify-center gap-2",
+        "rounded-2xl border border-[var(--border-soft)] bg-white px-4 py-3",
+        "text-sm font-bold text-[var(--color-danger)] shadow-sm",
+        "transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]",
+        props.disabled && "cursor-not-allowed opacity-60",
+        className
       )}
     >
       {children}
@@ -245,7 +248,7 @@ function EditModal({
         <div className="px-5 py-5 sm:px-6">{children}</div>
 
         <div className="flex flex-col-reverse gap-2 border-t border-[var(--color-cream)] px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
-          <SecondaryButton type="button" onClick={onClose} className="w-full sm:w-auto">
+          <SecondaryButton type="button" onClick={onClose} className="w-full sm:w-auto rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]">
             Скасувати
           </SecondaryButton>
 
@@ -1026,7 +1029,7 @@ export default function Profile() {
                             <button
                               type="button"
                               onClick={() => openEditModal("name")}
-                              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--color-mist)] bg-white text-[var(--color-caramel)] transition hover:-translate-y-0.5 hover:border-[var(--color-sand)] hover:bg-[var(--color-pending-bg)] hover:text-[var(--color-forest)]"
+                              className="rounded-xl border border-[var(--border-soft)] bg-white px-2 py-2 text-sm font-bold text-[var(--color-ink)] shadow-sm  hover:bg-[var(--color-cream)] active:scale-[0.98]"
                               title="Змінити ім’я та прізвище"
                             >
                               <PencilLine className="h-4 w-4" />
@@ -1057,7 +1060,7 @@ export default function Profile() {
                               className="w-full sm:flex-1 rounded-2xl"
                               disabled={saving}
                             >
-                              <X className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4" />
                               {saving ? "Видалення..." : "Видалити фото"}
                             </GhostDangerButton>
                           )}
@@ -1177,7 +1180,7 @@ export default function Profile() {
                   <GhostDangerButton
                     type="button"
                     onClick={handleLogout}
-                    className="min-w-[220px] rounded-2xl"
+                    className="min-w-[220px] rounded-2xl "
                   >
                     <LogOut className="h-4 w-4" />
                     Вийти

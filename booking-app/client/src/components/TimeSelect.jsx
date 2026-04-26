@@ -163,7 +163,7 @@ export default function TimeSelect({
 
             <div className="grid grid-cols-[1fr_auto_1fr] items-stretch gap-0 p-3">
               <div>
-                <p className="mb-2 px-2 text-[11px] font-bold uppercase tracking-wide text-[var(--color-caramel)]">
+                <p className="mb-2 text-center px-2 text-[11px] font-bold uppercase tracking-wide text-[var(--color-caramel)]">
                   Години
                 </p>
 
@@ -181,7 +181,7 @@ export default function TimeSelect({
                           className={cn(
                             "flex h-10 w-full items-center justify-center rounded-2xl text-sm font-semibold transition-all",
                             active
-                              ? "bg-[var(--color-ink)] text-white shadow-[var(--shadow-button)]"
+                              ? "bg-[var(--color-ink)] text-white "
                               : "text-[var(--color-ink)] hover:bg-[var(--color-cream)]",
                           )}
                         >
@@ -196,7 +196,7 @@ export default function TimeSelect({
               <div className="mx-2 w-px bg-[var(--color-cream)]" />
 
               <div>
-                <p className="mb-2 px-2 text-[11px] font-bold uppercase tracking-wide text-[var(--color-caramel)]">
+                <p className="mb-2 text-center px-2 text-[11px] font-bold uppercase tracking-wide text-[var(--color-caramel)]">
                   Хвилини
                 </p>
 
@@ -214,7 +214,7 @@ export default function TimeSelect({
                           className={cn(
                             "flex h-10 w-full items-center justify-center rounded-2xl text-sm font-semibold transition-all",
                             active
-                              ? "bg-[var(--color-ink)] text-white shadow-[var(--shadow-button)]"
+                              ? "bg-[var(--color-ink)] text-white"
                               : "text-[var(--color-ink)] hover:bg-[var(--color-cream)]",
                           )}
                         >
@@ -228,29 +228,29 @@ export default function TimeSelect({
             </div>
 
             <div className="border-t border-[var(--color-cream)] bg-[var(--color-cream)]/60 p-4">
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={handleClose}
-                  className="flex-1 rounded-2xl border border-[var(--color-cream)] bg-white py-2.5 text-sm font-semibold text-[var(--color-ink)] transition hover:bg-[var(--color-cream)] active:scale-[0.98]"
-                >
-                  Скасувати
-                </button>
+<div className="flex w-full gap-3">
+  <button
+    type="button"
+    onClick={handleClose}
+    className="flex-1 inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
+  >
+    Скасувати
+  </button>
 
-                <button
-                  type="button"
-                  onClick={handleDone}
-                  disabled={!isChanged || submitting}
-                  className={cn(
-                    "flex-1 rounded-2xl py-2.5 text-sm font-bold transition-all duration-200",
-                    isChanged && !submitting
-                      ? "bg-[var(--color-forest)] text-white hover:bg-[var(--color-forest-dark)] active:scale-[0.97]"
-                      : "cursor-not-allowed bg-[var(--color-cream)] text-[var(--color-caramel)]",
-                  )}
-                >
-                  {submitting ? "Збереження..." : "Готово"}
-                </button>
-              </div>
+  <button
+    type="button"
+    onClick={handleDone}
+    disabled={!isChanged || submitting}
+    className={cn(
+      "flex-1 inline-flex h-11 items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-bold active:scale-[0.98]",
+      isChanged && !submitting
+        ? "bg-gradient-to-r from-[#8fa88a] to-[#6f8c69] text-white active:scale-[0.97]"
+        : "cursor-not-allowed border-[var(--border-soft)] bg-[var(--color-cream)]/40 text-[var(--color-caramel)]/60 shadow-none"
+    )}
+  >
+    {submitting ? "Збереження..." : "Готово"}
+  </button>
+</div>
             </div>
           </div>
         </div>

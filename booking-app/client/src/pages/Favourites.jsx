@@ -136,8 +136,9 @@ export default function Favourites() {
     return <FavouritesSkeleton />;
   }
 
-  if (!favourites || favourites.length === 0) {
-    return (
+if (!favourites || favourites.length === 0) {
+  return (
+    <div className="min-h-screen pb-[calc(env(safe-area-inset-bottom)+68px)] sm:pb-0">
       <div className="mx-auto max-w-6xl px-2.5 pb-4 pt-0 sm:px-4 sm:pb-8 sm:pt-14 lg:pt-16">
         <div className="space-y-3 px-0 pt-2 sm:space-y-5 sm:pt-8 lg:pt-6">
           <section className="overflow-hidden rounded-[24px] border border-[var(--color-mist)] bg-white shadow-[var(--shadow-soft)] sm:rounded-3xl">
@@ -145,7 +146,7 @@ export default function Favourites() {
 
             <div className="px-4 pb-7 pt-7 sm:px-6 sm:pb-4 sm:pt-5 lg:px-8 lg:pt-6">
               <div className="mb-5 space-y-3 sm:mb-4 sm:space-y-2 lg:mb-5">
-                <div className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-[var(--color-pending-bg)] px-3 py-1 sm:px-4 sm:py-1.5">
+                <div className="hidden items-center gap-1.5 rounded-full bg-[var(--color-pending-bg)] px-3 py-1 sm:inline-flex sm:px-4 sm:py-1.5">
                   <Sparkles className="h-3.5 w-3.5 text-[var(--color-forest)] sm:h-4 sm:w-4" />
                   <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--color-forest)] sm:text-xs sm:tracking-[0.22em]">
                     Збережені студії
@@ -153,45 +154,62 @@ export default function Favourites() {
                 </div>
 
                 <h1 className="max-w-full !text-[34px] font-black leading-tight tracking-[-0.03em] text-[var(--color-ink)] sm:max-w-none sm:!text-5xl lg:!text-5xl">
-                  Ваші <span className="text-[var(--color-caramel)]">улюблені</span>
+                  Ваші{" "}
+                  <span className="text-[var(--color-caramel)]">
+                    улюблені
+                  </span>
                 </h1>
 
                 <p className="max-w-2xl text-sm leading-6 text-[color:var(--color-caramel)]/85 sm:text-base sm:leading-7">
-                  Тут з’являться студії, які ти додаси в обране. Зберігай цікаві
-                  варіанти та повертайся до них у будь-який момент.
+                  Тут з’являться студії, які ти додаси в обране. Зберігай
+                  цікаві варіанти та повертайся до них у будь-який момент.
                 </p>
-              </div>
-
-              <div className="rounded-3xl border border-[var(--color-mist)] bg-white p-8 shadow-[var(--shadow-soft)] sm:p-10">
-                <div className="mx-auto max-w-xl text-center">
-                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-[20px] border border-[var(--color-mist)] bg-[var(--color-cream)]">
-                    <Heart className="h-7 w-7 text-[var(--color-danger)]" />
-                  </div>
-
-                  <h2 className="mt-4 text-xl font-semibold tracking-tight text-[var(--color-ink)]">
-                    Поки що обране порожнє
-                  </h2>
-
-                  <p className="mt-2 text-sm text-[color:var(--color-caramel)]/85">
-                    Додай кілька студій до улюблених, щоб швидко знаходити їх і
-                    записуватись без повторного пошуку.
-                  </p>
-
-                  <Link
-                    to="/"
-                    className="mt-6 inline-flex items-center justify-center gap-2 rounded-[18px] bg-[var(--color-forest)] px-5 py-3 text-sm font-bold text-white shadow-[var(--shadow-button)] transition-all duration-200 hover:bg-[var(--color-forest-dark)] hover:shadow-md active:scale-95"
-                  >
-                    Перейти до салонів
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </div>
               </div>
             </div>
           </section>
+
+<div className="rounded-[28px] border-2 border-dashed border-[var(--color-caramel)]/40 bg-[var(--color-cream)] p-8 text-center sm:p-10">
+  <div className="mx-auto max-w-xl">
+    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-[22px] bg-white/70">
+      <Heart className="h-8 w-8 text-[var(--color-caramel)]" />
+    </div>
+
+    <h3 className="text-xl font-black tracking-tight text-[var(--color-caramel)] sm:text-2xl">
+      Поки що обране порожнє
+    </h3>
+
+    <p className="mt-2 text-sm leading-6 text-[var(--color-caramel)]/80 sm:text-[15px]">
+      Додай кілька студій до улюблених, щоб швидко знаходити їх і
+      записуватись без повторного пошуку.
+    </p>
+
+<Link
+  to="/"
+  className={cn(
+    "mt-6 inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold text-white",
+
+    // 👉 тепер через nude-green
+    "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
+
+    "transition-all duration-200 active:scale-[0.98]",
+
+    // 👉 hover
+    "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]",
+
+    // 👉 тінь (під новий зелений)
+    "shadow-[0_10px_24px_rgba(var(--color-nude-green-600),0.22)] hover:shadow-[0_14px_30px_rgba(var(--color-nude-green-600),0.28)]"
+  )}
+>
+  Перейти до салонів
+  <ArrowRight className="h-4 w-4" />
+</Link>
+  </div>
+</div>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
   return (
     <div className="min-h-screen pb-[calc(env(safe-area-inset-bottom)+68px)] sm:pb-0">
@@ -223,8 +241,9 @@ export default function Favourites() {
             </div>
           </section>
 
-          <div className="grid gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
-            {favourites.map((s) => {
+         <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
+  {favourites.map((s) => {
+       
               const logoUrl = toPublicUrl(s.logoUrl);
               const name = safeText(s.name) || "Студія";
               const city = safeText(s.city);

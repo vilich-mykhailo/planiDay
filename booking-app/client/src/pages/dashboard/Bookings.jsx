@@ -860,7 +860,7 @@ export default function Bookings() {
   }
 
   return (
-    <div className="min-h-screen ">
+    <div className="h-full">
       <div className="mx-auto max-w-6xl space-y-6">
         <div className="relative mb-3 overflow-hidden rounded-3xl border border-[var(--color-cream)] bg-white p-3.5 shadow-[0_4px_24px_-4px_rgba(27,27,27,0.10)] sm:p-6">
           <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[var(--color-forest)] via-[var(--color-forest)] to-[var(--color-ink)] opacity-70" />
@@ -971,17 +971,21 @@ export default function Bookings() {
               title="Порожньо"
               subtitle="У цій вкладці записів немає"
             >
-              <div className="rounded-2xl border-2 border-dashed border-[var(--color-cream)] bg-[var(--color-sand)] p-8 text-center">
-                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-cream)]">
-                  <CalendarDays className="h-6 w-6 text-[var(--color-forest)]" />
-                </div>
-                <p className="text-sm text-[var(--color-ink)]">
-                  Немає записів у цій вкладці
-                </p>
-                <p className="mt-1 text-xs text-[var(--color-caramel)]">
-                  Змініть фільтр або дочекайтесь нових бронювань
-                </p>
-              </div>
+<div className="rounded-2xl border-2 border-dashed border-[var(--color-caramel)]/40 bg-[var(--color-cream)] p-6 text-center sm:p-8">
+  <div className="mb-3 flex items-center justify-center">
+    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/70">
+      <CalendarDays className="h-6 w-6 text-[var(--color-caramel)]" />
+    </div>
+  </div>
+
+  <p className="text-sm font-medium text-[var(--color-caramel)]">
+    Немає записів у цій вкладці
+  </p>
+
+  <p className="mt-1 text-xs text-[var(--color-caramel)]/80">
+    Змініть фільтр або дочекайтесь нових бронювань
+  </p>
+</div>
             </SectionCard>
           ) : (
             <div className="space-y-2">
@@ -1431,7 +1435,7 @@ export default function Bookings() {
                     alert(e.message || "Не вдалося видалити запис");
                   }
                 }}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-danger)] px-4 py-2.5 text-sm font-bold text-white shadow-[0_14px_34px_rgba(213,92,82,0.28)] transition-all duration-200 hover:bg-[var(--color-danger-dark)] active:scale-[0.98] sm:w-auto"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-danger)] px-4 py-2.5 text-sm font-bold text-white  hover:bg-[var(--color-danger-dark)] active:scale-[0.98] sm:w-auto"
               >
                 <Trash2 className="h-4 w-4" />
                 Так, видалити
@@ -1498,7 +1502,7 @@ export default function Bookings() {
                     alert(e.message || "Не вдалося скасувати запис");
                   }
                 }}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-danger)] px-4 py-2.5 text-sm font-bold text-white shadow-[0_14px_34px_rgba(213,92,82,0.28)] transition-all duration-200 hover:bg-[var(--color-danger-dark)] active:scale-[0.98] sm:w-auto"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-danger)] px-4 py-2.5 text-sm font-bold text-white hover:bg-[var(--color-danger-dark)] active:scale-[0.98] sm:w-auto"
               >
                 <XCircle className="h-4 w-4" />
                 Так, скасувати
@@ -1812,10 +1816,17 @@ export default function Bookings() {
   disabled={!phone}
   className={cn(
     "inline-flex h-12 items-center justify-center gap-2 rounded-[22px] px-4 text-sm font-bold text-white transition-all duration-200 active:scale-[0.98]",
-    
+
     phone
-      ? "bg-gradient-to-r from-[#9fb29a] to-[#7f9a78] hover:from-[#8fa88a] hover:to-[#6f8c69]"
-      : "cursor-not-allowed bg-[var(--color-cream)] text-[var(--color-caramel)] hover:from-[var(--color-cream)] hover:to-[var(--color-cream)]"
+      ? [
+          // 👉 gradient через твої var
+          "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
+
+          // 👉 hover
+          "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]",
+
+        ].join(" ")
+      : "cursor-not-allowed bg-[var(--color-cream)] text-[var(--color-caramel)] shadow-none hover:from-[var(--color-cream)] hover:to-[var(--color-cream)]"
   )}
 >
   <Phone className="h-4 w-4" />
@@ -2134,8 +2145,14 @@ export default function Bookings() {
   }}
   className={cn(
     "inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold text-white transition-all duration-200 active:scale-[0.98]",
-    "bg-gradient-to-r from-[#9fb29a] to-[#7f9a78]",
-    "hover:from-[#8fa88a] hover:to-[#6f8c69]",
+
+    // 👉 gradient через nude-green
+    "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
+
+    // 👉 hover
+    "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]",
+
+    // 👉 ширина
     actionsCount > 1 ? "w-full" : "min-w-[160px]"
   )}
 >

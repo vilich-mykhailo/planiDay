@@ -247,15 +247,42 @@ input:-webkit-autofill:focus {
 
 :root {
   --color-primary: #8f7647;
-  --color-primary-buttom: #41351f;
+  --color-primary-buttom: #2e2e2e;
 --border-hover-primary: #b3b3b3;
 --border-primary:  #dfdfdf;
 --color-cream: #f7f5ef;
 --color-cream-secondary: #f7f6f3;
+--color-cream-secon: #f7f6f4;
 --color-caramel: #686868;
 --color-buttom-ok: #3a7027;
 
  --color-white: #ffffff;
+
+
+/* 👉 SAVE BUTTON (nude green, трохи насичений) */
+--color-nude-green-500: 72, 140, 100;
+--color-nude-green-600: 40, 105, 75;
+
+/* hover */
+--color-nude-green-500-hover: 62, 130, 92;
+--color-nude-green-600-hover: 32, 95, 68;
+
+/* opacity */
+--color-nude-green-opacity: 0.95;
+
+
+
+
+  /* трохи темніше ніж було */
+  --color-nude-emerald-600: 13, 148, 112;  /* було 16,185,129 */
+  --color-nude-emerald-700: 4, 120, 87;    /* було 5,150,105 */
+
+  /* opacity залишаємо */
+  --color-nude-emerald-opacity-soft: 0.78;
+  --color-nude-emerald-opacity-hover: 0.9;
+
+  /* тінь */
+  --color-nude-emerald-shadow-opacity: 0.16;
 
   /* shadow */
   --shadow-card: 0 14px 35px rgba(0, 0, 0, 0.10);

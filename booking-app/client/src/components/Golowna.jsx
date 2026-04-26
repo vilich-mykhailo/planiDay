@@ -836,9 +836,21 @@ const liveStatusUi = useMemo(() => {
                 ))}
               </ul>
             ) : upcomingAppointments.length === 0 ? (
-              <div className="ui-empty-panel mt-6 p-8 text-center text-sm">
-                Немає запланованих записів
-              </div>
+<div className="mt-6 rounded-2xl border-2 border-dashed border-[var(--color-caramel)]/40 bg-[var(--color-cream)] p-6 text-center sm:p-8">
+  <div className="mb-3 flex items-center justify-center">
+    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/70">
+      <CalendarDays className="h-7 w-7 text-[var(--color-caramel)]" />
+    </div>
+  </div>
+
+  <p className="text-sm font-medium text-[var(--color-caramel)]">
+    Немає запланованих записів
+  </p>
+
+  <p className="mt-1 text-xs text-[var(--color-caramel)]/80">
+    Коли клієнти почнуть записуватись, тут з’являться всі бронювання
+  </p>
+</div>
             ) : (
               <>
                 <ul className="mt-6 space-y-3">
@@ -1143,13 +1155,16 @@ const liveStatusUi = useMemo(() => {
       alert(e.message || "Не вдалося підтвердити запис");
     }
   }}
-  className={cn(
-    "mt-5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold text-white",
-    "bg-gradient-to-r from-[#9fb29a] to-[#7f9a78]",
-    "shadow-[0_10px_24px_rgba(127,154,120,0.25)]",
-    "transition-all duration-200 active:scale-[0.98]",
-    "hover:from-[#8fa88a] hover:to-[#6f8c69]"
-  )}
+className={cn(
+  "mt-5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold text-white",
+  "transition-all duration-200 active:scale-[0.98]",
+
+  // 👉 nude-green
+  "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
+
+  // 👉 hover
+  "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]"
+)}
 >
   <Check className="h-4 w-4" />
   Підтвердити запис
@@ -1173,7 +1188,7 @@ const liveStatusUi = useMemo(() => {
                             setCopiedPhone(false);
                             setShowDetailsScrollHint?.(true);
                           }}
-                          className="ui-button-secondary inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold shadow-sm transition-all duration-200 active:scale-[0.98]"
+                          className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
                         >
                           Закрити
                         </button>
@@ -1244,7 +1259,7 @@ const liveStatusUi = useMemo(() => {
                   alert(e.message || "Не вдалося скасувати запис");
                 }
               }}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-danger)] px-4 py-2.5 text-sm font-bold text-white shadow-[0_14px_34px_rgba(213,92,82,0.28)] transition-all duration-200 hover:bg-[var(--color-danger-dark)] active:scale-[0.98] sm:w-auto"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-danger)] px-4 py-2.5 text-sm font-bold text-white hover:bg-[var(--color-danger-dark)] active:scale-[0.98] sm:w-auto"
             >
               <XCircle className="h-4 w-4" />
               Так, скасувати

@@ -189,9 +189,15 @@ function NotificationCard({ item, onRead }) {
 <button
   type="button"
   onClick={() => onRead(item.id)}
-  className="inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-bold text-white transition-all duration-200 active:scale-[0.98]
-             bg-gradient-to-r from-[#9fb29a] to-[#7f9a78]
-             hover:from-[#8fa88a] hover:to-[#6f8c69]"
+  className={cn(
+    "inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-bold text-white active:scale-[0.98]",
+
+    // 👉 gradient через nude-green
+    "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
+
+    // 👉 hover
+    "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]"
+  )}
 >
   <Check className="h-3.5 w-3.5" />
   Прочитати
@@ -364,7 +370,7 @@ const liveStatusUi = useMemo(() => {
   };
 
   return (
-    <div className="min-h-screen space-y-6">
+    <div className="h-full space-y-6">
       <div className="relative overflow-hidden rounded-3xl border border-[var(--color-cream)] bg-white p-4 shadow-[var(--shadow-soft)] sm:p-6">
         <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[var(--color-forest)] via-[var(--color-caramel)] to-[var(--color-ink)] opacity-70" />
 
@@ -435,18 +441,21 @@ const liveStatusUi = useMemo(() => {
             ))}
           </div>
         ) : notifications.length === 0 ? (
-          <div className="rounded-2xl border-2 border-dashed border-[var(--color-cream)] bg-[var(--color-cream)]/60 p-8 text-center">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-white">
-              <Bell className="h-6 w-6 text-[var(--color-caramel)]" />
-            </div>
+<div className="rounded-2xl border-2 border-dashed border-[var(--color-caramel)]/40 bg-[var(--color-cream)] p-6 text-center sm:p-8">
+  <div className="mb-3 flex items-center justify-center">
+    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/70">
+      <Bell className="h-6 w-6 text-[var(--color-caramel)]" />
+    </div>
+  </div>
 
-            <p className="text-sm text-[var(--color-caramel)]">
-              Нових повідомлень немає
-            </p>
-            <p className="mt-1 text-xs text-[var(--color-caramel)]/80">
-              Коли з’являться нові події, вони будуть тут.
-            </p>
-          </div>
+  <p className="text-sm font-medium text-[var(--color-caramel)]">
+    Нових повідомлень немає
+  </p>
+
+<p className="mt-1 text-xs text-[var(--color-caramel)]/80">
+  Щойно з’являться нові події, вони будуть доступні тут.
+</p>
+</div>
         ) : (
           <>
             <div className="space-y-3">
