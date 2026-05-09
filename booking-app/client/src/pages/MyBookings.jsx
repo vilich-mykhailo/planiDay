@@ -13,8 +13,9 @@ import {
   CheckCheck,
   Banknote,
   X,
-  Check,
+    AlertTriangle,
   XCircle,
+  Check,
   Clock,
   RefreshCw,
   ChevronLeft,
@@ -1208,57 +1209,99 @@ useEffect(() => {
     );
   })()}
 
-      <Modal
-        open={cancelConfirmId != null}
-        onClose={() => setCancelConfirmId(null)}
-        title="Скасування запису"
-        subtitle="Запис буде позначено як скасований."
-        size="sm"
-        footer={
-          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Button variant="secondary" onClick={() => setCancelConfirmId(null)}>
-              Назад
-            </Button>
-
-            <Button
-              variant="danger"
-              onClick={async () => {
-                try {
-                  const canceledId = cancelConfirmId;
-                  await cancelBooking(canceledId);
-
-                  queryClient.setQueryData(["client-bookings"], (old = []) =>
-                    old.map((booking) =>
-                      booking.id === canceledId
-                        ? {
-                            ...booking,
-                            status: "canceled",
-                            canceledBy: booking.canceledBy || "client",
-                          }
-                        : booking,
-                    ),
-                  );
-
-                  setCancelConfirmId(null);
-
-                  if (activeBookingId === canceledId) {
-                    setActiveBookingId(null);
-                    setCopiedId(null);
-                  }
-                } catch (e) {
-                  alert(e.message || "Не вдалося скасувати запис");
-                }
-              }}
-            >
-              Так, скасувати
-            </Button>
-          </div>
-        }
+<Modal
+  open={cancelConfirmId != null}
+  onClose={() => setCancelConfirmId(null)}
+  size="sm"
+  footer={
+    <div className="flex justify-end gap-2">
+      <Button
+        variant="secondary"
+        onClick={() => setCancelConfirmId(null)}
+        className="w-full sm:w-auto"
       >
-        <div className="text-sm text-[var(--color-caramel)]">
-          Підтвердити скасування запису?
+        Назад
+      </Button>
+
+      <button
+        type="button"
+        onClick={async () => {
+          try {
+            const canceledId = cancelConfirmId;
+
+            await cancelBooking(canceledId);
+
+            queryClient.setQueryData(["client-bookings"], (old = []) =>
+              old.map((booking) =>
+                booking.id === canceledId
+                  ? {
+                      ...booking,
+                      status: "canceled",
+                      canceledBy: booking.canceledBy || "client",
+                    }
+                  : booking,
+              ),
+            );
+
+            setCancelConfirmId(null);
+
+            if (activeBookingId === canceledId) {
+              setActiveBookingId(null);
+              setCopiedId(null);
+            }
+          } catch (e) {
+            alert(e.message || "Не вдалося скасувати запис");
+          }
+        }}
+        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-danger)] px-4 py-2.5 text-sm font-bold text-white transition-all duration-200 hover:bg-[var(--color-danger-dark)] active:scale-[0.98] sm:w-auto"
+      >
+        <XCircle className="h-4 w-4" />
+        Так, скасувати
+      </button>
+    </div>
+  }
+>
+  <div className="space-y-4">
+    <div className="flex justify-center">
+      <div className="relative">
+        <div className="absolute inset-0 rounded-full bg-[var(--color-danger)]/40 blur-2xl" />
+
+        <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--color-windows-cancel)] text-white shadow-lg">
+          <XCircle className="h-7 w-7" />
         </div>
-      </Modal>
+      </div>
+    </div>
+
+    <div className="text-center">
+      <h3 className="text-xl font-black tracking-tight text-[var(--color-ink)]">
+        Скасувати запис?
+      </h3>
+
+      <p className="mt-2 text-sm leading-6 text-[var(--color-caramel)]">
+        Запис залишиться в системі, але буде позначений як скасований і
+        більше не вважатиметься активним.
+      </p>
+    </div>
+
+    <div className="rounded-2xl border border-[var(--color-cream)] bg-[var(--color-cream)] p-3.5">
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-[var(--color-delete)] shadow-sm">
+          <AlertTriangle className="h-4.5 w-4.5" />
+        </div>
+
+        <div className="min-w-0">
+          <p className="text-sm font-bold text-[var(--color-ink)]">
+            Після скасування
+          </p>
+
+          <p className="mt-1 text-xs leading-5 text-[var(--color-ink)]">
+            Студія побачить статус скасованого запису.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</Modal>
     </div>
   );
 }

@@ -14,8 +14,9 @@ import {
   ArrowLeft,
   Sparkles,
   ChevronDown,
-  Banknote ,
+  Banknote,
   Minus,
+  AlertTriangle,
 } from "lucide-react";
 
 const UNCATEGORIZED_ID = "__uncategorized__";
@@ -371,14 +372,6 @@ function Modal({
     size === "lg" && "sm:max-w-3xl",
   )}
 >
-<button
-  type="button"
-  onClick={onClose}
-  className="absolute left-4 top-4 z-30 inline-flex items-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white/90 px-3 py-2 text-sm font-bold text-[var(--color-ink)] shadow-sm backdrop-blur transition-all hover:bg-[var(--color-cream)] active:scale-[0.98]"
->
-  <ArrowLeft className="h-4 w-4" />
-  Назад
-</button>
 
   <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6">
     {children}
@@ -588,7 +581,7 @@ function CategoryFilters({ value, onChange, categories }) {
 
   return (
     <div className="mb-6">
-      <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+      <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:justify-center sm:overflow-visible sm:px-0">
         {items.map((item) => {
           const active = String(value) === String(item.id);
 
@@ -658,7 +651,12 @@ export default function Services() {
 
   const servicesLoading = servicesQuery.isLoading && !servicesQuery.data;
   const mastersLoading = mastersQuery.isLoading && !mastersQuery.data;
-
+const [deleteConfirm, setDeleteConfirm] = useState({
+  open: false,
+  type: null,
+  catId: null,
+  serviceId: null,
+});
   const [categoryModal, setCategoryModal] = useState({
     open: false,
     catId: null,
@@ -792,23 +790,27 @@ export default function Services() {
     }
   }
 
-  async function deleteCategory(catId) {
-    if (catId === UNCATEGORIZED_ID || !studio?.id) return;
+async function deleteCategory(catId) {
+  if (catId === UNCATEGORIZED_ID || !studio?.id) return;
 
-    try {
-      const token = localStorage.getItem("token");
+  try {
+    const token = localStorage.getItem("token");
 
-      await api(`/media/studio/${studio.id}/categories/${catId}`, {
-        method: "DELETE",
-        token,
-      });
+    await api(`/media/studio/${studio.id}/categories/${catId}`, {
+      method: "DELETE",
+      token,
+    });
 
-      await refreshServices();
-    } catch (e) {
-      console.error(e);
-      alert(e.message || "Не вдалося видалити категорію");
+    await refreshServices();
+
+    if (String(activeCategoryFilter) === String(catId)) {
+      setActiveCategoryFilter("all");
     }
+  } catch (e) {
+    console.error(e);
+    alert(e.message || "Не вдалося видалити категорію");
   }
+}
 
   function openAddService(catId) {
     setServiceModal({ open: true, mode: "add", catId, serviceId: null });
@@ -946,12 +948,22 @@ export default function Services() {
             <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[var(--color-forest)] via-[var(--color-forest)] to-[var(--color-ink)] opacity-70" />
 
             <div className="relative">
-              <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-[var(--color-cream)] px-3 py-1.5">
-                <Sparkles className="h-4 w-4 text-[var(--color-forest)]" />
-                <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-ink)]">
-                  Меню студії
-                </span>
-              </div>
+<div
+  className={cn(
+    "mb-3 inline-flex items-center gap-2 rounded-[20px] border px-3.5 py-2",
+    "transition-all duration-200",
+    "border-[var(--color-sand)]",
+    "bg-gradient-to-br from-[var(--color-pending-bg)] via-white to-[var(--color-cream)]",
+    "shadow-[0_10px_30px_rgba(212,186,140,0.10)]",
+    "backdrop-blur-sm",
+  )}
+>
+  <Sparkles className="h-4 w-4 text-[var(--color-forest)]" />
+
+  <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-ink)]">
+    Меню студії
+  </span>
+</div>
 
               <h1 className="text-3xl font-black tracking-tight text-[var(--color-ink)] sm:text-4xl">
                 Послуги
@@ -1054,7 +1066,14 @@ export default function Services() {
 
                               <IconButton
                                 variant="danger"
-                                onClick={() => deleteCategory(cat.id)}
+                                onClick={() =>
+  setDeleteConfirm({
+    open: true,
+    type: "category",
+    catId: cat.id,
+    serviceId: null,
+  })
+}
                                 title="Видалити"
                                 className="h-[42px] w-[42px] shrink-0"
                               >
@@ -1074,14 +1093,21 @@ export default function Services() {
                             <Pencil className="h-4 w-4" />
                           </IconButton>
 
-                          <IconButton
-                            variant="danger"
-                            onClick={() => deleteCategory(cat.id)}
-                            title="Видалити"
-                            className="h-[42px] w-[42px] shrink-0"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </IconButton>
+<IconButton
+  variant="danger"
+  onClick={() =>
+    setDeleteConfirm({
+      open: true,
+      type: "category",
+      catId: cat.id,
+      serviceId: null,
+    })
+  }
+  title="Видалити"
+  className="h-[42px] w-[42px] shrink-0"
+>
+  <Trash2 className="h-4 w-4" />
+</IconButton>
                         </>
                       ) : null,
                       mobileBottom: (
@@ -1167,14 +1193,21 @@ export default function Services() {
                                   <Pencil className="h-4 w-4" />
                                 </IconButton>
 
-                                <IconButton
-                                  variant="danger"
-                                  onClick={() => deleteService(cat.id, srv.id)}
-                                  title="Видалити"
-                                  className="h-11 w-11"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </IconButton>
+<IconButton
+  variant="danger"
+  onClick={() =>
+    setDeleteConfirm({
+      open: true,
+      type: "service",
+      catId: cat.id,
+      serviceId: srv.id,
+    })
+  }
+  title="Видалити"
+  className="h-11 w-11"
+>
+  <Trash2 className="h-4 w-4" />
+</IconButton>
                               </div>
                             </div>
                           </div>
@@ -1211,7 +1244,108 @@ export default function Services() {
           </div>
         )}
       </div>
+<Modal
+  open={deleteConfirm.open}
+  onClose={() =>
+    setDeleteConfirm({
+      open: false,
+      type: null,
+      catId: null,
+      serviceId: null,
+    })
+  }
+  size="sm"
+  footer={
+    <div className="flex justify-end gap-2">
+      <Button
+        variant="secondary"
+        onClick={() =>
+          setDeleteConfirm({
+            open: false,
+            type: null,
+            catId: null,
+            serviceId: null,
+          })
+        }
+        className="w-full sm:w-auto"
+      >
+        Назад
+      </Button>
 
+      <button
+        type="button"
+        onClick={async () => {
+          try {
+            if (deleteConfirm.type === "category") {
+              await deleteCategory(deleteConfirm.catId);
+            }
+
+            if (deleteConfirm.type === "service") {
+              await deleteService(deleteConfirm.catId, deleteConfirm.serviceId);
+            }
+
+            setDeleteConfirm({
+              open: false,
+              type: null,
+              catId: null,
+              serviceId: null,
+            });
+          } catch (e) {
+            alert(e.message || "Не вдалося видалити");
+          }
+        }}
+        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-danger)] px-4 py-2.5 text-sm font-bold text-white transition-all duration-200 hover:bg-[var(--color-danger-dark)] active:scale-[0.98] sm:w-auto"
+      >
+        <Trash2 className="h-4 w-4" />
+        Так, видалити
+      </button>
+    </div>
+  }
+>
+  <div className="space-y-4">
+    <div className="flex justify-center">
+      <div className="relative">
+        <div className="absolute inset-0 rounded-full bg-[var(--color-danger-bg)]/90 blur-2xl" />
+
+        <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--color-danger)] text-white shadow-[0_16px_36px_rgba(213,92,82,0.24)]">
+          <Trash2 className="h-7 w-7" />
+        </div>
+      </div>
+    </div>
+
+    <div className="text-center">
+      <h3 className="text-xl font-black tracking-tight text-[var(--color-ink)]">
+        {deleteConfirm.type === "category"
+          ? "Видалити категорію?"
+          : "Видалити послугу?"}
+      </h3>
+
+      <p className="mt-2 text-sm leading-6 text-[var(--color-caramel)]">
+        {deleteConfirm.type === "category"
+          ? "Категорія буде видалена зі списку послуг студії."
+          : "Послуга буде видалена зі списку та більше не відображатиметься клієнтам."}
+      </p>
+    </div>
+
+    <div className="rounded-2xl bg-[var(--color-danger-bg)] p-3.5">
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-[var(--color-danger-dark)] shadow-sm">
+          <AlertTriangle className="h-4.5 w-4.5" />
+        </div>
+
+        <div className="min-w-0">
+          <p className="text-sm font-bold text-[var(--color-danger-dark)]">
+            Увага
+          </p>
+
+          <p className="mt-1 text-xs leading-5 text-[var(--color-ink)]">
+            Видалені дані не можна буде повернути назад.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</Modal>
 <Modal
   open={categoryModal.open}
   onClose={() => setCategoryModal({ open: false, catId: null })}

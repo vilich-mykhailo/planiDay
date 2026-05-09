@@ -10,6 +10,7 @@ import {
   Camera,
   UserRound,
   CalendarDays,
+  AlertTriangle,
   ChevronDown,
   ChevronUp,
   ChevronLeft,
@@ -252,38 +253,7 @@ function Modal({
         )}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* 👉 HEADER */}
-        <div className="relative shrink-0 border-b border-[var(--color-cream)] px-6 py-6">
-          {/* Назад */}
-          <button
-            type="button"
-            onClick={onClose}
-            className="absolute left-4 top-4 inline-flex h-10 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Назад
-          </button>
 
-          {/* Центр */}
-          <div className="mx-auto flex max-w-md flex-col items-center text-center">
-            {/* Іконка */}
-            <div className="mb-5 mt-10 flex h-16 w-16 items-center justify-center rounded-[18px] bg-[var(--color-ink)] shadow-[0_14px_30px_rgba(27,27,27,0.20)]">
-              {icon}
-            </div>
-
-            {/* Title */}
-            <h2 className="text-xl font-black tracking-tight text-[var(--color-ink)]">
-              {title}
-            </h2>
-
-            {/* Subtitle */}
-            {subtitle && (
-              <p className="mt-3 text-sm text-[var(--color-caramel)]">
-                {subtitle}
-              </p>
-            )}
-          </div>
-        </div>
 
         {/* 👉 BODY */}
         <div
@@ -446,6 +416,10 @@ export default function Masters() {
   const [masterExceptions, setMasterExceptions] = useState([]);
   const [exceptionsLoading, setExceptionsLoading] = useState(false);
   const [expandedExceptions, setExpandedExceptions] = useState({});
+const [deleteConfirm, setDeleteConfirm] = useState({
+  open: false,
+  master: null,
+});
 
   async function syncMastersRelatedQueries() {
     if (!studioId) return;
@@ -1085,12 +1059,22 @@ const neutralButtonClass =
           <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[var(--color-forest)] via-[var(--color-forest)] to-[var(--color-ink)] opacity-70" />
 
           <div className="relative">
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-[var(--color-cream)] px-3 py-1.5">
-              <Sparkles className="h-4 w-4 text-[var(--color-forest)]" />
-              <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-ink)]">
-                Команда студії
-              </span>
-            </div>
+<div
+  className={cn(
+    "mb-3 inline-flex items-center gap-2 rounded-[20px] border px-3.5 py-2",
+    "transition-all duration-200",
+    "border-[var(--color-sand)]",
+    "bg-gradient-to-br from-[var(--color-pending-bg)] via-white to-[var(--color-cream)]",
+    "shadow-[0_10px_30px_rgba(212,186,140,0.10)]",
+    "backdrop-blur-sm",
+  )}
+>
+  <Sparkles className="h-4 w-4 text-[var(--color-forest)]" />
+
+  <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-ink)]">
+    Команда студії
+  </span>
+</div>
 
             <h1 className="text-3xl font-black tracking-tight text-[var(--color-ink)] sm:text-4xl">
               Майстри
@@ -1333,7 +1317,7 @@ const neutralButtonClass =
 </IconButton>
 
 <IconButton
-  onClick={() => deleteMaster(m)}
+  onClick={() => setDeleteConfirm({ open: true, master: m })}
   title="Видалити"
   className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--border-soft)] bg-white p-0 text-[#c97a72] shadow-sm transition-all duration-200 hover:bg-[rgba(201,122,114,0.10)] active:scale-[0.98]"
 >
@@ -1348,6 +1332,77 @@ const neutralButtonClass =
           )}
         </SectionCard>
 
+<Modal
+  open={deleteConfirm.open}
+  onClose={() => setDeleteConfirm({ open: false, master: null })}
+  size="sm"
+  footer={
+    <div className="flex justify-end gap-2">
+      <Button
+        onClick={() => setDeleteConfirm({ open: false, master: null })}
+        className="w-full rounded-2xl border border-[var(--border-soft)] bg-white px-4 py-2.5 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98] sm:w-auto"
+      >
+        Назад
+      </Button>
+
+      <button
+        type="button"
+        onClick={async () => {
+          try {
+            await deleteMaster(deleteConfirm.master);
+            setDeleteConfirm({ open: false, master: null });
+          } catch (e) {
+            alert(e.message || "Не вдалося видалити майстра");
+          }
+        }}
+        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-danger)] px-4 py-2.5 text-sm font-bold text-white transition-all duration-200 hover:bg-[var(--color-danger-dark)] active:scale-[0.98] sm:w-auto"
+      >
+        <Trash2 className="h-4 w-4" />
+        Так, видалити
+      </button>
+    </div>
+  }
+>
+  <div className="space-y-4">
+    <div className="flex justify-center">
+      <div className="relative">
+        <div className="absolute inset-0 rounded-full bg-[var(--color-danger-bg)]/90 blur-2xl" />
+
+        <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--color-danger)] text-white shadow-[0_16px_36px_rgba(213,92,82,0.24)]">
+          <Trash2 className="h-7 w-7" />
+        </div>
+      </div>
+    </div>
+
+    <div className="text-center">
+      <h3 className="text-xl font-black tracking-tight text-[var(--color-ink)]">
+        Видалити майстра?
+      </h3>
+
+      <p className="mt-2 text-sm leading-6 text-[var(--color-caramel)]">
+        Майстер буде видалений зі студії та більше не відображатиметься у списку.
+      </p>
+    </div>
+
+    <div className="rounded-2xl bg-[var(--color-danger-bg)] p-3.5">
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-[var(--color-danger-dark)] shadow-sm">
+          <AlertTriangle className="h-4.5 w-4.5" />
+        </div>
+
+        <div className="min-w-0">
+          <p className="text-sm font-bold text-[var(--color-danger-dark)]">
+            Увага
+          </p>
+
+          <p className="mt-1 text-xs leading-5 text-[var(--color-ink)]">
+            Видалені дані не можна буде повернути назад.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</Modal>
 <Modal
   open={Boolean(editMaster)}
   onClose={closeEdit}

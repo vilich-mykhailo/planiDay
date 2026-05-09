@@ -1553,12 +1553,22 @@ function showToast({ type = "success", title, text }) {
             )}
 
             <div className="relative">
-                          <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-[var(--color-cream)] px-3 py-1.5">
-              <Sparkles className="h-4 w-4 text-[var(--color-forest)]" />
-              <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-ink)]">
-               Профіль студії
-              </span>
-            </div>
+<div
+  className={cn(
+    "mb-3 inline-flex items-center gap-2 rounded-[20px] border px-3.5 py-2",
+    "transition-all duration-200",
+    "border-[var(--color-sand)]",
+    "bg-gradient-to-br from-[var(--color-pending-bg)] via-white to-[var(--color-cream)]",
+    "shadow-[0_10px_30px_rgba(212,186,140,0.10)]",
+    "backdrop-blur-sm",
+  )}
+>
+  <Sparkles className="h-4 w-4 text-[var(--color-forest)]" />
+
+  <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-ink)]">
+    Профіль студії
+  </span>
+</div>
 
               <h1 className="text-3xl font-black tracking-tight text-[var(--color-ink)] sm:text-4xl">
                 Профіль студії
@@ -1572,7 +1582,7 @@ function showToast({ type = "success", title, text }) {
 
           <div className="mt-4 rounded-2xl border border-[var(--color-cream)] bg-white px-0 py-2 shadow-sm sm:p-2">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div className="flex justify-center gap-1 overflow-x-auto px-0 sm:gap-2">
+              <div className="flex w-full justify-center gap-1 overflow-x-auto px-0 sm:gap-2 md:justify-center">
                 {[
                   { id: "profile", label: "Профіль" },
                   { id: "location", label: "Локація" },

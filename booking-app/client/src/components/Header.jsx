@@ -26,6 +26,7 @@ import {
   LogOut,
   Menu,
   Bell,
+  UserStar,
   Search,
   X,
   Settings2,
@@ -512,6 +513,11 @@ const newBookingsCount = useMemo(() => {
             label: "Графік роботи",
             icon: <Clock3 className="h-4 w-4" />,
           },
+          {
+            to: "/dashboard/clients",
+            label: "База клієнтів",
+            icon: <UserStar className="h-4 w-4" />,
+          },
         ],
         logout: true,
       };
@@ -532,24 +538,25 @@ const newBookingsCount = useMemo(() => {
     };
   }, [role]);
 
-  const staticRoutes = [
-    "/",
-    "/login",
-    "/register",
-    "/login-owner",
-    "/register-owner",
-    "/profile",
-    "/bookings",
-    "/favourites",
-    "/security-client",
-    "/dashboard",
-    "/dashboard/studio",
-    "/dashboard/services",
-    "/dashboard/schedule",
-    "/dashboard/bookings",
-    "/dashboard/masters",
-    "/dashboard/notifications",
-  ];
+const staticRoutes = [
+  "/",
+  "/login",
+  "/register",
+  "/login-owner",
+  "/register-owner",
+  "/profile",
+  "/bookings",
+  "/favourites",
+  "/security-client",
+  "/dashboard",
+  "/dashboard/studio",
+  "/dashboard/services",
+  "/dashboard/schedule",
+  "/dashboard/bookings",
+  "/dashboard/masters",
+  "/dashboard/notifications",
+  "/dashboard/clients",
+];
 
   const isStudioPublicPage = !staticRoutes.includes(location.pathname);
 

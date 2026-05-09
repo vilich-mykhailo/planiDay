@@ -867,12 +867,22 @@ export default function Bookings() {
 
           <div className="relative flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="relative">
-                                      <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-[var(--color-cream)] px-3 py-1.5">
-              <Sparkles className="h-4 w-4 text-[var(--color-forest)]" />
-              <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-ink)]">
-                 Записи клієнтів
-              </span>
-            </div>
+                                       <div
+    className={cn(
+      "mb-3 inline-flex items-center gap-2 rounded-[20px] border px-3.5 py-2",
+      "transition-all duration-200",
+      "border-[var(--color-sand)]",
+      "bg-gradient-to-br from-[var(--color-pending-bg)] via-white to-[var(--color-cream)]",
+      "shadow-[0_10px_30px_rgba(212,186,140,0.10)]",
+      "backdrop-blur-sm",
+    )}
+  >
+    <Sparkles className="h-4 w-4 text-[var(--color-forest)]" />
+
+    <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-ink)]">
+      Записи клієнтів
+    </span>
+  </div>
 
               <h1 className="text-3xl font-black tracking-tight text-[var(--color-ink)] sm:text-4xl">
                 Записи
@@ -936,24 +946,24 @@ export default function Bookings() {
 </div>
             }
           >
-            <div className="flex flex-wrap items-center gap-2">
-              {[
-                { key: "all", label: "Усі" },
-                { key: "new", label: "Нові" },
-                { key: "confirmed", label: "Підтверджені" },
-                { key: "canceled", label: "Скасовані" },
-                { key: "archive", label: "Архів" },
-              ].map((x) => (
-                <Pill
-                  key={x.key}
-                  active={filter === x.key}
-                  count={filterCounts[x.key] ?? 0}
-                  onClick={() => setFilter(x.key)}
-                >
-                  {x.label}
-                </Pill>
-              ))}
-            </div>
+<div className="flex flex-wrap items-center justify-center gap-2">
+  {[
+    { key: "all", label: "Усі" },
+    { key: "new", label: "Нові" },
+    { key: "archive", label: "Архів" },
+    { key: "confirmed", label: "Підтверджені" },
+    { key: "canceled", label: "Скасовані" },
+  ].map((x) => (
+    <Pill
+      key={x.key}
+      active={filter === x.key}
+      count={filterCounts[x.key] ?? 0}
+      onClick={() => setFilter(x.key)}
+    >
+      {x.label}
+    </Pill>
+  ))}
+</div>
           </SectionCard>
         )}
 

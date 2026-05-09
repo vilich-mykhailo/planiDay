@@ -1,5 +1,7 @@
+// Golowna.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useBookings } from "../context/bookings/useBookings";
+import { api } from "../api/http";
 import {
   Sparkles,
   CalendarDays,
@@ -10,7 +12,6 @@ import {
   ChevronRight,
   ChevronDown,
   AlertTriangle,
-  X,
   Trash2,
   Check,
   XCircle,
@@ -166,15 +167,6 @@ function cn(...arr) {
   return arr.filter(Boolean).join(" ");
 }
 
-function formatCompactNumber(num) {
-  if (num == null || num === 0) return "0";
-  if (num < 1000) return String(num);
-  if (num < 10_000) return `${Math.floor(num / 100) / 10}k`;
-  if (num < 1_000_000) return `${Math.floor(num / 1000)}k`;
-  if (num < 10_000_000) return `${Math.floor(num / 1_000_000)}M`;
-  return "999k+";
-}
-
 function SectionShell({ children, className = "" }) {
   return (
     <div className={cn("ui-shell", className)}>
@@ -184,43 +176,500 @@ function SectionShell({ children, className = "" }) {
   );
 }
 
-function StatCard({ title, value, icon: Icon, accent = "emerald" }) {
-  const displayValue = formatCompactNumber(value);
+function addMonthsSafe(date, amount) {
+  const next = new Date(date);
+  const day = next.getDate();
 
-  const iconTone =
-    accent === "amber"
-      ? "bg-[var(--color-pending-bg)] text-[var(--color-caramel)]"
-      : accent === "blue"
-        ? "bg-[var(--color-archived-bg)] text-[var(--color-ink)]"
-        : accent === "rose"
-          ? "bg-[var(--color-danger-bg)] text-[var(--color-danger)]"
-          : "bg-[var(--color-confirmed-bg)] text-[var(--color-forest)]";
+  next.setDate(1);
+  next.setMonth(next.getMonth() + amount);
+
+  const lastDay = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate();
+  next.setDate(Math.min(day, lastDay));
+  next.setHours(0, 0, 0, 0);
+
+  return next;
+}
+
+function isSameMonth(a, b) {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
+}
+
+function getWeekdayShortUA(date) {
+  return date
+    .toLocaleDateString("uk-UA", { weekday: "short" })
+    .replace(".", "")
+    .slice(0, 2);
+}
+
+function MonthlyBookingsChart({ bookings = [], nowTs }) {
+  const today = useMemo(() => {
+    const d = new Date(nowTs);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, [nowTs]);
+
+  const [visibleMonth, setVisibleMonth] = useState(() => {
+    const d = new Date(nowTs);
+    d.setDate(1);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  });
+
+  const [activeDayKey, setActiveDayKey] = useState(null);
+
+  const data = useMemo(() => {
+    const year = visibleMonth.getFullYear();
+    const month = visibleMonth.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    const days = Array.from({ length: daysInMonth }, (_, i) => {
+      const date = new Date(year, month, i + 1);
+
+      return {
+        day: i + 1,
+        date,
+        key: toISODateKey(date),
+        weekday: getWeekdayShortUA(date),
+        count: 0,
+        confirmed: 0,
+        pending: 0,
+      };
+    });
+
+    for (const booking of bookings || []) {
+      if (!booking?.date) continue;
+      if (booking.status === "canceled" || booking.status === "deleted") continue;
+
+      const d = new Date(booking.date);
+      if (Number.isNaN(d.getTime())) continue;
+      if (d.getFullYear() !== year || d.getMonth() !== month) continue;
+
+      const item = days[d.getDate() - 1];
+      item.count += 1;
+
+      if (booking.status === "confirmed") {
+        item.confirmed += 1;
+      } else {
+        item.pending += 1;
+      }
+    }
+
+    return days;
+  }, [bookings, visibleMonth]);
+
+  const chart = useMemo(() => {
+    const width = Math.max(920, data.length * 34);
+    const height = 330;
+   const padding = { top: 28, right: 2, bottom: 54, left: 62 };
+
+    const innerWidth = width - padding.left - padding.right;
+    const innerHeight = height - padding.top - padding.bottom;
+    const max = Math.max(...data.map((item) => item.count), 1);
+    const stepX = data.length > 1 ? innerWidth / (data.length - 1) : innerWidth;
+    const barWidth = Math.max(12, Math.min(22, stepX * 0.52));
+
+    const points = data.map((item, index) => {
+      const x = padding.left + index * stepX;
+      const y = padding.top + innerHeight - (item.count / max) * innerHeight;
+
+      return { ...item, x, y };
+    });
+
+
+    const gridValues =
+      max <= 6
+        ? Array.from({ length: max + 1 }, (_, index) => max - index)
+        : Array.from(new Set(
+            Array.from({ length: 5 }, (_, index) =>
+              Math.round(max - max * (index / 4)),
+            ),
+          ));
+
+    const grid = gridValues.map((value) => {
+      const ratio = 1 - value / max;
+      const y = padding.top + innerHeight * ratio;
+
+      return { y, value };
+    });
+
+    return {
+      width,
+      height,
+      padding,
+      innerHeight,
+      max,
+      barWidth,
+      points,
+      grid,
+    };
+  }, [data]);
+
+  const total = data.reduce((sum, item) => sum + item.count, 0);
+  const confirmed = data.reduce((sum, item) => sum + item.confirmed, 0);
+  const pending = data.reduce((sum, item) => sum + item.pending, 0);
+  const todayCount = data.find((item) => item.key === toISODateKey(today))?.count || 0;
+  const activeDays = data.filter((item) => item.count > 0).length;
+  const bestDay = data.reduce(
+    (best, item) => (item.count > best.count ? item : best),
+    data[0] || { day: "—", count: 0, key: "" },
+  );
+  const activePoint =
+    chart.points.find((item) => item.key === activeDayKey) ||
+    chart.points.find((item) => item.key === toISODateKey(today) && item.count > 0) ||
+    (bestDay.count > 0 ? chart.points.find((item) => item.key === bestDay.key) : null);
+
+  const monthLabel = visibleMonth.toLocaleDateString("uk-UA", {
+    month: "long",
+    year: "numeric",
+  });
+
+  const isCurrentMonth = isSameMonth(visibleMonth, today);
 
   return (
-    <div className="group rounded-[22px] border border-[var(--color-cream)] bg-gradient-to-br from-white via-[var(--color-cream)] to-white p-3 shadow-[0_10px_28px_rgba(27,27,27,0.06)] transition-all duration-300 hover:shadow-[0_14px_34px_rgba(27,27,27,0.10)] sm:rounded-[26px] sm:p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-         <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-[var(--color-primary-buttom)] sm:text-[10px] sm:tracking-[0.18em]">
-            {title}
-          </p>
+    <SectionShell>
+      <div className="px-4 pb-5 pt-5 sm:px-6 sm:pb-7 sm:pt-6">
+        <div className="mb-5 grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-end">
+          <div className="min-w-0">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-emerald-700 shadow-sm">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,0.12)]" />
+              Професійна аналітика
+            </div>
 
-          <div className="ui-title-section mt-2 text-2xl sm:mt-3 sm:text-4xl">
-            {displayValue}
+            <h2 className="text-2xl font-black tracking-tight text-[var(--color-ink)] sm:text-3xl">
+              Графік записів
+            </h2>
+
+          </div>
+
+
+        </div>
+
+
+<div className="mt-4 flex justify-center">
+  <div className="flex flex-wrap items-center justify-center gap-2">
+    <button
+      type="button"
+      onClick={() => {
+        setActiveDayKey(null);
+        setVisibleMonth((current) => addMonthsSafe(current, -1));
+      }}
+      className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/80 bg-white text-[var(--color-ink)] shadow-sm transition hover:bg-[var(--color-cream)] active:scale-[0.98]"
+      aria-label="Попередній місяць"
+      title="Попередній місяць"
+    >
+      <ChevronLeft className="h-5 w-5" />
+    </button>
+
+    <button
+      type="button"
+      onClick={() => {
+        const current = new Date(nowTs);
+        current.setDate(1);
+        current.setHours(0, 0, 0, 0);
+        setActiveDayKey(null);
+        setVisibleMonth(current);
+      }}
+      disabled={isCurrentMonth}
+      className="inline-flex h-11 min-w-[150px] items-center justify-center gap-2 rounded-2xl border border-white/80 bg-white px-4 text-sm font-black text-[var(--color-primary-buttom)] shadow-sm transition hover:bg-[var(--color-cream)] active:scale-[0.98]"
+    >
+<CalendarDays className="h-4 w-4" />
+
+<span className="capitalize">
+  {isCurrentMonth
+    ? "Поточний місяць"
+    : visibleMonth.toLocaleDateString("uk-UA", {
+        month: "long",
+        year: "numeric",
+      })}
+</span>
+    </button>
+
+    <button
+      type="button"
+      onClick={() => {
+        setActiveDayKey(null);
+        setVisibleMonth((current) => addMonthsSafe(current, 1));
+      }}
+      className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/80 bg-white text-[var(--color-ink)] shadow-sm transition hover:bg-[var(--color-cream)] active:scale-[0.98]"
+      aria-label="Наступний місяць"
+      title="Наступний місяць"
+    >
+      <ChevronRight className="h-5 w-5" />
+    </button>
+  </div>
+</div>
+        <div className="mb-5 mt-4 grid grid-cols-2 gap-2 lg:grid-cols-4">
+          <ChartKpi label="Усього записів" value={total} tone="emerald" />
+          <ChartKpi label="Підтверджені" value={confirmed} tone="sky" />
+          <ChartKpi label="Очікують" value={pending} tone="amber" />
+          <ChartKpi label="Записи на сьогодні" value={todayCount} tone="slate" />
+        </div>
+        <div className="relative mt-4 overflow-hidden rounded-[32px] border border-white/80 bg-white shadow-[0_18px_48px_rgba(15,23,42,0.08)]">
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400/50 to-transparent" />
+
+         <div className="grid gap-0">
+            <div className="min-w-0 border-b border-slate-100 bg-gradient-to-br from-slate-50 via-white to-emerald-50/45 p-3 sm:p-4 xl:border-b-0 xl:border-r">
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2 px-1">
+                <div className="flex flex-wrap items-center gap-3 text-[11px] font-black text-slate-500">
+                  <span className="inline-flex items-center gap-2">
+                    <span className="h-2.5 w-6 rounded-full bg-[var(--color-mist)]" />
+                    Нема записів
+                  </span>
+                  <span className="inline-flex items-center gap-2">
+                    <span className="h-2.5 w-6 rounded-full bg-emerald-600" />
+                    Записи
+                  </span>
+                </div>
+
+                <p className="text-[11px] font-bold text-slate-400">
+                  Наведіть або натисніть на дату
+                </p>
+              </div>
+
+<div className="relative">
+<div className="pointer-events-none absolute -left-5 top-0 z-20 h-[320px] w-16 rounded-l-[24px] border-r border-slate-200/80 bg-gradient-to-r from-white via-white to-white/90 shadow-[14px_0_24px_rgba(255,255,255,0.86)] sm:h-[360px]">
+  <span
+    className="absolute whitespace-nowrap text-[9px] font-black uppercase tracking-[0.14em] text-slate-500"
+style={{
+  left: "42%",
+  top: "50%",
+  writingMode: "vertical-rl",
+  transform: "translate(-50%, -50%) rotate(180deg)",
+}}
+  >
+    К-ть записів
+  </span>
+
+    {chart.grid.map((line) => (
+      <span
+        key={`fixed-axis-${line.value}-${line.y}`}
+        className="absolute right-2 -translate-y-1/2 rounded-lg bg-white px-1.5 py-0.5 text-[12px] font-black text-slate-600"
+        style={{ top: `${(line.y / chart.height) * 100}%` }}
+      >
+        {line.value}
+      </span>
+    ))}
+  </div>
+
+  <div className="overflow-x-auto pb-2">
+    <svg
+
+                  viewBox={`0 0 ${chart.width} ${chart.height}`}
+                  className="h-[320px] min-w-[920px] select-none sm:h-[360px]"
+                  role="img"
+                  aria-label={`Графік записів за ${monthLabel}`}
+                >
+                  <defs>
+                    <linearGradient id="bookingBarsGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#34d399" />
+                      <stop offset="48%" stopColor="#10b981" />
+                      <stop offset="100%" stopColor="#047857" />
+                    </linearGradient>
+                    <linearGradient id="bookingTrendGradient" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="#38bdf8" />
+                      <stop offset="100%" stopColor="#10b981" />
+                    </linearGradient>
+                    <linearGradient id="bookingAreaGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#10b981" stopOpacity="0.22" />
+                      <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
+                    </linearGradient>
+                  </defs>
+
+{chart.grid.map((line) => (
+  <g key={line.y}>
+    <line
+      x1={chart.padding.left}
+      x2={chart.width - chart.padding.right}
+      y1={line.y}
+      y2={line.y}
+      stroke="#e2e8f0"
+      strokeDasharray="5 7"
+    />
+  </g>
+))}
+
+
+                  {chart.areaPath && <path d={chart.areaPath} fill="url(#bookingAreaGradient)" />}
+
+                  {chart.points.map((item) => {
+                    const baseY = chart.padding.top + chart.innerHeight;
+                    const barHeight = baseY - item.y;
+                    const isToday = item.key === toISODateKey(today);
+                    const isActive = activePoint?.key === item.key;
+                    const isWeekend = item.date.getDay() === 0 || item.date.getDay() === 6;
+
+                    return (
+                      <g
+                        key={item.key}
+                        onMouseEnter={() => setActiveDayKey(item.key)}
+                        onFocus={() => setActiveDayKey(item.key)}
+                        onClick={() => setActiveDayKey(item.key)}
+                        tabIndex={0}
+                        className="cursor-pointer outline-none"
+                      >
+                        <rect
+                          x={item.x - chart.barWidth / 2}
+                          y={item.count > 0 ? item.y : baseY - 8}
+                          width={chart.barWidth}
+                          height={item.count > 0 ? Math.max(8, barHeight) : 8}
+                          rx="8"
+                          fill={item.count > 0 ? "url(#bookingBarsGradient)" : isWeekend ? "#cbd5e1" : "#e2e8f0"}
+                          opacity={isActive ? 1 : item.count > 0 ? 0.88 : 0.75}
+                        />
+
+                        {isToday && (
+                          <line
+                            x1={item.x}
+                            x2={item.x}
+                            y1={chart.padding.top - 8}
+                            y2={baseY + 8}
+                            stroke="#047857"
+                            strokeWidth="2"
+                            strokeDasharray="4 6"
+                            opacity="0.75"
+                          />
+                        )}
+
+                        {isActive && (
+                          <circle
+                            cx={item.x}
+                            cy={item.y}
+                            r="8"
+                            fill="white"
+                            stroke="#047857"
+                            strokeWidth="3"
+                          />
+                        )}
+
+                        <text
+                          x={item.x}
+                          y={baseY + 24}
+                          textAnchor="middle"
+                          className={cn(
+                            "text-[11px] font-black",
+                            isToday ? "fill-emerald-700" : isWeekend ? "fill-slate-500" : "fill-slate-400",
+                          )}
+                        >
+                          {item.day}
+                        </text>
+
+                        {(item.day === 1 || item.day % 5 === 0 || item.day === data.length) && (
+                          <text
+                            x={item.x}
+                            y={baseY + 41}
+                            textAnchor="middle"
+                            className="fill-slate-400 text-[10px] font-bold"
+                          >
+                            {item.weekday}
+                          </text>
+                        )}
+                      </g>
+                    );
+                  })}
+
+                  {chart.linePath && (
+                    <path
+                      d={chart.linePath}
+                      fill="none"
+                      stroke="url(#bookingTrendGradient)"
+                      strokeWidth="4"
+                      strokeLinecap="round"
+                      opacity="0.95"
+                    />
+                  )}
+                  </svg>
+  </div>
+</div>
+
+              </div>
+            </div>
+
+            <div className="bg-white p-4 sm:p-5">
+              <div className="rounded-[26px] border border-slate-100 bg-slate-50 p-4">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">
+                  Активна дата
+                </p>
+
+                <p className="mt-2 text-2xl font-black text-slate-950">
+                  {activePoint ? formatDateUA(activePoint.key) : "—"}
+                </p>
+
+                <div className="mt-4 grid grid-cols-3 gap-2">
+                  <ChartTinyStat label="Усього" value={activePoint?.count || 0} />
+                  <ChartTinyStat label="ОК" value={activePoint?.confirmed || 0} />
+                  <ChartTinyStat label="Нові" value={activePoint?.pending || 0} />
+                </div>
+              </div>
+
+              <div className="mt-3 rounded-[26px] border border-emerald-100 bg-emerald-50 p-4">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-700">
+                  Найактивніший день
+                </p>
+                <p className="mt-2 text-xl font-black text-emerald-950">
+                  {bestDay.count > 0 ? formatDateUA(bestDay.key) : "Записів немає"}
+                </p>
+                <p className="mt-1 text-sm font-bold text-emerald-700">
+                  {bestDay.count > 0 ? `${bestDay.count} записів` : "Оберіть інший місяць або чекайте бронювань"}
+                </p>
+              </div>
+
+              <div className="mt-3 rounded-[26px] border border-slate-100 bg-white p-4 shadow-sm">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">
+                  Завантаженість
+                </p>
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-emerald-600 to-sky-400"
+                    style={{
+                      width: `${Math.min(100, Math.round((activeDays / Math.max(data.length, 1)) * 100))}%`,
+                    }}
+                  />
+                </div>
+                <p className="mt-2 text-xs font-bold text-slate-500">
+                  {activeDays} з {data.length} днів мають записи
+                </p>
+              </div>
+            </div>
           </div>
         </div>
+    
+    </SectionShell>
+  );
+}
 
-        <div
-          className={cn(
-            "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl",
-            iconTone,
-          )}
-        >
-          <Icon className="h-5 w-5" />
-        </div>
-      </div>
+function ChartKpi({ label, value, tone = "emerald" }) {
+  const tones = {
+    emerald: "from-emerald-50 to-white text-emerald-700",
+    sky: "from-sky-50 to-white text-sky-700",
+    amber: "from-amber-50 to-white text-amber-700",
+    slate: "from-slate-50 to-white text-slate-700",
+  };
+
+  return (
+    <div className={cn("rounded-[24px] border border-white/80 bg-gradient-to-br p-4 shadow-sm", tones[tone])}>
+      <p className="truncate text-[10px] font-black uppercase tracking-[0.12em] opacity-70">
+        {label}
+      </p>
+      <p className="mt-2 text-2xl font-black leading-none text-slate-950">
+        {value}
+      </p>
     </div>
   );
 }
+
+function ChartTinyStat({ label, value }) {
+  return (
+    <div className="rounded-2xl bg-white px-2 py-3 text-center shadow-sm">
+      <p className="text-lg font-black text-slate-950">{value}</p>
+      <p className="mt-0.5 truncate text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">
+        {label}
+      </p>
+    </div>
+  );
+}
+
+
+
 
 function Badge({ children, className = "" }) {
   return (
@@ -355,21 +804,6 @@ function SkeletonBlock({ className = "" }) {
   );
 }
 
-function StatCardSkeleton() {
-  return (
-    <div className="bg-card-theme border-soft rounded-[22px] border p-3 shadow-[0_8px_25px_rgba(27,27,27,0.04)] sm:rounded-[26px] sm:p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <SkeletonBlock className="h-3 w-24 rounded-full" />
-          <SkeletonBlock className="mt-3 h-9 w-20" />
-        </div>
-
-        <SkeletonBlock className="h-11 w-11 rounded-2xl" />
-      </div>
-    </div>
-  );
-}
-
 function AppointmentCardSkeleton() {
   return (
     <li className="bg-card-theme border-soft rounded-[24px] border p-4 shadow-[0_8px_25px_rgba(27,27,27,0.04)] sm:p-5">
@@ -498,86 +932,96 @@ export default function Golowna() {
   );
 
   useEffect(() => {
+  let alive = true;
+
+  return () => {
+    alive = false;
+  };
+}, []);
+
+  useEffect(() => {
     const id = setInterval(() => setNowTs(Date.now()), 60_000);
     return () => clearInterval(id);
   }, []);
 
-  const stats = useMemo(() => {
-    const list = (bookings || []).filter(
-      (b) =>
-        b &&
-        b.id &&
-        (b.status === "confirmed" || b.status === "new" || !b.status),
-    );
+const stats = useMemo(() => {
+  const activeStatuses = ["confirmed", "new", "pending", "CONFIRMED", "NEW", "PENDING"];
 
-    const now = new Date(nowTs);
-    const todayKey = toISODateKey(now);
-    const weekStart = startOfWeekMonday(now);
-    const weekEnd = addDays(weekStart, 7);
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const list = (bookings || []).filter((b) => {
+    if (!b?.id) return false;
+    if (b.status === "canceled" || b.status === "deleted") return false;
+    return activeStatuses.includes(b.status) || !b.status;
+  });
 
-    let todayActive = 0;
-    let weekActive = 0;
-    let monthActive = 0;
-    let todayNew = 0;
+  const now = new Date(nowTs);
+  const todayKey = toISODateKey(now);
+  const weekStart = startOfWeekMonday(now);
+  const weekEnd = addDays(weekStart, 7);
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
-    for (const b of list) {
-      const dt = getBookingDateTime(b);
-      if (!dt) continue;
-      if (dt.getTime() < nowTs) continue;
+  let todayActive = 0;
+  let weekActive = 0;
+  let monthActive = 0;
+  let todayNew = 0;
 
-      const dateOnly = new Date(b.date);
-      if (Number.isNaN(dateOnly.getTime())) continue;
+  for (const b of list) {
+    const dt = getBookingDateTime(b);
+    if (!dt) continue;
+    if (dt.getTime() < nowTs) continue;
 
-      const key = toISODateKey(dateOnly);
-      const isNew = !b.status || b.status === "new";
+    const dateOnly = new Date(b.date);
+    if (Number.isNaN(dateOnly.getTime())) continue;
 
-      if (key === todayKey) {
-        todayActive++;
-        if (isNew) todayNew++;
-      }
+    const key = toISODateKey(dateOnly);
+    const status = String(b.status || "").toLowerCase();
+    const isPending = !status || status === "new" || status === "pending";
 
-      if (dateOnly >= weekStart && dateOnly < weekEnd) {
-        weekActive++;
-      }
-
-      if (dateOnly >= monthStart && dateOnly < monthEnd) {
-        monthActive++;
-      }
+    if (key === todayKey) {
+      todayActive++;
+      if (isPending) todayNew++;
     }
 
-    return [
-      {
-        key: "today-active",
-        title: "Активні на сьогодні",
-        value: todayActive,
-        icon: CalendarDays,
-        accent: "emerald",
-      },
-      {
-        key: "today-new",
-        title: "Очікують підтвердження",
-        value: todayNew,
-        icon: Sparkles,
-        accent: "amber",
-      },
-      {
-        key: "week-active",
-        title: "Активні на тижні",
-        value: weekActive,
-        icon: CheckCheck,
-        accent: "blue",
-      },
-      {
-        key: "month-active",
-        title: "Активні на місяць",
-        value: monthActive,
-        icon: Users,
-        accent: "rose",
-      },
-    ];
-  }, [bookings, nowTs]);
+    if (dateOnly >= weekStart && dateOnly < weekEnd) {
+      weekActive++;
+    }
+
+    if (dateOnly >= monthStart && dateOnly < monthEnd) {
+      monthActive++;
+    }
+  }
+
+  return [
+    {
+      key: "today-active",
+      title: "Активні на сьогодні",
+      value: todayActive,
+      icon: CalendarDays,
+      accent: "emerald",
+    },
+    {
+      key: "today-new",
+      title: "Очікують підтвердження",
+      value: todayNew,
+      icon: Sparkles,
+      accent: "amber",
+    },
+    {
+      key: "week-active",
+      title: "Активні на тижні",
+      value: weekActive,
+      icon: CheckCheck,
+      accent: "blue",
+    },
+    {
+      key: "month-active",
+      title: "Активні на місяць",
+      value: monthActive,
+      icon: Users,
+      accent: "rose",
+    },
+  ];
+}, [bookings, nowTs]);
 
   const selectedBooking = useMemo(() => {
     if (detailsId == null) return null;
@@ -751,49 +1195,9 @@ const liveStatusUi = useMemo(() => {
   return (
     <div className="">
       <div className="mx-auto w-full max-w-[1200px] space-y-3">
-        <SectionShell>
-          <div className="relative overflow-hidden px-5 pb-6 pt-6 sm:px-7 sm:pb-7 sm:pt-7">
-            <div className="absolute inset-0" />
 
-            <div className="relative z-10">
-                          <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-[var(--color-cream)] px-3 py-1.5">
-              <Sparkles className="h-4 w-4 text-[var(--color-forest)]" />
-              <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-ink)]">
-                 dashboard студії
-              </span>
-            </div>
-             
 
-              <h1 className="ui-title-hero mt-2 !text-[32px] leading-[1.2] sm:text-3xl sm:leading-[1.15] lg:text-5xl">
-                <span className="inline-flex items-center gap-2 sm:gap-3">
-                  <span>Вітаємо в кабінеті майстра</span>
-                </span>
-              </h1>
-
-              <p className="ui-text-muted mt-3 text-[13.5px] leading-6 sm:text-base sm:leading-7">
-                Керуйте студією, послугами та записами в одному теплому,
-                сучасному та зручному просторі.
-              </p>
-            </div>
-          </div>
-        </SectionShell>
-
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
-          {isInitialLoading
-            ? Array.from({ length: 4 }).map((_, i) => (
-                <StatCardSkeleton key={i} />
-              ))
-            : stats.map((item) => (
-                <StatCard
-                  key={item.key}
-                  title={item.title}
-                  value={item.value}
-                  icon={item.icon}
-                  accent={item.accent}
-                />
-              ))}
-        </div>
-
+<MonthlyBookingsChart bookings={bookings} nowTs={nowTs} />
         <SectionShell>
           <div className="px-5 pb-6 pt-5 sm:px-6 sm:pb-7 sm:pt-6">
             <div className="flex flex-col gap-2">

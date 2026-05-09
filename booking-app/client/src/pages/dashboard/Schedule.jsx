@@ -1227,12 +1227,22 @@ useEffect(() => {
           <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[var(--color-forest)] via-[var(--color-caramel)] to-[var(--color-ink)] opacity-70" />
 
           <div className="relative">
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[var(--color-sand)] bg-[var(--color-pending-bg)] px-3 py-1.5">
-              <Sparkles className="h-4 w-4 text-[var(--color-forest)]" />
-              <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-forest)]">
-                Графік студії
-              </span>
-            </div>
+<div
+  className={cn(
+    "mb-3 inline-flex items-center gap-2 rounded-[20px] border px-3.5 py-2",
+    "transition-all duration-200",
+    "border-[var(--color-sand)]",
+    "bg-gradient-to-br from-[var(--color-pending-bg)] via-white to-[var(--color-cream)]",
+    "shadow-[0_10px_30px_rgba(212,186,140,0.10)]",
+    "backdrop-blur-sm",
+  )}
+>
+  <Sparkles className="h-4 w-4 text-[var(--color-forest)]" />
+
+  <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-forest)]">
+    Графік студії
+  </span>
+</div>
 
             <h1 className="text-3xl font-black tracking-tight text-[var(--color-ink)] sm:text-4xl">
               Графік роботи
@@ -1248,8 +1258,7 @@ useEffect(() => {
         <SectionCard
           title="Робочі дні"
           subtitle="Увімкни день і задай час початку та завершення."
-          badge={`${enabledDaysCount} активн.`}
-        >
+                  >
           {initialLoading ? (
             <WorkDaysSkeleton />
           ) : (

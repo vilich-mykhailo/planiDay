@@ -376,12 +376,22 @@ const liveStatusUi = useMemo(() => {
 
         <div className="relative flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-                        <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-[var(--color-cream)] px-3 py-1.5">
-              <Sparkles className="h-4 w-4 text-[var(--color-forest)]" />
-              <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-ink)]">
-                Центр сповіщень
-              </span>
-            </div>
+<div
+  className={cn(
+    "mb-3 inline-flex items-center gap-2 rounded-[20px] border px-3.5 py-2",
+    "transition-all duration-200",
+    "border-[var(--color-sand)]",
+    "bg-gradient-to-br from-[var(--color-pending-bg)] via-white to-[var(--color-cream)]",
+    "shadow-[0_10px_30px_rgba(212,186,140,0.10)]",
+    "backdrop-blur-sm",
+  )}
+>
+  <Sparkles className="h-4 w-4 text-[var(--color-forest)]" />
+
+  <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-ink)]">
+    Центр сповіщень
+  </span>
+</div>
                          
 
             <h1 className="text-3xl font-black tracking-tight text-[var(--color-ink)] sm:text-4xl">

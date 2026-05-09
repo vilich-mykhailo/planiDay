@@ -39,6 +39,10 @@ model ClientAccount {
   updatedAt DateTime @updatedAt
   favouriteStudios FavouriteStudio[]
   bookings Booking[]
+  isVip   Boolean   @default(false)
+  vipSince DateTime?
+  notes ClientNote[]
+  salonStatuses ClientSalonStatus[]
 }
 
 model FavouriteStudio {
@@ -90,7 +94,8 @@ model Studio {
   updatedAt DateTime @updatedAt
   favouritedBy FavouriteStudio[]
   bookings Booking[]
-
+  clientNotes ClientNote[]
+  clientSalonStatuses ClientSalonStatus[]
   slotDuration       Int                       @default(15)
   scheduleExceptions StudioScheduleException[]
   scheduleDays       StudioScheduleDay[]
@@ -280,4 +285,36 @@ model MasterScheduleException {
 
   @@unique([masterId, date])
   @@index([masterId, date])
+}
+
+model ClientNote {
+  id        String   @id @default(cuid())
+  studioId  String
+  clientId  String
+  text      String
+  createdAt DateTime @default(now())
+
+  studio Studio        @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  client ClientAccount @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([studioId])
+  @@index([clientId])
+  @@index([studioId, clientId])
+}
+
+model ClientSalonStatus {
+  id            String   @id @default(cuid())
+  studioId      String
+  clientId      String
+  isFavorite    Boolean  @default(false)
+  favoriteSince DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  studio Studio        @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  client ClientAccount @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([studioId, clientId])
+  @@index([studioId])
+  @@index([clientId])
 }

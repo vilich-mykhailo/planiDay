@@ -34,6 +34,7 @@ import TermsClient from "./pages/dashboard/TermsClient";
 import PrivacyOwner from "./pages/dashboard/PrivacyOwner";
 import TermsOwner from "./pages/dashboard/TermsOwner";
 import MessagesClient from "./pages/MessagesClient";
+import Clients from "./pages/dashboard/Clients";
 
 function StudioDetailsKeyed() {
   const { slug } = useParams();
@@ -80,6 +81,7 @@ export default function App() {
               <Route path="services" element={<Services />} />
               <Route path="notifications" element={<Notifications />} />
               <Route path="schedule" element={<Schedule />} />
+              <Route path="clients" element={<Clients />} />
               <Route path="bookings" element={<Bookings />} />
               <Route path="masters" element={<Masters />} />
             </Route>

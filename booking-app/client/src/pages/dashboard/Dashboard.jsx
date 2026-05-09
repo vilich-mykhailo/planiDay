@@ -9,6 +9,7 @@ import {
   BriefcaseBusiness,
   Clock3,
   CalendarDays,
+  UserStar ,
   Users,
   LogOut,
   Sparkles,
@@ -21,9 +22,9 @@ const linkClass = ({ isActive }) =>
   [
     "group relative flex items-center gap-3 overflow-hidden rounded-[18px] border px-3 py-3 text-sm font-semibold transition-all duration-300 ease-out",
     "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--color-sand)]/30",
-isActive
-  ? "border-transparent text-white bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]"
-  : "border-transparent text-[var(--color-caramel)] hover:bg-[var(--color-cream)]",
+    isActive
+      ? "border-transparent text-white bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]"
+      : "border-transparent text-[var(--color-caramel)] hover:bg-[var(--color-cream)]",
   ].join(" ");
 
 function cn(...classes) {
@@ -47,8 +48,7 @@ function DashboardSkeleton() {
   return (
     <div className="min-h-screen ">
       <div className="mx-auto max-w-6xl px-4 pt-24 md:pt-22">
-      <div className="grid min-h-[calc(100vh-72px)] grid-cols-1 items-start gap-2 lg:grid-cols-[240px_minmax(0,1fr)] lg:items-start">
-
+        <div className="grid min-h-[calc(100vh-72px)] grid-cols-1 items-start gap-2 lg:grid-cols-[240px_minmax(0,1fr)] lg:items-start">
           <aside
             className="
               hidden lg:block
@@ -293,10 +293,9 @@ export default function Dashboard() {
       }}
     >
       <div className="mx-auto w-full max-w-6xl px-0 pt-18 lg:px-4">
-       <div className="grid min-h-[calc(100vh-72px)] grid-cols-1 items-start gap-2 lg:grid-cols-[240px_minmax(0,1fr)] lg:items-start">
-
-<aside
-  className="
+        <div className="grid min-h-[calc(100vh-72px)] grid-cols-1 items-start gap-2 lg:grid-cols-[240px_minmax(0,1fr)] lg:items-start">
+          <aside
+            className="
     hidden lg:block
     relative h-fit overflow-hidden rounded-3xl
     border border-[var(--color-mist)]
@@ -304,13 +303,22 @@ export default function Dashboard() {
     shadow-[var(--shadow-soft-hover)]
     lg:sticky lg:top-[88px] lg:mt-4
   "
->
-
+          >
             <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[var(--color-ink)] via-[var(--color-forest)] to-[var(--color-caramel)]" />
 
             <div className="mb-2 border-b border-[var(--color-mist)] px-1 pb-3 pt-2 text-center">
-              <div className="inline-flex items-center gap-2 rounded-full border border-[var(--color-sand)] bg-[var(--color-cream)] px-3 py-1.5">
+              <div
+                className={cn(
+                  "inline-flex items-center gap-2 rounded-[18px] border px-3.5 py-2",
+                  "transition-all duration-200",
+                  "border-[var(--color-sand)]",
+                  "bg-gradient-to-br from-[var(--color-pending-bg)] via-white to-[var(--color-cream)]",
+                  "shadow-[0_8px_24px_rgba(212,186,140,0.10)]",
+                  "backdrop-blur-sm",
+                )}
+              >
                 <Sparkles className="h-3.5 w-3.5 text-[var(--color-forest)]" />
+
                 <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-forest)]">
                   Кабінет
                 </span>
@@ -359,12 +367,12 @@ export default function Dashboard() {
 
                     {newBookingsCount > 0 && (
                       <span
-className={cn(
-  "ml-auto inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold",
-  isActive
-    ? "bg-[var(--color-danger)] text-white "
-    : "bg-[var(--color-danger)] text-white "
-)}
+                        className={cn(
+                          "ml-auto inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold",
+                          isActive
+                            ? "bg-[var(--color-danger)] text-white "
+                            : "bg-[var(--color-danger)] text-white ",
+                        )}
                       >
                         {newBookingsCount > 9 ? "9+" : newBookingsCount}
                       </span>
@@ -376,7 +384,7 @@ className={cn(
               <NavLink to="/dashboard/notifications" className={linkClass}>
                 {({ isActive }) => (
                   <>
-                       <span
+                    <span
                       className={cn(
                         "absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full transition-all duration-200",
                         isActive ? "bg-white" : "bg-transparent",
@@ -388,13 +396,13 @@ className={cn(
                     </SidebarLinkIcon>
                     <span className="flex-1 truncate">Повідомлення</span>
 
-                          {unreadNotifications > 0 && (
+                    {unreadNotifications > 0 && (
                       <span
                         className={cn(
                           "ml-auto inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold",
                           isActive
-                      ? "bg-[var(--color-danger)] text-white "
-    : "bg-[var(--color-danger)] text-white "
+                            ? "bg-[var(--color-danger)] text-white "
+                            : "bg-[var(--color-danger)] text-white ",
                         )}
                       >
                         {unreadNotifications > 9 ? "9+" : unreadNotifications}
@@ -478,6 +486,24 @@ className={cn(
                       <Clock3 className="h-4.5 w-4.5" />
                     </SidebarLinkIcon>
                     <span>Графік роботи</span>
+                  </>
+                )}
+              </NavLink>
+
+              <NavLink to="/dashboard/clients" className={linkClass}>
+                {({ isActive }) => (
+                  <>
+                    <span
+                      className={cn(
+                        "absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full transition-all duration-200",
+                        isActive ? "bg-white" : "bg-transparent",
+                      )}
+                    />
+
+                    <SidebarLinkIcon isActive={isActive}>
+                      <UserStar   className="h-4.5 w-4.5" />
+                    </SidebarLinkIcon>
+                    <span>База клієнтів</span>
                   </>
                 )}
               </NavLink>

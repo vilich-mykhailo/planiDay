@@ -2,7 +2,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Clock, Check, ChevronRight, UserRound, Sparkles, Users } from "lucide-react";
+import { Clock, Check, ChevronRight, UserRound, Sparkles, Users, Banknote } from "lucide-react";
 import Calendar from "./Calendar";
 import BookingCustomerForm from "./BookingCustomerForm";
 function cn(...classes) {
@@ -986,7 +986,8 @@ active
               {service.duration || slotDuration} хв
             </span>
 
-            <span className="font-semibold">
+            <span className="flex items-center gap-1">
+                 <Banknote className="h-3.5 w-3.5" />
               {service.price ?? 0} грн
             </span>
           </div>
