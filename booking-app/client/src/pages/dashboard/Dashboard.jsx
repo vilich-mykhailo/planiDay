@@ -14,6 +14,8 @@ import {
   LogOut,
   Sparkles,
   Bell,
+  ChartColumn,
+  MonitorCog,
 } from "lucide-react";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
@@ -22,9 +24,9 @@ const linkClass = ({ isActive }) =>
   [
     "group relative flex items-center gap-3 overflow-hidden rounded-[18px] border px-3 py-3 text-sm font-semibold transition-all duration-300 ease-out",
     "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--color-sand)]/30",
-    isActive
-      ? "border-transparent text-white bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]"
-      : "border-transparent text-[var(--color-caramel)] hover:bg-[var(--color-cream)]",
+isActive
+  ? "border-transparent text-white bg-[var(--color-sidebar-accent)] hover:bg-[var(--color-sidebar-accent-hover)]"  
+    : "border-transparent text-[var(--color-caramel)] hover:bg-[var(--color-cream)]",
   ].join(" ");
 
 function cn(...classes) {
@@ -97,14 +99,15 @@ function DashboardSkeleton() {
   );
 }
 
+// SidebarLinkIcon
 function SidebarLinkIcon({ children, isActive }) {
   return (
     <span
       className={cn(
-        "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border bg-white transition-all duration-200",
+        "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition-all duration-200",
         isActive
-          ? "border-[#9fb29a] text-[#7f9a78]"
-          : "border-[var(--color-cream)] text-[#9fb29a] shadow-[0_2px_8px_rgba(27,27,27,0.04)]",
+          ? "border-white/10 bg-white/10 text-white"
+          : "border-slate-200 bg-white text-slate-700 shadow-[0_2px_8px_rgba(15,23,42,0.04)]",
       )}
     >
       {children}
@@ -304,27 +307,17 @@ export default function Dashboard() {
     lg:sticky lg:top-[88px] lg:mt-4
   "
           >
-            <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[var(--color-ink)] via-[var(--color-forest)] to-[var(--color-caramel)]" />
+            <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[var(--color-sidebar-accent)] via-[var(--color-sidebar-accent-hover)] to-[var(--color-sidebar-accent-soft)]" />
 
             <div className="mb-2 border-b border-[var(--color-mist)] px-1 pb-3 pt-2 text-center">
-              <div
-                className={cn(
-                  "inline-flex items-center gap-2 rounded-[18px] border px-3.5 py-2",
-                  "transition-all duration-200",
-                  "border-[var(--color-sand)]",
-                  "bg-gradient-to-br from-[var(--color-pending-bg)] via-white to-[var(--color-cream)]",
-                  "shadow-[0_8px_24px_rgba(212,186,140,0.10)]",
-                  "backdrop-blur-sm",
-                )}
-              >
-                <Sparkles className="h-3.5 w-3.5 text-[var(--color-forest)]" />
+<div className="mb-3 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-slate-700 shadow-[0_4px_14px_rgba(15,23,42,0.05)]">
+  <div className="h-1 w-1 rounded-full bg-slate-400" />
+  <span>Особистий кабінет</span>
 
-                <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-forest)]">
-                  Кабінет
-                </span>
-              </div>
+  <div className="h-1 w-1 rounded-full bg-slate-400" />
+</div>
 
-              <h2 className="mt-3 text-lg font-bold tracking-tight text-[var(--color-ink)]">
+              <h2 className="text-lg font-bold tracking-tight text-[var(--color-ink)]">
                 Панель керування
               </h2>
             </div>
@@ -336,12 +329,14 @@ export default function Dashboard() {
                     <span
                       className={cn(
                         "absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full transition-all duration-200",
-                        isActive ? "bg-white" : "bg-transparent",
+                        isActive
+  ? "bg-[var(--color-sidebar-accent-soft)]"
+  : "bg-transparent"
                       )}
                     />
 
                     <SidebarLinkIcon isActive={isActive}>
-                      <LayoutDashboard className="h-4.5 w-4.5" />
+                      <ChartColumn className="h-4.5 w-4.5" />
                     </SidebarLinkIcon>
 
                     <span>Головна</span>

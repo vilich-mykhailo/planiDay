@@ -1,6 +1,7 @@
 // Clients.jsx
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api/http";
+import { useStudio } from "../../context/studio/useStudio";
 import {
   AlertTriangle,
   CalendarDays,
@@ -32,6 +33,7 @@ import {
   Cake,
   Phone,
   Copy,
+  ContactRound,
 } from "lucide-react";
 
 function cn(...classes) {
@@ -205,10 +207,7 @@ function MiniChart({ data = [], trend = "flat" }) {
   return (
     <svg
       viewBox="0 0 108 60"
-      className={cn(
-        "hidden h-14 w-28 shrink-0 sm:block",
-        trendColor[trend],
-      )}
+      className={cn("hidden h-14 w-28 shrink-0 sm:block", trendColor[trend])}
       fill="none"
     >
       <defs>
@@ -358,10 +357,7 @@ function StatCard({
           )}
         >
           <Icon
-            className={cn(
-              "h-5 w-5 sm:h-6 sm:w-6 lg:h-7 lg:w-7",
-              style.text,
-            )}
+            className={cn("h-5 w-5 sm:h-6 sm:w-6 lg:h-7 lg:w-7", style.text)}
             strokeWidth={2.6}
           />
         </div>
@@ -489,7 +485,98 @@ const sortItems = [
   { value: "newest", label: "Нові зверху" },
 ];
 
+const emptyFilterInfo = {
+  all: {
+    icon: Users,
+    title: "Поки що немає клієнтів",
+    description: (
+      <span className="flex flex-col gap-1">
+        <span>
+          Клієнти зʼявляться тут автоматично після перших бронювань.
+        </span>
+      </span>
+    ),
+  },
+
+  new: {
+    icon: UserPlus,
+    title: "Поки що немає нових клієнтів",
+    description: (
+      <span className="flex flex-col gap-1">
+        <span>
+          Тут зʼявляться клієнти, які мають тільки один нескасований запис.
+        </span>
+
+        <span>
+          Або ще не мають сформованої історії відвідувань.
+        </span>
+      </span>
+    ),
+  },
+
+  loyal: {
+    icon: Repeat,
+    title: "Поки що немає постійних клієнтів",
+    description: (
+      <span className="flex flex-col gap-1">
+        <span>
+          Тут зʼявляться клієнти, які мають 2 або більше нескасованих записів.
+        </span>
+
+        <span>
+          Останній візит був протягом останніх 30 днів.
+        </span>
+      </span>
+    ),
+  },
+
+  attention: {
+    icon: AlertTriangle,
+    title: "Поки що немає клієнтів, яким потрібна увага",
+    description: (
+      <span className="flex flex-col gap-1">
+        <span>
+          Тут зʼявляться клієнти, чий останній запис був більше 30 днів тому.
+        </span>
+
+        <span>Але не більше 60 днів.</span>
+      </span>
+    ),
+  },
+
+  risk: {
+    icon: TrendingDown,
+    title: "Поки що немає клієнтів у ризику втрати",
+    description: (
+      <span className="flex flex-col gap-1">
+        <span>
+          Тут зʼявляться клієнти, які не були у студії більше 60 днів.
+        </span>
+
+        <span>
+          Їм варто нагадати про себе або запропонувати повернутись.
+        </span>
+      </span>
+    ),
+  },
+
+  vip: {
+    icon: Crown,
+    title: "Поки що немає VIP клієнтів",
+    description: (
+      <span className="flex flex-col gap-1">
+        <span>
+          Тут зʼявляться лояльні клієнти, яким платформа автоматично надала
+          VIP-статус.
+        </span>
+      </span>
+    ),
+  },
+};
+
 export default function Clients() {
+  const { studio } = useStudio();
+  const studioId = studio?.id ?? null;
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("all");
   const [sort, setSort] = useState("lastVisit");
@@ -502,28 +589,29 @@ export default function Clients() {
   const [allClients, setAllClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-const [copiedPhone, setCopiedPhone] = useState(false);
+  const [copiedPhone, setCopiedPhone] = useState(false);
+  const emptyInfo = emptyFilterInfo[filter] || emptyFilterInfo.all;
+  const EmptyIcon = emptyInfo.icon;
+  async function handleCopyPhone(phone) {
+    if (!phone) return;
 
-async function handleCopyPhone(phone) {
-  if (!phone) return;
+    try {
+      await navigator.clipboard.writeText(phone);
+    } catch {
+      const textarea = document.createElement("textarea");
+      textarea.value = phone;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      textarea.remove();
+    }
 
-  try {
-    await navigator.clipboard.writeText(phone);
-  } catch {
-    const textarea = document.createElement("textarea");
-    textarea.value = phone;
-    document.body.appendChild(textarea);
-    textarea.select();
-    document.execCommand("copy");
-    textarea.remove();
+    setCopiedPhone(true);
+
+    setTimeout(() => {
+      setCopiedPhone(false);
+    }, 1600);
   }
-
-  setCopiedPhone(true);
-
-  setTimeout(() => {
-    setCopiedPhone(false);
-  }, 1600);
-}
 
   useEffect(() => {
     let alive = true;
@@ -533,10 +621,9 @@ async function handleCopyPhone(phone) {
         setLoading(true);
         setError("");
 
-        const studioId = localStorage.getItem("studioId");
-
         if (!studioId) {
-          throw new Error("studioId не знайдено в localStorage");
+          setAllClients([]);
+          return;
         }
 
         const data = await api(`/owner/studio/${studioId}/clients`);
@@ -557,13 +644,13 @@ async function handleCopyPhone(phone) {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [studioId]);
 
   async function handleAddNote() {
+    if (!studioId) return;
+
     const text = noteDraft.trim();
     if (!text || !noteClient?.id) return;
-
-    const studioId = localStorage.getItem("studioId");
 
     const data = await api(
       `/owner/studio/${studioId}/clients/${noteClient.id}/notes`,
@@ -589,7 +676,7 @@ async function handleCopyPhone(phone) {
   }
 
   async function handleDeleteNote(clientId, noteId) {
-    const studioId = localStorage.getItem("studioId");
+    if (!studioId) return;
 
     await api(`/owner/studio/${studioId}/clients/${clientId}/notes/${noteId}`, {
       method: "DELETE",
@@ -608,7 +695,7 @@ async function handleCopyPhone(phone) {
   }
 
   async function handleToggleVip(client) {
-    const studioId = localStorage.getItem("studioId");
+    if (!studioId) return;
 
     const data = await api(
       `/owner/studio/${studioId}/clients/${client.id}/favorite`,
@@ -691,11 +778,14 @@ async function handleCopyPhone(phone) {
 
           <div className="relative">
             <div>
-              <div className="mb-3 inline-flex items-center gap-2 rounded-[20px] border border-[var(--color-sand)] bg-gradient-to-br from-[var(--color-pending-bg)] via-white to-[var(--color-cream)] px-3.5 py-2 shadow-[0_10px_30px_rgba(212,186,140,0.10)] backdrop-blur-sm">
-                <Sparkles className="h-4 w-4 text-[var(--color-forest)]" />
-                <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-ink)]">
-                  CRM клієнтів
-                </span>
+              <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-slate-700 shadow-[0_4px_14px_rgba(15,23,42,0.05)]">
+                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-900 text-white">
+                  <ContactRound className="h-3 w-3" />
+                </div>
+
+                <span>База клієнтів</span>
+
+                <div className="h-1 w-1 rounded-full bg-slate-400" />
               </div>
 
               <h1 className="text-3xl font-black tracking-tight text-[var(--color-ink)] sm:text-4xl">
@@ -710,65 +800,65 @@ async function handleCopyPhone(phone) {
           </div>
         </div>
 
-<div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-  <StatCard
-    tone="green"
-    icon={Users}
-    label="Всього"
-    value={allClients.length}
-    hint="активних клієнтів"
-    chartData={[1, 2, 2, 3, 3, 4, 4]}
-  />
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-2">
+          <StatCard
+            tone="green"
+            icon={Users}
+            label="Всього"
+            value={allClients.length}
+            hint="активних клієнтів"
+            chartData={[1, 2, 2, 3, 3, 4, 4]}
+          />
 
-  <StatCard
-    tone="blue"
-    icon={UserPlus}
-    label="Нових"
-    value={`+${newClientsCount}`}
-    hint="за місяць"
-    chartData={
-      newClientsCount <= 0
-        ? [0, 0, 0, 0, 0, 0, 0]
-        : [0, 1, 1, 2, 2, 3, newClientsCount]
-    }
-  />
+          <StatCard
+            tone="blue"
+            icon={UserPlus}
+            label="Нових"
+            value={`+${newClientsCount}`}
+            hint="за місяць"
+            chartData={
+              newClientsCount <= 0
+                ? [0, 0, 0, 0, 0, 0, 0]
+                : [0, 1, 1, 2, 2, 3, newClientsCount]
+            }
+          />
 
-  <StatCard
-    tone="violet"
-    icon={Repeat}
-    label="Постійні"
-    value={`${loyalPercent}%`}
-    hint="повертаються"
-    chartData={[40, 52, 58, 70, 82, 91, loyalPercent]}
-  />
+          <StatCard
+            tone="violet"
+            icon={Repeat}
+            label="Постійні"
+            value={`${loyalPercent}%`}
+            hint="повертаються"
+            chartData={[40, 52, 58, 70, 82, 91, loyalPercent]}
+          />
 
-  <StatCard
-    tone="amber"
-    icon={Wallet}
-    label="Середній чек"
-    value={formatMoney(averageCheck)}
-    hint="по всіх записах"
-    chartData={[578, 560, 535, 510, 478]}
-  />
+          <StatCard
+            tone="amber"
+            icon={Wallet}
+            label="Середній чек"
+            value={formatMoney(averageCheck)}
+            hint="по всіх записах"
+            chartData={[578, 560, 535, 510, 478]}
+          />
 
-  <StatCard
-    tone="rose"
-    icon={BadgeCheck}
-    label="Бронювань"
-    value={totalBookings}
-    hint="за весь час"
-    chartData={[1, 3, 5, 8, 10, 13, totalBookings]}
-  />
+          <StatCard
+            tone="rose"
+            icon={BadgeCheck}
+            label="Бронювань"
+            value={totalBookings}
+            hint="за весь час"
+            chartData={[1, 3, 5, 8, 10, 13, totalBookings]}
+          />
 
-  <StatCard
-    tone="blue"
-    icon={CalendarDays}
-    label="Найактивніший день"
-    value="Пʼятниця"
-    hint="найбільше записів"
-    hideChart
-  />
-</div>
+          <StatCard
+            tone="blue"
+            icon={CalendarDays}
+            label="Найактивніший день"
+            value="Пʼятниця"
+            hint="найбільше записів"
+            hideChart
+          />
+        </div>
 
         <SectionCard>
           <div className="sticky top-0 z-10 -mx-5 -mt-5 border-b border-[var(--color-cream)] bg-white/95 px-5 py-4 backdrop-blur md:static md:m-0 md:border-0 md:bg-transparent md:p-0">
@@ -841,8 +931,7 @@ async function handleCopyPhone(phone) {
                 />
               </div>
             </div>
-
-            <div className="mt-3 flex gap-2 overflow-x-auto pb-1 md:justify-center">
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
               {filterItems.map((item) => (
                 <button
                   key={item.value}
@@ -854,13 +943,26 @@ async function handleCopyPhone(phone) {
                     setClientTabs({});
                   }}
                   className={cn(
-                    "shrink-0 rounded-full border px-4 py-2 text-xs font-bold transition-all",
+                    "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold",
                     filter === item.value
-                      ? "border-[var(--color-primary-buttom)] bg-[var(--color-primary-buttom)] text-white hover:bg-[var(--color-primary-buttom)]/90"
-                      : "border-[var(--color-cream)] bg-white text-[var(--color-caramel)] hover:bg-[var(--color-cream)]",
+                      ? "inline-flex h-9 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-[var(--color-primary-buttom)] px-2 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:bg-[var(--color-primary-buttom)] active:scale-[0.98]"
+                      : "inline-flex h-9 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-2 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]",
                   )}
                 >
-                  {item.label}
+                  <span>{item.label}</span>
+
+                  {typeof item.count === "number" && (
+                    <span
+                      className={cn(
+                        "rounded-full px-2 py-0.5 text-[10px] font-bold",
+                        filter === item.value
+                          ? "bg-white/20 text-white"
+                          : "bg-[var(--color-cream)] text-[var(--color-caramel)]",
+                      )}
+                    >
+                      {item.count}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
@@ -877,47 +979,52 @@ async function handleCopyPhone(phone) {
             </div>
           )}
           {!loading && !error && clients.length === 0 ? (
-            <div className="mt-5 rounded-2xl border-2 border-dashed border-[var(--color-caramel)]/40 bg-[var(--color-cream)] p-8 text-center">
+            <div className="mt-5 rounded-2xl border-2 border-dashed border-[var(--color-caramel)]/40 bg-[var(--color-cream)] p-6 text-center sm:p-8">
               <div className="mb-3 flex items-center justify-center">
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/70">
-                  <Users className="h-6 w-6 text-[var(--color-caramel)]" />
+                 <EmptyIcon className="h-6 w-6 text-[var(--color-caramel)]" />
                 </div>
               </div>
-              <p className="text-sm font-bold text-[var(--color-caramel)]">
-                Клієнти зʼявляться після перших бронювань
+
+              <p className="text-sm font-medium text-[var(--color-caramel)]">
+                {emptyInfo.title}
+              </p>
+
+              <p className="mt-1 text-xs text-[var(--color-caramel)]/80">
+                {emptyInfo.description}
               </p>
             </div>
           ) : !loading && !error ? (
             <div className="mt-5 space-y-3">
               {visibleClients.map((client) => (
-<ClientAccordion
-  key={client.id}
-  client={{
-    ...client,
-    notes: client.notes || [],
-  }}
-  isExpanded={expandedClientId === client.id}
-  onToggle={() =>
-    setExpandedClientId((current) =>
-      current === client.id ? null : client.id,
-    )
-  }
-  activeTab={clientTabs[client.id] || "history"}
-  onTabChange={(tab) =>
-    setClientTabs((current) => ({
-      ...current,
-      [client.id]: tab,
-    }))
-  }
-  onAddNote={() => {
-    setNoteClient(client);
-    setNoteDraft("");
-  }}
-  onDeleteNote={(noteId) => handleDeleteNote(client.id, noteId)}
-  onToggleVip={() => handleToggleVip(client)}
-  onCopyPhone={handleCopyPhone}
-  copiedPhone={copiedPhone}
-/>
+                <ClientAccordion
+                  key={client.id}
+                  client={{
+                    ...client,
+                    notes: client.notes || [],
+                  }}
+                  isExpanded={expandedClientId === client.id}
+                  onToggle={() =>
+                    setExpandedClientId((current) =>
+                      current === client.id ? null : client.id,
+                    )
+                  }
+                  activeTab={clientTabs[client.id] || "history"}
+                  onTabChange={(tab) =>
+                    setClientTabs((current) => ({
+                      ...current,
+                      [client.id]: tab,
+                    }))
+                  }
+                  onAddNote={() => {
+                    setNoteClient(client);
+                    setNoteDraft("");
+                  }}
+                  onDeleteNote={(noteId) => handleDeleteNote(client.id, noteId)}
+                  onToggleVip={() => handleToggleVip(client)}
+                  onCopyPhone={handleCopyPhone}
+                  copiedPhone={copiedPhone}
+                />
               ))}
 
               {hasMoreClients && (
@@ -1022,12 +1129,7 @@ async function handleCopyPhone(phone) {
   );
 }
 
-function MiniMetric({
-  label,
-  value,
-  icon: Icon,
-  danger = false,
-}) {
+function MiniMetric({ label, value, icon: Icon, danger = false }) {
   return (
     <div className="min-w-0 rounded-2xl border border-[var(--color-cream)] bg-white px-2.5 py-3">
       <div className="flex items-center gap-2.5">
@@ -1049,11 +1151,7 @@ function MiniMetric({
             {label}
           </p>
 
-          <p
-            className={cn(
-              "mt-1 truncate !text-[13px] font-black sm:text-sm",
-            )}
-          >
+          <p className={cn("mt-1 truncate !text-[13px] font-black sm:text-sm")}>
             {value}
           </p>
         </div>
@@ -1111,23 +1209,23 @@ function ClientAccordion({
               </div>
             </div>
 
-<button
-  type="button"
-  onClick={(e) => {
-    e.stopPropagation();
-    onCopyPhone?.(client.phone);
-  }}
-  className="mt-1 flex max-w-full items-center gap-1.5 truncate text-sm font-medium text-[var(--color-caramel)] transition hover:text-[var(--color-ink)] active:scale-[0.98]"
-  title="Скопіювати телефон"
->
-  <span className="truncate">{client.phone}</span>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onCopyPhone?.(client.phone);
+              }}
+              className="mt-1 flex max-w-full items-center gap-1.5 truncate text-sm font-medium text-[var(--color-caramel)] transition hover:text-[var(--color-ink)] active:scale-[0.98]"
+              title="Скопіювати телефон"
+            >
+              <span className="truncate">{client.phone}</span>
 
-  {copiedPhone ? (
-    <CheckCheck className="ml-2 h-3.5 w-3.5 shrink-0" />
-  ) : (
-    <Copy className="ml-2 h-3.5 w-3.5 shrink-0" />
-  )}
-</button>
+              {copiedPhone ? (
+                <CheckCheck className="ml-2 h-3.5 w-3.5 shrink-0" />
+              ) : (
+                <Copy className="ml-2 h-3.5 w-3.5 shrink-0" />
+              )}
+            </button>
             <p className="truncate text-sm text-[var(--color-caramel)]">
               {client.email}
             </p>
@@ -1163,17 +1261,19 @@ function ClientAccordion({
                 )}
               >
                 <UserStar className="h-4 w-4" />
-                {client.isFavorite
-                  ? <span className="leading-tight text-center">
-  Прибрати статус
-  <br />
-  Особливого клієнта
-</span>
-                  : <span className="leading-tight text-center">
-  Додати статус
-  <br />
-  Особливого клієнта
-</span>}
+                {client.isFavorite ? (
+                  <span className="leading-tight text-center">
+                    Прибрати статус
+                    <br />
+                    Особливого клієнта
+                  </span>
+                ) : (
+                  <span className="leading-tight text-center">
+                    Додати статус
+                    <br />
+                    Особливого клієнта
+                  </span>
+                )}
               </Button>
             </div>
           )}
@@ -1273,82 +1373,96 @@ function ClientDetails({
           : "rounded-3xl border border-[var(--color-cream)] shadow-[0_4px_24px_-4px_rgba(27,27,27,0.10)]",
       )}
     >
-<div className="border-b border-[var(--color-cream)] p-5">
-  {!compactHeader && (
-    <div className="flex items-start gap-3">
-      <Avatar name={client.name} className="h-16 w-16 rounded-[22px]" />
+      <div className="border-b border-[var(--color-cream)] p-5">
+        {!compactHeader && (
+          <div className="flex items-start gap-3">
+            <Avatar name={client.name} className="h-16 w-16 rounded-[22px]" />
 
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <h3 className="truncate text-lg font-black text-[var(--color-ink)]">
-            {client.name}
-          </h3>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="truncate text-lg font-black text-[var(--color-ink)]">
+                  {client.name}
+                </h3>
 
-          <ClientStatusBadges client={client} />
+                <ClientStatusBadges client={client} />
+              </div>
+
+              <p className="mt-1 text-sm font-medium text-[var(--color-caramel)]">
+                {client.phone}
+              </p>
+
+              <p className="truncate text-sm text-[var(--color-caramel)]">
+                {client.email}
+              </p>
+            </div>
+          </div>
+        )}
+
+        <div className="mb-4 flex justify-end sm:hidden">
+          <Button
+            onClick={onToggleVip}
+            className={cn(
+              "w-full",
+              client.isFavorite &&
+                "bg-[var(--color-cream)] text-[var(--color-ink)] hover:bg-[var(--color-sand)]/40",
+            )}
+          >
+            <UserStar className="h-4 w-4" />
+            {client.isFavorite
+              ? "Прибрати статус Особливого клієнта"
+              : "Додати статус Особливого клієнта"}
+          </Button>
         </div>
 
-        <p className="mt-1 text-sm font-medium text-[var(--color-caramel)]">
-          {client.phone}
-        </p>
+        <div
+          className={cn(
+            "grid grid-cols-2 gap-2 md:grid-cols-3",
+            !compactHeader && "mt-4",
+          )}
+        >
+          <MiniMetric
+            icon={BadgeCheck}
+            label="Усього записів"
+            value={client.bookings}
+          />
+          <MiniMetric
+            icon={XCircle}
+            danger
+            label="Скасовано клієнтом"
+            value={client.cancellations}
+          />
+          <MiniMetric
+            icon={CalendarDays}
+            label="Останній запис"
+            value={formatDateUA(client.lastBooking.date)}
+          />
+          <MiniMetric
+            icon={User}
+            label="Майстер"
+            value={client.lastBooking.master}
+          />
 
-        <p className="truncate text-sm text-[var(--color-caramel)]">
-          {client.email}
-        </p>
+          <MiniMetric
+            icon={Repeat}
+            label="Візит"
+            value={
+              !client.lastVisit || new Date(client.lastVisit) > new Date()
+                ? "Ще не було візитів"
+                : daysAgo(client.lastVisit) === 0
+                  ? "Сьогодні"
+                  : `${daysAgo(client.lastVisit)} дн. тому`
+            }
+          />
+
+          <MiniMetric
+            icon={Cake}
+            label="Дата народження"
+            value={
+              client.birthDate ? formatDateUA(client.birthDate) : "Не вказана"
+            }
+          />
+        </div>
       </div>
-    </div>
-  )}
-
-  <div className="mb-4 flex justify-end sm:hidden">
-    <Button
-      onClick={onToggleVip}
-      className={cn(
-        "w-full",
-        client.isFavorite &&
-          "bg-[var(--color-cream)] text-[var(--color-ink)] hover:bg-[var(--color-sand)]/40",
-      )}
-    >
-      <UserStar className="h-4 w-4" />
-      {client.isFavorite
-        ? "Прибрати статус Особливого клієнта"
-        : "Додати статус Особливого клієнта"}
-    </Button>
-  </div>
-
-  <div
-    className={cn(
-      "grid grid-cols-2 gap-2 md:grid-cols-3",
-      !compactHeader && "mt-4",
-    )}
-  >
-    <MiniMetric icon={BadgeCheck} label="Усього записів" value={client.bookings} />
-<MiniMetric
-  icon={XCircle}
-  danger
-  label="Скасовано клієнтом"
-  value={client.cancellations}
-/>
-    <MiniMetric icon={CalendarDays} label="Останній запис" value={formatDateUA(client.lastBooking.date)} />
-    <MiniMetric icon={User} label="Майстер" value={client.lastBooking.master} />
-
-    <MiniMetric
-      icon={Repeat}
-      label="Візит"
-      value={
-        !client.lastVisit || new Date(client.lastVisit) > new Date()
-          ? "Ще не було візитів"
-          : daysAgo(client.lastVisit) === 0
-            ? "Сьогодні"
-            : `${daysAgo(client.lastVisit)} дн. тому`
-      }
-    />
-
-    <MiniMetric
-      icon={Cake}
-      label="Дата народження"
-      value={client.birthDate ? formatDateUA(client.birthDate) : "Не вказана"}
-    />
-  </div>
-</div>
 
       <div className="flex gap-1.5 overflow-x-auto border-b border-[var(--color-cream)] px-3 py-3 md:justify-center md:gap-2 md:px-4">
         {tabs.map((tab) => {
@@ -1508,20 +1622,20 @@ function ClientDetails({
 
         {activeTab === "statuses" && (
           <div className="space-y-3">
-{statusInfoItems.map((item) => {
-  const isVip = client.isVip || client.status === "vip";
+            {statusInfoItems.map((item) => {
+              const isVip = client.isVip || client.status === "vip";
 
-  const isActive =
-    item.value === "vip"
-      ? isVip
-      : item.value === "favorite"
-        ? client.isFavorite
-        : client.status === item.value;
+              const isActive =
+                item.value === "vip"
+                  ? isVip
+                  : item.value === "favorite"
+                    ? client.isFavorite
+                    : client.status === item.value;
 
-  const meta = statusMeta[item.value] || statusMeta.new;
-  const Icon = meta.icon;
+              const meta = statusMeta[item.value] || statusMeta.new;
+              const Icon = meta.icon;
 
-  return (
+              return (
                 <div
                   key={item.value}
                   className={cn(

@@ -10,7 +10,7 @@ import {
   ChevronLeft,
   ChevronRight,
   BadgeCheck,
-  CheckCheck,
+  FolderClock,
   XCircle,
   Clock,
   UserRound,
@@ -23,6 +23,13 @@ import {
   ChevronDown,
   ChevronUp,
   AlertTriangle,
+  Users,
+  UserPlus,
+  CircleUser,
+  CircleCheck,
+  CheckCheck,
+  CopyCheck,
+  ListTodo,
 } from "lucide-react";
 import { useBookings } from "../../context/bookings/useBookings";
 import { socket } from "../../lib/socket";
@@ -131,7 +138,7 @@ function getStatusUi(status, isArchived = false, canceledBy = null) {
   if (isArchived) {
     return {
       text: "Завершено",
-      icon: CheckCheck,
+      icon: FolderClock,
       badge: `${base} text-[var(--color-archived-dark)]`,
       button:
         "bg-[var(--color-archived)] text-white hover:bg-[var(--color-archived-dark)]",
@@ -143,7 +150,7 @@ function getStatusUi(status, isArchived = false, canceledBy = null) {
   if (status === "confirmed") {
     return {
       text: "Підтверджено",
-      icon: Check,
+      icon: CheckCheck,
       badge: `${base} text-[var(--color-confirmed-dark)]`,
       button:
         "bg-[var(--color-confirmed)] text-white hover:bg-[var(--color-confirmed-dark)]",
@@ -336,6 +343,63 @@ function Pill({ active, count, children, onClick }) {
     </button>
   );
 }
+
+const emptyBookingInfo = {
+  all: {
+    icon: CalendarDays,
+    title: "Поки що немає записів",
+    description: (
+      <span className="flex flex-col gap-1">
+        <span>Тут зʼявляться всі активні записи клієнтів.</span>
+        <span>Нові бронювання автоматично додаватимуться у список.</span>
+      </span>
+    ),
+  },
+
+  new: {
+    icon: CircleCheck,
+    title: "Поки що немає нових записів",
+    description: (
+      <span className="flex flex-col gap-1">
+        <span>Тут зʼявляться записи, які очікують підтвердження.</span>
+        <span>Після підтвердження вони перейдуть у відповідну вкладку.</span>
+      </span>
+    ),
+  },
+
+  confirmed: {
+    icon: CheckCheck,
+    title: "Поки що немає підтверджених записів",
+    description: (
+      <span className="flex flex-col gap-1">
+        <span>Тут зʼявляться записи, які ви вже підтвердили.</span>
+        <span>Вони залишатимуться активними до дати візиту.</span>
+      </span>
+    ),
+  },
+
+  canceled: {
+    icon: XCircle,
+    title: "Поки що немає скасованих записів",
+    description: (
+      <span className="flex flex-col gap-1">
+        <span>Тут зʼявляться записи, які були скасовані вами або клієнтом.</span>
+        <span>За потреби їх можна буде переглянути або видалити.</span>
+      </span>
+    ),
+  },
+
+  archive: {
+    icon: FolderClock,
+    title: "Поки що немає записів в архіві",
+    description: (
+      <span className="flex flex-col gap-1">
+        <span>Тут зʼявляться записи, дата й час яких уже минули.</span>
+        <span>Архів допомагає переглядати завершену історію візитів.</span>
+      </span>
+    ),
+  },
+};
 
 function Modal({
   open,
@@ -840,9 +904,9 @@ export default function Bookings() {
 
     return {
       text: "Оновлюється автоматично",
-      dotClass:
-        "h-2 w-2 rounded-full bg-[var(--color-confirmed)] shadow-[0_0_0_3px_var(--color-confirmed-light)] animate-[pulse-soft_1.8s_ease-in-out_infinite]",
-      wrapClass: `${base} text-[var(--color-confirmed-dark)]`,
+    dotClass:
+      "h-2 w-2 rounded-full bg-emerald-600 shadow-[0_0_0_3px_var(--color-confirmed-light)] animate-[pulse-soft_1s_ease-in-out_infinite]",
+    wrapClass: `${base} text-emerald-600`,
     };
   }, [socketState, isRefreshing]);
 
@@ -859,6 +923,9 @@ export default function Bookings() {
     }
   }
 
+  const emptyInfo = emptyBookingInfo[filter] || emptyBookingInfo.all;
+const EmptyIcon = emptyInfo.icon;
+
   return (
     <div className="h-full">
       <div className="mx-auto max-w-6xl space-y-6">
@@ -867,22 +934,15 @@ export default function Bookings() {
 
           <div className="relative flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="relative">
-                                       <div
-    className={cn(
-      "mb-3 inline-flex items-center gap-2 rounded-[20px] border px-3.5 py-2",
-      "transition-all duration-200",
-      "border-[var(--color-sand)]",
-      "bg-gradient-to-br from-[var(--color-pending-bg)] via-white to-[var(--color-cream)]",
-      "shadow-[0_10px_30px_rgba(212,186,140,0.10)]",
-      "backdrop-blur-sm",
-    )}
-  >
-    <Sparkles className="h-4 w-4 text-[var(--color-forest)]" />
-
-    <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-ink)]">
-      Записи клієнтів
-    </span>
+<div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-slate-700 shadow-[0_4px_14px_rgba(15,23,42,0.05)]">
+  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-900 text-white">
+    <Users className="h-3 w-3" />
   </div>
+
+  <span>Записи клієнтів</span>
+
+  <div className="h-1 w-1 rounded-full bg-slate-400" />
+</div>
 
               <h1 className="text-3xl font-black tracking-tight text-[var(--color-ink)] sm:text-4xl">
                 Записи
@@ -977,26 +1037,23 @@ export default function Bookings() {
               </div>
             </SectionCard>
           ) : loading ? null : keys.length === 0 ? (
-            <SectionCard
-              title="Порожньо"
-              subtitle="У цій вкладці записів немає"
-            >
-<div className="rounded-2xl border-2 border-dashed border-[var(--color-caramel)]/40 bg-[var(--color-cream)] p-6 text-center sm:p-8">
-  <div className="mb-3 flex items-center justify-center">
-    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/70">
-      <CalendarDays className="h-6 w-6 text-[var(--color-caramel)]" />
+<SectionCard title={emptyInfo.title} subtitle="У цій вкладці записів немає">
+  <div className="rounded-2xl border-2 border-dashed border-[var(--color-caramel)]/40 bg-[var(--color-cream)] p-6 text-center sm:p-8">
+    <div className="mb-3 flex items-center justify-center">
+      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/70">
+        <EmptyIcon className="h-6 w-6 text-[var(--color-caramel)]" />
+      </div>
     </div>
+
+    <p className="text-sm font-medium text-[var(--color-caramel)]">
+      {emptyInfo.title}
+    </p>
+
+    <p className="mt-1 text-xs text-[var(--color-caramel)]/80">
+      {emptyInfo.description}
+    </p>
   </div>
-
-  <p className="text-sm font-medium text-[var(--color-caramel)]">
-    Немає записів у цій вкладці
-  </p>
-
-  <p className="mt-1 text-xs text-[var(--color-caramel)]/80">
-    Змініть фільтр або дочекайтесь нових бронювань
-  </p>
-</div>
-            </SectionCard>
+</SectionCard>
           ) : (
             <div className="space-y-2">
               {keys.map((key) => {
@@ -1146,7 +1203,7 @@ export default function Bookings() {
                                           }}
                                           className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
                                         >
-                                          <Check className="h-4 w-4" />
+                                          <CheckCheck className="h-4 w-4" />
                                           Підтвердити
                                         </button>
                                       )}
@@ -1571,7 +1628,7 @@ export default function Bookings() {
               ? {
                   label: "Завершено",
                   top: "from-[var(--color-archived-light)] to-white",
-                  Icon: CheckCheck,
+                  Icon: FolderClock,
                   iconColor: "text-[var(--color-archived-dark)]",
                   pillText: "text-[var(--color-archived-dark)]",
                   accent: "text-[var(--color-archived)]",
@@ -1580,7 +1637,7 @@ export default function Bookings() {
                 ? {
                     label: "Підтверджено",
                     top: "from-[var(--color-confirmed-light)] to-white",
-                    Icon: Check,
+                    Icon: CheckCheck,
                     iconColor: "text-[var(--color-confirmed-dark)]",
                     pillText: "text-[var(--color-confirmed-dark)]",
                     accent: "text-[var(--color-confirmed)]",
@@ -1804,7 +1861,7 @@ export default function Bookings() {
                                 title="Скопіювати телефон"
                               >
                                 {copiedPhone ? (
-                                  <CheckCheck className="h-4 w-4" />
+                                  <FolderClock className="h-4 w-4" />
                                 ) : (
                                   <Copy className="h-4 w-4" />
                                 )}
@@ -1904,7 +1961,7 @@ export default function Bookings() {
 
                     <div className="relative mt-4 flex justify-center">
                       <div className="inline-flex items-center gap-2 rounded-full border border-[var(--border-soft)] bg-white px-3 py-1.5 text-[13px] font-semibold shadow-[var(--shadow-card)]">
-                        <BadgeCheck className="h-4 w-4 text-[var(--color-pending-dark)]" />
+                        <ListTodo className="h-4 w-4 text-[var(--color-pending-dark)]" />
                         <span className="whitespace-nowrap text-[var(--color-ink)]">
                           Всього записів: {totalCount}
                         </span>
@@ -2125,7 +2182,7 @@ export default function Bookings() {
                                           title="Скопіювати телефон"
                                         >
                                           {copiedPhone ? (
-                                            <CheckCheck className="h-4 w-4" />
+                                            <FolderClock className="h-4 w-4" />
                                           ) : (
                                             <Copy className="h-4 w-4" />
                                           )}
@@ -2166,7 +2223,7 @@ export default function Bookings() {
     actionsCount > 1 ? "w-full" : "min-w-[160px]"
   )}
 >
-  <Check className="h-4 w-4" />
+  <CheckCheck className="h-4 w-4" />
   Підтвердити
 </button>
                                         )}

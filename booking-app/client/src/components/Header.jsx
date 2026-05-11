@@ -83,8 +83,7 @@ const navLinkBase =
   "inline-flex items-center gap-2 rounded-2xl px-3.5 py-2.5 text-sm font-semibold transition-all duration-200";
 
 const navLinkActive =
-  "border-transparent text-white bg-gradient-to-r from-[#8FA887] via-[#86A17D] to-[#7F9A78] shadow-[0_10px_24px_rgba(127,154,120,0.24)]";
-
+  "border-transparent text-[var(--color-white)] bg-[var(--color-sidebar-accent)] shadow-[0_10px_24px_rgba(24,24,27,0.22)] hover:bg-[var(--color-sidebar-accent-hover)]";
 const navLinkIdle =
   "border-transparent text-[var(--color-ink)] hover:bg-[#F3F5EF] active:scale-[0.99]";
 
@@ -143,9 +142,9 @@ function MobileNavIcon({ children, active }) {
     <span
       className={cx(
         "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-all duration-200 sm:h-11 sm:w-11 sm:rounded-2xl",
-        active
-          ? "border-white/40 bg-white/20 text-white"
-          : "border-[var(--color-cream)] bg-white text-[#7f9a78] shadow-[0_2px_8px_rgba(27,27,27,0.04)]"
+active
+  ? "border-white/20 bg-white/10 text-[var(--color-white)]"
+  : "border-[var(--color-cream)] bg-[var(--color-white)] text-[var(--color-sidebar-accent-soft)]"
       )}
     >
       {children}
@@ -166,7 +165,7 @@ function MobileBottomLink({ to, label, icon }) {
             className={cx(
               "flex h-9 w-9 items-center justify-center rounded-2xl",
 isActive
-  ? "border-transparent text-white bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]"
+  ? "border-transparent text-[var(--color-white)] bg-[var(--color-sidebar-accent)]"
   : "border-transparent text-[var(--color-caramel)] hover:bg-[var(--color-cream)]",
             )}
           >
@@ -177,7 +176,7 @@ isActive
             className={cx(
               "text-[9px] leading-none transition-colors duration-200",
               isActive
-                ? "font-semibold text-[var(--color-primary-buttom)]"
+                ? "font-semibold text-[var(--color-sidebar-accent)]"
                 : "text-[var(--color-caramel)] opacity-80",
             )}
           >
@@ -413,11 +412,12 @@ const newBookingsCount = useMemo(() => {
   <ButtonLink
     to="/dashboard/studio"
     icon={<Settings2 className="h-4 w-4" />}
-    className="bg-[var(--color-primary-buttom)] text-white hover:bg-[var(--color-primary-buttom)]/90"
+   className="bg-[var(--color-sidebar-accent)] text-[var(--color-white)] hover:bg-[var(--color-sidebar-accent-hover)]"
   >
     Керувати студією
   </ButtonLink>
 </div>
+
         ),
       };
     }
@@ -568,7 +568,7 @@ const staticRoutes = [
         <header className="fixed left-0 right-0 top-2 z-[60] sm:top-3">
           <div className="mx-auto max-w-6xl px-3 sm:px-4">
             <div className="overflow-hidden rounded-[22px] border border-[var(--color-cream)] bg-white/90 shadow-[0_10px_30px_rgba(27,27,27,0.08)] backdrop-blur-md sm:rounded-[28px]">
-              <div className="h-[2px] bg-gradient-to-r from-[var(--color-forest)] via-[var(--color-caramel)] to-[var(--color-ink)] opacity-70" />
+              <div className="h-[2px] bg-gradient-to-r from-[var(--color-sidebar-accent)] via-[var(--color-sidebar-accent-hover)] to-[var(--color-sidebar-accent-soft)]" />
 
               <div className="flex h-14 items-center justify-between gap-2 px-2.5 sm:h-16 sm:gap-3 sm:px-4">
                 <Link
@@ -638,7 +638,7 @@ const staticRoutes = [
           >
             <div className="flex h-full flex-col">
 <div className="relative border-b border-[var(--color-cream)] bg-white px-3 pb-2.5 pt-2.5 sm:px-4 sm:pb-3 sm:pt-3">
-  <div className="relative overflow-hidden rounded-[22px] bg-gradient-to-br from-[#3f815f] via-[#78a982] to-[#d9ead2] p-3.5 text-white shadow-[0_14px_40px_rgba(50,78,41,0.22)] sm:p-4">
+  <div className="relative overflow-hidden rounded-[22px] bg-gradient-to-br from-[var(--color-sidebar-accent)] via-[var(--color-sidebar-accent-hover)] to-[var(--color-sidebar-accent-soft)]bg-gradient-to-br from-[#3f815f] via-[#78a982] to-[#d9ead2] p-3.5 text-white shadow-[0_14px_40px_rgba(50,78,41,0.22)] sm:p-4">
     
     {/* glow */}
     <div className="pointer-events-none absolute -right-8 -top-10 h-32 w-32 rounded-full bg-white/20 blur-3xl" />
@@ -662,7 +662,7 @@ const staticRoutes = [
             )}
           </div>
 
-          <span className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full border-2 border-white bg-[#7fbd87]" />
+        
         </div>
 
         {/* text */}
@@ -715,7 +715,7 @@ const staticRoutes = [
     cx(
       "group relative flex items-center gap-3 overflow-hidden rounded-[18px] border px-3 py-3 transition-all duration-300 ease-out sm:rounded-[22px] sm:py-3.5",
 isActive
-  ? "border-transparent text-white bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]"
+  ? "border-transparent text-[var(--color-white)] bg-[var(--color-sidebar-accent)]"
   : "border-transparent text-[var(--color-caramel)] hover:bg-[var(--color-cream)]"
     )
   }
@@ -733,7 +733,9 @@ isActive
         <span
           className={cx(
             "absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full transition-all duration-200 sm:h-7",
-            isActive ? "bg-white" : "bg-transparent",
+            isActive
+  ? "bg-[var(--color-white)]"
+  : "bg-transparent"
           )}
         />
 

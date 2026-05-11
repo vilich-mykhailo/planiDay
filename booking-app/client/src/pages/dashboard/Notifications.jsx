@@ -258,8 +258,8 @@ const liveStatusUi = useMemo(() => {
   return {
     text: "Оновлюється автоматично",
     dotClass:
-      "h-2 w-2 rounded-full bg-[var(--color-confirmed)] shadow-[0_0_0_3px_var(--color-confirmed-light)] animate-[pulse-soft_1.8s_ease-in-out_infinite]",
-    wrapClass: `${base} text-[var(--color-confirmed-dark)]`,
+      "h-2 w-2 rounded-full bg-emerald-600 shadow-[0_0_0_3px_var(--color-confirmed-light)] animate-[pulse-soft_1s_ease-in-out_infinite]",
+    wrapClass: `${base} text-emerald-600`,
   };
 }, [isOnline, socketState]);
 
@@ -376,21 +376,14 @@ const liveStatusUi = useMemo(() => {
 
         <div className="relative flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-<div
-  className={cn(
-    "mb-3 inline-flex items-center gap-2 rounded-[20px] border px-3.5 py-2",
-    "transition-all duration-200",
-    "border-[var(--color-sand)]",
-    "bg-gradient-to-br from-[var(--color-pending-bg)] via-white to-[var(--color-cream)]",
-    "shadow-[0_10px_30px_rgba(212,186,140,0.10)]",
-    "backdrop-blur-sm",
-  )}
->
-  <Sparkles className="h-4 w-4 text-[var(--color-forest)]" />
+<div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-slate-700 shadow-[0_4px_14px_rgba(15,23,42,0.05)]">
+  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-900 text-white">
+    <Bell className="h-3 w-3" />
+  </div>
 
-  <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-ink)]">
-    Центр сповіщень
-  </span>
+  <span>Повідомлення</span>
+
+  <div className="h-1 w-1 rounded-full bg-slate-400" />
 </div>
                          
 

@@ -257,7 +257,9 @@ input:-webkit-autofill:focus {
 --color-buttom-ok: #3a7027;
 
  --color-white: #ffffff;
-
+  --color-sidebar-accent: #18181b;
+  --color-sidebar-accent-hover: #27272a;
+  --color-sidebar-accent-soft: #3f3f46;
 
 /* 👉 SAVE BUTTON (nude green, трохи насичений) */
 --color-nude-green-500: 72, 140, 100;

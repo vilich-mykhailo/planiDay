@@ -21,6 +21,16 @@ import {
   Banknote,
   Timer,
   Phone,
+  CircleCheck,
+  CircleAlert,
+  CircleCheckBig,
+  SquarePen,
+  ClockCheck,
+  ClockAlert,
+  CirclePause,
+  CirclePlay,
+  ChartColumn,
+  LayoutGrid,
 } from "lucide-react";
 import { socket } from "../lib/socket";
 
@@ -260,7 +270,7 @@ function MonthlyBookingsChart({ bookings = [], nowTs }) {
   const chart = useMemo(() => {
     const width = Math.max(920, data.length * 34);
     const height = 330;
-   const padding = { top: 28, right: 2, bottom: 54, left: 62 };
+   const padding = { top: 28, right: 12, bottom: 54, left: 62 };
 
     const innerWidth = width - padding.left - padding.right;
     const innerHeight = height - padding.top - padding.bottom;
@@ -330,10 +340,15 @@ function MonthlyBookingsChart({ bookings = [], nowTs }) {
       <div className="px-4 pb-5 pt-5 sm:px-6 sm:pb-7 sm:pt-6">
         <div className="mb-5 grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-end">
           <div className="min-w-0">
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-emerald-700 shadow-sm">
-              <span className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,0.12)]" />
-              Професійна аналітика
-            </div>
+<div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-slate-700 shadow-[0_4px_14px_rgba(15,23,42,0.05)]">
+  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-900 text-white">
+    <ChartColumn className="h-3 w-3" />
+  </div>
+
+  <span>Професійна аналітика</span>
+
+  <div className="h-1 w-1 rounded-full bg-slate-400" />
+</div>
 
             <h2 className="text-2xl font-black tracking-tight text-[var(--color-ink)] sm:text-3xl">
               Графік записів
@@ -398,27 +413,31 @@ function MonthlyBookingsChart({ bookings = [], nowTs }) {
     </button>
   </div>
 </div>
-        <div className="mb-5 mt-4 grid grid-cols-2 gap-2 lg:grid-cols-4">
-          <ChartKpi label="Усього записів" value={total} tone="emerald" />
-          <ChartKpi label="Підтверджені" value={confirmed} tone="sky" />
-          <ChartKpi label="Очікують" value={pending} tone="amber" />
-          <ChartKpi label="Записи на сьогодні" value={todayCount} tone="slate" />
+        <div className="mb-5 mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <ChartKpi label="Записи на сьогодні" value={todayCount} icon={CirclePlay} tone="emerald" />
+          <ChartKpi label="Підтверджені" value={confirmed} icon={CircleCheck} tone="sky" />
+          <ChartKpi label="Очікують" value={pending} icon={CirclePause} tone="amber" />
+          <ChartKpi label="Усього записів" value={total} icon={CircleCheckBig} tone="slate" />
         </div>
         <div className="relative mt-4 overflow-hidden rounded-[32px] border border-white/80 bg-white shadow-[0_18px_48px_rgba(15,23,42,0.08)]">
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400/50 to-transparent" />
 
          <div className="grid gap-0">
-            <div className="min-w-0 border-b border-slate-100 bg-gradient-to-br from-slate-50 via-white to-emerald-50/45 p-3 sm:p-4 xl:border-b-0 xl:border-r">
+            <div className="min-w-0 border-b border-slate-100 p-3 sm:p-4 xl:border-b-0 xl:border-r">
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2 px-1">
                 <div className="flex flex-wrap items-center gap-3 text-[11px] font-black text-slate-500">
                   <span className="inline-flex items-center gap-2">
                     <span className="h-2.5 w-6 rounded-full bg-[var(--color-mist)]" />
-                    Нема записів
+                    Вихідний
                   </span>
                   <span className="inline-flex items-center gap-2">
                     <span className="h-2.5 w-6 rounded-full bg-emerald-600" />
-                    Записи
+                    Робочий день
                   </span>
+<span className="inline-flex items-center gap-2">
+  <span className="h-[2px] w-6 bg-[repeating-linear-gradient(to_right,_#10b981_0,_#10b981_6px,_transparent_6px,_transparent_9px)]" />
+  Сьогодні
+</span>
                 </div>
 
                 <p className="text-[11px] font-bold text-slate-400">
@@ -509,11 +528,11 @@ style={{
                       >
                         <rect
                           x={item.x - chart.barWidth / 2}
-                          y={item.count > 0 ? item.y : baseY - 8}
+                          y={item.count > 0 ? item.y : baseY - 4}
                           width={chart.barWidth}
                           height={item.count > 0 ? Math.max(8, barHeight) : 8}
                           rx="8"
-                          fill={item.count > 0 ? "url(#bookingBarsGradient)" : isWeekend ? "#cbd5e1" : "#e2e8f0"}
+                          fill={item.count > 0 ? "url(#bookingBarsGradient)" : isWeekend ? "#e7e7e7" : "#009966"}
                           opacity={isActive ? 1 : item.count > 0 ? 0.88 : 0.75}
                         />
 
@@ -553,16 +572,17 @@ style={{
                           {item.day}
                         </text>
 
-                        {(item.day === 1 || item.day % 5 === 0 || item.day === data.length) && (
-                          <text
-                            x={item.x}
-                            y={baseY + 41}
-                            textAnchor="middle"
-                            className="fill-slate-400 text-[10px] font-bold"
-                          >
-                            {item.weekday}
-                          </text>
-                        )}
+<text
+  x={item.x}
+  y={baseY + 41}
+  textAnchor="middle"
+  className={cn(
+    "text-[10px] font-bold",
+    isWeekend ? "fill-slate-300" : "fill-slate-400"
+  )}
+>
+  {item.weekday}
+</text>
                       </g>
                     );
                   })}
@@ -637,7 +657,7 @@ style={{
   );
 }
 
-function ChartKpi({ label, value, tone = "emerald" }) {
+function ChartKpi({ label, value, icon: Icon, tone = "emerald" }) {
   const tones = {
     emerald: "from-emerald-50 to-white text-emerald-700",
     sky: "from-sky-50 to-white text-sky-700",
@@ -646,13 +666,24 @@ function ChartKpi({ label, value, tone = "emerald" }) {
   };
 
   return (
-    <div className={cn("rounded-[24px] border border-white/80 bg-gradient-to-br p-4 shadow-sm", tones[tone])}>
-      <p className="truncate text-[10px] font-black uppercase tracking-[0.12em] opacity-70">
-        {label}
-      </p>
-      <p className="mt-2 text-2xl font-black leading-none text-slate-950">
-        {value}
-      </p>
+    <div
+      className={cn(
+        "rounded-[24px] border border-white/80 bg-gradient-to-br p-4 shadow-sm flex justify-between items-center",
+        tones[tone]
+      )}
+    >
+      <div>
+        <p className="truncate text-[10px] font-black uppercase tracking-[0.12em] opacity-70">
+          {label}
+        </p>
+        <p className="mt-2 text-2xl font-black leading-none text-slate-950">
+          {value}
+        </p>
+      </div>
+
+      <div className="flex items-center justify-center">
+        {Icon && <Icon className="h-8 w-8" />}
+      </div>
     </div>
   );
 }
@@ -1187,8 +1218,8 @@ const liveStatusUi = useMemo(() => {
   return {
     text: "Оновлюється автоматично",
     dotClass:
-      "h-2 w-2 rounded-full bg-[var(--color-confirmed)] shadow-[0_0_0_3px_var(--color-confirmed-light)] animate-[pulse-soft_1.8s_ease-in-out_infinite]",
-    wrapClass: `${base} text-[var(--color-confirmed-dark)]`,
+      "h-2 w-2 rounded-full bg-emerald-600 shadow-[0_0_0_3px_var(--color-confirmed-light)] animate-[pulse-soft_1s_ease-in-out_infinite]",
+    wrapClass: `${base} text-emerald-600`,
   };
 }, [isOnline, socketState, isRefreshing]);
 

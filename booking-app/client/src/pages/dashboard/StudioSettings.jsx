@@ -16,6 +16,7 @@ import {
   MapPin, 
   FileText,
   XCircle,
+  Building2,
 } from "lucide-react";
 import { useStudio } from "../../context/studio/useStudio";
 import { api } from "../../api/http";
@@ -86,7 +87,7 @@ function SectionCard({
         className,
       )}
     >
-      <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[var(--color-forest)] via-[var(--color-caramel)] to-[var(--color-ink)] opacity-70" />
+  <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[var(--color-sidebar-accent)] via-[var(--color-sidebar-accent-hover)] to-[var(--color-sidebar-accent-soft)] opacity-80" />
 
       <div className="flex flex-col gap-3 border-b border-[var(--color-cream)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
@@ -95,9 +96,9 @@ function SectionCard({
               {title}
             </h2>
             {badge && (
-              <span className="inline-flex items-center rounded-full border border-[var(--color-sand)] bg-[var(--color-pending-bg)] px-2.5 py-0.5 text-xs font-semibold text-[var(--color-forest)]">
-                {badge}
-              </span>
+<span className="inline-flex items-center rounded-full border border-[var(--color-sidebar-accent-soft)] bg-[var(--color-white)] px-2.5 py-0.5 text-xs font-semibold text-[var(--color-sidebar-accent)]">
+  {badge}
+</span>
             )}
           </div>
           {subtitle && (
@@ -123,16 +124,16 @@ function Button({
   ...props
 }) {
   const variants = {
-    primary:
-      "bg-[var(--color-ink)] text-white hover:bg-[var(--color-ink-soft)] shadow-[var(--shadow-button)]",
+ primary:
+  "bg-[var(--color-sidebar-accent)] text-[var(--color-white)] hover:bg-[var(--color-sidebar-accent-hover)] shadow-[var(--shadow-button)]",
     secondary:
       "bg-white border border-[var(--color-cream)] text-[var(--color-ink)] hover:bg-[var(--color-cream)] hover:border-[var(--color-mist)]",
     danger:
       "border border-[var(--color-danger-border)] bg-[var(--color-danger-bg)] text-[var(--color-danger)] hover:border-[var(--color-danger)] hover:bg-[rgba(213,92,82,0.12)]",
     ghost:
       "text-[var(--color-caramel)] hover:bg-[var(--color-cream)] hover:text-[var(--color-ink)]",
-    warning:
-      "border border-[var(--color-sand)] bg-[var(--color-pending-bg)] text-[var(--color-forest)] hover:border-[var(--color-caramel)] hover:bg-[var(--color-sand)]",
+  warning:
+  "border border-[var(--color-sidebar-accent-soft)] bg-[var(--color-white)] text-[var(--color-sidebar-accent)] hover:bg-[var(--color-cream)]",
   };
 
   const sizes = {
@@ -294,7 +295,7 @@ function CustomSelect({
           className={cn(
             "h-4.5 w-4.5 shrink-0 text-[var(--color-caramel)] transition-all duration-200",
             "group-hover:text-[var(--color-ink)]",
-            open && "rotate-180 text-[var(--color-forest)]",
+            open && "rotate-180 text-[var(--color-sidebar-accent)]",
           )}
         />
       </button>
@@ -326,9 +327,9 @@ function CustomSelect({
                   }}
                   className={cn(
                     "flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm transition-colors duration-150",
-                    isSelected
-                      ? "bg-[var(--color-pending-bg)] text-[var(--color-forest)]"
-                      : "text-[var(--color-ink)] hover:bg-[var(--color-cream)]",
+                   isSelected
+  ? "bg-[var(--color-cream)] text-[var(--color-sidebar-accent)]"
+  : "text-[var(--color-ink)] hover:bg-[var(--color-cream)]",
                   )}
                   role="option"
                   aria-selected={isSelected}
@@ -346,7 +347,7 @@ function CustomSelect({
                   </span>
 
                   {isSelected && (
-                    <Check className="h-4 w-4 shrink-0 text-[var(--color-forest)]" />
+                    <Check className="h-4 w-4 shrink-0 text-[var(--color-sidebar-accent)]" />
                   )}
                 </button>
               );
@@ -1538,7 +1539,7 @@ function showToast({ type = "success", title, text }) {
 
             {profile.percent === 100 && (
               <div className="absolute right-4 top-4">
-                <div className="rounded-2xl bg-[var(--color-forest)] px-3 py-2 text-white">
+              <div className="rounded-2xl bg-[var(--color-sidebar-accent)] px-3 py-2 text-[var(--color-white)]">
                   <div className="flex items-center gap-2">
                     <div className="hidden h-7 w-7 items-center justify-center rounded-lg bg-white/20 sm:flex">
                       <Check className="h-4 w-4 text-white" />
@@ -1553,21 +1554,14 @@ function showToast({ type = "success", title, text }) {
             )}
 
             <div className="relative">
-<div
-  className={cn(
-    "mb-3 inline-flex items-center gap-2 rounded-[20px] border px-3.5 py-2",
-    "transition-all duration-200",
-    "border-[var(--color-sand)]",
-    "bg-gradient-to-br from-[var(--color-pending-bg)] via-white to-[var(--color-cream)]",
-    "shadow-[0_10px_30px_rgba(212,186,140,0.10)]",
-    "backdrop-blur-sm",
-  )}
->
-  <Sparkles className="h-4 w-4 text-[var(--color-forest)]" />
+<div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-slate-700 shadow-[0_4px_14px_rgba(15,23,42,0.05)]">
+  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-900 text-white">
+    <Building2 className="h-3 w-3" />
+  </div>
 
-  <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-ink)]">
-    Профіль студії
-  </span>
+  <span>Профіль студії</span>
+
+  <div className="h-1 w-1 rounded-full bg-slate-400" />
 </div>
 
               <h1 className="text-3xl font-black tracking-tight text-[var(--color-ink)] sm:text-4xl">
@@ -1595,7 +1589,7 @@ function showToast({ type = "success", title, text }) {
                     className={cn(
                       "shrink-0 whitespace-nowrap rounded-xl px-3 py-2 text-[13px] font-semibold sm:px-4 sm:py-2.5 sm:text-sm",
                       tab === t.id
-                        ? "bg-[var(--color-ink)] text-white"
+                       ? "bg-[var(--color-sidebar-accent)] text-[var(--color-white)]"
                         : "bg-white text-[var(--color-caramel)] hover:bg-[var(--color-cream)] hover:text-[var(--color-ink)]",
                     )}
                   >
@@ -1609,13 +1603,13 @@ function showToast({ type = "success", title, text }) {
                   <div className="flex items-center gap-3">
                     <div className="relative flex h-10 w-10 items-center justify-center rounded-2xl bg-white shadow-sm">
                       <span className="absolute inline-flex h-3 w-3 animate-ping rounded-full bg-[var(--color-caramel)] opacity-75" />
-                      <span className="relative inline-flex h-3 w-3 rounded-full bg-[var(--color-buttom-ok)]" />
+                    <span className="relative inline-flex h-3 w-3 rounded-full bg-[var(--color-sidebar-accent)]" />
                     </div>
 
                     <div>
-                      <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--color-forest)]">
-                        Заповненість
-                      </p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--color-sidebar-accent)]">
+  Заповненість
+</p>
 
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-black text-[var(--color-ink)]">
@@ -1766,8 +1760,8 @@ function showToast({ type = "success", title, text }) {
     
     {/* АДРЕСА */}
     <div className="flex items-center gap-2">
-      <MapPin className="h-4 w-4 text-[var(--color-primary-buttom)]" />
-      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-primary-buttom)]">
+      <MapPin className="h-4 w-4 text-[var(--color-sidebar-accent)]" />
+      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-sidebar-accent)]">
         Адреса
       </p>
     </div>
@@ -1784,8 +1778,8 @@ function showToast({ type = "success", title, text }) {
 
     {/* ОПИС */}
     <div className="flex items-center gap-2">
-      <FileText className="h-4 w-4 text-[var(--color-primary-buttom)]" />
-      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-primary-buttom)]">
+      <FileText className="h-4 w-4 text-[var(--color-sidebar-accent)]" />
+      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-sidebar-accent)]">
         Опис
       </p>
     </div>
@@ -1894,9 +1888,9 @@ function showToast({ type = "success", title, text }) {
   
   {/* HEADER */}
   <div className="flex items-center gap-2">
-    <Info className="h-4 w-4 text-[var(--color-primary-buttom)]" />
+    <Info className="h-4 w-4 text-[var(--color-sidebar-accent)]" />
 
-    <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-primary-buttom)]">
+    <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-sidebar-accent)]">
       Рекомендація
     </p>
   </div>
@@ -1991,7 +1985,7 @@ function showToast({ type = "success", title, text }) {
     "inline-flex cursor-pointer items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-semibold text-white transition-all duration-200 active:scale-[0.98]",
 
     // 👉 gradient через nude-green
-    "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
+    "bg-[var(--color-sidebar-accent)] hover:bg-[var(--color-sidebar-accent-hover)]",
 
     // 👉 hover
     "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]",
@@ -2154,7 +2148,7 @@ function showToast({ type = "success", title, text }) {
       className={cn(
         "absolute inset-x-0 top-0 h-1",
         toast.type === "success"
-          ? "bg-gradient-to-r from-[var(--color-forest)] via-[var(--color-forest)] to-[var(--color-caramel)]"
+         ? "bg-gradient-to-r from-[var(--color-sidebar-accent)] via-[var(--color-sidebar-accent-hover)] to-[var(--color-sidebar-accent-soft)]"
           : "bg-gradient-to-r from-[var(--color-danger-border)] via-[var(--color-danger)] to-[var(--color-danger-dark)]",
       )}
     />
@@ -2269,7 +2263,7 @@ function showToast({ type = "success", title, text }) {
 
           <div className="relative mx-auto max-w-5xl px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
             <div className="relative overflow-hidden rounded-[26px] border border-[var(--color-sand)] bg-white/95 px-4 py-4 shadow-[0_24px_80px_rgba(27,27,27,0.18)] ring-1 ring-[var(--color-pending-bg)] backdrop-blur-xl">
-              <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[var(--color-forest)] via-[var(--color-caramel)] to-[var(--color-ink)]" />
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[var(--color-sidebar-accent)] via-[var(--color-sidebar-accent-hover)] to-[var(--color-sidebar-accent-soft)]" />
 
               <div className="flex items-center gap-2">
                 <Button
@@ -2289,14 +2283,7 @@ function showToast({ type = "success", title, text }) {
     "flex-1",
     "inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold text-white",
     "active:scale-[0.98]",
-
-    // 👉 nude-green
-    "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
-
-    // 👉 hover
-    "hover:from-[rgba(var(--color-nude-green-500_hover),1)] hover:to-[rgba(var(--color-nude-green-600_hover),1)]",
-
-    // 👉 disabled
+"bg-[var(--color-sidebar-accent)] hover:bg-[var(--color-sidebar-accent-hover)]",
     !canSave &&
       "cursor-not-allowed bg-[var(--color-cream)] text-[var(--color-caramel)] hover:from-[var(--color-cream)] hover:to-[var(--color-cream)]"
   )}

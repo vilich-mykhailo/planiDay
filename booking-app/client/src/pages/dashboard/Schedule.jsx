@@ -10,6 +10,7 @@ import {
   ChevronUp,
   RefreshCw,
   Trash2,
+  Clock3,
 } from "lucide-react";
 import TimeSelect from "../../components/TimeSelect";
 import { useStudio } from "../../context/studio/useStudio";
@@ -1227,21 +1228,14 @@ useEffect(() => {
           <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[var(--color-forest)] via-[var(--color-caramel)] to-[var(--color-ink)] opacity-70" />
 
           <div className="relative">
-<div
-  className={cn(
-    "mb-3 inline-flex items-center gap-2 rounded-[20px] border px-3.5 py-2",
-    "transition-all duration-200",
-    "border-[var(--color-sand)]",
-    "bg-gradient-to-br from-[var(--color-pending-bg)] via-white to-[var(--color-cream)]",
-    "shadow-[0_10px_30px_rgba(212,186,140,0.10)]",
-    "backdrop-blur-sm",
-  )}
->
-  <Sparkles className="h-4 w-4 text-[var(--color-forest)]" />
+<div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-slate-700 shadow-[0_4px_14px_rgba(15,23,42,0.05)]">
+  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-900 text-white">
+    <Clock3 className="h-3 w-3" />
+  </div>
 
-  <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-forest)]">
-    Графік студії
-  </span>
+  <span>Графік роботи</span>
+
+  <div className="h-1 w-1 rounded-full bg-slate-400" />
 </div>
 
             <h1 className="text-3xl font-black tracking-tight text-[var(--color-ink)] sm:text-4xl">
