@@ -221,7 +221,15 @@ const items = await prisma.booking.findMany({
   },
   orderBy: { startAt: "asc" },
   include: {
-    client: { select: { name: true, phone: true } },
+    client: {
+  select: {
+    name: true,
+    firstName: true,
+    lastName: true,
+    phone: true,
+    photoUrl: true,
+  },
+},
     service: {
       select: {
         name: true,
@@ -229,27 +237,44 @@ const items = await prisma.booking.findMany({
         duration: true,
       },
     },
-    master: { select: { name: true } },
+    master: {
+  select: {
+    name: true,
+    photoUrl: true,
+  },
+},
   },
 });
 
 const bookings = items.map((b) => {
   const { date, time } = toUiDateTime(b.startAt);
 
-  return {
-    id: b.id,
-    date,
-    time,
-    status: uiStatus(b.status),
-    canceledBy: b.canceledBy || null,
-    clientName: b.client?.name || "—",
-    clientPhone: b.client?.phone || "—",
-    serviceName: b.service?.name || "—",
-    price: b.service?.price ?? null,
-    duration: b.service?.duration ?? null,
-    masterName: b.master?.name || "",
-    createdAt: b.createdAt,
-  };
+return {
+  id: b.id,
+  date,
+  time,
+  status: uiStatus(b.status),
+  canceledBy: b.canceledBy || null,
+
+  clientName:
+    b.client?.name ||
+    [b.client?.firstName, b.client?.lastName]
+      .filter(Boolean)
+      .join(" ") ||
+    "—",
+
+  clientPhone: b.client?.phone || "—",
+  clientPhotoUrl: b.client?.photoUrl || "",
+
+  serviceName: b.service?.name || "—",
+  price: b.service?.price ?? null,
+  duration: b.service?.duration ?? null,
+
+  masterName: b.master?.name || "",
+  masterPhotoUrl: b.master?.photoUrl || "",
+
+  createdAt: b.createdAt,
+};
 });
 
     res.json({ bookings });

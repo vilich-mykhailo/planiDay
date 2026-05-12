@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { socket } from "../../lib/socket";
-import { Bell, Sparkles, Check } from "lucide-react";
+import { Bell, Sparkles, Check, CalendarDays, ChevronUp, ChevronDown } from "lucide-react";
 import { api } from "../../api/http";
 
 function cn(...classes) {
@@ -118,93 +118,150 @@ function NotificationCardSkeleton() {
 }
 
 function NotificationCard({ item, onRead }) {
-  const isReschedule = item.oldDate || item.newDate;
+    const isReschedule = item.oldDate || item.newDate;
+  const [expanded, setExpanded] = useState(!item.isRead);
 
   return (
     <div
       className={cn(
-        "rounded-[28px] border p-4 transition-all duration-200",
-        "hover:border-[var(--color-sand)]",
+        "relative overflow-hidden rounded-[30px] border bg-white p-4 transition-all duration-200 sm:p-5",
         item.isRead
-          ? "border-[var(--color-mist)] bg-[var(--color-cream)]/30"
-          : "border-[var(--color-sand)] bg-gradient-to-br from-[var(--color-pending-bg)] via-white to-[var(--color-cream)]",
+          ? "border-[var(--color-cream)] shadow-sm"
+          : "border-[var(--color-sand)] shadow-[0_16px_44px_rgba(27,27,27,0.09)]",
       )}
     >
-      <div className="min-w-0">
-{/* HEADER */}
-<div className="flex justify-center border-b border-[var(--color-cream)] pb-3">
-  <div className="inline-flex items-center gap-2 rounded-full border border-[var(--border-soft)] bg-[var(--color-cream)] px-5 py-2 text-[13px] sm:text-sm font-bold uppercase tracking-[0.12em] text-[var(--color-primary-buttom)] shadow-sm">
-    {isReschedule ? "Перенесення запису" : item.title || "Повідомлення"}
-  </div>
-</div>
+      {!item.isRead && (
+        <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[var(--color-caramel)]" />
+      )}
 
-        {/* CONTENT */}
-{isReschedule && (
-  <div className="mt-3 flex flex-wrap items-center gap-1.5 sm:gap-2 text-sm leading-5 sm:leading-6 text-[var(--color-ink)]">
-    <span>Клієнт</span>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="inline-flex items-center gap-2 rounded-full bg-[var(--color-cream)] px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.14em] text-[var(--color-primary-buttom)]">
+            <Bell className="h-3.5 w-3.5" />
+            {isReschedule ? "Перенесення" : item.title || "Повідомлення"}
+          </div>
 
-    {item.clientName && (
-      <span className="font-bold text-[var(--color-primary-buttom)]">
-        {item.clientName}
-      </span>
-    )}
+          <h3 className="mt-3 text-lg font-black leading-tight text-[var(--color-ink)]">
+            {isReschedule
+              ? `${item.clientName || "Клієнт"} змінив дату запису`
+              : item.message || "Нове повідомлення"}
+          </h3>
 
-    <span>переніс послугу</span>
-
-    {item.serviceName && (
-      <span className="font-bold text-[var(--color-primary-buttom)]">
-        {item.serviceName}
-      </span>
-    )}
-
-    <span>з</span>
-
-    {item.oldDate && (
-      <span className="font-bold text-[var(--color-primary-buttom)]">
-        {item.oldDate}
-      </span>
-    )}
-
-    <span>на</span>
-
-    {item.newDate && (
-      <span className="font-bold text-[var(--color-primary-buttom)]">
-        {item.newDate}
-      </span>
-    )}
-  </div>
-)}
-
-        {/* FOOTER */}
-        <div className="mt-4 flex items-center justify-between gap-3 border-t border-[var(--color-cream)] pt-3">
-          <p className="text-xs font-medium text-[var(--color-caramel)]">
-            Створено: {formatDateTimeUA(item.createdAt)}
+          <p className="mt-1 text-xs font-medium text-[var(--color-caramel)]">
+            {formatDateTimeUA(item.createdAt)}
           </p>
+        </div>
 
-          {item.isRead ? (
-            <span className="inline-flex h-9 items-center justify-center gap-2 rounded-2xl  px-2.5 text-sm font-bold text-[var(--border-hover-primary)] ">
-              Прочитано
-            </span>
-          ) : (
-<button
-  type="button"
-  onClick={() => onRead(item.id)}
-  className={cn(
-    "inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-bold text-white active:scale-[0.98]",
+        {item.isRead ? (
+          <span className="shrink-0 rounded-full px-3 py-1.5 text-xs font-bold text-[var(--border-hover-primary)]">
+            Прочитано
+          </span>
+        ) : (
+          <button
+            type="button"
+            onClick={() => onRead(item.id)}
+            className={cn(
+              "shrink-0 rounded-2xl px-3 py-2 text-xs font-bold text-white active:scale-[0.98]",
+              "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
+            )}
+          >
+            Прочитати
+          </button>
+        )}
+      </div>
 
-    // 👉 gradient через nude-green
-    "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
+{isReschedule && (
+  <>
+    <div className="mt-4 flex justify-center">
+      <button
+        type="button"
+        onClick={() => setExpanded((prev) => !prev)}
+        className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-xl px-3 text-xs font-bold text-[var(--border-hover-primary)] transition hover:text-[var(--color-sidebar-accent-hover)] active:scale-[0.98]"
+      >
+        {expanded ? (
+          <>
+            <ChevronUp className="h-4 w-4" />
+            Сховати
+          </>
+        ) : (
+          <>
+            <ChevronDown className="h-4 w-4" />
+            Розгорнути
+          </>
+        )}
+      </button>
+    </div>
 
-    // 👉 hover
-    "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]"
-  )}
->
-  <Check className="h-3.5 w-3.5" />
-  Прочитати
-</button>
-          )}
+    <div
+      className={cn(
+        "grid transition-all duration-300 ease-out",
+        expanded ? "mt-4 grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
+      )}
+    >
+      <div className="overflow-hidden">
+        <div className="rounded-[26px] bg-[var(--color-cream)]/55 p-4">
+          <div className="mb-4 space-y-3">
+            <div className="flex items-center gap-3 rounded-[22px] bg-white p-3 shadow-sm">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--color-cream)] text-[var(--color-primary-buttom)]">
+                <Bell className="h-4.5 w-4.5" />
+              </div>
+
+              <div className="min-w-0">
+                <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--color-caramel)]">
+                  Клієнт
+                </p>
+
+                <p className="line-clamp-2 text-sm font-black leading-5 text-[var(--color-ink)]">
+                  {item.clientName || "—"}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 rounded-[22px] bg-white p-3 shadow-sm">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--color-cream)] text-[var(--color-primary-buttom)]">
+                <CalendarDays className="h-5 w-5" />
+              </div>
+
+              <div className="min-w-0">
+                <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--color-caramel)]">
+                  Послуга
+                </p>
+
+                <p className="line-clamp-2 text-sm font-black leading-5 text-[var(--color-ink)]">
+                  {item.serviceName || "—"}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="relative pl-5">
+            <div className="absolute bottom-4 left-[7px] top-4 w-px bg-[var(--color-mist)]" />
+
+            <div className="relative">
+              <span className="absolute -left-5 top-1 h-3.5 w-3.5 rounded-full bg-[var(--color-canceled)] ring-4 ring-white" />
+              <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--color-canceled-dark)]">
+                Було
+              </p>
+              <p className="mt-1 rounded-2xl bg-white px-3 py-2 text-sm font-bold text-[var(--color-ink)] shadow-sm">
+                {item.oldDate || "—"}
+              </p>
+            </div>
+
+            <div className="relative mt-4">
+              <span className="absolute -left-5 top-1 h-3.5 w-3.5 rounded-full bg-[var(--color-confirmed)] ring-4 ring-white" />
+              <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--color-confirmed-dark)]">
+                Стало
+              </p>
+              <p className="mt-1 rounded-2xl bg-white px-3 py-2 text-sm font-bold text-[var(--color-ink)] shadow-sm">
+                {item.newDate || "—"}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
+    </div>
+  </>
+)}
     </div>
   );
 }
@@ -413,30 +470,7 @@ const liveStatusUi = useMemo(() => {
         </div>
       </div>
 
-<SectionCard
-  actions={
-    
-    <div className="flex w-full justify-end">
-      {notifications.some((n) => !n.isRead) ? (
-        <button
-          type="button"
-          onClick={markAllAsRead}
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
-        >
-          Прочитати всі
-        </button>
-      ) : (
-        <button
-          type="button"
-          disabled
-          className="cursor-not-allowed rounded-2xl border border-[var(--color-cream)] bg-[var(--color-cream)] px-4 py-2 text-sm font-semibold text-[var(--color-caramel)]"
-        >
-          Прочитано все
-        </button>
-      )}
-    </div>
-  }
->
+<SectionCard>
         {showNotificationsSkeleton ? (
           <div className="space-y-3">
             {Array.from({ length: 6 }).map((_, i) => (

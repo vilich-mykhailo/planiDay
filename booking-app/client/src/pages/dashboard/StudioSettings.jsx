@@ -454,7 +454,7 @@ function StudioProfileFormSkeleton() {
 function StudioLocationFormSkeleton() {
   return (
     <SectionCard
-      title="Локація"
+      title="Адреса"
       subtitle="Адреса відображається клієнтам і впливає на пошук."
     >
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -1579,7 +1579,7 @@ function showToast({ type = "success", title, text }) {
               <div className="flex w-full justify-center gap-1 overflow-x-auto px-0 sm:gap-2 md:justify-center">
                 {[
                   { id: "profile", label: "Профіль" },
-                  { id: "location", label: "Локація" },
+                  { id: "location", label: "Адреса" },
                   { id: "links", label: "Портфоліо" },
                 ].map((t) => (
                   <button
@@ -1632,7 +1632,7 @@ function showToast({ type = "success", title, text }) {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        <div className="mb-20 grid grid-cols-1 gap-6 lg:grid-cols-12">
           {tab === "profile" && (
             <div className="space-y-6 self-start lg:col-span-5 lg:sticky lg:top-6">
               {initialLoading ? (
@@ -1755,41 +1755,8 @@ function showToast({ type = "success", title, text }) {
                     </div>
                   </div>
 
-<div className="px-3 pb-3 pt-14">
-  <div className="rounded-[26px] border border-[var(--color-cream)] bg-gradient-to-br from-white via-[var(--color-cream)] to-white p-4 shadow-[0_10px_28px_rgba(27,27,27,0.06)]">
-    
-    {/* АДРЕСА */}
-    <div className="flex items-center gap-2">
-      <MapPin className="h-4 w-4 text-[var(--color-sidebar-accent)]" />
-      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-sidebar-accent)]">
-        Адреса
-      </p>
-    </div>
+<div className="px-3 pb-3 pt-10">
 
-    <p
-      className="mt-2 line-clamp-2 break-words text-sm font-semibold text-[var(--color-ink)]"
-      title={AddressLine}
-    >
-      {AddressLine}
-    </p>
-
-    {/* РОЗДІЛЬНИК */}
-    <div className="my-4 h-px bg-[var(--color-cream)]" />
-
-    {/* ОПИС */}
-    <div className="flex items-center gap-2">
-      <FileText className="h-4 w-4 text-[var(--color-sidebar-accent)]" />
-      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-sidebar-accent)]">
-        Опис
-      </p>
-    </div>
-
-    <p className="mt-2 text-sm leading-6 text-[var(--color-caramel)]">
-      {form.description.trim()
-        ? form.description.trim()
-        : "Додай короткий опис: досвід, стиль, стерильність, бренди, гарантії."}
-    </p>
-  </div>
 </div>
                 </section>
               )}
@@ -1807,10 +1774,26 @@ function showToast({ type = "success", title, text }) {
                 (initialLoading ? (
                   <StudioProfileFormSkeleton />
                 ) : (
-                  <SectionCard
-                    title="Профіль"
-                    subtitle="Назва, категорія та опис — ключові для довіри клієнтів."
-                  >
+<SectionCard
+  title={
+    <div className="flex items-center gap-3 mb-3">
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-sidebar-accent)] text-white shadow-sm">
+        <Building2 className="h-5 w-5" />
+      </div>
+
+      <div>
+        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--color-sidebar-accent)]">
+          Основна інформація
+        </p>
+
+        <h2 className="text-xl font-black tracking-[-0.03em] text-[var(--color-ink)]">
+          Профіль студії
+        </h2>
+      </div>
+    </div>
+  }
+  subtitle="Назва, категорія та опис — ключові для довіри клієнтів."
+>
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <Field label="Назва студії" error={errors.name}>
                         <input
@@ -1883,25 +1866,41 @@ function showToast({ type = "success", title, text }) {
                             className={fieldClass("studio-field-description")}
                           />
                         </Field>
+{!form.description.trim() && (
+  <div className="mt-3 overflow-hidden rounded-[30px] border border-[var(--color-sidebar-accent-soft)]/40 bg-gradient-to-br from-white via-[var(--color-cream)] to-white shadow-[0_18px_44px_rgba(27,27,27,0.07)]">
+    <div className="p-4 sm:p-5">
+      <div className="min-w-0">
+        <h3 className="mt-1 flex items-center justify-center gap-2 text-center text-lg font-black leading-tight tracking-[-0.03em] text-[var(--color-ink)]">
+          <Sparkles className="h-5 w-5 shrink-0 text-[var(--color-sidebar-accent)]" />
+          <span>Підказка для опису</span>
+        </h3>
 
-<div className="mt-3 rounded-[26px] border border-[var(--color-cream)] bg-gradient-to-br from-white via-[var(--color-cream)] to-white p-4 shadow-[0_10px_28px_rgba(27,27,27,0.06)]">
-  
-  {/* HEADER */}
-  <div className="flex items-center gap-2">
-    <Info className="h-4 w-4 text-[var(--color-sidebar-accent)]" />
+        <p className="mt-2 text-center text-sm leading-6 text-[var(--color-caramel)]">
+          Напишіть коротко, чому клієнтам варто обрати саме вас <br />
+          Достатньо 2–4 речень про спеціалізацію, підхід до роботи та головні переваги студії.
+        </p>
 
-    <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-sidebar-accent)]">
-      Рекомендація
-    </p>
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+          {[
+            "Досвід",
+            "Стиль роботи",
+            "Стерильність",
+            "Бренди",
+            "Атмосфера",
+            "Якість роботи",
+          ].map((item) => (
+            <span
+              key={item}
+              className="rounded-full border border-[var(--color-cream)] bg-white px-3 py-1.5 text-xs font-bold text-[var(--color-sidebar-accent)] shadow-sm"
+            >
+              {item}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
   </div>
-
-  {/* TEXT */}
-  <p className="mt-2 text-sm leading-6 text-[var(--color-caramel)]">
-    Детальний опис допомагає клієнтам краще зрозуміти ваш досвід і підвищує
-    ймовірність запису. Опишіть свою спеціалізацію, підхід до роботи та ключові
-    переваги.
-  </p>
-</div>
+)}
                       </div>
                     </div>
                   </SectionCard>
@@ -1911,10 +1910,26 @@ function showToast({ type = "success", title, text }) {
                 (initialLoading ? (
                   <StudioLocationFormSkeleton />
                 ) : (
-                  <SectionCard
-                    title="Локація"
-                    subtitle="Адреса відображається клієнтам і впливає на пошук."
-                  >
+<SectionCard
+  title={
+    <div className="flex items-center gap-3 mb-3">
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-sidebar-accent)] text-white shadow-sm">
+        <MapPin className="h-5 w-5" />
+      </div>
+
+      <div>
+        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--color-sidebar-accent)]">
+          Адреса студії
+        </p>
+
+        <h2 className="text-xl font-black tracking-[-0.03em] text-[var(--color-ink)]">
+          Адреса
+        </h2>
+      </div>
+    </div>
+  }
+  subtitle="Адреса відображається клієнтам і впливає на пошук."
+>
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <Field label="Місто">
                         <input
@@ -1964,10 +1979,26 @@ function showToast({ type = "success", title, text }) {
                 (initialLoading ? (
                   <StudioPortfolioSkeleton />
                 ) : (
-                  <SectionCard
-                    title="Портфоліо"
-                    subtitle="Додай 4–12 фото робіт — це сильніше за будь-який текст."
-                  >
+<SectionCard
+  title={
+    <div className="flex items-center gap-3 mb-3">
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-sidebar-accent)] text-white shadow-sm">
+        <Camera className="h-5 w-5" />
+      </div>
+
+      <div>
+        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--color-sidebar-accent)]">
+          Роботи студії
+        </p>
+
+        <h2 className="text-xl font-black tracking-[-0.03em] text-[var(--color-ink)]">
+          Портфоліо
+        </h2>
+      </div>
+    </div>
+  }
+  subtitle="Додай 4–12 фото робіт — це сильніше за будь-який текст."
+>
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <div
                         id="studio-field-portfolio"

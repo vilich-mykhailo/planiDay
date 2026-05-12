@@ -83,9 +83,10 @@ const navLinkBase =
   "inline-flex items-center gap-2 rounded-2xl px-3.5 py-2.5 text-sm font-semibold transition-all duration-200";
 
 const navLinkActive =
-  "border-transparent text-[var(--color-white)] bg-[var(--color-sidebar-accent)] shadow-[0_10px_24px_rgba(24,24,27,0.22)] hover:bg-[var(--color-sidebar-accent-hover)]";
+  "border-transparent text-[var(--color-white)] bg-[var(--color-sidebar-accent)] shadow-[0_14px_30px_rgba(24,24,27,0.22)]";
+
 const navLinkIdle =
-  "border-transparent text-[var(--color-ink)] hover:bg-[#F3F5EF] active:scale-[0.99]";
+  "border-transparent text-[var(--color-ink)] hover:bg-[var(--color-cream)] active:scale-[0.99]";
 
 function HeaderLink({ to, children, icon, onClick }) {
   return (
@@ -141,10 +142,10 @@ function MobileNavIcon({ children, active }) {
   return (
     <span
       className={cx(
-        "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-all duration-200 sm:h-11 sm:w-11 sm:rounded-2xl",
+        "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border transition-all duration-200",
 active
-  ? "border-white/20 bg-white/10 text-[var(--color-white)]"
-  : "border-[var(--color-cream)] bg-[var(--color-white)] text-[var(--color-sidebar-accent-soft)]"
+  ? "border-transparent bg-white/70 text-[var(--color-ink)]"
+          : "border-[var(--color-cream)] bg-[var(--color-white)] text-[var(--color-sidebar-accent-soft)] shadow-sm",
       )}
     >
       {children}
@@ -157,16 +158,16 @@ function MobileBottomLink({ to, label, icon }) {
     <NavLink
       to={to}
       end={to === "/"}
-      className="flex flex-1 flex-col items-center justify-center gap-[3px] px-1 py-1 "
+      className="flex flex-1 flex-col items-center justify-center gap-[3px] px-1 py-1"
     >
       {({ isActive }) => (
         <>
           <span
             className={cx(
-              "flex h-9 w-9 items-center justify-center rounded-2xl",
-isActive
-  ? "border-transparent text-[var(--color-white)] bg-[var(--color-sidebar-accent)]"
-  : "border-transparent text-[var(--color-caramel)] hover:bg-[var(--color-cream)]",
+              "flex h-10 w-10 items-center justify-center rounded-2xl transition-all duration-200",
+              isActive
+                ? "bg-[var(--color-sidebar-accent)] text-[var(--color-white)] shadow-[0_10px_22px_rgba(24,24,27,0.24)]"
+                : "text-[var(--color-caramel)] hover:bg-[var(--color-cream)]",
             )}
           >
             {icon}
@@ -176,7 +177,7 @@ isActive
             className={cx(
               "text-[9px] leading-none transition-colors duration-200",
               isActive
-                ? "font-semibold text-[var(--color-sidebar-accent)]"
+                ? "font-bold text-[var(--color-sidebar-accent)]"
                 : "text-[var(--color-caramel)] opacity-80",
             )}
           >
@@ -412,7 +413,7 @@ const newBookingsCount = useMemo(() => {
   <ButtonLink
     to="/dashboard/studio"
     icon={<Settings2 className="h-4 w-4" />}
-   className="bg-[var(--color-sidebar-accent)] text-[var(--color-white)] hover:bg-[var(--color-sidebar-accent-hover)]"
+   className="bg-[var(--color-sidebar-accent)] text-[var(--color-white)] shadow-[0_12px_26px_rgba(24,24,27,0.22)] hover:bg-[var(--color-sidebar-accent-hover)]"
   >
     Керувати студією
   </ButtonLink>
@@ -480,7 +481,7 @@ const newBookingsCount = useMemo(() => {
         links: [
           {
             to: "/dashboard",
-            label: "Головна",
+            label: "Аналітика",
             icon: <LayoutDashboard className="h-4 w-4" />,
           },
           {
@@ -567,7 +568,7 @@ const staticRoutes = [
       {!showClientBottomBar && (
         <header className="fixed left-0 right-0 top-2 z-[60] sm:top-3">
           <div className="mx-auto max-w-6xl px-3 sm:px-4">
-            <div className="overflow-hidden rounded-[22px] border border-[var(--color-cream)] bg-white/90 shadow-[0_10px_30px_rgba(27,27,27,0.08)] backdrop-blur-md sm:rounded-[28px]">
+          <div className="overflow-hidden rounded-[24px] border border-white/70 bg-white/85 shadow-[0_18px_50px_rgba(24,24,27,0.10)] ring-1 ring-black/[0.03] backdrop-blur-2xl sm:rounded-[30px]">
               <div className="h-[2px] bg-gradient-to-r from-[var(--color-sidebar-accent)] via-[var(--color-sidebar-accent-hover)] to-[var(--color-sidebar-accent-soft)]" />
 
               <div className="flex h-14 items-center justify-between gap-2 px-2.5 sm:h-16 sm:gap-3 sm:px-4">
@@ -576,13 +577,13 @@ const staticRoutes = [
                   className="flex min-w-0 items-center gap-2 rounded-2xl px-1.5 py-1 transition hover:bg-[var(--color-cream)] sm:px-2 sm:py-1.5"
                   aria-label="Planiday"
                 >
-                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-2xl bg-[var(--color-ink)] text-xs font-extrabold text-white shadow-[var(--shadow-button)] sm:h-9 sm:w-9 sm:text-sm">
-                    P
-                  </span>
+<span className="grid h-9 w-9 shrink-0 place-items-center rounded-2xl bg-[var(--color-sidebar-accent)] text-sm font-black text-[var(--color-white)] shadow-[0_12px_26px_rgba(24,24,27,0.22)]">
+  P
+</span>
 
-                  <span className="truncate text-sm font-extrabold tracking-tight text-[var(--color-ink)] sm:text-base">
-                    Plani<span className="text-[var(--color-caramel)]">Day</span>
-                  </span>
+<span className="truncate text-sm font-black tracking-tight text-[var(--color-ink)] sm:text-base">
+  Plani<span className="text-[var(--color-sidebar-accent-soft)]">Day</span>
+</span>
                 </Link>
 
                 <nav className="hidden items-center gap-1 lg:flex">
@@ -638,66 +639,81 @@ const staticRoutes = [
           >
             <div className="flex h-full flex-col">
 <div className="relative border-b border-[var(--color-cream)] bg-white px-3 pb-2.5 pt-2.5 sm:px-4 sm:pb-3 sm:pt-3">
-  <div className="relative overflow-hidden rounded-[22px] bg-gradient-to-br from-[var(--color-sidebar-accent)] via-[var(--color-sidebar-accent-hover)] to-[var(--color-sidebar-accent-soft)]bg-gradient-to-br from-[#3f815f] via-[#78a982] to-[#d9ead2] p-3.5 text-white shadow-[0_14px_40px_rgba(50,78,41,0.22)] sm:p-4">
-    
-    {/* glow */}
-    <div className="pointer-events-none absolute -right-8 -top-10 h-32 w-32 rounded-full bg-white/20 blur-3xl" />
-    <div className="pointer-events-none absolute right-4 top-4 h-20 w-28 rotate-[-18deg] rounded-full bg-white/12 blur-sm" />
+<div className="relative overflow-hidden rounded-[26px] border border-[#ece6dd] bg-[#fcfaf7] p-3 shadow-[0_16px_40px_rgba(60,40,20,0.10)]">
 
-    <div className="relative flex items-start justify-between gap-2.5">
-      
-      <div className="flex min-w-0 items-center gap-2.5">
-        
-        {/* avatar */}
-        <div className="relative shrink-0">
-          <div className="grid h-10 w-10 place-items-center overflow-hidden rounded-xl border-2 border-white bg-[var(--color-ink)] text-sm font-extrabold text-white shadow-md">
-            {showOwnerIdentity && studioLogo ? (
-              <img src={studioLogo} className="h-full w-full object-cover" />
-            ) : role === "client" && clientPhoto ? (
-              <img src={clientPhoto} className="h-full w-full object-cover" />
-            ) : role === "client" ? (
-              clientInitials
-            ) : (
-              "P"
-            )}
-          </div>
+  {/* left accent */}
+  <div className="absolute left-0 top-0 h-full w-[7px] bg-[#2a2723]" />
 
-        
-        </div>
+  {/* dots */}
+  <div className="absolute left-4 top-4 grid grid-cols-5 gap-[5px] opacity-25">
+    {Array.from({ length: 20 }).map((_, i) => (
+      <span
+        key={i}
+        className="h-[2px] w-[2px] rounded-full bg-[#8b8177]"
+      />
+    ))}
+  </div>
 
-        {/* text */}
-        <div className="min-w-0">
-          <p className="truncate text-base font-extrabold leading-tight">
-            {showOwnerIdentity && studioName
-              ? studioName
-              : role === "client" && clientFullName
-              ? clientFullName
-              : "PlaniDay"}
-          </p>
+  {/* soft decor */}
+  <div className="pointer-events-none absolute bottom-0 right-0 h-full w-[42%] overflow-hidden">
+    <div className="absolute bottom-0 right-0 h-28 w-28 rounded-full bg-[#f3ede5]" />
+    <div className="absolute bottom-[-10px] right-10 h-20 w-20 rounded-full bg-[#efe6dc]" />
+  </div>
 
-          <p className="truncate text-[11px] text-white/80">
-            {mobileItems.subtitle || "Меню"}
-          </p>
+  <div className="relative flex items-start justify-between gap-3">
+
+    {/* content */}
+    <div className="flex items-center gap-3 min-w-0">
+
+      {/* logo */}
+      <div className="grid h-[72px] w-[72px] shrink-0 place-items-center rounded-[22px] bg-white p-2 shadow-[0_10px_24px_rgba(0,0,0,0.12)]">
+        <div className="grid h-full w-full place-items-center overflow-hidden rounded-[16px] bg-black">
+          {showOwnerIdentity && studioLogo ? (
+            <img
+              src={studioLogo}
+              className="h-full w-full object-cover"
+            />
+          ) : role === "client" && clientPhoto ? (
+            <img
+              src={clientPhoto}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <span className="text-xl font-black text-white">
+              P
+            </span>
+          )}
         </div>
       </div>
 
-      {/* close */}
-      <button
-        onClick={() => setOpen(false)}
-        className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white/85 text-[var(--color-ink)] shadow-sm transition hover:bg-white active:scale-[0.97]"
-      >
-        <X className="h-4 w-4" />
-      </button>
+      {/* text */}
+      <div className="min-w-0 flex-1 pt-1">
+
+        <h2 className="max-w-[170px] truncate text-[20px] font-black leading-none tracking-[-0.04em] text-[#1d2329]">
+          {showOwnerIdentity && studioName
+            ? studioName
+            : role === "client" && clientFullName
+            ? clientFullName
+            : "MotorCar"}
+        </h2>
+
+        <p className="mt-1 text-[10px] font-medium text-[#8d8a86]">
+          Панель керування
+        </p>
+
+
+      </div>
     </div>
 
-    {/* badge */}
-    <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1.5 backdrop-blur">
-      <LayoutDashboard className="h-3.5 w-3.5 text-white" />
-      <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white">
-        {mobileItems.subtitle || "Панель"}
-      </span>
-    </div>
+    {/* close */}
+    <button
+      onClick={() => setOpen(false)}
+      className="relative z-10 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#2b2118] shadow-[0_6px_16px_rgba(0,0,0,0.10)] transition hover:bg-[#f7efe4]"
+    >
+      <X className="h-4 w-4" />
+    </button>
   </div>
+</div>
 </div>
 
               <div className="flex-1 overflow-y-auto px-2.5 py-3 sm:px-3 sm:py-4">
@@ -715,7 +731,7 @@ const staticRoutes = [
     cx(
       "group relative flex items-center gap-3 overflow-hidden rounded-[18px] border px-3 py-3 transition-all duration-300 ease-out sm:rounded-[22px] sm:py-3.5",
 isActive
-  ? "border-transparent text-[var(--color-white)] bg-[var(--color-sidebar-accent)]"
+  ? "border-transparent bg-[var(--color-sidebar-selected)] text-[var(--color-ink)] shadow-[0_10px_24px_rgba(80,55,30,0.10)]"
   : "border-transparent text-[var(--color-caramel)] hover:bg-[var(--color-cream)]"
     )
   }

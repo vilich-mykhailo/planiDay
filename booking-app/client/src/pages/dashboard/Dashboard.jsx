@@ -339,7 +339,7 @@ export default function Dashboard() {
                       <ChartColumn className="h-4.5 w-4.5" />
                     </SidebarLinkIcon>
 
-                    <span>Головна</span>
+                    <span>Аналітика</span>
                   </>
                 )}
               </NavLink>

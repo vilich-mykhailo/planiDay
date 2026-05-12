@@ -20,6 +20,15 @@ import DatePicker from "../../components/ui/DatePicker";
 import TimeSelect from "../../components/TimeSelect";
 import { useStudio } from "../../context/studio/useStudio";
 
+const PUBLIC = import.meta.env.VITE_R2_PUBLIC_BASE_URL;
+
+function toPublicUrl(v) {
+  const s = String(v || "").trim();
+  if (!s) return "";
+  if (/^https?:\/\//i.test(s)) return s;
+  return PUBLIC ? `${PUBLIC}/${s}` : s;
+}
+
 async function uploadMasterPhoto(studioId, file) {
   const token = localStorage.getItem("token");
   const fd = new FormData();
@@ -281,33 +290,41 @@ function Modal({
 
 function Avatar({ name, photoUrl, size = "md", className = "" }) {
   const initials = initialsFromName(name);
+  const src = toPublicUrl(photoUrl);
 
   const sizes = {
-    sm: "h-12 w-12 rounded-2xl text-xs",
-    md: "h-20 w-20 rounded-[22px] text-sm",
+    sm: "h-12 w-12 rounded-[20px] text-[18px]",
+    md: "h-20 w-20 rounded-[26px] text-[28px]",
   };
 
   return (
     <div
       className={cn(
-        "flex shrink-0 items-center justify-center overflow-hidden border-2 border-[var(--color-cream)] bg-gradient-to-br from-[var(--color-cream)] to-[var(--color-sand)] shadow-sm",
+        "relative flex shrink-0 items-center justify-center overflow-hidden border border-white bg-gradient-to-br from-emerald-50 via-white to-amber-50 shadow-[0_10px_26px_rgba(15,23,42,0.10)]",
         sizes[size],
         className,
       )}
     >
-      {photoUrl ? (
+      {src ? (
         <img
-          src={photoUrl}
-          alt={name}
+          src={src}
+          alt={name || "Майстер"}
           className="h-full w-full object-cover"
           onError={(e) => {
             e.currentTarget.style.display = "none";
           }}
         />
-      ) : initials ? (
-        <span className="font-bold text-[var(--color-forest)]">{initials}</span>
       ) : (
-        <Camera className="h-6 w-6 text-[var(--color-forest)]" />
+        <>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(16,185,129,0.24),transparent_35%),radial-gradient(circle_at_80%_90%,rgba(180,140,108,0.22),transparent_38%)]" />
+
+          <div className="absolute -right-3 -top-3 h-10 w-10 rounded-full bg-white/55 blur-sm" />
+          <div className="absolute -bottom-4 -left-4 h-12 w-12 rounded-full bg-[var(--color-cream)]/80 blur-sm" />
+
+          <span className="relative z-10 font-black tracking-[-0.03em] text-[var(--color-sidebar-accent-soft)]">
+            {initials}
+          </span>
+        </>
       )}
     </div>
   );
@@ -1080,20 +1097,39 @@ const neutralButtonClass =
           </div>
         </div>
 
-        <SectionCard
-          title="Новий майстер"
-          subtitle="Фото, імʼя та короткий опис — як у професійних профілях."
-          actions={
-<Button
-  onClick={() => setAddOpen((prev) => !prev)}
-  className={cn(neutralButtonClass, "w-full justify-center md:w-auto")}
+<SectionCard
+  title={
+    <div className="flex items-center gap-3">
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-primary-buttom)] text-white shadow-sm">
+        <UserRound className="h-5 w-5" />
+      </div>
+
+      <div className="min-w-0">
+        <h2 className="text-lg font-black tracking-[-0.03em] text-[var(--color-ink)]">
+          Новий майстер
+        </h2>
+
+        <p className="mt-1 text-sm font-medium text-[var(--color-caramel)]">
+          Фото, імʼя та короткий опис — як у професійних профілях.
+        </p>
+      </div>
+    </div>
+  }
+  actions={
+    <Button
+      onClick={() => setAddOpen((prev) => !prev)}
+      className={cn(neutralButtonClass, "w-full justify-center md:w-auto")}
+    >
+      <Plus className="h-4 w-4" />
+      {addOpen ? "Сховати форму" : "Додати майстра"}
+      {addOpen ? (
+        <ChevronUp className="h-4 w-4" />
+      ) : (
+        <ChevronDown className="h-4 w-4" />
+      )}
+    </Button>
+  }
 >
-  <Plus className="h-4 w-4" />
-  {addOpen ? "Сховати форму" : "Додати майстра"}
-  {addOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-</Button>
-          }
-        >
           <div
             className={cn(
               "grid transition-all duration-300 ease-out",
@@ -1434,7 +1470,30 @@ const neutralButtonClass =
             </div>
           }
         >
-          <div className="space-y-5">
+          
+<div className="space-y-6">
+  <div className="space-y-4 pt-2">
+    <div className="flex justify-center">
+      <div className="relative">
+        <div className="absolute inset-0 rounded-full bg-[var(--color-forest)]/60 blur-2xl" />
+        <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--color-primary-buttom)] text-white shadow-sm">
+          <Users className="h-7 w-7" />
+        </div>
+      </div>
+    </div>
+
+    <div className="text-center">
+      <h3 className="text-xl font-black tracking-tight text-[var(--color-ink)]">
+        Редагування майстра
+      </h3>
+
+      <p className="mt-2 text-sm leading-6 text-[var(--color-caramel)]">
+        Онови фото, імʼя або опис і збережи зміни.
+      </p>
+    </div>
+  </div>
+
+  {/* далі твоя форма */}
             <div className="flex items-center gap-4">
               <div className="relative">
                 <Avatar
@@ -1538,32 +1597,67 @@ const neutralButtonClass =
     setMasterExceptions([]);
     setExpandedExceptions({});
   }}
-  title={`Особливі дати — ${exceptionsMaster?.name || ""}`}
-  subtitle="Керуйте індивідуальним графіком майстра."
+  title=""
+  subtitle=""
   size="md"
   mobileFull
   footer={
-    <div className="flex justify-end">
-<Button
-  onClick={addExceptionRow}
-  className={cn(
-    "w-full justify-center whitespace-nowrap sm:w-auto sm:shrink-0",
-    "inline-flex h-11 items-center gap-2 rounded-2xl px-4 text-sm font-bold text-white",
-    "transition-all duration-200 active:scale-[0.98]",
+  <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-end">
+    <Button
+      onClick={addExceptionRow}
+      className={cn(
+        "w-full justify-center whitespace-nowrap sm:w-auto sm:shrink-0",
+        "inline-flex h-11 items-center gap-2 rounded-2xl px-4 text-sm font-bold text-white",
+        "transition-all duration-200 active:scale-[0.98]",
 
-    // 👉 nude-green CTA
-    "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
+        "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
 
-    // 👉 hover
-    "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]"
-  )}
+        "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]"
+      )}
+    >
+      <CalendarDays className="h-4 w-4" />
+      Додати особливу дату
+    </Button>
+
+    <Button
+      onClick={() => {
+        setExceptionsModalOpen(false);
+        setExceptionsMaster(null);
+        setMasterExceptions([]);
+        setExpandedExceptions({});
+      }}
+      className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
+    >
+      Закрити
+    </Button>
+  </div>
+}
 >
-  <CalendarDays className="h-4 w-4" />
-  Додати особливу дату
-</Button>
+  <div className="space-y-5">
+  <div className="space-y-4 pt-2">
+    <div className="flex justify-center">
+      <div className="relative">
+        <div className="absolute inset-0 rounded-full bg-[var(--color-forest)]/60 blur-2xl" />
+        <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--color-primary-buttom)] text-white shadow-sm">
+          <CalendarDays className="h-7 w-7" />
+        </div>
+      </div>
     </div>
-  }
->
+
+    <div className="text-center">
+      <h3 className="text-xl font-black tracking-tight text-[var(--color-ink)]">
+        Особливі дати
+      </h3>
+
+      <p className="mt-2 text-sm leading-6 text-[var(--color-caramel)]">
+        {exceptionsMaster?.name
+          ? `Керуйте індивідуальним графіком майстра ${exceptionsMaster.name}.`
+          : "Керуйте індивідуальним графіком майстра."}
+      </p>
+    </div>
+  </div>
+
+  {/* далі твій поточний контент */}
           {exceptionsLoading ? (
             <div className="space-y-3">
               {Array.from({ length: 2 }).map((_, i) => (
@@ -1793,6 +1887,7 @@ const neutralButtonClass =
               })}
             </div>
           )}
+          </div>
         </Modal>
       </div>
     </div>

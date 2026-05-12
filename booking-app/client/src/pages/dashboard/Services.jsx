@@ -971,11 +971,26 @@ async function deleteCategory(catId) {
           </div>
         )}
 
-        <SectionCard
-          title="Нова категорія"
-          subtitle="Згрупуйте схожі послуги (наприклад: Вії, Нігті, Брови)"
-          className="mb-6"
-        >
+<SectionCard
+  className="mb-6"
+  title={
+    <div className="flex items-center gap-3">
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-primary-buttom)] text-white shadow-sm">
+        <Sparkles className="h-5 w-5" />
+      </div>
+
+      <div className="min-w-0">
+        <h2 className="text-lg font-black tracking-[-0.03em] text-[var(--color-ink)]">
+          Нова категорія
+        </h2>
+
+        <p className="mt-1 text-sm font-medium text-[var(--color-caramel)]">
+          Згрупуйте схожі послуги (наприклад: Вії, Нігті, Брови)
+        </p>
+      </div>
+    </div>
+  }
+>
           <div className="flex flex-col gap-2.5 sm:flex-row">
             <input
               value={newCategoryName}

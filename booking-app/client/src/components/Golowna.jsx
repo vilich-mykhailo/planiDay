@@ -15,7 +15,6 @@ import {
   Trash2,
   Check,
   XCircle,
-  UserRound,
   Copy,
   Clock3,
   Banknote,
@@ -33,6 +32,15 @@ import {
   LayoutGrid,
 } from "lucide-react";
 import { socket } from "../lib/socket";
+
+const PUBLIC = import.meta.env.VITE_R2_PUBLIC_BASE_URL;
+
+function toPublicUrl(v) {
+  const s = String(v || "").trim();
+  if (!s) return "";
+  if (/^https?:\/\//i.test(s)) return s;
+  return PUBLIC ? `${PUBLIC}/${s}` : s;
+}
 
 function pad2(n) {
   return String(n).padStart(2, "0");
@@ -112,7 +120,7 @@ function getBookingStatusMeta(booking, nowTs) {
       badge: "badge-theme-success",
       dot: "bg-[var(--color-buttom-ok)]",
       iconBg: "status-theme-success",
-      Icon: Check,
+      Icon: CheckCheck,
       text: "text-[var(--color-confirmed-dark)]",
     };
   }
@@ -193,11 +201,55 @@ function addMonthsSafe(date, amount) {
   next.setDate(1);
   next.setMonth(next.getMonth() + amount);
 
-  const lastDay = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate();
+  const lastDay = new Date(
+    next.getFullYear(),
+    next.getMonth() + 1,
+    0,
+  ).getDate();
   next.setDate(Math.min(day, lastDay));
   next.setHours(0, 0, 0, 0);
 
   return next;
+}
+
+function Avatar({ name, photoUrl, className = "" }) {
+  const initials =
+    String(name || "К")
+      .trim()
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0]?.toUpperCase())
+      .join("") || "К";
+
+  const src = toPublicUrl(photoUrl);
+
+  return (
+<div
+  className={cn(
+    "relative flex shrink-0 items-center justify-center overflow-hidden rounded-[16px] border border-white bg-gradient-to-br from-emerald-50 via-white to-amber-50 shadow-[0_10px_26px_rgba(15,23,42,0.10)]",
+    className,
+  )}
+>
+      {src ? (
+        <img
+          src={src}
+          alt={name || "Клієнт"}
+          className="h-full w-full object-cover"
+        />
+      ) : (
+        <>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(16,185,129,0.24),transparent_35%),radial-gradient(circle_at_80%_90%,rgba(180,140,108,0.22),transparent_38%)]" />
+          <div className="absolute -right-3 -top-3 h-10 w-10 rounded-full bg-white/55 blur-sm" />
+          <div className="absolute -bottom-4 -left-4 h-12 w-12 rounded-full bg-[var(--color-cream)]/80 blur-sm" />
+
+          <span className="relative z-10 text-[21px] font-black tracking-[-0.03em] text-[var(--color-sidebar-accent-soft)]">
+            {initials}
+          </span>
+        </>
+      )}
+    </div>
+  );
 }
 
 function isSameMonth(a, b) {
@@ -212,6 +264,8 @@ function getWeekdayShortUA(date) {
 }
 
 function MonthlyBookingsChart({ bookings = [], nowTs }) {
+  const [studioSchedule, setStudioSchedule] = useState(null);
+  const [studioExceptions, setStudioExceptions] = useState([]);
   const today = useMemo(() => {
     const d = new Date(nowTs);
     d.setHours(0, 0, 0, 0);
@@ -224,6 +278,38 @@ function MonthlyBookingsChart({ bookings = [], nowTs }) {
     d.setHours(0, 0, 0, 0);
     return d;
   });
+
+  useEffect(() => {
+    async function loadStudioSchedule() {
+      const token = localStorage.getItem("token");
+      const studioId = localStorage.getItem("studioId");
+
+      if (!token || !studioId) return;
+
+      try {
+        const [scheduleData, exceptionsData] = await Promise.all([
+          api(`/studio/${studioId}/schedule`, { token }),
+          api(`/studio/${studioId}/schedule/exceptions`, { token }),
+        ]);
+
+        setStudioSchedule(scheduleData?.schedule || null);
+
+        setStudioExceptions(
+          Array.isArray(exceptionsData?.exceptions)
+            ? exceptionsData.exceptions.map((item) => ({
+                ...item,
+                date: String(item.date || "").slice(0, 10),
+              }))
+            : [],
+        );
+      } catch {
+        setStudioSchedule(null);
+        setStudioExceptions([]);
+      }
+    }
+
+    loadStudioSchedule();
+  }, []);
 
   const [activeDayKey, setActiveDayKey] = useState(null);
 
@@ -248,7 +334,8 @@ function MonthlyBookingsChart({ bookings = [], nowTs }) {
 
     for (const booking of bookings || []) {
       if (!booking?.date) continue;
-      if (booking.status === "canceled" || booking.status === "deleted") continue;
+      if (booking.status === "canceled" || booking.status === "deleted")
+        continue;
 
       const d = new Date(booking.date);
       if (Number.isNaN(d.getTime())) continue;
@@ -268,15 +355,15 @@ function MonthlyBookingsChart({ bookings = [], nowTs }) {
   }, [bookings, visibleMonth]);
 
   const chart = useMemo(() => {
-    const width = Math.max(920, data.length * 34);
+    const width = Math.max(760, data.length * 20);
     const height = 330;
-   const padding = { top: 28, right: 12, bottom: 54, left: 62 };
+    const padding = { top: 28, right: 12, bottom: 54, left: 2 };
 
     const innerWidth = width - padding.left - padding.right;
     const innerHeight = height - padding.top - padding.bottom;
     const max = Math.max(...data.map((item) => item.count), 1);
     const stepX = data.length > 1 ? innerWidth / (data.length - 1) : innerWidth;
-    const barWidth = Math.max(12, Math.min(22, stepX * 0.52));
+    const barWidth = Math.max(16, Math.min(22, stepX * 0.52));
 
     const points = data.map((item, index) => {
       const x = padding.left + index * stepX;
@@ -285,15 +372,16 @@ function MonthlyBookingsChart({ bookings = [], nowTs }) {
       return { ...item, x, y };
     });
 
-
     const gridValues =
       max <= 6
         ? Array.from({ length: max + 1 }, (_, index) => max - index)
-        : Array.from(new Set(
-            Array.from({ length: 5 }, (_, index) =>
-              Math.round(max - max * (index / 4)),
+        : Array.from(
+            new Set(
+              Array.from({ length: 5 }, (_, index) =>
+                Math.round(max - max * (index / 4)),
+              ),
             ),
-          ));
+          );
 
     const grid = gridValues.map((value) => {
       const ratio = 1 - value / max;
@@ -317,16 +405,21 @@ function MonthlyBookingsChart({ bookings = [], nowTs }) {
   const total = data.reduce((sum, item) => sum + item.count, 0);
   const confirmed = data.reduce((sum, item) => sum + item.confirmed, 0);
   const pending = data.reduce((sum, item) => sum + item.pending, 0);
-  const todayCount = data.find((item) => item.key === toISODateKey(today))?.count || 0;
+  const todayCount =
+    data.find((item) => item.key === toISODateKey(today))?.count || 0;
   const activeDays = data.filter((item) => item.count > 0).length;
-  const bestDay = data.reduce(
-    (best, item) => (item.count > best.count ? item : best),
-    data[0] || { day: "—", count: 0, key: "" },
-  );
+  const maxCount = Math.max(...data.map((item) => item.count), 0);
+
+  const bestDays =
+    maxCount > 0 ? data.filter((item) => item.count === maxCount) : [];
   const activePoint =
     chart.points.find((item) => item.key === activeDayKey) ||
-    chart.points.find((item) => item.key === toISODateKey(today) && item.count > 0) ||
-    (bestDay.count > 0 ? chart.points.find((item) => item.key === bestDay.key) : null);
+    chart.points.find(
+      (item) => item.key === toISODateKey(today) && item.count > 0,
+    ) ||
+    (bestDays.length > 0
+      ? chart.points.find((item) => item.key === bestDays[0].key)
+      : null);
 
   const monthLabel = visibleMonth.toLocaleDateString("uk-UA", {
     month: "long",
@@ -334,95 +427,135 @@ function MonthlyBookingsChart({ bookings = [], nowTs }) {
   });
 
   const isCurrentMonth = isSameMonth(visibleMonth, today);
+  function isStudioWorkingDay(date) {
+    const dateKey = toISODateKey(date);
 
+    const exception = studioExceptions.find((item) => item.date === dateKey);
+
+    if (exception) {
+      return Boolean(exception.enabled);
+    }
+
+    const dayKeyMap = {
+      0: "sun",
+      1: "mon",
+      2: "tue",
+      3: "wed",
+      4: "thu",
+      5: "fri",
+      6: "sat",
+    };
+
+    const dayKey = dayKeyMap[date.getDay()];
+
+    if (!studioSchedule) return true;
+
+    return Boolean(studioSchedule?.[dayKey]?.enabled);
+  }
   return (
     <SectionShell>
       <div className="px-4 pb-5 pt-5 sm:px-6 sm:pb-7 sm:pt-6">
         <div className="mb-5 grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-end">
           <div className="min-w-0">
-<div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-slate-700 shadow-[0_4px_14px_rgba(15,23,42,0.05)]">
-  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-900 text-white">
-    <ChartColumn className="h-3 w-3" />
-  </div>
+            <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-slate-700 shadow-[0_4px_14px_rgba(15,23,42,0.05)]">
+              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-900 text-white">
+                <ChartColumn className="h-3 w-3" />
+              </div>
 
-  <span>Професійна аналітика</span>
+              <span>Професійна аналітика</span>
 
-  <div className="h-1 w-1 rounded-full bg-slate-400" />
-</div>
+              <div className="h-1 w-1 rounded-full bg-slate-400" />
+            </div>
 
             <h2 className="text-2xl font-black tracking-tight text-[var(--color-ink)] sm:text-3xl">
               Графік записів
             </h2>
-
           </div>
-
-
         </div>
 
+        <div className="mt-4 flex justify-center">
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setActiveDayKey(null);
+                setVisibleMonth((current) => addMonthsSafe(current, -1));
+              }}
+              className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/80 bg-white text-[var(--color-ink)] shadow-sm transition hover:bg-[var(--color-cream)] active:scale-[0.98]"
+              aria-label="Попередній місяць"
+              title="Попередній місяць"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
 
-<div className="mt-4 flex justify-center">
-  <div className="flex flex-wrap items-center justify-center gap-2">
-    <button
-      type="button"
-      onClick={() => {
-        setActiveDayKey(null);
-        setVisibleMonth((current) => addMonthsSafe(current, -1));
-      }}
-      className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/80 bg-white text-[var(--color-ink)] shadow-sm transition hover:bg-[var(--color-cream)] active:scale-[0.98]"
-      aria-label="Попередній місяць"
-      title="Попередній місяць"
-    >
-      <ChevronLeft className="h-5 w-5" />
-    </button>
+            <button
+              type="button"
+              onClick={() => {
+                const current = new Date(nowTs);
+                current.setDate(1);
+                current.setHours(0, 0, 0, 0);
+                setActiveDayKey(null);
+                setVisibleMonth(current);
+              }}
+              disabled={isCurrentMonth}
+              className="inline-flex h-11 min-w-[150px] items-center justify-center gap-2 rounded-2xl border border-white/80 bg-white px-4 text-sm font-black text-[var(--color-primary-buttom)] shadow-sm transition hover:bg-[var(--color-cream)] active:scale-[0.98]"
+            >
+              <CalendarDays className="h-4 w-4" />
 
-    <button
-      type="button"
-      onClick={() => {
-        const current = new Date(nowTs);
-        current.setDate(1);
-        current.setHours(0, 0, 0, 0);
-        setActiveDayKey(null);
-        setVisibleMonth(current);
-      }}
-      disabled={isCurrentMonth}
-      className="inline-flex h-11 min-w-[150px] items-center justify-center gap-2 rounded-2xl border border-white/80 bg-white px-4 text-sm font-black text-[var(--color-primary-buttom)] shadow-sm transition hover:bg-[var(--color-cream)] active:scale-[0.98]"
-    >
-<CalendarDays className="h-4 w-4" />
+              <span className="capitalize">
+                {isCurrentMonth
+                  ? "Поточний місяць"
+                  : visibleMonth.toLocaleDateString("uk-UA", {
+                      month: "long",
+                      year: "numeric",
+                    })}
+              </span>
+            </button>
 
-<span className="capitalize">
-  {isCurrentMonth
-    ? "Поточний місяць"
-    : visibleMonth.toLocaleDateString("uk-UA", {
-        month: "long",
-        year: "numeric",
-      })}
-</span>
-    </button>
-
-    <button
-      type="button"
-      onClick={() => {
-        setActiveDayKey(null);
-        setVisibleMonth((current) => addMonthsSafe(current, 1));
-      }}
-      className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/80 bg-white text-[var(--color-ink)] shadow-sm transition hover:bg-[var(--color-cream)] active:scale-[0.98]"
-      aria-label="Наступний місяць"
-      title="Наступний місяць"
-    >
-      <ChevronRight className="h-5 w-5" />
-    </button>
-  </div>
-</div>
+            <button
+              type="button"
+              onClick={() => {
+                setActiveDayKey(null);
+                setVisibleMonth((current) => addMonthsSafe(current, 1));
+              }}
+              className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/80 bg-white text-[var(--color-ink)] shadow-sm transition hover:bg-[var(--color-cream)] active:scale-[0.98]"
+              aria-label="Наступний місяць"
+              title="Наступний місяць"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
         <div className="mb-5 mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <ChartKpi label="Записи на сьогодні" value={todayCount} icon={CirclePlay} tone="emerald" />
-          <ChartKpi label="Підтверджені" value={confirmed} icon={CircleCheck} tone="sky" />
-          <ChartKpi label="Очікують" value={pending} icon={CirclePause} tone="amber" />
-          <ChartKpi label="Усього записів" value={total} icon={CircleCheckBig} tone="slate" />
+          <ChartKpi
+            label="Записи на сьогодні"
+            value={todayCount}
+            icon={CirclePlay}
+            tone="emerald"
+          />
+          <ChartKpi
+            label="Підтверджені"
+            value={confirmed}
+            icon={CircleCheck}
+            tone="sky"
+          />
+          <ChartKpi
+            label="Очікують"
+            value={pending}
+            icon={CirclePause}
+            tone="amber"
+          />
+          <ChartKpi
+            label="Усього записів"
+            value={total}
+            icon={CircleCheckBig}
+            tone="slate"
+          />
         </div>
         <div className="relative mt-4 overflow-hidden rounded-[32px] border border-white/80 bg-white shadow-[0_18px_48px_rgba(15,23,42,0.08)]">
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400/50 to-transparent" />
 
-         <div className="grid gap-0">
+          <div className="grid gap-0">
             <div className="min-w-0 border-b border-slate-100 p-3 sm:p-4 xl:border-b-0 xl:border-r">
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2 px-1">
                 <div className="flex flex-wrap items-center gap-3 text-[11px] font-black text-slate-500">
@@ -434,10 +567,10 @@ function MonthlyBookingsChart({ bookings = [], nowTs }) {
                     <span className="h-2.5 w-6 rounded-full bg-emerald-600" />
                     Робочий день
                   </span>
-<span className="inline-flex items-center gap-2">
-  <span className="h-[2px] w-6 bg-[repeating-linear-gradient(to_right,_#10b981_0,_#10b981_6px,_transparent_6px,_transparent_9px)]" />
-  Сьогодні
-</span>
+                  <span className="inline-flex items-center gap-2">
+                    <span className="h-[2px] w-6 bg-[repeating-linear-gradient(to_right,_#10b981_0,_#10b981_6px,_transparent_6px,_transparent_9px)]" />
+                    Сьогодні
+                  </span>
                 </div>
 
                 <p className="text-[11px] font-bold text-slate-400">
@@ -445,214 +578,334 @@ function MonthlyBookingsChart({ bookings = [], nowTs }) {
                 </p>
               </div>
 
-<div className="relative">
-<div className="pointer-events-none absolute -left-5 top-0 z-20 h-[320px] w-16 rounded-l-[24px] border-r border-slate-200/80 bg-gradient-to-r from-white via-white to-white/90 shadow-[14px_0_24px_rgba(255,255,255,0.86)] sm:h-[360px]">
-  <span
-    className="absolute whitespace-nowrap text-[9px] font-black uppercase tracking-[0.14em] text-slate-500"
-style={{
-  left: "42%",
-  top: "50%",
-  writingMode: "vertical-rl",
-  transform: "translate(-50%, -50%) rotate(180deg)",
-}}
-  >
-    К-ть записів
-  </span>
-
-    {chart.grid.map((line) => (
-      <span
-        key={`fixed-axis-${line.value}-${line.y}`}
-        className="absolute right-2 -translate-y-1/2 rounded-lg bg-white px-1.5 py-0.5 text-[12px] font-black text-slate-600"
-        style={{ top: `${(line.y / chart.height) * 100}%` }}
-      >
-        {line.value}
-      </span>
-    ))}
-  </div>
-
-  <div className="overflow-x-auto pb-2">
-    <svg
-
-                  viewBox={`0 0 ${chart.width} ${chart.height}`}
-                  className="h-[320px] min-w-[920px] select-none sm:h-[360px]"
-                  role="img"
-                  aria-label={`Графік записів за ${monthLabel}`}
-                >
-                  <defs>
-                    <linearGradient id="bookingBarsGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#34d399" />
-                      <stop offset="48%" stopColor="#10b981" />
-                      <stop offset="100%" stopColor="#047857" />
-                    </linearGradient>
-                    <linearGradient id="bookingTrendGradient" x1="0" y1="0" x2="1" y2="0">
-                      <stop offset="0%" stopColor="#38bdf8" />
-                      <stop offset="100%" stopColor="#10b981" />
-                    </linearGradient>
-                    <linearGradient id="bookingAreaGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#10b981" stopOpacity="0.22" />
-                      <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
-                    </linearGradient>
-                  </defs>
-
-{chart.grid.map((line) => (
-  <g key={line.y}>
-    <line
-      x1={chart.padding.left}
-      x2={chart.width - chart.padding.right}
-      y1={line.y}
-      y2={line.y}
-      stroke="#e2e8f0"
-      strokeDasharray="5 7"
-    />
-  </g>
-))}
-
-
-                  {chart.areaPath && <path d={chart.areaPath} fill="url(#bookingAreaGradient)" />}
-
-                  {chart.points.map((item) => {
-                    const baseY = chart.padding.top + chart.innerHeight;
-                    const barHeight = baseY - item.y;
-                    const isToday = item.key === toISODateKey(today);
-                    const isActive = activePoint?.key === item.key;
-                    const isWeekend = item.date.getDay() === 0 || item.date.getDay() === 6;
-
-                    return (
-                      <g
-                        key={item.key}
-                        onMouseEnter={() => setActiveDayKey(item.key)}
-                        onFocus={() => setActiveDayKey(item.key)}
-                        onClick={() => setActiveDayKey(item.key)}
-                        tabIndex={0}
-                        className="cursor-pointer outline-none"
-                      >
-                        <rect
-                          x={item.x - chart.barWidth / 2}
-                          y={item.count > 0 ? item.y : baseY - 4}
-                          width={chart.barWidth}
-                          height={item.count > 0 ? Math.max(8, barHeight) : 8}
-                          rx="8"
-                          fill={item.count > 0 ? "url(#bookingBarsGradient)" : isWeekend ? "#e7e7e7" : "#009966"}
-                          opacity={isActive ? 1 : item.count > 0 ? 0.88 : 0.75}
-                        />
-
-                        {isToday && (
-                          <line
-                            x1={item.x}
-                            x2={item.x}
-                            y1={chart.padding.top - 8}
-                            y2={baseY + 8}
-                            stroke="#047857"
-                            strokeWidth="2"
-                            strokeDasharray="4 6"
-                            opacity="0.75"
-                          />
-                        )}
-
-                        {isActive && (
-                          <circle
-                            cx={item.x}
-                            cy={item.y}
-                            r="8"
-                            fill="white"
-                            stroke="#047857"
-                            strokeWidth="3"
-                          />
-                        )}
-
-                        <text
-                          x={item.x}
-                          y={baseY + 24}
-                          textAnchor="middle"
-                          className={cn(
-                            "text-[11px] font-black",
-                            isToday ? "fill-emerald-700" : isWeekend ? "fill-slate-500" : "fill-slate-400",
-                          )}
-                        >
-                          {item.day}
-                        </text>
-
-<text
-  x={item.x}
-  y={baseY + 41}
-  textAnchor="middle"
-  className={cn(
-    "text-[10px] font-bold",
-    isWeekend ? "fill-slate-300" : "fill-slate-400"
-  )}
->
-  {item.weekday}
-</text>
-                      </g>
-                    );
-                  })}
-
-                  {chart.linePath && (
-                    <path
-                      d={chart.linePath}
-                      fill="none"
-                      stroke="url(#bookingTrendGradient)"
-                      strokeWidth="4"
-                      strokeLinecap="round"
-                      opacity="0.95"
-                    />
-                  )}
-                  </svg>
-  </div>
-</div>
-
-              </div>
-            </div>
-
-            <div className="bg-white p-4 sm:p-5">
-              <div className="rounded-[26px] border border-slate-100 bg-slate-50 p-4">
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">
-                  Активна дата
-                </p>
-
-                <p className="mt-2 text-2xl font-black text-slate-950">
-                  {activePoint ? formatDateUA(activePoint.key) : "—"}
-                </p>
-
-                <div className="mt-4 grid grid-cols-3 gap-2">
-                  <ChartTinyStat label="Усього" value={activePoint?.count || 0} />
-                  <ChartTinyStat label="ОК" value={activePoint?.confirmed || 0} />
-                  <ChartTinyStat label="Нові" value={activePoint?.pending || 0} />
-                </div>
-              </div>
-
-              <div className="mt-3 rounded-[26px] border border-emerald-100 bg-emerald-50 p-4">
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-700">
-                  Найактивніший день
-                </p>
-                <p className="mt-2 text-xl font-black text-emerald-950">
-                  {bestDay.count > 0 ? formatDateUA(bestDay.key) : "Записів немає"}
-                </p>
-                <p className="mt-1 text-sm font-bold text-emerald-700">
-                  {bestDay.count > 0 ? `${bestDay.count} записів` : "Оберіть інший місяць або чекайте бронювань"}
-                </p>
-              </div>
-
-              <div className="mt-3 rounded-[26px] border border-slate-100 bg-white p-4 shadow-sm">
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">
-                  Завантаженість
-                </p>
-                <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-emerald-600 to-sky-400"
+              <div className="relative">
+                <div className="pointer-events-none absolute -left-4 top-0 z-20 h-[320px] w-11 rounded-l-[24px] border-r border-slate-200/80 bg-gradient-to-r from-white via-white to-white/90 shadow-[10px_0_18px_rgba(255,255,255,0.82)] sm:h-[360px]">
+                  <span
+                    className="absolute whitespace-nowrap text-[9px] font-black uppercase tracking-[0.14em] text-slate-500"
                     style={{
-                      width: `${Math.min(100, Math.round((activeDays / Math.max(data.length, 1)) * 100))}%`,
+                      left: "30%",
+                      top: "50%",
+                      writingMode: "vertical-rl",
+                      transform: "translate(-50%, -50%) rotate(180deg)",
                     }}
-                  />
+                  >
+                    К-ть записів
+                  </span>
+
+                  {chart.grid.map((line) => (
+                    <span
+                      key={`fixed-axis-${line.value}-${line.y}`}
+                      className="absolute right-2 -translate-y-1/2 rounded-lg bg-white px-1.5 py-0.5 text-[12px] font-black text-slate-600"
+                      style={{ top: `${(line.y / chart.height) * 100}%` }}
+                    >
+                      {line.value}
+                    </span>
+                  ))}
                 </div>
-                <p className="mt-2 text-xs font-bold text-slate-500">
-                  {activeDays} з {data.length} днів мають записи
-                </p>
+
+                <div className="overflow-x-auto pb-2">
+                  <svg
+                    viewBox={`0 0 ${chart.width} ${chart.height}`}
+                    className="h-[320px] min-w-[920px] select-none sm:h-[360px]"
+                    role="img"
+                    aria-label={`Графік записів за ${monthLabel}`}
+                  >
+                    <defs>
+                      <linearGradient
+                        id="bookingBarsGradient"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop offset="0%" stopColor="#34d399" />
+                        <stop offset="48%" stopColor="#10b981" />
+                        <stop offset="100%" stopColor="#047857" />
+                      </linearGradient>
+                      <linearGradient
+                        id="bookingTrendGradient"
+                        x1="0"
+                        y1="0"
+                        x2="1"
+                        y2="0"
+                      >
+                        <stop offset="0%" stopColor="#38bdf8" />
+                        <stop offset="100%" stopColor="#10b981" />
+                      </linearGradient>
+                      <linearGradient
+                        id="bookingAreaGradient"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="0%"
+                          stopColor="#10b981"
+                          stopOpacity="0.22"
+                        />
+                        <stop
+                          offset="100%"
+                          stopColor="#10b981"
+                          stopOpacity="0"
+                        />
+                      </linearGradient>
+                    </defs>
+
+                    {chart.grid.map((line) => (
+                      <g key={line.y}>
+                        <line
+                          x1={chart.padding.left}
+                          x2={chart.width - chart.padding.right}
+                          y1={line.y}
+                          y2={line.y}
+                          stroke="#e2e8f0"
+                          strokeDasharray="5 7"
+                        />
+                      </g>
+                    ))}
+
+                    {chart.areaPath && (
+                      <path
+                        d={chart.areaPath}
+                        fill="url(#bookingAreaGradient)"
+                      />
+                    )}
+
+                    {chart.points.map((item) => {
+                      const baseY = chart.padding.top + chart.innerHeight;
+                      const barHeight = baseY - item.y;
+                      const isToday = item.key === toISODateKey(today);
+                      const isActive = activePoint?.key === item.key;
+                      const isNonWorkingDay = !isStudioWorkingDay(item.date);
+
+                      return (
+                        <g
+                          key={item.key}
+                          onMouseEnter={() => setActiveDayKey(item.key)}
+                          onFocus={() => setActiveDayKey(item.key)}
+                          onClick={() => setActiveDayKey(item.key)}
+                          tabIndex={0}
+                          className="cursor-pointer outline-none"
+                        >
+                          <rect
+                            x={item.x - chart.barWidth}
+                            y={chart.padding.top - 10}
+                            width={chart.barWidth * 2}
+                            height={chart.innerHeight + 62}
+                            fill="transparent"
+                            pointerEvents="all"
+                          />
+
+                          <rect
+                            x={item.x - chart.barWidth / 2}
+                            y={item.count > 0 ? item.y : baseY - 4}
+                            width={chart.barWidth}
+                            height={item.count > 0 ? Math.max(8, barHeight) : 8}
+                            rx="8"
+                            fill={
+                              item.count > 0
+                                ? "url(#bookingBarsGradient)"
+                                : isNonWorkingDay
+                                  ? "#e7e7e7"
+                                  : "#009966"
+                            }
+                            opacity={
+                              isActive ? 1 : item.count > 0 ? 0.88 : 0.75
+                            }
+                          />
+
+                          {isToday && (
+                            <line
+                              x1={item.x}
+                              x2={item.x}
+                              y1={chart.padding.top - 8}
+                              y2={baseY + 8}
+                              stroke="#047857"
+                              strokeWidth="2"
+                              strokeDasharray="4 6"
+                              opacity="0.75"
+                            />
+                          )}
+
+                          {isActive && (
+                            <circle
+                              cx={item.x}
+                              cy={item.y}
+                              r="8"
+                              fill="white"
+                              stroke="#047857"
+                              strokeWidth="3"
+                            />
+                          )}
+
+                          <text
+                            x={item.x}
+                            y={baseY + 24}
+                            textAnchor="middle"
+                            className={cn(
+                              "text-[11px] font-black",
+                              isToday
+                                ? "fill-emerald-700"
+                                : isNonWorkingDay
+                                  ? "fill-slate-500"
+                                  : "fill-slate-400",
+                            )}
+                          >
+                            {item.day}
+                          </text>
+
+                          <text
+                            x={item.x}
+                            y={baseY + 41}
+                            textAnchor="middle"
+                            className={cn(
+                              "text-[10px] font-bold",
+                              isNonWorkingDay
+                                ? "fill-slate-300"
+                                : "fill-slate-400",
+                            )}
+                          >
+                            {item.weekday}
+                          </text>
+                        </g>
+                      );
+                    })}
+
+                    {chart.linePath && (
+                      <path
+                        d={chart.linePath}
+                        fill="none"
+                        stroke="url(#bookingTrendGradient)"
+                        strokeWidth="4"
+                        strokeLinecap="round"
+                        opacity="0.95"
+                      />
+                    )}
+                  </svg>
+                </div>
               </div>
             </div>
           </div>
+
+          <div className="bg-white p-4 sm:p-5">
+            <div className="rounded-[26px] border border-slate-100 bg-slate-50 p-4">
+              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">
+                Активна дата
+              </p>
+
+              <p className="mt-2 text-2xl font-black text-slate-950">
+                {activePoint ? formatDateUA(activePoint.key) : "—"}
+              </p>
+
+              <div className="mt-4 grid grid-cols-3 gap-2">
+                <ChartTinyStat
+                  label="Усього записів"
+                  value={activePoint?.count || 0}
+                />
+
+                <ChartTinyStat
+                  label="Очікують підтвердження"
+                  value={activePoint?.pending || 0}
+                />
+
+                <ChartTinyStat
+                  label="Скасовані"
+                  value={activePoint?.canceled || 0}
+                />
+              </div>
+            </div>
+
+<div className="mt-3 overflow-hidden rounded-[28px] border border-emerald-200/70 bg-gradient-to-br from-emerald-50 via-white to-emerald-100/60 shadow-[0_14px_40px_rgba(16,185,129,0.10)]">
+  <div/>
+
+  <div className="p-5">
+    <div className="flex items-start justify-between gap-4">
+      <div className="min-w-0">
+        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700/80">
+          {bestDays.length > 1
+            ? "Найактивніші дні"
+            : "Найактивніший день"}
+        </p>
+
+        <h3 className="mt-2 text-[22px] font-black leading-tight tracking-[-0.03em] text-emerald-950">
+          {bestDays.length > 0
+            ? bestDays
+                .map((day) => formatDateUA(day.key))
+                .join(", ")
+            : "Записів немає"}
+        </h3>
+
+        <p className="mt-2 text-sm font-semibold text-emerald-700">
+          {bestDays.length > 0
+            ? `${maxCount} ${
+                maxCount === 1 ? "запис" : "записів"
+              } ${
+                bestDays.length > 1
+                  ? "у кожен із цих днів"
+                  : "за день"
+              }`
+            : "Оберіть інший місяць або дочекайтесь нових бронювань"}
+        </p>
+      </div>
+
+      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white shadow-[0_10px_30px_rgba(16,185,129,0.14)]">
+        <ChartColumn className="h-7 w-7 text-emerald-600" />
+      </div>
+    </div>
+
+
+  </div>
+</div>
+<div className="mt-3 rounded-[26px] border border-slate-100 bg-white p-4 shadow-sm">
+  <div className="flex items-start justify-between gap-3">
+    <div>
+      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">
+        Завантаженість
+      </p>
+
+      <p className="mt-2 text-xs font-bold text-slate-500">
+        {activeDays} з {data.length} днів мають записи
+      </p>
+    </div>
+
+<div
+  className={cn(
+    "flex h-12 min-w-[68px] items-center justify-center rounded-2xl px-3 shadow-sm",
+    activeDays / Math.max(data.length, 1) < 0.4
+      ? "bg-emerald-100 text-emerald-700"
+      : activeDays / Math.max(data.length, 1) < 0.75
+      ? "bg-amber-100 text-amber-700"
+      : "bg-red-100 text-red-700"
+  )}
+>
+  <span className="text-lg font-black">
+    {Math.min(
+      100,
+      Math.round((activeDays / Math.max(data.length, 1)) * 100),
+    )}
+    %
+  </span>
+</div>
+  </div>
+
+  <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
+    <div
+      className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-amber-400 to-red-500"
+      style={{
+        width: "100%",
+        clipPath: `inset(0 ${100 - Math.min(
+          100,
+          Math.round((activeDays / Math.max(data.length, 1)) * 100),
+        )}% 0 0 round 999px)`,
+      }}
+    />
+  </div>
+</div>
+
+          </div>
         </div>
-    
+      </div>
     </SectionShell>
   );
 }
@@ -669,7 +922,7 @@ function ChartKpi({ label, value, icon: Icon, tone = "emerald" }) {
     <div
       className={cn(
         "rounded-[24px] border border-white/80 bg-gradient-to-br p-4 shadow-sm flex justify-between items-center",
-        tones[tone]
+        tones[tone],
       )}
     >
       <div>
@@ -690,17 +943,15 @@ function ChartKpi({ label, value, icon: Icon, tone = "emerald" }) {
 
 function ChartTinyStat({ label, value }) {
   return (
-    <div className="rounded-2xl bg-white px-2 py-3 text-center shadow-sm">
-      <p className="text-lg font-black text-slate-950">{value}</p>
-      <p className="mt-0.5 truncate text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">
+    <div className="flex min-h-[68px] flex-col items-center justify-center rounded-2xl bg-white px-2 py-3 text-center shadow-sm">
+      <p className="text-lg font-black leading-none text-slate-950">{value}</p>
+
+      <p className="mt-2 text-center text-[9px] font-black uppercase leading-tight tracking-[0.08em] text-slate-400 break-words">
         {label}
       </p>
     </div>
   );
 }
-
-
-
 
 function Badge({ children, className = "" }) {
   return (
@@ -899,16 +1150,15 @@ function AppointmentCard({ item, todayKey, nowTs, onOpen }) {
                   <CalendarDays className="h-3.5 w-3.5" />
                   {isToday ? "Сьогодні" : dateLabel}
                 </span>
-
-                <span
-                  className={cn(
-                    "inline-flex items-center justify-center gap-2 px-2.5 py-1 text-xs font-semibold rounded-2xl border border-[var(--border-soft)] bg-white shadow-sm transition-all duration-200 ",
-                    statusMeta.text,
-                  )}
-                >
-                  <IconDot className={statusMeta.dot} />
-                  {statusMeta.label}
-                </span>
+<span
+  className={cn(
+    "inline-flex items-center justify-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-bold shadow-sm",
+    statusMeta.text,
+  )}
+>
+  <statusMeta.Icon className="h-3.5 w-3.5" />
+  {statusMeta.label}
+</span>
               </div>
             </div>
 
@@ -963,101 +1213,116 @@ export default function Golowna() {
   );
 
   useEffect(() => {
-  let alive = true;
+    let alive = true;
 
-  return () => {
-    alive = false;
-  };
-}, []);
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   useEffect(() => {
     const id = setInterval(() => setNowTs(Date.now()), 60_000);
     return () => clearInterval(id);
   }, []);
 
-const stats = useMemo(() => {
-  const activeStatuses = ["confirmed", "new", "pending", "CONFIRMED", "NEW", "PENDING"];
+  const stats = useMemo(() => {
+    const activeStatuses = [
+      "confirmed",
+      "new",
+      "pending",
+      "CONFIRMED",
+      "NEW",
+      "PENDING",
+    ];
 
-  const list = (bookings || []).filter((b) => {
-    if (!b?.id) return false;
-    if (b.status === "canceled" || b.status === "deleted") return false;
-    return activeStatuses.includes(b.status) || !b.status;
-  });
+    const list = (bookings || []).filter((b) => {
+      if (!b?.id) return false;
+      if (b.status === "canceled" || b.status === "deleted") return false;
+      return activeStatuses.includes(b.status) || !b.status;
+    });
 
-  const now = new Date(nowTs);
-  const todayKey = toISODateKey(now);
-  const weekStart = startOfWeekMonday(now);
-  const weekEnd = addDays(weekStart, 7);
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const now = new Date(nowTs);
+    const todayKey = toISODateKey(now);
+    const weekStart = startOfWeekMonday(now);
+    const weekEnd = addDays(weekStart, 7);
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
-  let todayActive = 0;
-  let weekActive = 0;
-  let monthActive = 0;
-  let todayNew = 0;
+    let todayActive = 0;
+    let weekActive = 0;
+    let monthActive = 0;
+    let todayNew = 0;
 
-  for (const b of list) {
-    const dt = getBookingDateTime(b);
-    if (!dt) continue;
-    if (dt.getTime() < nowTs) continue;
+    for (const b of list) {
+      const dt = getBookingDateTime(b);
+      if (!dt) continue;
+      if (dt.getTime() < nowTs) continue;
 
-    const dateOnly = new Date(b.date);
-    if (Number.isNaN(dateOnly.getTime())) continue;
+      const dateOnly = new Date(b.date);
+      if (Number.isNaN(dateOnly.getTime())) continue;
 
-    const key = toISODateKey(dateOnly);
-    const status = String(b.status || "").toLowerCase();
-    const isPending = !status || status === "new" || status === "pending";
+      const key = toISODateKey(dateOnly);
+      const status = String(b.status || "").toLowerCase();
+      const isPending = !status || status === "new" || status === "pending";
 
-    if (key === todayKey) {
-      todayActive++;
-      if (isPending) todayNew++;
+      if (key === todayKey) {
+        todayActive++;
+        if (isPending) todayNew++;
+      }
+
+      if (dateOnly >= weekStart && dateOnly < weekEnd) {
+        weekActive++;
+      }
+
+      if (dateOnly >= monthStart && dateOnly < monthEnd) {
+        monthActive++;
+      }
     }
 
-    if (dateOnly >= weekStart && dateOnly < weekEnd) {
-      weekActive++;
-    }
+    return [
+      {
+        key: "today-active",
+        title: "Активні на сьогодні",
+        value: todayActive,
+        icon: CalendarDays,
+        accent: "emerald",
+      },
+      {
+        key: "today-new",
+        title: "Очікують підтвердження",
+        value: todayNew,
+        icon: Sparkles,
+        accent: "amber",
+      },
+      {
+        key: "week-active",
+        title: "Активні на тижні",
+        value: weekActive,
+        icon: CheckCheck,
+        accent: "blue",
+      },
+      {
+        key: "month-active",
+        title: "Активні на місяць",
+        value: monthActive,
+        icon: Users,
+        accent: "rose",
+      },
+    ];
+  }, [bookings, nowTs]);
 
-    if (dateOnly >= monthStart && dateOnly < monthEnd) {
-      monthActive++;
-    }
-  }
+const selectedBooking = useMemo(() => {
+  if (detailsId == null) return null;
 
-  return [
-    {
-      key: "today-active",
-      title: "Активні на сьогодні",
-      value: todayActive,
-      icon: CalendarDays,
-      accent: "emerald",
-    },
-    {
-      key: "today-new",
-      title: "Очікують підтвердження",
-      value: todayNew,
-      icon: Sparkles,
-      accent: "amber",
-    },
-    {
-      key: "week-active",
-      title: "Активні на тижні",
-      value: weekActive,
-      icon: CheckCheck,
-      accent: "blue",
-    },
-    {
-      key: "month-active",
-      title: "Активні на місяць",
-      value: monthActive,
-      icon: Users,
-      accent: "rose",
-    },
-  ];
-}, [bookings, nowTs]);
+  const booking = (bookings || []).find((b) => b.id === detailsId);
+  if (!booking) return null;
 
-  const selectedBooking = useMemo(() => {
-    if (detailsId == null) return null;
-    return (bookings || []).find((b) => b.id === detailsId) || null;
-  }, [detailsId, bookings]);
+  return {
+    ...booking,
+    clientPhotoUrl: booking.clientPhotoUrl || booking.client?.photoUrl || "",
+    masterPhotoUrl: booking.masterPhotoUrl || booking.master?.photoUrl || "",
+  };
+}, [detailsId, bookings]);
 
   async function handleCopyPhone(value) {
     if (!value) return;
@@ -1096,13 +1361,15 @@ const stats = useMemo(() => {
 
     upcoming.sort((a, c) => a.ts - c.ts);
 
-    return upcoming.map(({ b }) => ({
-      ...b,
-      date: b.date,
-      time: parseTimeToHHMM(b.time) || b.time || "—",
-      serviceName: b.serviceName || "—",
-      clientName: b.clientName || "—",
-    }));
+return upcoming.map(({ b }) => ({
+  ...b,
+  date: b.date,
+  time: parseTimeToHHMM(b.time) || b.time || "—",
+  serviceName: b.serviceName || "—",
+  clientName: b.clientName || "—",
+  clientPhotoUrl: b.clientPhotoUrl || b.client?.photoUrl || "",
+  masterPhotoUrl: b.masterPhotoUrl || b.master?.photoUrl || "",
+}));
   }, [bookings, nowTs]);
 
   const todayKey = toISODateKey(new Date(nowTs));
@@ -1193,75 +1460,76 @@ const stats = useMemo(() => {
     };
   }, []);
 
-const liveStatusUi = useMemo(() => {
-  const base =
-    "inline-flex items-center gap-2 rounded-full border border-[var(--border-soft)] bg-white px-3 py-1.5 text-[13px] font-semibold shadow-[var(--shadow-card)]";
+  const liveStatusUi = useMemo(() => {
+    const base =
+      "inline-flex items-center gap-2 rounded-full border border-[var(--border-soft)] bg-white px-3 py-1.5 text-[13px] font-semibold shadow-[var(--shadow-card)]";
 
-  if (!isOnline || socketState === "offline") {
+    if (!isOnline || socketState === "offline") {
+      return {
+        text: "Немає інтернету",
+        dotClass:
+          "h-2 w-2 rounded-full bg-[var(--color-canceled)] shadow-[0_0_0_3px_var(--color-canceled-light)] animate-[pulse-soft_1.8s_ease-in-out_infinite]",
+        wrapClass: `${base} text-[var(--color-canceled-dark)]`,
+      };
+    }
+
+    if (socketState === "pending" || isRefreshing) {
+      return {
+        text: "Оновлення...",
+        dotClass:
+          "h-2 w-2 rounded-full bg-[var(--color-pending)] shadow-[0_0_0_3px_var(--color-pending-light)] animate-[pulse-soft_1.8s_ease-in-out_infinite]",
+        wrapClass: `${base} text-[var(--color-pending-dark)]`,
+      };
+    }
+
     return {
-      text: "Немає інтернету",
+      text: "Оновлюється автоматично",
       dotClass:
-        "h-2 w-2 rounded-full bg-[var(--color-canceled)] shadow-[0_0_0_3px_var(--color-canceled-light)] animate-[pulse-soft_1.8s_ease-in-out_infinite]",
-      wrapClass: `${base} text-[var(--color-canceled-dark)]`,
+        "h-2 w-2 rounded-full bg-emerald-600 shadow-[0_0_0_3px_var(--color-confirmed-light)] animate-[pulse-soft_1s_ease-in-out_infinite]",
+      wrapClass: `${base} text-emerald-600`,
     };
-  }
-
-  if (socketState === "pending" || isRefreshing) {
-    return {
-      text: "Оновлення...",
-      dotClass:
-        "h-2 w-2 rounded-full bg-[var(--color-pending)] shadow-[0_0_0_3px_var(--color-pending-light)] animate-[pulse-soft_1.8s_ease-in-out_infinite]",
-      wrapClass: `${base} text-[var(--color-pending-dark)]`,
-    };
-  }
-
-  return {
-    text: "Оновлюється автоматично",
-    dotClass:
-      "h-2 w-2 rounded-full bg-emerald-600 shadow-[0_0_0_3px_var(--color-confirmed-light)] animate-[pulse-soft_1s_ease-in-out_infinite]",
-    wrapClass: `${base} text-emerald-600`,
-  };
-}, [isOnline, socketState, isRefreshing]);
+  }, [isOnline, socketState, isRefreshing]);
 
   return (
     <div className="">
       <div className="mx-auto w-full max-w-[1200px] space-y-3">
-
-
-<MonthlyBookingsChart bookings={bookings} nowTs={nowTs} />
+        <MonthlyBookingsChart bookings={bookings} nowTs={nowTs} />
         <SectionShell>
           <div className="px-5 pb-6 pt-5 sm:px-6 sm:pb-7 sm:pt-6">
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between gap-3">
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-700 sm:text-xs sm:tracking-[0.22em]">
-                  Розклад
-                </p>
 
-<div
-  className={cn(
-    "inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-[11px] font-semibold shadow-sm sm:text-xs",
-    liveStatusUi.wrapClass,
-  )}
->
-  <span
-    className={cn(
-      "h-2 w-2 rounded-full shadow-[0_0_0_3px_rgba(255,255,255,0.9)]",
-      liveStatusUi.dotClass,
-    )}
-  />
-  <span className="whitespace-nowrap">{liveStatusUi.text}</span>
-</div>
-
-
+                <div
+                  className={cn(
+                    "inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-[11px] font-semibold shadow-sm sm:text-xs",
+                    liveStatusUi.wrapClass,
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "h-2 w-2 rounded-full shadow-[0_0_0_3px_rgba(255,255,255,0.9)]",
+                      liveStatusUi.dotClass,
+                    )}
+                  />
+                  <span className="whitespace-nowrap">{liveStatusUi.text}</span>
+                </div>
               </div>
 
-              <h2 className="ui-title-section text-2xl sm:text-3xl">
-                Найближчі записи
-              </h2>
+<div className="flex items-center gap-3">
+  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-primary-buttom)] text-white shadow-sm">
+    <CalendarDays className="h-5 w-5" />
+  </div>
 
-              <p className="ui-text-muted text-sm">
-                Тільки майбутні записи, відсортовані за датою та часом.
-              </p>
+  <div className="min-w-0">
+    <h2 className="ui-title-section text-2xl sm:text-3xl">
+      Найближчі записи
+    </h2>
+
+    <p className="mt-1 ui-text-muted text-sm">
+      Тільки майбутні записи, відсортовані за датою та часом.
+    </p>
+  </div>
+</div>
             </div>
 
             {isInitialLoading ? (
@@ -1271,21 +1539,22 @@ const liveStatusUi = useMemo(() => {
                 ))}
               </ul>
             ) : upcomingAppointments.length === 0 ? (
-<div className="mt-6 rounded-2xl border-2 border-dashed border-[var(--color-caramel)]/40 bg-[var(--color-cream)] p-6 text-center sm:p-8">
-  <div className="mb-3 flex items-center justify-center">
-    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/70">
-      <CalendarDays className="h-7 w-7 text-[var(--color-caramel)]" />
-    </div>
-  </div>
+              <div className="mt-6 rounded-2xl border-2 border-dashed border-[var(--color-caramel)]/40 bg-[var(--color-cream)] p-6 text-center sm:p-8">
+                <div className="mb-3 flex items-center justify-center">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/70">
+                    <CalendarDays className="h-7 w-7 text-[var(--color-caramel)]" />
+                  </div>
+                </div>
 
-  <p className="text-sm font-medium text-[var(--color-caramel)]">
-    Немає запланованих записів
-  </p>
+                <p className="text-sm font-medium text-[var(--color-caramel)]">
+                  Немає запланованих записів
+                </p>
 
-  <p className="mt-1 text-xs text-[var(--color-caramel)]/80">
-    Коли клієнти почнуть записуватись, тут з’являться всі бронювання
-  </p>
-</div>
+                <p className="mt-1 text-xs text-[var(--color-caramel)]/80">
+                  Коли клієнти почнуть записуватись, тут з’являться всі
+                  бронювання
+                </p>
+              </div>
             ) : (
               <>
                 <ul className="mt-6 space-y-3">
@@ -1343,7 +1612,7 @@ const liveStatusUi = useMemo(() => {
               ? {
                   label: "Підтверджено",
                   top: "from-[var(--color-confirmed-light)] to-white",
-                  Icon: Check,
+                  Icon: CheckCheck,
                   iconColor: "text-[var(--color-confirmed-dark)]",
                   pillText: "text-[var(--color-confirmed-dark)]",
                   accent: "text-[var(--color-confirmed)]",
@@ -1509,9 +1778,11 @@ const liveStatusUi = useMemo(() => {
                     <div className="space-y-3">
                       <div className="rounded-[26px] border border-[#e6ebe3]  from-[#f6faf4] via-[#edf4ea] to-[#fbfdf9] p-4 shadow-[0_8px_24px_rgba(120,140,120,0.08)]">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-[var(--color-ink)] shadow-sm">
-                            <UserRound className="h-5 w-5" />
-                          </div>
+<Avatar
+  name={clientName}
+  photoUrl={selectedBooking.clientPhotoUrl}
+  className="h-12 w-12"
+/>
 
                           <div className="min-w-0 flex-1">
                             <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-caramel)]">
@@ -1526,9 +1797,11 @@ const liveStatusUi = useMemo(() => {
 
                       <div className="rounded-[26px] border border-[#e6ebe3]  from-[#f6faf4] via-[#edf4ea] to-[#fbfdf9] p-4 shadow-[0_8px_24px_rgba(120,140,120,0.08)]">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white font-bold text-[var(--color-ink)] shadow-sm">
-                            {masterName?.[0] || "—"}
-                          </div>
+<Avatar
+  name={masterName}
+  photoUrl={selectedBooking.masterPhotoUrl}
+  className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-[14px]"
+/>
 
                           <div className="min-w-0 flex-1">
                             <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-caramel)]">
@@ -1578,32 +1851,31 @@ const liveStatusUi = useMemo(() => {
                     </div>
                   </div>
 
-
                   {!isConfirmed && !isCanceled && !isArchived && !isDeleted ? (
                     <>
-<button
-  type="button"
-  onClick={async () => {
-    try {
-      await confirmBooking(selectedBooking.id);
-    } catch (e) {
-      alert(e.message || "Не вдалося підтвердити запис");
-    }
-  }}
-className={cn(
-  "mt-5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold text-white",
-  "transition-all duration-200 active:scale-[0.98]",
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            await confirmBooking(selectedBooking.id);
+                          } catch (e) {
+                            alert(e.message || "Не вдалося підтвердити запис");
+                          }
+                        }}
+                        className={cn(
+                          "mt-5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold text-white",
+                          "transition-all duration-200 active:scale-[0.98]",
 
-  // 👉 nude-green
-  "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
+                          // 👉 nude-green
+                          "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
 
-  // 👉 hover
-  "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]"
-)}
->
-  <Check className="h-4 w-4" />
-  Підтвердити запис
-</button>
+                          // 👉 hover
+                          "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]",
+                        )}
+                      >
+                        <CheckCheck className="h-4 w-4" />
+                        Підтвердити запис
+                      </button>
 
                       <div className="mt-3 grid grid-cols-2 gap-3">
                         <button

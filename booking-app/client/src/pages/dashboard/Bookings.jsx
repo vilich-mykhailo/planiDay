@@ -317,7 +317,7 @@ function IconButton({
   );
 }
 
-function Pill({ active, count, children, onClick }) {
+function Pill({ active, count, showCount = false, children, onClick }) {
   return (
     <button
       type="button"
@@ -330,16 +330,19 @@ function Pill({ active, count, children, onClick }) {
       )}
     >
       <span>{children}</span>
-      <span
-        className={cn(
-          "inline-flex min-w-7 justify-center rounded-full px-2 py-0.5 text-xs font-bold",
-          active
-            ? "bg-white text-[var(--color-ink)]"
-            : "bg-[var(--color-cream)] text-[var(--color-ink)]",
-        )}
-      >
-        {count ?? 0}
-      </span>
+
+{showCount && (
+  <span
+    className={cn(
+      "text-[11px] font-medium tracking-tight",
+      active
+        ? "text-white/80"
+        : "text-emerald-600 drop-shadow-[0_0_10px_rgba(5,150,105,0.18)]",
+    )}
+  >
+    +{count ?? 0}
+  </span>
+)}
     </button>
   );
 }
@@ -986,10 +989,25 @@ const EmptyIcon = emptyInfo.icon;
         </div>
 
         {tab === "list" && (
-          <SectionCard
-            title="Фільтри"
-            subtitle="Швидке сортування записів"
-            actions={
+<SectionCard
+  title={
+    <div className="flex items-center gap-3">
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-primary-buttom)] text-white shadow-sm">
+        <ListTodo className="h-5 w-5" />
+      </div>
+
+      <div className="min-w-0">
+        <h2 className="text-lg font-black tracking-[-0.03em] text-[var(--color-ink)]">
+          Усі записи
+        </h2>
+
+        <p className="mt-1 text-sm font-medium text-[var(--color-caramel)]">
+          Переглядайте записи за статусами, датою та типом бронювання.
+        </p>
+      </div>
+    </div>
+  }
+  actions={
 <div
   className={cn(
     "inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-[11px] font-semibold shadow-sm sm:text-xs",
@@ -1014,14 +1032,15 @@ const EmptyIcon = emptyInfo.icon;
     { key: "confirmed", label: "Підтверджені" },
     { key: "canceled", label: "Скасовані" },
   ].map((x) => (
-    <Pill
-      key={x.key}
-      active={filter === x.key}
-      count={filterCounts[x.key] ?? 0}
-      onClick={() => setFilter(x.key)}
-    >
-      {x.label}
-    </Pill>
+<Pill
+  key={x.key}
+  active={filter === x.key}
+  count={filterCounts[x.key] ?? 0}
+  showCount={x.key === "new"}
+  onClick={() => setFilter(x.key)}
+>
+  {x.label}
+</Pill>
   ))}
 </div>
           </SectionCard>
@@ -1292,43 +1311,43 @@ const EmptyIcon = emptyInfo.icon;
           </SectionCard>
         ) : (
           <SectionCard>
-            <div className="mb-5 flex items-center justify-between">
-              <IconButton
-                onClick={() =>
-                  setActiveMonth(
-                    new Date(
-                      activeMonth.getFullYear(),
-                      activeMonth.getMonth() - 1,
-                      1,
-                    ),
-                  )
-                }
-                title="Попередній місяць"
-                className="h-10 w-10 shrink-0"
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </IconButton>
+<div className="mb-5 flex items-center justify-between">
+  <IconButton
+    onClick={() =>
+      setActiveMonth(
+        new Date(
+          activeMonth.getFullYear(),
+          activeMonth.getMonth() - 1,
+          1,
+        ),
+      )
+    }
+    title="Попередній місяць"
+    className="h-10 w-10 shrink-0 hover:bg-[var(--color-cream)]"
+  >
+    <ChevronLeft className="h-5 w-5" />
+  </IconButton>
 
-              <h3 className="text-center text-[22px] font-extrabold tracking-tight text-[var(--color-ink)] capitalize sm:text-[24px]">
-                {monthLabelUA(activeMonth)}
-              </h3>
+  <h3 className="text-center text-[22px] font-extrabold tracking-tight text-[var(--color-ink)] capitalize sm:text-[24px]">
+    {monthLabelUA(activeMonth)}
+  </h3>
 
-              <IconButton
-                onClick={() =>
-                  setActiveMonth(
-                    new Date(
-                      activeMonth.getFullYear(),
-                      activeMonth.getMonth() + 1,
-                      1,
-                    ),
-                  )
-                }
-                title="Наступний місяць"
-                className="h-10 w-10 shrink-0"
-              >
-                <ChevronRight className="h-5 w-5" />
-              </IconButton>
-            </div>
+  <IconButton
+    onClick={() =>
+      setActiveMonth(
+        new Date(
+          activeMonth.getFullYear(),
+          activeMonth.getMonth() + 1,
+          1,
+        ),
+      )
+    }
+    title="Наступний місяць"
+    className="h-10 w-10 shrink-0 hover:bg-[var(--color-cream)]"
+  >
+    <ChevronRight className="h-5 w-5" />
+  </IconButton>
+</div>
 
             <div className="grid grid-cols-7 gap-1.5 text-[11px] font-semibold text-[var(--color-caramel)] sm:gap-2 sm:text-xs">
               {["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"].map((x) => (
@@ -2059,7 +2078,7 @@ const EmptyIcon = emptyInfo.icon;
                                   <button
                                     type="button"
                                     onClick={() => toggleCalendarCard(b.id)}
-                                    className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-xl px-3 text-xs font-bold text-[var(--border-hover-primary)] transition hover:bg-[var(--color-cream)] active:scale-[0.98]"
+                                    className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-xl px-3 text-xs font-bold text-[var(--border-hover-primary)] transition hover:text-[var(--color-sidebar-accent-hover)] active:scale-[0.98]"
                                   >
                                     {isExpanded ? (
                                       <>

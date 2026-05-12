@@ -36,6 +36,15 @@ import {
   ContactRound,
 } from "lucide-react";
 
+const PUBLIC = import.meta.env.VITE_R2_PUBLIC_BASE_URL;
+
+function toPublicUrl(v) {
+  const s = String(v || "").trim();
+  if (!s) return "";
+  if (/^https?:\/\//i.test(s)) return s;
+  return PUBLIC ? `${PUBLIC}/${s}` : s;
+}
+
 function cn(...classes) {
   return classes.filter(Boolean).join(" ");
 }
@@ -127,20 +136,32 @@ function getBookingStatusUi(status, canceledBy = null) {
 
 function Avatar({ name, photoUrl, className = "" }) {
   const initials = initialsFromName(name);
+  const src = toPublicUrl(photoUrl);
 
   return (
     <div
       className={cn(
-        "flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 border-[var(--color-cream)] bg-gradient-to-br from-[var(--color-cream)] to-[var(--color-sand)] shadow-sm",
+        "relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-[22px] border border-white bg-gradient-to-br from-emerald-50 via-white to-amber-50 shadow-[0_10px_26px_rgba(15,23,42,0.10)]",
         className,
       )}
     >
-      {photoUrl ? (
-        <img src={photoUrl} alt={name} className="h-full w-full object-cover" />
+      {src ? (
+        <img
+          src={src}
+          alt={name || "Клієнт"}
+          className="h-full w-full object-cover"
+        />
       ) : (
-        <span className="text-sm font-black text-[var(--color-forest)]">
-          {initials}
-        </span>
+        <>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(16,185,129,0.24),transparent_35%),radial-gradient(circle_at_80%_90%,rgba(180,140,108,0.22),transparent_38%)]" />
+
+          <div className="absolute -right-3 -top-3 h-10 w-10 rounded-full bg-white/55 blur-sm" />
+          <div className="absolute -bottom-4 -left-4 h-12 w-12 rounded-full bg-[var(--color-cream)]/80 blur-sm" />
+
+          <span className="relative z-10 text-[25px] font-black tracking-[-0.03em] text-[var(--color-sidebar-accent-soft)]">
+            {initials}
+          </span>
+        </>
       )}
     </div>
   );
@@ -1192,7 +1213,11 @@ function ClientAccordion({
           onClick={onToggle}
           className="flex min-w-0 flex-1 items-center gap-3 text-left"
         >
-          <Avatar name={client.name} className="h-16 w-16 rounded-[22px]" />
+         <Avatar
+  name={client.name}
+  photoUrl={client.photoUrl}
+  className="h-16 w-16 rounded-[22px]"
+/>
 
           <div className="min-w-0 flex-1">
             <div className="flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
@@ -1376,7 +1401,11 @@ function ClientDetails({
       <div className="border-b border-[var(--color-cream)] p-5">
         {!compactHeader && (
           <div className="flex items-start gap-3">
-            <Avatar name={client.name} className="h-16 w-16 rounded-[22px]" />
+        <Avatar
+  name={client.name}
+  photoUrl={client.photoUrl}
+  className="h-16 w-16 rounded-[22px]"
+/>
 
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">

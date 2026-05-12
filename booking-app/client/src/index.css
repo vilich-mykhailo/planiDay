@@ -255,7 +255,7 @@ input:-webkit-autofill:focus {
 --color-cream-secon: #f7f6f4;
 --color-caramel: #686868;
 --color-buttom-ok: #3a7027;
-
+  --color-sidebar-selected: #d8d1c5;
  --color-white: #ffffff;
   --color-sidebar-accent: #18181b;
   --color-sidebar-accent-hover: #27272a;
