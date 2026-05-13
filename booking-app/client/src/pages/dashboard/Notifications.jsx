@@ -122,9 +122,15 @@ function NotificationCard({ item, onRead }) {
   const [expanded, setExpanded] = useState(!item.isRead);
 
   return (
-    <div
-      className={cn(
-        "relative overflow-hidden rounded-[30px] border bg-white p-4 transition-all duration-200 sm:p-5",
+<div
+  onClick={() => {
+    if (isReschedule) {
+      setExpanded((prev) => !prev);
+    }
+  }}
+  className={cn(
+    "group relative overflow-hidden rounded-[30px] border bg-white p-4 transition-all duration-200 sm:p-5",
+    isReschedule && "cursor-pointer",
         item.isRead
           ? "border-[var(--color-cream)] shadow-sm"
           : "border-[var(--color-sand)] shadow-[0_16px_44px_rgba(27,27,27,0.09)]",
@@ -176,8 +182,15 @@ function NotificationCard({ item, onRead }) {
       <button
         type="button"
         onClick={() => setExpanded((prev) => !prev)}
-        className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-xl px-3 text-xs font-bold text-[var(--border-hover-primary)] transition hover:text-[var(--color-sidebar-accent-hover)] active:scale-[0.98]"
-      >
+className={cn(
+  "pointer-events-none inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-xl px-3 text-xs font-bold transition-all duration-200 active:scale-[0.98]",
+  expanded
+    ? "text-[var(--color-sidebar-accent-hover)]"
+    : `
+      text-[var(--border-hover-primary)]
+      group-hover:text-slate-700
+    `,
+)} >
         {expanded ? (
           <>
             <ChevronUp className="h-4 w-4" />

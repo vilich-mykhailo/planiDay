@@ -15,6 +15,7 @@ import {
   ChevronUp,
   ChevronLeft,
   Users,
+  ArrowLeft,
 } from "lucide-react";
 import DatePicker from "../../components/ui/DatePicker";
 import TimeSelect from "../../components/TimeSelect";
@@ -93,11 +94,13 @@ function SectionCard({
                 {title}
               </h2>
 
-              {badge && (
-                <span className="shrink-0 inline-flex items-center rounded-full bg-[var(--color-cream)] px-3 py-1 text-xs font-semibold text-[var(--color-ink)]">
-                  {badge}
-                </span>
-              )}
+{badge && (
+  <div className="mt-1.5">
+    <span className="inline-flex max-w-full items-center px-2.5 py-0.5 text-xs font-semibold text-[var(--border-hover-primary)]">
+      {badge}
+    </span>
+  </div>
+)}
             </div>
 
             {subtitle && (
@@ -1471,7 +1474,16 @@ const neutralButtonClass =
           }
         >
           
-<div className="space-y-6">
+<button
+  type="button"
+  onClick={closeEdit}
+  className="absolute left-4 top-4 z-30 inline-flex items-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white/90 px-3 py-2 text-sm font-bold text-[var(--color-ink)] shadow-sm backdrop-blur transition-all hover:bg-[var(--color-cream)] active:scale-[0.98]"
+>
+  <ArrowLeft className="h-4 w-4" />
+  Назад
+</button>
+
+<div className="space-y-6 pt-10">
   <div className="space-y-4 pt-2">
     <div className="flex justify-center">
       <div className="relative">
@@ -1633,6 +1645,14 @@ const neutralButtonClass =
   </div>
 }
 >
+  <button
+  type="button"
+  onClick={closeEdit}
+  className="absolute left-4 top-4 z-30 inline-flex items-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white/90 px-3 py-2 text-sm font-bold text-[var(--color-ink)] shadow-sm backdrop-blur transition-all hover:bg-[var(--color-cream)] active:scale-[0.98]"
+>
+  <ArrowLeft className="h-4 w-4" />
+  Назад
+</button>
   <div className="space-y-5">
   <div className="space-y-4 pt-2">
     <div className="flex justify-center">

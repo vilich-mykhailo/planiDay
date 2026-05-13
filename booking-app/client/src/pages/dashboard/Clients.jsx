@@ -791,6 +791,23 @@ export default function Clients() {
       )
     : 0;
 
+    const filterItemsWithCounts = filterItems.map((item) => {
+  let count = 0;
+
+  if (item.value === "all") {
+    count = allClients.length;
+  } else if (item.value === "vip") {
+    count = allClients.filter((client) => client.isVip).length;
+  } else {
+    count = allClients.filter((client) => client.status === item.value).length;
+  }
+
+  return {
+    ...item,
+    count,
+  };
+});
+
   return (
     <div className="h-full">
       <div className="mx-auto max-w-7xl space-y-6">
@@ -953,7 +970,7 @@ export default function Clients() {
               </div>
             </div>
             <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-              {filterItems.map((item) => (
+             {filterItemsWithCounts.map((item) => (
                 <button
                   key={item.value}
                   type="button"
@@ -972,21 +989,15 @@ export default function Clients() {
                 >
                   <span>{item.label}</span>
 
-                  {typeof item.count === "number" && (
-                    <span
-                      className={cn(
-                        "rounded-full px-2 py-0.5 text-[10px] font-bold",
-                        filter === item.value
-                          ? "bg-white/20 text-white"
-                          : "bg-[var(--color-cream)] text-[var(--color-caramel)]",
-                      )}
-                    >
-                      {item.count}
-                    </span>
-                  )}
+
                 </button>
               ))}
             </div>
+            <div className="mt-1 flex justify-end">
+  <span className="inline-flex items-center rounded-full  px-3  text-xs font-semibold text-[var(--border-hover-primary)]">
+    К-ть клієнтів: {clients.length}
+  </span>
+</div>
           </div>
           {loading && (
             <div className="mt-5 rounded-2xl border border-[var(--color-cream)] bg-white p-6 text-center text-sm font-bold text-[var(--color-caramel)]">

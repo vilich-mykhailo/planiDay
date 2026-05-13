@@ -1,5 +1,5 @@
 // Golowna.jsx
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Activity, useEffect, useMemo, useRef, useState } from "react";
 import { useBookings } from "../context/bookings/useBookings";
 import { api } from "../api/http";
 import {
@@ -30,6 +30,7 @@ import {
   CirclePlay,
   ChartColumn,
   LayoutGrid,
+  BadgeCheck,
 } from "lucide-react";
 import { socket } from "../lib/socket";
 
@@ -311,122 +312,236 @@ function MonthlyBookingsChart({ bookings = [], nowTs }) {
     loadStudioSchedule();
   }, []);
 
-  const [activeDayKey, setActiveDayKey] = useState(null);
+ const [activeDayKey, setActiveDayKey] = useState(null);
+const [pinnedDayKey, setPinnedDayKey] = useState(null);
+const [chartMode, setChartMode] = useState("month");
+const [chartTabIndex, setChartTabIndex] = useState(2);
+const data = useMemo(() => {
+  if (chartMode === "today") {
 
-  const data = useMemo(() => {
-    const year = visibleMonth.getFullYear();
-    const month = visibleMonth.getMonth();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const todayKey = toISODateKey(new Date(nowTs));
 
-    const days = Array.from({ length: daysInMonth }, (_, i) => {
-      const date = new Date(year, month, i + 1);
-
-      return {
-        day: i + 1,
-        date,
-        key: toISODateKey(date),
-        weekday: getWeekdayShortUA(date),
-        count: 0,
-        confirmed: 0,
-        pending: 0,
-      };
-    });
+    const hours = Array.from({ length: 24 }, (_, hour) => ({
+      day: hour,
+      hour,
+      date: new Date(nowTs),
+      key: `${todayKey}-${pad2(hour)}`,
+      label: `${pad2(hour)}:00`,
+      weekday: "",
+      count: 0,
+      confirmed: 0,
+      pending: 0,
+      canceled: 0,
+    }));
 
     for (const booking of bookings || []) {
       if (!booking?.date) continue;
-      if (booking.status === "canceled" || booking.status === "deleted")
-        continue;
+      if (booking.status === "deleted") continue;
+      if (booking.date !== todayKey) continue;
 
-      const d = new Date(booking.date);
-      if (Number.isNaN(d.getTime())) continue;
-      if (d.getFullYear() !== year || d.getMonth() !== month) continue;
+      const dt = getBookingDateTime(booking);
+      if (!dt) continue;
 
-      const item = days[d.getDate() - 1];
-      item.count += 1;
+      const hour = dt.getHours();
+      const isCanceled = booking.status === "canceled";
 
-      if (booking.status === "confirmed") {
-        item.confirmed += 1;
-      } else {
-        item.pending += 1;
-      }
+      hours[hour] = {
+        ...hours[hour],
+        count: hours[hour].count + (isCanceled ? 0 : 1),
+        confirmed:
+          hours[hour].confirmed + (booking.status === "confirmed" ? 1 : 0),
+        pending:
+          hours[hour].pending +
+          (!isCanceled && booking.status !== "confirmed" ? 1 : 0),
+        canceled: hours[hour].canceled + (isCanceled ? 1 : 0),
+      };
     }
 
-    return days;
-  }, [bookings, visibleMonth]);
+    return hours;
+  }
 
-  const chart = useMemo(() => {
-    const width = Math.max(760, data.length * 20);
-    const height = 330;
-    const padding = { top: 28, right: 12, bottom: 54, left: 2 };
+  const year = visibleMonth.getFullYear();
+  const month = visibleMonth.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-    const innerWidth = width - padding.left - padding.right;
-    const innerHeight = height - padding.top - padding.bottom;
-    const max = Math.max(...data.map((item) => item.count), 1);
-    const stepX = data.length > 1 ? innerWidth / (data.length - 1) : innerWidth;
-    const barWidth = Math.max(16, Math.min(22, stepX * 0.52));
-
-    const points = data.map((item, index) => {
-      const x = padding.left + index * stepX;
-      const y = padding.top + innerHeight - (item.count / max) * innerHeight;
-
-      return { ...item, x, y };
-    });
-
-    const gridValues =
-      max <= 6
-        ? Array.from({ length: max + 1 }, (_, index) => max - index)
-        : Array.from(
-            new Set(
-              Array.from({ length: 5 }, (_, index) =>
-                Math.round(max - max * (index / 4)),
-              ),
-            ),
-          );
-
-    const grid = gridValues.map((value) => {
-      const ratio = 1 - value / max;
-      const y = padding.top + innerHeight * ratio;
-
-      return { y, value };
-    });
+  const days = Array.from({ length: daysInMonth }, (_, i) => {
+    const date = new Date(year, month, i + 1);
 
     return {
-      width,
-      height,
-      padding,
-      innerHeight,
-      max,
-      barWidth,
-      points,
-      grid,
+      day: i + 1,
+      date,
+      key: toISODateKey(date),
+      label: String(i + 1),
+      weekday: getWeekdayShortUA(date),
+      count: 0,
+      confirmed: 0,
+      pending: 0,
+      canceled: 0,
     };
-  }, [data]);
-
-  const total = data.reduce((sum, item) => sum + item.count, 0);
-  const confirmed = data.reduce((sum, item) => sum + item.confirmed, 0);
-  const pending = data.reduce((sum, item) => sum + item.pending, 0);
-  const todayCount =
-    data.find((item) => item.key === toISODateKey(today))?.count || 0;
-  const activeDays = data.filter((item) => item.count > 0).length;
-  const maxCount = Math.max(...data.map((item) => item.count), 0);
-
-  const bestDays =
-    maxCount > 0 ? data.filter((item) => item.count === maxCount) : [];
-  const activePoint =
-    chart.points.find((item) => item.key === activeDayKey) ||
-    chart.points.find(
-      (item) => item.key === toISODateKey(today) && item.count > 0,
-    ) ||
-    (bestDays.length > 0
-      ? chart.points.find((item) => item.key === bestDays[0].key)
-      : null);
-
-  const monthLabel = visibleMonth.toLocaleDateString("uk-UA", {
-    month: "long",
-    year: "numeric",
   });
 
-  const isCurrentMonth = isSameMonth(visibleMonth, today);
+  for (const booking of bookings || []) {
+    if (!booking?.date) continue;
+    if (booking.status === "deleted") continue;
+
+    const d = new Date(booking.date);
+    if (Number.isNaN(d.getTime())) continue;
+    if (d.getFullYear() !== year || d.getMonth() !== month) continue;
+
+    const index = d.getDate() - 1;
+    const isCanceled = booking.status === "canceled";
+
+    days[index] = {
+      ...days[index],
+      count: days[index].count + (isCanceled ? 0 : 1),
+      confirmed:
+        days[index].confirmed + (booking.status === "confirmed" ? 1 : 0),
+      pending:
+        days[index].pending +
+        (!isCanceled && booking.status !== "confirmed" ? 1 : 0),
+      canceled: days[index].canceled + (isCanceled ? 1 : 0),
+    };
+  }
+
+  return days;
+}, [bookings, visibleMonth, chartMode, nowTs]);
+
+const liveKpi = useMemo(() => {
+  let today = 0;
+  let confirmed = 0;
+  let pending = 0;
+
+  const todayKey = toISODateKey(new Date(nowTs));
+
+  for (const booking of bookings || []) {
+    if (!booking?.date) continue;
+    if (booking.status === "canceled" || booking.status === "deleted") continue;
+
+    const dt = getBookingDateTime(booking);
+    if (!dt) continue;
+    if (dt.getTime() < nowTs) continue;
+
+    if (booking.date === todayKey) {
+      today += 1;
+    }
+
+    if (booking.status === "confirmed") {
+      confirmed += 1;
+    } else {
+      pending += 1;
+    }
+  }
+
+  return { today, confirmed, pending };
+}, [bookings, nowTs]);
+
+const chart = useMemo(() => {
+  const width = Math.max(760, data.length * 20);
+  const height = 330;
+  const padding = { top: 28, right: 12, bottom: 54, left: 2 };
+
+  const innerWidth = width - padding.left - padding.right;
+  const innerHeight = height - padding.top - padding.bottom;
+  const max = Math.max(...data.map((item) => item.count), 1);
+  const stepX = data.length > 1 ? innerWidth / (data.length - 1) : innerWidth;
+  const barWidth = Math.max(16, Math.min(22, stepX * 0.52));
+
+  const points = data.map((item, index) => {
+    const x = padding.left + index * stepX;
+    const y = padding.top + innerHeight - (item.count / max) * innerHeight;
+
+    return { ...item, x, y };
+  });
+
+  const gridValues =
+    max <= 6
+      ? Array.from({ length: max + 1 }, (_, index) => max - index)
+      : Array.from(
+          new Set(
+            Array.from({ length: 5 }, (_, index) =>
+              Math.round(max - max * (index / 4)),
+            ),
+          ),
+        );
+
+  const grid = gridValues.map((value) => {
+    const ratio = 1 - value / max;
+    const y = padding.top + innerHeight * ratio;
+
+    return { y, value };
+  });
+
+  return {
+    width,
+    height,
+    padding,
+    innerHeight,
+    max,
+    barWidth,
+    points,
+    grid,
+  };
+}, [data]);
+
+const total = data.reduce((sum, item) => sum + item.count, 0);
+const activeDays = data.filter((item) => item.count > 0).length;
+const maxCount = Math.max(...data.map((item) => item.count), 0);
+
+const bestDays =
+  maxCount > 0 ? data.filter((item) => item.count === maxCount) : [];
+
+const hoveredPoint = chart.points.find((item) => item.key === activeDayKey);
+const pinnedPoint = chart.points.find((item) => item.key === pinnedDayKey);
+const currentMonth = useMemo(() => {
+  const d = new Date(nowTs);
+  d.setDate(1);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}, [nowTs]);
+
+const prevMonth = addMonthsSafe(currentMonth, -1);
+const nextMonth = addMonthsSafe(currentMonth, 1);
+
+const chartTabs = [
+  {
+    type: "month",
+    date: prevMonth,
+    label: prevMonth.toLocaleDateString("uk-UA", { month: "long" }),
+  },
+  {
+    type: "today",
+    date: null,
+    label: "Сьогодні",
+  },
+  {
+    type: "month",
+    date: currentMonth,
+    label: "Поточний місяць",
+  },
+  {
+    type: "month",
+    date: nextMonth,
+    label: nextMonth.toLocaleDateString("uk-UA", { month: "long" }),
+  },
+];
+
+const activeChartTab = chartTabs[chartTabIndex];
+
+const activePoint =
+  hoveredPoint ||
+  pinnedPoint ||
+  chart.points.find(
+    (item) => item.key === toISODateKey(today) && item.count > 0,
+  ) ||
+  (bestDays.length > 0
+    ? chart.points.find((item) => item.key === bestDays[0].key)
+    : null);
+const monthLabel = visibleMonth.toLocaleDateString("uk-UA", {
+  month: "long",
+  year: "numeric",
+});
+
+const isCurrentMonth = isSameMonth(visibleMonth, today);
   function isStudioWorkingDay(date) {
     const dateKey = toISODateKey(date);
 
@@ -452,6 +567,8 @@ function MonthlyBookingsChart({ bookings = [], nowTs }) {
 
     return Boolean(studioSchedule?.[dayKey]?.enabled);
   }
+
+  
   return (
     <SectionShell>
       <div className="px-4 pb-5 pt-5 sm:px-6 sm:pb-7 sm:pt-6">
@@ -473,112 +590,152 @@ function MonthlyBookingsChart({ bookings = [], nowTs }) {
           </div>
         </div>
 
-        <div className="mt-4 flex justify-center">
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setActiveDayKey(null);
-                setVisibleMonth((current) => addMonthsSafe(current, -1));
-              }}
-              className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/80 bg-white text-[var(--color-ink)] shadow-sm transition hover:bg-[var(--color-cream)] active:scale-[0.98]"
-              aria-label="Попередній місяць"
-              title="Попередній місяць"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </button>
+<div className="mt-4 flex justify-center">
+  <div className="flex items-center justify-center gap-2">
+    <button
+      type="button"
+      disabled={chartTabIndex === 0}
+      onClick={() => {
+        const nextIndex = Math.max(0, chartTabIndex - 1);
+        const nextTab = chartTabs[nextIndex];
 
-            <button
-              type="button"
-              onClick={() => {
-                const current = new Date(nowTs);
-                current.setDate(1);
-                current.setHours(0, 0, 0, 0);
-                setActiveDayKey(null);
-                setVisibleMonth(current);
-              }}
-              disabled={isCurrentMonth}
-              className="inline-flex h-11 min-w-[150px] items-center justify-center gap-2 rounded-2xl border border-white/80 bg-white px-4 text-sm font-black text-[var(--color-primary-buttom)] shadow-sm transition hover:bg-[var(--color-cream)] active:scale-[0.98]"
-            >
-              <CalendarDays className="h-4 w-4" />
+        setChartTabIndex(nextIndex);
+        setChartMode(nextTab.type);
+        setPinnedDayKey(null);
+        setActiveDayKey(null);
 
-              <span className="capitalize">
-                {isCurrentMonth
-                  ? "Поточний місяць"
-                  : visibleMonth.toLocaleDateString("uk-UA", {
-                      month: "long",
-                      year: "numeric",
-                    })}
-              </span>
-            </button>
+        if (nextTab.type === "month") {
+          setVisibleMonth(nextTab.date);
+        }
+      }}
+      className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/80 bg-white text-[var(--color-ink)] shadow-sm transition hover:bg-[var(--color-cream)] active:scale-[0.98] disabled:opacity-40"
+    >
+      <ChevronLeft className="h-5 w-5" />
+    </button>
 
-            <button
-              type="button"
-              onClick={() => {
-                setActiveDayKey(null);
-                setVisibleMonth((current) => addMonthsSafe(current, 1));
-              }}
-              className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/80 bg-white text-[var(--color-ink)] shadow-sm transition hover:bg-[var(--color-cream)] active:scale-[0.98]"
-              aria-label="Наступний місяць"
-              title="Наступний місяць"
-            >
-              <ChevronRight className="h-5 w-5" />
-            </button>
-          </div>
-        </div>
-        <div className="mb-5 mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <ChartKpi
-            label="Записи на сьогодні"
-            value={todayCount}
-            icon={CirclePlay}
-            tone="emerald"
-          />
-          <ChartKpi
-            label="Підтверджені"
-            value={confirmed}
-            icon={CircleCheck}
-            tone="sky"
-          />
-          <ChartKpi
-            label="Очікують"
-            value={pending}
-            icon={CirclePause}
-            tone="amber"
-          />
-          <ChartKpi
-            label="Усього записів"
-            value={total}
-            icon={CircleCheckBig}
-            tone="slate"
-          />
-        </div>
+    <button
+      type="button"
+      className="inline-flex h-11 min-w-[180px] items-center justify-center gap-2 rounded-2xl border border-white/80 bg-white px-4 text-sm font-black text-[var(--color-primary-buttom)] shadow-sm"
+    >
+      <CalendarDays className="h-4 w-4" />
+
+      <span className="capitalize">
+        {activeChartTab.label}
+      </span>
+    </button>
+
+    <button
+      type="button"
+      disabled={chartTabIndex === chartTabs.length - 1}
+      onClick={() => {
+        const nextIndex = Math.min(chartTabs.length - 1, chartTabIndex + 1);
+        const nextTab = chartTabs[nextIndex];
+
+        setChartTabIndex(nextIndex);
+        setChartMode(nextTab.type);
+        setPinnedDayKey(null);
+        setActiveDayKey(null);
+
+        if (nextTab.type === "month") {
+          setVisibleMonth(nextTab.date);
+        }
+      }}
+      className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/80 bg-white text-[var(--color-ink)] shadow-sm transition hover:bg-[var(--color-cream)] active:scale-[0.98] disabled:opacity-40"
+    >
+      <ChevronRight className="h-5 w-5" />
+    </button>
+  </div>
+</div>
+
+<div className="mb-6 mt-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
+  <ChartKpi
+    label="Сьогодні"
+    value={liveKpi.today}
+    icon={CalendarDays}
+    tone="emerald"
+  />
+
+  <ChartKpi
+    label="Підтверджені записи"
+    value={liveKpi.confirmed}
+    icon={BadgeCheck}
+    tone="sky"
+  />
+
+  <ChartKpi
+    label="Очікують підтвердження"
+    value={liveKpi.pending}
+    icon={ClockAlert}
+    tone="amber"
+  />
+
+  <ChartKpi
+    label="Усього бронювань"
+    value={total}
+    icon={LayoutGrid}
+    tone="slate"
+  />
+</div>
         <div className="relative mt-4 overflow-hidden rounded-[32px] border border-white/80 bg-white shadow-[0_18px_48px_rgba(15,23,42,0.08)]">
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400/50 to-transparent" />
 
           <div className="grid gap-0">
             <div className="min-w-0 border-b border-slate-100 p-3 sm:p-4 xl:border-b-0 xl:border-r">
-              <div className="mb-3 flex flex-wrap items-center justify-between gap-2 px-1">
-                <div className="flex flex-wrap items-center gap-3 text-[11px] font-black text-slate-500">
-                  <span className="inline-flex items-center gap-2">
-                    <span className="h-2.5 w-6 rounded-full bg-[var(--color-mist)]" />
-                    Вихідний
-                  </span>
-                  <span className="inline-flex items-center gap-2">
-                    <span className="h-2.5 w-6 rounded-full bg-emerald-600" />
-                    Робочий день
-                  </span>
-                  <span className="inline-flex items-center gap-2">
-                    <span className="h-[2px] w-6 bg-[repeating-linear-gradient(to_right,_#10b981_0,_#10b981_6px,_transparent_6px,_transparent_9px)]" />
-                    Сьогодні
-                  </span>
-                </div>
+<div className="mb-3 flex flex-wrap items-center justify-between gap-2 px-1">
+  <div className="flex flex-wrap items-center gap-3 text-[11px] font-black text-slate-500">
+    {chartMode === "month" ? (
+      <>
+        <span className="inline-flex items-center gap-2">
+          <span className="h-2.5 w-6 rounded-full bg-[var(--color-mist)]" />
+          Вихідний
+        </span>
 
-                <p className="text-[11px] font-bold text-slate-400">
-                  Наведіть або натисніть на дату
-                </p>
-              </div>
+        <span className="inline-flex items-center gap-2">
+          <span className="h-2.5 w-6 rounded-full bg-emerald-600" />
+          Робочий день
+        </span>
 
-              <div className="relative">
+        <span className="inline-flex items-center gap-2">
+          <span className="h-[2px] w-6 bg-[repeating-linear-gradient(to_right,_#10b981_0,_#10b981_6px,_transparent_6px,_transparent_9px)]" />
+          Сьогодні
+        </span>
+      </>
+    ) : (
+      <>
+        <span className="inline-flex items-center gap-2">
+          <span className="h-2.5 w-6 rounded-full bg-[var(--color-mist)] " />
+          Вільна година
+        </span>
+
+        <span className="inline-flex items-center gap-2">
+          <span className="h-2.5 w-6 rounded-full bg-emerald-600" />
+          Година із записами
+        </span>
+
+        <span className="inline-flex items-center gap-2">
+          <span className="h-[2px] w-6 bg-[repeating-linear-gradient(to_right,_#10b981_0,_#10b981_6px,_transparent_6px,_transparent_9px)]" />
+          Поточна година
+        </span>
+      </>
+    )}
+  </div>
+
+  <p className="text-[11px] font-bold text-slate-400">
+    {chartMode === "today"
+      ? "Наведіть або натисніть на годину"
+      : "Наведіть або натисніть на дату"}
+  </p>
+</div>
+
+              <div
+  className="relative"
+  onClick={(e) => {
+    if (e.target === e.currentTarget) {
+      setPinnedDayKey(null);
+      setActiveDayKey(null);
+    }
+  }}
+>
                 <div className="pointer-events-none absolute -left-4 top-0 z-20 h-[320px] w-11 rounded-l-[24px] border-r border-slate-200/80 bg-gradient-to-r from-white via-white to-white/90 shadow-[10px_0_18px_rgba(255,255,255,0.82)] sm:h-[360px]">
                   <span
                     className="absolute whitespace-nowrap text-[9px] font-black uppercase tracking-[0.14em] text-slate-500"
@@ -605,10 +762,19 @@ function MonthlyBookingsChart({ bookings = [], nowTs }) {
 
                 <div className="overflow-x-auto pb-2">
                   <svg
+  onMouseLeave={() => {
+    if (!pinnedDayKey) {
+      setActiveDayKey(null);
+    }
+  }}
                     viewBox={`0 0 ${chart.width} ${chart.height}`}
                     className="h-[320px] min-w-[920px] select-none sm:h-[360px]"
                     role="img"
-                    aria-label={`Графік записів за ${monthLabel}`}
+                    aria-label={
+  chartMode === "today"
+    ? `Графік записів за сьогодні`
+    : `Графік записів за ${monthLabel}`
+}
                   >
                     <defs>
                       <linearGradient
@@ -675,16 +841,32 @@ function MonthlyBookingsChart({ bookings = [], nowTs }) {
                     {chart.points.map((item) => {
                       const baseY = chart.padding.top + chart.innerHeight;
                       const barHeight = baseY - item.y;
-                      const isToday = item.key === toISODateKey(today);
+                      const isToday =
+  chartMode === "today"
+    ? item.hour === new Date(nowTs).getHours()
+    : item.key === toISODateKey(today);
                       const isActive = activePoint?.key === item.key;
-                      const isNonWorkingDay = !isStudioWorkingDay(item.date);
+                      const isPinned = pinnedDayKey === item.key;
+                     const isNonWorkingDay =
+  chartMode === "month" ? !isStudioWorkingDay(item.date) : false;
 
                       return (
                         <g
                           key={item.key}
-                          onMouseEnter={() => setActiveDayKey(item.key)}
-                          onFocus={() => setActiveDayKey(item.key)}
-                          onClick={() => setActiveDayKey(item.key)}
+                         onMouseEnter={() => {
+  if (!pinnedDayKey) {
+    setActiveDayKey(item.key);
+  }
+}}
+                         onFocus={() => {
+  if (!pinnedDayKey) {
+    setActiveDayKey(item.key);
+  }
+}}
+onClick={() => {
+  setPinnedDayKey((prev) => (prev === item.key ? null : item.key));
+  setActiveDayKey(item.key);
+}}
                           tabIndex={0}
                           className="cursor-pointer outline-none"
                         >
@@ -696,24 +878,44 @@ function MonthlyBookingsChart({ bookings = [], nowTs }) {
                             fill="transparent"
                             pointerEvents="all"
                           />
+<rect
+  x={item.x - chart.barWidth / 2}
+  y={item.count > 0 ? item.y : baseY - 4}
+  width={chart.barWidth}
+  height={item.count > 0 ? Math.max(8, barHeight) : 8}
+  rx="8"
+fill={
+  item.count > 0
+    ? "url(#bookingBarsGradient)"
+    : chartMode === "today"
+      ? "#e2e8f0"
+      : isNonWorkingDay
+        ? "#e7e7e7"
+        : "#009966"
+}
+  opacity={item.count > 0 ? 0.88 : 0.75}
+/>
 
-                          <rect
-                            x={item.x - chart.barWidth / 2}
-                            y={item.count > 0 ? item.y : baseY - 4}
-                            width={chart.barWidth}
-                            height={item.count > 0 ? Math.max(8, barHeight) : 8}
-                            rx="8"
-                            fill={
-                              item.count > 0
-                                ? "url(#bookingBarsGradient)"
-                                : isNonWorkingDay
-                                  ? "#e7e7e7"
-                                  : "#009966"
-                            }
-                            opacity={
-                              isActive ? 1 : item.count > 0 ? 0.88 : 0.75
-                            }
-                          />
+<rect
+  x={item.x - (chart.barWidth + 2) / 2}
+ y={item.count > 0 ? item.y - 2 : baseY - 6}
+  width={chart.barWidth + 2}
+  height={item.count > 0 ? Math.max(12, barHeight + 8) : 12}
+  rx="10"
+  fill="#f59e0b"
+  opacity={isPinned || isActive ? 1 : 0}
+  pointerEvents="none"
+  transform={
+    isActive && !isPinned
+      ? "scaleY(1.03) scaleX(1.08)"
+      : "scaleX(1.08)"
+  }
+  transformOrigin={`${item.x}px ${baseY}px`}
+  style={{
+    transition:
+      "opacity 220ms ease, transform 180ms ease",
+  }}
+/>
 
                           {isToday && (
                             <line
@@ -728,46 +930,35 @@ function MonthlyBookingsChart({ bookings = [], nowTs }) {
                             />
                           )}
 
-                          {isActive && (
-                            <circle
-                              cx={item.x}
-                              cy={item.y}
-                              r="8"
-                              fill="white"
-                              stroke="#047857"
-                              strokeWidth="3"
-                            />
-                          )}
-
                           <text
                             x={item.x}
                             y={baseY + 24}
                             textAnchor="middle"
-                            className={cn(
-                              "text-[11px] font-black",
-                              isToday
-                                ? "fill-emerald-700"
-                                : isNonWorkingDay
-                                  ? "fill-slate-500"
-                                  : "fill-slate-400",
-                            )}
+fill={
+  isPinned || isActive
+    ? "#d97706"
+    : isToday
+      ? "#047857"
+      : isNonWorkingDay
+        ? "#64748b"
+        : "#94a3b8"
+}
+className="text-[11px] font-black transition-all duration-200"
                           >
-                            {item.day}
+                          {chartMode === "today" ? item.label : item.day}
                           </text>
 
-                          <text
-                            x={item.x}
-                            y={baseY + 41}
-                            textAnchor="middle"
-                            className={cn(
-                              "text-[10px] font-bold",
-                              isNonWorkingDay
-                                ? "fill-slate-300"
-                                : "fill-slate-400",
-                            )}
-                          >
-                            {item.weekday}
-                          </text>
+<text
+  x={item.x}
+  y={baseY + 41}
+  textAnchor="middle"
+  className={cn(
+    "text-[10px] font-bold",
+    isNonWorkingDay ? "fill-slate-300" : "fill-slate-400",
+  )}
+>
+  {chartMode === "month" ? item.weekday : ""}
+</text>
                         </g>
                       );
                     })}
@@ -788,122 +979,324 @@ function MonthlyBookingsChart({ bookings = [], nowTs }) {
             </div>
           </div>
 
-          <div className="bg-white p-4 sm:p-5">
-            <div className="rounded-[26px] border border-slate-100 bg-slate-50 p-4">
-              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">
-                Активна дата
-              </p>
+<div className="bg-white p-4 sm:p-5">
+  {chartMode === "month" ? (
+  <div className="overflow-hidden rounded-[28px] border border-sky-200/70 bg-gradient-to-br from-sky-50 via-white to-blue-100/60 shadow-[0_14px_40px_rgba(14,165,233,0.10)]">
+    <div className="p-5">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-sky-700/80">
+            <CalendarDays className="h-3.5 w-3.5" />
+            Активна дата
+          </p>
 
-              <p className="mt-2 text-2xl font-black text-slate-950">
-                {activePoint ? formatDateUA(activePoint.key) : "—"}
-              </p>
+          <p className="mt-2 text-2xl font-black text-slate-950">
+            {activePoint ? formatDateUA(activePoint.key) : "—"}
+          </p>
+        </div>
 
-              <div className="mt-4 grid grid-cols-3 gap-2">
-                <ChartTinyStat
-                  label="Усього записів"
-                  value={activePoint?.count || 0}
-                />
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white text-sky-600 shadow-[0_10px_30px_rgba(14,165,233,0.14)]">
+          <CalendarDays className="h-7 w-7" />
+        </div>
+      </div>
 
-                <ChartTinyStat
-                  label="Очікують підтвердження"
-                  value={activePoint?.pending || 0}
-                />
+<div className="mt-4 grid grid-cols-2 gap-3">
+<div className="relative overflow-hidden rounded-[24px] border border-emerald-200/70 bg-gradient-to-br from-emerald-50 via-white to-emerald-100/60 p-4 shadow-[0_10px_30px_rgba(16,185,129,0.10)]">
+  <div className="absolute right-[-14px] top-[-14px] h-24 w-24 rounded-full bg-emerald-200/30 blur-2xl" />
 
-                <ChartTinyStat
-                  label="Скасовані"
-                  value={activePoint?.canceled || 0}
-                />
-              </div>
-            </div>
+  <div className="relative flex h-full flex-col justify-between">
+    <div className="flex items-center gap-3">
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-emerald-700 shadow-sm">
+        <BadgeCheck className="h-6 w-6" />
+      </div>
 
-<div className="mt-3 overflow-hidden rounded-[28px] border border-emerald-200/70 bg-gradient-to-br from-emerald-50 via-white to-emerald-100/60 shadow-[0_14px_40px_rgba(16,185,129,0.10)]">
-  <div/>
+      <p className="text-left text-[11px] font-black uppercase tracking-[0.16em] text-emerald-700/70">
+        Усього записів
+      </p>
+    </div>
 
+    <div className="mt-3">
+      <p className="text-[38px] font-black leading-none tracking-[-0.05em] text-emerald-950">
+        {activePoint?.count || 0}
+      </p>
+    </div>
+  </div>
+</div>
+
+<div className="relative overflow-hidden rounded-[24px] border border-amber-200/70 bg-gradient-to-br from-amber-50 via-white to-orange-100/60 p-4 shadow-[0_10px_30px_rgba(245,158,11,0.10)]">
+  <div className="absolute right-[-14px] top-[-14px] h-24 w-24 rounded-full bg-amber-200/30 blur-2xl" />
+
+  <div className="relative flex h-full flex-col justify-between">
+    <div className="flex items-center gap-3">
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-amber-700 shadow-sm">
+        <Clock className="h-6 w-6" />
+      </div>
+
+      <p className="text-left text-[11px] font-black uppercase tracking-[0.16em] text-amber-700/70">
+        Очікують підтвердження
+      </p>
+    </div>
+
+    <div className="mt-3">
+      <p className="text-[38px] font-black leading-none tracking-[-0.05em] text-amber-950">
+        {activePoint?.pending || 0}
+      </p>
+    </div>
+  </div>
+</div>
+
+<div className="relative overflow-hidden rounded-[24px] border border-slate-200/80 bg-gradient-to-br from-slate-50 via-white to-slate-100/70 p-4 shadow-[0_10px_30px_rgba(100,116,139,0.10)]">
+  <div className="absolute right-[-14px] top-[-14px] h-24 w-24 rounded-full bg-slate-200/40 blur-2xl" />
+
+  <div className="relative flex h-full flex-col justify-between">
+    <div className="flex items-center gap-3">
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-slate-600 shadow-sm">
+        <CheckCheck className="h-6 w-6" />
+      </div>
+
+      <p className="text-left text-[11px] font-black uppercase tracking-[0.16em] text-slate-600/70">
+        Завершені записи
+      </p>
+    </div>
+
+    <div className="mt-3">
+      <p className="text-[38px] font-black leading-none tracking-[-0.05em] text-slate-950">
+        {activePoint?.archived || 0}
+      </p>
+    </div>
+  </div>
+</div>
+
+<div className="relative overflow-hidden rounded-[24px] border border-rose-200/70 bg-gradient-to-br from-rose-50 via-white to-red-100/60 p-4 shadow-[0_10px_30px_rgba(244,63,94,0.10)]">
+  <div className="absolute right-[-14px] top-[-14px] h-24 w-24 rounded-full bg-rose-200/30 blur-2xl" />
+
+  <div className="relative flex h-full flex-col justify-between">
+    <div className="flex items-center gap-3">
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-rose-700 shadow-sm">
+        <XCircle className="h-6 w-6" />
+      </div>
+
+      <p className="text-left text-[11px] font-black uppercase tracking-[0.16em] text-rose-700/70">
+        Скасовані записи
+      </p>
+    </div>
+
+    <div className="mt-3">
+      <p className="text-[38px] font-black leading-none tracking-[-0.05em] text-rose-950">
+        {activePoint?.canceled || 0}
+      </p>
+    </div>
+  </div>
+</div>
+</div>
+    </div>
+  </div>
+) : (
+<div className="overflow-hidden rounded-[28px] border border-sky-200/70 bg-gradient-to-br from-sky-50 via-white to-blue-100/60 shadow-[0_14px_40px_rgba(14,165,233,0.10)]">
   <div className="p-5">
     <div className="flex items-start justify-between gap-4">
       <div className="min-w-0">
-        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700/80">
-          {bestDays.length > 1
-            ? "Найактивніші дні"
-            : "Найактивніший день"}
+        <p className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-sky-700/80">
+          <Clock className="h-3.5 w-3.5" />
+          Активна година
         </p>
 
-        <h3 className="mt-2 text-[22px] font-black leading-tight tracking-[-0.03em] text-emerald-950">
-          {bestDays.length > 0
-            ? bestDays
-                .map((day) => formatDateUA(day.key))
-                .join(", ")
-            : "Записів немає"}
-        </h3>
-
-        <p className="mt-2 text-sm font-semibold text-emerald-700">
-          {bestDays.length > 0
-            ? `${maxCount} ${
-                maxCount === 1 ? "запис" : "записів"
-              } ${
-                bestDays.length > 1
-                  ? "у кожен із цих днів"
-                  : "за день"
-              }`
-            : "Оберіть інший місяць або дочекайтесь нових бронювань"}
+        <p className="mt-2 text-2xl font-black text-slate-950">
+          {activePoint?.label || "—"}
         </p>
       </div>
 
-      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white shadow-[0_10px_30px_rgba(16,185,129,0.14)]">
-        <ChartColumn className="h-7 w-7 text-emerald-600" />
+      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white text-sky-600 shadow-[0_10px_30px_rgba(14,165,233,0.14)]">
+        <Clock className="h-7 w-7" />
       </div>
     </div>
 
+    <div className="mt-4 grid grid-cols-2 gap-3">
+      <div className="relative overflow-hidden rounded-[24px] border border-emerald-200/70 bg-gradient-to-br from-emerald-50 via-white to-emerald-100/60 p-4 shadow-[0_10px_30px_rgba(16,185,129,0.10)]">
+        <div className="absolute right-[-14px] top-[-14px] h-24 w-24 rounded-full bg-emerald-200/30 blur-2xl" />
 
-  </div>
-</div>
-<div className="mt-3 rounded-[26px] border border-slate-100 bg-white p-4 shadow-sm">
-  <div className="flex items-start justify-between gap-3">
-    <div>
-      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">
-        Завантаженість
-      </p>
+        <div className="relative flex h-full flex-col justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-emerald-700 shadow-sm">
+              <BadgeCheck className="h-6 w-6" />
+            </div>
 
-      <p className="mt-2 text-xs font-bold text-slate-500">
-        {activeDays} з {data.length} днів мають записи
-      </p>
-    </div>
-
-<div
-  className={cn(
-    "flex h-12 min-w-[68px] items-center justify-center rounded-2xl px-3 shadow-sm",
-    activeDays / Math.max(data.length, 1) < 0.4
-      ? "bg-emerald-100 text-emerald-700"
-      : activeDays / Math.max(data.length, 1) < 0.75
-      ? "bg-amber-100 text-amber-700"
-      : "bg-red-100 text-red-700"
-  )}
->
-  <span className="text-lg font-black">
-    {Math.min(
-      100,
-      Math.round((activeDays / Math.max(data.length, 1)) * 100),
-    )}
-    %
-  </span>
-</div>
-  </div>
-
-  <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
-    <div
-      className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-amber-400 to-red-500"
-      style={{
-        width: "100%",
-        clipPath: `inset(0 ${100 - Math.min(
-          100,
-          Math.round((activeDays / Math.max(data.length, 1)) * 100),
-        )}% 0 0 round 999px)`,
-      }}
-    />
-  </div>
-</div>
-
+            <p className="text-left text-[11px] font-black uppercase tracking-[0.16em] text-emerald-700/70">
+              Усього записів
+            </p>
           </div>
+
+          <div className="mt-3">
+            <p className="text-[38px] font-black leading-none tracking-[-0.05em] text-emerald-950">
+              {activePoint?.count || 0}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="relative overflow-hidden rounded-[24px] border border-amber-200/70 bg-gradient-to-br from-amber-50 via-white to-orange-100/60 p-4 shadow-[0_10px_30px_rgba(245,158,11,0.10)]">
+        <div className="absolute right-[-14px] top-[-14px] h-24 w-24 rounded-full bg-amber-200/30 blur-2xl" />
+
+        <div className="relative flex h-full flex-col justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-amber-700 shadow-sm">
+              <Clock className="h-6 w-6" />
+            </div>
+
+            <p className="text-left text-[11px] font-black uppercase tracking-[0.16em] text-amber-700/70">
+              Очікують підтвердження
+            </p>
+          </div>
+
+          <div className="mt-3">
+            <p className="text-[38px] font-black leading-none tracking-[-0.05em] text-amber-950">
+              {activePoint?.pending || 0}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="relative overflow-hidden rounded-[24px] border border-slate-200/80 bg-gradient-to-br from-slate-50 via-white to-slate-100/70 p-4 shadow-[0_10px_30px_rgba(100,116,139,0.10)]">
+        <div className="absolute right-[-14px] top-[-14px] h-24 w-24 rounded-full bg-slate-200/40 blur-2xl" />
+
+        <div className="relative flex h-full flex-col justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-slate-600 shadow-sm">
+              <CheckCheck className="h-6 w-6" />
+            </div>
+
+            <p className="text-left text-[11px] font-black uppercase tracking-[0.16em] text-slate-600/70">
+              Завершені записи
+            </p>
+          </div>
+
+          <div className="mt-3">
+            <p className="text-[38px] font-black leading-none tracking-[-0.05em] text-slate-950">
+              {activePoint?.archived || 0}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="relative overflow-hidden rounded-[24px] border border-rose-200/70 bg-gradient-to-br from-rose-50 via-white to-red-100/60 p-4 shadow-[0_10px_30px_rgba(244,63,94,0.10)]">
+        <div className="absolute right-[-14px] top-[-14px] h-24 w-24 rounded-full bg-rose-200/30 blur-2xl" />
+
+        <div className="relative flex h-full flex-col justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-rose-700 shadow-sm">
+              <XCircle className="h-6 w-6" />
+            </div>
+
+            <p className="text-left text-[11px] font-black uppercase tracking-[0.16em] text-rose-700/70">
+              Скасовані записи
+            </p>
+          </div>
+
+          <div className="mt-3">
+            <p className="text-[38px] font-black leading-none tracking-[-0.05em] text-rose-950">
+              {activePoint?.canceled || 0}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+)}
+
+{chartMode === "month" && (
+  <div className="mt-3 overflow-hidden rounded-[28px] border border-emerald-200/70 bg-gradient-to-br from-emerald-50 via-white to-emerald-100/60 shadow-[0_14px_40px_rgba(16,185,129,0.10)]">
+    <div className="p-5">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700/80">
+            <ChartColumn className="h-3.5 w-3.5" />
+            {bestDays.length > 1
+              ? "Найактивніші дні"
+              : "Найактивніший день"}
+          </p>
+
+          <h3 className="mt-2 text-[22px] font-black leading-tight tracking-[-0.03em] text-emerald-950">
+            {bestDays.length > 0
+              ? bestDays.map((day) => formatDateUA(day.key)).join(", ")
+              : "Записів немає"}
+          </h3>
+
+          <p className="mt-2 text-sm font-semibold text-emerald-700">
+            {bestDays.length > 0
+              ? `${maxCount} ${maxCount === 1 ? "запис" : "записів"} ${
+                  bestDays.length > 1 ? "у кожен із цих днів" : "за день"
+                }`
+              : "Оберіть інший місяць або дочекайтесь нових бронювань"}
+          </p>
+        </div>
+
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white text-emerald-600 shadow-[0_10px_30px_rgba(16,185,129,0.14)]">
+          <ChartColumn className="h-7 w-7" />
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+{chartMode === "month" && (
+  <div className="mt-3 overflow-hidden rounded-[28px] border border-violet-200/70 bg-gradient-to-br from-violet-50 via-white to-indigo-100/60 shadow-[0_14px_40px_rgba(139,92,246,0.10)]">
+    <div className="p-5">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-amber-700/80">
+            <Activity className="h-3.5 w-3.5" />
+            Завантаженість
+          </p>
+
+          <p className="mt-2 text-sm font-bold">
+          {chartMode === "today"
+  ? `${activeDays} з 24 годин мають записи`
+  : `${activeDays} з ${data.length} днів мають записи`}
+          </p>
+        </div>
+
+        <div
+          className={cn(
+            "flex h-14 min-w-[76px] items-center justify-center rounded-2xl px-4 shadow-[0_10px_30px_rgba(245,158,11,0.14)]",
+            activeDays / Math.max(data.length, 1) < 0.4
+              ? "bg-emerald-100 text-emerald-700"
+              : activeDays / Math.max(data.length, 1) < 0.75
+                ? "bg-amber-100 text-amber-700"
+                : "bg-red-100 text-red-700",
+          )}
+        >
+          <span className="text-xl font-black">
+            {Math.min(
+              100,
+              Math.round((activeDays / Math.max(data.length, 1)) * 100),
+            )}
+            %
+          </span>
+        </div>
+      </div>
+
+      <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-white/80">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-amber-400 to-red-500"
+          style={{
+            width: "100%",
+            clipPath: `inset(0 ${
+              100 -
+              Math.min(
+                100,
+                Math.round((activeDays / Math.max(data.length, 1)) * 100),
+              )
+            }% 0 0 round 999px)`,
+          }}
+        />
+      </div>
+    </div>
+  </div>
+
+)}
+
+
+</div>
         </div>
       </div>
     </SectionShell>
@@ -1205,12 +1598,22 @@ export default function Golowna() {
   const [hasScroll, setHasScroll] = useState(false);
   const calendarScrollRef = useRef(null);
   const [visibleAppointmentsCount, setVisibleAppointmentsCount] = useState(5);
+  const [appointmentsRange, setAppointmentsRange] = useState("thisWeek");
   const isInitialLoading = loading;
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  
   const [socketState, setSocketState] = useState(
     socket.connected ? "ok" : "offline",
   );
+
+  const appointmentRangeItems = [
+  { value: "thisWeek", label: "Цей тиждень" },
+  { value: "nextWeek", label: "Наступний тиждень" },
+  { value: "thisMonth", label: "Цей місяць" },
+  { value: "nextMonth", label: "Наступний місяць" },
+  { value: "all", label: "Усі" },
+];
 
   useEffect(() => {
     let alive = true;
@@ -1343,34 +1746,67 @@ const selectedBooking = useMemo(() => {
     }
   }
 
-  const upcomingAppointments = useMemo(() => {
-    const list = (bookings || []).filter(
-      (b) =>
-        b &&
-        b.id &&
-        (b.status === "confirmed" || b.status === "new" || !b.status),
-    );
+const upcomingAppointments = useMemo(() => {
+  const now = new Date(nowTs);
 
-    const upcoming = [];
-    for (const b of list) {
-      const dt = getBookingDateTime(b);
-      if (!dt) continue;
-      if (dt.getTime() < nowTs) continue;
-      upcoming.push({ b, ts: dt.getTime() });
-    }
+  const thisWeekStart = startOfWeekMonday(now);
+  const thisWeekEnd = addDays(thisWeekStart, 7);
 
-    upcoming.sort((a, c) => a.ts - c.ts);
+  const nextWeekStart = thisWeekEnd;
+  const nextWeekEnd = addDays(nextWeekStart, 7);
 
-return upcoming.map(({ b }) => ({
-  ...b,
-  date: b.date,
-  time: parseTimeToHHMM(b.time) || b.time || "—",
-  serviceName: b.serviceName || "—",
-  clientName: b.clientName || "—",
-  clientPhotoUrl: b.clientPhotoUrl || b.client?.photoUrl || "",
-  masterPhotoUrl: b.masterPhotoUrl || b.master?.photoUrl || "",
-}));
-  }, [bookings, nowTs]);
+  const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const thisMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+  const nextMonthStart = thisMonthEnd;
+  const nextMonthEnd = new Date(now.getFullYear(), now.getMonth() + 2, 1);
+
+  const list = (bookings || []).filter(
+    (b) =>
+      b &&
+      b.id &&
+      (b.status === "confirmed" || b.status === "new" || !b.status),
+  );
+
+  const upcoming = [];
+
+  for (const b of list) {
+    const dt = getBookingDateTime(b);
+    if (!dt) continue;
+    if (dt.getTime() < nowTs) continue;
+
+    const inRange =
+      appointmentsRange === "all" ||
+      (appointmentsRange === "thisWeek" &&
+        dt >= thisWeekStart &&
+        dt < thisWeekEnd) ||
+      (appointmentsRange === "nextWeek" &&
+        dt >= nextWeekStart &&
+        dt < nextWeekEnd) ||
+      (appointmentsRange === "thisMonth" &&
+        dt >= thisMonthStart &&
+        dt < thisMonthEnd) ||
+      (appointmentsRange === "nextMonth" &&
+        dt >= nextMonthStart &&
+        dt < nextMonthEnd);
+
+    if (!inRange) continue;
+
+    upcoming.push({ b, ts: dt.getTime() });
+  }
+
+  upcoming.sort((a, c) => a.ts - c.ts);
+
+  return upcoming.map(({ b }) => ({
+    ...b,
+    date: b.date,
+    time: parseTimeToHHMM(b.time) || b.time || "—",
+    serviceName: b.serviceName || "—",
+    clientName: b.clientName || "—",
+    clientPhotoUrl: b.clientPhotoUrl || b.client?.photoUrl || "",
+    masterPhotoUrl: b.masterPhotoUrl || b.master?.photoUrl || "",
+  }));
+}, [bookings, nowTs, appointmentsRange]);
 
   const todayKey = toISODateKey(new Date(nowTs));
 
@@ -1520,15 +1956,40 @@ return upcoming.map(({ b }) => ({
     <CalendarDays className="h-5 w-5" />
   </div>
 
-  <div className="min-w-0">
+  <div className="min-w-0 mt-2">
     <h2 className="ui-title-section text-2xl sm:text-3xl">
       Найближчі записи
     </h2>
 
     <p className="mt-1 ui-text-muted text-sm">
-      Тільки майбутні записи, відсортовані за датою та часом.
+      Оберіть період і перегляньте активні майбутні записи.
     </p>
   </div>
+</div>
+
+<div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+  {appointmentRangeItems.map((item) => {
+    const active = appointmentsRange === item.value;
+
+    return (
+      <button
+        key={item.value}
+        type="button"
+        onClick={() => {
+          setAppointmentsRange(item.value);
+          setVisibleAppointmentsCount(5);
+        }}
+        className={cn(
+          "inline-flex h-9 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] px-3 text-sm font-bold shadow-sm transition-all duration-200 active:scale-[0.98]",
+          active
+            ? "bg-[var(--color-primary-buttom)] text-white"
+            : "bg-white text-[var(--color-ink)] hover:bg-[var(--color-cream)]",
+        )}
+      >
+        {item.label}
+      </button>
+    );
+  })}
 </div>
             </div>
 

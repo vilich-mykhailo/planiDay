@@ -236,13 +236,13 @@ function SectionCard({
               {title}
             </h2>
 
-            {badge && (
-              <div className="mt-1.5">
-                <span className="inline-flex max-w-full items-center rounded-full border border-[var(--color-cream)] bg-[var(--color-cream)] px-2.5 py-1 text-[11px] font-semibold text-[var(--color-ink)] sm:text-xs">
-                  {badge}
-                </span>
-              </div>
-            )}
+{badge && (
+  <div className="">
+     <span className="inline-flex max-w-full items-center text-xs font-semibold text-[var(--border-hover-primary)]">
+      {badge}
+    </span>
+  </div>
+)}
 
             {subtitle && (
               <p className="mt-2 text-sm leading-5 text-[var(--color-caramel)]">
@@ -1468,6 +1468,14 @@ async function deleteCategory(catId) {
           </div>
         }
       >
+        <button
+  type="button"
+  onClick={closeServiceModal}
+  className="absolute left-4 top-4 z-30 inline-flex items-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white/90 px-3 py-2 text-sm font-bold text-[var(--color-ink)] shadow-sm backdrop-blur transition-all hover:bg-[var(--color-cream)] active:scale-[0.98]"
+>
+  <ArrowLeft className="h-4 w-4" />
+  Назад
+</button>
         <div className="space-y-6">
   <div className="space-y-4 pt-2">
     <div className="flex justify-center">
