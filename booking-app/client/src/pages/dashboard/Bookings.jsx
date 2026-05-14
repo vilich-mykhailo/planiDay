@@ -331,18 +331,18 @@ function Pill({ active, count, showCount = false, children, onClick }) {
     >
       <span>{children}</span>
 
-{showCount && (
-  <span
-    className={cn(
-      "text-[11px] font-medium tracking-tight",
-      active
-        ? "text-white/80"
-        : "text-emerald-600 drop-shadow-[0_0_10px_rgba(5,150,105,0.18)]",
-    )}
-  >
-    +{count ?? 0}
-  </span>
-)}
+      {showCount && (
+        <span
+          className={cn(
+            "text-[11px] font-medium tracking-tight",
+            active
+              ? "text-white/80"
+              : "text-emerald-600 drop-shadow-[0_0_10px_rgba(5,150,105,0.18)]",
+          )}
+        >
+          +{count ?? 0}
+        </span>
+      )}
     </button>
   );
 }
@@ -386,7 +386,9 @@ const emptyBookingInfo = {
     title: "Поки що немає скасованих записів",
     description: (
       <span className="flex flex-col gap-1">
-        <span>Тут зʼявляться записи, які були скасовані вами або клієнтом.</span>
+        <span>
+          Тут зʼявляться записи, які були скасовані вами або клієнтом.
+        </span>
         <span>За потреби їх можна буде переглянути або видалити.</span>
       </span>
     ),
@@ -558,7 +560,9 @@ export default function Bookings() {
   const [confirmId, setConfirmId] = useState(null);
   const [cancelConfirmId, setCancelConfirmId] = useState(null);
   const [detailsId, setDetailsId] = useState(null);
-  const [tab, setTab] = useState("list");
+  const [tab, setTab] = useState(() => {
+    return localStorage.getItem("bookings-tab") || "list";
+  });
   const [activeMonth, setActiveMonth] = useState(() =>
     startOfMonth(new Date()),
   );
@@ -574,6 +578,10 @@ export default function Bookings() {
   const [copiedPhone, setCopiedPhone] = useState(false);
   const [expandedCalendarCards, setExpandedCalendarCards] = useState({});
   const [showLoadingSkeleton, setShowLoadingSkeleton] = useState(false);
+  const [visibleBookingCount, setVisibleBookingCount] = useState(10);
+  useEffect(() => {
+    localStorage.setItem("bookings-tab", tab);
+  }, [tab]);
 
   useEffect(() => {
     const timer = window.setTimeout(
@@ -907,9 +915,9 @@ export default function Bookings() {
 
     return {
       text: "Оновлюється автоматично",
-    dotClass:
-      "h-2 w-2 rounded-full bg-emerald-600 shadow-[0_0_0_3px_var(--color-confirmed-light)] animate-[pulse-soft_1s_ease-in-out_infinite]",
-    wrapClass: `${base} text-emerald-600`,
+      dotClass:
+        "h-2 w-2 rounded-full bg-emerald-600 shadow-[0_0_0_3px_var(--color-confirmed-light)] animate-[pulse-soft_1s_ease-in-out_infinite]",
+      wrapClass: `${base} text-emerald-600`,
     };
   }, [socketState, isRefreshing]);
 
@@ -927,7 +935,7 @@ export default function Bookings() {
   }
 
   const emptyInfo = emptyBookingInfo[filter] || emptyBookingInfo.all;
-const EmptyIcon = emptyInfo.icon;
+  const EmptyIcon = emptyInfo.icon;
 
   return (
     <div className="h-full">
@@ -937,15 +945,15 @@ const EmptyIcon = emptyInfo.icon;
 
           <div className="relative flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="relative">
-<div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-slate-700 shadow-[0_4px_14px_rgba(15,23,42,0.05)]">
-  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-900 text-white">
-    <Users className="h-3 w-3" />
-  </div>
+              <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-slate-700 shadow-[0_4px_14px_rgba(15,23,42,0.05)]">
+                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-900 text-white">
+                  <Users className="h-3 w-3" />
+                </div>
 
-  <span>Записи клієнтів</span>
+                <span>Записи клієнтів</span>
 
-  <div className="h-1 w-1 rounded-full bg-slate-400" />
-</div>
+                <div className="h-1 w-1 rounded-full bg-slate-400" />
+              </div>
 
               <h1 className="text-3xl font-black tracking-tight text-[var(--color-ink)] sm:text-4xl">
                 Записи
@@ -989,60 +997,60 @@ const EmptyIcon = emptyInfo.icon;
         </div>
 
         {tab === "list" && (
-<SectionCard
-  title={
-    <div className="flex items-center gap-3">
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-primary-buttom)] text-white shadow-sm">
-        <ListTodo className="h-5 w-5" />
-      </div>
+          <SectionCard
+            title={
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-primary-buttom)] text-white shadow-sm">
+                  <ListTodo className="h-5 w-5" />
+                </div>
 
-      <div className="min-w-0">
-        <h2 className="text-lg font-black tracking-[-0.03em] text-[var(--color-ink)]">
-          Усі записи
-        </h2>
+                <div className="min-w-0">
+                  <h2 className="text-lg font-black tracking-[-0.03em] text-[var(--color-ink)]">
+                    Усі записи
+                  </h2>
 
-        <p className="mt-1 text-sm font-medium text-[var(--color-caramel)]">
-          Переглядайте записи за статусами, датою та типом бронювання.
-        </p>
-      </div>
-    </div>
-  }
-  actions={
-<div
-  className={cn(
-    "inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-[11px] font-semibold shadow-sm sm:text-xs",
-    liveStatusUi.wrapClass,
-  )}
->
-  <span
-    className={cn(
-      "h-2 w-2 rounded-full shadow-[0_0_0_3px_rgba(255,255,255,0.9)]",
-      liveStatusUi.dotClass,
-    )}
-  />
-  <span className="whitespace-nowrap">{liveStatusUi.text}</span>
-</div>
+                  <p className="mt-1 text-sm font-medium text-[var(--color-caramel)]">
+                    Переглядайте записи за статусами, датою та типом бронювання.
+                  </p>
+                </div>
+              </div>
+            }
+            actions={
+              <div
+                className={cn(
+                  "inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-[11px] font-semibold shadow-sm sm:text-xs",
+                  liveStatusUi.wrapClass,
+                )}
+              >
+                <span
+                  className={cn(
+                    "h-2 w-2 rounded-full shadow-[0_0_0_3px_rgba(255,255,255,0.9)]",
+                    liveStatusUi.dotClass,
+                  )}
+                />
+                <span className="whitespace-nowrap">{liveStatusUi.text}</span>
+              </div>
             }
           >
-<div className="flex flex-wrap items-center justify-center gap-2">
-  {[
-    { key: "all", label: "Усі" },
-    { key: "new", label: "Нові" },
-    { key: "archive", label: "Архів" },
-    { key: "confirmed", label: "Підтверджені" },
-    { key: "canceled", label: "Скасовані" },
-  ].map((x) => (
-<Pill
-  key={x.key}
-  active={filter === x.key}
-  count={filterCounts[x.key] ?? 0}
-  showCount={x.key === "new"}
-  onClick={() => setFilter(x.key)}
->
-  {x.label}
-</Pill>
-  ))}
-</div>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {[
+                { key: "all", label: "Усі" },
+                { key: "new", label: "Нові" },
+                { key: "archive", label: "Архів" },
+                { key: "confirmed", label: "Підтверджені" },
+                { key: "canceled", label: "Скасовані" },
+              ].map((x) => (
+                <Pill
+                  key={x.key}
+                  active={filter === x.key}
+                  count={filterCounts[x.key] ?? 0}
+                  showCount={x.key === "new"}
+                  onClick={() => setFilter(x.key)}
+                >
+                  {x.label}
+                </Pill>
+              ))}
+            </div>
           </SectionCard>
         )}
 
@@ -1056,26 +1064,29 @@ const EmptyIcon = emptyInfo.icon;
               </div>
             </SectionCard>
           ) : loading ? null : keys.length === 0 ? (
-<SectionCard title={emptyInfo.title} subtitle="У цій вкладці записів немає">
-  <div className="rounded-2xl border-2 border-dashed border-[var(--color-caramel)]/40 bg-[var(--color-cream)] p-6 text-center sm:p-8">
-    <div className="mb-3 flex items-center justify-center">
-      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/70">
-        <EmptyIcon className="h-6 w-6 text-[var(--color-caramel)]" />
-      </div>
-    </div>
+            <SectionCard
+              title={emptyInfo.title}
+              subtitle="У цій вкладці записів немає"
+            >
+              <div className="rounded-2xl border-2 border-dashed border-[var(--color-caramel)]/40 bg-[var(--color-cream)] p-6 text-center sm:p-8">
+                <div className="mb-3 flex items-center justify-center">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/70">
+                    <EmptyIcon className="h-6 w-6 text-[var(--color-caramel)]" />
+                  </div>
+                </div>
 
-    <p className="text-sm font-medium text-[var(--color-caramel)]">
-      {emptyInfo.title}
-    </p>
+                <p className="text-sm font-medium text-[var(--color-caramel)]">
+                  {emptyInfo.title}
+                </p>
 
-    <p className="mt-1 text-xs text-[var(--color-caramel)]/80">
-      {emptyInfo.description}
-    </p>
-  </div>
-</SectionCard>
+                <p className="mt-1 text-xs text-[var(--color-caramel)]/80">
+                  {emptyInfo.description}
+                </p>
+              </div>
+            </SectionCard>
           ) : (
             <div className="space-y-2">
-              {keys.map((key) => {
+              {keys.slice(0, visibleBookingCount).map((key) => {
                 const isCollapsed = collapsedGroups.has(key);
                 const items = grouped.map[key] || [];
 
@@ -1284,6 +1295,17 @@ const EmptyIcon = emptyInfo.icon;
                   </section>
                 );
               })}
+              {visibleBookingCount < keys.length && (
+  <div className="mt-5 flex justify-center">
+    <button
+      type="button"
+      onClick={() => setVisibleBookingCount((prev) => prev + 5)}
+      className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-primary-buttom)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
+    >
+      Показати ще
+    </button>
+  </div>
+)}
             </div>
           )
         ) : showLoadingSkeleton ? (
@@ -1311,43 +1333,43 @@ const EmptyIcon = emptyInfo.icon;
           </SectionCard>
         ) : (
           <SectionCard>
-<div className="mb-5 flex items-center justify-between">
-  <IconButton
-    onClick={() =>
-      setActiveMonth(
-        new Date(
-          activeMonth.getFullYear(),
-          activeMonth.getMonth() - 1,
-          1,
-        ),
-      )
-    }
-    title="Попередній місяць"
-    className="h-10 w-10 shrink-0 hover:bg-[var(--color-cream)]"
-  >
-    <ChevronLeft className="h-5 w-5" />
-  </IconButton>
+            <div className="mb-5 flex items-center justify-between">
+              <IconButton
+                onClick={() =>
+                  setActiveMonth(
+                    new Date(
+                      activeMonth.getFullYear(),
+                      activeMonth.getMonth() - 1,
+                      1,
+                    ),
+                  )
+                }
+                title="Попередній місяць"
+                className="h-10 w-10 shrink-0 hover:bg-[var(--color-cream)]"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </IconButton>
 
-  <h3 className="text-center text-[22px] font-extrabold tracking-tight text-[var(--color-ink)] capitalize sm:text-[24px]">
-    {monthLabelUA(activeMonth)}
-  </h3>
+              <h3 className="text-center text-[22px] font-extrabold tracking-tight text-[var(--color-ink)] capitalize sm:text-[24px]">
+                {monthLabelUA(activeMonth)}
+              </h3>
 
-  <IconButton
-    onClick={() =>
-      setActiveMonth(
-        new Date(
-          activeMonth.getFullYear(),
-          activeMonth.getMonth() + 1,
-          1,
-        ),
-      )
-    }
-    title="Наступний місяць"
-    className="h-10 w-10 shrink-0 hover:bg-[var(--color-cream)]"
-  >
-    <ChevronRight className="h-5 w-5" />
-  </IconButton>
-</div>
+              <IconButton
+                onClick={() =>
+                  setActiveMonth(
+                    new Date(
+                      activeMonth.getFullYear(),
+                      activeMonth.getMonth() + 1,
+                      1,
+                    ),
+                  )
+                }
+                title="Наступний місяць"
+                className="h-10 w-10 shrink-0 hover:bg-[var(--color-cream)]"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </IconButton>
+            </div>
 
             <div className="grid grid-cols-7 gap-1.5 text-[11px] font-semibold text-[var(--color-caramel)] sm:gap-2 sm:text-xs">
               {["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"].map((x) => (
@@ -1383,7 +1405,7 @@ const EmptyIcon = emptyInfo.icon;
                       disabled={count === 0}
                       title={count > 0 ? `Записів: ${count}` : "Немає записів"}
                       className={cn(
-"relative min-h-[58px] sm:h-11 sm:min-h-0 gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-2 sm:px-4 py-2 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]",
+                        "relative min-h-[58px] sm:h-11 sm:min-h-0 gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-2 sm:px-4 py-2 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]",
                         // база
                         "bg-white border-[var(--border-soft)] shadow-[0_4px_12px_rgba(0,0,0,0.04)]",
 
@@ -1421,15 +1443,17 @@ const EmptyIcon = emptyInfo.icon;
                       )}
                     >
                       <div className="flex h-full flex-col items-center justify-center sm:hidden">
-<span
-  className={cn(
-    "text-sm font-semibold",
-    isInMonth ? "text-[var(--color-ink)]" : "text-[var(--color-caramel)]",
-    isPastDay && "text-gray-400 line-through",
-  )}
->
-  {day.getDate()}
-</span>
+                        <span
+                          className={cn(
+                            "text-sm font-semibold",
+                            isInMonth
+                              ? "text-[var(--color-ink)]"
+                              : "text-[var(--color-caramel)]",
+                            isPastDay && "text-gray-400 line-through",
+                          )}
+                        >
+                          {day.getDate()}
+                        </span>
 
                         {count > 0 && (
                           <span
@@ -1454,7 +1478,7 @@ const EmptyIcon = emptyInfo.icon;
                             isInMonth
                               ? "text-[var(--color-ink)]"
                               : "text-[var(--color-caramel)]",
-                           isPastDay && "text-gray-400 line-through",
+                            isPastDay && "text-gray-400 line-through",
                           )}
                         >
                           {day.getDate()}
@@ -1894,30 +1918,29 @@ const EmptyIcon = emptyInfo.icon;
                     </div>
 
                     <div className="mt-4 grid grid-cols-2 gap-3 pt-2">
-<button
-  type="button"
-  onClick={() => {
-    if (phone) window.location.href = `tel:${phone}`;
-  }}
-  disabled={!phone}
-  className={cn(
-    "inline-flex h-12 items-center justify-center gap-2 rounded-[22px] px-4 text-sm font-bold text-white transition-all duration-200 active:scale-[0.98]",
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (phone) window.location.href = `tel:${phone}`;
+                        }}
+                        disabled={!phone}
+                        className={cn(
+                          "inline-flex h-12 items-center justify-center gap-2 rounded-[22px] px-4 text-sm font-bold text-white transition-all duration-200 active:scale-[0.98]",
 
-    phone
-      ? [
-          // 👉 gradient через твої var
-          "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
+                          phone
+                            ? [
+                                // 👉 gradient через твої var
+                                "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
 
-          // 👉 hover
-          "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]",
-
-        ].join(" ")
-      : "cursor-not-allowed bg-[var(--color-cream)] text-[var(--color-caramel)] shadow-none hover:from-[var(--color-cream)] hover:to-[var(--color-cream)]"
-  )}
->
-  <Phone className="h-4 w-4" />
-  Дзвінок
-</button>
+                                // 👉 hover
+                                "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]",
+                              ].join(" ")
+                            : "cursor-not-allowed bg-[var(--color-cream)] text-[var(--color-caramel)] shadow-none hover:from-[var(--color-cream)] hover:to-[var(--color-cream)]",
+                        )}
+                      >
+                        <Phone className="h-4 w-4" />
+                        Дзвінок
+                      </button>
 
                       <button
                         type="button"
@@ -2061,7 +2084,12 @@ const EmptyIcon = emptyInfo.icon;
                           return (
                             <div
                               key={b.id}
-                              className="overflow-hidden rounded-[24px] border border-[var(--border-primary)] bg-white shadow-[0_8px_30px_-12px_rgba(27,27,27,0.08)]"
+                              onClick={() => toggleCalendarCard(b.id)}
+                              className={cn(
+                                "group overflow-hidden rounded-[24px] border border-[var(--border-primary)] bg-white shadow-[0_8px_30px_-12px_rgba(27,27,27,0.08)] transition-all duration-200 cursor-pointer",
+                                isExpanded &&
+                                  "border-[var(--border-hover-primary)] shadow-[0_14px_34px_rgba(27,27,27,0.12)]",
+                              )}
                             >
                               <div className="p-4">
                                 <div className="flex items-start justify-between gap-3">
@@ -2078,7 +2106,7 @@ const EmptyIcon = emptyInfo.icon;
                                   <button
                                     type="button"
                                     onClick={() => toggleCalendarCard(b.id)}
-                                    className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-xl px-3 text-xs font-bold text-[var(--border-hover-primary)] transition hover:text-[var(--color-sidebar-accent-hover)] active:scale-[0.98]"
+                                    className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-xl px-3 text-xs font-bold text-[var(--border-hover-primary)] transition group-hover:text-[var(--color-sidebar-accent-hover)] active:scale-[0.98]"
                                   >
                                     {isExpanded ? (
                                       <>
@@ -2098,7 +2126,7 @@ const EmptyIcon = emptyInfo.icon;
                                   {b.serviceName || "Послуга"}
                                 </h3>
 
-                               <div className="mt-3 flex flex-wrap items-center justify-center gap-3 text-center text-sm font-semibold text-[var(--color-ink)]">
+                                <div className="mt-3 flex flex-wrap items-center justify-center gap-3 text-center text-sm font-semibold text-[var(--color-ink)]">
                                   {/* Час */}
                                   <span className="inline-flex items-center gap-1.5">
                                     <Clock3
@@ -2220,31 +2248,36 @@ const EmptyIcon = emptyInfo.icon;
                                       {!isConfirmed &&
                                         !isCanceled &&
                                         !isArchived && (
-<button
-  type="button"
-  onClick={async () => {
-    try {
-      await confirmBooking(b.id);
-    } catch (e) {
-      alert(e.message || "Не вдалося підтвердити запис");
-    }
-  }}
-  className={cn(
-    "inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold text-white transition-all duration-200 active:scale-[0.98]",
+                                          <button
+                                            type="button"
+                                            onClick={async () => {
+                                              try {
+                                                await confirmBooking(b.id);
+                                              } catch (e) {
+                                                alert(
+                                                  e.message ||
+                                                    "Не вдалося підтвердити запис",
+                                                );
+                                              }
+                                            }}
+                                            className={cn(
+                                              "inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold text-white transition-all duration-200 active:scale-[0.98]",
 
-    // 👉 gradient через nude-green
-    "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
+                                              // 👉 gradient через nude-green
+                                              "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
 
-    // 👉 hover
-    "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]",
+                                              // 👉 hover
+                                              "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]",
 
-    // 👉 ширина
-    actionsCount > 1 ? "w-full" : "min-w-[160px]"
-  )}
->
-  <CheckCheck className="h-4 w-4" />
-  Підтвердити
-</button>
+                                              // 👉 ширина
+                                              actionsCount > 1
+                                                ? "w-full"
+                                                : "min-w-[160px]",
+                                            )}
+                                          >
+                                            <CheckCheck className="h-4 w-4" />
+                                            Підтвердити
+                                          </button>
                                         )}
 
                                       {!isCanceled && (

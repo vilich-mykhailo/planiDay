@@ -66,7 +66,15 @@ router.get("/me", requireAuth, requireOwner, async (req, res) => {
       }
     }
 
-    res.json(studio);
+  const owner = await prisma.ownerAccount.findUnique({
+  where: { id: ownerId },
+  select: { createdAt: true },
+});
+
+res.json({
+  ...studio,
+  ownerCreatedAt: owner?.createdAt || null,
+});
   } catch (e) {
     console.error(e);
     res.status(500).json({ message: "Server error" });

@@ -242,10 +242,10 @@ export default function TimeSelect({
     onClick={handleDone}
     disabled={!isChanged || submitting}
     className={cn(
-      "flex-1 inline-flex h-11 items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-bold active:scale-[0.98]",
-      isChanged && !submitting
-        ? "bg-gradient-to-r from-[#8fa88a] to-[#6f8c69] text-white active:scale-[0.97]"
-        : "cursor-not-allowed border-[var(--border-soft)] bg-[var(--color-cream)]/40 text-[var(--color-caramel)]/60 shadow-none"
+      "flex-1 inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold active:scale-[0.98]",
+isChanged && !submitting
+  ? "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))] text-white "
+  : "cursor-not-allowed border-[var(--border-soft)] bg-[var(--color-cream)]/40 text-[var(--color-caramel)]/60 shadow-none"
     )}
   >
     {submitting ? "Збереження..." : "Готово"}

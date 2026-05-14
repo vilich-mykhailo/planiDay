@@ -295,15 +295,22 @@ bookings: 0,
         item.servicesCount[serviceName] = (item.servicesCount[serviceName] || 0) + 1;
         item.mastersCount[masterName] = (item.mastersCount[masterName] || 0) + 1;
 
-        item.allBookings.push({
-          id: booking.id,
-          date: booking.startAt,
-          service: serviceName,
-          master: masterName,
-          price: booking.service?.price || 0,
-          status: booking.status,
-          canceledBy: booking.canceledBy || null,
-        });
+const startAt = booking.startAt ? new Date(booking.startAt) : null;
+
+item.allBookings.push({
+  id: booking.id,
+  date: booking.startAt,
+  time: startAt
+    ? `${String(startAt.getHours()).padStart(2, "0")}:${String(
+        startAt.getMinutes(),
+      ).padStart(2, "0")}`
+    : "",
+  service: serviceName,
+  master: masterName,
+  price: booking.service?.price || 0,
+  status: booking.status,
+  canceledBy: booking.canceledBy || null,
+});
       }
 
       const clientIds = Array.from(map.keys());

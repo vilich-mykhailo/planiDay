@@ -43,40 +43,7 @@ function SectionCard({ title, subtitle, actions, children, className = "" }) {
     >
       <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[var(--color-forest)] via-[var(--color-caramel)] to-[var(--color-ink)] opacity-70" />
 
-      <div className="border-b border-[var(--color-cream)] px-5 py-4">
-<div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-  
-  {/* ЛІВИЙ БЛОК */}
-  <div className="min-w-0">
-    {/* 1 РЯДОК (тільки заголовок на мобілці) */}
-    <h2 className="text-[22px] sm:text-[26px] font-bold tracking-tight text-[var(--color-ink)]">
-      {title}
-    </h2>
 
-    {/* 2 РЯДОК (subtitle + кнопка на мобілці) */}
-    <div className="mt-1 flex items-center justify-between sm:justify-start sm:gap-3">
-      {subtitle && (
-        <p className="text-sm text-[var(--color-caramel)]">
-          {subtitle}
-        </p>
-      )}
-
-{actions && (
-  <div className="ml-auto sm:hidden">
-    {actions}
-  </div>
-)}
-    </div>
-  </div>
-
-  {/* ДЕСКТОП (кнопка справа як було) */}
-  {actions && (
-    <div className="hidden sm:flex shrink-0 items-center">
-      {actions}
-    </div>
-  )}
-</div>
-      </div>
 
       <div className="p-5">{children}</div>
     </section>

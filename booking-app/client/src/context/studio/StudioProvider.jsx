@@ -13,7 +13,7 @@ function normalizeStudio(raw) {
     name: s.name ?? "",
     category: s.category ?? "",
     phone: s.phone ?? "",
-    email: s.email ?? "", 
+    email: s.email ?? "",
     description: s.description ?? "",
     city: s.city ?? "",
     street: s.street ?? "",
@@ -24,6 +24,7 @@ function normalizeStudio(raw) {
     portfolioUrls: Array.isArray(s.portfolioUrls) ? s.portfolioUrls : [],
     published: Boolean(s.published),
     createdAt: s.createdAt ?? null,
+    ownerCreatedAt: s.ownerCreatedAt ?? s.owner?.createdAt ?? null,
     updatedAt: s.updatedAt ?? null,
   };
 }

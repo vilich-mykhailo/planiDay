@@ -1530,7 +1530,7 @@ function showToast({ type = "success", title, text }) {
           className="hidden"
         />
 
-        <div className="mb-6">
+        <div>
           <div
             ref={headerTriggerRef}
             className="relative overflow-hidden rounded-3xl border border-[var(--color-cream)] bg-white p-5 shadow-[var(--shadow-soft)] sm:p-6"
@@ -1631,10 +1631,10 @@ function showToast({ type = "success", title, text }) {
             </div>
           </div>
         </div>
-
-        <div className="mb-20 grid grid-cols-1 gap-6 lg:grid-cols-12">
-          {tab === "profile" && (
-            <div className="space-y-6 self-start lg:col-span-5 lg:sticky lg:top-6">
+          <div className="mt-4">
+        <div className="mb-20 grid grid-cols-1 gap-2 lg:grid-cols-12">
+{tab === "profile" && (
+  <div className="space-y-6 self-start lg:col-span-12">
               {initialLoading ? (
                 <StudioPreviewSkeleton />
               ) : (
@@ -1763,12 +1763,12 @@ function showToast({ type = "success", title, text }) {
             </div>
           )}
 
-          <div
-            className={cn(
-              "space-y-6",
-              tab === "profile" ? "lg:col-span-7" : "lg:col-span-12",
-            )}
-          >
+<div
+  className={cn(
+    "space-y-6",
+    "lg:col-span-12",
+  )}
+>
             <form onSubmit={save} className="space-y-6">
               {tab === "profile" &&
                 (initialLoading ? (
@@ -2236,7 +2236,7 @@ function showToast({ type = "success", title, text }) {
     }
   `}</style>
 </div>
-
+</div>
         {portfolioPreview.open && (
           <div
             className="fixed inset-0 z-[80] flex items-center justify-center bg-[rgba(5,5,5,0.55)] p-4 backdrop-blur-[2px]"

@@ -10,6 +10,8 @@ import {
   ChevronUp,
   Clock,
   XCircle,
+  ChevronLeft,
+ChevronRight,
   CheckCheck,
   Check,
   Crown,
@@ -512,9 +514,7 @@ const emptyFilterInfo = {
     title: "Поки що немає клієнтів",
     description: (
       <span className="flex flex-col gap-1">
-        <span>
-          Клієнти зʼявляться тут автоматично після перших бронювань.
-        </span>
+        <span>Клієнти зʼявляться тут автоматично після перших бронювань.</span>
       </span>
     ),
   },
@@ -528,9 +528,7 @@ const emptyFilterInfo = {
           Тут зʼявляться клієнти, які мають тільки один нескасований запис.
         </span>
 
-        <span>
-          Або ще не мають сформованої історії відвідувань.
-        </span>
+        <span>Або ще не мають сформованої історії відвідувань.</span>
       </span>
     ),
   },
@@ -544,9 +542,7 @@ const emptyFilterInfo = {
           Тут зʼявляться клієнти, які мають 2 або більше нескасованих записів.
         </span>
 
-        <span>
-          Останній візит був протягом останніх 30 днів.
-        </span>
+        <span>Останній візит був протягом останніх 30 днів.</span>
       </span>
     ),
   },
@@ -574,9 +570,7 @@ const emptyFilterInfo = {
           Тут зʼявляться клієнти, які не були у студії більше 60 днів.
         </span>
 
-        <span>
-          Їм варто нагадати про себе або запропонувати повернутись.
-        </span>
+        <span>Їм варто нагадати про себе або запропонувати повернутись.</span>
       </span>
     ),
   },
@@ -595,6 +589,26 @@ const emptyFilterInfo = {
   },
 };
 
+function pad2(n) {
+  return String(n).padStart(2, "0");
+}
+
+function toISODateKey(d) {
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+}
+
+function addMonthsSafe(date, amount) {
+  const next = new Date(date);
+  next.setDate(1);
+  next.setMonth(next.getMonth() + amount);
+  next.setHours(0, 0, 0, 0);
+  return next;
+}
+
+function isSameMonth(a, b) {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
+}
+
 export default function Clients() {
   const { studio } = useStudio();
   const studioId = studio?.id ?? null;
@@ -611,6 +625,21 @@ export default function Clients() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [copiedPhone, setCopiedPhone] = useState(false);
+const studioCreatedMonth = useMemo(() => {
+  const source = studio?.ownerCreatedAt || studio?.createdAt || new Date();
+
+  const d = new Date(source);
+  d.setDate(1);
+  d.setHours(0, 0, 0, 0);
+
+  return d;
+}, [studio?.ownerCreatedAt, studio?.createdAt]);
+
+const [statsTabIndex, setStatsTabIndex] = useState(() => {
+  const saved = Number(localStorage.getItem("clientsStatsTabIndex"));
+  return Number.isFinite(saved) ? saved : 0;
+});
+
   const emptyInfo = emptyFilterInfo[filter] || emptyFilterInfo.all;
   const EmptyIcon = emptyInfo.icon;
   async function handleCopyPhone(phone) {
@@ -791,22 +820,254 @@ export default function Clients() {
       )
     : 0;
 
-    const filterItemsWithCounts = filterItems.map((item) => {
-  let count = 0;
+  const filterItemsWithCounts = filterItems.map((item) => {
+    let count = 0;
 
-  if (item.value === "all") {
-    count = allClients.length;
-  } else if (item.value === "vip") {
-    count = allClients.filter((client) => client.isVip).length;
-  } else {
-    count = allClients.filter((client) => client.status === item.value).length;
+    if (item.value === "all") {
+      count = allClients.length;
+    } else if (item.value === "vip") {
+      count = allClients.filter((client) => client.isVip).length;
+    } else {
+      count = allClients.filter(
+        (client) => client.status === item.value,
+      ).length;
+    }
+
+    return {
+      ...item,
+      count,
+    };
+  });
+
+  const mostActiveDay = useMemo(() => {
+    const dayNames = [
+      "Неділя",
+      "Понеділок",
+      "Вівторок",
+      "Середа",
+      "Четвер",
+      "Пʼятниця",
+      "Субота",
+    ];
+
+    const counts = Array(7).fill(0);
+
+    allClients.forEach((client) => {
+      (client.history || []).forEach((booking) => {
+        if (!booking?.date) return;
+
+        const date = new Date(booking.date);
+        if (Number.isNaN(date.getTime())) return;
+
+        counts[date.getDay()] += 1;
+      });
+    });
+
+    const max = Math.max(...counts);
+
+    if (max === 0) {
+      return {
+        label: "—",
+        count: 0,
+      };
+    }
+
+    const dayIndex = counts.indexOf(max);
+
+    return {
+      label: dayNames[dayIndex],
+      count: max,
+    };
+  }, [allClients]);
+
+
+  
+  const currentMonth = useMemo(() => {
+  const d = new Date();
+  d.setDate(1);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}, []);
+
+const statsTabs = useMemo(() => {
+  const tabs = [];
+
+  let cursor = new Date(studioCreatedMonth);
+
+  for (let i = 0; i < 120; i++) {
+    const date = new Date(cursor);
+
+    if (isSameMonth(date, currentMonth)) {
+      tabs.push({
+        type: "today",
+        date: null,
+        label: "Сьогодні",
+      });
+    }
+
+    tabs.push({
+      type: "month",
+      date,
+      label: isSameMonth(date, currentMonth)
+        ? "Поточний місяць"
+        : date.toLocaleDateString("uk-UA", {
+            month: "long",
+            year: "numeric",
+          }),
+    });
+
+    cursor = addMonthsSafe(cursor, 1);
   }
 
+  return tabs;
+}, [studioCreatedMonth, currentMonth]);
+
+
+useEffect(() => {
+  if (!statsTabs.length) return;
+
+  if (statsTabIndex < 0 || statsTabIndex >= statsTabs.length) {
+    setStatsTabIndex(0);
+    localStorage.setItem("clientsStatsTabIndex", "0");
+    return;
+  }
+
+  localStorage.setItem("clientsStatsTabIndex", String(statsTabIndex));
+}, [statsTabIndex, statsTabs.length]);
+
+const activeStatsTab =
+  statsTabs[statsTabIndex] || statsTabs[0] || null;
+
+const filteredClientsForStats = useMemo(() => {
+  if (!activeStatsTab) return [];
+
+  if (activeStatsTab?.type === "today") {
+    const todayKey = toISODateKey(new Date());
+
+    return allClients
+      .map((client) => {
+        const history = (client.history || []).filter(
+          (booking) => String(booking.date || "").slice(0, 10) === todayKey,
+        );
+
+        return { ...client, history };
+      })
+      .filter((client) => client.history.length > 0);
+  }
+
+  const year = activeStatsTab.date.getFullYear();
+  const month = activeStatsTab.date.getMonth();
+
+  return allClients
+    .map((client) => {
+      const history = (client.history || []).filter((booking) => {
+        const d = new Date(booking.date);
+        if (Number.isNaN(d.getTime())) return false;
+
+        return d.getFullYear() === year && d.getMonth() === month;
+      });
+
+      return { ...client, history };
+    })
+    .filter((client) => client.history.length > 0);
+}, [allClients, activeStatsTab]);
+
+const statsBookings = useMemo(() => {
+  return filteredClientsForStats.flatMap((client) => client.history || []);
+}, [filteredClientsForStats]);
+
+const filteredTotalBookings = statsBookings.length;
+
+const filteredTotalSpent = statsBookings.reduce(
+  (sum, booking) => sum + Number(booking.price || 0),
+  0,
+);
+
+const filteredAverageCheck = Math.round(
+  filteredTotalSpent / Math.max(filteredTotalBookings, 1),
+);
+
+const filteredNewClientsCount = filteredClientsForStats.filter(
+  (client) => client.status === "new",
+).length;
+
+const filteredLoyalPercent = filteredClientsForStats.length
+  ? Math.round(
+      (filteredClientsForStats.filter((client) =>
+        ["loyal", "vip"].includes(client.status),
+      ).length /
+        filteredClientsForStats.length) *
+        100,
+    )
+  : 0;
+
+const filteredMostActiveDay = useMemo(() => {
+  const dayNames = [
+    "Неділя",
+    "Понеділок",
+    "Вівторок",
+    "Середа",
+    "Четвер",
+    "Пʼятниця",
+    "Субота",
+  ];
+
+  const counts = Array(7).fill(0);
+
+  statsBookings.forEach((booking) => {
+    if (!booking?.date) return;
+
+    const date = new Date(booking.date);
+    if (Number.isNaN(date.getTime())) return;
+
+    counts[date.getDay()] += 1;
+  });
+
+  const max = Math.max(...counts);
+
+  if (max === 0) {
+    return { label: "—", count: 0 };
+  }
+
+  const dayIndex = counts.indexOf(max);
+
   return {
-    ...item,
-    count,
+    label: dayNames[dayIndex],
+    count: max,
   };
-});
+}, [statsBookings]);
+
+
+
+const filteredMostActiveHour = useMemo(() => {
+  const counts = Array.from({ length: 24 }, (_, hour) => ({
+    label: `${String(hour).padStart(2, "0")}:00`,
+    count: 0,
+  }));
+
+  statsBookings.forEach((booking) => {
+    if (!booking?.date) return;
+    if (booking.status === "CANCELED" || booking.status === "canceled") return;
+
+    const date = new Date(booking.date);
+
+    if (Number.isNaN(date.getTime())) return;
+
+    const hour = date.getHours();
+
+    counts[hour].count += 1;
+  });
+
+  const best = counts.reduce((max, item) =>
+    item.count > max.count ? item : max,
+  );
+
+  if (best.count === 0) {
+    return { label: "—", count: 0 };
+  }
+
+  return best;
+}, [statsBookings]);
 
   return (
     <div className="h-full">
@@ -836,66 +1097,124 @@ export default function Clients() {
               </p>
             </div>
           </div>
-        </div>
 
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-2">
-          <StatCard
-            tone="green"
-            icon={Users}
-            label="Всього"
-            value={allClients.length}
-            hint="активних клієнтів"
-            chartData={[1, 2, 2, 3, 3, 4, 4]}
-          />
+          <div className="mt-5 flex justify-center">
+  <div className="flex items-center justify-center gap-2">
+    <button
+      type="button"
+      disabled={statsTabIndex === 0}
+      onClick={() => setStatsTabIndex((prev) => Math.max(0, prev - 1))}
+      className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--border-soft)] bg-white text-[var(--color-ink)] shadow-sm transition hover:bg-[var(--color-cream)] active:scale-[0.98] disabled:opacity-40"
+    >
+      <ChevronLeft className="h-5 w-5" />
+    </button>
 
-          <StatCard
-            tone="blue"
-            icon={UserPlus}
-            label="Нових"
-            value={`+${newClientsCount}`}
-            hint="за місяць"
-            chartData={
-              newClientsCount <= 0
-                ? [0, 0, 0, 0, 0, 0, 0]
-                : [0, 1, 1, 2, 2, 3, newClientsCount]
-            }
-          />
+    <button
+      type="button"
+      className="inline-flex h-11 min-w-[180px] items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-black text-[var(--color-primary-buttom)] shadow-sm"
+    >
+      <CalendarDays className="h-4 w-4" />
+     <span className="capitalize">
+  {activeStatsTab?.label || "Сьогодні"}
+</span>
+    </button>
 
-          <StatCard
-            tone="violet"
-            icon={Repeat}
-            label="Постійні"
-            value={`${loyalPercent}%`}
-            hint="повертаються"
-            chartData={[40, 52, 58, 70, 82, 91, loyalPercent]}
-          />
+    <button
+      type="button"
+      disabled={statsTabIndex === statsTabs.length - 1}
+      onClick={() =>
+        setStatsTabIndex((prev) => Math.min(statsTabs.length - 1, prev + 1))
+      }
+      className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--border-soft)] bg-white text-[var(--color-ink)] shadow-sm transition hover:bg-[var(--color-cream)] active:scale-[0.98] disabled:opacity-40"
+    >
+      <ChevronRight className="h-5 w-5" />
+    </button>
+  </div>
+</div>
 
-          <StatCard
-            tone="amber"
-            icon={Wallet}
-            label="Середній чек"
-            value={formatMoney(averageCheck)}
-            hint="по всіх записах"
-            chartData={[578, 560, 535, 510, 478]}
-          />
+          <div className="grid grid-cols-2 gap-3 mt-5 md:grid-cols-2">
+            <StatCard
+              tone="green"
+              icon={Users}
+              label="Всього"
+              value={filteredClientsForStats.length}
+              hint="записаних клієнтів"
+              chartData={[1, 2, 2, 3, 3, 4, 4]}
+            />
 
-          <StatCard
-            tone="rose"
-            icon={BadgeCheck}
-            label="Бронювань"
-            value={totalBookings}
-            hint="за весь час"
-            chartData={[1, 3, 5, 8, 10, 13, totalBookings]}
-          />
+<StatCard
+  tone="blue"
+  icon={UserPlus}
+  label="Нових"
+  value={`+${filteredNewClientsCount}`}
+  hint={
+    activeStatsTab?.typeype === "today"
+      ? "за сьогодні"
+      : "за вибраний період"
+  }
+  chartData={
+    filteredNewClientsCount <= 0
+      ? [0, 0, 0, 0, 0, 0, 0]
+      : [0, 1, 1, 2, 2, 3, filteredNewClientsCount]
+  }
+/>
 
-          <StatCard
-            tone="blue"
-            icon={CalendarDays}
-            label="Найактивніший день"
-            value="Пʼятниця"
-            hint="найбільше записів"
-            hideChart
-          />
+            <StatCard
+              tone="violet"
+              icon={Repeat}
+              label="Постійні"
+              value={`${filteredLoyalPercent}%`}
+              hint="повертаються"
+              chartData={[40, 52, 58, 70, 82, 91, loyalPercent]}
+            />
+
+<StatCard
+  tone="amber"
+  icon={Wallet}
+  label="Дохід"
+  value={formatMoney(filteredTotalSpent)}
+  hint={
+    activeStatsTab?.typeype === "today"
+      ? "за сьогодні"
+      : "за вибраний період"
+  }
+  chartData={[0, filteredTotalSpent]}
+/>
+
+<StatCard
+  tone="rose"
+  icon={BadgeCheck}
+  label="Бронювань"
+  value={filteredTotalBookings}
+  hint={
+    activeStatsTab?.typeype === "today"
+      ? "за сьогодні"
+      : "за вибраний період"
+  }
+  chartData={[1, 3, 5, 8, 10, 13, totalBookings]}
+/>
+
+<StatCard
+  tone="blue"
+  icon={CalendarDays}
+  label={activeStatsTab?.typeype === "today" ? "Найактивніша година" : "Найактивніший день"}
+  value={
+    activeStatsTab?.typeype === "today"
+      ? filteredMostActiveHour.label
+      : filteredMostActiveDay.label
+  }
+  hint={
+    activeStatsTab?.typeype === "today"
+      ? filteredMostActiveHour.count > 0
+        ? `${filteredMostActiveHour.count} записів`
+        : "ще немає записів"
+      : filteredMostActiveDay.count > 0
+        ? `${filteredMostActiveDay.count} записів`
+        : "ще немає записів"
+  }
+  hideChart
+/>
+          </div>
         </div>
 
         <SectionCard>
@@ -970,7 +1289,7 @@ export default function Clients() {
               </div>
             </div>
             <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-             {filterItemsWithCounts.map((item) => (
+              {filterItemsWithCounts.map((item) => (
                 <button
                   key={item.value}
                   type="button"
@@ -988,16 +1307,14 @@ export default function Clients() {
                   )}
                 >
                   <span>{item.label}</span>
-
-
                 </button>
               ))}
             </div>
             <div className="mt-1 flex justify-end">
-  <span className="inline-flex items-center rounded-full  px-3  text-xs font-semibold text-[var(--border-hover-primary)]">
-    К-ть клієнтів: {clients.length}
-  </span>
-</div>
+              <span className="inline-flex items-center rounded-full  px-3  text-xs font-semibold text-[var(--border-hover-primary)]">
+                К-ть клієнтів: {clients.length}
+              </span>
+            </div>
           </div>
           {loading && (
             <div className="mt-5 rounded-2xl border border-[var(--color-cream)] bg-white p-6 text-center text-sm font-bold text-[var(--color-caramel)]">
@@ -1014,7 +1331,7 @@ export default function Clients() {
             <div className="mt-5 rounded-2xl border-2 border-dashed border-[var(--color-caramel)]/40 bg-[var(--color-cream)] p-6 text-center sm:p-8">
               <div className="mb-3 flex items-center justify-center">
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/70">
-                 <EmptyIcon className="h-6 w-6 text-[var(--color-caramel)]" />
+                  <EmptyIcon className="h-6 w-6 text-[var(--color-caramel)]" />
                 </div>
               </div>
 
@@ -1224,11 +1541,11 @@ function ClientAccordion({
           onClick={onToggle}
           className="flex min-w-0 flex-1 items-center gap-3 text-left"
         >
-         <Avatar
-  name={client.name}
-  photoUrl={client.photoUrl}
-  className="h-16 w-16 rounded-[22px]"
-/>
+          <Avatar
+            name={client.name}
+            photoUrl={client.photoUrl}
+            className="h-16 w-16 rounded-[22px]"
+          />
 
           <div className="min-w-0 flex-1">
             <div className="flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
@@ -1412,11 +1729,11 @@ function ClientDetails({
       <div className="border-b border-[var(--color-cream)] p-5">
         {!compactHeader && (
           <div className="flex items-start gap-3">
-        <Avatar
-  name={client.name}
-  photoUrl={client.photoUrl}
-  className="h-16 w-16 rounded-[22px]"
-/>
+            <Avatar
+              name={client.name}
+              photoUrl={client.photoUrl}
+              className="h-16 w-16 rounded-[22px]"
+            />
 
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">

@@ -2,19 +2,23 @@
 import { Activity, useEffect, useMemo, useRef, useState } from "react";
 import { useBookings } from "../context/bookings/useBookings";
 import { api } from "../api/http";
+import { useStudio } from "../context/studio/useStudio";
 import {
   Sparkles,
   CalendarDays,
   Clock,
   Users,
-  CheckCheck,
   ChevronLeft,
-  ChevronRight,
+ChevronRight,
+  CheckCheck,
   ChevronDown,
   AlertTriangle,
   Trash2,
   Check,
   XCircle,
+  Eye,
+FolderClock,
+UserRound,
   Copy,
   Clock3,
   Banknote,
@@ -264,7 +268,12 @@ function getWeekdayShortUA(date) {
     .slice(0, 2);
 }
 
-function MonthlyBookingsChart({ bookings = [], nowTs }) {
+function MonthlyBookingsChart({
+  bookings = [],
+  nowTs,
+  onModeChange,
+  studioCreatedAt,
+}) {
   const [studioSchedule, setStudioSchedule] = useState(null);
   const [studioExceptions, setStudioExceptions] = useState([]);
   const today = useMemo(() => {
@@ -315,7 +324,12 @@ function MonthlyBookingsChart({ bookings = [], nowTs }) {
  const [activeDayKey, setActiveDayKey] = useState(null);
 const [pinnedDayKey, setPinnedDayKey] = useState(null);
 const [chartMode, setChartMode] = useState("month");
-const [chartTabIndex, setChartTabIndex] = useState(2);
+
+useEffect(() => {
+  onModeChange?.(chartMode);
+}, [chartMode, onModeChange]);
+
+
 const data = useMemo(() => {
   if (chartMode === "today") {
 
@@ -334,6 +348,7 @@ const data = useMemo(() => {
       canceled: 0,
     }));
 
+    
     for (const booking of bookings || []) {
       if (!booking?.date) continue;
       if (booking.status === "deleted") continue;
@@ -410,30 +425,66 @@ const liveKpi = useMemo(() => {
   let today = 0;
   let confirmed = 0;
   let pending = 0;
+ let canceled = 0;
+  let total = 0;
 
   const todayKey = toISODateKey(new Date(nowTs));
 
   for (const booking of bookings || []) {
     if (!booking?.date) continue;
-    if (booking.status === "canceled" || booking.status === "deleted") continue;
+    if (booking.status === "deleted") continue;
 
     const dt = getBookingDateTime(booking);
     if (!dt) continue;
-    if (dt.getTime() < nowTs) continue;
 
-    if (booking.date === todayKey) {
+    const isCanceled = booking.status === "canceled";
+    const isArchived = dt.getTime() < nowTs;
+
+    if (chartMode === "today") {
+      if (booking.date !== todayKey) continue;
+
+      total += 1;
+
+if (isCanceled) {
+  canceled += 1;
+} else if (booking.status === "confirmed") {
+
+        confirmed += 1;
+      } else if (!isCanceled) {
+        pending += 1;
+      }
+
+      if (!isArchived && !isCanceled) {
+        today += 1;
+      }
+
+      continue;
+    }
+
+    if (
+      dt.getFullYear() !== visibleMonth.getFullYear() ||
+      dt.getMonth() !== visibleMonth.getMonth()
+    ) {
+      continue;
+    }
+
+    if (!isCanceled) {
+      total += 1;
+    }
+
+    if (booking.date === todayKey && !isCanceled) {
       today += 1;
     }
 
-    if (booking.status === "confirmed") {
+    if (booking.status === "confirmed" && !isCanceled) {
       confirmed += 1;
-    } else {
+    } else if (!isCanceled) {
       pending += 1;
     }
   }
 
-  return { today, confirmed, pending };
-}, [bookings, nowTs]);
+  return { today, confirmed, pending, canceled, total };
+}, [bookings, nowTs, chartMode, visibleMonth]);
 
 const chart = useMemo(() => {
   const width = Math.max(760, data.length * 20);
@@ -499,31 +550,50 @@ const currentMonth = useMemo(() => {
   return d;
 }, [nowTs]);
 
-const prevMonth = addMonthsSafe(currentMonth, -1);
-const nextMonth = addMonthsSafe(currentMonth, 1);
+const chartTabs = useMemo(() => {
+  const tabs = [];
 
-const chartTabs = [
-  {
-    type: "month",
-    date: prevMonth,
-    label: prevMonth.toLocaleDateString("uk-UA", { month: "long" }),
-  },
-  {
-    type: "today",
-    date: null,
-    label: "Сьогодні",
-  },
-  {
-    type: "month",
-    date: currentMonth,
-    label: "Поточний місяць",
-  },
-  {
-    type: "month",
-    date: nextMonth,
-    label: nextMonth.toLocaleDateString("uk-UA", { month: "long" }),
-  },
-];
+  const start = new Date(studioCreatedAt || nowTs);
+  start.setDate(1);
+  start.setHours(0, 0, 0, 0);
+
+  let cursor = new Date(start);
+
+  for (let i = 0; i < 120; i++) {
+    const date = new Date(cursor);
+
+    if (isSameMonth(date, currentMonth)) {
+      tabs.push({
+        type: "today",
+        date: null,
+        label: "Сьогодні",
+      });
+    }
+
+    tabs.push({
+      type: "month",
+      date,
+      label: isSameMonth(date, currentMonth)
+        ? "Поточний місяць"
+        : date.toLocaleDateString("uk-UA", {
+            month: "long",
+            year: "numeric",
+          }),
+    });
+
+    cursor = addMonthsSafe(cursor, 1);
+  }
+
+  return tabs;
+}, [studioCreatedAt, currentMonth, nowTs]);
+
+const [chartTabIndex, setChartTabIndex] = useState(() => {
+  const currentIndex = chartTabs.findIndex(
+    (tab) => tab.type === "today",
+  );
+
+  return currentIndex >= 0 ? currentIndex : 0;
+});
 
 const activeChartTab = chartTabs[chartTabIndex];
 
@@ -649,28 +719,59 @@ const isCurrentMonth = isSameMonth(visibleMonth, today);
 
 <div className="mb-6 mt-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
   <ChartKpi
-    label="Сьогодні"
-    value={liveKpi.today}
-    icon={CalendarDays}
+    label={
+      chartMode === "today"
+        ? "Активні на сьогодні"
+        : (
+          <>
+            Підтверджені
+            <span className="block sm:inline"> записи</span>
+          </>
+        )
+    }
+    value={chartMode === "today" ? liveKpi.today : liveKpi.confirmed}
+    icon={chartMode === "today" ? CalendarDays : BadgeCheck}
     tone="emerald"
   />
 
   <ChartKpi
-    label="Підтверджені записи"
-    value={liveKpi.confirmed}
-    icon={BadgeCheck}
-    tone="sky"
-  />
-
-  <ChartKpi
-    label="Очікують підтвердження"
+    label={
+      chartMode === "today"
+        ? (
+          <>
+            Очікують
+            <span className="block sm:inline"> підтвердження</span>
+          </>
+        )
+        : (
+          <>
+            Очікують
+            <span className="block sm:inline"> підтвердження</span>
+          </>
+        )
+    }
     value={liveKpi.pending}
     icon={ClockAlert}
     tone="amber"
   />
 
   <ChartKpi
-    label="Усього бронювань"
+    label={
+      chartMode === "today"
+        ? "Скасовані"
+        : "Скасовані"
+    }
+    value={liveKpi.canceled}
+    icon={XCircle}
+    tone="rose"
+  />
+
+  <ChartKpi
+    label={
+      chartMode === "today"
+        ? "Усього записів"
+        : "Усього бронювань"
+    }
     value={total}
     icon={LayoutGrid}
     tone="slate"
@@ -979,227 +1080,116 @@ className="text-[11px] font-black transition-all duration-200"
             </div>
           </div>
 
-<div className="bg-white p-4 sm:p-5">
+        </div>
+<div className="bg-white mt-4">
   {chartMode === "month" ? (
   <div className="overflow-hidden rounded-[28px] border border-sky-200/70 bg-gradient-to-br from-sky-50 via-white to-blue-100/60 shadow-[0_14px_40px_rgba(14,165,233,0.10)]">
     <div className="p-5">
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <p className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-sky-700/80">
-            <CalendarDays className="h-3.5 w-3.5" />
-            Активна дата
-          </p>
+<div className="flex flex-col items-center justify-center text-center">
+  <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-sky-700 shadow-sm">
+    <CalendarDays className="h-3.5 w-3.5" />
+    Вибрана дата
+  </div>
 
-          <p className="mt-2 text-2xl font-black text-slate-950">
-            {activePoint ? formatDateUA(activePoint.key) : "—"}
-          </p>
-        </div>
-
-        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white text-sky-600 shadow-[0_10px_30px_rgba(14,165,233,0.14)]">
-          <CalendarDays className="h-7 w-7" />
-        </div>
-      </div>
+  <p className="mt-3 text-[30px] sm:text-[34px] font-black leading-none tracking-[-0.04em] text-slate-950">
+    {activePoint ? formatDateUA(activePoint.key) : "—"}
+  </p>
+</div>
 
 <div className="mt-4 grid grid-cols-2 gap-3">
-<div className="relative overflow-hidden rounded-[24px] border border-emerald-200/70 bg-gradient-to-br from-emerald-50 via-white to-emerald-100/60 p-4 shadow-[0_10px_30px_rgba(16,185,129,0.10)]">
-  <div className="absolute right-[-14px] top-[-14px] h-24 w-24 rounded-full bg-emerald-200/30 blur-2xl" />
+  <ChartKpi
+    label={
+      <>
+        Підтверджені
+        <span className="block sm:inline"> записи</span>
+      </>
+    }
+    value={activePoint?.confirmed || 0}
+    icon={BadgeCheck}
+    tone="emerald"
+  />
 
-  <div className="relative flex h-full flex-col justify-between">
-    <div className="flex items-center gap-3">
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-emerald-700 shadow-sm">
-        <BadgeCheck className="h-6 w-6" />
-      </div>
+  <ChartKpi
+    label={
+      <>
+        Очікують
+        <span className="block sm:inline"> підтвердження</span>
+      </>
+    }
+    value={activePoint?.pending || 0}
+    icon={ClockAlert}
+    tone="amber"
+  />
 
-      <p className="text-left text-[11px] font-black uppercase tracking-[0.16em] text-emerald-700/70">
-        Усього записів
-      </p>
-    </div>
+  <ChartKpi
+    label="Скасовані"
+    value={activePoint?.canceled || 0}
+    icon={XCircle}
+    tone="rose"
+  />
 
-    <div className="mt-3">
-      <p className="text-[38px] font-black leading-none tracking-[-0.05em] text-emerald-950">
-        {activePoint?.count || 0}
-      </p>
-    </div>
-  </div>
-</div>
-
-<div className="relative overflow-hidden rounded-[24px] border border-amber-200/70 bg-gradient-to-br from-amber-50 via-white to-orange-100/60 p-4 shadow-[0_10px_30px_rgba(245,158,11,0.10)]">
-  <div className="absolute right-[-14px] top-[-14px] h-24 w-24 rounded-full bg-amber-200/30 blur-2xl" />
-
-  <div className="relative flex h-full flex-col justify-between">
-    <div className="flex items-center gap-3">
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-amber-700 shadow-sm">
-        <Clock className="h-6 w-6" />
-      </div>
-
-      <p className="text-left text-[11px] font-black uppercase tracking-[0.16em] text-amber-700/70">
-        Очікують підтвердження
-      </p>
-    </div>
-
-    <div className="mt-3">
-      <p className="text-[38px] font-black leading-none tracking-[-0.05em] text-amber-950">
-        {activePoint?.pending || 0}
-      </p>
-    </div>
-  </div>
-</div>
-
-<div className="relative overflow-hidden rounded-[24px] border border-slate-200/80 bg-gradient-to-br from-slate-50 via-white to-slate-100/70 p-4 shadow-[0_10px_30px_rgba(100,116,139,0.10)]">
-  <div className="absolute right-[-14px] top-[-14px] h-24 w-24 rounded-full bg-slate-200/40 blur-2xl" />
-
-  <div className="relative flex h-full flex-col justify-between">
-    <div className="flex items-center gap-3">
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-slate-600 shadow-sm">
-        <CheckCheck className="h-6 w-6" />
-      </div>
-
-      <p className="text-left text-[11px] font-black uppercase tracking-[0.16em] text-slate-600/70">
-        Завершені записи
-      </p>
-    </div>
-
-    <div className="mt-3">
-      <p className="text-[38px] font-black leading-none tracking-[-0.05em] text-slate-950">
-        {activePoint?.archived || 0}
-      </p>
-    </div>
-  </div>
-</div>
-
-<div className="relative overflow-hidden rounded-[24px] border border-rose-200/70 bg-gradient-to-br from-rose-50 via-white to-red-100/60 p-4 shadow-[0_10px_30px_rgba(244,63,94,0.10)]">
-  <div className="absolute right-[-14px] top-[-14px] h-24 w-24 rounded-full bg-rose-200/30 blur-2xl" />
-
-  <div className="relative flex h-full flex-col justify-between">
-    <div className="flex items-center gap-3">
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-rose-700 shadow-sm">
-        <XCircle className="h-6 w-6" />
-      </div>
-
-      <p className="text-left text-[11px] font-black uppercase tracking-[0.16em] text-rose-700/70">
-        Скасовані записи
-      </p>
-    </div>
-
-    <div className="mt-3">
-      <p className="text-[38px] font-black leading-none tracking-[-0.05em] text-rose-950">
-        {activePoint?.canceled || 0}
-      </p>
-    </div>
-  </div>
-</div>
+  <ChartKpi
+    label="Усього записів"
+    value={activePoint?.count || 0}
+    icon={LayoutGrid}
+    tone="slate"
+  />
 </div>
     </div>
   </div>
 ) : (
 <div className="overflow-hidden rounded-[28px] border border-sky-200/70 bg-gradient-to-br from-sky-50 via-white to-blue-100/60 shadow-[0_14px_40px_rgba(14,165,233,0.10)]">
   <div className="p-5">
-    <div className="flex items-start justify-between gap-4">
-      <div className="min-w-0">
-        <p className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-sky-700/80">
-          <Clock className="h-3.5 w-3.5" />
-          Активна година
-        </p>
+<div className="flex flex-col items-center justify-center text-center">
+  <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-sky-700 shadow-sm">
+    <Clock className="h-3.5 w-3.5" />
+    Обрана година
+  </div>
 
-        <p className="mt-2 text-2xl font-black text-slate-950">
-          {activePoint?.label || "—"}
-        </p>
-      </div>
+  <p className="mt-3 text-[34px] font-black leading-none tracking-[-0.04em] text-slate-950">
+    {activePoint?.label || "—"}
+  </p>
+</div>
 
-      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white text-sky-600 shadow-[0_10px_30px_rgba(14,165,233,0.14)]">
-        <Clock className="h-7 w-7" />
-      </div>
-    </div>
+<div className="mt-4 grid grid-cols-2 gap-3">
+  <ChartKpi
+    label={
+      <>
+        Підтверджені
+        <span className="block sm:inline"> записи</span>
+      </>
+    }
+    value={activePoint?.confirmed || 0}
+    icon={BadgeCheck}
+    tone="emerald"
+  />
 
-    <div className="mt-4 grid grid-cols-2 gap-3">
-      <div className="relative overflow-hidden rounded-[24px] border border-emerald-200/70 bg-gradient-to-br from-emerald-50 via-white to-emerald-100/60 p-4 shadow-[0_10px_30px_rgba(16,185,129,0.10)]">
-        <div className="absolute right-[-14px] top-[-14px] h-24 w-24 rounded-full bg-emerald-200/30 blur-2xl" />
+  <ChartKpi
+    label={
+      <>
+        Очікують
+        <span className="block sm:inline"> підтвердження</span>
+      </>
+    }
+    value={activePoint?.pending || 0}
+    icon={ClockAlert}
+    tone="amber"
+  />
 
-        <div className="relative flex h-full flex-col justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-emerald-700 shadow-sm">
-              <BadgeCheck className="h-6 w-6" />
-            </div>
+  <ChartKpi
+    label="Скасовані"
+    value={activePoint?.canceled || 0}
+    icon={XCircle}
+    tone="rose"
+  />
 
-            <p className="text-left text-[11px] font-black uppercase tracking-[0.16em] text-emerald-700/70">
-              Усього записів
-            </p>
-          </div>
-
-          <div className="mt-3">
-            <p className="text-[38px] font-black leading-none tracking-[-0.05em] text-emerald-950">
-              {activePoint?.count || 0}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="relative overflow-hidden rounded-[24px] border border-amber-200/70 bg-gradient-to-br from-amber-50 via-white to-orange-100/60 p-4 shadow-[0_10px_30px_rgba(245,158,11,0.10)]">
-        <div className="absolute right-[-14px] top-[-14px] h-24 w-24 rounded-full bg-amber-200/30 blur-2xl" />
-
-        <div className="relative flex h-full flex-col justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-amber-700 shadow-sm">
-              <Clock className="h-6 w-6" />
-            </div>
-
-            <p className="text-left text-[11px] font-black uppercase tracking-[0.16em] text-amber-700/70">
-              Очікують підтвердження
-            </p>
-          </div>
-
-          <div className="mt-3">
-            <p className="text-[38px] font-black leading-none tracking-[-0.05em] text-amber-950">
-              {activePoint?.pending || 0}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="relative overflow-hidden rounded-[24px] border border-slate-200/80 bg-gradient-to-br from-slate-50 via-white to-slate-100/70 p-4 shadow-[0_10px_30px_rgba(100,116,139,0.10)]">
-        <div className="absolute right-[-14px] top-[-14px] h-24 w-24 rounded-full bg-slate-200/40 blur-2xl" />
-
-        <div className="relative flex h-full flex-col justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-slate-600 shadow-sm">
-              <CheckCheck className="h-6 w-6" />
-            </div>
-
-            <p className="text-left text-[11px] font-black uppercase tracking-[0.16em] text-slate-600/70">
-              Завершені записи
-            </p>
-          </div>
-
-          <div className="mt-3">
-            <p className="text-[38px] font-black leading-none tracking-[-0.05em] text-slate-950">
-              {activePoint?.archived || 0}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="relative overflow-hidden rounded-[24px] border border-rose-200/70 bg-gradient-to-br from-rose-50 via-white to-red-100/60 p-4 shadow-[0_10px_30px_rgba(244,63,94,0.10)]">
-        <div className="absolute right-[-14px] top-[-14px] h-24 w-24 rounded-full bg-rose-200/30 blur-2xl" />
-
-        <div className="relative flex h-full flex-col justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-rose-700 shadow-sm">
-              <XCircle className="h-6 w-6" />
-            </div>
-
-            <p className="text-left text-[11px] font-black uppercase tracking-[0.16em] text-rose-700/70">
-              Скасовані записи
-            </p>
-          </div>
-
-          <div className="mt-3">
-            <p className="text-[38px] font-black leading-none tracking-[-0.05em] text-rose-950">
-              {activePoint?.canceled || 0}
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
+  <ChartKpi
+    label="Усього записів"
+    value={activePoint?.count || 0}
+    icon={LayoutGrid}
+    tone="slate"
+  />
+</div>
   </div>
 </div>
 )}
@@ -1297,7 +1287,6 @@ className="text-[11px] font-black transition-all duration-200"
 
 
 </div>
-        </div>
       </div>
     </SectionShell>
   );
@@ -1309,6 +1298,7 @@ function ChartKpi({ label, value, icon: Icon, tone = "emerald" }) {
     sky: "from-sky-50 to-white text-sky-700",
     amber: "from-amber-50 to-white text-amber-700",
     slate: "from-slate-50 to-white text-slate-700",
+    rose: "from-rose-50 to-white text-rose-700",
   };
 
   return (
@@ -1327,9 +1317,9 @@ function ChartKpi({ label, value, icon: Icon, tone = "emerald" }) {
         </p>
       </div>
 
-      <div className="flex items-center justify-center">
-        {Icon && <Icon className="h-8 w-8" />}
-      </div>
+<div className="hidden items-center justify-center sm:flex">
+  {Icon && <Icon className="h-8 w-8" />}
+</div>
     </div>
   );
 }
@@ -1502,7 +1492,14 @@ function AppointmentCardSkeleton() {
   );
 }
 
-function AppointmentCard({ item, todayKey, nowTs, onOpen }) {
+function AppointmentCard({
+  item,
+  todayKey,
+  nowTs,
+  onOpen,
+  hideTodayBadge = false,
+  hideDate = false,
+}) {
   const key = item.date ? String(item.date) : "";
   const dateLabel = key ? formatDateUA(key) : "—";
   const isToday = key === todayKey;
@@ -1534,15 +1531,17 @@ function AppointmentCard({ item, todayKey, nowTs, onOpen }) {
                   {item.time}
                 </span>
 
-                <span
-                  className={cn(
-                    "inline-flex items-center justify-center gap-2 px-2.5 py-1 text-xs font-semibold rounded-2xl border border-[var(--border-soft)] bg-white shadow-sm transition-all duration-200 ",
-                    statusMeta.text,
-                  )}
-                >
-                  <CalendarDays className="h-3.5 w-3.5" />
-                  {isToday ? "Сьогодні" : dateLabel}
-                </span>
+{!hideDate && (
+  <span
+    className={cn(
+      "inline-flex items-center justify-center gap-2 px-2.5 py-1 text-xs font-semibold rounded-2xl border border-[var(--border-soft)] bg-white shadow-sm transition-all duration-200 ",
+      statusMeta.text,
+    )}
+  >
+    <CalendarDays className="h-3.5 w-3.5" />
+    {isToday && !hideTodayBadge ? "Сьогодні" : dateLabel}
+  </span>
+)}
 <span
   className={cn(
     "inline-flex items-center justify-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-bold shadow-sm",
@@ -1559,12 +1558,24 @@ function AppointmentCard({ item, todayKey, nowTs, onOpen }) {
               {item.serviceName || "—"}
             </p>
 
-            <p className="ui-text-muted mt-1 truncate text-sm">
-              Клієнт:{" "}
-              <span className="ui-title-section font-semibold">
-                {item.clientName || "—"}
-              </span>
-            </p>
+<div className="mt-1 space-y-1">
+  <p className="ui-text-muted truncate text-sm">
+    Клієнт:{" "}
+    <span className="ui-title-section font-semibold">
+      {item.clientName || "—"}
+    </span>
+  </p>
+
+  <p className="ui-text-muted truncate text-sm">
+    Майстер:{" "}
+    <span className="ui-title-section font-semibold">
+      {item.masterName ||
+        item.staffName ||
+        item.employeeName ||
+        "—"}
+    </span>
+  </p>
+</div>
           </div>
 
           <div className="text-label flex items-center gap-2 self-start text-xs font-semibold sm:self-center">
@@ -1591,6 +1602,7 @@ export default function Golowna() {
   const { bookings, confirmBooking, cancelBooking, loading } = useBookings();
   const [nowTs, setNowTs] = useState(() => Date.now());
   const [detailsId, setDetailsId] = useState(null);
+  const { studio } = useStudio();
   const [copiedPhone, setCopiedPhone] = useState(false);
   const [cancelConfirmId, setCancelConfirmId] = useState(null);
   const [showDetailsScrollHint, setShowDetailsScrollHint] = useState(true);
@@ -1601,6 +1613,8 @@ export default function Golowna() {
   const [appointmentsRange, setAppointmentsRange] = useState("thisWeek");
   const isInitialLoading = loading;
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [dashboardChartMode, setDashboardChartMode] = useState("month");
+const [todayBookingsFilter, setTodayBookingsFilter] = useState("all");
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   
   const [socketState, setSocketState] = useState(
@@ -1926,10 +1940,150 @@ const upcomingAppointments = useMemo(() => {
     };
   }, [isOnline, socketState, isRefreshing]);
 
+  const todayBookings = useMemo(() => {
+  const todayKey = toISODateKey(new Date(nowTs));
+
+  return (bookings || [])
+    .filter((b) => b?.id && b.date === todayKey && b.status !== "deleted")
+    .sort((a, c) => (a.time || "").localeCompare(c.time || ""));
+}, [bookings, nowTs]);
+
+const todayBookingsFiltered = useMemo(() => {
+  return todayBookings.filter((b) => {
+    const dt = getBookingDateTime(b);
+    const isArchived = dt ? dt.getTime() < nowTs : false;
+
+    if (todayBookingsFilter === "archive") return isArchived;
+    if (todayBookingsFilter === "confirmed") {
+      return b.status === "confirmed" && !isArchived;
+    }
+    if (todayBookingsFilter === "canceled") return b.status === "canceled";
+    if (todayBookingsFilter === "new") {
+      return (!b.status || b.status === "new" || b.status === "pending") && !isArchived;
+    }
+
+    return true;
+  });
+}, [todayBookings, todayBookingsFilter, nowTs]);
+
+const todayFilterCounts = useMemo(() => {
+  return todayBookings.reduce(
+    (acc, b) => {
+      const dt = getBookingDateTime(b);
+      const isArchived = dt ? dt.getTime() < nowTs : false;
+
+      acc.all += 1;
+      if (isArchived) acc.archive += 1;
+      else if (b.status === "confirmed") acc.confirmed += 1;
+      else if (b.status === "canceled") acc.canceled += 1;
+      else acc.new += 1;
+
+      return acc;
+    },
+    { all: 0, new: 0, confirmed: 0, canceled: 0, archive: 0 },
+  );
+}, [todayBookings, nowTs]);
+
+const todayEmptyText = {
+  all: "Сьогодні ще немає жодного запису.",
+  new: "Ще немає записів, які очікують на підтвердження.",
+  confirmed: "Ще немає підтверджених записів.",
+  canceled: "Ще немає скасованих записів.",
+  archive: "Ще немає завершених записів.",
+};
+
   return (
     <div className="">
       <div className="mx-auto w-full max-w-[1200px] space-y-3">
-        <MonthlyBookingsChart bookings={bookings} nowTs={nowTs} />
+<MonthlyBookingsChart
+  bookings={bookings}
+  nowTs={nowTs}
+  onModeChange={setDashboardChartMode}
+  studioCreatedAt={studio?.ownerCreatedAt || studio?.createdAt}
+/>
+{dashboardChartMode === "today" && (
+  <SectionShell>
+    <div className="px-5 pb-6 pt-5 sm:px-6 sm:pb-7 sm:pt-6">
+      <div className="flex items-center gap-3">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-primary-buttom)] text-white shadow-sm">
+          <ClockCheck className="h-5 w-5" />
+        </div>
+
+        <div className="min-w-0">
+          <h2 className="ui-title-section text-2xl sm:text-3xl">
+            Сьогоднішні записи
+          </h2>
+
+          <p className="mt-1 ui-text-muted text-sm">
+            Усі записи на сьогодні: підтверджені, скасовані, завершені та ті, що очікують підтвердження.
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+        {[
+          { key: "all", label: "Усі" },
+          { key: "new", label: "Очікують", count: todayFilterCounts.new },
+          { key: "confirmed", label: "Підтверджені", count: todayFilterCounts.confirmed },
+          { key: "canceled", label: "Скасовані", count: todayFilterCounts.canceled },
+          { key: "archive", label: "Завершені", count: todayFilterCounts.archive },
+        ].map((item) => {
+          const active = todayBookingsFilter === item.key;
+
+          return (
+            <button
+              key={item.key}
+              type="button"
+              onClick={() => setTodayBookingsFilter(item.key)}
+              className={cn(
+                "inline-flex h-9 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] px-3 text-sm font-bold shadow-sm transition-all duration-200 active:scale-[0.98]",
+                active
+                  ? "bg-[var(--color-primary-buttom)] text-white"
+                  : "bg-white text-[var(--color-ink)] hover:bg-[var(--color-cream)]",
+              )}
+            >
+              {item.label}
+
+{item.key !== "all" && item.count > 0 && (
+  <span className={active ? "text-white/80" : "text-emerald-600"}>
+    +{item.count}
+  </span>
+)}
+            </button>
+          );
+        })}
+      </div>
+
+      {todayBookingsFiltered.length === 0 ? (
+        <div className="mt-5 rounded-2xl border-2 border-dashed border-[var(--color-caramel)]/40 bg-[var(--color-cream)] p-6 text-center">
+          <p className="text-sm font-medium text-[var(--color-caramel)]">
+          {todayEmptyText[todayBookingsFilter] || "У цій вкладці сьогодні записів немає"}
+          </p>
+        </div>
+      ) : (
+<ul className="mt-5 space-y-3 list-none p-0">
+  {todayBookingsFiltered.map((item) => (
+    <AppointmentCard
+      key={item.id}
+      item={{
+        ...item,
+        time: parseTimeToHHMM(item.time) || item.time || "—",
+        serviceName: item.serviceName || "—",
+        clientName: item.clientName || "—",
+        clientPhotoUrl: item.clientPhotoUrl || item.client?.photoUrl || "",
+        masterPhotoUrl: item.masterPhotoUrl || item.master?.photoUrl || "",
+      }}
+      todayKey={todayKey}
+      nowTs={nowTs}
+      onOpen={setDetailsId}
+      hideDate
+    />
+  ))}
+</ul>
+      )}
+    </div>
+  </SectionShell>
+)}
         <SectionShell>
           <div className="px-5 pb-6 pt-5 sm:px-6 sm:pb-7 sm:pt-6">
             <div className="flex flex-col gap-2">
@@ -1950,6 +2104,7 @@ const upcomingAppointments = useMemo(() => {
                   <span className="whitespace-nowrap">{liveStatusUi.text}</span>
                 </div>
               </div>
+
 
 <div className="flex items-center gap-3">
   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-primary-buttom)] text-white shadow-sm">

@@ -290,7 +290,7 @@ function SectionCard({
             </h2>
 
             {badge && (
-              <span className="inline-flex items-center rounded-full border border-[var(--color-sand)] bg-[var(--color-pending-bg)] px-2.5 py-0.5 text-xs font-semibold text-[var(--color-forest)]">
+              <span className="inline-flex items-center rounded-full  px-2.5 text-xs font-semibold text-[var(--border-hover-primary)]">
                 {badge}
               </span>
             )}
@@ -1305,7 +1305,12 @@ useEffect(() => {
     </div>
   </button>
 
- <div className={cn("w-full sm:w-[260px]", !enabled && "hidden sm:invisible")}>
+<div
+  className={cn(
+    "w-full sm:w-[260px]",
+    enabled ? "block" : "hidden sm:block sm:invisible"
+  )}
+>
     <div className="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-[20px] border border-[var(--color-cream)] bg-white px-2.5 py-2 shadow-[0_6px_20px_rgba(27,27,27,0.06)]">
       <div className="min-w-0">
         <div className="rounded-[14px] border border-[var(--color-cream)] bg-white transition-all duration-200 hover:bg-[var(--color-cream)]">

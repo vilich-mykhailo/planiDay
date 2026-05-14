@@ -26,7 +26,9 @@ const PUBLIC = import.meta.env.VITE_R2_PUBLIC_BASE_URL;
 function toPublicUrl(v) {
   const s = String(v || "").trim();
   if (!s) return "";
-  if (/^https?:\/\//i.test(s)) return s;
+
+  if (/^(https?:\/\/|blob:|data:)/i.test(s)) return s;
+
   return PUBLIC ? `${PUBLIC}/${s}` : s;
 }
 
@@ -52,7 +54,7 @@ async function uploadMasterPhoto(studioId, file) {
 
 function initialsFromName(name) {
   const s = String(name || "").trim();
-  if (!s) return "M";
+  if (!s) return "";
 
   return (
     s
@@ -60,7 +62,7 @@ function initialsFromName(name) {
       .filter(Boolean)
       .slice(0, 2)
       .map((w) => w[0]?.toUpperCase())
-      .join("") || "M"
+      .join("") || ""
   );
 }
 
@@ -114,7 +116,7 @@ function SectionCard({
         </div>
       </div>
 
-      <div className="p-5">{children}</div>
+<div>{children}</div>
     </section>
   );
 }
@@ -317,17 +319,12 @@ function Avatar({ name, photoUrl, size = "md", className = "" }) {
             e.currentTarget.style.display = "none";
           }}
         />
+      ) : initials ? (
+        <span className="relative z-10 font-black tracking-[-0.03em] text-[var(--color-sidebar-accent-soft)]">
+          {initials}
+        </span>
       ) : (
-        <>
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(16,185,129,0.24),transparent_35%),radial-gradient(circle_at_80%_90%,rgba(180,140,108,0.22),transparent_38%)]" />
-
-          <div className="absolute -right-3 -top-3 h-10 w-10 rounded-full bg-white/55 blur-sm" />
-          <div className="absolute -bottom-4 -left-4 h-12 w-12 rounded-full bg-[var(--color-cream)]/80 blur-sm" />
-
-          <span className="relative z-10 font-black tracking-[-0.03em] text-[var(--color-sidebar-accent-soft)]">
-            {initials}
-          </span>
-        </>
+        <Camera className="relative z-10 h-7 w-7 text-[var(--color-caramel)]" />
       )}
     </div>
   );
@@ -1119,18 +1116,30 @@ const neutralButtonClass =
     </div>
   }
   actions={
-    <Button
-      onClick={() => setAddOpen((prev) => !prev)}
-      className={cn(neutralButtonClass, "w-full justify-center md:w-auto")}
-    >
-      <Plus className="h-4 w-4" />
-      {addOpen ? "Сховати форму" : "Додати майстра"}
-      {addOpen ? (
-        <ChevronUp className="h-4 w-4" />
-      ) : (
-        <ChevronDown className="h-4 w-4" />
-      )}
-    </Button>
+<Button
+  onClick={() => setAddOpen((prev) => !prev)}
+  className={cn(
+    addOpen
+      ? cn(neutralButtonClass, "w-full justify-center md:w-auto")
+      : cn(
+          "w-full justify-center md:w-auto",
+          "inline-flex h-11 items-center gap-2 rounded-2xl px-4 text-sm font-bold text-white",
+          "!bg-[var(--color-primary-buttom)]",
+          "transition-all duration-200 active:scale-[0.98]",
+          "hover:brightness-110"
+        )
+  )}
+>
+  {!addOpen && <Plus className="h-4 w-4" />}
+
+  {addOpen ? "Згорнути форму" : "Додати майстра"}
+
+  {addOpen ? (
+    <ChevronUp className="h-4 w-4" />
+  ) : (
+    <ChevronDown className="h-4 w-4" />
+  )}
+</Button>
   }
 >
           <div
@@ -1140,20 +1149,20 @@ const neutralButtonClass =
             )}
           >
             <div className="overflow-hidden">
-              <div className="pt-1">
+              <div className="p-5 pt-5">
                 <form onSubmit={addMaster} className="space-y-5">
                   <div className="flex flex-col gap-4">
-                    <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="flex flex-col items-center justify-center gap-3">
                       <div className="relative">
-                        <Avatar
-                          name={form.name || "Фото"}
-                          photoUrl={!photoBroken ? form.photoUrl : ""}
-                          size="md"
-                          className="h-16 w-16 rounded-2xl sm:h-20 sm:w-20 sm:rounded-[22px]"
-                        />
+<Avatar
+  name={form.name}
+  photoUrl={!photoBroken ? form.photoUrl : ""}
+  size="md"
+  className="h-16 w-16 rounded-2xl sm:h-20 sm:w-20 sm:rounded-[22px]"
+/>
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-2">
+                     <div className="flex flex-wrap items-center justify-center gap-2">
 <label className="cursor-pointer">
 <span
   className={cn(
@@ -1221,17 +1230,28 @@ const neutralButtonClass =
                     <label className="mb-2 block text-sm font-medium text-[var(--color-ink)]">
                       Опис
                     </label>
-                    <textarea
-                      name="bio"
-                      placeholder="Напр. 6 років досвіду, спеціалізація: фарбування, укладки..."
-                      value={form.bio}
-                      onChange={handleChange}
-                      rows={4}
-                      className={cn(inputBaseClass, "resize-none")}
-                    />
-                    <p className="mt-1 text-xs text-[var(--color-caramel)]">
-                      Коротко і по суті (2–4 речення).
-                    </p>
+<textarea
+  name="bio"
+  placeholder="Опишіть досвід, спеціалізацію та підхід майстра до роботи"
+  value={form.bio}
+  onChange={(e) => {
+    const value = e.target.value.slice(0, 200);
+
+    setForm((p) => ({
+      ...p,
+      bio: value,
+    }));
+  }}
+  rows={4}
+  maxLength={200}
+  className={cn(inputBaseClass, "resize-none")}
+/>
+
+<div className="mt-1 flex justify-end">
+  <span className="text-xs font-medium text-[var(--border-hover-primary)]">
+    {form.bio.length}/200
+  </span>
+</div>
                   </div>
 
 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -1240,17 +1260,11 @@ const neutralButtonClass =
   disabled={adding || !String(form.name || "").trim()}
   className={cn(
     "inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold text-white",
-
-    // 👉 gradient через nude-green
-    "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
-
+    "!bg-[var(--color-primary-buttom)] hover:brightness-110",
     "transition-all duration-200 active:scale-[0.98]",
 
-    // 👉 hover
-    "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]",
-
     (adding || !String(form.name || "").trim()) &&
-      "cursor-not-allowed bg-[var(--color-cream)] text-[var(--color-caramel)] hover:from-[var(--color-cream)] hover:to-[var(--color-cream)]"
+      "cursor-not-allowed !bg-[var(--color-cream)] text-[var(--color-caramel)] hover:brightness-100"
   )}
 >
   <Check className="h-4 w-4" />
@@ -1513,9 +1527,6 @@ const neutralButtonClass =
                   photoUrl={editDraft.photoUrl}
                   size="md"
                 />
-                <div className="absolute -bottom-2 -right-2 rounded-xl border border-[var(--color-cream)] bg-white p-2 shadow-sm">
-                  <Camera className="h-4 w-4 text-[var(--color-forest)]" />
-                </div>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
@@ -1615,21 +1626,19 @@ const neutralButtonClass =
   mobileFull
   footer={
   <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-end">
-    <Button
-      onClick={addExceptionRow}
-      className={cn(
-        "w-full justify-center whitespace-nowrap sm:w-auto sm:shrink-0",
-        "inline-flex h-11 items-center gap-2 rounded-2xl px-4 text-sm font-bold text-white",
-        "transition-all duration-200 active:scale-[0.98]",
-
-        "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
-
-        "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]"
-      )}
-    >
-      <CalendarDays className="h-4 w-4" />
-      Додати особливу дату
-    </Button>
+<Button
+  onClick={addExceptionRow}
+  className={cn(
+    "w-full justify-center whitespace-nowrap sm:w-auto sm:shrink-0",
+    "inline-flex h-11 items-center gap-2 rounded-2xl px-4 text-sm font-bold text-white",
+    "!bg-[var(--color-primary-buttom)]",
+    "transition-all duration-200 active:scale-[0.98]",
+    "hover:brightness-110"
+  )}
+>
+  <CalendarDays className="h-4 w-4" />
+  Додати особливу дату
+</Button>
 
     <Button
       onClick={() => {
@@ -1645,9 +1654,14 @@ const neutralButtonClass =
   </div>
 }
 >
-  <button
+<button
   type="button"
-  onClick={closeEdit}
+  onClick={() => {
+    setExceptionsModalOpen(false);
+    setExceptionsMaster(null);
+    setMasterExceptions([]);
+    setExpandedExceptions({});
+  }}
   className="absolute left-4 top-4 z-30 inline-flex items-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white/90 px-3 py-2 text-sm font-bold text-[var(--color-ink)] shadow-sm backdrop-blur transition-all hover:bg-[var(--color-cream)] active:scale-[0.98]"
 >
   <ArrowLeft className="h-4 w-4" />

@@ -517,12 +517,7 @@ export default function Dashboard() {
           </aside>
 
           <section
-            className="
-    self-start overflow-hidden rounded-3xl px-3 py-2 sm:px-4 sm:py-4
-    lg:mb-4 lg:mt-4 lg:border lg:border-[var(--color-mist)] lg:bg-white lg:p-6
-    lg:shadow-[var(--shadow-soft)]
-  "
-          >
+            className="self-start overflow-hidden px-3 py-2 sm:py-4">
             <Outlet />
           </section>
         </div>
