@@ -30,6 +30,7 @@ import {
   CheckCheck,
   CopyCheck,
   ListTodo,
+  CalendarCheck,
 } from "lucide-react";
 import { useBookings } from "../../context/bookings/useBookings";
 import { socket } from "../../lib/socket";
@@ -138,7 +139,7 @@ function getStatusUi(status, isArchived = false, canceledBy = null) {
   if (isArchived) {
     return {
       text: "Завершено",
-      icon: FolderClock,
+      icon: CalendarCheck,
       badge: `${base} text-[var(--color-archived-dark)]`,
       button:
         "bg-[var(--color-archived)] text-white hover:bg-[var(--color-archived-dark)]",
@@ -840,28 +841,42 @@ export default function Bookings() {
   }
 
   const bookingsByDateKey = useMemo(() => {
-    const map = new Map();
+  const map = new Map();
 
-    for (const b of bookings || []) {
-      if (!b?.id) continue;
+  for (const b of bookings || []) {
+    if (!b?.id) continue;
 
-      const raw = b?.date;
-      if (!raw) continue;
+    const raw = b?.date;
+    if (!raw) continue;
 
-      const d = new Date(raw);
-      if (Number.isNaN(d.getTime())) continue;
+    const d = new Date(raw);
+    if (Number.isNaN(d.getTime())) continue;
 
-      const key = toISODateKey(d);
+    const key = toISODateKey(d);
 
-      if (!map.has(key)) {
-        map.set(key, { items: [], count: 0, newCount: 0 });
-      }
+if (!map.has(key)) {
+  map.set(key, {
+    items: [],
+    count: 0,
+    pendingCount: 0,
+    confirmedCount: 0,
+    canceledCount: 0,
+  });
+}
 
-      const bucket = map.get(key);
-      bucket.items.push(b);
-      bucket.count += 1;
-      if (!b.status || b.status === "new") bucket.newCount += 1;
-    }
+const bucket = map.get(key);
+
+bucket.items.push(b);
+bucket.count += 1;
+
+if (b.status === "canceled") {
+  bucket.canceledCount += 1;
+} else if (b.status === "confirmed") {
+  bucket.confirmedCount += 1;
+} else {
+  bucket.pendingCount += 1;
+}
+  }
 
     for (const [k, bucket] of map.entries()) {
       bucket.items.sort((a, c) => (a.time || "").localeCompare(c.time || ""));
@@ -1395,7 +1410,13 @@ export default function Bookings() {
 
                   const bucket = bookingsByDateKey.get(key);
                   const count = bucket?.count ?? 0;
-                  const newCount = bucket?.newCount ?? 0;
+const pendingCount = bucket?.pendingCount ?? 0;
+const confirmedCount = bucket?.confirmedCount ?? 0;
+const canceledCount = bucket?.canceledCount ?? 0;
+
+const hasPending = pendingCount > 0;
+const hasConfirmed = confirmedCount > 0;
+const allCanceled = count > 0 && canceledCount === count;
 
                   return (
                     <button
@@ -1426,16 +1447,20 @@ export default function Bookings() {
                           "relative border-[var(--border-soft)] bg-[var(--color-cream)] text-[var(--color-cream-secondary)] opacity-70 ",
 
                         // є нові записи (акцент)
-                        !isPastDay &&
-                          newCount > 0 &&
-                          "border-[var(--color-pending)] bg-[var(--color-pending-light)] shadow-[0_6px_18px_rgba(0,0,0,0.06)]",
+!isPastDay &&
+  allCanceled &&
+  "border-[var(--color-canceled)] bg-[var(--color-canceled-light)] shadow-[0_6px_18px_rgba(0,0,0,0.06)]",
 
-                        // є записи
-                        !isPastDay &&
-                          newCount === 0 &&
-                          count > 0 &&
-                          "border-[var(--color-buttom-ok)] hover:border-[var(--color-pending)] hover:shadow-[0_6px_18px_rgba(0,0,0,0.08)]",
+!isPastDay &&
+  !allCanceled &&
+  hasPending &&
+  "border-[var(--color-pending)] bg-[var(--color-pending-light)] shadow-[0_6px_18px_rgba(0,0,0,0.06)]",
 
+!isPastDay &&
+  !allCanceled &&
+  !hasPending &&
+  hasConfirmed &&
+  "border-[var(--color-buttom-ok)] hover:border-[var(--color-pending)] hover:shadow-[0_6px_18px_rgba(0,0,0,0.08)]",
                         // пустий день
                         !isPastDay &&
                           count === 0 &&
@@ -1459,11 +1484,15 @@ export default function Bookings() {
                           <span
                             className={cn(
                               "mt-1 inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-semibold",
-                              isPastDay
-                                ? "bg-[var(--color-archived-light)] text-[var(--color-archived-dark)]"
-                                : newCount > 0
-                                  ? "bg-[var(--color-pending)] text-white"
-                                  : "bg-[var(--color-confirmed)] text-white",
+isPastDay
+  ? "bg-[var(--color-archived-light)] text-[var(--color-archived-dark)]"
+  : allCanceled
+    ? "bg-[var(--color-canceled)] text-white"
+    : hasPending
+      ? "bg-[var(--color-pending)] text-white"
+      : hasConfirmed
+        ? "bg-[var(--color-confirmed)] text-white"
+        : "bg-[var(--color-confirmed)] text-white",
                             )}
                           >
                             {count}
@@ -1487,11 +1516,15 @@ export default function Bookings() {
                           <span
                             className={cn(
                               "inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-semibold",
-                              isPastDay
-                                ? "bg-[var(--color-archived-light)] text-[var(--color-archived-dark)]"
-                                : newCount > 0
-                                  ? "bg-[var(--color-pending)] text-white"
-                                  : "bg-[var(--color-confirmed)] text-white",
+isPastDay
+  ? "bg-[var(--color-archived-light)] text-[var(--color-archived-dark)]"
+  : allCanceled
+    ? "bg-[var(--color-canceled)] text-white"
+    : hasPending
+      ? "bg-[var(--color-pending)] text-white"
+      : hasConfirmed
+        ? "bg-[var(--color-confirmed)] text-white"
+        : "bg-[var(--color-confirmed)] text-white",
                             )}
                           >
                             {count}
@@ -1505,18 +1538,25 @@ export default function Bookings() {
             </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-[var(--color-caramel)]">
-              <span className="inline-flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-[var(--color-pending)]" />
-                Є записи
-              </span>
-              <span className="inline-flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-[var(--color-confirmed)]" />
-                Є нові записи
-              </span>
-              <span className="inline-flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-[var(--color-confirmed-light)]" />
-                Минулі дні
-              </span>
+<span className="inline-flex items-center gap-2">
+  <span className="h-2 w-2 rounded-full bg-[var(--color-pending)]" />
+  Є записи, що очікують підтвердження
+</span>
+
+<span className="inline-flex items-center gap-2">
+  <span className="h-2 w-2 rounded-full bg-[var(--color-confirmed)]" />
+  Усі записи підтверджені
+</span>
+
+<span className="inline-flex items-center gap-2">
+  <span className="h-2 w-2 rounded-full bg-[var(--color-canceled)]" />
+  Усі записи скасовані
+</span>
+
+<span className="inline-flex items-center gap-2">
+  <span className="h-2 w-2 rounded-full bg-[var(--color-confirmed-light)]" />
+  Минулі дні
+</span>
             </div>
           </SectionCard>
         )}
@@ -1671,7 +1711,7 @@ export default function Bookings() {
               ? {
                   label: "Завершено",
                   top: "from-[var(--color-archived-light)] to-white",
-                  Icon: FolderClock,
+                  Icon: CalendarCheck,
                   iconColor: "text-[var(--color-archived-dark)]",
                   pillText: "text-[var(--color-archived-dark)]",
                   accent: "text-[var(--color-archived)]",
@@ -2103,23 +2143,26 @@ export default function Bookings() {
                                     {statusUi.text}
                                   </div>
 
-                                  <button
-                                    type="button"
-                                    onClick={() => toggleCalendarCard(b.id)}
-                                    className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-xl px-3 text-xs font-bold text-[var(--border-hover-primary)] transition group-hover:text-[var(--color-sidebar-accent-hover)] active:scale-[0.98]"
-                                  >
-                                    {isExpanded ? (
-                                      <>
-                                        <ChevronUp className="h-4 w-4" />
-                                        Сховати
-                                      </>
-                                    ) : (
-                                      <>
-                                        <ChevronDown className="h-4 w-4" />
-                                        Розгорнути
-                                      </>
-                                    )}
-                                  </button>
+<button
+  type="button"
+  onClick={(e) => {
+    e.stopPropagation();
+    toggleCalendarCard(b.id);
+  }}
+  className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-xl px-3 text-xs font-bold text-[var(--border-hover-primary)] transition group-hover:text-[var(--color-sidebar-accent-hover)] active:scale-[0.98]"
+>
+  {isExpanded ? (
+    <>
+      <ChevronUp className="h-4 w-4" />
+      Сховати
+    </>
+  ) : (
+    <>
+      <ChevronDown className="h-4 w-4" />
+      Розгорнути
+    </>
+  )}
+</button>
                                 </div>
 
                                 <h3 className="mt-3 text-center text-[17px] font-black leading-[1.15] tracking-[-0.03em] text-[var(--color-ink)]">

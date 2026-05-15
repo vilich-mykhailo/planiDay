@@ -210,7 +210,7 @@ const [unreadNotifications, setUnreadNotifications] = useState(0);
   const studioName = studio?.name?.trim() || "";
   const studioLogo = toPublicUrl(studio?.logoUrl);
   const showOwnerIdentity = role === "owner";
-  const showClientBottomBar = role === "client" && isMobile;
+ const showClientBottomBar = false;
   const clientFullName = `${clientProfile.firstName || ""} ${clientProfile.lastName || ""}`.trim();
   const clientPhoto = toPublicUrl(clientProfile.photoUrl);
   const clientInitials =
@@ -565,26 +565,43 @@ const staticRoutes = [
 
   return (
     <>
-      {!showClientBottomBar && (
-        <header className="fixed left-0 right-0 top-2 z-[60] sm:top-3">
+   <header className="fixed left-0 right-0 top-2 z-[60] sm:top-3">
           <div className="mx-auto max-w-6xl px-3 sm:px-4">
           <div className="overflow-hidden rounded-[24px] border border-white/70 bg-white/85 shadow-[0_18px_50px_rgba(24,24,27,0.10)] ring-1 ring-black/[0.03] backdrop-blur-2xl sm:rounded-[30px]">
               <div className="h-[2px] bg-gradient-to-r from-[var(--color-sidebar-accent)] via-[var(--color-sidebar-accent-hover)] to-[var(--color-sidebar-accent-soft)]" />
 
-              <div className="flex h-14 items-center justify-between gap-2 px-2.5 sm:h-16 sm:gap-3 sm:px-4">
-                <Link
-                  to="/"
-                  className="flex min-w-0 items-center gap-2 rounded-2xl px-1.5 py-1 transition hover:bg-[var(--color-cream)] sm:px-2 sm:py-1.5"
-                  aria-label="Planiday"
-                >
-<span className="grid h-9 w-9 shrink-0 place-items-center rounded-2xl bg-[var(--color-sidebar-accent)] text-sm font-black text-[var(--color-white)] shadow-[0_12px_26px_rgba(24,24,27,0.22)]">
-  P
-</span>
+           <div className="relative flex h-14 items-center justify-end gap-2 px-2.5 sm:h-16 sm:gap-3 sm:px-4 lg:justify-between">
+{/* desktop logo */}
+<Link
+  to="/"
+  className="hidden min-w-0 items-center gap-2 rounded-2xl px-1.5 py-1 transition hover:bg-[var(--color-cream)] sm:px-2 sm:py-1.5 lg:flex"
+  aria-label="Planiday"
+>
+  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-2xl bg-[var(--color-sidebar-accent)] text-sm font-black text-[var(--color-white)] shadow-[0_12px_26px_rgba(24,24,27,0.22)]">
+    P
+  </span>
 
-<span className="truncate text-sm font-black tracking-tight text-[var(--color-ink)] sm:text-base">
-  Plani<span className="text-[var(--color-sidebar-accent-soft)]">Day</span>
-</span>
-                </Link>
+  <span className="truncate text-sm font-black tracking-tight text-[var(--color-ink)] sm:text-base">
+    Plani
+    <span className="text-[var(--color-sidebar-accent-soft)]">
+      Day
+    </span>
+  </span>
+</Link>
+
+{/* mobile centered logo */}
+<Link
+  to="/"
+  aria-label="Planiday"
+  className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center"
+>
+  <span className="text-[22px] font-black tracking-[-0.08em] text-[var(--color-ink)]">
+    PLANI
+    <span className="text-[var(--color-sidebar-accent)]">
+      DAY
+    </span>
+  </span>
+</Link>
 
                 <nav className="hidden items-center gap-1 lg:flex">
                   {desktopItems.links?.map((i) => (
@@ -599,7 +616,9 @@ const staticRoutes = [
                 <button
                   type="button"
                   onClick={() => setOpen((v) => !v)}
-                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[var(--color-cream)] bg-white/90 text-[var(--color-ink)] shadow-[0_4px_16px_rgba(27,27,27,0.06)] transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.97] sm:h-11 sm:w-11 sm:rounded-2xl lg:hidden"
+className={cx(
+  "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[var(--color-cream)] bg-white/90 text-[var(--color-ink)] shadow-[0_4px_16px_rgba(27,27,27,0.06)] transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.97] sm:h-11 sm:w-11 sm:rounded-2xl lg:hidden",
+)}
                   aria-label="Menu"
                   aria-expanded={open}
                 >
@@ -613,7 +632,6 @@ const staticRoutes = [
             </div>
           </div>
         </header>
-      )}
 
       {!showClientBottomBar && (
         <div
@@ -823,7 +841,7 @@ isActive
         </div>
       )}
 
-      {showClientBottomBar && (
+      {/* {showClientBottomBar && (
         <div className="fixed inset-x-0 bottom-0 z-[80] sm:hidden">
           <div className="mx-auto max-w-6xl px-2 pb-[calc(env(safe-area-inset-bottom)+6px)]">
             <div className="overflow-hidden rounded-[26px] border border-white/40 bg-white/80 backdrop-blur-2xl shadow-[0_-20px_50px_rgba(0,0,0,0.18)]">
@@ -840,7 +858,7 @@ isActive
             </div>
           </div>
         </div>
-      )}
+      )} */}
     </>
   );
 }

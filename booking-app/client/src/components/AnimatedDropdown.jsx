@@ -31,6 +31,7 @@ export default function AnimatedDropdown({
   options = [],
   disabled = false,
   searchable = false,
+  icon: Icon,
 }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -133,8 +134,10 @@ export default function AnimatedDropdown({
         type="button"
         disabled={disabled}
         onClick={toggle}
-        className={cn(
-          "relative h-[50px] w-full rounded-[20px] border px-3.5 pb-2.5 pt-5 text-left transition-all duration-200 sm:h-16 sm:rounded-[22px] sm:px-4 sm:pb-3 sm:pt-6",
+       className={cn(
+  "relative h-[48px] w-full rounded-[18px] border pl-4 pt-2 text-left transition-all duration-200",
+  "sm:h-[50px] sm:rounded-[20px] ",
+  "lg:h-[55px] lg:rounded-[18px]",
           "bg-gradient-to-b from-white to-stone-50",
           "shadow-[0_6px_22px_rgba(15,23,42,0.045)]",
           "active:scale-[0.99]",
@@ -170,7 +173,11 @@ export default function AnimatedDropdown({
             open && "rotate-180 text-amber-700",
           )}
         >
-          <ChevronDown className="h-4 w-4" />
+         {Icon ? (
+  <Icon className="h-4 w-4" />
+) : (
+  <ChevronDown className="h-4 w-4" />
+)}
         </span>
       </button>
 

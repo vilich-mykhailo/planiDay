@@ -20,7 +20,9 @@ import {
 import DatePicker from "../../components/ui/DatePicker";
 import TimeSelect from "../../components/TimeSelect";
 import { useStudio } from "../../context/studio/useStudio";
+import Cropper from "react-easy-crop";
 
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 const PUBLIC = import.meta.env.VITE_R2_PUBLIC_BASE_URL;
 
 function toPublicUrl(v) {
@@ -30,6 +32,65 @@ function toPublicUrl(v) {
   if (/^(https?:\/\/|blob:|data:)/i.test(s)) return s;
 
   return PUBLIC ? `${PUBLIC}/${s}` : s;
+}
+
+async function compressImage(
+  file,
+  { maxWidth = 900, maxHeight = 900, quality = 0.82, type = "image/jpeg" } = {},
+) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+
+      let { width, height } = img;
+
+      if (width > maxWidth || height > maxHeight) {
+        const ratio = Math.min(maxWidth / width, maxHeight / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        reject(new Error("Canvas error"));
+        return;
+      }
+
+      ctx.drawImage(img, 0, 0, width, height);
+
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            reject(new Error("Compression failed"));
+            return;
+          }
+
+          resolve(
+            new File([blob], file.name.replace(/\.\w+$/, ".jpg"), {
+              type,
+              lastModified: Date.now(),
+            }),
+          );
+        },
+        type,
+        quality,
+      );
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error("Image load failed"));
+    };
+
+    img.src = objectUrl;
+  });
 }
 
 async function uploadMasterPhoto(studioId, file) {
@@ -96,17 +157,19 @@ function SectionCard({
                 {title}
               </h2>
 
-{badge && (
-  <div className="mt-1.5">
-    <span className="inline-flex max-w-full items-center px-2.5 py-0.5 text-xs font-semibold text-[var(--border-hover-primary)]">
-      {badge}
-    </span>
-  </div>
-)}
+              {badge && (
+                <div className="mt-1.5">
+                  <span className="inline-flex max-w-full items-center px-2.5 py-0.5 text-xs font-semibold text-[var(--border-hover-primary)]">
+                    {badge}
+                  </span>
+                </div>
+              )}
             </div>
 
             {subtitle && (
-              <p className="mt-1.5 text-sm text-[var(--color-caramel)]">{subtitle}</p>
+              <p className="mt-1.5 text-sm text-[var(--color-caramel)]">
+                {subtitle}
+              </p>
             )}
           </div>
 
@@ -116,7 +179,7 @@ function SectionCard({
         </div>
       </div>
 
-<div>{children}</div>
+      <div>{children}</div>
     </section>
   );
 }
@@ -249,7 +312,7 @@ function Modal({
         "fixed inset-0 z-[9999] flex bg-[var(--color-bg)]/45 backdrop-blur-sm",
         mobileFull
           ? "items-stretch justify-stretch p-0 sm:items-center sm:justify-center sm:p-6"
-          : "items-center justify-center p-4 sm:p-6"
+          : "items-center justify-center p-4 sm:p-6",
       )}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose?.();
@@ -264,19 +327,17 @@ function Modal({
             ? "flex h-[100dvh] max-h-[100dvh] flex-col rounded-none sm:h-auto sm:max-h-none sm:rounded-3xl"
             : "rounded-3xl",
 
-          sizeClasses[size]
+          sizeClasses[size],
         )}
         onClick={(e) => e.stopPropagation()}
       >
-
-
         {/* 👉 BODY */}
         <div
           className={cn(
             "flex-1 overflow-y-auto px-6 py-6",
             mobileFull
               ? "pb-24 sm:max-h-[calc(100vh-220px)] sm:pb-6"
-              : "max-h-[calc(100vh-220px)]"
+              : "max-h-[calc(100vh-220px)]",
           )}
         >
           {children}
@@ -333,7 +394,10 @@ function Avatar({ name, photoUrl, size = "md", className = "" }) {
 function SkeletonBlock({ className = "" }) {
   return (
     <div
-      className={cn("animate-pulse rounded-xl bg-[var(--color-cream)]", className)}
+      className={cn(
+        "animate-pulse rounded-xl bg-[var(--color-cream)]",
+        className,
+      )}
       aria-hidden="true"
     />
   );
@@ -434,10 +498,20 @@ export default function Masters() {
   const [masterExceptions, setMasterExceptions] = useState([]);
   const [exceptionsLoading, setExceptionsLoading] = useState(false);
   const [expandedExceptions, setExpandedExceptions] = useState({});
-const [deleteConfirm, setDeleteConfirm] = useState({
-  open: false,
-  master: null,
-});
+  const [cropModal, setCropModal] = useState({
+    open: false,
+    imageUrl: "",
+    file: null,
+    target: "add",
+  });
+
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState({
+    open: false,
+    master: null,
+  });
 
   async function syncMastersRelatedQueries() {
     if (!studioId) return;
@@ -452,6 +526,102 @@ const [deleteConfirm, setDeleteConfirm] = useState({
         exact: true,
       }),
     ]);
+  }
+
+  async function getCroppedImage(imageSrc, cropPixels) {
+    const image = new Image();
+    image.src = imageSrc;
+
+    await new Promise((resolve, reject) => {
+      image.onload = resolve;
+      image.onerror = reject;
+    });
+
+    const canvas = document.createElement("canvas");
+    canvas.width = 900;
+    canvas.height = 900;
+
+    const ctx = canvas.getContext("2d");
+
+    ctx.drawImage(
+      image,
+      cropPixels.x,
+      cropPixels.y,
+      cropPixels.width,
+      cropPixels.height,
+      0,
+      0,
+      900,
+      900,
+    );
+
+    return new Promise((resolve) => {
+      canvas.toBlob(
+        (blob) => {
+          resolve(
+            new File([blob], "master-photo.jpg", {
+              type: "image/jpeg",
+              lastModified: Date.now(),
+            }),
+          );
+        },
+        "image/jpeg",
+        0.82,
+      );
+    });
+  }
+
+  async function confirmCrop() {
+    if (!cropModal.imageUrl || !croppedAreaPixels) return;
+
+    const croppedFile = await getCroppedImage(
+      cropModal.imageUrl,
+      croppedAreaPixels,
+    );
+
+    const localUrl = URL.createObjectURL(croppedFile);
+
+    if (cropModal.target === "add") {
+      setForm((p) => {
+        if (p.photoUrl?.startsWith("blob:")) {
+          URL.revokeObjectURL(p.photoUrl);
+        }
+
+        return {
+          ...p,
+          photoUrl: localUrl,
+          photoFile: croppedFile,
+          photoKey: null,
+        };
+      });
+    }
+
+    if (cropModal.target === "edit") {
+      setEditDraft((p) => {
+        if (p.photoUrl?.startsWith("blob:")) {
+          URL.revokeObjectURL(p.photoUrl);
+        }
+
+        return {
+          ...p,
+          photoUrl: localUrl,
+          photoFile: croppedFile,
+        };
+      });
+    }
+
+    URL.revokeObjectURL(cropModal.imageUrl);
+
+    setCropModal({
+      open: false,
+      imageUrl: "",
+      file: null,
+      target: "add",
+    });
+
+    setCroppedAreaPixels(null);
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
   }
 
   async function fetchMasters(currentStudioId) {
@@ -532,21 +702,38 @@ const [deleteConfirm, setDeleteConfirm] = useState({
     setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
   }
 
-  async function handlePickPhoto(e) {
+  function handlePickPhoto(e) {
+    handlePickPhotoForCrop(e, "add");
+  }
+
+  function handlePickPhotoForCrop(e, target = "add") {
     const file = e.target.files?.[0];
+    e.target.value = "";
+
     if (!file) return;
 
-    const localUrl = URL.createObjectURL(file);
+    if (!file.type?.startsWith("image/")) {
+      alert("Оберіть зображення.");
+      return;
+    }
 
-    setForm((p) => ({
-      ...p,
-      photoUrl: localUrl,
-      photoFile: file,
-      photoKey: null,
-    }));
+    if (file.size > MAX_IMAGE_SIZE) {
+      alert("Фото має бути до 10 MB.");
+      return;
+    }
 
-    setPhotoBroken(false);
-    e.target.value = "";
+    const imageUrl = URL.createObjectURL(file);
+
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+    setCroppedAreaPixels(null);
+
+    setCropModal({
+      open: true,
+      imageUrl,
+      file,
+      target,
+    });
   }
 
   function removePhoto() {
@@ -753,7 +940,9 @@ const [deleteConfirm, setDeleteConfirm] = useState({
       const data = await res.json().catch(() => null);
 
       if (!res.ok) {
-        throw new Error(data?.message || "Не вдалося завантажити особливі дати");
+        throw new Error(
+          data?.message || "Не вдалося завантажити особливі дати",
+        );
       }
 
       const rawExceptions = Array.isArray(data?.exceptions)
@@ -955,25 +1144,6 @@ const [deleteConfirm, setDeleteConfirm] = useState({
     setEditOriginal({ photoKey: null, photoUrl: "" });
   }
 
-  async function editPickPhoto(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const localUrl = URL.createObjectURL(file);
-
-    setEditDraft((p) => {
-      if (p.photoUrl?.startsWith("blob:")) URL.revokeObjectURL(p.photoUrl);
-
-      return {
-        ...p,
-        photoUrl: localUrl,
-        photoFile: file,
-      };
-    });
-
-    e.target.value = "";
-  }
-
   const inputBaseClass =
     "w-full rounded-2xl border border-[var(--color-cream)] bg-white px-4 py-3 " +
     "text-sm font-medium text-[var(--color-ink)] outline-none transition-all " +
@@ -1068,8 +1238,8 @@ const [deleteConfirm, setDeleteConfirm] = useState({
 
   const total = masters.length;
   const [photoBroken, setPhotoBroken] = useState(false);
-const neutralButtonClass =
-  "inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]";
+  const neutralButtonClass =
+    "inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]";
   return (
     <div className="h-full">
       <div className="mx-auto max-w-5xl space-y-6">
@@ -1077,122 +1247,125 @@ const neutralButtonClass =
           <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[var(--color-forest)] via-[var(--color-forest)] to-[var(--color-ink)] opacity-70" />
 
           <div className="relative">
-<div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-slate-700 shadow-[0_4px_14px_rgba(15,23,42,0.05)]">
-  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-900 text-white">
-    <Users className="h-3 w-3" />
-  </div>
+            <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-slate-700 shadow-[0_4px_14px_rgba(15,23,42,0.05)]">
+              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-900 text-white">
+                <Users className="h-3 w-3" />
+              </div>
 
-  <span>Майстри</span>
+              <span>Майстри</span>
 
-  <div className="h-1 w-1 rounded-full bg-slate-400" />
-</div>
+              <div className="h-1 w-1 rounded-full bg-slate-400" />
+            </div>
 
             <h1 className="text-3xl font-black tracking-tight text-[var(--color-ink)] sm:text-4xl">
               Майстри
             </h1>
 
             <p className="mt-2 max-w-xl text-sm text-[var(--color-caramel)] sm:text-base">
-              Додай майстрів, щоб привʼязувати їх до послуг, графіка та записів клієнтів.
+              Додай майстрів, щоб привʼязувати їх до послуг, графіка та записів
+              клієнтів.
             </p>
           </div>
         </div>
 
-<SectionCard
-  title={
-    <div className="flex items-center gap-3">
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-primary-buttom)] text-white shadow-sm">
-        <UserRound className="h-5 w-5" />
-      </div>
+        <SectionCard
+          title={
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-primary-buttom)] text-white shadow-sm">
+                <UserRound className="h-5 w-5" />
+              </div>
 
-      <div className="min-w-0">
-        <h2 className="text-lg font-black tracking-[-0.03em] text-[var(--color-ink)]">
-          Новий майстер
-        </h2>
+              <div className="min-w-0">
+                <h2 className="text-lg font-black tracking-[-0.03em] text-[var(--color-ink)]">
+                  Новий майстер
+                </h2>
 
-        <p className="mt-1 text-sm font-medium text-[var(--color-caramel)]">
-          Фото, імʼя та короткий опис — як у професійних профілях.
-        </p>
-      </div>
-    </div>
-  }
-  actions={
-<Button
-  onClick={() => setAddOpen((prev) => !prev)}
-  className={cn(
-    addOpen
-      ? cn(neutralButtonClass, "w-full justify-center md:w-auto")
-      : cn(
-          "w-full justify-center md:w-auto",
-          "inline-flex h-11 items-center gap-2 rounded-2xl px-4 text-sm font-bold text-white",
-          "!bg-[var(--color-primary-buttom)]",
-          "transition-all duration-200 active:scale-[0.98]",
-          "hover:brightness-110"
-        )
-  )}
->
-  {!addOpen && <Plus className="h-4 w-4" />}
+                <p className="mt-1 text-sm font-medium text-[var(--color-caramel)]">
+                  Фото, імʼя та короткий опис — як у професійних профілях.
+                </p>
+              </div>
+            </div>
+          }
+          actions={
+            <Button
+              onClick={() => setAddOpen((prev) => !prev)}
+              className={cn(
+                addOpen
+                  ? cn(neutralButtonClass, "w-full justify-center md:w-auto")
+                  : cn(
+                      "w-full justify-center md:w-auto",
+                      "inline-flex h-11 items-center gap-2 rounded-2xl px-4 text-sm font-bold text-white",
+                      "!bg-[var(--color-primary-buttom)]",
+                      "transition-all duration-200 active:scale-[0.98]",
+                      "hover:brightness-110",
+                    ),
+              )}
+            >
+              {!addOpen && <Plus className="h-4 w-4" />}
 
-  {addOpen ? "Згорнути форму" : "Додати майстра"}
+              {addOpen ? "Згорнути форму" : "Додати майстра"}
 
-  {addOpen ? (
-    <ChevronUp className="h-4 w-4" />
-  ) : (
-    <ChevronDown className="h-4 w-4" />
-  )}
-</Button>
-  }
->
+              {addOpen ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
+            </Button>
+          }
+        >
           <div
             className={cn(
               "grid transition-all duration-300 ease-out",
-              addOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
+              addOpen
+                ? "grid-rows-[1fr] opacity-100"
+                : "grid-rows-[0fr] opacity-0",
             )}
           >
             <div className="overflow-hidden">
               <div className="p-5 pt-5">
                 <form onSubmit={addMaster} className="space-y-5">
                   <div className="flex flex-col gap-4">
-                  <div className="flex flex-col items-center justify-center gap-3">
+                    <div className="flex flex-col items-center justify-center gap-3">
                       <div className="relative">
-<Avatar
-  name={form.name}
-  photoUrl={!photoBroken ? form.photoUrl : ""}
-  size="md"
-  className="h-16 w-16 rounded-2xl sm:h-20 sm:w-20 sm:rounded-[22px]"
-/>
+                        <Avatar
+                          name={form.name}
+                          photoUrl={!photoBroken ? form.photoUrl : ""}
+                          size="md"
+                          className="h-16 w-16 rounded-2xl sm:h-20 sm:w-20 sm:rounded-[22px]"
+                        />
                       </div>
 
-                     <div className="flex flex-wrap items-center justify-center gap-2">
-<label className="cursor-pointer">
-<span
-  className={cn(
-    "inline-flex h-11 w-[150px] items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold text-white",
-    "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
-    "transition-all duration-200 active:scale-[0.98]",
-    "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]"
-  )}
->
-  <Plus className="h-4 w-4" />
-  Додати фото
-</span>
+                      <div className="flex flex-wrap items-center justify-center gap-2">
+                        <label className="cursor-pointer">
+                          <span
+                            className={cn(
+                              "inline-flex h-11 w-[150px] items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold text-white",
+                              "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
+                              "transition-all duration-200 active:scale-[0.98]",
+                              "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]",
+                            )}
+                          >
+                            <Plus className="h-4 w-4" />
+                            Додати фото
+                          </span>
 
-<input
-  type="file"
-  accept="image/*"
-  onChange={handlePickPhoto}
-  className="hidden"
-/>
-</label>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handlePickPhoto}
+                            className="hidden"
+                          />
+                        </label>
 
-{form.photoUrl && (
-  <Button
-    onClick={removePhoto}
-    className="inline-flex h-11 w-[150px] items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
-  >
-    <Trash2 className="h-4 w-4 text-[var(--color-danger)]" />
-    Видалити
-  </Button>
-)}
+                        {form.photoUrl && (
+                          <Button
+                            onClick={removePhoto}
+                            className="inline-flex h-11 w-[150px] items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
+                          >
+                            <Trash2 className="h-4 w-4 text-[var(--color-danger)]" />
+                            Видалити
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1230,47 +1403,47 @@ const neutralButtonClass =
                     <label className="mb-2 block text-sm font-medium text-[var(--color-ink)]">
                       Опис
                     </label>
-<textarea
-  name="bio"
-  placeholder="Опишіть досвід, спеціалізацію та підхід майстра до роботи"
-  value={form.bio}
-  onChange={(e) => {
-    const value = e.target.value.slice(0, 200);
+                    <textarea
+                      name="bio"
+                      placeholder="Опишіть досвід, спеціалізацію та підхід майстра до роботи"
+                      value={form.bio}
+                      onChange={(e) => {
+                        const value = e.target.value.slice(0, 200);
 
-    setForm((p) => ({
-      ...p,
-      bio: value,
-    }));
-  }}
-  rows={4}
-  maxLength={200}
-  className={cn(inputBaseClass, "resize-none")}
-/>
+                        setForm((p) => ({
+                          ...p,
+                          bio: value,
+                        }));
+                      }}
+                      rows={4}
+                      maxLength={200}
+                      className={cn(inputBaseClass, "resize-none")}
+                    />
 
-<div className="mt-1 flex justify-end">
-  <span className="text-xs font-medium text-[var(--border-hover-primary)]">
-    {form.bio.length}/200
-  </span>
-</div>
+                    <div className="mt-1 flex justify-end">
+                      <span className="text-xs font-medium text-[var(--border-hover-primary)]">
+                        {form.bio.length}/200
+                      </span>
+                    </div>
                   </div>
 
-<div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-<Button
-  type="submit"
-  disabled={adding || !String(form.name || "").trim()}
-  className={cn(
-    "inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold text-white",
-    "!bg-[var(--color-primary-buttom)] hover:brightness-110",
-    "transition-all duration-200 active:scale-[0.98]",
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <Button
+                      type="submit"
+                      disabled={adding || !String(form.name || "").trim()}
+                      className={cn(
+                        "inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold text-white",
+                        "!bg-[var(--color-primary-buttom)] hover:brightness-110",
+                        "transition-all duration-200 active:scale-[0.98]",
 
-    (adding || !String(form.name || "").trim()) &&
-      "cursor-not-allowed !bg-[var(--color-cream)] text-[var(--color-caramel)] hover:brightness-100"
-  )}
->
-  <Check className="h-4 w-4" />
-  {adding ? "Додаємо..." : "Додати майстра"}
-</Button>
-</div>
+                        (adding || !String(form.name || "").trim()) &&
+                          "cursor-not-allowed !bg-[var(--color-cream)] text-[var(--color-caramel)] hover:brightness-100",
+                      )}
+                    >
+                      <Check className="h-4 w-4" />
+                      {adding ? "Додаємо..." : "Додати майстра"}
+                    </Button>
+                  </div>
                 </form>
               </div>
             </div>
@@ -1289,21 +1462,21 @@ const neutralButtonClass =
           {loading ? (
             <MastersListSkeleton />
           ) : total === 0 ? (
-<div className="rounded-2xl border-2 border-dashed border-[var(--color-caramel)]/40 bg-[var(--color-cream)] p-6 text-center sm:p-8">
-  <div className="mb-3 flex items-center justify-center">
-    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/70">
-      <UserRound className="h-6 w-6 text-[var(--color-caramel)]" />
-    </div>
-  </div>
+            <div className="rounded-2xl border-2 border-dashed border-[var(--color-caramel)]/40 bg-[var(--color-cream)] p-6 text-center sm:p-8">
+              <div className="mb-3 flex items-center justify-center">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/70">
+                  <UserRound className="h-6 w-6 text-[var(--color-caramel)]" />
+                </div>
+              </div>
 
-  <p className="text-sm font-medium text-[var(--color-caramel)]">
-    Поки що немає майстрів
-  </p>
+              <p className="text-sm font-medium text-[var(--color-caramel)]">
+                Поки що немає майстрів
+              </p>
 
-<p className="mt-1 text-xs text-[var(--color-caramel)]/80">
-  Натисніть «Додати майстра» зверху, щоб створити першого майстра.
-</p>
-</div>
+              <p className="mt-1 text-xs text-[var(--color-caramel)]/80">
+                Натисніть «Додати майстра» зверху, щоб створити першого майстра.
+              </p>
+            </div>
           ) : (
             <div className="space-y-3">
               {masters.map((m) => (
@@ -1311,215 +1484,220 @@ const neutralButtonClass =
                   key={m.id}
                   className="group rounded-2xl border border-[var(--color-cream)] bg-white p-4 transition-all  hover:shadow-md hover:shadow-black/5"
                 >
-<div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-  {/* ЛІВА ЧАСТИНА */}
-  <div className="min-w-0 flex-1">
-    <div className="flex min-w-0 items-start gap-3">
-      <Avatar name={m.name} photoUrl={m.photoUrl} size="sm" />
+                  <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    {/* ЛІВА ЧАСТИНА */}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex min-w-0 items-start gap-3">
+                        <Avatar name={m.name} photoUrl={m.photoUrl} size="sm" />
 
-      <div className="min-w-0 flex-1">
-        <p className="truncate font-semibold text-[var(--color-ink)]">
-          {m.name}
-        </p>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-semibold text-[var(--color-ink)]">
+                            {m.name}
+                          </p>
 
-        {m.role ? (
-          <p className="mt-1 truncate text-sm font-medium text-[var(--color-caramel)]">
-            {m.role}
-          </p>
-        ) : (
-          <p className="mt-1 text-sm text-[var(--color-caramel)]">
-            Спеціалізація не вказана
-          </p>
-        )}
+                          {m.role ? (
+                            <p className="mt-1 truncate text-sm font-medium text-[var(--color-caramel)]">
+                              {m.role}
+                            </p>
+                          ) : (
+                            <p className="mt-1 text-sm text-[var(--color-caramel)]">
+                              Спеціалізація не вказана
+                            </p>
+                          )}
 
-        {m.bio ? (
-          <p className="mt-1 line-clamp-2 break-words text-sm text-[var(--color-caramel)]">
-            {m.bio}
-          </p>
-        ) : (
-          <p className="mt-1 text-sm text-[var(--color-caramel)]">
-            Без опису
-          </p>
-        )}
-      </div>
-    </div>
-  </div>
+                          {m.bio ? (
+                            <p className="mt-1 line-clamp-2 break-words text-sm text-[var(--color-caramel)]">
+                              {m.bio}
+                            </p>
+                          ) : (
+                            <p className="mt-1 text-sm text-[var(--color-caramel)]">
+                              Без опису
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
 
-  {/* КНОПКИ */}
-  <div className="mt-2 flex w-full justify-end gap-2 md:mt-0 md:w-auto">
-<Button
-  onClick={() => openMasterExceptions(m)}
-  className={cn(neutralButtonClass, "flex-1 min-w-0 max-w-[200px]")}
->
-  <CalendarDays className="h-4 w-4 shrink-0" />
-  <span className="truncate">Особливі дати</span>
-</Button>
+                    {/* КНОПКИ */}
+                    <div className="mt-2 flex w-full justify-end gap-2 md:mt-0 md:w-auto">
+                      <Button
+                        onClick={() => openMasterExceptions(m)}
+                        className={cn(
+                          neutralButtonClass,
+                          "flex-1 min-w-0 max-w-[200px]",
+                        )}
+                      >
+                        <CalendarDays className="h-4 w-4 shrink-0" />
+                        <span className="truncate">Особливі дати</span>
+                      </Button>
 
-<IconButton
-  onClick={() => openEdit(m)}
-  title="Редагувати"
-  className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--border-soft)] bg-white p-0 text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
->
-  <Pencil className="h-4 w-4" />
-</IconButton>
+                      <IconButton
+                        onClick={() => openEdit(m)}
+                        title="Редагувати"
+                        className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--border-soft)] bg-white p-0 text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </IconButton>
 
-<IconButton
-  onClick={() => setDeleteConfirm({ open: true, master: m })}
-  title="Видалити"
-  className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--border-soft)] bg-white p-0 text-[#c97a72] shadow-sm transition-all duration-200 hover:bg-[rgba(201,122,114,0.10)] active:scale-[0.98]"
->
-  <Trash2 className="h-4 w-4 text-[var(--color-danger)]" />
-</IconButton>
-
-  </div>
-</div>
+                      <IconButton
+                        onClick={() =>
+                          setDeleteConfirm({ open: true, master: m })
+                        }
+                        title="Видалити"
+                        className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--border-soft)] bg-white p-0 text-[#c97a72] shadow-sm transition-all duration-200 hover:bg-[rgba(201,122,114,0.10)] active:scale-[0.98]"
+                      >
+                        <Trash2 className="h-4 w-4 text-[var(--color-danger)]" />
+                      </IconButton>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
           )}
         </SectionCard>
 
-<Modal
-  open={deleteConfirm.open}
-  onClose={() => setDeleteConfirm({ open: false, master: null })}
-  size="sm"
-  footer={
-    <div className="flex justify-end gap-2">
-      <Button
-        onClick={() => setDeleteConfirm({ open: false, master: null })}
-        className="w-full rounded-2xl border border-[var(--border-soft)] bg-white px-4 py-2.5 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98] sm:w-auto"
-      >
-        Назад
-      </Button>
-
-      <button
-        type="button"
-        onClick={async () => {
-          try {
-            await deleteMaster(deleteConfirm.master);
-            setDeleteConfirm({ open: false, master: null });
-          } catch (e) {
-            alert(e.message || "Не вдалося видалити майстра");
-          }
-        }}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-danger)] px-4 py-2.5 text-sm font-bold text-white transition-all duration-200 hover:bg-[var(--color-danger-dark)] active:scale-[0.98] sm:w-auto"
-      >
-        <Trash2 className="h-4 w-4" />
-        Так, видалити
-      </button>
-    </div>
-  }
->
-  <div className="space-y-4">
-    <div className="flex justify-center">
-      <div className="relative">
-        <div className="absolute inset-0 rounded-full bg-[var(--color-danger-bg)]/90 blur-2xl" />
-
-        <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--color-danger)] text-white shadow-[0_16px_36px_rgba(213,92,82,0.24)]">
-          <Trash2 className="h-7 w-7" />
-        </div>
-      </div>
-    </div>
-
-    <div className="text-center">
-      <h3 className="text-xl font-black tracking-tight text-[var(--color-ink)]">
-        Видалити майстра?
-      </h3>
-
-      <p className="mt-2 text-sm leading-6 text-[var(--color-caramel)]">
-        Майстер буде видалений зі студії та більше не відображатиметься у списку.
-      </p>
-    </div>
-
-    <div className="rounded-2xl bg-[var(--color-danger-bg)] p-3.5">
-      <div className="flex items-start gap-3">
-        <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-[var(--color-danger-dark)] shadow-sm">
-          <AlertTriangle className="h-4.5 w-4.5" />
-        </div>
-
-        <div className="min-w-0">
-          <p className="text-sm font-bold text-[var(--color-danger-dark)]">
-            Увага
-          </p>
-
-          <p className="mt-1 text-xs leading-5 text-[var(--color-ink)]">
-            Видалені дані не можна буде повернути назад.
-          </p>
-        </div>
-      </div>
-    </div>
-  </div>
-</Modal>
-<Modal
-  open={Boolean(editMaster)}
-  onClose={closeEdit}
-  title="Редагування майстра"
-  subtitle="Онови фото, імʼя або опис і збережи зміни."
-  size="md"
-  mobileFull
-  footer={
-            <div className="flex items-center justify-end gap-2">
-              <Button 
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
-              onClick={closeEdit}>
-                Скасувати
+        <Modal
+          open={deleteConfirm.open}
+          onClose={() => setDeleteConfirm({ open: false, master: null })}
+          size="sm"
+          footer={
+            <div className="flex justify-end gap-2">
+              <Button
+                onClick={() => setDeleteConfirm({ open: false, master: null })}
+                className="w-full rounded-2xl border border-[var(--border-soft)] bg-white px-4 py-2.5 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98] sm:w-auto"
+              >
+                Назад
               </Button>
-<Button
-  onClick={saveEdit}
-  disabled={!String(editDraft.name || "").trim()}
-  className={cn(
-    "inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold text-white transition-all duration-200 active:scale-[0.98]",
 
-    // 👉 gradient через nude-green
-    "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
-
-    // 👉 hover
-    "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]",
-
-    // 👉 disabled
-    !String(editDraft.name || "").trim() &&
-      "cursor-not-allowed bg-[var(--color-cream)] text-[var(--color-caramel)] hover:from-[var(--color-cream)] hover:to-[var(--color-cream)]"
-  )}
->
-  <Check className="h-4 w-4" />
-  Зберегти
-</Button>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await deleteMaster(deleteConfirm.master);
+                    setDeleteConfirm({ open: false, master: null });
+                  } catch (e) {
+                    alert(e.message || "Не вдалося видалити майстра");
+                  }
+                }}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-danger)] px-4 py-2.5 text-sm font-bold text-white transition-all duration-200 hover:bg-[var(--color-danger-dark)] active:scale-[0.98] sm:w-auto"
+              >
+                <Trash2 className="h-4 w-4" />
+                Так, видалити
+              </button>
             </div>
           }
         >
-          
-<button
-  type="button"
-  onClick={closeEdit}
-  className="absolute left-4 top-4 z-30 inline-flex items-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white/90 px-3 py-2 text-sm font-bold text-[var(--color-ink)] shadow-sm backdrop-blur transition-all hover:bg-[var(--color-cream)] active:scale-[0.98]"
->
-  <ArrowLeft className="h-4 w-4" />
-  Назад
-</button>
+          <div className="space-y-4">
+            <div className="flex justify-center">
+              <div className="relative">
+                <div className="absolute inset-0 rounded-full bg-[var(--color-danger-bg)]/90 blur-2xl" />
 
-<div className="space-y-6 pt-10">
-  <div className="space-y-4 pt-2">
-    <div className="flex justify-center">
-      <div className="relative">
-        <div className="absolute inset-0 rounded-full bg-[var(--color-forest)]/60 blur-2xl" />
-        <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--color-primary-buttom)] text-white shadow-sm">
-          <Users className="h-7 w-7" />
-        </div>
-      </div>
-    </div>
+                <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--color-danger)] text-white shadow-[0_16px_36px_rgba(213,92,82,0.24)]">
+                  <Trash2 className="h-7 w-7" />
+                </div>
+              </div>
+            </div>
 
-    <div className="text-center">
-      <h3 className="text-xl font-black tracking-tight text-[var(--color-ink)]">
-        Редагування майстра
-      </h3>
+            <div className="text-center">
+              <h3 className="text-xl font-black tracking-tight text-[var(--color-ink)]">
+                Видалити майстра?
+              </h3>
 
-      <p className="mt-2 text-sm leading-6 text-[var(--color-caramel)]">
-        Онови фото, імʼя або опис і збережи зміни.
-      </p>
-    </div>
-  </div>
+              <p className="mt-2 text-sm leading-6 text-[var(--color-caramel)]">
+                Майстер буде видалений зі студії та більше не відображатиметься
+                у списку.
+              </p>
+            </div>
 
-  {/* далі твоя форма */}
+            <div className="rounded-2xl bg-[var(--color-danger-bg)] p-3.5">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-[var(--color-danger-dark)] shadow-sm">
+                  <AlertTriangle className="h-4.5 w-4.5" />
+                </div>
+
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-[var(--color-danger-dark)]">
+                    Увага
+                  </p>
+
+                  <p className="mt-1 text-xs leading-5 text-[var(--color-ink)]">
+                    Видалені дані не можна буде повернути назад.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Modal>
+        <Modal
+          open={Boolean(editMaster)}
+          onClose={closeEdit}
+          title="Редагування майстра"
+          subtitle="Онови фото, імʼя або опис і збережи зміни."
+          size="md"
+          mobileFull
+          footer={
+            <div className="flex items-center justify-end gap-2">
+              <Button
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
+                onClick={closeEdit}
+              >
+                Скасувати
+              </Button>
+              <Button
+                onClick={saveEdit}
+                disabled={!String(editDraft.name || "").trim()}
+                className={cn(
+                  "inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold text-white transition-all duration-200 active:scale-[0.98]",
+
+                  // 👉 gradient через nude-green
+                  "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
+
+                  // 👉 hover
+                  "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]",
+
+                  // 👉 disabled
+                  !String(editDraft.name || "").trim() &&
+                    "cursor-not-allowed bg-[var(--color-cream)] text-[var(--color-caramel)] hover:from-[var(--color-cream)] hover:to-[var(--color-cream)]",
+                )}
+              >
+                <Check className="h-4 w-4" />
+                Зберегти
+              </Button>
+            </div>
+          }
+        >
+          <button
+            type="button"
+            onClick={closeEdit}
+            className="absolute left-4 top-4 z-30 inline-flex items-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white/90 px-3 py-2 text-sm font-bold text-[var(--color-ink)] shadow-sm backdrop-blur transition-all hover:bg-[var(--color-cream)] active:scale-[0.98]"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Назад
+          </button>
+
+          <div className="space-y-6 pt-10">
+            <div className="space-y-4 pt-2">
+              <div className="flex justify-center">
+                <div className="relative">
+                  <div className="absolute inset-0 rounded-full bg-[var(--color-forest)]/60 blur-2xl" />
+                  <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--color-primary-buttom)] text-white shadow-sm">
+                    <Users className="h-7 w-7" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-center">
+                <h3 className="text-xl font-black tracking-tight text-[var(--color-ink)]">
+                  Редагування майстра
+                </h3>
+
+                <p className="mt-2 text-sm leading-6 text-[var(--color-caramel)]">
+                  Онови фото, імʼя або опис і збережи зміни.
+                </p>
+              </div>
+            </div>
+
+            {/* далі твоя форма */}
             <div className="flex items-center gap-4">
               <div className="relative">
                 <Avatar
@@ -1539,7 +1717,7 @@ const neutralButtonClass =
                     type="file"
                     accept="image/*"
                     className="hidden"
-                    onChange={editPickPhoto}
+                    onChange={(e) => handlePickPhotoForCrop(e, "edit")}
                   />
                 </label>
 
@@ -1560,7 +1738,7 @@ const neutralButtonClass =
                       })
                     }
                   >
-                   <Trash2 className="h-4 w-4 text-[var(--color-danger)]" />
+                    <Trash2 className="h-4 w-4 text-[var(--color-danger)]" />
                     Видалити фото
                   </Button>
                 )}
@@ -1612,315 +1790,408 @@ const neutralButtonClass =
           </div>
         </Modal>
 
-<Modal
-  open={exceptionsModalOpen}
-  onClose={() => {
-    setExceptionsModalOpen(false);
-    setExceptionsMaster(null);
-    setMasterExceptions([]);
-    setExpandedExceptions({});
-  }}
-  title=""
-  subtitle=""
-  size="md"
-  mobileFull
-  footer={
-  <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-end">
-<Button
-  onClick={addExceptionRow}
-  className={cn(
-    "w-full justify-center whitespace-nowrap sm:w-auto sm:shrink-0",
-    "inline-flex h-11 items-center gap-2 rounded-2xl px-4 text-sm font-bold text-white",
-    "!bg-[var(--color-primary-buttom)]",
-    "transition-all duration-200 active:scale-[0.98]",
-    "hover:brightness-110"
-  )}
->
-  <CalendarDays className="h-4 w-4" />
-  Додати особливу дату
-</Button>
+        <Modal
+          open={exceptionsModalOpen}
+          onClose={() => {
+            setExceptionsModalOpen(false);
+            setExceptionsMaster(null);
+            setMasterExceptions([]);
+            setExpandedExceptions({});
+          }}
+          title=""
+          subtitle=""
+          size="md"
+          mobileFull
+          footer={
+            <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-end">
+              <Button
+                onClick={addExceptionRow}
+                className={cn(
+                  "w-full justify-center whitespace-nowrap sm:w-auto sm:shrink-0",
+                  "inline-flex h-11 items-center gap-2 rounded-2xl px-4 text-sm font-bold text-white",
+                  "!bg-[var(--color-primary-buttom)]",
+                  "transition-all duration-200 active:scale-[0.98]",
+                  "hover:brightness-110",
+                )}
+              >
+                <CalendarDays className="h-4 w-4" />
+                Додати особливу дату
+              </Button>
 
-    <Button
-      onClick={() => {
-        setExceptionsModalOpen(false);
-        setExceptionsMaster(null);
-        setMasterExceptions([]);
-        setExpandedExceptions({});
-      }}
-      className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
-    >
-      Закрити
-    </Button>
-  </div>
-}
->
-<button
-  type="button"
-  onClick={() => {
-    setExceptionsModalOpen(false);
-    setExceptionsMaster(null);
-    setMasterExceptions([]);
-    setExpandedExceptions({});
-  }}
-  className="absolute left-4 top-4 z-30 inline-flex items-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white/90 px-3 py-2 text-sm font-bold text-[var(--color-ink)] shadow-sm backdrop-blur transition-all hover:bg-[var(--color-cream)] active:scale-[0.98]"
->
-  <ArrowLeft className="h-4 w-4" />
-  Назад
-</button>
-  <div className="space-y-5">
-  <div className="space-y-4 pt-2">
-    <div className="flex justify-center">
-      <div className="relative">
-        <div className="absolute inset-0 rounded-full bg-[var(--color-forest)]/60 blur-2xl" />
-        <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--color-primary-buttom)] text-white shadow-sm">
-          <CalendarDays className="h-7 w-7" />
-        </div>
-      </div>
-    </div>
-
-    <div className="text-center">
-      <h3 className="text-xl font-black tracking-tight text-[var(--color-ink)]">
-        Особливі дати
-      </h3>
-
-      <p className="mt-2 text-sm leading-6 text-[var(--color-caramel)]">
-        {exceptionsMaster?.name
-          ? `Керуйте індивідуальним графіком майстра ${exceptionsMaster.name}.`
-          : "Керуйте індивідуальним графіком майстра."}
-      </p>
-    </div>
-  </div>
-
-  {/* далі твій поточний контент */}
-          {exceptionsLoading ? (
-            <div className="space-y-3">
-              {Array.from({ length: 2 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="rounded-2xl border border-[var(--color-cream)] bg-white p-4"
-                >
-                  <SkeletonBlock className="h-5 w-44" />
-                  <SkeletonBlock className="mt-2 h-4 w-36" />
-                </div>
-              ))}
+              <Button
+                onClick={() => {
+                  setExceptionsModalOpen(false);
+                  setExceptionsMaster(null);
+                  setMasterExceptions([]);
+                  setExpandedExceptions({});
+                }}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
+              >
+                Закрити
+              </Button>
             </div>
-          ) : masterExceptions.length === 0 ? (
-<div className="rounded-2xl border-2 border-dashed border-[var(--color-caramel)]/40 bg-[var(--color-cream)] p-6 text-center sm:p-8">
-  <div className="mb-3 flex items-center justify-center">
-    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/70">
-      <CalendarDays className="h-7 w-7 text-[var(--color-caramel)]" />
-    </div>
-  </div>
+          }
+        >
+          <button
+            type="button"
+            onClick={() => {
+              setExceptionsModalOpen(false);
+              setExceptionsMaster(null);
+              setMasterExceptions([]);
+              setExpandedExceptions({});
+            }}
+            className="absolute left-4 top-4 z-30 inline-flex items-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white/90 px-3 py-2 text-sm font-bold text-[var(--color-ink)] shadow-sm backdrop-blur transition-all hover:bg-[var(--color-cream)] active:scale-[0.98]"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Назад
+          </button>
+          <div className="space-y-5">
+            <div className="space-y-4 pt-2">
+              <div className="flex justify-center">
+                <div className="relative">
+                  <div className="absolute inset-0 rounded-full bg-[var(--color-forest)]/60 blur-2xl" />
+                  <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--color-primary-buttom)] text-white shadow-sm">
+                    <CalendarDays className="h-7 w-7" />
+                  </div>
+                </div>
+              </div>
 
-  <p className="text-sm font-medium text-[var(--color-caramel)]">
-    Немає особливих дат
-  </p>
+              <div className="text-center">
+                <h3 className="text-xl font-black tracking-tight text-[var(--color-ink)]">
+                  Особливі дати
+                </h3>
 
-  <p className="mt-1 text-xs text-[var(--color-caramel)]/80">
-    Тут ви можете додати вихідні, відпустку, лікарняні або інші дні, коли майстер не працює. <br />
-    У ці дні він не буде доступний для запису клієнтами.
-  </p>
-</div>
-          ) : (
-            <div className="space-y-3">
-              {masterExceptions.map((item, index) => {
-                const isValid = isExceptionValid(item);
-                const exceptionKey = getExceptionKey(item, index);
-                const isExpanded =
-                  item.isNew || expandedExceptions[exceptionKey] === true;
+                <p className="mt-2 text-sm leading-6 text-[var(--color-caramel)]">
+                  {exceptionsMaster?.name
+                    ? `Керуйте індивідуальним графіком майстра ${exceptionsMaster.name}.`
+                    : "Керуйте індивідуальним графіком майстра."}
+                </p>
+              </div>
+            </div>
 
-                return (
+            {/* далі твій поточний контент */}
+            {exceptionsLoading ? (
+              <div className="space-y-3">
+                {Array.from({ length: 2 }).map((_, i) => (
                   <div
-                    key={exceptionKey}
-                    className="overflow-hidden rounded-2xl border border-[var(--color-cream)] bg-white shadow-[0_6px_18px_rgba(27,27,27,0.04)]"
+                    key={i}
+                    className="rounded-2xl border border-[var(--color-cream)] bg-white p-4"
                   >
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (item.isNew) return;
+                    <SkeletonBlock className="h-5 w-44" />
+                    <SkeletonBlock className="mt-2 h-4 w-36" />
+                  </div>
+                ))}
+              </div>
+            ) : masterExceptions.length === 0 ? (
+              <div className="rounded-2xl border-2 border-dashed border-[var(--color-caramel)]/40 bg-[var(--color-cream)] p-6 text-center sm:p-8">
+                <div className="mb-3 flex items-center justify-center">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/70">
+                    <CalendarDays className="h-7 w-7 text-[var(--color-caramel)]" />
+                  </div>
+                </div>
 
-                        setExpandedExceptions((prev) => ({
-                          ...prev,
-                          [exceptionKey]: !prev[exceptionKey],
-                        }));
-                      }}
-                      className={cn(
-                        "flex w-full items-start justify-between gap-3 p-4 text-left transition-colors",
-                        !item.isNew && "hover:bg-[var(--color-cream)]",
-                      )}
+                <p className="text-sm font-medium text-[var(--color-caramel)]">
+                  Немає особливих дат
+                </p>
+
+                <p className="mt-1 text-xs text-[var(--color-caramel)]/80">
+                  Тут ви можете додати вихідні, відпустку, лікарняні або інші
+                  дні, коли майстер не працює. <br />У ці дні він не буде
+                  доступний для запису клієнтами.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {masterExceptions.map((item, index) => {
+                  const isValid = isExceptionValid(item);
+                  const exceptionKey = getExceptionKey(item, index);
+                  const isExpanded =
+                    item.isNew || expandedExceptions[exceptionKey] === true;
+
+                  return (
+                    <div
+                      key={exceptionKey}
+                      className="overflow-hidden rounded-2xl border border-[var(--color-cream)] bg-white shadow-[0_6px_18px_rgba(27,27,27,0.04)]"
                     >
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-[15px] font-bold text-[var(--color-ink)]">
-                            {item.date
-                              ? formatExceptionDate(item.date)
-                              : "Нова особлива дата"}
-                          </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (item.isNew) return;
 
-                          <div className="rounded-full  px-3 py-1 text-xs font-semibold text-[var(--color-ink)]">
-                            {item.enabled ? "Особливий графік" : "Вихідний"}
+                          setExpandedExceptions((prev) => ({
+                            ...prev,
+                            [exceptionKey]: !prev[exceptionKey],
+                          }));
+                        }}
+                        className={cn(
+                          "flex w-full items-start justify-between gap-3 p-4 text-left transition-colors",
+                          !item.isNew && "hover:bg-[var(--color-cream)]",
+                        )}
+                      >
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="text-[15px] font-bold text-[var(--color-ink)]">
+                              {item.date
+                                ? formatExceptionDate(item.date)
+                                : "Нова особлива дата"}
+                            </p>
+
+                            <div className="rounded-full  px-3 py-1 text-xs font-semibold text-[var(--color-ink)]">
+                              {item.enabled ? "Особливий графік" : "Вихідний"}
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      <div className="flex shrink-0 items-center gap-2">
-                        {!item.isNew && (
-                          <span className="hidden text-xs font-medium text-[var(--color-caramel)] sm:inline">
-                            {isExpanded ? "Згорнути" : "Розгорнути"}
-                          </span>
-                        )}
+                        <div className="flex shrink-0 items-center gap-2">
+                          {!item.isNew && (
+                            <span className="hidden text-xs font-medium text-[var(--color-caramel)] sm:inline">
+                              {isExpanded ? "Згорнути" : "Розгорнути"}
+                            </span>
+                          )}
 
-                        {!item.isNew &&
-                          (isExpanded ? (
-                            <ChevronUp className="h-5 w-5 shrink-0 text-[var(--color-caramel)]" />
-                          ) : (
-                            <ChevronDown className="h-5 w-5 shrink-0 text-[var(--color-caramel)]" />
-                          ))}
-                      </div>
-                    </button>
-
-                    <div
-                      className={cn(
-                        "grid transition-all duration-300 ease-out",
-                        isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
-                      )}
-                    >
-                      <div className="overflow-hidden">
-                        <div className="border-t border-[var(--color-cream)] px-4 pb-4 pt-4">
-                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:items-end">
-                            <div className="min-w-0">
-                              <DatePicker
-                                label="Дата"
-                                value={item.date}
-                                onChange={(value) =>
-                                  updateException(index, "date", value)
-                                }
-                              />
-                            </div>
-
-                            <div className="col-span-1 sm:col-span-1">
-                              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[var(--color-caramel)]">
-                                Статус
-                              </label>
-
-<button
-  type="button"
-  onClick={() =>
-    updateException(index, "enabled", !item.enabled)
-  }
-  className="flex h-[50px] w-full items-center gap-3 rounded-2xl border border-[var(--color-cream)] bg-white px-4 transition-all duration-200 hover:bg-[var(--color-cream)] focus:border-[var(--color-forest)] focus:ring-4 focus:ring-[var(--color-forest)]/10"
->
-<span
-  className={cn(
-    "relative inline-flex h-7 w-12 items-center rounded-full",
-    item.enabled
-      ? "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),0.8)] to-[rgba(var(--color-nude-green-600),0.8)]"
-      : "bg-[var(--color-mist)]",
-  )}
->
-  <span
-    className={cn(
-      "inline-block h-5 w-5 transform rounded-full bg-white transition-transform duration-300",
-      item.enabled ? "translate-x-6" : "translate-x-1",
-    )}
-  />
-</span>
-
-  <span className="whitespace-nowrap text-sm font-semibold text-[var(--color-ink)]">
-    {item.enabled ? "Робочий день" : "Вихідний"}
-  </span>
-</button>
-                            </div>
-
-                            {item.enabled ? (
-                              <div className="grid grid-cols-2 gap-2 sm:col-span-2">
-                                <div className="min-w-0">
-                                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[var(--color-caramel)]">
-                                    Початок
-                                  </label>
-
-                                 <div className="flex h-[50px] items-center overflow-hidden rounded-2xl border border-[var(--color-cream)] bg-white px-2 transition-all hover:bg-[var(--color-cream)] focus-within:ring-4 focus-within:ring-[var(--color-forest)]/10">
-                                    <TimeSelect
-                                      value={item.start}
-                                      label="Початок"
-                                      dayLabel={item.date || "Особлива дата"}
-                                      onChange={(value) =>
-                                        updateException(index, "start", value)
-                                      }
-                                      onCommit={(value) =>
-                                        updateException(index, "start", value)
-                                      }
-                                    />
-                                  </div>
-                                </div>
-
-                                <div className="min-w-0">
-                                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[var(--color-caramel)]">
-                                    Завершення
-                                  </label>
-                                  <div className="flex h-[50px] items-center overflow-hidden rounded-2xl border border-[var(--color-cream)] bg-white px-2 transition-all hover:bg-[var(--color-cream)] focus-within:border-[var(--color-forest)] focus-within:ring-4 focus-within:ring-[var(--color-forest)]/10">
-                                    <TimeSelect
-                                      value={item.end}
-                                      label="Завершення"
-                                      dayLabel={item.date || "Особлива дата"}
-                                      onChange={(value) =>
-                                        updateException(index, "end", value)
-                                      }
-                                      onCommit={(value) =>
-                                        updateException(index, "end", value)
-                                      }
-                                    />
-                                  </div>
-                                </div>
-                              </div>
+                          {!item.isNew &&
+                            (isExpanded ? (
+                              <ChevronUp className="h-5 w-5 shrink-0 text-[var(--color-caramel)]" />
                             ) : (
-                              <div className="flex items-center sm:col-span-2">
-<div className="w-full text-center rounded-2xl border border-[#e8b7b0]  px-4 py-3 text-sm font-semibold text-[#b6463f]">
-  У цей день майстер не працюватиме
-</div>
+                              <ChevronDown className="h-5 w-5 shrink-0 text-[var(--color-caramel)]" />
+                            ))}
+                        </div>
+                      </button>
+
+                      <div
+                        className={cn(
+                          "grid transition-all duration-300 ease-out",
+                          isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+                        )}
+                      >
+                        <div className="overflow-hidden">
+                          <div className="border-t border-[var(--color-cream)] px-4 pb-4 pt-4">
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:items-end">
+                              <div className="min-w-0">
+                                <DatePicker
+                                  label="Дата"
+                                  value={item.date}
+                                  onChange={(value) =>
+                                    updateException(index, "date", value)
+                                  }
+                                />
                               </div>
-                            )}
 
-                            <div className="grid grid-cols-2 gap-2 sm:col-span-2 sm:flex">
-<Button
-  onClick={() => saveException(item, index)}
-  disabled={!isValid}
-  className={cn(
-    "inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold text-white",
+                              <div className="col-span-1 sm:col-span-1">
+                                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[var(--color-caramel)]">
+                                  Статус
+                                </label>
 
-    // 👉 gradient через var
-    "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    updateException(
+                                      index,
+                                      "enabled",
+                                      !item.enabled,
+                                    )
+                                  }
+                                  className="flex h-[50px] w-full items-center gap-3 rounded-2xl border border-[var(--color-cream)] bg-white px-4 transition-all duration-200 hover:bg-[var(--color-cream)] focus:border-[var(--color-forest)] focus:ring-4 focus:ring-[var(--color-forest)]/10"
+                                >
+                                  <span
+                                    className={cn(
+                                      "relative inline-flex h-7 w-12 items-center rounded-full",
+                                      item.enabled
+                                        ? "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),0.8)] to-[rgba(var(--color-nude-green-600),0.8)]"
+                                        : "bg-[var(--color-mist)]",
+                                    )}
+                                  >
+                                    <span
+                                      className={cn(
+                                        "inline-block h-5 w-5 transform rounded-full bg-white transition-transform duration-300",
+                                        item.enabled
+                                          ? "translate-x-6"
+                                          : "translate-x-1",
+                                      )}
+                                    />
+                                  </span>
 
-    "transition-all duration-200 active:scale-[0.98]",
+                                  <span className="whitespace-nowrap text-sm font-semibold text-[var(--color-ink)]">
+                                    {item.enabled ? "Робочий день" : "Вихідний"}
+                                  </span>
+                                </button>
+                              </div>
 
-    // 👉 hover через var
-    "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]",
+                              {item.enabled ? (
+                                <div className="grid grid-cols-2 gap-2 sm:col-span-2">
+                                  <div className="min-w-0">
+                                    <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[var(--color-caramel)]">
+                                      Початок
+                                    </label>
 
-    !isValid &&
-      "cursor-not-allowed bg-[var(--color-cream)] text-[var(--color-caramel)] shadow-none hover:from-[var(--color-cream)] hover:to-[var(--color-cream)]"
-  )}
->
-  <Check className="h-4 w-4" />
-  Зберегти
-</Button>
-                              <Button
-                               
-                                onClick={() => removeException(item, index)}
-                                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
-                              >
-                              <Trash2 className="h-4 w-4 text-[#b96b61]" />
-                                Видалити
-                              </Button>
+                                    <div className="flex h-[50px] items-center overflow-hidden rounded-2xl border border-[var(--color-cream)] bg-white px-2 transition-all hover:bg-[var(--color-cream)] focus-within:ring-4 focus-within:ring-[var(--color-forest)]/10">
+                                      <TimeSelect
+                                        value={item.start}
+                                        label="Початок"
+                                        dayLabel={item.date || "Особлива дата"}
+                                        onChange={(value) =>
+                                          updateException(index, "start", value)
+                                        }
+                                        onCommit={(value) =>
+                                          updateException(index, "start", value)
+                                        }
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <div className="min-w-0">
+                                    <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[var(--color-caramel)]">
+                                      Завершення
+                                    </label>
+                                    <div className="flex h-[50px] items-center overflow-hidden rounded-2xl border border-[var(--color-cream)] bg-white px-2 transition-all hover:bg-[var(--color-cream)] focus-within:border-[var(--color-forest)] focus-within:ring-4 focus-within:ring-[var(--color-forest)]/10">
+                                      <TimeSelect
+                                        value={item.end}
+                                        label="Завершення"
+                                        dayLabel={item.date || "Особлива дата"}
+                                        onChange={(value) =>
+                                          updateException(index, "end", value)
+                                        }
+                                        onCommit={(value) =>
+                                          updateException(index, "end", value)
+                                        }
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex items-center sm:col-span-2">
+                                  <div className="w-full text-center rounded-2xl border border-[#e8b7b0]  px-4 py-3 text-sm font-semibold text-[#b6463f]">
+                                    У цей день майстер не працюватиме
+                                  </div>
+                                </div>
+                              )}
+
+                              <div className="grid grid-cols-2 gap-2 sm:col-span-2 sm:flex">
+                                <Button
+                                  onClick={() => saveException(item, index)}
+                                  disabled={!isValid}
+                                  className={cn(
+                                    "inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold text-white",
+
+                                    // 👉 gradient через var
+                                    "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
+
+                                    "transition-all duration-200 active:scale-[0.98]",
+
+                                    // 👉 hover через var
+                                    "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]",
+
+                                    !isValid &&
+                                      "cursor-not-allowed bg-[var(--color-cream)] text-[var(--color-caramel)] shadow-none hover:from-[var(--color-cream)] hover:to-[var(--color-cream)]",
+                                  )}
+                                >
+                                  <Check className="h-4 w-4" />
+                                  Зберегти
+                                </Button>
+                                <Button
+                                  onClick={() => removeException(item, index)}
+                                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
+                                >
+                                  <Trash2 className="h-4 w-4 text-[#b96b61]" />
+                                  Видалити
+                                </Button>
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </Modal>
+        <Modal
+          open={cropModal.open}
+          onClose={() => {
+            if (cropModal.imageUrl) URL.revokeObjectURL(cropModal.imageUrl);
+
+            setCropModal({
+              open: false,
+              imageUrl: "",
+              file: null,
+              target: "add",
+            });
+          }}
+          size="md"
+          mobileFull
+          footer={
+            <div className="flex justify-end gap-2">
+              <Button
+                onClick={() => {
+                  if (cropModal.imageUrl)
+                    URL.revokeObjectURL(cropModal.imageUrl);
+
+                  setCropModal({
+                    open: false,
+                    imageUrl: "",
+                    file: null,
+                    target: "add",
+                  });
+                }}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
+              >
+                Скасувати
+              </Button>
+
+              <Button
+                onClick={confirmCrop}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl !bg-[var(--color-primary-buttom)] px-4 text-sm font-bold text-white transition-all duration-200 !hover:brightness-110 active:scale-[0.98]"
+              >
+                <Check className="h-4 w-4" />
+                Застосувати
+              </Button>
             </div>
-          )}
+          }
+        >
+          <div className="space-y-4 pt-10">
+            <div className="text-center">
+              <h3 className="text-xl font-black text-[var(--color-ink)]">
+                Обрізати фото
+              </h3>
+
+              <p className="mt-2 text-sm text-[var(--color-caramel)]">
+                Виберіть область, яка буде видима в профілі майстра.
+              </p>
+            </div>
+
+            <div className="relative h-[340px] overflow-hidden rounded-3xl bg-black">
+              <Cropper
+                image={cropModal.imageUrl}
+                crop={crop}
+                zoom={zoom}
+                aspect={1}
+                cropShape="rect"
+                showGrid={false}
+                onCropChange={setCrop}
+                onZoomChange={setZoom}
+                onCropComplete={(_, croppedPixels) => {
+                  setCroppedAreaPixels(croppedPixels);
+                }}
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-bold text-[var(--color-ink)]">
+                Масштаб
+              </label>
+
+              <input
+                type="range"
+                min={1}
+                max={3}
+                step={0.1}
+                value={zoom}
+                onChange={(e) => setZoom(Number(e.target.value))}
+                className="w-full"
+              />
+            </div>
           </div>
         </Modal>
       </div>

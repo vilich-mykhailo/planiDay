@@ -109,10 +109,24 @@ function NotificationCard({ item, onRead }) {
 
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="inline-flex items-center gap-2 rounded-full bg-[var(--color-cream)] px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.14em] text-[var(--color-primary-buttom)]">
-            <Bell className="h-3.5 w-3.5" />
-            {isReschedule ? "Перенесення" : item.title || "Повідомлення"}
-          </div>
+<div
+  className={cn(
+    "inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.14em] transition-all duration-200",
+    
+    isReschedule
+      ? "bg-[var(--color-pending-light)] text-[var(--color-pending-dark)] border border-[var(--color-pending)]/30 shadow-[0_6px_18px_rgba(245,158,11,0.10)]"
+      : "bg-[var(--color-cream)] text-[var(--color-primary-buttom)]",
+  )}
+>
+  <Bell
+    className={cn(
+      "h-3.5 w-3.5",
+      isReschedule && "text-[var(--color-pending)]",
+    )}
+  />
+
+  {isReschedule ? "Перенесення" : item.title || "Повідомлення"}
+</div>
 
           <h3 className="mt-3 text-lg font-black leading-tight text-[var(--color-ink)]">
             {isReschedule

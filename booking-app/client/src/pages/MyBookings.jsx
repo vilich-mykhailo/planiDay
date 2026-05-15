@@ -421,6 +421,27 @@ export default function MyBookings() {
     return () => clearInterval(id);
   }, []);
 
+useEffect(() => {
+  const savedScroll = sessionStorage.getItem("myBookingsScrollY");
+  const savedActiveBookingId = sessionStorage.getItem("myBookingsActiveBookingId");
+
+  requestAnimationFrame(() => {
+    if (savedScroll) {
+      window.scrollTo({
+        top: Number(savedScroll),
+        behavior: "instant",
+      });
+
+      sessionStorage.removeItem("myBookingsScrollY");
+    }
+
+    if (savedActiveBookingId) {
+      setActiveBookingId(savedActiveBookingId);
+      sessionStorage.removeItem("myBookingsActiveBookingId");
+    }
+  });
+}, []);
+
   function resolveBookingStatus(booking, currentNowTs) {
     const rawStatus = booking?.status || "new";
 
@@ -642,19 +663,33 @@ useEffect(() => {
     activeBooking?.durationMinutes ??
     null;
 
-  function openStudio(booking) {
-    const studioPath =
-      booking?.studioSlug || booking?.studio?.slug || booking?.studioId;
+function openStudio(booking) {
+  const studioPath =
+    booking?.studioSlug || booking?.studio?.slug || booking?.studioId;
 
-    if (!studioPath) {
-      alert("Не вдалося відкрити сторінку студії");
-      return;
-    }
-
-    setActiveBookingId(null);
-    setCopiedId(null);
-    navigate(`/${studioPath}`);
+  if (!studioPath) {
+    alert("Не вдалося відкрити сторінку студії");
+    return;
   }
+
+  sessionStorage.setItem("myBookingsScrollY", String(window.scrollY));
+
+  if (activeBookingId) {
+    sessionStorage.setItem("myBookingsActiveBookingId", String(activeBookingId));
+  } else {
+    sessionStorage.removeItem("myBookingsActiveBookingId");
+  }
+
+  setActiveBookingId(null);
+  setCopiedId(null);
+
+  navigate(`/${studioPath}`, {
+    state: {
+      fromMyBookings: true,
+    },
+  });
+}
+
 
   function handleRescheduleClick(booking) {
     const studioPath =
@@ -835,11 +870,18 @@ useEffect(() => {
         {service}
       </h3>
 
-      <button
-        type="button"
-        onClick={() => openStudio(b)}
-        className="mt-4 flex min-w-0 items-center gap-2 rounded-2xl text-left transition hover:bg-[var(--color-cream)] active:scale-[0.99]"
-      >
+<div
+  role="button"
+  tabIndex={0}
+  onClick={() => openStudio(b)}
+  onKeyDown={(e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      openStudio(b);
+    }
+  }}
+  className="mt-4 flex min-w-0 cursor-pointer items-center gap-2 rounded-2xl p-2 -m-2 text-left transition hover:bg-[var(--color-cream)] active:scale-[0.99]"
+>
         {studioLogo ? (
           <img
             src={studioLogo}
@@ -855,7 +897,7 @@ useEffect(() => {
         <p className="truncate text-[15px] font-medium text-[var(--color-ink)]">
           {title}
         </p>
-      </button>
+</div>
 
 
       <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
@@ -1078,33 +1120,40 @@ useEffect(() => {
             <div className="min-h-0 flex-1 overflow-y-auto pb-16 sm:pb-6">
               <div className="space-y-3">
                 <div className="rounded-[26px] border border-[#e6ebe3] p-4 shadow-[0_8px_24px_rgba(120,140,120,0.08)]">
-                  <div className="flex items-center gap-3">
-                    {activeStudioLogo ? (
-                      <img
-                        src={activeStudioLogo}
-                        alt={activeTitle}
-                        className="h-12 w-12 shrink-0 rounded-2xl object-cover shadow-sm"
-                      />
-                    ) : (
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-[var(--color-ink)] shadow-sm">
-                        <Sparkles className="h-5 w-5" />
-                      </div>
-                    )}
+<div
+  role="button"
+  tabIndex={0}
+  onClick={() => openStudio(activeBooking)}
+  onKeyDown={(e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      openStudio(activeBooking);
+    }
+  }}
+  className="flex cursor-pointer items-center gap-3 rounded-2xl p-2 -m-2 transition hover:bg-[var(--color-cream)] active:scale-[0.99]"
+>
+  {activeStudioLogo ? (
+    <img
+      src={activeStudioLogo}
+      alt={activeTitle}
+      className="h-12 w-12 shrink-0 rounded-2xl object-cover shadow-sm"
+    />
+  ) : (
+    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-[var(--color-ink)] shadow-sm">
+      <Sparkles className="h-5 w-5" />
+    </div>
+  )}
 
-                    <div className="min-w-0 flex-1">
-                      <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-caramel)]">
-                        Студія
-                      </span>
+  <div className="min-w-0 flex-1">
+    <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-caramel)]">
+      Студія
+    </span>
 
-                      <button
-                        type="button"
-                        onClick={() => openStudio(activeBooking)}
-                        className="block truncate text-left text-[15px] font-extrabold text-[var(--color-ink)] transition hover:text-[var(--color-forest)]"
-                      >
-                        {activeTitle || "Студія"}
-                      </button>
-                    </div>
-                  </div>
+    <p className="truncate text-left text-[15px] font-extrabold text-[var(--color-ink)] transition hover:text-[var(--color-forest)]">
+      {activeTitle || "Студія"}
+    </p>
+  </div>
+</div>
                 </div>
 
                 <div className="rounded-[26px] border border-[#e6ebe3] p-4 shadow-[0_8px_24px_rgba(120,140,120,0.08)]">

@@ -1,39 +1,100 @@
-// Profile.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-
 import {
-  Sparkles,
-  Phone,
-  Mail,
-  CalendarDays,
-  VenusAndMars,
-  CheckCircle2,
-  ShieldCheck,
-  X,
-  BadgeCheck,
-  LogOut,
-  CircleDashed,
-  Image as ImageIcon,
-  PencilLine,
   AlertTriangle,
+  BadgeCheck,
+  CalendarDays,
+  Camera,
+  CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  CircleDashed,
+  CreditCard,
+  Heart,
+  Image as ImageIcon,
+  LogOut,
+  Mail,
+  MapPin,
+  PencilLine,
+  Phone,
+  Search,
   Trash2,
+  UserRound,
+  VenusAndMars,
+  X,
 } from "lucide-react";
 import { api } from "../../api/http";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 const PUBLIC = import.meta.env.VITE_R2_PUBLIC_BASE_URL;
 
-function cx(...a) {
-  return a.filter(Boolean).join(" ");
+function cx(...classes) {
+  return classes.filter(Boolean).join(" ");
 }
 
-function toPublicUrl(v) {
-  const s = String(v || "").trim();
-  if (!s) return "";
-  if (/^https?:\/\//i.test(s)) return s;
-  return PUBLIC ? `${PUBLIC}/${s}` : s;
+function toPublicUrl(value) {
+  const src = String(value || "").trim();
+  if (!src) return "";
+  if (/^https?:\/\//i.test(src)) return src;
+  return PUBLIC ? `${PUBLIC}/${src}` : src;
+}
+
+async function compressImage(
+  file,
+  { maxWidth = 900, maxHeight = 900, quality = 0.82, type = "image/jpeg" } = {},
+) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+
+      let { width, height } = img;
+      if (width > maxWidth || height > maxHeight) {
+        const ratio = Math.min(maxWidth / width, maxHeight / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        reject(new Error("Canvas error"));
+        return;
+      }
+
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            reject(new Error("Compression failed"));
+            return;
+          }
+
+          resolve(
+            new File([blob], file.name.replace(/\.\w+$/, ".jpg"), {
+              type,
+              lastModified: Date.now(),
+            }),
+          );
+        },
+        type,
+        quality,
+      );
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error("Image load failed"));
+    };
+
+    img.src = objectUrl;
+  });
 }
 
 async function fetchClientProfile() {
@@ -53,84 +114,59 @@ async function fetchClientProfile() {
   };
 }
 
-function Input(props) {
+const emptyProfile = {
+  firstName: "",
+  lastName: "",
+  phone: "",
+  email: "",
+  birthDate: "",
+  gender: "unknown",
+  photoUrl: "",
+};
+
+function Input({ className, ...props }) {
   return (
     <input
       {...props}
       className={cx(
-        "w-full rounded-2xl border px-4 py-3 text-[14px] outline-none transition-all duration-200",
-        "border-[var(--color-mist)] bg-white text-[var(--color-ink)]",
-        "placeholder:text-[color:var(--color-caramel)]/70",
-        "focus:border-[var(--color-caramel)] focus:ring-4 focus:ring-[color:var(--color-caramel)]/15",
-        props.disabled &&
-          "cursor-not-allowed border-[var(--color-mist)] bg-[var(--color-cream)] text-[color:var(--color-caramel)]/80 placeholder:text-[color:var(--color-caramel)]/60",
-        props.className,
+        "h-12 w-full rounded-xl border border-[var(--color-mist)] bg-white px-4 text-sm text-[var(--color-ink)] outline-none transition",
+        "placeholder:text-[color:var(--color-caramel)]/65",
+        "focus:border-[var(--color-forest)] focus:ring-4 focus:ring-[color:var(--color-forest)]/10",
+        props.disabled && "cursor-not-allowed bg-[var(--color-cream)] opacity-70",
+        className,
       )}
     />
   );
 }
 
-function Select(props) {
-  const [open, setOpen] = React.useState(false);
-
+function Select({ className, children, ...props }) {
   return (
     <div className="relative">
       <select
         {...props}
-        onFocus={(e) => {
-          setOpen(true);
-          props.onFocus?.(e);
-        }}
-        onBlur={(e) => {
-          setOpen(false);
-          props.onBlur?.(e);
-        }}
-        onChange={(e) => {
-          props.onChange?.(e);
-          setOpen(false);
-        }}
         className={cx(
-          "w-full appearance-none rounded-2xl border px-4 py-3 pr-11 text-[14px] outline-none transition-all duration-200",
-          "border-[var(--color-mist)] bg-white text-[var(--color-ink)]",
-          "focus:border-[var(--color-caramel)] focus:ring-4 focus:ring-[color:var(--color-caramel)]/15",
-          props.className,
+          "h-12 w-full appearance-none rounded-xl border border-[var(--color-mist)] bg-white px-4 pr-11 text-sm text-[var(--color-ink)] outline-none transition",
+          "focus:border-[var(--color-forest)] focus:ring-4 focus:ring-[color:var(--color-forest)]/10",
+          className,
         )}
       >
-        {props.children}
+        {children}
       </select>
-
-      <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center">
-        <svg
-          className={cx(
-            "h-4 w-4 text-[var(--color-caramel)] transition-transform duration-200 ease-out",
-            open ? "rotate-180" : "rotate-0",
-          )}
-          viewBox="0 0 20 20"
-          fill="none"
-        >
-          <path
-            d="M6 8l4 4 4-4"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </div>
+      <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-caramel)]" />
     </div>
   );
 }
 
-function PrimaryButton({ children, ...props }) {
+function PrimaryButton({ children, className, ...props }) {
   return (
     <button
       {...props}
       className={cx(
-        "inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[18px] px-4 py-3 text-sm font-bold transition-all duration-200 active:scale-[0.98]",
+        "inline-flex h-12 items-center justify-center gap-2 rounded-xl px-4 text-sm font-bold transition active:scale-[0.98]",
         props.disabled
-          ? "cursor-not-allowed border border-[var(--color-mist)] bg-[var(--color-cream)] text-[color:var(--color-caramel)]/70 shadow-none"
-          : "bg-[var(--color-forest)] text-white shadow-[var(--shadow-button)] hover:bg-[var(--color-forest-dark)]",
-        props.className,
+          ? "cursor-not-allowed border border-[var(--color-mist)] bg-[var(--color-cream)] text-[color:var(--color-caramel)]/70"
+          : "bg-[var(--color-forest)] text-white shadow-[0_14px_30px_-18px_rgba(50,78,41,0.7)] hover:bg-[var(--color-forest-dark)]",
+        className,
       )}
     >
       {children}
@@ -143,48 +179,30 @@ function SecondaryButton({ children, className, ...props }) {
     <button
       {...props}
       className={cx(
-        "inline-flex min-h-[48px] items-center justify-center gap-2",
-        "rounded-2xl border border-[var(--border-soft)] bg-white px-4 py-3",
-        "text-sm font-bold text-[var(--color-ink)] shadow-sm",
-        "transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]",
+        "inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] transition",
+        "hover:border-[var(--color-sand)] hover:bg-[var(--color-cream)] active:scale-[0.98]",
         props.disabled && "cursor-not-allowed opacity-60",
-        className
-      )}
-    >
-      {children}
-    </button>
-  );
-}
-
-function GhostDangerButton({ children, className, ...props }) {
-  return (
-    <button
-      {...props}
-      className={cx(
-        "inline-flex min-h-[48px] w-full items-center justify-center gap-2",
-        "rounded-2xl border border-[var(--border-soft)] bg-white px-4 py-3",
-        "text-sm font-bold text-[var(--color-danger)] shadow-sm",
-        "transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]",
-        props.disabled && "cursor-not-allowed opacity-60",
-        className
-      )}
-    >
-      {children}
-    </button>
-  );
-}
-
-function SectionCard({ className, children }) {
-  return (
-    <section
-      className={cx(
-        "overflow-hidden rounded-[28px] border bg-white shadow-[var(--shadow-soft)]",
-        "border-[var(--color-mist)]",
         className,
       )}
     >
       {children}
-    </section>
+    </button>
+  );
+}
+
+function DangerButton({ children, className, ...props }) {
+  return (
+    <button
+      {...props}
+      className={cx(
+        "inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-[var(--color-danger-border)] bg-white px-4 text-sm font-bold text-[var(--color-danger)] transition",
+        "hover:bg-[var(--color-danger-bg)] active:scale-[0.98]",
+        props.disabled && "cursor-not-allowed opacity-60",
+        className,
+      )}
+    >
+      {children}
+    </button>
   );
 }
 
@@ -192,17 +210,59 @@ function FormField({ label, hint, children }) {
   return (
     <label className="block space-y-2">
       <div className="flex items-center justify-between gap-3">
-        <span className="text-sm font-semibold text-[var(--color-ink)]">
-          {label}
-        </span>
+        <span className="text-sm font-bold text-[var(--color-ink)]">{label}</span>
         {hint ? (
-          <span className="text-[11px] font-medium text-[var(--color-caramel)]">
+          <span className="text-xs font-semibold text-[var(--color-caramel)]">
             {hint}
           </span>
         ) : null}
       </div>
       {children}
     </label>
+  );
+}
+
+function SkeletonBlock({ className = "" }) {
+  return (
+    <div
+      className={cx(
+        "animate-pulse rounded-xl bg-[linear-gradient(90deg,var(--color-cream),#fff,var(--color-cream))] bg-[length:180%_100%]",
+        className,
+      )}
+    />
+  );
+}
+
+function ProfileSkeleton() {
+  return (
+    <main className="min-h-screen bg-[var(--color-cream)]/40 px-3 pb-[calc(env(safe-area-inset-bottom)+76px)] pt-3 sm:px-6 sm:pb-10 sm:pt-10">
+      <div className="mx-auto max-w-6xl space-y-4">
+        <section className="rounded-2xl border border-[var(--color-mist)] bg-white p-5 shadow-[var(--shadow-soft)] sm:p-7">
+          <SkeletonBlock className="h-4 w-36" />
+          <SkeletonBlock className="mt-4 h-10 w-full max-w-md" />
+          <SkeletonBlock className="mt-3 h-5 w-full max-w-2xl" />
+        </section>
+
+        <div className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
+          <section className="rounded-2xl border border-[var(--color-mist)] bg-white p-5 shadow-[var(--shadow-soft)]">
+            <SkeletonBlock className="mx-auto h-36 w-36 rounded-3xl" />
+            <SkeletonBlock className="mx-auto mt-5 h-7 w-44" />
+            <SkeletonBlock className="mx-auto mt-3 h-4 w-52" />
+            <SkeletonBlock className="mt-6 h-12 w-full" />
+            <SkeletonBlock className="mt-2 h-12 w-full" />
+          </section>
+
+          <section className="rounded-2xl border border-[var(--color-mist)] bg-white p-5 shadow-[var(--shadow-soft)]">
+            <SkeletonBlock className="h-8 w-56" />
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              {Array.from({ length: 4 }).map((_, index) => (
+                <SkeletonBlock key={index} className="h-24 w-full" />
+              ))}
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
   );
 }
 
@@ -215,12 +275,10 @@ function EditModal({
   saveDisabled = false,
   saving = false,
 }) {
-  React.useEffect(() => {
+  useEffect(() => {
     if (!open) return;
-
     const original = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-
     return () => {
       document.body.style.overflow = original;
     };
@@ -229,29 +287,28 @@ function EditModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 px-4 backdrop-blur-md">
-      <div className="w-full max-w-lg rounded-[28px] border border-[var(--color-mist)] bg-white shadow-[0_24px_80px_rgba(20,18,16,0.18)]">
-        <div className="flex items-center justify-between border-b border-[var(--color-cream)] px-5 py-4 sm:px-6">
+    <div className="fixed inset-0 z-[9999] flex items-end justify-center bg-[rgba(20,18,16,0.46)] px-3 pb-3 backdrop-blur-sm sm:items-center sm:p-6">
+      <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-[var(--color-mist)] bg-white shadow-[0_30px_90px_rgba(20,18,16,0.24)]">
+        <div className="flex items-center justify-between gap-4 border-b border-[var(--color-cream)] px-5 py-4">
           <h3 className="text-lg font-black tracking-[-0.02em] text-[var(--color-ink)]">
             {title}
           </h3>
-
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-[var(--color-mist)] bg-white text-[var(--color-caramel)] transition hover:bg-[var(--color-cream)] hover:text-[var(--color-ink)]"
+            className="grid h-10 w-10 place-items-center rounded-xl text-[var(--color-caramel)] transition hover:bg-[var(--color-cream)] hover:text-[var(--color-ink)]"
+            aria-label="Закрити"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="px-5 py-5 sm:px-6">{children}</div>
+        <div className="px-5 py-5">{children}</div>
 
-        <div className="flex flex-col-reverse gap-2 border-t border-[var(--color-cream)] px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
-          <SecondaryButton type="button" onClick={onClose} className="w-full sm:w-auto rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]">
+        <div className="flex flex-col-reverse gap-2 border-t border-[var(--color-cream)] bg-[#f7f5ef] px-5 py-4 sm:flex-row sm:justify-end">
+          <SecondaryButton type="button" onClick={onClose} className="w-full sm:w-auto">
             Скасувати
           </SecondaryButton>
-
           <PrimaryButton
             type="button"
             onClick={onSave}
@@ -266,111 +323,70 @@ function EditModal({
   );
 }
 
-function SkeletonBlock({ className = "" }) {
+function SettingsRow({ icon, label, value, action = "Edit", onClick }) {
   return (
-    <div
-      className={cx("animate-pulse rounded-2xl bg-[var(--color-cream)]", className)}
-    />
+    <button
+      type="button"
+      onClick={onClick}
+      className="group flex w-full items-center gap-4 border-b border-[#eef0ee] px-4 py-4 text-left transition last:border-b-0 hover:bg-[#f8faf8] sm:px-5"
+    >
+      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#f1f4f2] text-[#111] transition group-hover:bg-[#111] group-hover:text-white">
+        {icon}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[15px] font-black text-[#111]">{label}</p>
+        <p className="mt-0.5 truncate text-sm font-medium text-[#6f7672]">
+          {value}
+        </p>
+      </div>
+      <span className="hidden rounded-full bg-[#f1f4f2] px-3 py-1 text-xs font-black text-[#111] transition group-hover:bg-[#e6f7ef] group-hover:text-[#00875a] sm:inline-flex">
+        {action}
+      </span>
+      <ChevronRight className="h-5 w-5 shrink-0 text-[#9aa19d] transition group-hover:translate-x-0.5 group-hover:text-[#111]" />
+    </button>
   );
 }
 
-function ProfileSkeleton() {
+function NavItem({ active, icon, children, onClick }) {
   return (
-    <div className="min-h-screen pb-[calc(env(safe-area-inset-bottom)+68px)] sm:pb-0">
-      <div className="mx-auto max-w-6xl px-2.5 pb-4 pt-0 sm:px-4 sm:pb-8 sm:pt-14 lg:pt-16">
-        <div className="space-y-3 px-0 pt-2 sm:space-y-5 sm:pt-8 lg:pt-6">
-          <section className="overflow-hidden rounded-[22px] border border-[var(--color-mist)] bg-white shadow-[var(--shadow-soft)] sm:rounded-3xl">
-            <div className="h-[2px] bg-[linear-gradient(90deg,var(--color-forest),var(--color-caramel),var(--color-ink))] opacity-50" />
+    <button
+      type="button"
+      onClick={onClick}
+      className={cx(
+        "flex h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-black transition",
+        active
+          ? "bg-[#111] text-white"
+          : "text-[#4f5752] hover:bg-[#f1f4f2] hover:text-[#111]",
+      )}
+    >
+      {icon}
+      {children}
+    </button>
+  );
+}
 
-            <div className="px-3.5 pb-5 pt-5 sm:px-6 sm:pb-4 sm:pt-5 lg:px-8 lg:pt-6">
-              <div className="mb-4 space-y-2.5 sm:mb-4 sm:space-y-2 lg:mb-5">
-                <SkeletonBlock className="hidden h-8 w-40 rounded-full sm:block" />
-                <SkeletonBlock className="h-10 w-[290px] max-w-full rounded-2xl sm:h-14 sm:w-[470px]" />
-                <SkeletonBlock className="h-4 w-full max-w-[680px] rounded-xl sm:h-5" />
-              </div>
-            </div>
-          </section>
-
-          <div className="space-y-4">
-            <section className="overflow-hidden rounded-[28px] border border-[var(--color-mist)] bg-[radial-gradient(circle_at_top_left,rgba(180,140,108,0.18),transparent_28%),radial-gradient(circle_at_top_right,rgba(50,78,41,0.10),transparent_24%),linear-gradient(135deg,#ffffff_0%,#f7f5ef_48%,#fff_100%)] shadow-[var(--shadow-soft)]">
-              <div className="relative p-4 sm:p-6 lg:p-7">
-                <div className="grid gap-4 lg:grid-cols-[340px_minmax(0,1fr)]">
-                  <div className="rounded-[28px] border border-white/70 bg-white/90 p-4 shadow-[var(--shadow-soft)] backdrop-blur">
-                    <div className="flex flex-col items-center text-center">
-                      <SkeletonBlock className="h-32 w-32 rounded-[32px]" />
-
-                      <SkeletonBlock className="mt-5 h-6 w-32 rounded-full" />
-
-                      <div className="mt-3 flex items-center justify-center gap-2">
-                        <SkeletonBlock className="h-8 w-40 rounded-xl" />
-                        <SkeletonBlock className="h-9 w-9 rounded-xl" />
-                      </div>
-
-                      <SkeletonBlock className="mt-2 h-4 w-56 rounded-xl" />
-                      <SkeletonBlock className="mt-2 h-4 w-44 rounded-xl" />
-
-                      <div className="mt-5 flex w-full flex-col gap-2 sm:flex-row lg:flex-col">
-                        <SkeletonBlock className="h-12 w-full rounded-2xl" />
-                        <SkeletonBlock className="h-12 w-full rounded-2xl" />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-4">
-                    <div className="rounded-[28px] border border-white/70 bg-white/95 p-5 shadow-[var(--shadow-soft)] backdrop-blur sm:p-6">
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                        <div className="min-w-0">
-                          <SkeletonBlock className="h-3 w-28 rounded-xl" />
-                          <SkeletonBlock className="mt-3 h-8 w-60 rounded-2xl" />
-                          <SkeletonBlock className="mt-3 h-4 w-full max-w-[360px] rounded-xl" />
-                        </div>
-
-                        <SkeletonBlock className="h-10 w-44 rounded-2xl" />
-                      </div>
-
-                      <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                        {Array.from({ length: 4 }).map((_, i) => (
-                          <div
-                            key={i}
-                            className="flex items-center justify-between gap-3 rounded-2xl border border-[var(--color-mist)] bg-white px-3 py-3"
-                          >
-                            <div className="flex min-w-0 flex-1 items-center gap-3">
-                              <SkeletonBlock className="h-9 w-9 shrink-0 rounded-xl" />
-                              <div className="min-w-0 flex-1">
-                                <SkeletonBlock className="h-3 w-20 rounded-xl" />
-                                <SkeletonBlock className="mt-2 h-4 w-28 rounded-xl" />
-                              </div>
-                            </div>
-
-                            <SkeletonBlock className="h-8 w-20 shrink-0 rounded-xl" />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            <section className="overflow-hidden rounded-[28px] border border-[var(--color-danger-border)] bg-white shadow-[0_14px_40px_-24px_rgba(213,92,82,0.26)]">
-              <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-                <div className="min-w-0">
-                  <SkeletonBlock className="h-6 w-40 rounded-xl" />
-                  <SkeletonBlock className="mt-2 h-4 w-64 rounded-xl" />
-                </div>
-
-                <SkeletonBlock className="h-12 w-full rounded-2xl sm:w-[220px]" />
-              </div>
-            </section>
-          </div>
-        </div>
+function ChecklistRow({ complete, children }) {
+  return (
+    <div className="flex items-center gap-3 rounded-xl border border-[var(--color-mist)] bg-white px-4 py-3">
+      <div
+        className={cx(
+          "grid h-8 w-8 shrink-0 place-items-center rounded-lg",
+          complete
+            ? "bg-[var(--color-confirmed-bg)] text-[var(--color-forest)]"
+            : "bg-[var(--color-cream)] text-[var(--color-caramel)]",
+        )}
+      >
+        {complete ? <CheckCircle2 className="h-4 w-4" /> : <CircleDashed className="h-4 w-4" />}
       </div>
+      <span className="text-sm font-bold text-[var(--color-ink)]">{children}</span>
     </div>
   );
 }
 
 export default function Profile() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const fileRef = useRef(null);
 
   const profileQuery = useQuery({
     queryKey: ["client-profile"],
@@ -381,53 +397,14 @@ export default function Profile() {
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   });
-  const navigate = useNavigate();
-  const [profile, setProfile] = useState({
-    firstName: "",
-    lastName: "",
-    phone: "",
-    email: "",
-    birthDate: "",
-    gender: "unknown",
-    photoUrl: "",
-  });
-  const [modal, setModal] = useState({
-    type: "",
-    open: false,
-  });
 
-  const [draft, setDraft] = useState({
-    firstName: "",
-    lastName: "",
-    phone: "",
-    email: "",
-    birthDate: "",
-    gender: "unknown",
-  });
-  const [initialProfile, setInitialProfile] = useState({
-    firstName: "",
-    lastName: "",
-    phone: "",
-    email: "",
-    birthDate: "",
-    gender: "unknown",
-    photoUrl: "",
-  });
-
-  const [isSaved, setIsSaved] = useState(false);
-  const loading = profileQuery.isLoading && !profileQuery.data;
+  const [profile, setProfile] = useState(emptyProfile);
+  const [initialProfile, setInitialProfile] = useState(emptyProfile);
+  const [draft, setDraft] = useState(emptyProfile);
+  const [modal, setModal] = useState({ type: "", open: false });
   const [saving, setSaving] = useState(false);
-  const [apiError, setApiError] = useState("");
-
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState("");
-  const [pendingDeletePhotoKey, setPendingDeletePhotoKey] = useState("");
-
-  const [errorModal, setErrorModal] = useState({
-    open: false,
-    title: "",
-    message: "",
-  });
   const [toast, setToast] = useState({
     id: 0,
     open: false,
@@ -436,23 +413,47 @@ export default function Profile() {
     text: "",
     duration: 2600,
   });
-  const fileRef = useRef(null);
+  const [errorModal, setErrorModal] = useState({
+    open: false,
+    title: "",
+    message: "",
+  });
 
-  function handleLogout() {
-    queryClient.removeQueries({ queryKey: ["client-profile"] });
-    localStorage.removeItem("token");
-    localStorage.removeItem("role");
-    window.dispatchEvent(new Event("auth-changed"));
-    navigate("/login", { replace: true });
-  }
+  const loading = profileQuery.isLoading && !profileQuery.data;
+
+  useEffect(() => {
+    if (!photoFile) {
+      setPhotoPreviewUrl("");
+      return;
+    }
+
+    const url = URL.createObjectURL(photoFile);
+    setPhotoPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [photoFile]);
+
+  useEffect(() => {
+    if (!profileQuery.data) return;
+    setProfile(profileQuery.data);
+    setInitialProfile(profileQuery.data);
+  }, [profileQuery.data]);
 
   const initials = useMemo(() => {
-    const a = (profile.firstName || "").trim().slice(0, 1).toUpperCase();
-    const b = (profile.lastName || "").trim().slice(0, 1).toUpperCase();
-    return (a + b).trim() || "U";
+    const first = profile.firstName.trim().slice(0, 1).toUpperCase();
+    const last = profile.lastName.trim().slice(0, 1).toUpperCase();
+    return (first + last).trim() || "U";
   }, [profile.firstName, profile.lastName]);
 
+  const fullName = `${profile.firstName || ""} ${profile.lastName || ""}`.trim();
   const photoSrc = photoPreviewUrl || toPublicUrl(profile.photoUrl);
+
+  const genderLabel = useMemo(() => {
+    if (profile.gender === "female") return "Жіноча";
+    if (profile.gender === "male") return "Чоловіча";
+    if (profile.gender === "other") return "Інше";
+    return "Не вказано";
+  }, [profile.gender]);
+
   const isProfileComplete = useMemo(() => {
     return Boolean(
       initialProfile.firstName.trim() &&
@@ -467,40 +468,58 @@ export default function Profile() {
     initialProfile.gender,
     initialProfile.photoUrl,
   ]);
-  const fullName = `${profile.firstName || ""} ${profile.lastName || ""}`.trim();
 
-  const genderLabel = useMemo(() => {
-    if (profile.gender === "female") return "Жіноча";
-    if (profile.gender === "male") return "Чоловіча";
-    if (profile.gender === "other") return "Інше";
-    return "Не вказано";
-  }, [profile.gender]);
+  const profileCompletion = useMemo(() => {
+    const checks = [
+      Boolean(initialProfile.firstName.trim()),
+      Boolean(initialProfile.birthDate),
+      Boolean(initialProfile.gender && initialProfile.gender !== "unknown"),
+      Boolean(initialProfile.photoUrl),
+    ];
 
-  React.useEffect(() => {
-    if (!photoFile) {
-      setPhotoPreviewUrl("");
-      return;
-    }
+    return Math.round(
+      (checks.filter(Boolean).length / checks.length) * 100,
+    );
+  }, [
+    initialProfile.firstName,
+    initialProfile.birthDate,
+    initialProfile.gender,
+    initialProfile.photoUrl,
+  ]);
 
-    const url = URL.createObjectURL(photoFile);
-    setPhotoPreviewUrl(url);
+  const profileItems = [
+    {
+      label: "Телефон",
+      value: profile.phone || "Не вказано",
+      icon: <Phone className="h-4 w-4" />,
+      type: "phone",
+    },
+    {
+      label: "Email",
+      value: profile.email || "Не вказано",
+      icon: <Mail className="h-4 w-4" />,
+      type: "email",
+    },
+    {
+      label: "Стать",
+      value: genderLabel,
+      icon: <VenusAndMars className="h-4 w-4" />,
+      type: "gender",
+    },
+    {
+      label: "Дата народження",
+      value: profile.birthDate || "Не вказано",
+      icon: <CalendarDays className="h-4 w-4" />,
+      type: "birthDate",
+    },
+  ];
 
-    return () => URL.revokeObjectURL(url);
-  }, [photoFile]);
-
-  useEffect(() => {
-    if (!profileQuery.data) return;
-
-    setProfile(profileQuery.data);
-    setInitialProfile(profileQuery.data);
-    setIsSaved(true);
-  }, [profileQuery.data]);
-
-  function stageDeletePhoto(key) {
-    const k = String(key || "").trim();
-    if (!k) return;
-    if (/^https?:\/\//i.test(k)) return;
-    setPendingDeletePhotoKey(k);
+  function handleLogout() {
+    queryClient.removeQueries({ queryKey: ["client-profile"] });
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    window.dispatchEvent(new Event("auth-changed"));
+    navigate("/login", { replace: true });
   }
 
   function showToast({ type = "success", title, text }) {
@@ -529,8 +548,8 @@ export default function Profile() {
       email: profile.email || "",
       birthDate: profile.birthDate || "",
       gender: profile.gender || "unknown",
+      photoUrl: profile.photoUrl || "",
     });
-
     setModal({ type, open: true });
   }
 
@@ -538,12 +557,48 @@ export default function Profile() {
     setModal({ type: "", open: false });
   }
 
+  function normalizeProfile(data) {
+    return {
+      firstName: data?.firstName || "",
+      lastName: data?.lastName || "",
+      phone: data?.phone || "",
+      email: data?.email || "",
+      birthDate: data?.birthDate ? String(data.birthDate).slice(0, 10) : "",
+      gender: data?.gender || "unknown",
+      photoUrl: data?.photoUrl || "",
+    };
+  }
+
+  async function patchProfile(body) {
+    const token = localStorage.getItem("token");
+    const updatedRaw = await api("/client/me", {
+      method: "PATCH",
+      token,
+      body,
+    });
+    const updated = normalizeProfile(updatedRaw);
+
+    queryClient.setQueryData(["client-profile"], updated);
+    setProfile(updated);
+    setInitialProfile(updated);
+    return updated;
+  }
+
+  function showSaveError(error, fallback = "Не вдалося зберегти зміни") {
+    const raw = String(error?.message || "").toLowerCase();
+    const isOffline =
+      !navigator.onLine || raw.includes("failed to fetch") || raw.includes("network");
+
+    showToast({
+      type: "error",
+      title: isOffline ? "Немає підключення" : "Помилка",
+      text: isOffline ? "Перевірте інтернет" : fallback,
+    });
+  }
+
   async function saveModalChanges() {
     try {
       setSaving(true);
-      setApiError("");
-
-      const token = localStorage.getItem("token");
 
       const body = {
         firstName: profile.firstName,
@@ -558,59 +613,51 @@ export default function Profile() {
         body.lastName = draft.lastName;
       }
 
-      if (modal.type === "birthDate") {
-        body.birthDate = draft.birthDate || null;
-      }
+      if (modal.type === "birthDate") body.birthDate = draft.birthDate || null;
+      if (modal.type === "gender") body.gender = draft.gender;
 
-      if (modal.type === "gender") {
-        body.gender = draft.gender;
-      }
-
-      const updatedRaw = await api("/client/me", {
-        method: "PATCH",
-        token,
-        body,
-      });
-
-      const updated = {
-        firstName: updatedRaw?.firstName || "",
-        lastName: updatedRaw?.lastName || "",
-        phone: updatedRaw?.phone || "",
-        email: updatedRaw?.email || "",
-        birthDate: updatedRaw?.birthDate
-          ? String(updatedRaw.birthDate).slice(0, 10)
-          : "",
-        gender: updatedRaw?.gender || "unknown",
-        photoUrl: updatedRaw?.photoUrl || "",
-      };
-
-      queryClient.setQueryData(["client-profile"], updated);
-
-      setProfile(updated);
-      setInitialProfile(updated);
-      setIsSaved(true);
+      await patchProfile(body);
       closeEditModal();
       showToast({
         type: "success",
         title: "Збережено",
         text: "Дані профілю оновлено",
       });
-    } catch (e) {
-      const raw = String(e?.message || "").toLowerCase();
-
-      const isOffline =
-        !navigator.onLine ||
-        raw.includes("failed to fetch") ||
-        raw.includes("network");
-
-      showToast({
-        type: "error",
-        title: isOffline ? "Немає підключення" : "Помилка",
-        text: isOffline ? "Перевірте інтернет" : "Не вдалося зберегти зміни",
-      });
+    } catch (error) {
+      showSaveError(error);
     } finally {
       setSaving(false);
     }
+  }
+
+  async function uploadClientPhoto(file, token) {
+    const fd = new FormData();
+    fd.append("file", file);
+
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/media/client`, {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: fd,
+    });
+
+    const data = await res.json().catch(() => null);
+    if (!res.ok) throw new Error(data?.message || "Upload failed");
+    return data;
+  }
+
+  async function deleteFromR2(key) {
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/media/delete`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ key }),
+    });
+
+    if (!res.ok) throw new Error("Delete failed");
   }
 
   async function onPickPhoto(file) {
@@ -636,47 +683,26 @@ export default function Profile() {
 
     try {
       setSaving(true);
-      setApiError("");
-      setPhotoFile(file);
 
       const token = localStorage.getItem("token");
       const previousPhotoKey = String(profile.photoUrl || "").trim();
+      const compressed = await compressImage(file);
 
-      const out = await uploadClientPhoto(file, token);
+      setPhotoFile(compressed);
+
+      const out = await uploadClientPhoto(compressed, token);
       const nextPhotoKey = out?.key || "";
 
-      const updatedRaw = await api("/client/me", {
-        method: "PATCH",
-        token,
-        body: {
-          firstName: profile.firstName,
-          lastName: profile.lastName,
-          birthDate: profile.birthDate || null,
-          gender: profile.gender,
-          photoUrl: nextPhotoKey || null,
-        },
+      await patchProfile({
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+        birthDate: profile.birthDate || null,
+        gender: profile.gender,
+        photoUrl: nextPhotoKey || null,
       });
 
-      const updated = {
-        firstName: updatedRaw?.firstName || "",
-        lastName: updatedRaw?.lastName || "",
-        phone: updatedRaw?.phone || "",
-        email: updatedRaw?.email || "",
-        birthDate: updatedRaw?.birthDate
-          ? String(updatedRaw.birthDate).slice(0, 10)
-          : "",
-        gender: updatedRaw?.gender || "unknown",
-        photoUrl: updatedRaw?.photoUrl || "",
-      };
-
-      queryClient.setQueryData(["client-profile"], updated);
-
-      setProfile(updated);
-      setInitialProfile(updated);
       setPhotoFile(null);
       setPhotoPreviewUrl("");
-      setPendingDeletePhotoKey("");
-      setIsSaved(true);
 
       showToast({
         type: "success",
@@ -689,29 +715,13 @@ export default function Profile() {
         previousPhotoKey !== nextPhotoKey &&
         !/^https?:\/\//i.test(previousPhotoKey)
       ) {
-        try {
-          await deleteFromR2(previousPhotoKey);
-        } catch (err) {
-          console.error(err);
-        }
+        await deleteFromR2(previousPhotoKey).catch(console.error);
       }
-    } catch (e) {
-      console.error(e);
+    } catch (error) {
+      console.error(error);
       setPhotoFile(null);
       setPhotoPreviewUrl("");
-
-      const raw = String(e?.message || "").toLowerCase();
-
-      const isOffline =
-        !navigator.onLine ||
-        raw.includes("failed to fetch") ||
-        raw.includes("network");
-
-      showToast({
-        type: "error",
-        title: isOffline ? "Немає підключення" : "Помилка",
-        text: isOffline ? "Перевірте інтернет" : "Не вдалося оновити фото",
-      });
+      showSaveError(error, "Не вдалося оновити фото");
     } finally {
       setSaving(false);
     }
@@ -723,42 +733,17 @@ export default function Profile() {
 
     try {
       setSaving(true);
-      setApiError("");
 
-      const token = localStorage.getItem("token");
-
-      const updatedRaw = await api("/client/me", {
-        method: "PATCH",
-        token,
-        body: {
-          firstName: profile.firstName,
-          lastName: profile.lastName,
-          birthDate: profile.birthDate || null,
-          gender: profile.gender,
-          photoUrl: null,
-        },
+      await patchProfile({
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+        birthDate: profile.birthDate || null,
+        gender: profile.gender,
+        photoUrl: null,
       });
-
-      const updated = {
-        firstName: updatedRaw?.firstName || "",
-        lastName: updatedRaw?.lastName || "",
-        phone: updatedRaw?.phone || "",
-        email: updatedRaw?.email || "",
-        birthDate: updatedRaw?.birthDate
-          ? String(updatedRaw.birthDate).slice(0, 10)
-          : "",
-        gender: updatedRaw?.gender || "unknown",
-        photoUrl: updatedRaw?.photoUrl || "",
-      };
-
-      queryClient.setQueryData(["client-profile"], updated);
 
       setPhotoFile(null);
       setPhotoPreviewUrl("");
-      setProfile(updated);
-      setInitialProfile(updated);
-      setPendingDeletePhotoKey("");
-      setIsSaved(true);
 
       showToast({
         type: "success",
@@ -767,432 +752,190 @@ export default function Profile() {
       });
 
       if (currentPhotoKey && !/^https?:\/\//i.test(currentPhotoKey)) {
-        try {
-          await deleteFromR2(currentPhotoKey);
-        } catch (err) {
-          console.error(err);
-        }
+        await deleteFromR2(currentPhotoKey).catch(console.error);
       }
-    } catch (e) {
-      console.error(e);
-      const raw = String(e?.message || "").toLowerCase();
-
-      const isOffline =
-        !navigator.onLine ||
-        raw.includes("failed to fetch") ||
-        raw.includes("network");
-
-      showToast({
-        type: "error",
-        title: isOffline ? "Немає підключення" : "Помилка",
-        text: isOffline ? "Перевірте інтернет" : "Не вдалося видалити фото",
-      });
+    } catch (error) {
+      console.error(error);
+      showSaveError(error, "Не вдалося видалити фото");
     } finally {
       setSaving(false);
     }
   }
 
-  async function uploadClientPhoto(file, token) {
-    const fd = new FormData();
-    fd.append("file", file);
+  if (loading) return <ProfileSkeleton />;
 
-    const res = await fetch(`${import.meta.env.VITE_API_URL}/media/client`, {
-      method: "POST",
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-      body: fd,
-    });
+ return (
+<main className="mt-16 min-h-screen  pb-[calc(env(safe-area-inset-bottom)+84px)] text-[#111] sm:mt-0 sm:pb-10">
 
-    const data = await res.json().catch(() => null);
-    if (!res.ok) {
-      throw new Error(data?.message || "Upload failed");
-    }
 
-    return data;
-  }
+    <div className="mx-auto w-full max-w-7xl px-3 py-3 sm:px-6 sm:py-6 lg:py-8">
+      <div className="space-y-4 sm:space-y-5">
 
-  async function deleteFromR2(key) {
-    const token = localStorage.getItem("token");
-
-    const res = await fetch(`${import.meta.env.VITE_API_URL}/media/delete`, {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify({ key }),
-    });
-
-    if (!res.ok) {
-      throw new Error("Delete failed");
-    }
-  }
-
-  async function saveProfile(e) {
-    e?.preventDefault?.();
-
-    try {
-      setSaving(true);
-      setApiError("");
-
-      const token = localStorage.getItem("token");
-
-      let nextPhotoKey = String(profile.photoUrl || "").trim();
-      const deletesAfterSave = [];
-
-      if (photoFile) {
-        const previousPhotoKey = String(profile.photoUrl || "").trim();
-        const out = await uploadClientPhoto(photoFile, token);
-        nextPhotoKey = out?.key || "";
-
-        if (
-          previousPhotoKey &&
-          previousPhotoKey !== nextPhotoKey &&
-          !/^https?:\/\//i.test(previousPhotoKey)
-        ) {
-          deletesAfterSave.push(previousPhotoKey);
-        }
-      }
-
-      if (pendingDeletePhotoKey && !/^https?:\/\//i.test(pendingDeletePhotoKey)) {
-        deletesAfterSave.push(pendingDeletePhotoKey);
-      }
-
-      const updatedRaw = await api("/client/me", {
-        method: "PATCH",
-        token,
-        body: {
-          firstName: profile.firstName,
-          lastName: profile.lastName,
-          birthDate: profile.birthDate || null,
-          gender: profile.gender,
-          photoUrl: nextPhotoKey || null,
-        },
-      });
-
-      const updated = {
-        firstName: updatedRaw?.firstName || "",
-        lastName: updatedRaw?.lastName || "",
-        phone: updatedRaw?.phone || "",
-        email: updatedRaw?.email || "",
-        birthDate: updatedRaw?.birthDate
-          ? String(updatedRaw.birthDate).slice(0, 10)
-          : "",
-        gender: updatedRaw?.gender || "unknown",
-        photoUrl: updatedRaw?.photoUrl || "",
-      };
-
-      queryClient.setQueryData(["client-profile"], updated);
-
-      setProfile(updated);
-      setInitialProfile(updated);
-      setPhotoFile(null);
-      setPhotoPreviewUrl("");
-      setPendingDeletePhotoKey("");
-      setIsSaved(true);
-
-      const uniqDeletes = Array.from(new Set(deletesAfterSave)).filter(Boolean);
-
-      for (const key of uniqDeletes) {
-        try {
-          await deleteFromR2(key);
-        } catch (err) {
-          console.error(err);
-        }
-      }
-
-      showToast({
-        type: "success",
-        title: "Збережено",
-        text: "Профіль оновлено",
-      });
-    } catch (e) {
-      console.error(e);
-
-      const raw = String(e?.message || "").toLowerCase();
-
-      const isOffline =
-        !navigator.onLine ||
-        raw.includes("failed to fetch") ||
-        raw.includes("network");
-
-      showToast({
-        type: "error",
-        title: isOffline ? "Немає підключення" : "Помилка",
-        text: isOffline ? "Перевірте інтернет" : "Не вдалося зберегти профіль",
-      });
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  function resetProfileFields() {
-    setProfile((p) => ({
-      ...p,
-      firstName: "",
-      lastName: "",
-      birthDate: "",
-      gender: "unknown",
-    }));
-    setIsSaved(false);
-  }
-
-  if (loading) {
-    return <ProfileSkeleton />;
-  }
-
-  return (
-    <div className="min-h-screen pb-[calc(env(safe-area-inset-bottom)+68px)] sm:pb-0">
-      <div className="mx-auto max-w-6xl px-2.5 pb-4 pt-0 sm:px-4 sm:pb-8 sm:pt-14 lg:pt-16">
-        <div className="space-y-3 px-0 pt-2 sm:space-y-5 sm:pt-8 lg:pt-6">
-          <section className="overflow-hidden rounded-[22px] border border-[var(--color-mist)] bg-white shadow-[var(--shadow-soft)] sm:rounded-3xl">
-            <div className="h-[2px] bg-[linear-gradient(90deg,var(--color-forest),var(--color-caramel),var(--color-ink))] opacity-70" />
-
-            <div className="px-3.5 pb-5 pt-5 sm:px-6 sm:pb-4 sm:pt-5 lg:px-8 lg:pt-6">
-              <div className="mb-4 space-y-2.5 sm:mb-4 sm:space-y-2 lg:mb-5">
-                <div className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-[var(--color-pending-bg)] px-3 py-1 sm:px-4 sm:py-1.5">
-                  <Sparkles className="h-3.5 w-3.5 text-[var(--color-forest)] sm:h-4 sm:w-4" />
-                  <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--color-forest)] sm:text-xs sm:tracking-[0.22em]">
-                    Особистий кабінет
-                  </span>
+        <div className="space-y-5">
+          <section className="overflow-hidden rounded-[24px] border border-[#e4e8e5] bg-white shadow-[0_18px_44px_-36px_rgba(15,23,42,0.75)]">
+            <div className="h-28 bg-[#111] sm:h-36">
+     <div className="flex h-full items-end justify-between px-5 pb-5 text-left sm:px-7 lg:items-center lg:justify-center lg:text-center">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-white/55">
+                    Account & settings
+                  </p>
+                  <h1 className="mt-2 text-3xl font-black tracking-[-0.05em] text-white sm:text-5xl">
+                    Профіль
+                  </h1>
                 </div>
 
-                <h1 className="max-w-full text-[28px] font-black leading-[1.02] tracking-[-0.035em] text-[var(--color-ink)] sm:max-w-none sm:!text-5xl lg:!text-5xl">
-                  Керуйте своїм{" "}
-                  <span className="text-[var(--color-caramel)]">профілем</span>
-                </h1>
-
-                <p className="max-w-2xl text-[13px] leading-5 text-[color:var(--color-caramel)]/85 sm:text-base sm:leading-7">
-                  Оновлюй особисті дані, номер телефону та пошту, щоб бронювання
-                  проходили швидко і без зайвих кроків.
-                </p>
               </div>
             </div>
+
+<div className="px-4 pb-5 sm:px-7 sm:pb-7">
+<div className="-mt-6 flex flex-col gap-4 sm:-mt-12">
+    <div className="flex min-w-0 flex-col items-center gap-3 text-center lg:flex-row lg:items-end lg:text-left">
+      <button
+        type="button"
+        onClick={() => fileRef.current?.click()}
+        disabled={saving}
+        className="group relative grid h-24 w-24 shrink-0 place-items-center overflow-hidden rounded-[22px] border-4 border-white bg-[#eef1ef] text-3xl font-black tracking-[-0.05em] shadow-[0_18px_42px_-28px_rgba(20,18,16,0.55)] transition hover:scale-[1.01] sm:h-28 sm:w-28"
+      >
+        {photoSrc ? (
+          <img src={photoSrc} alt="avatar" className="h-full w-full object-cover" />
+        ) : (
+          initials
+        )}
+
+        <span className="absolute inset-0 grid place-items-center bg-black/45 text-white opacity-0 transition group-hover:opacity-100">
+          <Camera className="h-5 w-5" />
+        </span>
+      </button>
+
+     <div className="min-w-0 pb-1 text-center">
+       <div className="flex min-w-0 items-center justify-center gap-2">
+          <h2 className="max-w-[240px] truncate text-2xl font-black tracking-[-0.04em] sm:max-w-[420px] sm:text-3xl">
+            {fullName || "Ваш профіль"}
+          </h2>
+
+          <button
+            type="button"
+            onClick={() => openEditModal("name")}
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[#e4e8e5] bg-white text-[#111] transition hover:bg-[#f1f4f2]"
+            title="Змінити ім’я та прізвище"
+          >
+            <PencilLine className="h-4 w-4" />
+          </button>
+        </div>
+
+      <p className="mx-auto mt-1 max-w-md text-sm font-semibold leading-6 text-[#6f7672]">
+          Дані для бронювань, підтверджень і сповіщень.
+        </p>
+      </div>
+    </div>
+
+<div className="hidden gap-2 lg:mt-14 lg:grid lg:min-w-[260px] lg:grid-cols-1">
+  <div className="rounded-2xl border border-[#e4e8e5] bg-[#f6f7f6] p-3">
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-xs font-black uppercase tracking-[0.14em] text-[#6f7672]">
+        Заповнення профілю
+      </span>
+      <span className="text-sm font-black text-[#111]">
+        {profileCompletion}%
+      </span>
+    </div>
+
+    <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#e4e8e5]">
+      <div
+        className="h-full rounded-full bg-[#00a36c]"
+        style={{ width: `${profileCompletion}%` }}
+      />
+    </div>
+  </div>
+</div>
+
+  </div>
+
+<div className="mt-5 flex w-full gap-2 lg:w-auto">
+  <SecondaryButton
+    type="button"
+    onClick={() => fileRef.current?.click()}
+    disabled={saving}
+    className="min-w-0 flex-1 rounded-full px-3 text-xs lg:flex-none lg:px-4 lg:text-sm"
+  >
+    <ImageIcon className="h-4 w-4 shrink-0" />
+    <span className="truncate">
+      {saving ? "Оновлення..." : "Оновити фото"}
+    </span>
+  </SecondaryButton>
+
+  {(profile.photoUrl || photoFile) && (
+    <DangerButton
+      type="button"
+      onClick={removePhoto}
+      disabled={saving}
+      className="min-w-0 flex-1 rounded-full px-3 text-xs lg:flex-none lg:px-4 lg:text-sm"
+    >
+      <Trash2 className="h-4 w-4 shrink-0" />
+      <span className="truncate">
+        {saving ? "Видалення..." : "Видалити фото"}
+      </span>
+    </DangerButton>
+  )}
+</div>
+<div className="mt-4 grid gap-2 lg:hidden">
+  <div className="rounded-2xl border border-[#e4e8e5] bg-[#f6f7f6] p-3">
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-xs font-black text-[#6f7672]">
+        Заповнення профілю
+      </span>
+      <span className="text-sm font-black text-[#111]">
+        {profileCompletion}%
+      </span>
+    </div>
+
+    <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#e4e8e5]">
+      <div
+        className="h-full rounded-full bg-[#00a36c]"
+        style={{ width: `${profileCompletion}%` }}
+      />
+    </div>
+  </div>
+</div>
+</div>
           </section>
 
-          <div className="space-y-4">
-            <SectionCard className="overflow-hidden border-0 bg-transparent shadow-none">
-              <div className="relative overflow-hidden rounded-[32px] border border-[var(--color-mist)] bg-[radial-gradient(circle_at_top_left,rgba(180,140,108,0.22),transparent_28%),radial-gradient(circle_at_top_right,rgba(50,78,41,0.12),transparent_24%),linear-gradient(135deg,#ffffff_0%,#f7f5ef_48%,#fff_100%)] shadow-[var(--shadow-soft)]">
-                <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(180,140,108,0.08)_1px,transparent_1px),linear-gradient(to_bottom,rgba(180,140,108,0.08)_1px,transparent_1px)] bg-[size:22px_22px] opacity-40" />
-                <div className="absolute -left-16 top-10 h-40 w-40 rounded-full bg-[color:var(--color-sand)]/60 blur-3xl" />
-                <div className="absolute -right-12 top-0 h-44 w-44 rounded-full bg-[color:var(--color-confirmed-bg)]/70 blur-3xl" />
+          <section className="overflow-hidden rounded-[24px] border border-[#e4e8e5] bg-white shadow-[0_18px_44px_-36px_rgba(15,23,42,0.75)]">
+            <div className="border-b border-[#eef0ee] px-4 py-4 sm:px-5">
 
-                <div className="relative p-4 sm:p-6 lg:p-7">
-                  <div className="grid gap-4 lg:grid-cols-[340px_minmax(0,1fr)]">
-                    <div className="rounded-[28px] border border-white/70 bg-white/85 p-4 shadow-[var(--shadow-soft)] backdrop-blur">
-                      <div className="flex flex-col items-center text-center">
-                        <div className="relative">
-                          <button
-                            type="button"
-                            onClick={() => fileRef.current?.click()}
-                            className="group relative grid h-32 w-32 place-items-center overflow-hidden rounded-[32px] border border-white bg-white shadow-[0_16px_40px_rgba(0,0,0,0.12)] transition duration-200 hover:scale-[1.02]"
-                            disabled={saving}
-                          >
-                            {photoSrc ? (
-                              <img
-                                src={photoSrc}
-                                alt="avatar"
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              <span className="text-4xl font-black tracking-[-0.05em] text-[var(--color-ink)]">
-                                {initials}
-                              </span>
-                            )}
-
-                            <div className="absolute inset-0 bg-black/0 transition group-hover:bg-black/10" />
-                          </button>
-                        </div>
-
-                        <input
-                          ref={fileRef}
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            e.target.value = "";
-                            onPickPhoto(file);
-                          }}
-                        />
-
-                        <div className="mt-5">
-                          <div className="inline-flex items-center gap-2 rounded-full border border-[var(--color-sand)] bg-[var(--color-pending-bg)] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--color-forest)]">
-                            <ShieldCheck className="h-3.5 w-3.5" />
-                            Профіль клієнта
-                          </div>
-
-                          <div className="mt-3 flex items-center justify-center gap-2">
-                            <h2 className="text-[24px] font-black tracking-[-0.04em] text-[var(--color-ink)]">
-                              {fullName || "Ваш профіль"}
-                            </h2>
-
-                            <button
-                              type="button"
-                              onClick={() => openEditModal("name")}
-                              className="rounded-xl border border-[var(--border-soft)] bg-white px-2 py-2 text-sm font-bold text-[var(--color-ink)] shadow-sm  hover:bg-[var(--color-cream)] active:scale-[0.98]"
-                              title="Змінити ім’я та прізвище"
-                            >
-                              <PencilLine className="h-4 w-4" />
-                            </button>
-                          </div>
-
-                          <p className="mt-2 text-sm leading-6 text-[color:var(--color-caramel)]/85">
-                            Тут можна швидко оновити фото, особисті дані та
-                            контакти.
-                          </p>
-                        </div>
-
-                        <div className="mt-5 flex w-full flex-col gap-2 sm:flex-row lg:flex-col">
-                          <SecondaryButton
-                            type="button"
-                            onClick={() => fileRef.current?.click()}
-                            className="w-full sm:flex-1 rounded-2xl"
-                            disabled={saving}
-                          >
-                            <ImageIcon className="h-4 w-4" />
-                            {saving ? "Оновлення..." : "Оновити фото"}
-                          </SecondaryButton>
-
-                          {(profile.photoUrl || photoFile) && (
-                            <GhostDangerButton
-                              type="button"
-                              onClick={removePhoto}
-                              className="w-full sm:flex-1 rounded-2xl"
-                              disabled={saving}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                              {saving ? "Видалення..." : "Видалити фото"}
-                            </GhostDangerButton>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col gap-4">
-                      <div className="rounded-[28px] border border-white/70 bg-white/90 p-5 shadow-[var(--shadow-soft)] backdrop-blur sm:p-6">
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                          <div>
-                            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--color-caramel)]">
-                              Особисті дані
-                            </p>
-                            <h3 className="mt-2 text-[26px] font-black leading-none tracking-[-0.04em] text-[var(--color-ink)]">
-                              Керуйте профілем
-                            </h3>
-                            <p className="mt-3 max-w-xl text-sm leading-6 text-[color:var(--color-caramel)]/85">
-                              Оновлюйте ключову інформацію в одному місці.
-                            </p>
-                          </div>
-
-                          <div
-                            className={cx(
-                              "inline-flex w-fit items-center gap-2 rounded-2xl border px-3 py-2 text-sm font-semibold",
-                              isProfileComplete
-                                ? "border-[var(--color-sand)] bg-[var(--color-confirmed-bg)] text-[var(--color-forest)]"
-                                : "border-[var(--color-sand)] bg-[var(--color-pending-bg)] text-[var(--color-caramel-dark)]",
-                            )}
-                          >
-                            {isProfileComplete ? (
-                              <BadgeCheck className="h-4 w-4" />
-                            ) : (
-                              <CircleDashed className="h-4 w-4" />
-                            )}
-
-                            {isProfileComplete
-                              ? "Профіль заповнено"
-                              : "Профіль не завершено"}
-                          </div>
-                        </div>
-
-                        <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                          {[
-                            {
-                              label: "Телефон",
-                              value: profile.phone || "Не вказано",
-                              icon: <Phone className="h-4 w-4" />,
-                              type: "phone",
-                            },
-                            {
-                              label: "Email",
-                              value: profile.email || "Не вказано",
-                              icon: <Mail className="h-4 w-4" />,
-                              type: "email",
-                            },
-                            {
-                              label: "Стать",
-                              value: genderLabel,
-                              icon: <VenusAndMars className="h-4 w-4" />,
-                              type: "gender",
-                            },
-                            {
-                              label: "Дата народження",
-                              value: profile.birthDate || "Не вказано",
-                              icon: <CalendarDays className="h-4 w-4" />,
-                              type: "birthDate",
-                            },
-                          ].map((item) => (
-                            <button
-                              key={item.type}
-                              type="button"
-                              onClick={() => openEditModal(item.type)}
-                              className="group flex items-center justify-between gap-3 rounded-2xl border border-[var(--color-mist)] bg-white px-3 py-3 text-left transition hover:border-[var(--color-sand)] hover:bg-[color:var(--color-cream)]/80"
-                            >
-                              <div className="flex min-w-0 items-center gap-3">
-                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--color-cream)] text-[var(--color-caramel)] transition group-hover:bg-[var(--color-pending-bg)] group-hover:text-[var(--color-forest)]">
-                                  {item.icon}
-                                </div>
-
-                                <div className="min-w-0">
-                                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--color-caramel)]">
-                                    {item.label}
-                                  </p>
-                                  <p className="truncate text-sm font-semibold text-[var(--color-ink)]">
-                                    {item.value}
-                                  </p>
-                                </div>
-                              </div>
-
-                              <span className="shrink-0 rounded-xl border border-[var(--color-mist)] bg-white px-3 py-1 text-xs font-semibold text-[var(--color-caramel)] transition group-hover:border-[var(--color-sand)] group-hover:bg-[var(--color-pending-bg)] group-hover:text-[var(--color-forest)]">
-                                Змінити
-                              </span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </SectionCard>
-
-            <div className="lg:hidden sm:hidden">
-              <SectionCard className="overflow-hidden border-[var(--color-danger-border)] bg-white shadow-[0_14px_40px_-24px_rgba(213,92,82,0.26)]">
-                <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-                  <div className="min-w-0">
-                    <h3 className="text-lg font-black tracking-[-0.03em] text-[var(--color-ink)]">
-                      Вийти з акаунта
-                    </h3>
-
-                    <p className="mt-1 text-sm leading-6 text-[color:var(--color-caramel)]/85">
-                      Завершіть поточну сесію на цьому пристрої.
-                    </p>
-                  </div>
-
-                  <GhostDangerButton
-                    type="button"
-                    onClick={handleLogout}
-                    className="min-w-[220px] rounded-2xl "
-                  >
-                    <LogOut className="h-4 w-4" />
-                    Вийти
-                  </GhostDangerButton>
-                </div>
-              </SectionCard>
+              <h3 className="mt-1 text-2xl font-black tracking-[-0.035em] text-[#111]">
+                Особиста інформація
+              </h3>
             </div>
-          </div>
-        </div>
-      </div>
 
-      <EditModal
+            {profileItems.map((item) => (
+              <SettingsRow
+                key={item.type}
+                icon={item.icon}
+                label={item.label}
+                value={item.value}
+                action="Змінити"
+                onClick={() => openEditModal(item.type)}
+              />
+            ))}
+          </section>
+
+<section className="lg:hidden">
+  <button
+    type="button"
+    onClick={handleLogout}
+    className="flex w-full items-center justify-center gap-2 py-5 text-[#dc2626] transition hover:opacity-80"
+  >
+    <LogOut className="h-5 w-5" />
+    <span className="text-sm font-bold">Вийти</span>
+  </button>
+</section>
+        </div>
+
+      </div>
+    </div>
+
+    <EditModal
         open={modal.open && modal.type === "name"}
         title="Змінити ім’я та прізвище"
         onClose={closeEditModal}
@@ -1204,18 +947,17 @@ export default function Profile() {
           <FormField label="Ім’я">
             <Input
               value={draft.firstName}
-              onChange={(e) =>
-                setDraft((p) => ({ ...p, firstName: e.target.value }))
+              onChange={(event) =>
+                setDraft((prev) => ({ ...prev, firstName: event.target.value }))
               }
               placeholder="Наприклад, Михайло"
             />
           </FormField>
-
           <FormField label="Прізвище">
             <Input
               value={draft.lastName}
-              onChange={(e) =>
-                setDraft((p) => ({ ...p, lastName: e.target.value }))
+              onChange={(event) =>
+                setDraft((prev) => ({ ...prev, lastName: event.target.value }))
               }
               placeholder="Наприклад, Петренко"
             />
@@ -1234,8 +976,8 @@ export default function Profile() {
         <FormField label="Стать">
           <Select
             value={draft.gender}
-            onChange={(e) =>
-              setDraft((p) => ({ ...p, gender: e.target.value }))
+            onChange={(event) =>
+              setDraft((prev) => ({ ...prev, gender: event.target.value }))
             }
           >
             <option value="unknown">Не вказано</option>
@@ -1258,8 +1000,8 @@ export default function Profile() {
           <Input
             type="date"
             value={draft.birthDate}
-            onChange={(e) =>
-              setDraft((p) => ({ ...p, birthDate: e.target.value }))
+            onChange={(event) =>
+              setDraft((prev) => ({ ...prev, birthDate: event.target.value }))
             }
           />
         </FormField>
@@ -1271,20 +1013,19 @@ export default function Profile() {
         onClose={closeEditModal}
         onSave={closeEditModal}
         saveDisabled={!draft.phone.trim()}
-        saving={false}
       >
         <div className="space-y-4">
           <FormField label="Новий номер">
             <Input
               value={draft.phone}
-              onChange={(e) => setDraft((p) => ({ ...p, phone: e.target.value }))}
+              onChange={(event) =>
+                setDraft((prev) => ({ ...prev, phone: event.target.value }))
+              }
               placeholder="+380..."
             />
           </FormField>
-
           <p className="text-sm leading-6 text-[color:var(--color-caramel)]/85">
-            Тут можна підключити твою існуючу логіку підтвердження через
-            SMS-код.
+            Тут можна підключити існуючу логіку підтвердження через SMS-код.
           </p>
         </div>
       </EditModal>
@@ -1295,111 +1036,80 @@ export default function Profile() {
         onClose={closeEditModal}
         onSave={closeEditModal}
         saveDisabled={!draft.email.trim()}
-        saving={false}
       >
         <div className="space-y-4">
           <FormField label="Нова пошта">
             <Input
               value={draft.email}
-              onChange={(e) => setDraft((p) => ({ ...p, email: e.target.value }))}
+              onChange={(event) =>
+                setDraft((prev) => ({ ...prev, email: event.target.value }))
+              }
               placeholder="email@domain.com"
             />
           </FormField>
-
           <p className="text-sm leading-6 text-[color:var(--color-caramel)]/85">
-            Тут можна підключити твою існуючу логіку підтвердження через
-            email-код або лист.
+            Тут можна підключити існуючу логіку підтвердження через email-код або лист.
           </p>
         </div>
       </EditModal>
 
-      <div
-        className={cx(
-          "pointer-events-none fixed inset-x-0 top-[calc(12px+env(safe-area-inset-top))] z-[120] flex justify-center px-4",
-          "md:bottom-5 md:top-auto md:justify-start md:px-5",
-        )}
-      >
-        <div className="w-full max-w-[1400px]">
-          <div
-            className={cx(
-              "transition-all duration-200 ease-out",
-              toast.open
-                ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
-                : "pointer-events-none -translate-y-2 scale-[0.98] opacity-0 md:translate-y-2",
-            )}
-          >
+      <div className="pointer-events-none fixed inset-x-0 top-[calc(12px+env(safe-area-inset-top))] z-[120] flex justify-center px-4 sm:bottom-5 sm:top-auto sm:justify-start sm:px-5">
+        <div
+          className={cx(
+            "w-fit max-w-[calc(100vw-32px)] overflow-hidden rounded-2xl border bg-white shadow-[0_18px_50px_rgba(15,23,42,0.14)] transition-all duration-200",
+            toast.open
+              ? "pointer-events-auto translate-y-0 opacity-100"
+              : "pointer-events-none -translate-y-2 opacity-0 sm:translate-y-2",
+            toast.type === "success" && "border-[var(--color-sand)]",
+            toast.type === "error" && "border-[var(--color-danger-border)]",
+            toast.type === "warning" && "border-[var(--color-sand)]",
+          )}
+        >
+          <div className="flex items-start gap-3 px-4 py-3.5">
             <div
               className={cx(
-                "relative w-fit max-w-[85vw] overflow-hidden rounded-2xl border bg-white shadow-[0_16px_40px_rgba(15,23,42,0.12)]",
-                toast.type === "success" && "border-[var(--color-sand)]",
-                toast.type === "error" && "border-[var(--color-danger-border)]",
-                toast.type === "warning" && "border-[var(--color-sand)]",
+                "grid h-9 w-9 shrink-0 place-items-center rounded-xl text-white",
+                toast.type === "success" && "bg-[var(--color-forest)]",
+                toast.type === "error" && "bg-[var(--color-danger)]",
+                toast.type === "warning" && "bg-[var(--color-caramel)]",
               )}
             >
-              <div className="flex items-start gap-3 px-4 py-3.5">
-                <div
-                  className={cx(
-                    "mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white",
-                    toast.type === "success" && "bg-[var(--color-forest)]",
-                    toast.type === "error" && "bg-[var(--color-danger)]",
-                    toast.type === "warning" && "bg-[var(--color-caramel)]",
-                  )}
-                >
-                  {toast.type === "success" && (
-                    <CheckCircle2 className="h-4.5 w-4.5" />
-                  )}
-                  {toast.type === "error" && <X className="h-4.5 w-4.5" />}
-                  {toast.type === "warning" && (
-                    <AlertTriangle className="h-4.5 w-4.5" />
-                  )}
-                </div>
-
-                <div className="min-w-0">
-                  <p className="whitespace-nowrap text-[14px] font-semibold text-[var(--color-ink)]">
-                    {toast.title}
-                  </p>
-
-                  {toast.text && (
-                    <p className="mt-0.5 text-[13px] text-[color:var(--color-caramel)]/85">
-                      {toast.text}
-                    </p>
-                  )}
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setToast((prev) => ({ ...prev, open: false }))}
-                  className="ml-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[var(--color-caramel)] transition hover:bg-[var(--color-cream)] hover:text-[var(--color-ink)]"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-
-              <div
-                className={cx(
-                  "h-[2px] w-full",
-                  toast.type === "success" && "bg-[var(--color-confirmed-bg)]",
-                  toast.type === "error" && "bg-[var(--color-danger-bg)]",
-                  toast.type === "warning" && "bg-[var(--color-pending-bg)]",
-                )}
-              >
-                <div
-                  key={toast.id}
-                  className={cx(
-                    "h-full w-full origin-left",
-                    toast.type === "success" && "bg-[var(--color-forest)]",
-                    toast.type === "error" && "bg-[var(--color-danger)]",
-                    toast.type === "warning" && "bg-[var(--color-caramel)]",
-                  )}
-                  style={{
-                    animation: `toastbar ${toast.duration}ms linear forwards`,
-                  }}
-                />
-              </div>
+              {toast.type === "success" && <CheckCircle2 className="h-4 w-4" />}
+              {toast.type === "error" && <X className="h-4 w-4" />}
+              {toast.type === "warning" && <AlertTriangle className="h-4 w-4" />}
             </div>
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-[var(--color-ink)]">
+                {toast.title}
+              </p>
+              {toast.text ? (
+                <p className="mt-0.5 text-sm text-[color:var(--color-caramel)]/85">
+                  {toast.text}
+                </p>
+              ) : null}
+            </div>
+            <button
+              type="button"
+              onClick={() => setToast((prev) => ({ ...prev, open: false }))}
+              className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-[var(--color-caramel)] transition hover:bg-[var(--color-cream)] hover:text-[var(--color-ink)]"
+              aria-label="Закрити сповіщення"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="h-[2px] bg-[var(--color-cream)]">
+            <div
+              key={toast.id}
+              className={cx(
+                "h-full origin-left",
+                toast.type === "success" && "bg-[var(--color-forest)]",
+                toast.type === "error" && "bg-[var(--color-danger)]",
+                toast.type === "warning" && "bg-[var(--color-caramel)]",
+              )}
+              style={{ animation: `toastbar ${toast.duration}ms linear forwards` }}
+            />
           </div>
         </div>
-
         <style>{`
           @keyframes toastbar {
             from { transform: scaleX(1); }
@@ -1409,20 +1119,18 @@ export default function Profile() {
       </div>
 
       {errorModal.open && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-md rounded-3xl border border-[var(--color-mist)] bg-white p-6 shadow-[0_24px_80px_rgba(20,18,16,0.18)]">
-            <h3 className="text-lg font-bold text-[var(--color-ink)]">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[rgba(20,18,16,0.46)] px-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-[var(--color-mist)] bg-white p-6 shadow-[0_24px_80px_rgba(20,18,16,0.18)]">
+            <h3 className="text-lg font-black text-[var(--color-ink)]">
               {errorModal.title}
             </h3>
-            <p className="mt-2 text-sm text-[color:var(--color-caramel)]/85">
+            <p className="mt-2 text-sm leading-6 text-[color:var(--color-caramel)]/85">
               {errorModal.message}
             </p>
             <div className="mt-5 flex justify-end">
               <PrimaryButton
                 type="button"
-                onClick={() =>
-                  setErrorModal({ open: false, title: "", message: "" })
-                }
+                onClick={() => setErrorModal({ open: false, title: "", message: "" })}
               >
                 Зрозуміло
               </PrimaryButton>
@@ -1430,6 +1138,6 @@ export default function Profile() {
           </div>
         </div>
       )}
-    </div>
+    </main>
   );
 }

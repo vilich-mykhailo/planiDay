@@ -18,6 +18,7 @@ import {
   Minus,
   AlertTriangle,
   BriefcaseBusiness,
+  User,
 } from "lucide-react";
 
 const UNCATEGORIZED_ID = "__uncategorized__";
@@ -1179,14 +1180,19 @@ async function deleteCategory(catId) {
     {formatDuration(srv.duration)}
   </span>
 
-  <span className="inline-flex items-center gap-1 font-semibold text-[var(--color-ink)]">
+  <span className="inline-flex items-center gap-1  text-[var(--color-ink)]">
     <Banknote className="h-3.5 w-3.5" />
     {srv.price} грн
   </span>
 
   <span className="inline-flex w-full items-center gap-1">
-    <Users className="h-3.5 w-3.5" />
-    {resolveServiceMastersText(srv)}
+{srv.allMasters || (srv.masters?.length || 0) !== 1 ? (
+  <Users className="h-3.5 w-3.5" />
+) : (
+  <User className="h-3.5 w-3.5" />
+)}
+
+{resolveServiceMastersText(srv)}
   </span>
 </div>
                               </div>

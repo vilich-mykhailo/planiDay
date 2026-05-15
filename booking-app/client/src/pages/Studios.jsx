@@ -16,6 +16,8 @@ import {
   ArrowRight,
   Crown,
   Star,
+  LayoutGrid,
+  Scissors,
 } from "lucide-react";
 import AnimatedField from "../components/AnimatedField";
 import AnimatedDropdown from "../components/AnimatedDropdown";
@@ -313,22 +315,22 @@ async function fetchStudios() {
 
 export default function Studios() {
   const [searchParams, setSearchParams] = useSearchParams();
-const studiosQuery = useQuery({
-  queryKey: ["studios"],
-  queryFn: fetchStudios,
-  staleTime: 1000 * 60 * 10,
-  gcTime: 1000 * 60 * 30,
-  refetchOnMount: false,
-  refetchOnWindowFocus: false,
-  refetchOnReconnect: false,
-});
+  const studiosQuery = useQuery({
+    queryKey: ["studios"],
+    queryFn: fetchStudios,
+    staleTime: 1000 * 60 * 10,
+    gcTime: 1000 * 60 * 30,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  });
 
-const studios = useMemo(() => {
-  return Array.isArray(studiosQuery.data) ? studiosQuery.data : [];
-}, [studiosQuery.data]);
-const [shouldRestoreScroll, setShouldRestoreScroll] = useState(() => {
-  return sessionStorage.getItem("restore-studios-scroll") === "1";
-});
+  const studios = useMemo(() => {
+    return Array.isArray(studiosQuery.data) ? studiosQuery.data : [];
+  }, [studiosQuery.data]);
+  const [shouldRestoreScroll, setShouldRestoreScroll] = useState(() => {
+    return sessionStorage.getItem("restore-studios-scroll") === "1";
+  });
   const [q, setQ] = useState(() => searchParams.get("q") || "");
   const [city, setCity] = useState(() => searchParams.get("city") || "");
   const [category, setCategory] = useState(
@@ -355,8 +357,6 @@ const [shouldRestoreScroll, setShouldRestoreScroll] = useState(() => {
   const navigate = useNavigate();
   const location = useLocation();
   const [hasSearched, setHasSearched] = useState(false);
-
-
 
   useEffect(() => {
     if (!shouldRestoreScroll) return;
@@ -626,27 +626,20 @@ const [shouldRestoreScroll, setShouldRestoreScroll] = useState(() => {
     setIsApplying(false);
   }
 
-const isInitialLoading = studiosQuery.isLoading && !studiosQuery.data;
+  const isInitialLoading = studiosQuery.isLoading && !studiosQuery.data;
 
-if (isInitialLoading) {
-  return <StudiosSkeleton />;
-}
+  if (isInitialLoading) {
+    return <StudiosSkeleton />;
+  }
 
   return (
-     <div className="min-h-screen pb-[calc(env(safe-area-inset-bottom)+68px)] sm:pb-0">
-      <div className="mx-auto max-w-6xl px-2.5 pb-4 pt-0 sm:px-4 sm:pb-8 sm:pt-14 lg:pt-16">
+    <div className="min-h-screen pb-[calc(env(safe-area-inset-bottom)+68px)] sm:pb-0">
+     <div className="mx-auto mt-17 max-w-6xl px-2.5 pb-4 pt-0 sm:mt-0 sm:px-4 sm:pb-8 sm:pt-14 lg:pt-16">
         <div className="space-y-3 px-0 pt-2 sm:space-y-5 sm:pt-8 lg:pt-6">
-          <section className="overflow-hidden rounded-[24px] border border-stone-200/60 bg-white shadow-[0_4px_20px_-6px_rgba(120,90,60,0.08)] sm:rounded-3xl">
-            {" "}
-            <div className="h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-70" />
-            <div className="px-4 pb-7 pt-7 sm:px-6 sm:pb-4 sm:pt-5 lg:px-8 lg:pt-6">
-              <div className="mb-5 space-y-3 sm:mb-4 sm:space-y-2 lg:mb-5">
-                <div className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 px-3 py-1 sm:px-4 sm:py-1.5">
-                  <Sparkles className="h-3.5 w-3.5 text-amber-600 sm:h-4 sm:w-4" />
-                  <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-700 sm:text-xs sm:tracking-[0.22em]">
-                    Пошук послуг
-                  </span>
-                </div>
+<section className="overflow-hidden rounded-[28px] border border-[#e6ebe7] bg-white shadow-[0_18px_50px_-42px_rgba(15,23,42,0.75)]">
+  <div className="px-4 pt-5 py-3 sm:px-6 sm:py-6 lg:px-8">
+    <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+      <div className="max-w-2xl">
 
                 <h1 className="max-w-full !text-[37px] font-black leading-tight tracking-[-0.03em] text-stone-800 sm:max-w-none sm:!text-5xl lg:!text-5xl">
                   Обирай та{" "}
@@ -657,124 +650,139 @@ if (isInitialLoading) {
                   Обирай послуги поруч із тобою — швидко, зручно та без зайвих
                   дзвінків.
                 </p>
-              </div>
 
-              <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-[1.2fr_0.9fr_0.9fr_0.9fr]">
-                <AnimatedField
-                  label="Пошук"
-                  value={q}
-                  onChange={setQ}
-                  placeholder="Напр. тату, брови, манікюр…"
-                />
+      </div>
 
-                <AnimatedDropdown
-                  label="Місто"
-                  value={city}
-                  onChange={setCity}
-                  placeholder=""
-                  options={cities.map((c) => ({ value: c, label: c }))}
-                  searchable
-                />
+      <div className="hidden rounded-2xl border border-[#e6ebe7] bg-[#f6f7f6] px-4 py-3 lg:block">
+        <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#6f7672]">
+          Результати
+        </p>
+        <p className="mt-1 text-2xl font-black tracking-[-0.04em] text-[#111]">
+          {filtered.length}
+        </p>
+      </div>
+    </div>
+<div className="mt-5 rounded-[24px] border border-[#e6ebe7] bg-[#f6f7f6] p-3">
+  <div className="grid grid-cols-3 gap-2 sm:grid-cols-2 lg:grid-cols-[1.25fr_0.9fr_0.9fr_auto]">
+    
+    {/* SEARCH */}
+    <div className="col-span-3 sm:col-span-1 lg:col-span-1">
+      <AnimatedField
+        size="compact"
+        icon={Search}
+        label="Що шукаєте?"
+        value={q}
+        onChange={setQ}
+        placeholder="Манікюр, стрижка, масаж..."
+      />
+    </div>
 
-                <AnimatedDropdown
-                  label="Категорія"
-                  value={category}
-                  onChange={setCategory}
-                  placeholder=""
-                  options={categories}
-                  searchable
-                />
+    {/* 👇 MOBILE ROW */}
+    <div className="col-span-3 grid grid-cols-2 gap-2 sm:contents">
+      
+      <AnimatedDropdown
+        size="compact"
+        icon={MapPin}
+        label="Місто"
+        value={city}
+        onChange={setCity}
+        placeholder="Оберіть місто"
+        options={cities.map((c) => ({ value: c, label: c }))}
+        searchable
+      />
 
-                <AnimatedDropdown
-                  label="Сортування"
-                  value={sort}
-                  onChange={setSort}
-                  placeholder=""
-                  options={sortOptions}
-                />
-              </div>
+      <AnimatedDropdown
+        size="compact"
+        icon={Scissors}
+        label="Категорія"
+        value={category}
+        onChange={setCategory}
+        placeholder="Усі категорії"
+        options={categories}
+        searchable
+      />
+    </div>
 
-              <div className="mt-2.5 flex flex-col gap-2 sm:mt-4 sm:gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex flex-wrap gap-2">
-                  {activeChips.length === 0 ? (
-                    <span className="text-xs text-stone-500 sm:text-sm">
-                      Фільтри не вибрані
-                    </span>
-                  ) : (
-                    activeChips.map((ch) => (
-                      <FilterChip
-                        key={ch.key}
-                        onClick={() => removeChip(ch.key)}
-                      >
-                        {ch.label}
-                      </FilterChip>
-                    ))
-                  )}
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={handleApply}
-                    disabled={!hasPendingChanges || isApplying || isLoadingMore}
+    <button
+      type="button"
+      onClick={handleApply}
+      disabled={!hasPendingChanges || isApplying || isLoadingMore}
 className={cn(
-  "flex h-11 flex-1 items-center justify-center gap-2 rounded-[18px] px-4 text-sm font-bold active:scale-95 sm:h-auto sm:rounded-2xl sm:px-5 sm:py-3",
-  !hasPendingChanges || isApplying
-    ? "cursor-not-allowed border border-[var(--color-cream)] bg-[var(--color-cream)] text-[var(--color-caramel)]"
-    : [
-        // 👉 nude-green
-        "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
-        "text-white",
-
-        // 👉 hover
-        "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]"
-      ].join(" ")
+  "col-span-2 mt-4 flex h-[48px] items-center justify-center gap-2 rounded-[18px] px-5 text-sm font-black transition active:scale-95",
+  "sm:col-span-1 sm:mt-0 sm:h-[50px] sm:rounded-[20px]",
+  "lg:h-[55px] lg:min-w-[180px] lg:rounded-[18px]",
+  !hasPendingChanges || isApplying || isLoadingMore
+    ? "cursor-not-allowed bg-[#d9dfdb] text-white"
+    : "bg-[#111] text-white shadow-[0_14px_30px_-22px_rgba(15,23,42,0.9)] hover:bg-black",
 )}
-                  >
-                    {isApplying ? (
-                      <>
-                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/80 border-t-transparent" />
-                        Пошук...
-                      </>
-                    ) : (
-                      <>
-                        <Search className="h-4 w-4" />
-                        Знайти
-                      </>
-                    )}
-                  </button>
+    >
+      {isApplying ? (
+        <>
+          <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/80 border-t-transparent" />
+          Пошук
+        </>
+      ) : (
+        <>
+          <Search className="h-4 w-4" />
+          Знайти
+        </>
+      )}
+    </button>
 
-                  <button
-                    type="button"
-                    onClick={clearAll}
-                    disabled={activeChips.length === 0}
-                    className="h-11 shrink-0 whitespace-nowrap rounded-[18px] border border-stone-200 bg-white px-4 text-sm font-bold text-stone-600 transition-all duration-200 hover:border-red-200 hover:bg-red-50 hover:text-red-600 hover:shadow-sm active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 sm:h-auto sm:rounded-2xl sm:py-3"
-                  >
-                    Очистити все
-                  </button>
-                </div>
-              </div>
-            </div>
-          </section>
+<button
+  type="button"
+  onClick={clearAll}
+  disabled={activeChips.length === 0}
+  className="col-span-1 mt-4 flex h-12 items-center justify-center gap-1 rounded-[18px] border border-[#e6ebe7] bg-white px-3 text-sm font-black text-[#111] transition hover:bg-[#f1f4f2] active:scale-95 disabled:cursor-not-allowed disabled:opacity-45 sm:mt-0 sm:hidden"
+>
+  Очистити
+</button>
+  </div>
+</div>
+
+    <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex min-w-0 flex-wrap gap-2">
+        {activeChips.length === 0 ? (
+          <span className="inline-flex h-8 items-center rounded-full bg-[#f1f4f2] px-3 text-xs font-bold text-[#6f7672]">
+            Фільтри не вибрані
+          </span>
+        ) : (
+          activeChips.map((ch) => (
+            <FilterChip key={ch.key} onClick={() => removeChip(ch.key)}>
+              {ch.label}
+            </FilterChip>
+          ))
+        )}
+      </div>
+
+<div className="hidden items-center gap-2 sm:flex">
+  <button
+    type="button"
+    onClick={clearAll}
+    disabled={activeChips.length === 0}
+    className="h-10 rounded-full border border-[#e6ebe7] bg-white px-4 text-sm font-black text-[#111] transition hover:bg-[#f1f4f2] active:scale-95 disabled:cursor-not-allowed disabled:opacity-45"
+  >
+    Очистити
+  </button>
+</div>
+    </div>
+  </div>
+</section>
+
 
           <div className="flex items-center gap-2 text-sm text-stone-500">
-{studiosQuery.isFetching && (
-  <span className="rounded-full border border-stone-200 bg-stone-100 px-2 py-0.5 text-xs text-stone-600">
-    Завантаження...
-  </span>
-)}
+            {studiosQuery.isFetching && (
+              <span className="rounded-full border border-stone-200 bg-stone-100 px-2 py-0.5 text-xs text-stone-600">
+                Завантаження...
+              </span>
+            )}
 
-{hasPendingChanges && !studiosQuery.isFetching && (
+            {hasPendingChanges && !studiosQuery.isFetching && (
               <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
                 Натисніть “Знайти”
               </span>
             )}
 
-          {!hasPendingChanges && hasSearched && !studiosQuery.isFetching && (
-              <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
-                Знайдено: {filtered.length}
-              </span>
-            )}
           </div>
 
           {filtered.length === 0 ? (
@@ -791,16 +799,6 @@ className={cn(
                   Спробуй змінити місто або категорію, або прибери частину
                   фільтрів — тоді ми покажемо більше доступних студій.
                 </p>
-
-                <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
-                  <button
-                    type="button"
-                    onClick={clearAll}
-                    className="w-full rounded-2xl border border-stone-200 bg-white px-5 py-3 text-stone-600 transition-all duration-200 hover:bg-stone-50 hover:shadow-sm active:scale-[0.98] sm:w-auto"
-                  >
-                    Очистити фільтри
-                  </button>
-                </div>
 
                 <p className="mt-4 text-xs text-stone-500">
                   Порада: якщо шукаєш конкретну послугу — введи загальніше слово
@@ -902,14 +900,17 @@ className={cn(
                       <div className="absolute inset-0 bg-gradient-to-t from-stone-950/70 via-stone-900/20 to-transparent" />
                       <div className="absolute inset-0 bg-gradient-to-r from-stone-950/20 via-transparent to-transparent" />
 
-                      <div className="absolute left-4 top-4 z-20 flex flex-wrap items-center gap-2">
-                        {studio.premium && (
-                          <div className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-white shadow-[0_10px_24px_rgba(245,158,11,0.30)]">
-                            <Crown className="h-3.5 w-3.5" />
-                            Premium
-                          </div>
-                        )}
-                      </div>
+<div className="absolute left-4 top-4 z-20 flex items-center gap-2">
+
+  {studio.premium && (
+    <div className="inline-flex h-[34px] items-center gap-1.5 rounded-full border border-white/20 bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 px-3 text-[11px] font-bold uppercase tracking-[0.18em] text-white shadow-[0_10px_24px_rgba(245,158,11,0.30)]">
+      <Crown className="h-3.5 w-3.5" />
+    </div>
+  )}
+  <div className="inline-flex h-[34px] items-center rounded-full border border-white/20 bg-white/90 px-3 text-[12px] font-bold text-stone-800 shadow-sm backdrop-blur-md">
+    <span>{cat}</span>
+  </div>
+</div>
 
                       {rating !== null && (
                         <div className="absolute right-4 top-4 z-20 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/90 px-3 py-1.5 text-[12px] font-bold text-stone-800 shadow-sm backdrop-blur-md">
@@ -964,11 +965,18 @@ className={cn(
                               )} */}
                             </div>
                           </div>
+                          <div
+                            className="relative z-20 flex items-center justify-center"
+                            onClick={(e) => e.stopPropagation()}
+                            onMouseDown={(e) => e.stopPropagation()}
+                          >
+                            <FavouriteButton studio={studio} />
+                          </div>
                         </div>
                       </div>
                     </div>
 
-<div className="flex flex-1 flex-col p-5">
+{/* <div className="hidden flex-1 flex-col p-5 sm:flex">
   <div className="absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-stone-200 to-transparent" />
 
   <div className="space-y-4">
@@ -981,6 +989,8 @@ className={cn(
         Детальний опис студії скоро буде додано.
       </p>
     )}
+
+
 
     {topServices.length > 0 && (
       <div className="space-y-2">
@@ -1001,78 +1011,23 @@ className={cn(
       </div>
     )}
   </div>
+</div> */}
+{studio.premium && (
+  <div className="mt-auto">
+    <div className="relative rounded-b-[28px] bg-gradient-to-r from-orange-500 via-amber-500 to-orange-400 px-4 py-2.5">
+      <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.16),transparent)]" />
 
-  <div className="mt-auto pt-4">
-    {cat && (
-      <div className="flex items-start gap-2.5 rounded-2xl border border-stone-200/80 bg-stone-50/80 px-3 py-3">
-        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm">
-          <Sparkles className="h-4 w-4 text-amber-500" />
-        </div>
-
-        <div className="min-w-0">
-          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-stone-400">
-            Категорія
-          </p>
-          <p className="mt-1 text-sm font-medium leading-5 text-stone-700">
-            {cat}
+      <div className="relative flex items-center justify-center gap-3 text-white">
+        <div className="flex items-center gap-2">
+          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-white">
+            Premium studio
           </p>
         </div>
-      </div>
-    )}
-  </div>
 
-  <div className="pt-5">
-    <div className="flex items-center gap-3">
-      <div
-        className={cn(
-          "relative flex h-12 w-full items-center justify-center overflow-hidden rounded-[18px]",
-          "px-4 text-sm font-semibold tracking-[-0.01em] transition-all duration-300",
-          "active:scale-[0.985]",
-          studio.premium
-            ? "bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 text-white shadow-[0_12px_28px_rgba(245,158,11,0.24)]"
-            : "border border-stone-200 bg-white text-stone-900 shadow-[0_8px_24px_rgba(15,23,42,0.06)] hover:-translate-y-0.5 hover:border-stone-300 hover:shadow-[0_14px_32px_rgba(15,23,42,0.10)]",
-        )}
-      >
-        {!studio.premium && (
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white to-transparent opacity-80" />
-        )}
-
-        <span className="relative z-10 flex items-center gap-2.5">
-          <span
-            className={cn(
-              "flex h-6 w-6 items-center justify-center rounded-full",
-              studio.premium ? "bg-white/15" : "bg-emerald-50",
-            )}
-          >
-            <span
-              className={cn(
-                "h-2 w-2 rounded-full",
-                studio.premium ? "bg-white" : "bg-emerald-500",
-              )}
-            />
-          </span>
-
-          <span>Переглянути студію</span>
-
-          <ArrowRight
-            className={cn(
-              "h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5",
-              studio.premium ? "text-white/90" : "text-stone-500",
-            )}
-          />
-        </span>
-      </div>
-
-      <div
-        className="relative z-20 flex items-center justify-center"
-        onClick={(e) => e.stopPropagation()}
-        onMouseDown={(e) => e.stopPropagation()}
-      >
-        <FavouriteButton studio={studio} />
       </div>
     </div>
   </div>
-</div>
+)}
                   </div>
                 );
               })}

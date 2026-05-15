@@ -1228,64 +1228,6 @@ className="text-[11px] font-black transition-all duration-200"
     </div>
   </div>
 )}
-{chartMode === "month" && (
-  <div className="mt-3 overflow-hidden rounded-[28px] border border-violet-200/70 bg-gradient-to-br from-violet-50 via-white to-indigo-100/60 shadow-[0_14px_40px_rgba(139,92,246,0.10)]">
-    <div className="p-5">
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <p className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-amber-700/80">
-            <Activity className="h-3.5 w-3.5" />
-            Завантаженість
-          </p>
-
-          <p className="mt-2 text-sm font-bold">
-          {chartMode === "today"
-  ? `${activeDays} з 24 годин мають записи`
-  : `${activeDays} з ${data.length} днів мають записи`}
-          </p>
-        </div>
-
-        <div
-          className={cn(
-            "flex h-14 min-w-[76px] items-center justify-center rounded-2xl px-4 shadow-[0_10px_30px_rgba(245,158,11,0.14)]",
-            activeDays / Math.max(data.length, 1) < 0.4
-              ? "bg-emerald-100 text-emerald-700"
-              : activeDays / Math.max(data.length, 1) < 0.75
-                ? "bg-amber-100 text-amber-700"
-                : "bg-red-100 text-red-700",
-          )}
-        >
-          <span className="text-xl font-black">
-            {Math.min(
-              100,
-              Math.round((activeDays / Math.max(data.length, 1)) * 100),
-            )}
-            %
-          </span>
-        </div>
-      </div>
-
-      <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-white/80">
-        <div
-          className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-amber-400 to-red-500"
-          style={{
-            width: "100%",
-            clipPath: `inset(0 ${
-              100 -
-              Math.min(
-                100,
-                Math.round((activeDays / Math.max(data.length, 1)) * 100),
-              )
-            }% 0 0 round 999px)`,
-          }}
-        />
-      </div>
-    </div>
-  </div>
-
-)}
-
-
 </div>
       </div>
     </SectionShell>
