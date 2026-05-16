@@ -30,6 +30,7 @@ import {
   Search,
   X,
   Settings2,
+  LayoutGrid,
 } from "lucide-react";
 import { api } from "../api/http";
 import { useStudio } from "../context/studio/useStudio";
@@ -565,12 +566,12 @@ const staticRoutes = [
 
   return (
     <>
-   <header className="fixed left-0 right-0 top-2 z-[60] sm:top-3">
-          <div className="mx-auto max-w-6xl px-3 sm:px-4">
-          <div className="overflow-hidden rounded-[24px] border border-white/70 bg-white/85 shadow-[0_18px_50px_rgba(24,24,27,0.10)] ring-1 ring-black/[0.03] backdrop-blur-2xl sm:rounded-[30px]">
-              <div className="h-[2px] bg-gradient-to-r from-[var(--color-sidebar-accent)] via-[var(--color-sidebar-accent-hover)] to-[var(--color-sidebar-accent-soft)]" />
+<header className="fixed left-0 right-0 top-2 z-[60] sm:top-3">
+  <div className="mx-auto max-w-6xl px-3 sm:px-4">
+    <div className="lg:overflow-hidden lg:rounded-[30px] lg:border lg:border-white/70 lg:bg-white/85 lg:shadow-[0_18px_50px_rgba(24,24,27,0.10)] lg:ring-1 lg:ring-black/[0.03] lg:backdrop-blur-2xl">
+      <div className="hidden h-[2px] bg-gradient-to-r from-[var(--color-sidebar-accent)] via-[var(--color-sidebar-accent-hover)] to-[var(--color-sidebar-accent-soft)] lg:block" />
 
-           <div className="relative flex h-14 items-center justify-end gap-2 px-2.5 sm:h-16 sm:gap-3 sm:px-4 lg:justify-between">
+      <div className="relative flex h-14 items-center justify-between gap-2 px-2.5 sm:h-16 sm:gap-3 sm:px-4">
 {/* desktop logo */}
 <Link
   to="/"
@@ -589,17 +590,18 @@ const staticRoutes = [
   </span>
 </Link>
 
-{/* mobile centered logo */}
+{/* mobile logo */}
 <Link
   to="/"
   aria-label="Planiday"
-  className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center"
+  className="flex min-w-0 items-center gap-2 rounded-2xl px-1.5 py-1 transition active:scale-[0.98] lg:hidden"
 >
-  <span className="text-[22px] font-black tracking-[-0.08em] text-[var(--color-ink)]">
-    PLANI
-    <span className="text-[var(--color-sidebar-accent)]">
-      DAY
-    </span>
+  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-black text-sm font-black text-white">
+    P
+  </span>
+
+  <span className="truncate text-sm font-black tracking-tight text-[var(--color-ink)] sm:text-base">
+    PlaniDay
   </span>
 </Link>
 
@@ -613,21 +615,19 @@ const staticRoutes = [
 
                 {desktopItems.actions}
 
-                <button
-                  type="button"
-                  onClick={() => setOpen((v) => !v)}
-className={cx(
-  "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[var(--color-cream)] bg-white/90 text-[var(--color-ink)] shadow-[0_4px_16px_rgba(27,27,27,0.06)] transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.97] sm:h-11 sm:w-11 sm:rounded-2xl lg:hidden",
-)}
-                  aria-label="Menu"
-                  aria-expanded={open}
-                >
-                  {open ? (
-                    <X className="h-5 w-5" />
-                  ) : (
-                    <Menu className="h-5 w-5" />
-                  )}
-                </button>
+<button
+  type="button"
+  onClick={() => setOpen((v) => !v)}
+  className="flex h-12 w-12 items-center justify-center rounded-[18px] bg-white text-[#111] shadow-[0_16px_35px_rgba(15,23,42,0.10)] transition hover:scale-105 active:scale-95 lg:hidden"
+  aria-label="Menu"
+  aria-expanded={open}
+>
+  {open ? (
+    <X className="h-6 w-6" />
+  ) : (
+    <LayoutGrid className="h-6 w-6" />
+  )}
+</button>
               </div>
             </div>
           </div>
@@ -649,195 +649,176 @@ className={cx(
             onClick={() => setOpen(false)}
           />
 
-          <aside
-            className={cx(
-              "absolute right-0 top-0 h-dvh w-[76%] max-w-[280px] overflow-hidden border-l border-white/20 bg-[rgba(255,255,255,0.96)] backdrop-blur-2xl shadow-[0_24px_80px_rgba(0,0,0,0.22)] transition-transform duration-300 ease-out sm:w-[88%] sm:max-w-[360px]",
-              open ? "translate-x-0" : "translate-x-full",
-            )}
-          >
-            <div className="flex h-full flex-col">
-<div className="relative border-b border-[var(--color-cream)] bg-white px-3 pb-2.5 pt-2.5 sm:px-4 sm:pb-3 sm:pt-3">
-<div className="relative overflow-hidden rounded-[26px] border border-[#ece6dd] bg-[#fcfaf7] p-3 shadow-[0_16px_40px_rgba(60,40,20,0.10)]">
+<aside
+  className={cx(
+    "absolute right-0 top-0 h-dvh w-[76%] max-w-[360px] overflow-hidden bg-white shadow-[0_24px_80px_rgba(0,0,0,0.22)] transition-transform duration-300 ease-out",
+    open ? "translate-x-0" : "translate-x-full",
+  )}
+>
+  <div className="flex h-full flex-col">
+    {/* TOP */}
+    <div className="border-b border-stone-100 px-5 pb-5 pt-[calc(env(safe-area-inset-top)+18px)]">
+      <div className="mb-5 flex items-center justify-between">
+        <Link
+          to="/"
+          onClick={() => setOpen(false)}
+          className="flex items-center gap-2"
+        >
+          <span className="grid h-10 w-10 place-items-center rounded-2xl bg-[var(--color-sidebar-accent)] text-sm font-black text-white shadow-[0_10px_24px_rgba(24,24,27,0.20)]">
+            P
+          </span>
 
-  {/* left accent */}
-  <div className="absolute left-0 top-0 h-full w-[7px] bg-[#2a2723]" />
+          <span className="text-lg font-black tracking-tight text-[var(--color-ink)]">
+            Plani
+            <span className="text-[var(--color-sidebar-accent-soft)]">
+              Day
+            </span>
+          </span>
+        </Link>
 
-  {/* dots */}
-  <div className="absolute left-4 top-4 grid grid-cols-5 gap-[5px] opacity-25">
-    {Array.from({ length: 20 }).map((_, i) => (
-      <span
-        key={i}
-        className="h-[2px] w-[2px] rounded-full bg-[#8b8177]"
-      />
-    ))}
-  </div>
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          className="grid h-10 w-10 place-items-center rounded-full bg-stone-100 text-stone-700 transition hover:bg-stone-200 active:scale-95"
+          aria-label="Закрити меню"
+        >
+          <X className="h-5 w-5" />
+        </button>
+      </div>
 
-  {/* soft decor */}
-  <div className="pointer-events-none absolute bottom-0 right-0 h-full w-[42%] overflow-hidden">
-    <div className="absolute bottom-0 right-0 h-28 w-28 rounded-full bg-[#f3ede5]" />
-    <div className="absolute bottom-[-10px] right-10 h-20 w-20 rounded-full bg-[#efe6dc]" />
-  </div>
-
-  <div className="relative flex items-start justify-between gap-3">
-
-    {/* content */}
-    <div className="flex items-center gap-3 min-w-0">
-
-      {/* logo */}
-      <div className="grid h-[72px] w-[72px] shrink-0 place-items-center rounded-[22px] bg-white p-2 shadow-[0_10px_24px_rgba(0,0,0,0.12)]">
-        <div className="grid h-full w-full place-items-center overflow-hidden rounded-[16px] bg-black">
+      <div className="flex items-center gap-3 rounded-[24px] bg-stone-50 p-3">
+        <div className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-2xl bg-white shadow-sm">
           {showOwnerIdentity && studioLogo ? (
-            <img
-              src={studioLogo}
-              className="h-full w-full object-cover"
-            />
+            <img src={studioLogo} className="h-full w-full object-cover" />
           ) : role === "client" && clientPhoto ? (
-            <img
-              src={clientPhoto}
-              className="h-full w-full object-cover"
-            />
+            <img src={clientPhoto} className="h-full w-full object-cover" />
           ) : (
-            <span className="text-xl font-black text-white">
+            <span className="text-lg font-black text-[var(--color-sidebar-accent)]">
               P
             </span>
           )}
         </div>
-      </div>
 
-      {/* text */}
-      <div className="min-w-0 flex-1 pt-1">
+        <div className="min-w-0 flex-1">
+          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-stone-400">
+            {mobileItems.subtitle}
+          </p>
 
-        <h2 className="max-w-[170px] truncate text-[20px] font-black leading-none tracking-[-0.04em] text-[#1d2329]">
-          {showOwnerIdentity && studioName
-            ? studioName
-            : role === "client" && clientFullName
-            ? clientFullName
-            : "MotorCar"}
-        </h2>
-
-        <p className="mt-1 text-[10px] font-medium text-[#8d8a86]">
-          Панель керування
-        </p>
-
-
+          <h2 className="mt-1 truncate text-lg font-black leading-tight text-[var(--color-ink)]">
+            {showOwnerIdentity && studioName
+              ? studioName
+              : role === "client" && clientFullName
+              ? clientFullName
+              : "PlaniDay"}
+          </h2>
+        </div>
       </div>
     </div>
 
-    {/* close */}
-    <button
-      onClick={() => setOpen(false)}
-      className="relative z-10 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#2b2118] shadow-[0_6px_16px_rgba(0,0,0,0.10)] transition hover:bg-[#f7efe4]"
-    >
-      <X className="h-4 w-4" />
-    </button>
-  </div>
-</div>
-</div>
-
-              <div className="flex-1 overflow-y-auto px-2.5 py-3 sm:px-3 sm:py-4">
-                <nav className="space-y-0.5 sm:space-y-1">
-                  {mobileItems.links.map((i) => (
-<NavLink
-  key={i.to}
-  to={i.to}
-  end={i.to === "/dashboard"}
-  onClick={() => {
-    i.onClick?.();
-    setOpen(false);
-  }}
-  className={({ isActive }) =>
-    cx(
-      "group relative flex items-center gap-3 overflow-hidden rounded-[18px] border px-3 py-3 transition-all duration-300 ease-out sm:rounded-[22px] sm:py-3.5",
-isActive
-  ? "border-transparent bg-[var(--color-sidebar-selected)] text-[var(--color-ink)] shadow-[0_10px_24px_rgba(80,55,30,0.10)]"
-  : "border-transparent text-[var(--color-caramel)] hover:bg-[var(--color-cream)]"
-    )
-  }
->
-  {({ isActive }) => {
-    const badgeCount =
-      i.to === "/dashboard/bookings"
-        ? newBookingsCount
-        : i.to === "/dashboard/notifications"
-          ? unreadNotifications
-          : 0;
-
-    return (
-      <>
-        <span
-          className={cx(
-            "absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full transition-all duration-200 sm:h-7",
-            isActive
-  ? "bg-[var(--color-white)]"
-  : "bg-transparent"
-          )}
-        />
-
-        <MobileNavIcon active={isActive}>{i.icon}</MobileNavIcon>
-
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-semibold">{i.label}</div>
-        </div>
-
-        {badgeCount > 0 && (
-          <span
-            className={cx(
-              "ml-auto mr-1.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold",
-isActive
-  ? "bg-[var(--color-danger)] text-white"
-  : "bg-[var(--color-danger)] text-white",
-            )}
+    {/* LINKS */}
+    <div className="flex-1 overflow-y-auto px-3 py-4">
+      <nav className="space-y-1">
+        {mobileItems.links.map((i) => (
+          <NavLink
+            key={i.to}
+            to={i.to}
+            end={i.to === "/dashboard"}
+            onClick={() => {
+              i.onClick?.();
+              setOpen(false);
+            }}
+            className={({ isActive }) =>
+              cx(
+                "group flex min-h-[54px] items-center gap-3 rounded-2xl px-3.5 py-2.5 text-[15px] font-bold transition-all duration-200",
+                isActive
+                  ? "bg-[var(--color-sidebar-accent)] text-white shadow-[0_12px_28px_rgba(24,24,27,0.18)]"
+                  : "text-stone-800 hover:bg-stone-100 active:scale-[0.99]",
+              )
+            }
           >
-            {badgeCount > 9 ? "9+" : badgeCount}
-          </span>
-        )}
-      </>
-    );
-  }}
-</NavLink>
-                  ))}
-                </nav>
-              </div>
+            {({ isActive }) => {
+              const badgeCount =
+                i.to === "/dashboard/bookings"
+                  ? newBookingsCount
+                  : i.to === "/dashboard/notifications"
+                    ? unreadNotifications
+                    : 0;
 
-              <div className="border-t border-[var(--color-cream)] bg-white/70 p-2.5 backdrop-blur-xl sm:p-3">
-                {mobileItems.logout ? (
-<button
-  type="button"
-  onClick={() => {
-    handleLogout();
-    setOpen(false);
-  }}
-  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
->
-  <LogOut className="h-4 w-4 text-[var(--color-danger)]" />
-  Вийти
-</button>
-                ) : (
-                  <div className="grid grid-cols-1 gap-2">
-                    <ButtonLink
-                      to="/login"
-                      variant="primary"
-                      disabled={isLogin}
-                      onClick={() => setOpen(false)}
-                      className="w-full rounded-[18px] py-2.5 sm:rounded-[20px] sm:py-3"
-                    >
-                      Увійти як клієнт
-                    </ButtonLink>
+              return (
+                <>
+                  <span
+                    className={cx(
+                      "grid h-10 w-10 shrink-0 place-items-center rounded-2xl transition",
+                      isActive
+                        ? "bg-white/15 text-white"
+                        : "bg-stone-100 text-stone-600 group-hover:bg-white",
+                    )}
+                  >
+                    {i.icon}
+                  </span>
 
-                    <ButtonLink
-                      to="/login-owner"
-                      variant="secondary"
-                      disabled={isOwnerLogin}
-                      onClick={() => setOpen(false)}
-                      className="w-full rounded-[18px] py-2.5 sm:rounded-[20px] sm:py-3"
+                  <span className="min-w-0 flex-1 truncate">{i.label}</span>
+
+                  {badgeCount > 0 && (
+                    <span
+                      className={cx(
+                        "grid h-6 min-w-6 place-items-center rounded-full px-1.5 text-[11px] font-black",
+                        isActive
+                          ? "bg-white text-[var(--color-sidebar-accent)]"
+                          : "bg-red-500 text-white",
+                      )}
                     >
-                      Увійти як власник
-                    </ButtonLink>
-                  </div>
-                )}
-              </div>
-            </div>
-          </aside>
+                      {badgeCount > 9 ? "9+" : badgeCount}
+                    </span>
+                  )}
+                </>
+              );
+            }}
+          </NavLink>
+        ))}
+      </nav>
+    </div>
+
+    {/* BOTTOM */}
+    <div className="border-t border-stone-100 bg-white p-4 pb-[calc(env(safe-area-inset-bottom)+16px)]">
+      {mobileItems.logout ? (
+        <button
+          type="button"
+          onClick={() => {
+            handleLogout();
+            setOpen(false);
+          }}
+          className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-stone-100 px-4 text-sm font-black text-stone-900 transition hover:bg-stone-200 active:scale-[0.98]"
+        >
+          <LogOut className="h-4 w-4 text-red-500" />
+          Вийти
+        </button>
+      ) : (
+        <div className="grid gap-2">
+          <ButtonLink
+            to="/login"
+            variant="primary"
+            disabled={isLogin}
+            onClick={() => setOpen(false)}
+            className="w-full rounded-2xl py-3"
+          >
+            Увійти як клієнт
+          </ButtonLink>
+
+          <ButtonLink
+            to="/login-owner"
+            variant="secondary"
+            disabled={isOwnerLogin}
+            onClick={() => setOpen(false)}
+            className="w-full rounded-2xl py-3"
+          >
+            Увійти як власник
+          </ButtonLink>
+        </div>
+      )}
+    </div>
+  </div>
+</aside>
         </div>
       )}
 

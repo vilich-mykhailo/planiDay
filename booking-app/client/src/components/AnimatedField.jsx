@@ -1,5 +1,5 @@
 // AnimatedField.jsx
-import { Search } from "lucide-react";
+import { CircleX, Search, X } from "lucide-react";
 
 function cn(...classes) {
   return classes.filter(Boolean).join(" ");
@@ -23,48 +23,55 @@ export default function AnimatedField({
         disabled && "pointer-events-none opacity-60",
       )}
     >
-      <div
-        className={cn(
-          "group relative h-[48px] w-full rounded-[18px] border pl-4  pr-10 text-left transition-all duration-200",
-          "sm:h-[50px] sm:rounded-[20px]",
-          "lg:h-[55px] lg:rounded-[18px]",
-          "bg-gradient-to-b from-white to-stone-50",
-          "shadow-[0_6px_22px_rgba(15,23,42,0.045)]",
-          "active:scale-[0.99]",
-          "border-stone-200/80 hover:-translate-y-[1px] hover:border-stone-300 hover:shadow-[0_10px_28px_rgba(15,23,42,0.07)]",
-          "focus-within:border-amber-300/70 focus-within:ring-4 focus-within:ring-amber-400/10",
-        )}
-      >
-        <label
-          className={cn(
-            "pointer-events-none absolute left-4 transition-all duration-200",
-            filled
-              ? "top-2 text-[9px] font-bold uppercase tracking-[0.16em] text-amber-600 sm:top-2.5 sm:text-[10px]"
-              : "top-1/2 -translate-y-1/2 text-[13px] font-semibold text-stone-500 sm:text-sm",
-            !filled &&
-              "group-focus-within:top-2 group-focus-within:-translate-y-0 group-focus-within:text-[9px] group-focus-within:font-bold group-focus-within:uppercase group-focus-within:tracking-[0.16em] group-focus-within:text-amber-600 sm:group-focus-within:top-2.5 sm:group-focus-within:text-[10px]",
-          )}
-        >
-          {label}
-        </label>
+<div
+  className={cn(
+    "group relative h-10 w-full rounded-[16px] border border-[#eadfce] bg-white pl-11 pr-9 text-left transition-all duration-200",
+    "shadow-[0_8px_22px_rgba(15,23,42,0.035)]",
+    "sm:h-[68px] sm:rounded-[26px] sm:pl-[62px] sm:pr-11",
+    "active:scale-[0.99]",
+    "focus-within:border-[#f1dfbf] focus-within:ring-4 focus-within:ring-orange-200/20",
+  )}
+>
+<label
+  className={cn(
+    "pointer-events-none absolute left-9 top-1/2 -translate-y-1/2 text-[12px] font-bold text-[#77716b] transition-all duration-200 sm:left-[62px] sm:text-[16px]",
+    filled && "opacity-0",
+  )}
+>
+  {label}
+</label>
 
-        <input
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder=""
-          type={type}
-          disabled={disabled}
-          inputMode={inputMode}
-          className={cn(
-            "block h-full w-full bg-transparent pr-1 text-sm font-bold text-stone-800 outline-none",
-            filled ? "pt-3" : "pt-0",
-            "group-focus-within:pt-3",
-          )}
-        />
+<span
+  className={cn(
+    "pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 transition-colors duration-200 sm:left-6",
+    filled ? "text-[#ff6b00]" : "text-[#8a8580] group-focus-within:text-[#ff6b00]",
+  )}
+>
+  <Search className="h-4 w-4 sm:h-[22px] sm:w-[22px]" />
+</span>
 
-        <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 transition-all duration-200">
-          <Search className="h-4 w-4" />
-        </span>
+<input
+  value={value}
+  onChange={(e) => onChange(e.target.value)}
+  placeholder=""
+  type={type}
+  disabled={disabled}
+  inputMode={inputMode}
+  className="block h-full w-full bg-transparent text-[12px] font-bold text-stone-800 outline-none sm:text-[16px]"
+/>
+
+{filled && (
+  <button
+    type="button"
+    onMouseDown={(e) => e.preventDefault()}
+    onClick={() => onChange("")}
+    disabled={disabled}
+    className="absolute right-4 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full text-[#8a8580] transition hover:bg-stone-100 hover:text-[#111] active:scale-95 disabled:pointer-events-none"
+    aria-label="Очистити поле"
+  >
+    <X className="h-4 w-4" />
+  </button>
+)}
       </div>
     </div>
   );

@@ -139,7 +139,7 @@ export default function Favourites() {
 if (!favourites || favourites.length === 0) {
   return (
     <div className="min-h-screen pb-[calc(env(safe-area-inset-bottom)+68px)] sm:pb-0">
-      <div className="mx-auto max-w-6xl px-2.5 pb-4 pt-0 sm:px-4 sm:pb-8 sm:pt-14 lg:pt-16">
+      <div className="mx-auto max-w-6xl px-2.5 pb-4 pt-18 sm:px-4 sm:pb-8 sm:pt-14 lg:pt-16">
         <div className="space-y-3 px-0 pt-2 sm:space-y-5 sm:pt-8 lg:pt-6">
           <section className="overflow-hidden rounded-[24px] border border-[var(--color-mist)] bg-white shadow-[var(--shadow-soft)] sm:rounded-3xl">
             <div className="h-[2px] bg-[linear-gradient(90deg,var(--color-forest),var(--color-caramel),var(--color-ink))] opacity-70" />

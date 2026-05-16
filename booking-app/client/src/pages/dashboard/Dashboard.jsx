@@ -517,7 +517,7 @@ export default function Dashboard() {
           </aside>
 
           <section
-            className="self-start overflow-hidden px-3 py-2 sm:py-4">
+            className="self-start overflow-hidden px-3 py-2 sm:py-4 ">
             <Outlet />
           </section>
         </div>

@@ -720,7 +720,7 @@ function openStudio(booking) {
 
   return (
     <div className="min-h-screen pb-[calc(env(safe-area-inset-bottom)+68px)] sm:pb-0">
-      <div className="mx-auto max-w-6xl px-2.5 pb-4 pt-0 sm:px-4 sm:pb-8 sm:pt-14 lg:pt-16">
+      <div className="mx-auto max-w-6xl px-2.5 pb-4 pt-18 sm:px-4 sm:pb-8 sm:pt-14 lg:pt-16">
         <div className="space-y-3 px-0 pt-2 sm:space-y-3 sm:pt-8 lg:pt-6">
           <section className="overflow-hidden rounded-[24px] border border-[var(--color-cream)] bg-white shadow-[var(--shadow-soft)] sm:rounded-3xl">
             <div className="h-[2px] bg-gradient-to-r from-[var(--color-forest)] via-[var(--color-caramel)] to-[var(--color-ink)] opacity-70" />
@@ -739,10 +739,6 @@ function openStudio(booking) {
                   <span className="text-[var(--color-caramel)]">записами</span>
                 </h1>
 
-                <p className="max-w-2xl text-sm leading-6 text-[var(--color-caramel)] sm:text-base sm:leading-7">
-                  Переглядай майбутні, минулі та скасовані записи, знаходь
-                  потрібну студію та швидко керуй бронюваннями.
-                </p>
               </div>
 
               <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -752,7 +748,7 @@ function openStudio(booking) {
                     active={tab === "upcoming"}
                     onClick={() => setTab("upcoming")}
                   >
-                    Майбутні ({counters.upcoming})
+                    Активні ({counters.upcoming})
                   </FilterTab>
 
                   <FilterTab
@@ -760,70 +756,48 @@ function openStudio(booking) {
                     active={tab === "past"}
                     onClick={() => setTab("past")}
                   >
-                    Минулі ({counters.past})
+                    Завершені ({counters.past})
                   </FilterTab>
 
-                  <FilterTab
-                    type="danger"
-                    active={tab === "canceled"}
-                    onClick={() => setTab("canceled")}
-                  >
-                    Скасовані ({counters.canceled})
-                  </FilterTab>
-                  <FilterTab
-                    type="default"
-                    active={tab === "all"}
-                    onClick={() => setTab("all")}
-                  >
-                    Усі ({counters.all})
-                  </FilterTab>
                 </div>
 
-                <div className="w-full lg:w-[360px]">
-                  <div className="flex items-center gap-2.5 rounded-2xl border border-[var(--color-cream)] bg-white px-4 py-3 shadow-sm transition-all duration-200 focus-within:border-[var(--color-caramel)] focus-within:ring-4 focus-within:ring-[rgba(180,140,108,0.12)]">
-                    <Search className="h-4 w-4 text-[var(--color-caramel)]" />
 
-                    <input
-                      value={q}
-                      onChange={(e) => setQ(e.target.value)}
-                      placeholder="Пошук: студія, послуга, дата…"
-                      className="w-full bg-transparent text-sm text-[var(--color-ink)] outline-none placeholder:text-[var(--color-caramel)]"
-                    />
-
-                    {q ? (
-                      <button
-                        type="button"
-                        onClick={() => setQ("")}
-                        className="text-[var(--color-caramel)] transition hover:text-[var(--color-danger)]"
-                        aria-label="Очистити пошук"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    ) : null}
-                  </div>
-                </div>
               </div>
             </div>
           </section>
 
-          <div className="flex items-center gap-2 text-sm text-[var(--color-caramel)]">
-            {q ? (
-              <span className="rounded-full border border-[var(--color-sand)] bg-[var(--color-pending-bg)] px-2 py-0.5 text-xs font-medium text-[var(--color-forest)]">
-                Пошук: {q}
-              </span>
-            ) : null}
-          </div>
-
           {visibleBookings.length === 0 ? (
             <EmptyState />
           ) : (
-            <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2">
-              {visibleBookings.map((b, idx) => {
+<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+  {visibleBookings.map((b, idx) => {
+    
                 const status = resolveBookingStatus(b, nowTs);
                 const bookingPast = status === "completed";
                 const statusUi = getStatusUi(status, b.canceledBy);
                 const title = b.studioName || "Студія";
                 const service = b.serviceName || "Послуга";
+const statusBadge = {
+  canceled: {
+    label: "Скасовано",
+    className: "bg-[#ef4444] text-white",
+  },
+  confirmed: {
+    label: "Підтверджено",
+    className: "bg-[#22c55e] text-white",
+  },
+  completed: {
+    label: "Завершено",
+    className: "bg-[#6b7280] text-white",
+  },
+  new: {
+    label: "Очікує",
+    className: "bg-[#f59e0b] text-white",
+  },
+}[status] || {
+  label: "Очікує",
+  className: "bg-[#f59e0b] text-white",
+};
                 const rowId =
                   b.id ??
                   `${b.studioSlug ?? "studio"}-${b.date ?? "d"}-${b.time ?? "t"}-${idx}`;
@@ -845,146 +819,121 @@ function openStudio(booking) {
                 const studioLogo = toPublicUrl(
                   b.studio?.logoUrl || b.logoUrl || b.studioLogo || "",
                 );
+const masterName =
+  b?.masterName ||
+  b?.master?.name ||
+  b?.staffName ||
+  b?.staff?.name ||
+  b?.employeeName ||
+  b?.employee?.name ||
+  "Майстер";
 
-                return (
-<div
-  key={rowId}
-  className={cn(
-    "rounded-[28px] border border-[var(--color-cream)] bg-white p-3.5 shadow-[0_10px_30px_rgba(27,27,27,0.06)] transition-all duration-200 hover:border-[var(--border-hover-primary)] hover:shadow-[0_14px_34px_rgba(27,27,27,0.10)] sm:p-4",
-    bookingPast && "bg-[var(--color-sand)]",
-  )}
->
-  <div className="relative grid grid-cols-[1fr_auto] gap-3">
-    <div className="min-w-0">
-<div
-  className={cn(
-    "inline-flex items-center justify-center gap-2 rounded-2xl border px-2.5 py-1.5 text-xs font-semibold shadow-sm",
-    statusUi.badge,
-  )}
->
-  <statusUi.icon className={cn("h-3.5 w-3.5", statusUi.textColor)} />
-  <span className={statusUi.textColor}>{statusUi.text}</span>
-</div>
+const masterPhoto = toPublicUrl(
+  b?.masterPhoto ||
+    b?.masterAvatar ||
+    b?.masterImage ||
+    b?.master?.photo ||
+    b?.master?.photoUrl ||
+    b?.master?.avatar ||
+    b?.master?.avatarUrl ||
+    b?.employee?.photo ||
+    b?.employee?.photoUrl ||
+    b?.employee?.avatar ||
+    b?.employee?.avatarUrl ||
+    b?.staff?.photo ||
+    b?.staff?.photoUrl ||
+    "",
+);
 
-      <h3 className="mt-3 line-clamp-2 text-[18px] font-black leading-[1.05] tracking-[-0.03em] text-[var(--color-ink)]">
-        {service}
-      </h3>
-
-<div
-  role="button"
-  tabIndex={0}
-  onClick={() => openStudio(b)}
-  onKeyDown={(e) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      openStudio(b);
-    }
-  }}
-  className="mt-4 flex min-w-0 cursor-pointer items-center gap-2 rounded-2xl p-2 -m-2 text-left transition hover:bg-[var(--color-cream)] active:scale-[0.99]"
->
-        {studioLogo ? (
-          <img
-            src={studioLogo}
-            alt={title}
-            className="h-8 w-8 shrink-0 rounded-full border border-[var(--color-cream)] object-cover"
-          />
-        ) : (
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--color-cream)] bg-[var(--color-cream)]">
-            <Sparkles className="h-4 w-4 text-[var(--color-forest)]" />
-          </div>
-        )}
-
-        <p className="truncate text-[15px] font-medium text-[var(--color-ink)]">
-          {title}
-        </p>
-</div>
-
-
-      <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-        <button
-          type="button"
-          onClick={() => {
-            if (bookingPast) {
-              const studioPath = b.studioSlug || b.studio?.slug || b.studioId;
-
-              if (!studioPath) {
-                alert("Не вдалося відкрити студію для повторного запису");
-                return;
-              }
-
-              navigate(`/${studioPath}`, {
-                state: {
-                  openBooking: true,
-                  rebook: true,
-                  preselectedService: { serviceId: b.serviceId },
-                  preselectedMasterId: b.masterId || null,
-                },
-              });
-
-              return;
-            }
-
-            setActiveBookingId(b.id);
-          }}
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
-        >
-          {bookingPast ? (
-            <>
-              <RefreshCw className="h-4 w-4" />
-              Забронювати ще раз
-            </>
-          ) : (
-            <>
-              <Eye className="h-4 w-4" />
-              Переглянути
-            </>
-          )}
-        </button>
-
-        {canRescheduleBooking(b) && (
-          <button
-            type="button"
-            onClick={() => handleRescheduleClick(b)}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
-          >
-            <RefreshCw className="h-4 w-4" />
-            Перенести
-          </button>
-        )}
-
-        {status !== "canceled" && !bookingPast && (
-          <button
-            type="button"
-            onClick={() => setCancelConfirmId(b.id)}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
-          >
-            <XCircle className="h-4 w-4" />
-            Скасувати
-          </button>
-        )}
+return (
+  <div
+    key={rowId}
+    role="button"
+    tabIndex={0}
+    onClick={() => setActiveBookingId(b.id)}
+    onKeyDown={(e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        setActiveBookingId(b.id);
+      }
+    }}
+    className={cn(
+      "rounded-[24px] border border-[var(--color-cream)] bg-white px-4 py-4 shadow-[0_14px_38px_rgba(27,27,27,0.08)] transition-all duration-200 hover:border-[var(--border-hover-primary)] hover:shadow-[0_18px_46px_rgba(27,27,27,0.12)] active:scale-[0.99]",
+      bookingPast && "opacity-80",
+    )}
+  >
+   <div className="grid grid-cols-[1fr_115px] gap-4">
+<div className="min-w-0">
+  {/* Майстер */}
+  <div className="grid min-h-[46px] grid-cols-[36px_1fr] items-center gap-3">
+    {masterPhoto ? (
+      <img
+        src={masterPhoto}
+        alt={masterName}
+        className="h-9 w-9 rounded-full object-cover"
+      />
+    ) : (
+      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-cream)] text-sm font-black text-[var(--color-ink)]">
+        {masterName?.[0] || "М"}
       </div>
+    )}
+
+    <div className="min-w-0">
+      <p className="text-[10px] font-black uppercase leading-none tracking-[0.16em] text-[var(--color-ink)]/35">
+        Майстер
+      </p>
+
+      <p className="mt-1 truncate text-[15px] font-black leading-tight tracking-[-0.03em] text-[var(--color-ink)]">
+        {masterName}
+      </p>
+    </div>
+  </div>
+
+  <div className="my-3 h-px w-full bg-[var(--color-ink)]/10" />
+
+  {/* Послуга */}
+  <div className="grid min-h-[46px] grid-cols-[36px_1fr] items-center gap-3">
+    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-cream)] text-[var(--color-ink)]">
+      <Scissors className="h-4 w-4" />
     </div>
 
-    <div
-      className={cn(
-        "relative flex min-w-[78px] flex-col items-center justify-center border-l pl-3 text-center",
-        statusUi.side,
-      )}
-    >
-      <span className="text-[14px] font-medium capitalize text-[var(--color-caramel)]">
-        {monthLabel}
-      </span>
+    <div className="min-w-0">
+      <p className="text-[10px] font-black uppercase leading-none tracking-[0.16em] text-[var(--color-ink)]/35">
+        Послуга
+      </p>
 
-      <span className="mt-1 text-[28px] font-light leading-none tracking-[-0.05em] text-[var(--color-ink)]">
-        {dayLabel}
-      </span>
-
-      <span className={cn("mt-2 text-[16px] font-semibold", statusUi.time)}>
-        {timeLabel}
-      </span>
+<p className="mt-1 line-clamp-2 text-[15px] font-black leading-[1.15] tracking-[-0.03em] text-[var(--color-ink)]">
+  {service}
+</p>
     </div>
   </div>
 </div>
+
+      <div className="flex flex-col items-center border-l border-[var(--color-ink)]/10 pl-4 text-center">
+       <div
+  className={cn(
+    "mb-4 rounded-full px-3 py-1 text-[11px] font-black leading-none shadow-[0_6px_16px_rgba(0,0,0,0.10)]",
+    statusBadge.className,
+  )}
+>
+  {statusBadge.label}
+</div>
+
+        <span className="text-[12px] font-medium capitalize text-[var(--color-ink)]/45">
+          {monthLabel}
+        </span>
+
+        <span className="mt-0.5 text-[34px] font-light leading-none tracking-[-0.06em] text-[var(--color-ink)]">
+          {dayLabel}
+        </span>
+
+<span className="mt-1 text-[14px] font-bold capitalize text-[var(--color-ink)]/45">
+  {timeLabel}
+</span>
+      </div>
+    </div>
+  </div>
+
                 );
               })}
             </div>
@@ -998,42 +947,42 @@ function openStudio(booking) {
     const isConfirmed = activeStatus === "confirmed";
     const isCompleted = activeStatus === "completed";
 
-    const statusMeta = isCompleted
+const statusMeta = isCompleted
+  ? {
+      label: "Завершено",
+      top: "from-[#f3f4f6] to-white",
+      Icon: CheckCheck,
+      className: "bg-[#6b7280] text-white",
+      iconColor: "text-[#6b7280]",
+    }
+  : isConfirmed
+    ? {
+        label: "Підтверджено",
+        top: "from-[#dcfce7] to-white",
+        Icon: Check,
+        className: "bg-[#22c55e] text-white",
+        iconColor: "text-[#22c55e]",
+      }
+    : isCanceled
       ? {
-          label: "Завершено",
-          top: "from-[var(--color-archived-light)] to-white",
-          Icon: CheckCheck,
-          iconColor: "text-[var(--color-archived-dark)]",
-          pillText: "text-[var(--color-archived-dark)]",
+          label:
+            activeBooking?.canceledBy === "owner"
+              ? "Скасовано студією"
+              : "Скасовано вами",
+          top: "from-[#fee2e2] to-white",
+          Icon: XCircle,
+          className: "bg-[#ef4444] text-white",
+          iconColor: "text-[#ef4444]",
         }
-      : isConfirmed
-        ? {
-            label: "Підтверджено",
-            top: "from-[var(--color-confirmed-light)] to-white",
-            Icon: Check,
-            iconColor: "text-[var(--color-confirmed-dark)]",
-            pillText: "text-[var(--color-confirmed-dark)]",
-          }
-        : isCanceled
-          ? {
-              label:
-                activeBooking?.canceledBy === "owner"
-                  ? "Скасовано студією"
-                  : "Скасовано вами",
-              top: "from-[var(--color-canceled-light)] to-white",
-              Icon: XCircle,
-              iconColor: "text-[var(--color-canceled-dark)]",
-              pillText: "text-[var(--color-canceled-dark)]",
-            }
-          : {
-              label: "Очікуємо підтвердження",
-              top: "from-[var(--color-pending-light)] to-white",
-              Icon: Clock,
-              iconColor: "text-[var(--color-pending-dark)]",
-              pillText: "text-[var(--color-pending-dark)]",
-            };
+      : {
+          label: "Очікує підтвердження",
+          top: "from-[#fef3c7] to-white",
+          Icon: Clock3,
+          className: "bg-[#f59e0b] text-white",
+          iconColor: "text-[#f59e0b]",
+        };
 
-    const StatusIcon = statusMeta.Icon;
+const StatusIcon = statusMeta.Icon;
 
     return (
       <div
@@ -1060,27 +1009,32 @@ function openStudio(booking) {
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.22),transparent_30%)]" />
 
             <div className="relative flex items-center justify-between">
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveBookingId(null);
-                  setCopiedId(null);
-                }}
-                className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-[var(--color-ink)] shadow-[0_4px_18px_rgba(27,27,27,0.08)] transition hover:bg-[var(--color-cream)]"
-                aria-label="Назад"
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </button>
+<button
+  type="button"
+  onClick={() => {
+    setActiveBookingId(null);
+    setCopiedId(null);
+  }}
+  className="inline-flex h-11 w-11 items-center justify-center rounded-2xl text-[var(--color-ink)] transition-all duration-200 hover:scale-110 active:scale-95"
+  aria-label="Назад"
+>
+  <ChevronLeft className="h-8 w-8" />
+</button>
 
               <div className="w-11" />
             </div>
 
-            <div className="relative mt-4 flex justify-center">
-              <div className="inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-[13px] font-semibold shadow-[0_4px_18px_rgba(27,27,27,0.06)] backdrop-blur">
-                <StatusIcon className={cn("h-4 w-4", statusMeta.iconColor)} />
-                <span className={statusMeta.pillText}>{statusMeta.label}</span>
-              </div>
-            </div>
+<div className="relative mt-4 flex justify-center">
+  <div
+    className={cn(
+      "inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-black shadow-[0_8px_24px_rgba(0,0,0,0.12)]",
+      statusMeta.className,
+    )}
+  >
+    <StatusIcon className="h-4 w-4" />
+    <span>{statusMeta.label}</span>
+  </div>
+</div>
 
             <div className="relative mt-5 text-center">
               <h2 className="text-[24px] font-black leading-tight tracking-[-0.03em] text-[var(--color-ink)]">
@@ -1092,28 +1046,28 @@ function openStudio(booking) {
               </p>
             </div>
 
-            <div className="relative mt-4 grid grid-cols-3 gap-2">
-              <div className="inline-flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-[22px] bg-white px-3 py-2 text-sm font-semibold shadow-sm">
-                <Clock3 className={cn("h-4 w-4", statusMeta.iconColor)} />
-                <span className="text-[var(--color-ink)]">
-                  {activeBooking.time || "—"}
-                </span>
-              </div>
+<div className="relative mt-4 grid grid-cols-3 gap-2">
+  <div className="inline-flex min-h-[56px] flex-col items-center justify-center gap-1 rounded-[18px] px-2 py-2 text-sm font-semibold">
+    <Clock3 className={cn("h-4 w-4", statusMeta.iconColor)} />
+    <span className="text-[var(--color-ink)]">
+      {activeBooking.time || "—"}
+    </span>
+  </div>
 
-              <div className="inline-flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-[22px] bg-white px-3 py-2 text-sm font-semibold shadow-sm">
-                <Banknote className={cn("h-4 w-4", statusMeta.iconColor)} />
-                <span className="text-[var(--color-ink)]">
-                  {activePrice != null ? `${activePrice} грн` : "—"}
-                </span>
-              </div>
+  <div className="inline-flex min-h-[56px] flex-col items-center justify-center gap-1 rounded-[18px] px-2 py-2 text-sm font-semibold">
+    <Banknote className={cn("h-4 w-4", statusMeta.iconColor)} />
+    <span className="text-[var(--color-ink)]">
+      {activePrice != null ? `${activePrice} грн` : "—"}
+    </span>
+  </div>
 
-              <div className="inline-flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-[22px] bg-white px-3 py-2 text-sm font-semibold shadow-sm">
-                <Timer className={cn("h-4 w-4", statusMeta.iconColor)} />
-                <span className="text-[var(--color-ink)]">
-                  {activeDuration != null ? `${activeDuration} хв` : "—"}
-                </span>
-              </div>
-            </div>
+  <div className="inline-flex min-h-[56px] flex-col items-center justify-center gap-1 rounded-[18px] px-2 py-2 text-sm font-semibold">
+    <Timer className={cn("h-4 w-4", statusMeta.iconColor)} />
+    <span className="text-[var(--color-ink)]">
+      {activeDuration != null ? `${activeDuration} хв` : "—"}
+    </span>
+  </div>
+</div>
           </div>
 
           <div className="relative flex min-h-0 flex-1 flex-col px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-4 sm:px-5 sm:pb-5">
@@ -1225,33 +1179,29 @@ function openStudio(booking) {
               </div>
             </div>
 
-            <div className="mt-4 grid grid-cols-2 gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => handleRescheduleClick(activeBooking)}
-                disabled={!canRescheduleBooking(activeBooking)}
-                className={cn(
-                  "inline-flex h-12 items-center justify-center gap-2 rounded-[22px] px-4 text-sm font-bold transition-all duration-200 active:scale-[0.98]",
-                  canRescheduleBooking(activeBooking)
-                    ? "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))] text-white hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]"
-                    : "cursor-not-allowed bg-[var(--color-cream)] text-[var(--color-caramel)] shadow-none",
-                )}
-              >
-                <RefreshCw className="h-4 w-4" />
-                Перенести
-              </button>
+<div className="mt-4 grid grid-cols-2 gap-3 pt-2">
+<button
+  type="button"
+  onClick={() => handleRescheduleClick(activeBooking)}
+  disabled={!canRescheduleBooking(activeBooking)}
+  className="inline-flex h-12 items-center justify-center gap-2 rounded-[22px] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50"
+>
+  <RefreshCw className="h-4 w-4" />
+  Перенести
+</button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveBookingId(null);
-                  setCopiedId(null);
-                }}
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-[22px] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
-              >
-                Закрити
-              </button>
-            </div>
+  <button
+    type="button"
+    onClick={() => {
+      setCancelConfirmId(activeBooking.id);
+    }}
+    disabled={!canRescheduleBooking(activeBooking)}
+    className="inline-flex h-12 items-center justify-center gap-2 rounded-[22px] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50"
+  >
+    <XCircle className="h-4 w-4" />
+    Скасувати запис
+  </button>
+</div>
           </div>
         </div>
       </div>

@@ -7,6 +7,7 @@ import {
 } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import calendarHero from "../assets/calendarHero.png";
 import {
   Sparkles,
   Search,
@@ -18,6 +19,8 @@ import {
   Star,
   LayoutGrid,
   Scissors,
+  Check,
+  Repeat,
 } from "lucide-react";
 import AnimatedField from "../components/AnimatedField";
 import AnimatedDropdown from "../components/AnimatedDropdown";
@@ -54,6 +57,34 @@ const CATEGORY_LABELS = {
   shopping: "Покупки",
   auto: "Автосервіс",
   other: "Інше",
+};
+
+const CITY_TO_REGION = {
+  Луцьк: "Волинська область",
+  Львів: "Львівська область",
+  Київ: "Київська область",
+  Рівне: "Рівненська область",
+  Тернопіль: "Тернопільська область",
+  ІваноФранківськ: "Івано-Франківська область",
+  Ужгород: "Закарпатська область",
+  Чернівці: "Чернівецька область",
+  Вінниця: "Вінницька область",
+  Житомир: "Житомирська область",
+  Хмельницький: "Хмельницька область",
+  Черкаси: "Черкаська область",
+  Кропивницький: "Кіровоградська область",
+  Полтава: "Полтавська область",
+  Суми: "Сумська область",
+  Чернігів: "Чернігівська область",
+  Харків: "Харківська область",
+  Дніпро: "Дніпропетровська область",
+  Запоріжжя: "Запорізька область",
+  Миколаїв: "Миколаївська область",
+  Одеса: "Одеська область",
+  Херсон: "Херсонська область",
+  Донецьк: "Донецька область",
+  Луганськ: "Луганська область",
+  Сімферополь: "АР Крим",
 };
 
 function getCategoryLabel(value) {
@@ -100,7 +131,13 @@ function tokenizeAndStem(text) {
   if (!n) return [];
   return n.split(" ").map(stemUa).filter(Boolean);
 }
+function getCityRegion(city) {
+  const clean = safeText(city)
+    .replace(/^м\.\s*/i, "")
+    .trim();
 
+  return CITY_TO_REGION[clean] || "";
+}
 const QUERY_EXPAND = {
   стриж: ["перукар", "перукарня", "барбер", "уклад", "фарб", "haircut"],
   перукар: ["стриж", "уклад", "фарб", "перукарня"],
@@ -325,6 +362,7 @@ export default function Studios() {
     refetchOnReconnect: false,
   });
 
+  
   const studios = useMemo(() => {
     return Array.isArray(studiosQuery.data) ? studiosQuery.data : [];
   }, [studiosQuery.data]);
@@ -425,6 +463,36 @@ export default function Studios() {
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [studios]);
 
+const regions = useMemo(() => {
+  const set = new Set(
+    (studios || [])
+      .map((s) => safeText(s.region || s.oblast || s.area || getCityRegion(s.city)))
+      .filter(Boolean),
+  );
+
+  return Array.from(set)
+    .sort((a, b) => a.localeCompare(b, "uk"))
+    .map((r) => ({
+      value: r,
+      label: r,
+      meta: "Область",
+    }));
+}, [studios]);
+
+const districts = useMemo(() => {
+  const set = new Set(
+    (studios || []).map((s) => safeText(s.district || s.raion)).filter(Boolean),
+  );
+
+  return Array.from(set)
+    .sort((a, b) => a.localeCompare(b, "uk"))
+    .map((d) => ({
+      value: d,
+      label: d,
+      meta: "Район",
+    }));
+}, [studios]);
+
   const categories = useMemo(() => {
     const raw = Array.from(
       new Set((studios || []).map((s) => safeText(s.category)).filter(Boolean)),
@@ -450,9 +518,17 @@ export default function Studios() {
     const scored = (studios || [])
       .map((s) => {
         const catNItem = normalize(s.category);
-        const cityNItem = normalize(s.city);
+const locationValues = [
+  s.city,
+  s.region,
+  s.oblast,
+  s.area,
+  CITY_TO_REGION[safeText(s.city)],
+]
+  .map(normalize)
+  .filter(Boolean);
 
-        const matchCity = !cityN || cityNItem === cityN;
+const matchCity = !cityN || locationValues.includes(cityN);
         const matchCategory = !catN || catNItem === catN;
 
         const priceFrom = toNumber(s.priceFrom);
@@ -632,182 +708,237 @@ export default function Studios() {
     return <StudiosSkeleton />;
   }
 
+  function clearFilters() {
+  setQ("");
+  setCity("");
+  setCategory("");
+  setMinPrice("");
+  setMaxPrice("");
+  setSort("recommended");
+}
+
   return (
     <div className="min-h-screen pb-[calc(env(safe-area-inset-bottom)+68px)] sm:pb-0">
-     <div className="mx-auto mt-17 max-w-6xl px-2.5 pb-4 pt-0 sm:mt-0 sm:px-4 sm:pb-8 sm:pt-14 lg:pt-16">
-        <div className="space-y-3 px-0 pt-2 sm:space-y-5 sm:pt-8 lg:pt-6">
-<section className="overflow-hidden rounded-[28px] border border-[#e6ebe7] bg-white shadow-[0_18px_50px_-42px_rgba(15,23,42,0.75)]">
-  <div className="px-4 pt-5 py-3 sm:px-6 sm:py-6 lg:px-8">
-    <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-      <div className="max-w-2xl">
+     <div className="mx-auto max-w-6xl px-1 pb-4 pt-18 sm:mt-0 sm:pb-8 sm:pt-14 lg:pt-26">
+        <div className="space-y-1 px-0 sm:space-y-2 sm:pt-8 lg:pt-0">
+<section className="relative px-4 pb-5 pt-5 sm:px-6 sm:pt- lg:px-8">
+  <div className="relative">
+<h1 className="text-[35px] font-black leading-[0.98] tracking-[-0.055em] text-[#141414] sm:text-[54px] lg:text-[64px]">
+  Обирай та{" "}
 
-                <h1 className="max-w-full !text-[37px] font-black leading-tight tracking-[-0.03em] text-stone-800 sm:max-w-none sm:!text-5xl lg:!text-5xl">
-                  Обирай та{" "}
-                  <span className="text-amber-600">записуйся онлайн</span>
-                </h1>
+  {/* mobile */}
+  <span className="block text-[#ff6b00] sm:hidden">
+    записуйся <br /> онлайн
+  </span>
 
-                <p className="hidden max-w-2xl text-base leading-7 text-stone-600 ">
-                  Обирай послуги поруч із тобою — швидко, зручно та без зайвих
-                  дзвінків.
-                </p>
+  {/* tablet / desktop */}
+  <span className="hidden text-[#ff6b00] sm:block">
+    записуйся онлайн
+  </span>
+</h1>
 
-      </div>
+<img
+  src={calendarHero}
+  alt=""
+  aria-hidden="true"
+  className="
+    pointer-events-none absolute object-contain
+    right-[-14px] top-[-10px] h-[135px] w-[135px]
+   
 
-      <div className="hidden rounded-2xl border border-[#e6ebe7] bg-[#f6f7f6] px-4 py-3 lg:block">
-        <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#6f7672]">
-          Результати
-        </p>
-        <p className="mt-1 text-2xl font-black tracking-[-0.04em] text-[#111]">
-          {filtered.length}
-        </p>
-      </div>
-    </div>
-<div className="mt-5 rounded-[24px] border border-[#e6ebe7] bg-[#f6f7f6] p-3">
-  <div className="grid grid-cols-3 gap-2 sm:grid-cols-2 lg:grid-cols-[1.25fr_0.9fr_0.9fr_auto]">
-    
-    {/* SEARCH */}
-    <div className="col-span-3 sm:col-span-1 lg:col-span-1">
-      <AnimatedField
-        size="compact"
-        icon={Search}
-        label="Що шукаєте?"
-        value={q}
-        onChange={setQ}
-        placeholder="Манікюр, стрижка, масаж..."
-      />
-    </div>
+    xs:right-[-12px] xs:top-[-12px] xs:h-[150px] xs:w-[150px]
+    sm:right-[-18px] sm:top-[-6px] sm:h-[190px] sm:w-[190px]
+    md:right-[-10px] md:top-[-10px] md:h-[205px] md:w-[205px]
+    lg:right-[-8px] lg:top-[-30px] lg:h-[250px] lg:w-[250px]
+    xl:right-[-4px] xl:top-[-18px] xl:h-[235px] xl:w-[235px]
+  "
+/>
+  </div>
 
-    {/* 👇 MOBILE ROW */}
-    <div className="col-span-3 grid grid-cols-2 gap-2 sm:contents">
-      
-      <AnimatedDropdown
-        size="compact"
-        icon={MapPin}
-        label="Місто"
-        value={city}
-        onChange={setCity}
-        placeholder="Оберіть місто"
-        options={cities.map((c) => ({ value: c, label: c }))}
-        searchable
-      />
+      <p className="mt-2 text-[12px] sm:text-[15px] lg:text-[18px] font-medium leading-6 text-[#74706b]">
+        Пошук послуг і закладів у твоєму місті
+      </p>
+<div className="relative mt-6 rounded-[28px] bg-white/90 p-[22px] shadow-[0_14px_28px_rgba(15,23,42,0.12)] sm:mt-18 sm:rounded-[32px] sm:p-7 sm:shadow-[0_18px_36px_rgba(15,23,42,0.11)] lg:mt-20">
+<div className="grid gap-3">
+  {/* MOBILE: пошук окремо */}
+  <div className="lg:hidden">
+    <AnimatedField
+      size="compact"
+      icon={Search}
+      label="Що шукаєте?"
+      value={q}
+      onChange={setQ}
+      placeholder="Що шукаєте?"
+    />
+  </div>
 
-      <AnimatedDropdown
-        size="compact"
-        icon={Scissors}
-        label="Категорія"
-        value={category}
-        onChange={setCategory}
-        placeholder="Усі категорії"
-        options={categories}
-        searchable
-      />
-    </div>
+  {/* DESKTOP: пошук + знайти в один ряд */}
+  <div className="hidden lg:grid lg:grid-cols-[1fr_220px] lg:gap-4">
+    <AnimatedField
+      size="compact"
+      icon={Search}
+      label="Що шукаєте?"
+      value={q}
+      onChange={setQ}
+      placeholder="Що шукаєте?"
+    />
 
+<button
+  type="button"
+  onClick={handleApply}
+  disabled={!hasPendingChanges || isApplying || isLoadingMore}
+  className={cn(
+    "flex h-[64px] items-center justify-center rounded-[22px] bg-gradient-to-r from-[#ff6b00] to-[#ffb800] px-8 text-[18px] font-black text-white shadow-[0_14px_28px_rgba(255,107,0,0.28)] transition hover:scale-[1.02] active:scale-95",
+    "disabled:cursor-not-allowed disabled:from-[#ffb18a] disabled:to-[#ffe0a3] disabled:text-white/80 disabled:shadow-[0_10px_22px_rgba(255,138,76,0.12)]",
+  )}
+>
+  <span className="mx-auto inline-flex items-center justify-center gap-2">
+    <Search className="h-5 w-5 mr-2" />
+    <span>Знайти</span>
+  </span>
+</button>
+  </div>
+
+  {/* MOBILE: місто + категорія */}
+  <div className="grid grid-cols-2 gap-3 lg:hidden">
+<AnimatedDropdown
+  icon={MapPin}
+  label="Місто"
+  value={city}
+  onChange={setCity}
+  placeholder="Локація"
+  options={cities.map((c) => ({
+    value: c,
+    label: c,
+    meta: "Місто",
+  }))}
+  regionOptions={regions}
+  districtOptions={districts}
+  searchable
+/>
+
+    <AnimatedDropdown
+      size="compact"
+      icon={LayoutGrid}
+      label="Категорія"
+      value={category}
+      onChange={setCategory}
+      placeholder="Категорія"
+      options={categories}
+      searchable
+    />
+  </div>
+
+  {/* DESKTOP: місто + категорія + очистити в один ряд */}
+  <div className="hidden lg:grid lg:grid-cols-[1fr_1fr_180px] lg:gap-4">
+<AnimatedDropdown
+  size="compact"
+  icon={MapPin}
+  label="Місто"
+  value={city}
+  onChange={setCity}
+  placeholder="Локація"
+  options={cities.map((c) => ({
+    value: c,
+    label: c,
+    meta: "Місто",
+  }))}
+  regionOptions={regions}
+  districtOptions={districts}
+  searchable
+/>
+
+    <AnimatedDropdown
+      size="compact"
+      icon={LayoutGrid}
+      label="Категорія"
+      value={category}
+      onChange={setCategory}
+      placeholder="Категорія"
+      options={categories}
+      searchable
+    />
+
+    <button
+      type="button"
+      onClick={clearAll}
+      disabled={activeChips.length === 0}
+      className={cn(
+        "flex h-[64px] items-center justify-center gap-2 rounded-[22px] bg-white px-6 text-[16px] font-black text-[#6f6962] shadow-[0_12px_26px_rgba(15,23,42,0.075)] transition hover:scale-[1.02] active:scale-95",
+        "disabled:cursor-not-allowed disabled:bg-white/65 disabled:text-[#c9c3bc] disabled:shadow-[0_8px_18px_rgba(15,23,42,0.035)]",
+      )}
+    >
+      <Repeat className="h-4 w-4 mr-2" />
+      Очистити
+    </button>
+  </div>
+
+  {/* MOBILE: кнопки */}
+  <div className="flex gap-3 lg:hidden">
     <button
       type="button"
       onClick={handleApply}
       disabled={!hasPendingChanges || isApplying || isLoadingMore}
 className={cn(
-  "col-span-2 mt-4 flex h-[48px] items-center justify-center gap-2 rounded-[18px] px-5 text-sm font-black transition active:scale-95",
-  "sm:col-span-1 sm:mt-0 sm:h-[50px] sm:rounded-[20px]",
-  "lg:h-[55px] lg:min-w-[180px] lg:rounded-[18px]",
-  !hasPendingChanges || isApplying || isLoadingMore
-    ? "cursor-not-allowed bg-[#d9dfdb] text-white"
-    : "bg-[#111] text-white shadow-[0_14px_30px_-22px_rgba(15,23,42,0.9)] hover:bg-black",
+  "flex h-10  mt-4  flex-[1.45] items-center justify-center gap-1.5 rounded-[16px] bg-gradient-to-r from-[#ff6b00] to-[#ffb800] px-4 text-[13px] font-black text-white shadow-[0_14px_28px_rgba(255,107,0,0.28)] transition hover:scale-[1.02] active:scale-95",
+  "sm:h-12 sm:gap-2 sm:rounded-[18px] sm:px-5 sm:text-[15px]",
+  "md:h-14 md:rounded-[20px] md:px-6 md:text-[16px]",
+  "disabled:cursor-not-allowed disabled:from-[#ffb18a] disabled:to-[#ffe0a3] disabled:text-white/80 disabled:shadow-[0_10px_22px_rgba(255,138,76,0.12)]",
 )}
     >
-      {isApplying ? (
-        <>
-          <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/80 border-t-transparent" />
-          Пошук
-        </>
-      ) : (
-        <>
-          <Search className="h-4 w-4" />
-          Знайти
-        </>
-      )}
+      <Search className="h-4 w-4 sm:h-4.5 sm:w-4.5 md:h-5 md:w-5 mr-2" />
+      Знайти
     </button>
 
-<button
-  type="button"
-  onClick={clearAll}
-  disabled={activeChips.length === 0}
-  className="col-span-1 mt-4 flex h-12 items-center justify-center gap-1 rounded-[18px] border border-[#e6ebe7] bg-white px-3 text-sm font-black text-[#111] transition hover:bg-[#f1f4f2] active:scale-95 disabled:cursor-not-allowed disabled:opacity-45 sm:mt-0 sm:hidden"
->
-  Очистити
-</button>
+    <button
+      type="button"
+      onClick={clearAll}
+      disabled={activeChips.length === 0}
+className={cn(
+  "flex h-10 flex-[0.75] mt-4  items-center justify-center gap-1.5 rounded-[16px] bg-white px-3 text-[13px] font-black text-[#6f6962] shadow-[0_12px_26px_rgba(15,23,42,0.075)] transition hover:scale-[1.02] active:scale-95",
+  "sm:h-12 sm:gap-2 sm:rounded-[18px] sm:px-4 sm:text-[15px]",
+  "md:h-14 md:rounded-[20px] md:px-5 md:text-[16px]",
+  "disabled:cursor-not-allowed disabled:bg-white/65 disabled:text-[#c9c3bc] disabled:shadow-[0_8px_18px_rgba(15,23,42,0.035)]",
+)}
+    >
+     <X className="h-3.5 w-3.5 md:h-4 md:w-4 mr-2" />
+      Очистити
+    </button>
   </div>
-</div>
 
-    <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex min-w-0 flex-wrap gap-2">
-        {activeChips.length === 0 ? (
-          <span className="inline-flex h-8 items-center rounded-full bg-[#f1f4f2] px-3 text-xs font-bold text-[#6f7672]">
-            Фільтри не вибрані
-          </span>
-        ) : (
-          activeChips.map((ch) => (
-            <FilterChip key={ch.key} onClick={() => removeChip(ch.key)}>
-              {ch.label}
-            </FilterChip>
-          ))
-        )}
-      </div>
-
-<div className="hidden items-center gap-2 sm:flex">
-  <button
-    type="button"
-    onClick={clearAll}
-    disabled={activeChips.length === 0}
-    className="h-10 rounded-full border border-[#e6ebe7] bg-white px-4 text-sm font-black text-[#111] transition hover:bg-[#f1f4f2] active:scale-95 disabled:cursor-not-allowed disabled:opacity-45"
-  >
-    Очистити
-  </button>
 </div>
-    </div>
   </div>
 </section>
 
 
-          <div className="flex items-center gap-2 text-sm text-stone-500">
-            {studiosQuery.isFetching && (
-              <span className="rounded-full border border-stone-200 bg-stone-100 px-2 py-0.5 text-xs text-stone-600">
-                Завантаження...
-              </span>
-            )}
 
-            {hasPendingChanges && !studiosQuery.isFetching && (
-              <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
-                Натисніть “Знайти”
-              </span>
-            )}
 
-          </div>
+{filtered.length === 0 ? (
+  <div className="px-4">
+    <div className="rounded-[28px] border-2 border-dashed border-[var(--color-mist)] bg-white p-6 text-center shadow-[var(--shadow-soft)] sm:p-8">
+    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--color-cream)] text-[var(--color-caramel)]">
+      <Search className="h-6 w-6" />
+    </div>
 
-          {filtered.length === 0 ? (
-            <div className="rounded-3xl border border-stone-200/60 bg-white p-8 shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)] sm:p-10">
-              <div className="mx-auto max-w-xl text-center">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-[20px] border border-stone-200 bg-stone-100">
-                  <Search className="h-7 w-7 text-stone-500" />
-                </div>
+    <h3 className="mt-4 text-xl font-black tracking-[-0.03em] text-[var(--color-ink)]">
+      Нічого не знайдено
+    </h3>
 
-                <h3 className="mt-4 text-xl font-semibold tracking-tight text-stone-800">
-                  Немає результатів за цими фільтрами
-                </h3>
-                <p className="mt-2 text-sm text-stone-500">
-                  Спробуй змінити місто або категорію, або прибери частину
-                  фільтрів — тоді ми покажемо більше доступних студій.
-                </p>
+    <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-[color:var(--color-caramel)]/80">
+      Спробуй змінити фільтри або ввести простіший запит.
+    </p>
 
-                <p className="mt-4 text-xs text-stone-500">
-                  Порада: якщо шукаєш конкретну послугу — введи загальніше слово
-                  (наприклад “масаж”, “манікюр”, “стрижка”).
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="grid gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
+    <button
+      type="button"
+      onClick={clearAll}
+      className="mt-5 inline-flex h-11 items-center justify-center rounded-2xl bg-[var(--color-ink)] px-5 text-sm font-bold text-white shadow-[0_12px_28px_rgba(15,23,42,0.16)] transition hover:-translate-y-0.5 hover:opacity-90 active:scale-[0.98]"
+    >
+      Очистити фільтри
+    </button>
+  </div>
+  </div>
+) : (
+            <div className="grid gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 px-4">
               {filtered.slice(0, visibleCount).map((studio) => {
                 const name = safeText(studio.name) || "Студія";
                 const cat = getCategoryLabel(safeText(studio.category));

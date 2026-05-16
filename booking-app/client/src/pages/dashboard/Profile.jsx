@@ -765,7 +765,7 @@ export default function Profile() {
   if (loading) return <ProfileSkeleton />;
 
  return (
-<main className="mt-16 min-h-screen  pb-[calc(env(safe-area-inset-bottom)+84px)] text-[#111] sm:mt-0 sm:pb-10">
+<main className="min-h-screen pt-[calc(env(safe-area-inset-top)+66px)] pb-2 text-[#111] sm:pt-[calc(env(safe-area-inset-top)+66px)] lg:pt-[calc(env(safe-area-inset-top)+56px)]">
 
 
     <div className="mx-auto w-full max-w-7xl px-3 py-3 sm:px-6 sm:py-6 lg:py-8">
