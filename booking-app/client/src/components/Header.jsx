@@ -84,10 +84,10 @@ const navLinkBase =
   "inline-flex items-center gap-2 rounded-2xl px-3.5 py-2.5 text-sm font-semibold transition-all duration-200";
 
 const navLinkActive =
-  "border-transparent text-[var(--color-white)] bg-[var(--color-sidebar-accent)] shadow-[0_14px_30px_rgba(24,24,27,0.22)]";
+  "bg-[#ff6200] text-white shadow-[0_10px_24px_rgba(255,98,0,0.18)]";
 
 const navLinkIdle =
-  "border-transparent text-[var(--color-ink)] hover:bg-[var(--color-cream)] active:scale-[0.99]";
+  "text-[#77716b] hover:bg-[#fff3e9] hover:text-[#ff6200] active:scale-[0.99]";
 
 function HeaderLink({ to, children, icon, onClick }) {
   return (
@@ -566,72 +566,49 @@ const staticRoutes = [
 
   return (
     <>
-<header className="fixed left-0 right-0 top-2 z-[60] sm:top-3">
-  <div className="mx-auto max-w-6xl px-3 sm:px-4">
-    <div className="lg:overflow-hidden lg:rounded-[30px] lg:border lg:border-white/70 lg:bg-white/85 lg:shadow-[0_18px_50px_rgba(24,24,27,0.10)] lg:ring-1 lg:ring-black/[0.03] lg:backdrop-blur-2xl">
-      <div className="hidden h-[2px] bg-gradient-to-r from-[var(--color-sidebar-accent)] via-[var(--color-sidebar-accent-hover)] to-[var(--color-sidebar-accent-soft)] lg:block" />
+<header className="fixed left-0 right-0 top-3 z-[60]">
+  <div className="mx-auto max-w-[1260px] px-4 max-[639px]:px-5 sm:px-6 lg:px-10">
+    <div className="flex h-[58px] items-center justify-between rounded-[28px] border border-[#eadfce] bg-white/82 px-3 shadow-[0_14px_34px_rgba(15,23,42,0.06)] backdrop-blur-2xl sm:h-[64px] sm:px-4 lg:h-[66px]">
+      <Link
+        to="/"
+        className="flex min-w-0 items-center gap-2 rounded-2xl px-1.5 py-1 transition active:scale-[0.98]"
+        aria-label="PlaniDay"
+      >
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#111111] text-sm font-black text-white shadow-[0_10px_24px_rgba(15,23,42,0.14)]">
+          P
+        </span>
 
-      <div className="relative flex h-14 items-center justify-between gap-2 px-2.5 sm:h-16 sm:gap-3 sm:px-4">
-{/* desktop logo */}
-<Link
-  to="/"
-  className="hidden min-w-0 items-center gap-2 rounded-2xl px-1.5 py-1 transition hover:bg-[var(--color-cream)] sm:px-2 sm:py-1.5 lg:flex"
-  aria-label="Planiday"
->
-  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-2xl bg-[var(--color-sidebar-accent)] text-sm font-black text-[var(--color-white)] shadow-[0_12px_26px_rgba(24,24,27,0.22)]">
-    P
-  </span>
+        <span className="truncate text-[15px] font-black tracking-[-0.04em] text-[#202020] sm:text-[16px]">
+          Plani<span className="text-[#ff6200]">Day</span>
+        </span>
+      </Link>
 
-  <span className="truncate text-sm font-black tracking-tight text-[var(--color-ink)] sm:text-base">
-    Plani
-    <span className="text-[var(--color-sidebar-accent-soft)]">
-      Day
-    </span>
-  </span>
-</Link>
+      <nav className="hidden items-center gap-1 lg:flex">
+        {desktopItems.links?.map((i) => (
+          <HeaderLink key={i.to} to={i.to} icon={i.icon}>
+            {i.label}
+          </HeaderLink>
+        ))}
+      </nav>
 
-{/* mobile logo */}
-<Link
-  to="/"
-  aria-label="Planiday"
-  className="flex min-w-0 items-center gap-2 rounded-2xl px-1.5 py-1 transition active:scale-[0.98] lg:hidden"
->
-  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-black text-sm font-black text-white">
-    P
-  </span>
+      <div className="hidden lg:block">{desktopItems.actions}</div>
 
-  <span className="truncate text-sm font-black tracking-tight text-[var(--color-ink)] sm:text-base">
-    PlaniDay
-  </span>
-</Link>
-
-                <nav className="hidden items-center gap-1 lg:flex">
-                  {desktopItems.links?.map((i) => (
-                    <HeaderLink key={i.to} to={i.to} icon={i.icon}>
-                      {i.label}
-                    </HeaderLink>
-                  ))}
-                </nav>
-
-                {desktopItems.actions}
-
-<button
-  type="button"
-  onClick={() => setOpen((v) => !v)}
-  className="flex h-12 w-12 items-center justify-center rounded-[18px] bg-white text-[#111] shadow-[0_16px_35px_rgba(15,23,42,0.10)] transition hover:scale-105 active:scale-95 lg:hidden"
-  aria-label="Menu"
-  aria-expanded={open}
->
-  {open ? (
-    <X className="h-6 w-6" />
-  ) : (
-    <LayoutGrid className="h-6 w-6" />
-  )}
-</button>
-              </div>
-            </div>
-          </div>
-        </header>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="grid h-12 w-12 place-items-center rounded-[18px] border border-[#eadfce] bg-white text-[#111111] shadow-[0_10px_28px_rgba(15,23,42,0.06)] transition hover:border-[#f1dfbf] hover:text-[#ff6200] hover:ring-4 hover:ring-orange-200/20 active:scale-95 lg:hidden"
+        aria-label="Menu"
+        aria-expanded={open}
+      >
+        {open ? (
+          <X className="h-6 w-6" />
+        ) : (
+          <LayoutGrid className="h-6 w-6" />
+        )}
+      </button>
+    </div>
+  </div>
+</header>
 
       {!showClientBottomBar && (
         <div

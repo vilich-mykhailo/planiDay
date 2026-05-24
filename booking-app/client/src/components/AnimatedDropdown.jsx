@@ -172,24 +172,24 @@ function handleClear(e) {
         type="button"
         disabled={disabled}
         onClick={toggle}
-        className={cn(
-             "relative h-10 w-full rounded-[16px] border border-[#eadfce] bg-white pl-9 pr-6 text-left transition-all duration-200",
-          "shadow-[0_8px_22px_rgba(15,23,42,0.035)]",
-          "sm:h-[68px] sm:rounded-[26px] sm:pl-[62px] sm:pr-11",
-          "active:scale-[0.99]",
-          open
-            ? "border-[#f1dfbf] ring-4 ring-orange-200/20"
-            : "hover:border-[#eadfce]",
-        )}
+className={cn(
+  "group relative h-10 w-full rounded-[16px] border border-[#eadfce] bg-white pl-11 pr-9 text-left transition-all duration-200",
+  "shadow-[0_8px_22px_rgba(15,23,42,0.035)]",
+  "sm:h-[54px] sm:rounded-[20px] sm:pl-[52px] sm:pr-9",
+  "active:scale-[0.99]",
+  open
+    ? "border-[#f1dfbf] ring-4 ring-orange-200/20"
+    : "hover:border-[#eadfce]",
+)}
       >
 {SelectedIcon && (
   <span
-    className={cn(
-      "pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 sm:left-6",
-      filled ? "text-[#ff6b00]" : "text-[#8a8580]",
-    )}
+className={cn(
+  "pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 transition-colors duration-200 sm:left-6",
+  filled ? "text-[#ff6b00]" : "text-[#8a8580] group-hover:text-[#ff6b00]",
+)}
   >
-    <SelectedIcon className="h-4 w-4 sm:h-[22px] sm:w-[22px]" />
+    <SelectedIcon className="h-4 w-4 sm:h-[18px] sm:w-[18px]" />
   </span>
 )}
 
@@ -200,13 +200,19 @@ function handleClear(e) {
     onClick={(e) => e.stopPropagation()}
     autoFocus
     placeholder={placeholder || label}
-    className="block h-full w-full bg-transparent text-[12px] font-bold text-[#141414] outline-none placeholder:text-[#77716b] sm:text-[16px]"
+   className="block h-full w-full bg-transparent text-[12px] font-bold text-stone-800 outline-none placeholder:text-[#77716b] sm:text-[14px]"
   />
 ) : (
-  <span className="block truncate text-[12px] font-bold text-[#77716b] sm:text-[16px]">
-    {filled ? selected?.label : placeholder || label}
-  </span>
+<span
+  className={cn(
+    "block truncate text-[12px] font-bold sm:text-[14px]",
+    filled ? "text-stone-800" : "text-[#77716b]",
+  )}
+>
+  {filled ? selected?.label : placeholder || label}
+</span>
 )}
+
 
         {filled ? (
           <span
@@ -216,7 +222,7 @@ function handleClear(e) {
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") handleClear(e);
             }}
-            className="absolute right-3 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-full text-[#8a8580] transition hover:bg-stone-100 hover:text-[#111] sm:right-5 sm:h-8 sm:w-8"
+           className="absolute right-4 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full text-[#8a8580] transition hover:bg-stone-100 hover:text-[#c56b5f] active:scale-95 sm:right-3"
             aria-label="Очистити"
           >
             <X className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#c56b5f]" />
@@ -225,12 +231,12 @@ function handleClear(e) {
 
 {!filled && (
   <span
-    className={cn(
-      "pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#77716b] transition-all duration-200 sm:right-6",
-      open && "rotate-180",
-    )}
+className={cn(
+  "pointer-events-none absolute right-5 top-1/2 -translate-y-1/2 text-[#747684] transition-all duration-200 sm:right-4",
+  open && "rotate-180",
+)}
   >
-    <ChevronDown className="h-3.5 w-3.5 sm:h-5 sm:w-5 text-[#8a8580]" />
+    <ChevronDown className="h-3.5 w-3.5 text-[#8a8580] transition-colors duration-200 group-hover:text-[#ff6200] sm:h-5 sm:w-5" />
   </span>
 )}
       </button>

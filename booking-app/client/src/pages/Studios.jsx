@@ -1,28 +1,30 @@
-// Studios.jsx
-import {
-  Link,
-  useSearchParams,
-  useNavigate,
-  useLocation,
-} from "react-router-dom";
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import calendarHero from "../assets/calendarHero.png";
+import calendarHero from "../assets/calendarHero1.png";
 import {
-  Sparkles,
-  Search,
+  Bell,
+  CalendarDays,
+  Car,
+  Dumbbell,
+  GraduationCap,
+  Grid2X2,
+  Heart,
+  Home,
+  House,
   MapPin,
-  SlidersHorizontal,
-  X,
-  ArrowRight,
-  Crown,
-  Star,
-  LayoutGrid,
+  Search,
   Scissors,
-  Check,
-  Repeat,
+  ShieldCheck,
+  SlidersHorizontal,
+  Star,
+    ChevronLeft,
+  ChevronRight,
+  User,
+  Zap,
+  X,
+  Crown,
 } from "lucide-react";
-import AnimatedField from "../components/AnimatedField";
 import AnimatedDropdown from "../components/AnimatedDropdown";
 import FavouriteButton from "../components/FavouriteButton";
 
@@ -87,13 +89,66 @@ const CITY_TO_REGION = {
   Сімферополь: "АР Крим",
 };
 
+const QUERY_EXPAND = {
+  стриж: ["перукар", "перукарня", "барбер", "уклад", "фарб", "haircut"],
+  перукар: ["стриж", "уклад", "фарб", "перукарня"],
+  барбер: ["стриж", "barber", "barbershop"],
+  манік: ["нігт", "гель", "лак", "покрит", "shellac", "шелак", "френч"],
+  педик: ["нігт", "стоп", "покрит", "педикюр"],
+  масаж: ["спин", "шия", "комірц", "ноги", "стоп", "релакс", "massage"],
+  спин: ["масаж", "спина"],
+  шия: ["масаж", "комірц"],
+  стоп: ["масаж", "педик"],
+  ног: ["масаж", "педик"],
+  бров: ["корекц", "архітект", "ламін", "фарб", "brows"],
+  вії: ["нарощ", "ламін", "lash", "lashes"],
+  косметолог: ["чистк", "пілінг", "догляд", "маск", "facial", "skincare"],
+  пілінг: ["косметолог", "догляд"],
+  чистк: ["косметолог", "догляд"],
+  спа: ["spa", "wellness", "обгорт", "хамам", "сауна", "релакс"],
+  spa: ["спа", "wellness", "обгорт", "хамам", "сауна", "релакс"],
+};
+
+const STOP_TOKENS = new Set(["салон", "студ", "послуг", "процедур"]);
+
+const CATEGORY_PILL_ICONS = {
+  hair: Scissors,
+  barber: Scissors,
+  beauty_salon: Heart,
+  nails: Grid2X2,
+  brows_lashes: Heart,
+  cosmetology: Heart,
+  makeup: Heart,
+  massage: User,
+  physiotherapy: User,
+  depilation: Heart,
+  tattoo_piercing: Grid2X2,
+  spa: Heart,
+  health: Heart,
+  fitness_diet: Dumbbell,
+  dentistry: Heart,
+  podiatry: User,
+  aesthetic_medicine: Heart,
+  natural_medicine: Heart,
+  psychotherapy: User,
+  pets: Heart,
+  finance: Grid2X2,
+  shopping: Home,
+  auto: Car,
+  other: GraduationCap,
+};
+
 function getCategoryLabel(value) {
-  const key = String(value || "").trim();
+  const key = safeText(value);
   return CATEGORY_LABELS[key] || key;
 }
 
+function getCategoryIcon(value) {
+  return CATEGORY_PILL_ICONS[safeText(value)] || Grid2X2;
+}
+
 function toPublicUrl(v) {
-  const s = String(v || "").trim();
+  const s = safeText(v);
   if (!s) return "";
   if (/^https?:\/\//i.test(s)) return s;
   return R2_PUBLIC ? `${R2_PUBLIC}/${s}` : s;
@@ -121,7 +176,7 @@ function normalizeUa(text) {
 
 function stemUa(word) {
   return word.replace(
-    /(ами|ями|ові|еві|ого|ому|ими|іми|ий|ій|ої|ої|ая|яя|ого|ею|єю|ою|ю|а|я|і|и|у|ю|е|о)$/u,
+    /(ами|ями|ові|еві|ого|ому|ими|іми|ий|ій|ої|ая|яя|ею|єю|ою|ю|а|я|і|и|у|е|о)$/u,
     "",
   );
 }
@@ -131,39 +186,6 @@ function tokenizeAndStem(text) {
   if (!n) return [];
   return n.split(" ").map(stemUa).filter(Boolean);
 }
-function getCityRegion(city) {
-  const clean = safeText(city)
-    .replace(/^м\.\s*/i, "")
-    .trim();
-
-  return CITY_TO_REGION[clean] || "";
-}
-const QUERY_EXPAND = {
-  стриж: ["перукар", "перукарня", "барбер", "уклад", "фарб", "haircut"],
-  перукар: ["стриж", "уклад", "фарб", "перукарня"],
-  барбер: ["стриж", "barber", "barbershop"],
-
-  манік: ["нігт", "гель", "лак", "покрит", "shellac", "шелак", "френч"],
-  педик: ["нігт", "стоп", "покрит", "педикюр"],
-
-  масаж: ["спин", "шия", "комірц", "ноги", "стоп", "релакс", "massage"],
-  спин: ["масаж", "спина"],
-  шия: ["масаж", "комірц"],
-  стоп: ["масаж", "педик"],
-  ног: ["масаж", "педик"],
-
-  бров: ["корекц", "архітект", "ламін", "фарб", "brows"],
-  вії: ["нарощ", "ламін", "lash", "lashes"],
-
-  косметолог: ["чистк", "пілінг", "догляд", "маск", "facial", "skincare"],
-  пілінг: ["косметолог", "догляд"],
-  чистк: ["косметолог", "догляд"],
-
-  спа: ["spa", "wellness", "обгорт", "хамам", "сауна", "релакс"],
-  spa: ["спа", "wellness", "обгорт", "хамам", "сауна", "релакс"],
-};
-
-const STOP_TOKENS = new Set(["салон", "студ", "послуг", "процедур"]);
 
 function expandQueryTokens(rawQuery) {
   const base = tokenizeAndStem(rawQuery).filter((t) => t.length >= 3);
@@ -192,144 +214,13 @@ function countTokenHits(hayTokens, qTokens) {
   return hits;
 }
 
+function getCityRegion(city) {
+  const clean = safeText(city).replace(/^м\.\s*/i, "").trim();
+  return CITY_TO_REGION[clean] || "";
+}
+
 function cn(...classes) {
   return classes.filter(Boolean).join(" ");
-}
-
-function FilterChip({ children, onClick }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="group cursor-pointer rounded-full border border-stone-200 bg-stone-100 px-3 py-1 text-xs font-medium text-stone-600 transition-all duration-200 hover:-translate-y-[1px] hover:border-red-200 hover:bg-red-50 hover:text-red-600 hover:shadow-sm active:scale-95"
-      title="Прибрати фільтр"
-    >
-      {children}
-      <span className="ml-1 inline-block text-stone-400 transition-all duration-200 group-hover:scale-125 group-hover:text-red-600">
-        ×
-      </span>
-    </button>
-  );
-}
-
-function SkeletonPulse({ className = "" }) {
-  return (
-    <div
-      className={cn("animate-pulse rounded-2xl bg-stone-200/80", className)}
-    />
-  );
-}
-
-function StudioCardSkeleton() {
-  return (
-    <div className="overflow-hidden rounded-[24px] border border-stone-200/70 bg-white shadow-[0_10px_26px_rgba(15,23,42,0.07)] sm:rounded-[30px]">
-      <div className="relative h-56 overflow-hidden">
-        <SkeletonPulse className="h-full w-full rounded-none" />
-
-        <div className="absolute right-4 top-4">
-          <SkeletonPulse className="h-8 w-20 rounded-full" />
-        </div>
-
-        <div className="absolute inset-x-0 bottom-0 p-4">
-          <div className="flex items-end gap-3">
-            <SkeletonPulse className="h-16 w-16 shrink-0 rounded-[20px] bg-white/80" />
-
-            <div className="min-w-0 flex-1 pb-1">
-              <SkeletonPulse className="h-6 w-40 rounded-xl bg-white/80" />
-              <SkeletonPulse className="mt-2 h-4 w-56 max-w-full rounded-xl bg-white/70" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex flex-1 flex-col p-5">
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <SkeletonPulse className="h-4 w-full rounded-xl" />
-            <SkeletonPulse className="h-4 w-[92%] rounded-xl" />
-            <SkeletonPulse className="h-4 w-[70%] rounded-xl" />
-          </div>
-
-          <div className="space-y-2">
-            <SkeletonPulse className="h-3 w-28 rounded-xl" />
-
-            <div className="flex flex-wrap gap-2">
-              <SkeletonPulse className="h-8 w-24 rounded-full" />
-              <SkeletonPulse className="h-8 w-28 rounded-full" />
-              <SkeletonPulse className="h-8 w-20 rounded-full" />
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-auto pt-4">
-          <div className="rounded-2xl border border-stone-200/80 bg-stone-50/80 px-3 py-3">
-            <div className="flex items-start gap-2.5">
-              <SkeletonPulse className="h-8 w-8 shrink-0 rounded-xl bg-white" />
-
-              <div className="min-w-0 flex-1">
-                <SkeletonPulse className="h-3 w-24 rounded-xl" />
-                <SkeletonPulse className="mt-2 h-4 w-32 rounded-xl" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="pt-5">
-          <div className="flex items-center gap-3">
-            <SkeletonPulse className="h-12 w-full rounded-[18px]" />
-            <SkeletonPulse className="h-12 w-12 shrink-0 rounded-[18px]" />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function StudiosSkeleton() {
-  return (
-    <div className="min-h-screen pb-[calc(env(safe-area-inset-bottom)+68px)] sm:pb-0">
-      <div className="mx-auto max-w-6xl px-2.5 pb-4 pt-0 sm:px-4 sm:pb-8 sm:pt-14 lg:pt-16">
-        <div className="space-y-3 px-0 pt-2 sm:space-y-5 sm:pt-8 lg:pt-6">
-          <section className="overflow-hidden rounded-[24px] border border-stone-200/60 bg-white shadow-[0_4px_20px_-6px_rgba(120,90,60,0.08)] sm:rounded-3xl">
-            <div className="h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-40" />
-
-            <div className="px-4 pb-7 pt-7 sm:px-6 sm:pb-4 sm:pt-5 lg:px-8 lg:pt-6">
-              <div className="mb-5 space-y-3 sm:mb-4 sm:space-y-2 lg:mb-5">
-                <SkeletonPulse className="hidden h-8 w-36 rounded-full sm:block" />
-                <SkeletonPulse className="h-10 w-[280px] max-w-full rounded-2xl sm:h-14 sm:w-[420px]" />
-                <SkeletonPulse className="h-4 w-[320px] max-w-full rounded-xl" />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-[1.2fr_0.9fr_0.9fr_0.9fr]">
-                <SkeletonPulse className="h-[72px] rounded-[22px]" />
-                <SkeletonPulse className="h-[72px] rounded-[22px]" />
-                <SkeletonPulse className="h-[72px] rounded-[22px]" />
-                <SkeletonPulse className="h-[72px] rounded-[22px]" />
-              </div>
-
-              <div className="mt-2.5 flex flex-col gap-2 sm:mt-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex flex-wrap gap-2">
-                  <SkeletonPulse className="h-7 w-24 rounded-full" />
-                  <SkeletonPulse className="h-7 w-28 rounded-full" />
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <SkeletonPulse className="h-11 w-32 rounded-[18px]" />
-                  <SkeletonPulse className="h-11 w-36 rounded-[18px]" />
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <div className="grid gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <StudioCardSkeleton key={i} />
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 async function fetchStudios() {
@@ -350,8 +241,258 @@ async function fetchStudios() {
   }));
 }
 
+function generateFakeRating(seed) {
+  const str = String(seed || "");
+  let hash = 0;
+
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+
+  const normalized = Math.abs(hash % 1000) / 1000;
+
+  return {
+    rating: Number((4.2 + normalized * 0.8).toFixed(1)),
+    reviewsCount: Math.floor(5 + normalized * 115),
+  };
+}
+
+function SkeletonPulse({ className = "" }) {
+  return <div className={cn("animate-pulse rounded-[28px] bg-black/5", className)} />;
+}
+
+function StudiosSkeleton() {
+  return (
+    <main className="min-h-screen bg-[#fbfaf8] px-4 pb-24 pt-4 text-[#111111]">
+      <div className="mx-auto max-w-[1260px]">
+        <div className="flex items-center justify-between">
+          <SkeletonPulse className="h-12 w-36 rounded-full bg-white" />
+          <div className="flex gap-3">
+            <SkeletonPulse className="h-12 w-12 rounded-[18px] bg-white" />
+            <SkeletonPulse className="h-12 w-12 rounded-[18px] bg-white" />
+          </div>
+        </div>
+        <SkeletonPulse className="mt-12 h-52 w-full bg-white" />
+        <div className="mt-8 grid gap-4 lg:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <SkeletonPulse key={i} className="h-60 bg-white" />
+          ))}
+        </div>
+      </div>
+    </main>
+  );
+}
+
+function IconButton({ children, className = "", badge }) {
+  return (
+    <button
+      type="button"
+      className={cn(
+        "relative grid h-12 w-12 place-items-center rounded-[18px] bg-white text-black shadow-[0_16px_36px_rgba(20,20,20,0.08)] transition active:scale-95 sm:h-11 sm:w-11 sm:rounded-2xl",
+        className,
+      )}
+    >
+      {children}
+      {badge ? (
+        <span className="absolute right-2 top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-[#ff6200] px-1 text-[10px] font-black leading-none text-white">
+          {badge}
+        </span>
+      ) : null}
+    </button>
+  );
+}
+
+function BrandBar() {
+  return (
+    <div className="mt-12 flex items-center justify-between gap-4">
+    </div>
+  );
+}
+
+function FeaturePill({ active, icon: Icon, children, onClick, className = "" }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+className={cn(
+ "group inline-flex h-[32px] min-w-max shrink-0 select-none items-center justify-center gap-1 rounded-[11px] border border-[#f0e7da] bg-white px-2.5 text-[10px] font-bold text-[#77716b] shadow-[0_4px_12px_rgba(15,23,42,0.025)] transition-all duration-200 active:scale-[0.97]",
+  "snap-start whitespace-nowrap",
+  "sm:h-[34px] sm:gap-1.5 sm:rounded-[12px] sm:px-3 sm:text-[11px]",
+  active && "bg-[#fff3e9] text-[#ff6200]",
+  className,
+)}
+    >
+   <Icon
+  className={cn(
+    "h-3.5 w-3.5 shrink-0 transition-colors duration-200 sm:h-[12px] sm:w-[12px]",
+    active
+      ? "text-[#ff6200]"
+      : "text-[#8b8794] group-hover:text-[#ff6200]",
+  )}
+/>
+      {children}
+    </button>
+  );
+}
+
+function RatingBadge({ rating, reviewsCount }) {
+  return (
+    <div className="inline-flex h-6 items-center gap-1 rounded-full bg-white px-2 text-[9px] font-black text-[#151515] shadow-[0_8px_18px_rgba(20,20,20,0.1)] sm:h-7 sm:px-2.5 sm:text-[10px]">
+      <Star className="h-3 w-3 fill-[#ffb11a] text-[#ffb11a] sm:h-4 sm:w-4" />
+      <span>{rating.toFixed(1)}</span>
+      <span className="font-semibold text-[#6f7280]">({reviewsCount})</span>
+    </div>
+  );
+}
+
+function StudioCard({ studio, onOpen, mode = "carousel" }) {
+  const name = safeText(studio.name) || "Студія";
+  const cat = getCategoryLabel(safeText(studio.category)) || "Послуга";
+  const CategoryIcon = getCategoryIcon(studio.category);
+  const cityLabel = safeText(studio.city);
+  const coverUrl = safeText(studio.coverUrl);
+  const logoUrl = safeText(studio.logoUrl);
+  const { rating, reviewsCount } = generateFakeRating(studio.id || studio.slug || name);
+  const address = [studio?.street, studio?.building, studio?.apartment]
+    .filter(Boolean)
+    .join(", ");
+  const fullAddress = [cityLabel, address].filter(Boolean).join(", ");
+  const services = Array.isArray(studio.services)
+    ? studio.services.map((s) => safeText(s?.name)).filter(Boolean)
+    : [];
+  const serviceLabel = services[0] || cat;
+  const priceLabel =
+    studio.priceFrom != null && studio.priceFrom !== ""
+      ? `від ${studio.priceFrom} ₴`
+      : "від 350 ₴";
+
+  const isGrid = mode === "grid";
+  const isPremium = studio.premium === true || studio.premium === "true";
+
+  return (
+<div
+  role="button"
+  tabIndex={0}
+  onClick={() => onOpen(studio)}
+  onKeyDown={(event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onOpen(studio);
+    }
+  }}
+  className={cn(
+    "group relative shrink-0 cursor-pointer outline-none transition hover:-translate-y-1",
+    isGrid
+      ? "w-full max-w-none"
+      : "w-[84%] shrink-0 sm:w-[48%] lg:w-[32%]",
+  )}
+>
+<article
+  className={cn(
+    "relative z-10 overflow-hidden bg-[#202020] text-white shadow-[0_14px_34px_rgba(0,0,0,0.16)]",
+isPremium
+  ? "h-[398px] rounded-[30px] max-[639px]:h-[190px] max-[639px]:rounded-[20px] sm:h-[202px] sm:rounded-[18px]"
+  : "h-[410px] rounded-[30px] max-[639px]:h-[200px] max-[639px]:rounded-[20px] sm:h-[215px] sm:rounded-[18px]"
+  )}
+>
+    {coverUrl ? (
+      <img
+        src={coverUrl}
+        alt={`${name} cover`}
+        className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
+        loading="lazy"
+        onError={(event) => {
+          event.currentTarget.style.display = "none";
+        }}
+      />
+    ) : (
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_15%,#5c5248,#191919_56%)]" />
+    )}
+
+    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-black/10" />
+
+    <div className="absolute left-2.5 top-2.5 z-10 inline-flex h-6 max-w-[58%] items-center gap-1 rounded-full border border-white/40 bg-white/92 px-2 shadow-[0_8px_18px_rgba(20,20,20,0.1)] backdrop-blur-md sm:left-4 sm:top-4 sm:h-7 sm:px-3">
+      <span className="grid h-4 w-4 place-items-center rounded-full bg-[#fff3e9] text-[#ff6200] sm:h-5 sm:w-5">
+        {React.createElement(CategoryIcon, {
+          className: "h-3.5 w-3.5 sm:h-3 sm:w-3",
+        })}
+      </span>
+
+      <span className="truncate text-[9px] font-bold tracking-[-0.01em] text-[#1c1c1c] sm:text-[11px]">
+        {cat}
+      </span>
+    </div>
+
+    <div className="absolute right-2.5 top-2.5 z-10 sm:right-4 sm:top-4">
+      <RatingBadge rating={rating} reviewsCount={reviewsCount} />
+    </div>
+
+    <div className="absolute bottom-3 left-3 right-3 z-10 flex items-end gap-2 sm:bottom-4 sm:left-4 sm:right-4 sm:gap-3">
+      <div className="grid h-[72px] w-[72px] shrink-0 place-items-center overflow-hidden rounded-[18px] bg-white p-2 shadow-[0_12px_28px_rgba(0,0,0,0.22)] sm:h-[58px] sm:w-[58px] sm:rounded-[15px]">
+        {logoUrl ? (
+          <img
+            src={logoUrl}
+            alt={`${name} logo`}
+            className="h-full w-full rounded-[12px] object-contain object-center sm:rounded-[10px]"
+            loading="lazy"
+            onError={(event) => {
+              event.currentTarget.style.display = "none";
+            }}
+          />
+        ) : (
+          <Scissors className="h-9 w-9 text-black sm:h-7 sm:w-7" />
+        )}
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <h2 className="truncate text-[16px] font-black leading-none tracking-[-0.04em] sm:text-[17px]">
+          {name}
+        </h2>
+
+        {fullAddress ? (
+          <p className="mt-1 flex items-center gap-1 truncate leading-none text-[10px] font-medium text-white sm:text-[10px] md:text-[10px] lg:text-[11px]">
+            <MapPin className="-mt-[1px] h-3 w-3 shrink-0 text-[#ff6200] sm:h-3 sm:w-3" />
+            {fullAddress}
+          </p>
+        ) : null}
+
+        <p className="mt-1 flex items-center gap-1 text-[10px] font-semibold text-[#13a044] sm:text-xs">
+          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#13a044] shadow-[0_0_0_3px_rgba(19,160,68,0.16)] sm:h-2 sm:w-2" />
+          Відкрито зараз
+        </p>
+      </div>
+
+      <div
+        className="relative z-20"
+        onClick={(event) => event.stopPropagation()}
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <FavouriteButton studio={studio} />
+      </div>
+    </div>
+  </article>
+
+{isPremium ? (
+  <div className="absolute left-2.5 top-[38px] z-10 sm:left-4 sm:top-[48px]">
+    <div className="inline-flex items-center gap-1 rounded-full border border-[#ffd7b5]/50 bg-[linear-gradient(90deg,#ff6200_0%,#ff8a00_18%,#ffc266_50%,#ff8a00_82%,#ff6200_100%)] px-2 py-[4px] shadow-[0_8px_20px_rgba(255,98,0,0.28)] backdrop-blur-md sm:px-2.5">
+      <Crown className="h-3 w-3 fill-white text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.22)]" />
+
+      <span className="text-[9px] font-black uppercase tracking-[0.08em] text-white">
+        Premium
+      </span>
+    </div>
+  </div>
+) : null}
+</div>
+    
+  );
+}
+
 export default function Studios() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const studiosQuery = useQuery({
     queryKey: ["studios"],
     queryFn: fetchStudios,
@@ -362,10 +503,10 @@ export default function Studios() {
     refetchOnReconnect: false,
   });
 
-  
   const studios = useMemo(() => {
     return Array.isArray(studiosQuery.data) ? studiosQuery.data : [];
   }, [studiosQuery.data]);
+
   const [shouldRestoreScroll, setShouldRestoreScroll] = useState(() => {
     return sessionStorage.getItem("restore-studios-scroll") === "1";
   });
@@ -383,6 +524,7 @@ export default function Studios() {
   const [sort, setSort] = useState(
     () => searchParams.get("sort") || "recommended",
   );
+  const [activeSlide, setActiveSlide] = useState(0);
   const [applied, setApplied] = useState(() => ({
     q,
     city,
@@ -391,11 +533,8 @@ export default function Studios() {
     maxPrice,
     sort,
   }));
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [hasSearched, setHasSearched] = useState(false);
-
+  
+  const recommendedScrollRef = useRef(null);
   useEffect(() => {
     if (!shouldRestoreScroll) return;
 
@@ -451,86 +590,78 @@ export default function Studios() {
       { value: "recommended", label: "Рекомендовано" },
       { value: "priceAsc", label: "За зростанням ціни" },
       { value: "priceDesc", label: "За спаданням ціни" },
-      { value: "nameAsc", label: "За назвою (A–Z)" },
+      { value: "nameAsc", label: "За назвою" },
     ],
     [],
   );
 
   const cities = useMemo(() => {
-    const set = new Set(
-      (studios || []).map((s) => safeText(s.city)).filter(Boolean),
-    );
-    return Array.from(set).sort((a, b) => a.localeCompare(b));
+    const set = new Set(studios.map((s) => safeText(s.city)).filter(Boolean));
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "uk"));
   }, [studios]);
 
-const regions = useMemo(() => {
-  const set = new Set(
-    (studios || [])
-      .map((s) => safeText(s.region || s.oblast || s.area || getCityRegion(s.city)))
-      .filter(Boolean),
-  );
+  const regions = useMemo(() => {
+    const set = new Set(
+      studios
+        .map((s) => safeText(s.region || s.oblast || s.area || getCityRegion(s.city)))
+        .filter(Boolean),
+    );
 
-  return Array.from(set)
-    .sort((a, b) => a.localeCompare(b, "uk"))
-    .map((r) => ({
-      value: r,
-      label: r,
-      meta: "Область",
-    }));
-}, [studios]);
+    return Array.from(set)
+      .sort((a, b) => a.localeCompare(b, "uk"))
+      .map((r) => ({
+        value: r,
+        label: r,
+        meta: "Область",
+      }));
+  }, [studios]);
 
-const districts = useMemo(() => {
-  const set = new Set(
-    (studios || []).map((s) => safeText(s.district || s.raion)).filter(Boolean),
-  );
+  const districts = useMemo(() => {
+    const set = new Set(
+      studios.map((s) => safeText(s.district || s.raion)).filter(Boolean),
+    );
 
-  return Array.from(set)
-    .sort((a, b) => a.localeCompare(b, "uk"))
-    .map((d) => ({
-      value: d,
-      label: d,
-      meta: "Район",
-    }));
-}, [studios]);
+    return Array.from(set)
+      .sort((a, b) => a.localeCompare(b, "uk"))
+      .map((d) => ({
+        value: d,
+        label: d,
+        meta: "Район",
+      }));
+  }, [studios]);
 
   const categories = useMemo(() => {
     const raw = Array.from(
-      new Set((studios || []).map((s) => safeText(s.category)).filter(Boolean)),
+      new Set(studios.map((s) => safeText(s.category)).filter(Boolean)),
     );
 
     return raw
-      .map((value) => ({
-        value,
-        label: getCategoryLabel(value),
-      }))
+      .map((value) => ({ value, label: getCategoryLabel(value) }))
       .sort((a, b) => a.label.localeCompare(b.label, "uk"));
   }, [studios]);
 
   const filtered = useMemo(() => {
     const cityN = normalize(applied.city);
     const catN = normalize(applied.category);
-
     const min = toNumber(applied.minPrice);
     const max = toNumber(applied.maxPrice);
-
     const qTokens = expandQueryTokens(applied.q);
 
-    const scored = (studios || [])
+    const scored = studios
       .map((s) => {
         const catNItem = normalize(s.category);
-const locationValues = [
-  s.city,
-  s.region,
-  s.oblast,
-  s.area,
-  CITY_TO_REGION[safeText(s.city)],
-]
-  .map(normalize)
-  .filter(Boolean);
+        const locationValues = [
+          s.city,
+          s.region,
+          s.oblast,
+          s.area,
+          getCityRegion(s.city),
+        ]
+          .map(normalize)
+          .filter(Boolean);
 
-const matchCity = !cityN || locationValues.includes(cityN);
+        const matchCity = !cityN || locationValues.includes(cityN);
         const matchCategory = !catN || catNItem === catN;
-
         const priceFrom = toNumber(s.priceFrom);
         const matchMin = min == null || (priceFrom != null && priceFrom >= min);
         const matchMax = max == null || (priceFrom != null && priceFrom <= max);
@@ -543,34 +674,24 @@ const matchCity = !cityN || locationValues.includes(cityN);
         const categoryTokens = tokensFrom(s.category);
         const descTokens = tokensFrom(s.description);
         const servicesTokens = tokenizeAndStem(
-          (Array.isArray(s.services)
-            ? s.services.map((x) => x?.name)
-            : []
-          ).join(" "),
+          (Array.isArray(s.services) ? s.services.map((x) => x?.name) : []).join(" "),
         );
 
-        if (qTokens.length === 0) {
-          return { s, score: 0, matchQuery: true };
-        }
+        if (qTokens.length === 0) return { s, score: 0, matchQuery: true };
 
         const nameHits = countTokenHits(nameTokens, qTokens);
         const catHits = countTokenHits(categoryTokens, qTokens);
         const descHits = countTokenHits(descTokens, qTokens);
         const servicesHits = countTokenHits(servicesTokens, qTokens);
-
         const matchQuery = nameHits + catHits + descHits + servicesHits > 0;
 
-        if (!matchQuery) {
-          return { s, score: -1, matchQuery: false };
-        }
+        if (!matchQuery) return { s, score: -1, matchQuery: false };
 
         let score = 0;
-
         score += nameHits * 6;
         score += catHits * 5;
         score += servicesHits * 4;
         score += descHits * 2;
-
         if (nameHits > 0) score += 4;
         if (catHits > 0) score += 3;
         if (servicesHits > 0) score += 2;
@@ -590,8 +711,9 @@ const matchCity = !cityN || locationValues.includes(cityN);
 
       if (applied.sort === "priceAsc") return ap - bp;
       if (applied.sort === "priceDesc") return bp - ap;
-      if (applied.sort === "nameAsc")
-        return safeText(a.s.name).localeCompare(safeText(b.s.name));
+      if (applied.sort === "nameAsc") {
+        return safeText(a.s.name).localeCompare(safeText(b.s.name), "uk");
+      }
 
       if (b.score !== a.score) return b.score - a.score;
       return ap - bp;
@@ -600,48 +722,23 @@ const matchCity = !cityN || locationValues.includes(cityN);
     return sorted.map((x) => x.s);
   }, [applied, studios]);
 
-  const activeChips = useMemo(() => {
-    const chips = [];
-    if (safeText(q)) chips.push({ key: "q", label: `Пошук: ${safeText(q)}` });
-    if (safeText(city))
-      chips.push({ key: "city", label: `Місто: ${safeText(city)}` });
-    if (safeText(category))
-      chips.push({
-        key: "category",
-        label: `Категорія: ${getCategoryLabel(safeText(category))}`,
-      });
-    if (safeText(minPrice))
-      chips.push({ key: "minPrice", label: `Від: ${safeText(minPrice)} грн` });
-    if (safeText(maxPrice))
-      chips.push({ key: "maxPrice", label: `До: ${safeText(maxPrice)} грн` });
+const premiumStudios = studios.filter(
+  (studio) => studio.premium === true,
+);
 
-    if (sort !== "recommended") {
-      const label =
-        sort === "priceAsc"
-          ? "Ціна ↑"
-          : sort === "priceDesc"
-            ? "Ціна ↓"
-            : "Назва A–Z";
-
-      chips.push({ key: "sort", label });
-    }
-    return chips;
-  }, [q, city, category, minPrice, maxPrice, sort]);
-
-  const PAGE_SIZE = 12;
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const [isApplying, setIsApplying] = useState(false);
+const recommended =
+  premiumStudios.length > 0
+    ? premiumStudios.slice(0, 6)
+    : studios.slice(0, 6);
+  const allStudios = filtered;
 
   function clearAll() {
-    setVisibleCount(PAGE_SIZE);
-
     setQ("");
     setCity("");
     setCategory("");
     setMinPrice("");
     setMaxPrice("");
     setSort("recommended");
-
     setApplied({
       q: "",
       city: "",
@@ -650,187 +747,123 @@ const matchCity = !cityN || locationValues.includes(cityN);
       maxPrice: "",
       sort: "recommended",
     });
-
-    setHasSearched(false);
-  }
-
-  function generateFakeRating(seed) {
-    const str = String(seed || "");
-    let hash = 0;
-
-    for (let i = 0; i < str.length; i++) {
-      hash = str.charCodeAt(i) + ((hash << 5) - hash);
-    }
-
-    const normalized = Math.abs(hash % 1000) / 1000;
-
-    // рейтинг 4.2 – 5.0
-    const rating = 4.2 + normalized * 0.8;
-
-    // кількість відгуків 5 – 120
-    const reviewsCount = Math.floor(5 + normalized * 115);
-
-    return {
-      rating: Number(rating.toFixed(1)),
-      reviewsCount,
-    };
-  }
-
-  function removeChip(key) {
-    if (key === "q") setQ("");
-    if (key === "city") setCity("");
-    if (key === "category") setCategory("");
-    if (key === "minPrice") setMinPrice("");
-    if (key === "maxPrice") setMaxPrice("");
-    if (key === "sort") setSort("recommended");
-  }
-
-  function handleLoadMore() {
-    if (isLoadingMore) return;
-    setIsLoadingMore(true);
-    setVisibleCount((prev) => prev + PAGE_SIZE);
-    setIsLoadingMore(false);
   }
 
   function handleApply() {
-    if (isApplying || !hasPendingChanges) return;
-
-    setIsApplying(true);
     setApplied({ q, city, category, minPrice, maxPrice, sort });
-    setVisibleCount(PAGE_SIZE);
-    setHasSearched(true);
-    setIsApplying(false);
   }
 
-  const isInitialLoading = studiosQuery.isLoading && !studiosQuery.data;
+  function openStudio(studio) {
+    if (location.pathname === "/") {
+      sessionStorage.setItem("studios-scroll-y", String(window.scrollY));
+      sessionStorage.setItem("restore-studios-scroll", "1");
+    }
+    navigate(`/${studio.slug}`);
+  }
 
-  if (isInitialLoading) {
+  if (studiosQuery.isLoading && !studiosQuery.data) {
     return <StudiosSkeleton />;
   }
 
-  function clearFilters() {
-  setQ("");
-  setCity("");
-  setCategory("");
-  setMinPrice("");
-  setMaxPrice("");
-  setSort("recommended");
+const heroImageBoxClass =
+  "pointer-events-none absolute z-0 " +
+  "max-[639px]:right-[-55px] max-[639px]:top-[-120px] max-[639px]:h-[360px] max-[639px]:w-[620px] " +
+  "sm:right-[-50px] sm:top-[-120px] sm:h-[390px] sm:w-[680px] " +
+  "md:right-[-60px] md:top-[-170px] md:h-[500px] md:w-[820px] " +
+  "lg:right-[-80px] lg:top-[-240px] lg:h-[620px] lg:w-[1040px]";
+  
+const heroImageClass =
+  "h-full w-full object-contain object-right";
+
+  function scrollRecommended(direction) {
+  const container = recommendedScrollRef.current;
+  if (!container) return;
+
+  const card = container.querySelector("article");
+  if (!card) return;
+
+  const gap = 16;
+  const scrollAmount = card.offsetWidth + gap;
+
+  container.scrollBy({
+    left: direction * scrollAmount,
+    behavior: "smooth",
+  });
 }
 
   return (
-    <div className="min-h-screen pb-[calc(env(safe-area-inset-bottom)+68px)] sm:pb-0">
-     <div className="mx-auto max-w-6xl px-1 pb-4 pt-18 sm:mt-0 sm:pb-8 sm:pt-14 lg:pt-26">
-        <div className="space-y-1 px-0 sm:space-y-2 sm:pt-8 lg:pt-0">
-<section className="relative px-4 pb-5 pt-5 sm:px-6 sm:pt- lg:px-8">
-  <div className="relative">
-<h1 className="text-[35px] font-black leading-[0.98] tracking-[-0.055em] text-[#141414] sm:text-[54px] lg:text-[64px]">
-  Обирай та{" "}
+    
+<main className="min-h-screen overflow-x-hidden bg-[#fbfaf8] pb-[calc(env(safe-area-inset-bottom)+92px)] text-[#111111]">
+  <div className="mx-auto max-w-[1260px] px-4 pt-5 max-[639px]:px-5 max-[639px]:pt-4 sm:px-6 sm:pt-8 lg:px-10 lg:pt-10">
+        <BrandBar />
 
-  {/* mobile */}
-  <span className="block text-[#ff6b00] sm:hidden">
-    записуйся <br /> онлайн
+        <section className="relative mt-8 max-[639px]:mt-6 sm:mt-12 lg:mt-10">
+<div className={cn(heroImageBoxClass, "mask-hero-image")}>
+                <img
+              src={calendarHero}
+              alt=""
+              aria-hidden="true"
+           className={heroImageClass}
+            />
+          </div>
+
+          <div className="relative z-10 max-w-[720px] mt-18">
+<h1 className="max-w-[360px] text-[44px] font-black leading-[1.02] tracking-[-0.06em] text-[#202020] max-[639px]:max-w-[260px] max-[639px]:text-[38px] max-[639px]:leading-[0.98] sm:max-w-[520px] sm:text-[46px] sm:leading-[0.98] md:text-[52px] lg:max-w-[720px] lg:text-[54px]">
+  <span className="block">Обирай та</span>
+
+  <span className="block text-[#ff6200] sm:inline">
+    записуйся{" "}
   </span>
 
-  {/* tablet / desktop */}
-  <span className="hidden text-[#ff6b00] sm:block">
-    записуйся онлайн
+  <span className="block text-[#ff6200] sm:inline">
+    онлайн
   </span>
 </h1>
+         <p className="mb-14 mt-3 max-w-[250px] text-[13px] font-medium leading-5 text-[#7a7d87] max-[639px]:mb-7 max-[639px]:mt-2.5 max-[639px]:max-w-[210px] max-[639px]:text-[12px] max-[639px]:leading-4 sm:mt-3 sm:max-w-[360px] sm:text-[13px] sm:leading-5 md:max-w-[420px] md:text-[14px]">
+              Пошук послуг і закладів у твоєму місті
+            </p>
+          </div>
+        </section>
 
-<img
-  src={calendarHero}
-  alt=""
-  aria-hidden="true"
-  className="
-    pointer-events-none absolute object-contain
-    right-[-14px] top-[-10px] h-[135px] w-[135px]
-   
+        <section className="relative z-20 mt-10 sm:mt-8">
+<div className="flex h-[56px] items-center rounded-[30px] border border-[#eadfce] bg-white pl-5 pr-3 shadow-[0_10px_30px_rgba(15,23,42,0.04)] transition-all duration-200 hover:border-[#f1dfbf] hover:ring-4 hover:ring-orange-200/20 sm:max-w-[450px] md:max-w-[500px] lg:max-w-[660px]">
+  <Search className="h-5 w-5 shrink-0 text-[#8b8794] sm:h-6 sm:w-6" />
 
-    xs:right-[-12px] xs:top-[-12px] xs:h-[150px] xs:w-[150px]
-    sm:right-[-18px] sm:top-[-6px] sm:h-[190px] sm:w-[190px]
-    md:right-[-10px] md:top-[-10px] md:h-[205px] md:w-[205px]
-    lg:right-[-8px] lg:top-[-30px] lg:h-[250px] lg:w-[250px]
-    xl:right-[-4px] xl:top-[-18px] xl:h-[235px] xl:w-[235px]
-  "
-/>
-  </div>
+<div className="flex min-w-0 flex-1 items-center">
+  <input
+    value={q}
+    onChange={(event) => setQ(event.target.value)}
+    placeholder="Барбершоп в Луцьку"
+    className="min-w-0 flex-1 bg-transparent px-4 text-[15px] font-semibold text-[#111111] outline-none placeholder:font-semibold placeholder:text-[#8b8794] sm:text-[18px]"
+  />
 
-      <p className="mt-2 text-[12px] sm:text-[15px] lg:text-[18px] font-medium leading-6 text-[#74706b]">
-        Пошук послуг і закладів у твоєму місті
-      </p>
-<div className="relative mt-6 rounded-[28px] bg-white/90 p-[22px] shadow-[0_14px_28px_rgba(15,23,42,0.12)] sm:mt-18 sm:rounded-[32px] sm:p-7 sm:shadow-[0_18px_36px_rgba(15,23,42,0.11)] lg:mt-20">
-<div className="grid gap-3">
-  {/* MOBILE: пошук окремо */}
-  <div className="lg:hidden">
-    <AnimatedField
-      size="compact"
-      icon={Search}
-      label="Що шукаєте?"
-      value={q}
-      onChange={setQ}
-      placeholder="Що шукаєте?"
-    />
-  </div>
+  {q ? (
+    <button
+      type="button"
+      onClick={() => setQ("")}
+      className="mr-2 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#f5f1eb] text-[#8b8794] transition hover:bg-[#fff1e7] hover:text-[#ff6200]"
+    >
+      <X className="h-4 w-4" />
+    </button>
+  ) : null}
+</div>
 
-  {/* DESKTOP: пошук + знайти в один ряд */}
-  <div className="hidden lg:grid lg:grid-cols-[1fr_220px] lg:gap-4">
-    <AnimatedField
-      size="compact"
-      icon={Search}
-      label="Що шукаєте?"
-      value={q}
-      onChange={setQ}
-      placeholder="Що шукаєте?"
-    />
+  <button
+    type="button"
+    onClick={handleApply}
+    disabled={!hasPendingChanges}
+className={cn(
+  "flex h-[38px] items-center justify-center rounded-full px-4 text-[14px] font-black text-white transition-all duration-300 active:scale-[0.98] sm:h-[38px] sm:px-5 sm:text-[13px]",
+  hasPendingChanges
+    ? "animate-[heartbeat_1.8s_ease-in-out_infinite] bg-[#ff6200] shadow-[0_12px_30px_rgba(255,98,0,0.24)] hover:bg-[#ff6f14]"
+    : "bg-[#ff6200] shadow-[0_10px_24px_rgba(255,98,0,0.18)] opacity-70",
+)}
+  >
+    Знайти
+  </button>
+</div>
 
-<button
-  type="button"
-  onClick={handleApply}
-  disabled={!hasPendingChanges || isApplying || isLoadingMore}
-  className={cn(
-    "flex h-[64px] items-center justify-center rounded-[22px] bg-gradient-to-r from-[#ff6b00] to-[#ffb800] px-8 text-[18px] font-black text-white shadow-[0_14px_28px_rgba(255,107,0,0.28)] transition hover:scale-[1.02] active:scale-95",
-    "disabled:cursor-not-allowed disabled:from-[#ffb18a] disabled:to-[#ffe0a3] disabled:text-white/80 disabled:shadow-[0_10px_22px_rgba(255,138,76,0.12)]",
-  )}
->
-  <span className="mx-auto inline-flex items-center justify-center gap-2">
-    <Search className="h-5 w-5 mr-2" />
-    <span>Знайти</span>
-  </span>
-</button>
-  </div>
-
-  {/* MOBILE: місто + категорія */}
-  <div className="grid grid-cols-2 gap-3 lg:hidden">
-<AnimatedDropdown
-  icon={MapPin}
-  label="Місто"
-  value={city}
-  onChange={setCity}
-  placeholder="Локація"
-  options={cities.map((c) => ({
-    value: c,
-    label: c,
-    meta: "Місто",
-  }))}
-  regionOptions={regions}
-  districtOptions={districts}
-  searchable
-/>
-
-    <AnimatedDropdown
-      size="compact"
-      icon={LayoutGrid}
-      label="Категорія"
-      value={category}
-      onChange={setCategory}
-      placeholder="Категорія"
-      options={categories}
-      searchable
-    />
-  </div>
-
-  {/* DESKTOP: місто + категорія + очистити в один ряд */}
-  <div className="hidden lg:grid lg:grid-cols-[1fr_1fr_180px] lg:gap-4">
+      <div className="mt-5 grid grid-cols-2 gap-3 sm:mt-5 sm:grid-cols-[1fr_1fr_auto] lg:max-w-[900px]">
 <AnimatedDropdown
   size="compact"
   icon={MapPin}
@@ -846,351 +879,243 @@ const matchCity = !cityN || locationValues.includes(cityN);
   regionOptions={regions}
   districtOptions={districts}
   searchable
+  className="h-10 rounded-[16px] sm:h-[54px] sm:rounded-[20px]"
 />
-
-    <AnimatedDropdown
-      size="compact"
-      icon={LayoutGrid}
-      label="Категорія"
-      value={category}
-      onChange={setCategory}
-      placeholder="Категорія"
-      options={categories}
-      searchable
-    />
-
-    <button
-      type="button"
-      onClick={clearAll}
-      disabled={activeChips.length === 0}
-      className={cn(
-        "flex h-[64px] items-center justify-center gap-2 rounded-[22px] bg-white px-6 text-[16px] font-black text-[#6f6962] shadow-[0_12px_26px_rgba(15,23,42,0.075)] transition hover:scale-[1.02] active:scale-95",
-        "disabled:cursor-not-allowed disabled:bg-white/65 disabled:text-[#c9c3bc] disabled:shadow-[0_8px_18px_rgba(15,23,42,0.035)]",
-      )}
-    >
-      <Repeat className="h-4 w-4 mr-2" />
-      Очистити
-    </button>
-  </div>
-
-  {/* MOBILE: кнопки */}
-  <div className="flex gap-3 lg:hidden">
-    <button
-      type="button"
-      onClick={handleApply}
-      disabled={!hasPendingChanges || isApplying || isLoadingMore}
-className={cn(
-  "flex h-10  mt-4  flex-[1.45] items-center justify-center gap-1.5 rounded-[16px] bg-gradient-to-r from-[#ff6b00] to-[#ffb800] px-4 text-[13px] font-black text-white shadow-[0_14px_28px_rgba(255,107,0,0.28)] transition hover:scale-[1.02] active:scale-95",
-  "sm:h-12 sm:gap-2 sm:rounded-[18px] sm:px-5 sm:text-[15px]",
-  "md:h-14 md:rounded-[20px] md:px-6 md:text-[16px]",
-  "disabled:cursor-not-allowed disabled:from-[#ffb18a] disabled:to-[#ffe0a3] disabled:text-white/80 disabled:shadow-[0_10px_22px_rgba(255,138,76,0.12)]",
-)}
-    >
-      <Search className="h-4 w-4 sm:h-4.5 sm:w-4.5 md:h-5 md:w-5 mr-2" />
-      Знайти
-    </button>
-
-    <button
-      type="button"
-      onClick={clearAll}
-      disabled={activeChips.length === 0}
-className={cn(
-  "flex h-10 flex-[0.75] mt-4  items-center justify-center gap-1.5 rounded-[16px] bg-white px-3 text-[13px] font-black text-[#6f6962] shadow-[0_12px_26px_rgba(15,23,42,0.075)] transition hover:scale-[1.02] active:scale-95",
-  "sm:h-12 sm:gap-2 sm:rounded-[18px] sm:px-4 sm:text-[15px]",
-  "md:h-14 md:rounded-[20px] md:px-5 md:text-[16px]",
-  "disabled:cursor-not-allowed disabled:bg-white/65 disabled:text-[#c9c3bc] disabled:shadow-[0_8px_18px_rgba(15,23,42,0.035)]",
-)}
-    >
-     <X className="h-3.5 w-3.5 md:h-4 md:w-4 mr-2" />
-      Очистити
-    </button>
-  </div>
-
-</div>
-  </div>
-</section>
-
-
-
-
-{filtered.length === 0 ? (
-  <div className="px-4">
-    <div className="rounded-[28px] border-2 border-dashed border-[var(--color-mist)] bg-white p-6 text-center shadow-[var(--shadow-soft)] sm:p-8">
-    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--color-cream)] text-[var(--color-caramel)]">
-      <Search className="h-6 w-6" />
-    </div>
-
-    <h3 className="mt-4 text-xl font-black tracking-[-0.03em] text-[var(--color-ink)]">
-      Нічого не знайдено
-    </h3>
-
-    <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-[color:var(--color-caramel)]/80">
-      Спробуй змінити фільтри або ввести простіший запит.
-    </p>
-
-    <button
-      type="button"
-      onClick={clearAll}
-      className="mt-5 inline-flex h-11 items-center justify-center rounded-2xl bg-[var(--color-ink)] px-5 text-sm font-bold text-white shadow-[0_12px_28px_rgba(15,23,42,0.16)] transition hover:-translate-y-0.5 hover:opacity-90 active:scale-[0.98]"
-    >
-      Очистити фільтри
-    </button>
-  </div>
-  </div>
-) : (
-            <div className="grid gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 px-4">
-              {filtered.slice(0, visibleCount).map((studio) => {
-                const name = safeText(studio.name) || "Студія";
-                const cat = getCategoryLabel(safeText(studio.category));
-                const cityLabel = safeText(studio.city);
-                const description = safeText(studio.description);
-                const coverUrl = safeText(studio.coverUrl);
-                const logoUrl = safeText(studio.logoUrl);
-                const { rating, reviewsCount } = generateFakeRating(studio.id);
-                const isTopRated = rating >= 4.8;
-                const address = [
-                  studio?.street,
-                  studio?.building,
-                  studio?.apartment,
-                ]
-                  .filter(Boolean)
-                  .join(", ");
-                const fullAddress = [cityLabel, address]
-                  .filter(Boolean)
-                  .join(", ");
-
-                const topServices = Array.isArray(studio.services)
-                  ? studio.services
-                      .map((s) => safeText(s?.name))
-                      .filter(Boolean)
-                      .slice(0, 3)
-                  : [];
-                const priceLabel =
-                  studio.priceFrom != null && studio.priceFrom !== ""
-                    ? `від ${studio.priceFrom} грн`
-                    : null;
-
-                return (
-                  <div
-                    key={studio.slug}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => {
-                      if (location.pathname === "/") {
-                        sessionStorage.setItem(
-                          "studios-scroll-y",
-                          String(window.scrollY),
-                        );
-                        sessionStorage.setItem("restore-studios-scroll", "1");
-                      }
-                      navigate(`/${studio.slug}`);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        sessionStorage.setItem(
-                          "studios-scroll-y",
-                          String(window.scrollY),
-                        );
-                        sessionStorage.setItem("restore-studios-scroll", "1");
-                        navigate(`/${studio.slug}`);
-                      }
-                    }}
-                    className={cn(
-                      "group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-[24px] border transition-all duration-500 will-change-transform sm:rounded-[30px]",
-                      "bg-white/95 backdrop-blur-sm",
-                      studio.premium
-                        ? "border-amber-300/70 shadow-[0_12px_34px_rgba(217,168,72,0.18)] hover:-translate-y-1 hover:shadow-[0_18px_44px_rgba(217,168,72,0.24)] sm:shadow-[0_20px_60px_rgba(217,168,72,0.22)] sm:hover:-translate-y-2 sm:hover:shadow-[0_28px_70px_rgba(217,168,72,0.30)]"
-                        : "border-stone-200/80 shadow-[0_10px_26px_rgba(15,23,42,0.07)] hover:-translate-y-1 hover:border-stone-300 hover:shadow-[0_16px_34px_rgba(15,23,42,0.10)] sm:shadow-[0_14px_38px_rgba(15,23,42,0.08)] sm:hover:-translate-y-1.5 sm:hover:shadow-[0_22px_48px_rgba(15,23,42,0.12)]",
-                    )}
-                  >
-                    {studio.premium && (
-                      <>
-                        <div className="pointer-events-none absolute inset-0 rounded-[30px] bg-[linear-gradient(135deg,rgba(251,191,36,0.10),rgba(255,255,255,0),rgba(245,158,11,0.08))]" />
-                        <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-amber-400 to-transparent opacity-90" />
-                      </>
-                    )}
-
-                    <div className="relative h-56 overflow-hidden">
-                      {coverUrl ? (
-                        <img
-                          src={coverUrl}
-                          alt={`${name} cover`}
-                          className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.06]"
-                          loading="lazy"
-                          onError={(e) =>
-                            (e.currentTarget.style.display = "none")
-                          }
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-stone-100 to-stone-200 text-sm text-stone-500">
-                          Без обкладинки
-                        </div>
-                      )}
-
-                      <div className="absolute inset-0 bg-gradient-to-t from-stone-950/70 via-stone-900/20 to-transparent" />
-                      <div className="absolute inset-0 bg-gradient-to-r from-stone-950/20 via-transparent to-transparent" />
-
-<div className="absolute left-4 top-4 z-20 flex items-center gap-2">
-
-  {studio.premium && (
-    <div className="inline-flex h-[34px] items-center gap-1.5 rounded-full border border-white/20 bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 px-3 text-[11px] font-bold uppercase tracking-[0.18em] text-white shadow-[0_10px_24px_rgba(245,158,11,0.30)]">
-      <Crown className="h-3.5 w-3.5" />
-    </div>
+<AnimatedDropdown
+  size="compact"
+  icon={Grid2X2}
+  label="Категорія"
+  value={category}
+  onChange={setCategory}
+  placeholder="Категорія"
+  options={categories}
+  searchable
+  className="h-[76px] rounded-full bg-white px-5 shadow-[0_18px_42px_rgba(20,20,20,0.08)] sm:h-[52px]"
+/>
+<button
+  type="button"
+  onClick={clearAll}
+  className={cn(
+    "hidden sm:flex",
+    "group relative h-10 w-full items-center justify-center gap-2 rounded-[16px] border border-[#eadfce] bg-white px-4 text-left transition-all duration-200",
+    "shadow-[0_8px_22px_rgba(15,23,42,0.035)]",
+    "sm:h-[50px] sm:min-w-[120px] sm:rounded-[18px]",
+    "active:scale-[0.99]",
+    "hover:border-[#f1dfbf] hover:ring-4 hover:ring-orange-200/20",
   )}
-  <div className="inline-flex h-[34px] items-center rounded-full border border-white/20 bg-white/90 px-3 text-[12px] font-bold text-stone-800 shadow-sm backdrop-blur-md">
-    <span>{cat}</span>
+>
+  <SlidersHorizontal className="h-4 w-4 text-[#8a8580] transition-colors duration-200 group-hover:text-[#ff6b00] sm:h-[12px] sm:w-[12px]" />
+
+  <span className="text-[12px] font-bold text-[#77716b] sm:text-[16px]">
+    Скинути
+  </span>
+</button>
+          </div>
+
+<div className="relative mt-6 sm:mt-5">
+  <div className="-mx-5 overflow-x-auto overflow-y-hidden px-5 pb-3 [-ms-overflow-style:none] [scrollbar-width:none] sm:-mx-6 sm:px-6 lg:-mx-10 lg:px-10 [&::-webkit-scrollbar]:hidden">
+    <div className="flex w-max min-w-full touch-pan-x snap-x snap-mandatory flex-nowrap gap-2.5 scroll-smooth sm:gap-4">
+      <FeaturePill
+        active={!category}
+        icon={Grid2X2}
+        onClick={() => setCategory("")}
+      >
+        Усі категорії
+      </FeaturePill>
+
+      {categories.map((cat) => (
+        <FeaturePill
+          key={cat.value}
+          active={category === cat.value}
+          icon={getCategoryIcon(cat.value)}
+          onClick={() => setCategory(cat.value)}
+        >
+          {cat.label}
+        </FeaturePill>
+      ))}
+    </div>
   </div>
 </div>
+        </section>
 
-                      {rating !== null && (
-                        <div className="absolute right-4 top-4 z-20 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/90 px-3 py-1.5 text-[12px] font-bold text-stone-800 shadow-sm backdrop-blur-md">
-                          <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                          <span>{rating.toFixed(1)}</span>
+{allStudios.length > 0 ? (
+  <>
+    <section className="mt-8 max-[639px]:mt-7 sm:mt-8">
+      <div className="mb-6 flex items-center justify-between gap-4 sm:mb-4">
+        <h2 className="text-[18px] font-black tracking-[-0.05em] sm:!text-xl">
+          Рекомендовані
+        </h2>
 
-                          {reviewsCount > 0 && (
-                            <span className="font-semibold text-stone-500">
-                              ({reviewsCount})
-                            </span>
-                          )}
-                        </div>
-                      )}
+        <div className="hidden items-center gap-3 sm:flex">
+          <button
+            type="button"
+            onClick={() => scrollRecommended(-1)}
+            className="group grid h-11 w-11 place-items-center text-[#5f5b57] transition-all duration-300 hover:text-[#ff6200] active:scale-[0.96] sm:h-10 sm:w-10 lg:h-11 lg:w-11"
+          >
+            <ChevronLeft className="h-5 w-5 transition-transform duration-300 group-hover:-translate-x-[1px]" />
+          </button>
 
-                      <div className="absolute inset-x-0 bottom-0 z-20 p-4">
-                        <div className="flex items-end gap-3">
-                          <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-[20px] border border-white/35 bg-white shadow-[0_12px_24px_rgba(15,23,42,0.18)] ring-1 ring-black/5">
-                            {logoUrl ? (
-                              <img
-                                src={logoUrl}
-                                alt={`${name} logo`}
-                                className="h-full w-full object-cover"
-                                loading="lazy"
-                                onError={(e) =>
-                                  (e.currentTarget.style.display = "none")
-                                }
-                              />
-                            ) : (
-                              <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-stone-100 to-stone-200 text-[11px] font-bold text-stone-500">
-                                LOGO
-                              </div>
-                            )}
-                          </div>
+          <button
+            type="button"
+            onClick={() => scrollRecommended(1)}
+            className="group grid h-11 w-11 place-items-center text-[#5f5b57] transition-all duration-300 hover:text-[#ff6200] active:scale-[0.96] sm:h-10 sm:w-10 lg:h-11 lg:w-11"
+          >
+            <ChevronRight className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-[1px]" />
+          </button>
+        </div>
+      </div>
 
-                          <div className="min-w-0 flex-1 pb-1">
-                            <h2 className="truncate text-xl font-black tracking-[-0.03em] text-white drop-shadow-sm">
-                              {name}
-                            </h2>
+      <div
+        id="recommended-scroll"
+        ref={recommendedScrollRef}
+        className="-mx-5 overflow-x-auto px-5 pb-3 pr-12 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        onScroll={(e) => {
+          const container = e.currentTarget;
+          const card = container.querySelector("article");
 
-                            <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-white/90">
-                              {fullAddress && (
-                                <span className="inline-flex items-center gap-1">
-                                  <MapPin className="h-4 w-4 text-rose-300" />
-                                  {fullAddress}
-                                </span>
-                              )}
+          if (!card) return;
 
-                              {/* {priceLabel && (
-                                <span className="rounded-full border border-white/15 bg-white/12 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-md">
-                                  {priceLabel}
-                                </span>
-                              )} */}
-                            </div>
-                          </div>
-                          <div
-                            className="relative z-20 flex items-center justify-center"
-                            onClick={(e) => e.stopPropagation()}
-                            onMouseDown={(e) => e.stopPropagation()}
-                          >
-                            <FavouriteButton studio={studio} />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+          const gap = 16;
+          const cardStep = card.offsetWidth + gap;
 
-{/* <div className="hidden flex-1 flex-col p-5 sm:flex">
-  <div className="absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-stone-200 to-transparent" />
+          const maxScroll =
+            container.scrollWidth - container.clientWidth;
 
-  <div className="space-y-4">
-    {description ? (
-      <p className="line-clamp-3 text-sm leading-6 text-stone-600">
-        {description}
-      </p>
-    ) : (
-      <p className="text-sm leading-6 text-stone-400">
-        Детальний опис студії скоро буде додано.
-      </p>
-    )}
+          const lastIndex =
+            window.innerWidth >= 1024
+              ? Math.max(0, recommended.length - 3)
+              : window.innerWidth >= 640
+                ? Math.max(0, recommended.length - 2)
+                : Math.max(0, recommended.length - 1);
 
+          if (container.scrollLeft >= maxScroll - 8) {
+            setActiveSlide(lastIndex);
+            return;
+          }
 
+          const index = Math.round(
+            container.scrollLeft / cardStep,
+          );
 
-    {topServices.length > 0 && (
-      <div className="space-y-2">
-        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-stone-400">
-          Популярні послуги
-        </p>
-
-        <div className="flex flex-wrap gap-2">
-          {topServices.map((service) => (
-            <span
-              key={service}
-              className="rounded-full border border-stone-200 bg-white px-3 py-1.5 text-xs font-medium text-stone-700 shadow-sm"
-            >
-              {service}
-            </span>
+          setActiveSlide(Math.min(index, lastIndex));
+        }}
+      >
+        <div className="flex gap-4">
+          {recommended.slice(0, 6).map((studio) => (
+            <StudioCard
+              key={studio.slug}
+              studio={studio}
+              onOpen={openStudio}
+            />
           ))}
         </div>
       </div>
-    )}
-  </div>
-</div> */}
-{studio.premium && (
-  <div className="mt-auto">
-    <div className="relative rounded-b-[28px] bg-gradient-to-r from-orange-500 via-amber-500 to-orange-400 px-4 py-2.5">
-      <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.16),transparent)]" />
 
-      <div className="relative flex items-center justify-center gap-3 text-white">
-        <div className="flex items-center gap-2">
-          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-white">
-            Premium studio
+      <div className="mt-7 flex justify-center gap-2 sm:mt-4">
+        {Array.from({
+          length:
+            window.innerWidth >= 1024
+              ? Math.max(1, recommended.length - 2)
+              : window.innerWidth >= 640
+                ? Math.max(1, recommended.length - 1)
+                : recommended.length,
+        }).map((_, index) => (
+          <button
+            key={index}
+            type="button"
+            onClick={() => {
+              const container =
+                document.getElementById(
+                  "recommended-scroll",
+                );
+
+              if (!container) return;
+
+              const card =
+                container.querySelector("article");
+
+              if (!card) return;
+
+              const gap = 16;
+              const cardStep =
+                card.offsetWidth + gap;
+
+              container.scrollTo({
+                left: cardStep * index,
+                behavior: "smooth",
+              });
+            }}
+            className={cn(
+              "h-2 rounded-full transition-all duration-300",
+              activeSlide === index
+                ? "w-6 bg-[#ff6200]"
+                : "w-2 bg-[#dedede]",
+            )}
+          />
+        ))}
+      </div>
+    </section>
+
+    <section className="mt-9 sm:mt-7">
+      <div className="mb-5 flex items-end justify-between gap-4 sm:mb-4">
+        <div>
+          <h2 className="text-[30px] font-black tracking-[-0.05em] sm:text-xl">
+            Усі салони
+          </h2>
+
+          <p className="mt-1 text-sm font-medium text-[#6f7280]">
+            {allStudios.length} закладів за вибраними фільтрами
           </p>
         </div>
 
+        {hasPendingChanges ? (
+          <button
+            type="button"
+            onClick={handleApply}
+            className="hidden rounded-full bg-[#ff6200] px-5 py-3 text-sm font-black text-white shadow-[0_12px_26px_rgba(255,98,0,0.22)] sm:inline-flex"
+          >
+            Оновити
+          </button>
+        ) : null}
       </div>
-    </div>
-  </div>
-)}
-                  </div>
-                );
-              })}
-            </div>
-          )}
 
-          {visibleCount < filtered.length && (
-            <div className="mt-8 flex justify-center">
-              <button
-                type="button"
-                onClick={handleLoadMore}
-                disabled={isLoadingMore}
-                className={cn(
-                  "flex items-center gap-2 rounded-2xl px-6 py-3 text-sm font-bold transition-all duration-200 active:scale-95",
-                  isLoadingMore
-                    ? "cursor-not-allowed bg-stone-300 text-white/80"
-                    : "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-[0_10px_24px_rgba(74,93,78,0.22)] hover:from-emerald-700 hover:to-emerald-800 hover:shadow-md",
-                )}
-              >
-                {isLoadingMore ? (
-                  <>
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                    Завантаження...
-                  </>
-                ) : (
-                  <>Показати ще</>
-                )}
-              </button>
-            </div>
-          )}
-        </div>
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {allStudios.map((studio) => (
+          <StudioCard
+            key={studio.slug}
+            studio={studio}
+            onOpen={openStudio}
+            mode="grid"
+          />
+        ))}
       </div>
+    </section>
+  </>
+) : (
+  <section className="mt-8">
+    <div className="rounded-[28px] border-2 border-dashed border-[#eadfce] bg-white/70 p-8 text-center backdrop-blur-sm">
+      <Search className="mx-auto h-8 w-8 text-[#6f7280]" />
+
+      <h3 className="mt-4 text-xl font-black">
+        Нічого не знайдено
+      </h3>
+
+      <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-[#6f7280]">
+        Спробуй змінити фільтри або ввести простіший запит.
+      </p>
+
+      <button
+        type="button"
+        onClick={clearAll}
+        className="mt-5 h-11 rounded-full bg-[#ff6200] px-5 text-sm font-black text-white"
+           >
+        Очистити фільтри
+      </button>
     </div>
+  </section>
+)}
+</div>
+
+</main>
   );
 }
