@@ -294,24 +294,42 @@ clientRouter.get(
         where: { clientId },
         orderBy: { createdAt: "desc" },
         include: {
-          studio: {
-            select: {
-              id: true,
-              name: true,
-              category: true,
-              description: true,
-              city: true,
-              street: true,
-              building: true,
-              apartment: true,
-              phone: true,
-              coverUrl: true,
-              logoUrl: true,
-              premium: true,
-              createdAt: true,
-              updatedAt: true,
-            },
-          },
+studio: {
+  select: {
+    id: true,
+    name: true,
+    category: true,
+    description: true,
+    city: true,
+    street: true,
+    building: true,
+    apartment: true,
+    phone: true,
+    coverUrl: true,
+    logoUrl: true,
+    premium: true,
+    createdAt: true,
+    updatedAt: true,
+
+    scheduleDays: {
+      select: {
+        day: true,
+        enabled: true,
+        startMin: true,
+        endMin: true,
+      },
+    },
+
+    scheduleExceptions: {
+      select: {
+        date: true,
+        enabled: true,
+        startMin: true,
+        endMin: true,
+      },
+    },
+  },
+},
         },
       });
 

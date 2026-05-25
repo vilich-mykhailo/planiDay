@@ -628,60 +628,57 @@ const staticRoutes = [
 
 <aside
   className={cx(
-    "absolute right-0 top-0 h-dvh w-[76%] max-w-[360px] overflow-hidden bg-white shadow-[0_24px_80px_rgba(0,0,0,0.22)] transition-transform duration-300 ease-out",
+    "absolute right-0 top-0 h-dvh w-[76%] max-w-[360px] overflow-hidden bg-[#fbfaf8] shadow-[0_24px_80px_rgba(0,0,0,0.22)] transition-transform duration-300 ease-out",
     open ? "translate-x-0" : "translate-x-full",
   )}
 >
   <div className="flex h-full flex-col">
     {/* TOP */}
-    <div className="border-b border-stone-100 px-5 pb-5 pt-[calc(env(safe-area-inset-top)+18px)]">
+    <div className="border-b border-[#eee8df] px-5 pb-5 pt-[calc(env(safe-area-inset-top)+18px)]">
       <div className="mb-5 flex items-center justify-between">
         <Link
           to="/"
           onClick={() => setOpen(false)}
-          className="flex items-center gap-2"
+          className="flex items-center gap-3"
         >
-          <span className="grid h-10 w-10 place-items-center rounded-2xl bg-[var(--color-sidebar-accent)] text-sm font-black text-white shadow-[0_10px_24px_rgba(24,24,27,0.20)]">
+          <span className="grid h-11 w-11 place-items-center rounded-full bg-[#202020] text-sm font-black text-white">
             P
           </span>
 
-          <span className="text-lg font-black tracking-tight text-[var(--color-ink)]">
-            Plani
-            <span className="text-[var(--color-sidebar-accent-soft)]">
-              Day
-            </span>
+          <span className="text-[18px] font-black tracking-[-0.05em] text-[#202020]">
+            Plani<span className="text-[#ff6200]">Day</span>
           </span>
         </Link>
 
         <button
           type="button"
           onClick={() => setOpen(false)}
-          className="grid h-10 w-10 place-items-center rounded-full bg-stone-100 text-stone-700 transition hover:bg-stone-200 active:scale-95"
+          className="grid h-12 w-12 place-items-center rounded-[18px] border border-[#eadfce] bg-white text-[#111111] shadow-[0_10px_28px_rgba(15,23,42,0.06)] transition hover:border-[#f1dfbf] hover:text-[#ff6200] hover:ring-4 hover:ring-orange-200/20 active:scale-95 lg:hidden"
           aria-label="Закрити меню"
         >
           <X className="h-5 w-5" />
         </button>
       </div>
 
-      <div className="flex items-center gap-3 rounded-[24px] bg-stone-50 p-3">
-        <div className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-2xl bg-white shadow-sm">
+      <div className="flex items-center gap-3 rounded-[28px] bg-[#f4f0ea] p-3">
+        <div className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-[18px] bg-white">
           {showOwnerIdentity && studioLogo ? (
             <img src={studioLogo} className="h-full w-full object-cover" />
           ) : role === "client" && clientPhoto ? (
             <img src={clientPhoto} className="h-full w-full object-cover" />
           ) : (
-            <span className="text-lg font-black text-[var(--color-sidebar-accent)]">
+            <span className="text-lg font-black text-[#ff6200]">
               P
             </span>
           )}
         </div>
 
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-stone-400">
+          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#9b948d]">
             {mobileItems.subtitle}
           </p>
 
-          <h2 className="mt-1 truncate text-lg font-black leading-tight text-[var(--color-ink)]">
+          <h2 className="mt-1 truncate text-[18px] font-black leading-tight text-[#202020]">
             {showOwnerIdentity && studioName
               ? studioName
               : role === "client" && clientFullName
@@ -693,8 +690,8 @@ const staticRoutes = [
     </div>
 
     {/* LINKS */}
-    <div className="flex-1 overflow-y-auto px-3 py-4">
-      <nav className="space-y-1">
+    <div className="flex-1 overflow-y-auto px-4 py-5">
+      <nav className="space-y-3">
         {mobileItems.links.map((i) => (
           <NavLink
             key={i.to}
@@ -706,58 +703,38 @@ const staticRoutes = [
             }}
             className={({ isActive }) =>
               cx(
-                "group flex min-h-[54px] items-center gap-3 rounded-2xl px-3.5 py-2.5 text-[15px] font-bold transition-all duration-200",
+                "group flex min-h-[68px] items-center gap-4 rounded-[26px] px-4 py-2 text-[17px] font-black transition-all duration-200",
                 isActive
-                  ? "bg-[var(--color-sidebar-accent)] text-white shadow-[0_12px_28px_rgba(24,24,27,0.18)]"
-                  : "text-stone-800 hover:bg-stone-100 active:scale-[0.99]",
+                  ? "bg-[#fff1e8] text-[#202020]"
+                  : "text-[#202020] hover:bg-[#f5f1ec]",
               )
             }
           >
-            {({ isActive }) => {
-              const badgeCount =
-                i.to === "/dashboard/bookings"
-                  ? newBookingsCount
-                  : i.to === "/dashboard/notifications"
-                    ? unreadNotifications
-                    : 0;
-
-              return (
-                <>
-                  <span
-                    className={cx(
-                      "grid h-10 w-10 shrink-0 place-items-center rounded-2xl transition",
-                      isActive
-                        ? "bg-white/15 text-white"
-                        : "bg-stone-100 text-stone-600 group-hover:bg-white",
-                    )}
-                  >
-                    {i.icon}
-                  </span>
-
-                  <span className="min-w-0 flex-1 truncate">{i.label}</span>
-
-                  {badgeCount > 0 && (
-                    <span
-                      className={cx(
-                        "grid h-6 min-w-6 place-items-center rounded-full px-1.5 text-[11px] font-black",
-                        isActive
-                          ? "bg-white text-[var(--color-sidebar-accent)]"
-                          : "bg-red-500 text-white",
-                      )}
-                    >
-                      {badgeCount > 9 ? "9+" : badgeCount}
-                    </span>
+            {({ isActive }) => (
+              <>
+                <span
+                  className={cx(
+                    "grid h-12 w-12 shrink-0 place-items-center rounded-[18px] transition",
+                    isActive
+                      ? "bg-transparent text-[#ff6200]"
+                      : "bg-[#f5f2ed] text-[#202020]",
                   )}
-                </>
-              );
-            }}
+                >
+                  {i.icon}
+                </span>
+
+                <span className="min-w-0 flex-1 truncate">
+                  {i.label}
+                </span>
+              </>
+            )}
           </NavLink>
         ))}
       </nav>
     </div>
 
     {/* BOTTOM */}
-    <div className="border-t border-stone-100 bg-white p-4 pb-[calc(env(safe-area-inset-bottom)+16px)]">
+    <div className="border-t border-[#eee8df] bg-[#fbfaf8] p-4 pb-[calc(env(safe-area-inset-bottom)+16px)]">
       {mobileItems.logout ? (
         <button
           type="button"
@@ -765,34 +742,12 @@ const staticRoutes = [
             handleLogout();
             setOpen(false);
           }}
-          className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-stone-100 px-4 text-sm font-black text-stone-900 transition hover:bg-stone-200 active:scale-[0.98]"
+          className="flex h-14 w-full items-center justify-center gap-2 rounded-[24px] bg-[#f4f0ea] px-4 text-[16px] font-black text-[#202020] transition active:scale-[0.98]"
         >
-          <LogOut className="h-4 w-4 text-red-500" />
+          <LogOut className="h-4 w-4 text-[#ff6200]" />
           Вийти
         </button>
-      ) : (
-        <div className="grid gap-2">
-          <ButtonLink
-            to="/login"
-            variant="primary"
-            disabled={isLogin}
-            onClick={() => setOpen(false)}
-            className="w-full rounded-2xl py-3"
-          >
-            Увійти як клієнт
-          </ButtonLink>
-
-          <ButtonLink
-            to="/login-owner"
-            variant="secondary"
-            disabled={isOwnerLogin}
-            onClick={() => setOpen(false)}
-            className="w-full rounded-2xl py-3"
-          >
-            Увійти як власник
-          </ButtonLink>
-        </div>
-      )}
+      ) : null}
     </div>
   </div>
 </aside>

@@ -833,7 +833,7 @@ const heroImageClass =
   <input
     value={q}
     onChange={(event) => setQ(event.target.value)}
-    placeholder="Барбершоп в Луцьку"
+    placeholder="Пошук послуг"
     className="min-w-0 flex-1 bg-transparent px-4 text-[15px] font-semibold text-[#111111] outline-none placeholder:font-semibold placeholder:text-[#8b8794] sm:text-[18px]"
   />
 

@@ -1,9 +1,31 @@
-// Favourites.jsx
 import { Link } from "react-router-dom";
-import { Sparkles, ArrowRight, Heart, MapPin } from "lucide-react";
+import calendarHero from "../assets/calendarHero2.png";
+import {
+  Bell,
+  Grid2X2,
+  Heart,
+  MapPin,
+  Search,
+  SlidersHorizontal,
+  Star,
+  Clock3,
+  Scissors,
+  User,
+  Dumbbell,
+  Home,
+  Car,
+  GraduationCap,
+  CheckCircle2,
+  XCircle,
+} from "lucide-react";
+import React, { useMemo, useState } from "react";
 import { useFavourites } from "../context/favourites.context";
 
 const R2_PUBLIC = import.meta.env.VITE_R2_PUBLIC_BASE_URL;
+
+function cn(...classes) {
+  return classes.filter(Boolean).join(" ");
+}
 
 function toPublicUrl(v) {
   const s = String(v || "").trim();
@@ -12,359 +34,429 @@ function toPublicUrl(v) {
   return R2_PUBLIC ? `${R2_PUBLIC}/${s}` : s;
 }
 
-const CATEGORY_LABELS = {
-  hair: "Перукарня",
-  barber: "Барбершоп",
-  beauty_salon: "Салон краси",
-  nails: "Манікюр і педикюр",
-  brows_lashes: "Брови та вії",
-  cosmetology: "Косметологія",
-  makeup: "Макіяж",
-  massage: "Масаж",
-  physiotherapy: "Фізіотерапія",
-  depilation: "Депіляція",
-  tattoo_piercing: "Тату і пірсинг",
-  spa: "SPA і wellness",
-  health: "Здоровʼя",
-  fitness_diet: "Тренування і дієта",
-  dentistry: "Стоматологія",
-  podiatry: "Подологія",
-  aesthetic_medicine: "Естетична медицина",
-  natural_medicine: "Натуральна медицина",
-  psychotherapy: "Психотерапія",
-  pets: "Тварини",
-  finance: "Фінансові послуги",
-  shopping: "Покупки",
-  auto: "Автосервіс",
-  other: "Інше",
-};
-
-function getCategoryLabel(value) {
-  const key = String(value || "").trim();
-  return CATEGORY_LABELS[key] || key;
-}
-
 function safeText(v) {
   return String(v ?? "").trim();
 }
 
-function cn(...classes) {
-  return classes.filter(Boolean).join(" ");
+const CATEGORY_LABELS = {
+  hair: "Перукарня",
+  barber: "Барбершоп",
+  beauty_salon: "Салон краси",
+  nails: "Манікюр",
+  massage: "Масаж",
+  spa: "SPA",
+  cosmetology: "Косметологія",
+  brows_lashes: "Брови та вії",
+  makeup: "Макіяж",
+  other: "Інше",
+};
+
+const CATEGORY_PILL_ICONS = {
+  hair: Scissors,
+  barber: Scissors,
+  beauty_salon: Heart,
+  nails: Grid2X2,
+  brows_lashes: Heart,
+  cosmetology: Heart,
+  makeup: Heart,
+  massage: User,
+  physiotherapy: User,
+  depilation: Heart,
+  tattoo_piercing: Grid2X2,
+  spa: Heart,
+  health: Heart,
+  fitness_diet: Dumbbell,
+  dentistry: Heart,
+  podiatry: User,
+  aesthetic_medicine: Heart,
+  natural_medicine: Heart,
+  psychotherapy: User,
+  pets: Heart,
+  finance: Grid2X2,
+  shopping: Home,
+  auto: Car,
+  other: GraduationCap,
+};
+
+function getCategoryIcon(value) {
+  return CATEGORY_PILL_ICONS[safeText(value)] || Grid2X2;
 }
 
-function SkeletonPulse({ className = "" }) {
+function FeaturePill({ active, icon: Icon, children, onClick, className = "" }) {
   return (
-    <div
+    <button
+      type="button"
+      onClick={onClick}
       className={cn(
-        "animate-pulse rounded-2xl bg-[var(--color-cream)]",
+        "group inline-flex h-[32px] min-w-max shrink-0 select-none items-center justify-center gap-1 rounded-[11px] border border-[#f0e7da] bg-white px-2.5 text-[10px] font-bold text-[#77716b] shadow-[0_4px_12px_rgba(15,23,42,0.025)] transition-all duration-200 active:scale-[0.97]",
+        "snap-start whitespace-nowrap",
+        "sm:h-[34px] sm:gap-1.5 sm:rounded-[12px] sm:px-3 sm:text-[11px]",
+        active && "bg-[#fff3e9] text-[#ff6200]",
         className,
       )}
-    />
+    >
+      <Icon
+        className={cn(
+          "h-3.5 w-3.5 shrink-0 transition-colors duration-200 sm:h-[12px] sm:w-[12px]",
+          active
+            ? "text-[#ff6200]"
+            : "text-[#8b8794] group-hover:text-[#ff6200]",
+        )}
+      />
+
+      {children}
+    </button>
   );
 }
 
-function FavouriteCardSkeleton() {
-  return (
-    <div className="overflow-hidden rounded-[24px] border border-[var(--color-mist)] bg-white shadow-[var(--shadow-soft)] sm:rounded-[30px]">
-      <div className="relative h-40 overflow-hidden bg-[var(--color-cream)]">
-        <SkeletonPulse className="h-full w-full rounded-none" />
-
-        <div className="absolute bottom-4 left-4 z-30">
-          <SkeletonPulse className="h-14 w-14 rounded-2xl bg-white/70" />
-        </div>
-
-        <div className="absolute left-4 top-4 z-20">
-          <SkeletonPulse className="h-8 w-28 rounded-full bg-white/60" />
-        </div>
-
-        <div className="absolute right-4 top-4 z-20">
-          <SkeletonPulse className="h-10 w-10 rounded-full bg-white/80" />
-        </div>
-
-        <div className="absolute inset-x-0 bottom-0 z-20 p-4">
-          <div className="pl-[72px]">
-            <SkeletonPulse className="h-6 w-40 rounded-xl bg-white/70" />
-            <SkeletonPulse className="mt-2 h-4 w-48 rounded-xl bg-white/50" />
-          </div>
-        </div>
-      </div>
-
-      <div className="relative flex flex-1 flex-col p-5">
-        <div className="absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-[var(--color-mist)] to-transparent" />
-        <div className="mt-auto">
-          <SkeletonPulse className="h-12 w-full rounded-[18px]" />
-        </div>
-      </div>
-    </div>
-  );
+function getCategoryLabel(value) {
+  const key = String(value || "").trim();
+  return CATEGORY_LABELS[key] || key || "Студія";
 }
 
-function FavouritesSkeleton() {
-  return (
-    <div className="min-h-screen pb-[calc(env(safe-area-inset-bottom)+68px)] sm:pb-0">
-      <div className="mx-auto max-w-6xl px-2.5 pb-4 pt-0 sm:px-4 sm:pb-8 sm:pt-14 lg:pt-16">
-        <div className="space-y-3 px-0 pt-2 sm:space-y-5 sm:pt-8 lg:pt-6">
-          <section className="overflow-hidden rounded-[24px] border border-[var(--color-mist)] bg-white shadow-[var(--shadow-soft)] sm:rounded-3xl">
-            <div className="h-[2px] bg-[linear-gradient(90deg,var(--color-forest),var(--color-caramel),var(--color-ink))] opacity-40" />
+const DAY_KEYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
-            <div className="px-4 pb-7 pt-7 sm:px-6 sm:pb-4 sm:pt-5 lg:px-8 lg:pt-6">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                <div className="space-y-3 sm:space-y-2">
-                  <SkeletonPulse className="hidden h-8 w-36 rounded-full sm:block" />
-                  <SkeletonPulse className="h-10 w-[280px] max-w-full rounded-2xl sm:h-14 sm:w-[360px]" />
-                  <SkeletonPulse className="h-4 w-[420px] max-w-full rounded-xl" />
-                </div>
-              </div>
-            </div>
-          </section>
+function minutesToTime(total) {
+  const h = Math.floor(Number(total || 0) / 60);
+  const m = Number(total || 0) % 60;
 
-          <div className="grid gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <FavouriteCardSkeleton key={i} />
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
-export default function Favourites() {
-  const { favourites, toggleFavourite, loading } = useFavourites();
+function formatDateLocal(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
 
-  if (loading) {
-    return <FavouritesSkeleton />;
+function getStudioOpenStatus(studio) {
+  const now = new Date();
+  const todayIso = formatDateLocal(now);
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+
+  const exception = studio.scheduleExceptions?.find(
+    (item) => String(item.date).slice(0, 10) === todayIso,
+  );
+
+  let day = null;
+
+  if (exception) {
+    if (!exception.enabled) {
+      return {
+        isOpen: false,
+        text: "Сьогодні зачинено",
+      };
+    }
+
+    day = exception;
+  } else {
+    const todayKey = DAY_KEYS[now.getDay()];
+    day = studio.scheduleDays?.find((item) => item.day === todayKey);
   }
 
-if (!favourites || favourites.length === 0) {
+  if (!day?.enabled) {
+    return {
+      isOpen: false,
+      text: "Сьогодні зачинено",
+    };
+  }
+
+  const startMin = Number(day.startMin || 0);
+  const endMin = Number(day.endMin || 0);
+
+  if (nowMin >= startMin && nowMin < endMin) {
+    return {
+      isOpen: true,
+      text: `Відкрито до ${minutesToTime(endMin)}`,
+    };
+  }
+
+  if (nowMin < startMin) {
+    return {
+      isOpen: false,
+      text: `Відкриється о ${minutesToTime(startMin)}`,
+    };
+  }
+
+return {
+  isOpen: false,
+  text: "Сьогодні зачинено",
+};
+}
+
+function FavouriteCard({ studio, toggleFavourite }) {
+  const coverUrl = toPublicUrl(studio.coverUrl);
+  const name = safeText(studio.name) || "Студія";
+  const city = safeText(studio.city);
+  const category = safeText(studio.category);
+  const CategoryIcon = getCategoryIcon(category);
+  const address = [studio?.street, studio?.building].filter(Boolean).join(", ");
+  const fullAddress = [city, address].filter(Boolean).join(", ");
+const openStatus = getStudioOpenStatus(studio);
+
   return (
-    <div className="min-h-screen pb-[calc(env(safe-area-inset-bottom)+68px)] sm:pb-0">
-      <div className="mx-auto max-w-6xl px-2.5 pb-4 pt-18 sm:px-4 sm:pb-8 sm:pt-14 lg:pt-16">
-        <div className="space-y-3 px-0 pt-2 sm:space-y-5 sm:pt-8 lg:pt-6">
-          <section className="overflow-hidden rounded-[24px] border border-[var(--color-mist)] bg-white shadow-[var(--shadow-soft)] sm:rounded-3xl">
-            <div className="h-[2px] bg-[linear-gradient(90deg,var(--color-forest),var(--color-caramel),var(--color-ink))] opacity-70" />
+    <Link
+      to={`/${studio.slug}`}
+      className="group grid grid-cols-[112px_1fr_auto] gap-3 rounded-[24px] bg-white p-3 shadow-[0_14px_36px_rgba(15,23,42,0.06)] transition active:scale-[0.99] sm:grid-cols-[150px_1fr_auto] sm:p-4 lg:hover:-translate-y-1"
+    >
+      <div className="my-auto h-[112px] overflow-hidden rounded-[20px] bg-[#f4f0ea] sm:h-[132px]">
+        {coverUrl ? (
+          <img
+            src={coverUrl}
+            alt={name}
+            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+          />
+        ) : (
+          <div className="grid h-full w-full place-items-center text-xs font-bold text-stone-400">
+            Фото
+          </div>
+        )}
+      </div>
 
-            <div className="px-4 pb-7 pt-7 sm:px-6 sm:pb-4 sm:pt-5 lg:px-8 lg:pt-6">
-              <div className="mb-5 space-y-3 sm:mb-4 sm:space-y-2 lg:mb-5">
-                <div className="hidden items-center gap-1.5 rounded-full bg-[var(--color-pending-bg)] px-3 py-1 sm:inline-flex sm:px-4 sm:py-1.5">
-                  <Sparkles className="h-3.5 w-3.5 text-[var(--color-forest)] sm:h-4 sm:w-4" />
-                  <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--color-forest)] sm:text-xs sm:tracking-[0.22em]">
-                    Збережені студії
-                  </span>
-                </div>
+      <div className="min-w-0 py-1">
+        <h2 className="truncate text-[17px] font-black tracking-[-0.03em] text-[#202020] sm:text-xl">
+          {name}
+        </h2>
 
-                <h1 className="max-w-full !text-[34px] font-black leading-tight tracking-[-0.03em] text-[var(--color-ink)] sm:max-w-none sm:!text-5xl lg:!text-5xl">
-                  Ваші{" "}
-                  <span className="text-[var(--color-caramel)]">
-                    улюблені
-                  </span>
-                </h1>
+        {fullAddress && (
+          <div className="mt-2 flex items-center gap-1.5 text-[12px] font-medium text-stone-500 sm:text-sm">
+            <MapPin className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">{fullAddress}</span>
+          </div>
+        )}
 
-                <p className="max-w-2xl text-sm leading-6 text-[color:var(--color-caramel)]/85 sm:text-base sm:leading-7">
-                  Тут з’являться студії, які ти додаси в обране. Зберігай
-                  цікаві варіанти та повертайся до них у будь-який момент.
-                </p>
-              </div>
-            </div>
-          </section>
-
-<div className="rounded-[28px] border-2 border-dashed border-[var(--color-caramel)]/40 bg-[var(--color-cream)] p-8 text-center sm:p-10">
-  <div className="mx-auto max-w-xl">
-    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-[22px] bg-white/70">
-      <Heart className="h-8 w-8 text-[var(--color-caramel)]" />
-    </div>
-
-    <h3 className="text-xl font-black tracking-tight text-[var(--color-caramel)] sm:text-2xl">
-      Поки що обране порожнє
-    </h3>
-
-    <p className="mt-2 text-sm leading-6 text-[var(--color-caramel)]/80 sm:text-[15px]">
-      Додай кілька студій до улюблених, щоб швидко знаходити їх і
-      записуватись без повторного пошуку.
-    </p>
-
-<Link
-  to="/"
+<div
   className={cn(
-    "mt-6 inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold text-white",
-
-    // 👉 тепер через nude-green
-    "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
-
-    "transition-all duration-200 active:scale-[0.98]",
-
-    // 👉 hover
-    "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]",
-
-    // 👉 тінь (під новий зелений)
-    "shadow-[0_10px_24px_rgba(var(--color-nude-green-600),0.22)] hover:shadow-[0_14px_30px_rgba(var(--color-nude-green-600),0.28)]"
+    "inline-flex items-center gap-1 text-[10px] font-bold sm:mt-2 sm:h-[30px] sm:gap-1.5 sm:rounded-[11px] sm:border sm:px-2.5 sm:shadow-[0_4px_12px_rgba(15,23,42,0.025)]",
+openStatus.isOpen
+  ? "text-emerald-700 sm:border-emerald-100 sm:bg-emerald-50"
+  : "text-[#8b8794] sm:border-[#f0e7da] sm:bg-[#f8f6f3]"
   )}
 >
-  Перейти до салонів
-  <ArrowRight className="h-4 w-4" />
-</Link>
+{openStatus.isOpen ? (
+  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+) : (
+  <XCircle className="h-3.5 w-3.5 text-[#b0aba5]" />
+)}
+
+  {openStatus.text}
+</div>
+
+<div className="mt-3 flex flex-wrap gap-2">
+<div className="inline-flex h-[30px] items-center gap-1.5 rounded-[11px] border border-[#f0e7da] bg-[#fff3e9] px-2.5 text-[10px] font-bold text-[#ff6200] shadow-[0_4px_12px_rgba(15,23,42,0.025)]">
+ {React.createElement(CategoryIcon, {
+  className: "h-3.5 w-3.5 text-[#ff6200]",
+})}
+  {getCategoryLabel(category)}
+</div>
+
+  <div className="hidden h-[30px] items-center gap-1.5 rounded-[11px] border border-[#f0e7da] bg-white px-2.5 text-[10px] font-bold text-[#77716b] shadow-[0_4px_12px_rgba(15,23,42,0.025)] sm:inline-flex">
+    <Clock3 className="h-3.5 w-3.5 text-[#ff6200]" />
+    Онлайн запис
   </div>
 </div>
-        </div>
       </div>
-    </div>
+
+      <div className="flex flex-col items-end justify-between py-1">
+        <div className="flex items-center gap-1 text-[13px] font-black text-[#202020]">
+          <Star className="h-4 w-4 fill-[#ff8a00] text-[#ff8a00]" />
+          4.9
+        </div>
+
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleFavourite(studio);
+          }}
+          className="grid h-12 w-12 place-items-center  text-[#ff6200]  transition hover:scale-115 active:scale-95"
+        >
+          <Heart className="h-6 w-6 fill-[#ff6200] text-[#ff6200]" />
+        </button>
+      </div>
+    </Link>
   );
 }
 
-  return (
-    <div className="min-h-screen pb-[calc(env(safe-area-inset-bottom)+68px)] sm:pb-0">
-      <div className="mx-auto max-w-6xl px-2.5 pb-4 pt-0 sm:px-4 sm:pb-8 sm:pt-14 lg:pt-16">
-        <div className="space-y-3 px-0 pt-2 sm:space-y-5 sm:pt-8 lg:pt-6">
-          <section className="overflow-hidden rounded-[24px] border border-[var(--color-mist)] bg-white shadow-[var(--shadow-soft)] sm:rounded-3xl">
-            <div className="h-[2px] bg-[linear-gradient(90deg,var(--color-forest),var(--color-caramel),var(--color-ink))] opacity-70" />
+const heroImageBoxClass =
+  "pointer-events-none absolute z-0 " +
+  "max-[639px]:right-[0px] max-[639px]:top-[0px] max-[639px]:h-[150px] max-[639px]:w-[240px] " +
+  "sm:right-[0px] sm:top-[-5px] sm:h-[160px] sm:w-[268px] " +
+  "md:right-[10px] md:top-[-10px] md:h-[180px] md:w-[320px] " +
+  "lg:right-[10px] lg:top-[-10px] lg:h-[200px] lg:w-[340px]";
 
-            <div className="px-4 pb-7 pt-7 sm:px-6 sm:pb-4 sm:pt-5 lg:px-8 lg:pt-6">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                <div className="space-y-3 sm:space-y-2">
-                  <div className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-[var(--color-pending-bg)] px-3 py-1 sm:px-4 sm:py-1.5">
-                    <Sparkles className="h-3.5 w-3.5 text-[var(--color-forest)] sm:h-4 sm:w-4" />
-                    <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--color-forest)] sm:text-xs sm:tracking-[0.22em]">
-                      Улюблені студії
-                    </span>
-                  </div>
+const heroImageClass =
+  "h-full w-full object-contain object-right";
 
-                  <h1 className="max-w-full !text-[34px] font-black leading-tight tracking-[-0.03em] text-[var(--color-ink)] sm:max-w-none sm:!text-5xl lg:!text-5xl">
-                    Ваші <span className="text-[var(--color-caramel)]">улюблені</span>
-                  </h1>
 
-                  <p className="max-w-2xl text-sm leading-6 text-[color:var(--color-caramel)]/85 sm:text-base sm:leading-7">
-                    Усі студії, які ти зберіг, знаходяться тут. Можна швидко
-                    переглянути деталі або прибрати зайве з обраного.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </section>
+export default function Favourites() {
+  const { favourites = [], toggleFavourite, loading } = useFavourites();
+  const [query, setQuery] = useState("");
+  const [activeCategory, setActiveCategory] = useState("all");
 
-         <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
-  {favourites.map((s) => {
-       
-              const logoUrl = toPublicUrl(s.logoUrl);
-              const name = safeText(s.name) || "Студія";
-              const city = safeText(s.city);
-              const category = safeText(s.category);
-              const coverUrl = toPublicUrl(s.coverUrl);
+  const categories = useMemo(() => {
+    const unique = [...new Set(favourites.map((s) => s.category).filter(Boolean))];
+    return unique.slice(0, 8);
+  }, [favourites]);
 
-              const address = [s?.street, s?.building, s?.apartment]
-                .filter(Boolean)
-                .join(", ");
+  const filtered = useMemo(() => {
+    const q = query.toLowerCase().trim();
 
-              const fullAddress = [city, address].filter(Boolean).join(", ");
+    return favourites.filter((s) => {
+      const matchesQuery =
+        !q ||
+        [s.name, s.city, s.street, getCategoryLabel(s.category)]
+          .join(" ")
+          .toLowerCase()
+          .includes(q);
 
-              return (
-                <Link
-                  key={s.slug}
-                  to={`/${s.slug}`}
-                  className={cn(
-                    "group relative flex h-full flex-col overflow-hidden rounded-[24px] border bg-white transition-all duration-500 will-change-transform sm:rounded-[30px]",
-                    "border-[var(--color-mist)] shadow-[var(--shadow-soft)] hover:-translate-y-1 hover:border-[var(--color-sand)] hover:shadow-[var(--shadow-soft-hover)] sm:hover:-translate-y-1.5",
-                  )}
-                >
-                  <div className="relative h-40 overflow-hidden bg-[var(--color-cream)]">
-                    {coverUrl ? (
-                      <img
-                        src={coverUrl}
-                        alt={`${name} cover`}
-                        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.06]"
-                        loading="lazy"
-                        onError={(e) => (e.currentTarget.style.display = "none")}
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-[linear-gradient(135deg,var(--color-cream),var(--color-mist))] text-sm text-[var(--color-caramel)]">
-                        Без обкладинки
-                      </div>
-                    )}
+      const matchesCategory =
+        activeCategory === "all" || s.category === activeCategory;
 
-                    {logoUrl && (
-                      <div className="absolute bottom-4 left-4 z-30">
-                        <div className="h-14 w-14 overflow-hidden rounded-2xl border border-white/20 bg-[var(--color-ink)] shadow-[0_10px_30px_rgba(0,0,0,0.28)]">
-                          <img
-                            src={logoUrl}
-                            alt={`${name} logo`}
-                            className="h-full w-full object-cover"
-                            onError={(e) => (e.currentTarget.style.display = "none")}
-                          />
-                        </div>
-                      </div>
-                    )}
+      return matchesQuery && matchesCategory;
+    });
+  }, [favourites, query, activeCategory]);
 
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-
-                    <div className="absolute left-4 top-4 z-20 flex flex-wrap items-center gap-2">
-                      {category ? (
-                        <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/15 px-3 py-1.5 text-[11px] font-semibold text-white backdrop-blur-md">
-                          <span className="h-2 w-2 rounded-full bg-[var(--color-confirmed-bg)] shadow-[0_0_8px_rgba(50,78,41,0.65)]" />
-                          {getCategoryLabel(category)}
-                        </div>
-                      ) : null}
-                    </div>
-
-                    <div className="absolute right-4 top-4 z-20">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          toggleFavourite(s);
-                        }}
-                        className="flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-white/90 text-[var(--color-danger)] shadow-[0_8px_22px_rgba(15,23,42,0.16)] backdrop-blur-md transition-all duration-200 hover:scale-105 hover:bg-[var(--color-danger-bg)] active:scale-95"
-                      >
-                        <Heart className="h-5 w-5 fill-[var(--color-danger)] text-[var(--color-danger)]" />
-                      </button>
-                    </div>
-
-                    <div className="absolute inset-x-0 bottom-0 z-20 p-4">
-                      <div className="min-w-0 pl-[72px]">
-                        <h2 className="truncate text-xl font-black text-white">
-                          {name}
-                        </h2>
-
-                        <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-white/90">
-                          {fullAddress && (
-                            <div className="flex max-w-full items-start gap-1">
-                              <MapPin className="mt-[2px] h-4 w-4 shrink-0 text-[var(--color-sand)]" />
-                              <span className="line-clamp-3 text-left">
-                                {fullAddress}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="relative flex flex-1 flex-col p-5">
-                    <div className="absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-[var(--color-mist)] to-transparent" />
-
-                    <div className="mt-auto">
-                      <div className="flex items-center gap-3">
-                        <div className="relative flex h-12 w-full items-center justify-center overflow-hidden rounded-[18px] border border-[var(--color-mist)] bg-white px-4 text-sm font-semibold tracking-[-0.01em] text-[var(--color-ink)] shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition-all duration-300 hover:-translate-y-0.5 hover:border-[var(--color-sand)] hover:bg-[var(--color-cream)] hover:shadow-[var(--shadow-soft)] active:scale-[0.985]">
-                          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white to-transparent opacity-80" />
-
-                          <span className="relative z-10 flex items-center gap-2.5">
-                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--color-confirmed-bg)]">
-                              <span className="h-2 w-2 rounded-full bg-[var(--color-forest)]" />
-                            </span>
-
-                            <span>Переглянути студію</span>
-
-                            <ArrowRight className="h-4 w-4 text-[var(--color-caramel)] transition-transform duration-300 group-hover:translate-x-0.5" />
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#f7f5f1] px-4 pt-8">
+        <div className="mx-auto max-w-6xl animate-pulse space-y-4">
+          <div className="h-56 rounded-[36px] bg-white" />
+          <div className="h-16 rounded-[28px] bg-white" />
+          <div className="h-36 rounded-[28px] bg-white" />
+          <div className="h-36 rounded-[28px] bg-white" />
         </div>
       </div>
+    );
+  }
+
+  return (
+    <main className="min-h-screen bg-[#f7f5f1] pb-[calc(env(safe-area-inset-bottom)+88px)] sm:pb-10">
+      <div className="mx-auto max-w-6xl px-4 pt-5 sm:px-6 sm:pt-8 lg:px-8">
+
+
+<section className="relative mb-5 mt-15 overflow-hidden max-[639px]:rounded-[26px] bg-[#f3eee7] px-5 py-7 sm:rounded-[34px] sm:px-8 sm:py-9 lg:px-10">
+  <div className={cn(heroImageBoxClass, "mask-hero-image")}>
+  <img
+    src={calendarHero}
+    alt=""
+    aria-hidden="true"
+    className={heroImageClass}
+  />
+</div>
+
+<div className="relative z-10 max-w-[760px]">
+  <h1
+    className="
+      flex flex-wrap items-end gap-x-3
+      text-[#202020] font-black tracking-[-0.06em] leading-[0.9]
+
+      sm:text-[48px]
+      md:text-[58px]
+      lg:text-[68px]
+
+      max-[639px]:block
+      max-[639px]:max-w-[220px]
+      max-[639px]:text-[34px]
+    "
+  >
+    <span className="block">Улюблені</span>
+
+    <span className="block text-[#ff6200]">
+      студії
+    </span>
+  </h1>
+
+  <p
+    className="
+      font-medium text-[#7a7d87]
+
+      sm:mt-4 sm:max-w-[360px] sm:text-[14px]
+      md:max-w-[420px] md:text-[15px]
+      lg:max-w-[520px] lg:text-[16px]
+
+      max-[639px]:mt-3
+      max-[639px]:max-w-[220px]
+      max-[639px]:text-[11px]
+    "
+  >
+    Студії, які ви додали до обраного
+  </p>
+</div>
+
+  </section>
+
+<section className="mb-5 rounded-[24px] bg-white p-2 shadow-[0_14px_34px_rgba(15,23,42,0.06)]">
+  <div className="flex items-center gap-2">
+    <Search className="ml-2 h-4 w-4 shrink-0 text-stone-400" />
+
+    <input
+      value={query}
+      onChange={(e) => setQuery(e.target.value)}
+      placeholder="Пошук улюблених студій"
+      className="h-10 min-w-0 flex-1 bg-transparent text-[13px] font-semibold text-[#202020] outline-none placeholder:text-stone-400 sm:h-11 sm:text-sm"
+    />
+
+    <button className="flex h-10 shrink-0 items-center gap-2 rounded-[18px] bg-[#f7f5f1] px-3 text-[12px] font-black text-[#202020] transition hover:bg-[#fff1e8] hover:text-[#ff6200] sm:h-11 sm:px-4 sm:text-sm">
+      <SlidersHorizontal className="h-3.5 w-3.5" />
+      <span className="hidden xs:inline">Фільтри</span>
+    </button>
+  </div>
+</section>
+
+<div className="relative mb-6">
+  <div className="-mx-4 overflow-x-auto overflow-y-hidden px-4 pb-3 [-ms-overflow-style:none] [scrollbar-width:none] sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 [&::-webkit-scrollbar]:hidden">
+    <div className="flex w-max min-w-full touch-pan-x snap-x snap-mandatory flex-nowrap gap-2.5 scroll-smooth sm:gap-4">
+      <FeaturePill
+        active={activeCategory === "all"}
+        icon={Grid2X2}
+        onClick={() => setActiveCategory("all")}
+      >
+        Усі студії
+      </FeaturePill>
+
+      {categories.map((cat) => (
+        <FeaturePill
+          key={cat}
+          active={activeCategory === cat}
+          icon={getCategoryIcon(cat)}
+          onClick={() => setActiveCategory(cat)}
+        >
+          {getCategoryLabel(cat)}
+        </FeaturePill>
+      ))}
     </div>
+  </div>
+</div>
+
+<div className="mb-4 flex items-center justify-between">
+  <p className="text-sm font-black text-[#202020]">
+    {filtered.length} улюблених студій
+  </p>
+
+</div>
+
+        {filtered.length > 0 ? (
+          <div className="grid gap-4 lg:grid-cols-2">
+            {filtered.map((studio) => (
+              <FavouriteCard
+                key={studio.slug}
+                studio={studio}
+                toggleFavourite={toggleFavourite}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-[32px] bg-white px-6 py-12 text-center shadow-[0_14px_34px_rgba(15,23,42,0.06)]">
+            <Heart className="mx-auto h-12 w-12 text-[#ff6200]" />
+            <h2 className="mt-4 text-xl font-black text-[#202020]">
+              Поки що немає улюблених
+            </h2>
+            <p className="mt-2 text-sm text-stone-500">
+              Додайте студії в обране, щоб швидко знаходити їх тут.
+            </p>
+          </div>
+        )}
+      </div>
+    </main>
   );
 }
