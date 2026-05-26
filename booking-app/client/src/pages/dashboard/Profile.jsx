@@ -28,6 +28,11 @@ Star,
   UserRound,
   VenusAndMars,
   X,
+  Check,
+  Crown,
+  CrownIcon,
+  Sparkles,
+  ShieldCheck,
 } from "lucide-react";
 import { api } from "../../api/http";
 
@@ -48,6 +53,7 @@ function toPublicUrl(value) {
   if (/^https?:\/\//i.test(src)) return src;
   return PUBLIC ? `${PUBLIC}/${src}` : src;
 }
+
 
 async function compressImage(
   file,
@@ -138,10 +144,10 @@ function Input({ className, ...props }) {
     <input
       {...props}
       className={cx(
-        "h-12 w-full rounded-xl border border-[var(--color-mist)] bg-white px-4 text-sm text-[var(--color-ink)] outline-none transition",
-        "placeholder:text-[color:var(--color-caramel)]/65",
-        "focus:border-[var(--color-forest)] focus:ring-4 focus:ring-[color:var(--color-forest)]/10",
-        props.disabled && "cursor-not-allowed bg-[var(--color-cream)] opacity-70",
+        "h-13 w-full rounded-[18px] border border-[#efe4d8] bg-[#fbfaf8] px-4 text-[14px] font-bold text-[#202020] outline-none transition",
+        "placeholder:text-[#b8afa5]",
+        "focus:border-[#ff6200] focus:bg-white focus:ring-4 focus:ring-[#ff6200]/10",
+        props.disabled && "cursor-not-allowed opacity-60",
         className,
       )}
     />
@@ -154,14 +160,15 @@ function Select({ className, children, ...props }) {
       <select
         {...props}
         className={cx(
-          "h-12 w-full appearance-none rounded-xl border border-[var(--color-mist)] bg-white px-4 pr-11 text-sm text-[var(--color-ink)] outline-none transition",
-          "focus:border-[var(--color-forest)] focus:ring-4 focus:ring-[color:var(--color-forest)]/10",
+          "h-13 w-full appearance-none rounded-[18px] border border-[#efe4d8] bg-[#fbfaf8] px-4 pr-11 text-[14px] font-bold text-[#202020] outline-none transition",
+          "focus:border-[#ff6200] focus:bg-white focus:ring-4 focus:ring-[#ff6200]/10",
           className,
         )}
       >
         {children}
       </select>
-      <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-caramel)]" />
+
+      <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#ff6200]" />
     </div>
   );
 }
@@ -171,10 +178,10 @@ function PrimaryButton({ children, className, ...props }) {
     <button
       {...props}
       className={cx(
-        "inline-flex h-12 items-center justify-center gap-2 rounded-xl px-4 text-sm font-bold transition active:scale-[0.98]",
+        "inline-flex h-12 items-center justify-center gap-2 rounded-[18px] px-5 text-sm font-black transition active:scale-[0.98]",
         props.disabled
-          ? "cursor-not-allowed border border-[var(--color-mist)] bg-[var(--color-cream)] text-[color:var(--color-caramel)]/70"
-          : "bg-[var(--color-forest)] text-white shadow-[0_14px_30px_-18px_rgba(50,78,41,0.7)] hover:bg-[var(--color-forest-dark)]",
+          ? "cursor-not-allowed bg-[#f1ebe4] text-[#aaa19a]"
+          : "bg-[#ff6200] text-white shadow-[0_14px_30px_rgba(255,98,0,0.25)] hover:bg-[#f25c00]",
         className,
       )}
     >
@@ -188,8 +195,8 @@ function SecondaryButton({ children, className, ...props }) {
     <button
       {...props}
       className={cx(
-        "inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] transition",
-        "hover:border-[var(--color-sand)] hover:bg-[var(--color-cream)] active:scale-[0.98]",
+        "inline-flex h-12 items-center justify-center gap-2 rounded-[18px] border border-[#eadfce] bg-white px-5 text-sm font-black text-[#77716b] transition",
+        "hover:border-[#ffd8bd] hover:bg-[#fff3e9] hover:text-[#ff6200] active:scale-[0.98]",
         props.disabled && "cursor-not-allowed opacity-60",
         className,
       )}
@@ -283,11 +290,14 @@ function EditModal({
   onSave,
   saveDisabled = false,
   saving = false,
+  saveText = "Зберегти",
 }) {
   useEffect(() => {
     if (!open) return;
+
     const original = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+
     return () => {
       document.body.style.overflow = original;
     };
@@ -296,35 +306,56 @@ function EditModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-end justify-center bg-[rgba(20,18,16,0.46)] px-3 pb-3 backdrop-blur-sm sm:items-center sm:p-6">
-      <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-[var(--color-mist)] bg-white shadow-[0_30px_90px_rgba(20,18,16,0.24)]">
-        <div className="flex items-center justify-between gap-4 border-b border-[var(--color-cream)] px-5 py-4">
-          <h3 className="text-lg font-black tracking-[-0.02em] text-[var(--color-ink)]">
-            {title}
-          </h3>
-          <button
-            type="button"
-            onClick={onClose}
-            className="grid h-10 w-10 place-items-center rounded-xl text-[var(--color-caramel)] transition hover:bg-[var(--color-cream)] hover:text-[var(--color-ink)]"
-            aria-label="Закрити"
-          >
-            <X className="h-5 w-5" />
-          </button>
+    <div className="fixed inset-0 z-[9999] flex items-end justify-center bg-[#202020]/45 px-3 pb-3 backdrop-blur-[6px] sm:items-center sm:p-6">
+      <div className="w-full max-w-lg overflow-hidden rounded-[30px] border border-[#f0e2d3] bg-[#f7f5f1] shadow-[0_30px_90px_rgba(15,23,42,0.24)]">
+        <div className="relative overflow-hidden bg-[#f3eee7] px-5 py-5 sm:px-6 sm:py-6">
+          <div className="absolute right-[-55px] top-[-70px] h-[180px] w-[180px] rounded-full bg-[#ff6200]/10 blur-3xl" />
+
+          <div className="relative z-10 flex items-start justify-between gap-4">
+            <div>
+{title !== "Вийти з акаунта?" && (
+  <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-white px-3 text-[11px] font-black uppercase tracking-[0.08em] text-[#ff6200] shadow-[0_8px_20px_rgba(255,98,0,0.08)]">
+    <PencilLine className="h-3.5 w-3.5" />
+    Редагування
+  </span>
+)}
+
+              <h3 className="mt-3 text-[26px] font-black leading-[0.95] tracking-[-0.05em] text-[#202020] sm:text-[32px]">
+                {title}
+              </h3>
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white text-[#77716b] shadow-[0_10px_24px_rgba(15,23,42,0.06)] transition hover:bg-[#fff3e9] hover:text-[#ff6200] active:scale-[0.96]"
+              aria-label="Закрити"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
 
-        <div className="px-5 py-5">{children}</div>
+        <div className="bg-white px-5 py-5 sm:px-6">
+          {children}
+        </div>
 
-        <div className="flex flex-col-reverse gap-2 border-t border-[var(--color-cream)] bg-[#f7f5ef] px-5 py-4 sm:flex-row sm:justify-end">
-          <SecondaryButton type="button" onClick={onClose} className="w-full sm:w-auto">
+        <div className="flex flex-row gap-2 border-t border-[#f0e7da] bg-[#fbfaf8] px-5 py-4 sm:justify-end sm:px-6">
+          <SecondaryButton
+            type="button"
+            onClick={onClose}
+           className="flex-1 sm:flex-none"
+          >
             Скасувати
           </SecondaryButton>
+
           <PrimaryButton
             type="button"
             onClick={onSave}
             disabled={saveDisabled || saving}
-            className="w-full sm:w-auto"
+            className="flex-1 sm:flex-none"
           >
-            {saving ? "Збереження..." : "Зберегти"}
+            {saving ? "Завантаження..." : saveText}
           </PrimaryButton>
         </div>
       </div>
@@ -394,10 +425,10 @@ function ChecklistRow({ complete, children }) {
 
   const heroImageBoxClass =
   "pointer-events-none absolute z-0 " +
-  "max-[639px]:right-[0px] max-[639px]:top-[0px] max-[639px]:h-[150px] max-[639px]:w-[240px] " +
-  "sm:right-[0px] sm:top-[-5px] sm:h-[180px] sm:w-[300px] " +
-  "md:right-[10px] md:top-[-10px] md:h-[220px] md:w-[360px] " +
-  "lg:right-[10px] lg:top-[-10px] lg:h-[260px] lg:w-[420px]";
+  "max-[639px]:right-[0px] max-[639px]:top-[18px] max-[639px]:h-[120px] max-[639px]:w-[240px] " +
+  "sm:right-[0px] sm:top-[10px] sm:h-[140px] sm:w-[300px] " +
+  "md:right-[10px] md:top-[2px] md:h-[160px] md:w-[360px] " +
+  "lg:right-[10px] lg:top-[10px] lg:h-[160px] lg:w-[320px]";
 
 const heroImageClass =
   "h-full w-full object-contain object-right";
@@ -406,7 +437,7 @@ export default function Profile() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const fileRef = useRef(null);
-
+const personalDataRef = useRef(null);
   const profileQuery = useQuery({
     queryKey: ["client-profile"],
     queryFn: fetchClientProfile,
@@ -424,6 +455,7 @@ export default function Profile() {
   const [saving, setSaving] = useState(false);
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState("");
+  const [logoutModalOpen, setLogoutModalOpen] = useState(false);
   const [toast, setToast] = useState({
     id: 0,
     open: false,
@@ -784,28 +816,11 @@ export default function Profile() {
   if (loading) return <ProfileSkeleton />;
 
  return (
-  <main className="min-h-screen bg-[#f7f5f1] pb-[calc(env(safe-area-inset-bottom)+92px)] pt-[calc(env(safe-area-inset-top)+78px)] text-[#202020] sm:pb-10 lg:pt-[calc(env(safe-area-inset-top)+92px)]">
-    <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
-      {/* MOBILE TOP */}
-      <div className="mb-5 flex items-center justify-between lg:hidden">
-        <div>
-          <p className="text-sm font-bold text-[#8b8794]">Кабінет клієнта</p>
-          <h1 className="text-[34px] font-black leading-none tracking-[-0.06em]">
-            Профіль
-          </h1>
-        </div>
+    <main className="min-h-screen bg-[#fdfcfb] pb-[calc(env(safe-area-inset-bottom)+88px)] sm:pb-10">
+      <div className="mx-auto max-w-6xl px-4 pt-5 sm:px-6 sm:pt-8 lg:px-8">
 
-        <button
-          type="button"
-          className="grid h-12 w-12 place-items-center rounded-[18px] bg-white shadow-[0_12px_30px_rgba(15,23,42,0.08)]"
-        >
-          <Bell className="h-5 w-5" />
-        </button>
-      </div>
 
-      {/* HERO */}
-
-<section className="relative mb-5 overflow-hidden rounded-[26px] bg-[#f3eee7] px-5 py-7 sm:rounded-[34px] sm:px-8 sm:py-9 lg:px-10">
+<section className="relative mb-5 mt-15 overflow-hidden max-[639px]:rounded-[26px] bg-[#f3eee7] px-5 py-7 sm:rounded-[34px] sm:px-8 sm:py-9 lg:px-10">
   <div className={cn(heroImageBoxClass, "mask-hero-image")}>
     <img
       src={profileHero}
@@ -815,174 +830,261 @@ export default function Profile() {
     />
   </div>
 
-  <div className="relative z-10 flex flex-col gap-5 sm:flex-row sm:items-center">
-    <button
-      type="button"
-      onClick={() => fileRef.current?.click()}
-      disabled={saving}
-      className="group relative grid h-[105px] w-[105px] shrink-0 place-items-center overflow-hidden rounded-full border-4 border-white bg-white text-3xl font-black shadow-[0_18px_44px_rgba(15,23,42,0.12)] transition active:scale-[0.98] sm:h-[128px] sm:w-[128px]"
+  <div className="relative z-10 max-w-[760px]">
+    <h1
+      className="
+        flex flex-wrap items-end gap-x-3
+        text-[#202020] font-black tracking-[-0.06em] leading-[0.9]
+        sm:text-[48px]
+        md:text-[58px]
+        lg:text-[68px]
+        max-[639px]:block
+        max-[639px]:max-w-[220px]
+        max-[639px]:text-[34px]
+      "
     >
-      {photoSrc ? (
-        <img
-          src={photoSrc}
-          alt="avatar"
-          className="h-full w-full object-cover"
-        />
-      ) : (
-        initials
-      )}
+      <span className="block">Мій</span>
 
-      <span className="absolute inset-0 grid place-items-center bg-black/40 text-white opacity-0 transition group-hover:opacity-100">
-        <Camera className="h-6 w-6" />
+      <span className="block text-[#ff6200]">
+        профіль
       </span>
-    </button>
+    </h1>
 
-    <div className="min-w-0 max-w-[520px]">
-      <div className="flex flex-wrap items-center gap-2">
-        <h1
-          className="
-            text-[#202020] font-black tracking-[-0.06em] leading-[0.9]
-
-            sm:text-[48px]
-            md:text-[58px]
-            lg:text-[64px]
-
-            max-[639px]:text-[34px]
-          "
+<p
+  className="
+    font-medium text-[#7a7d87]
+    sm:mt-4 sm:max-w-[360px] sm:text-[14px]
+    md:max-w-[420px] md:text-[15px]
+    lg:max-w-[520px] lg:text-[16px]
+    max-[639px]:mt-3
+    max-[639px]:max-w-[220px]
+    max-[639px]:text-[11px]
+  "
+>
+  Особисті дані, налаштування <br className="sm:hidden" />
+  та фото вашого акаунта
+</p>
+  </div>
+</section>
+      {/* HERO */}
+<section className="relative mb-5 overflow-hidden rounded-[26px] border border-[#eadfce] bg-[#f3eee7] px-4 py-5 shadow-[0_14px_36px_rgba(15,23,42,0.06)] sm:rounded-[34px] sm:px-8 sm:py-9 lg:px-10">
+  <div className="relative z-10 grid gap-5 lg:grid-cols-[1fr_280px] lg:items-center">
+    <div className="flex items-center gap-4 text-left sm:gap-5">
+      <div className="relative shrink-0">
+        <button
+          type="button"
+          onClick={() => fileRef.current?.click()}
+          disabled={saving}
+          className="group relative grid h-[120px] w-[120px] place-items-center overflow-hidden rounded-full border-4 border-white bg-white text-3xl font-black shadow-[0_18px_44px_rgba(255,98,0,0.18)] transition active:scale-[0.98] sm:h-[142px] sm:w-[142px]"
         >
-          {fullName || "Ваш профіль"}
-        </h1>
+          {photoSrc ? (
+            <img
+              src={photoSrc}
+              alt="avatar"
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            initials
+          )}
 
-        <span className="inline-flex h-8 items-center gap-1 rounded-full bg-[#fff3e9] px-3 text-xs font-black text-[#ff6200]">
-          <BadgeCheck className="h-4 w-4" />
-          Pro
-        </span>
+          <span className="absolute inset-0 grid place-items-center bg-black/40 text-white opacity-0 transition group-hover:opacity-100">
+            <Camera className="h-6 w-6" />
+          </span>
+        </button>
+
+<span
+  className="
+    absolute left-1/2 bottom-[-10px] z-20
+    inline-flex -translate-x-1/2 items-center gap-[3px]
+
+    h-6 px-2
+    sm:h-8 sm:px-3
+
+    rounded-full border-[2.5px] border-white
+    bg-white
+
+    text-[9px] font-black uppercase tracking-[0.04em]
+    text-[#ff6200]
+
+    shadow-[0_8px_20px_rgba(255,98,0,0.08)]
+    whitespace-nowrap
+  "
+>
+  <BadgeCheck className="h-3 w-3 sm:h-4 sm:w-4" />
+  Pro
+</span>
       </div>
 
-      <div className="mt-4 space-y-2 text-[13px] font-semibold text-[#77716b] sm:text-sm">
-        <div className="flex items-center gap-2">
-          <Mail className="h-4 w-4 shrink-0" />
-          <span className="truncate">
-            {profile.email || "Email не вказано"}
-          </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="text-[20px] font-black leading-[0.9] tracking-[-0.06em] text-[#202020] sm:text-[30px] md:text-[38px] lg:text-[40px]">
+            {fullName || "Ваш профіль"}
+          </h1>
+
         </div>
 
-        <div className="flex items-center gap-2">
-          <Phone className="h-4 w-4 shrink-0" />
-          <span>
-            {profile.phone || "Телефон не вказано"}
-          </span>
+        <div className="mt-3 space-y-2 text-[12px] font-semibold text-[#77716b] sm:mt-4 sm:text-sm">
+          <div className="flex items-center gap-2">
+            <Mail className="h-4 w-4 shrink-0" />
+            <span className="truncate">
+              {profile.email || "Email не вказано"}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Phone className="h-4 w-4 shrink-0" />
+            <span>{profile.phone || "Телефон не вказано"}</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <MapPin className="h-4 w-4 shrink-0" />
+            <span>Україна, Київ</span>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <MapPin className="h-4 w-4 shrink-0" />
-          <span>Україна, Київ</span>
+<button
+  type="button"
+  onClick={() => {
+    personalDataRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }}
+  className="mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-[18px] border border-[#eadfce] bg-white px-4 text-[12px] font-black text-[#77716b] shadow-[0_10px_28px_rgba(15,23,42,0.05)] transition hover:border-[#f1dfbf] hover:text-[#ff6200] active:scale-[0.98] sm:hidden"
+>
+          <Edit3 className="h-4 w-4" />
+          Редагувати профіль
+        </button>
+      </div>
+    </div>
+
+    <div className="rounded-[24px] border border-[#ffe2cf] bg-white/80 px-5 py-4 shadow-[0_14px_34px_rgba(255,98,0,0.08)] backdrop-blur-sm">
+      <div className="flex items-center gap-3">
+        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-[16px] bg-[#fff1e8] text-[#ff6200]">
+          <Shield className="h-5 w-5" />
+        </div>
+
+        <div className="min-w-0">
+          <div className="text-[26px] font-black leading-none tracking-[-0.05em] text-[#202020]">
+            {profileCompletion}%
+          </div>
+
+          <p className="mt-1 text-[12px] font-semibold leading-5 text-[#8a847d]">
+            Заповнення профілю
+          </p>
         </div>
       </div>
 
-      <button
-        type="button"
-        onClick={() => openEditModal("name")}
-        className="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-[18px] border border-[#eadfce] bg-white px-5 text-sm font-black text-[#77716b] shadow-[0_10px_28px_rgba(15,23,42,0.05)] transition hover:border-[#f1dfbf] hover:text-[#ff6200] active:scale-[0.98]"
-      >
-        <Edit3 className="h-4 w-4" />
-        Редагувати профіль
-      </button>
+      <div className="mt-4 h-2 overflow-hidden rounded-full bg-[#eee8df]">
+        <div
+          className="h-full rounded-full bg-[#ff6200]"
+          style={{ width: `${profileCompletion}%` }}
+        />
+      </div>
     </div>
   </div>
 </section>
-      {/* STATS */}
-     <section className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
-        {[
-          {
-            icon: <CalendarDays className="h-6 w-6" />,
-            value: "12",
-            label: "Мої записи",
-            sub: "майбутні візити",
-          },
-          {
-            icon: <Heart className="h-6 w-6" />,
-            value: "8",
-            label: "Улюблені студії",
-            sub: "додано до обраного",
-          },
-          {
-            icon: <Star className="h-6 w-6" />,
-            value: "24",
-            label: "Відгуки",
-            sub: "залишено відгуків",
-          },
-          {
-            icon: <Shield className="h-6 w-6" />,
-            value: isProfileComplete ? "Pro" : `${profileCompletion}%`,
-            label: "Статус",
-            sub: isProfileComplete ? "профіль заповнено" : "заповнення профілю",
-          },
-        ].map((item) => (
-<div
-  key={item.label}
-  className="flex items-center justify-between gap-4 rounded-[28px] bg-white p-4 shadow-[0_14px_36px_rgba(15,23,42,0.06)] sm:p-5"
->
-  <div className="min-w-0">
-    <p className="text-[26px] font-black leading-none tracking-[-0.05em]">
-      {item.value}
-    </p>
-
-    <p className="mt-1 text-sm font-black">
-      {item.label}
-    </p>
-
-    <p className="mt-1 text-xs font-medium text-[#8b8794]">
-      {item.sub}
-    </p>
-  </div>
-
-  <div className="grid h-12 w-12 shrink-0 place-items-center rounded-[18px] bg-[#fff1e8] text-[#ff6200]">
-    {item.icon}
-  </div>
-</div>
-        ))}
-      </section>
 
       {/* CONTENT */}
-      <section className="mt-5 grid gap-5 lg:grid-cols-[300px_1fr]">
+   <section className="mt-5 grid items-center gap-5 lg:grid-cols-[300px_1fr]">
         {/* SIDE MENU */}
-        <aside className="rounded-[30px] bg-white p-3 shadow-[0_14px_36px_rgba(15,23,42,0.06)]">
-          {[
-            { icon: <UserRound className="h-5 w-5" />, label: "Особисті дані", active: true },
-            { icon: <CalendarDays className="h-5 w-5" />, label: "Мої записи" },
-            { icon: <Heart className="h-5 w-5" />, label: "Улюблені студії" },
-            { icon: <Star className="h-5 w-5" />, label: "Відгуки та оцінки" },
-            { icon: <Shield className="h-5 w-5" />, label: "Безпека" },
-            { icon: <Bell className="h-5 w-5" />, label: "Сповіщення" },
-          ].map((item) => (
-            <button
-              key={item.label}
-              type="button"
-              className={cx(
-                "flex h-14 w-full items-center gap-4 rounded-[20px] px-4 text-sm font-black transition",
-                item.active
-                  ? "bg-[#fff1e8] text-[#ff6200]"
-                  : "text-[#77716b] hover:bg-[#f7f5f1] hover:text-[#202020]",
-              )}
-            >
-              {item.icon}
-              {item.label}
-            </button>
-          ))}
+<aside className="relative overflow-hidden rounded-[32px] border border-[#eadfce] bg-[#f3eee7] p-5 shadow-[0_14px_36px_rgba(15,23,42,0.06)]">
+  <div className="absolute right-[-50px] top-[-60px] h-[220px] w-[220px] rounded-full bg-[#ff6200]/10 blur-3xl" />
 
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="mt-3 flex h-14 w-full items-center gap-4 rounded-[20px] px-4 text-sm font-black text-red-500 transition hover:bg-red-50"
+  <div className="relative z-10">
+<span className="inline-flex h-7 items-center gap-1 rounded-full bg-white px-2.5 text-[10px] font-black uppercase tracking-[0.05em] text-[#ff6200] shadow-[0_8px_20px_rgba(255,98,0,0.08)] sm:h-8 sm:px-3 sm:text-xs">
+  <BadgeCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+  Pro
+</span>
+    <h2 className="mt-2 text-[36px] font-black leading-[0.92] tracking-[-0.06em] text-[#202020]">
+      Статус {" "}
+      <span className="text-[#ff6200]">
+        Pro 
+      </span>
+    </h2>
+
+<p className="mt-1 max-w-[260px] text-[13px] font-medium leading-6 text-[#77716b]">
+  Преміальний статус клієнта.
+</p>
+
+<div className="mt-2 flex items-start gap-3 rounded-[20px] border border-[#ffe2cf] bg-[#fff7f2] p-3">
+  <div>
+
+<p className="mt-1 text-[11px] font-medium leading-5 text-[#8a847d]">
+  Значок <span className="font-black text-[#ff6200]">Pro</span> будуть бачити усі, тому студії та майстри розуміють,
+  що це преміальний клієнт із вищим статусом та довірою на платформі.
+</p>
+  </div>
+</div>
+
+    <div className="mt-2 rounded-[24px] bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="text-[11px] font-black uppercase tracking-[0.12em] text-[#9b948d]">
+            Підписка
+          </div>
+
+          <div className="mt-1 text-[32px] font-black tracking-[-0.05em] text-[#202020]">
+            19 zł
+          </div>
+
+          <div className="text-[12px] font-bold text-[#9b948d]">
+            / місяць
+          </div>
+        </div>
+
+        <div className="grid h-14 w-14 place-items-center rounded-[20px] bg-[#fff1e8]">
+          <Crown className="h-6 w-6 fill-[#ff6200] text-[#ff6200]" />
+        </div>
+      </div>
+
+      <div className="mt- space-y-3">
+        {[
+          "Більше довіри від студій",
+          "Преміальний вигляд акаунта",
+          "Пріоритет при записі",
+          "Вищий статус на платформі",
+        ].map((item) => (
+          <div
+            key={item}
+            className="flex items-center gap-3 text-[13px] font-bold text-[#5f5a55]"
           >
-            <LogOut className="h-5 w-5" />
-            Вийти
-          </button>
-        </aside>
+            <span className="grid h-6 w-6 place-items-center rounded-full bg-[#fff1e8]">
+              <Check className="h-3.5 w-3.5 text-[#ff6200]" />
+            </span>
+
+            {item}
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <button
+      type="button"
+      className="
+        mt-2 flex h-[56px] w-full items-center justify-center gap-2
+        rounded-[20px]
+        bg-[#ff6200]
+        text-[14px] font-black text-white
+        shadow-[0_14px_30px_rgba(255,98,0,0.28)]
+        transition-all duration-300
+        hover:bg-[#f25c00]
+        active:scale-[0.98]
+      "
+    >
+      <Sparkles className="h-4 w-4" />
+
+      Отримати статус Pro
+    </button>
+
+  </div>
+</aside>
 
         {/* PERSONAL DATA */}
-        <section className="overflow-hidden rounded-[30px] bg-white shadow-[0_14px_36px_rgba(15,23,42,0.06)]">
+        <section
+  ref={personalDataRef}
+ className="overflow-hidden rounded-[30px] border border-[#eadfce] bg-white shadow-[0_14px_36px_rgba(15,23,42,0.06)]"
+>
           <div className="border-b border-[#eee8df] px-5 py-5 sm:px-7">
             <h3 className="text-2xl font-black tracking-[-0.05em]">
               Особисті дані
@@ -1022,37 +1124,43 @@ export default function Profile() {
                 type: "birthDate",
               },
             ].map((item) => (
-              <button
-                key={item.type}
-                type="button"
-                onClick={() => openEditModal(item.type)}
-                className="group grid w-full grid-cols-[44px_1fr] gap-4 border-b border-[#eee8df] px-5 py-4 text-left transition last:border-b-0 hover:bg-[#fbfaf8] sm:grid-cols-[44px_240px_1fr] sm:px-7"
-              >
-                <div className="grid h-11 w-11 place-items-center rounded-[16px] bg-[#f7f5f1] text-[#77716b] transition group-hover:bg-[#fff1e8] group-hover:text-[#ff6200]">
+<button
+  key={item.type}
+  type="button"
+  onClick={() => openEditModal(item.type)}
+  className="group flex w-full items-center justify-between gap-4 border-b border-[#eee8df] px-5 py-4 text-left transition last:border-b-0 hover:bg-[#fbfaf8] sm:px-7"
+>
+               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[16px] bg-[#f7f5f1] text-[#77716b] transition group-hover:bg-[#fff1e8] group-hover:text-[#ff6200]">
                   {item.icon}
                 </div>
 
-                <div className="sm:contents">
-                  <p className="text-sm font-bold text-[#77716b] sm:self-center">
-                    {item.label}
-                  </p>
-                  <p className="mt-1 min-w-0 truncate text-sm font-black text-[#202020] sm:mt-0 sm:self-center">
-                    {item.value}
-                  </p>
+               <div className="flex min-w-0 flex-1 items-center gap-4">
+<div className="min-w-0 flex-1">
+  <p className="text-sm font-bold text-[#77716b]">
+    {item.label}
+  </p>
+
+  <p className="mt-1 truncate text-sm font-black text-[#202020]">
+    {item.value}
+  </p>
+</div>
+<div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#fff3e9] text-[#ff6200] transition-all duration-200 group-hover:bg-[#ff6200] group-hover:text-white group-hover:scale-105">
+  <PencilLine className="h-3.5 w-3.5" />
+</div>
                 </div>
               </button>
             ))}
           </div>
 
           <div className="px-5 py-5 sm:px-7">
-            <button
-              type="button"
-              onClick={() => openEditModal("name")}
-              className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[18px] border border-[#ff6200] bg-white px-5 text-sm font-black text-[#ff6200] transition hover:bg-[#fff1e8] active:scale-[0.98] sm:w-auto"
-            >
-              <PencilLine className="h-4 w-4" />
-              Редагувати особисті дані
-            </button>
+<button
+  type="button"
+  onClick={() => setLogoutModalOpen(true)}
+  className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[18px] border border-[#ffd8d8] bg-white px-5 text-sm font-black text-[#e5484d] transition hover:bg-[#fff1f1] active:scale-[0.98] sm:hidden"
+>
+  <LogOut className="h-4 w-4" />
+  Вийти з акаунта
+</button>
           </div>
         </section>
       </section>
@@ -1269,6 +1377,32 @@ export default function Profile() {
           </div>
         </div>
       )}
+<EditModal
+  open={logoutModalOpen}
+  title="Вийти з акаунта?"
+  onClose={() => setLogoutModalOpen(false)}
+  onSave={handleLogout}
+  saveText="Так, вийти"
+>
+  <div className="space-y-4">
+   <div className="flex items-center gap-3 rounded-[22px] border border-[#ffd8d8] bg-[#fff7f7] p-4">
+      <div className="grid h-11 w-11 shrink-0 place-items-center rounded-[16px] bg-white text-[#e5484d]">
+        <LogOut className="h-5 w-5" />
+      </div>
+
+      <div>
+        <p className="text-sm font-black text-[#202020]">
+          Ви справді хочете вийти?
+        </p>
+
+        <p className="mt-1 text-[13px] font-medium leading-5 text-[#77716b]">
+          Після виходу потрібно буде знову увійти в акаунт, щоб переглядати профіль,
+          записи та улюблені студії.
+        </p>
+      </div>
+    </div>
+  </div>
+</EditModal>
     </main>
   );
 }

@@ -2,6 +2,7 @@
 import { useMemo, useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import bookingsHero from "../assets/calendarHero2.png";
 import { api } from "../api/http";
 import {
   Sparkles,
@@ -719,57 +720,106 @@ function openStudio(booking) {
   }
 
   return (
-    <div className="min-h-screen pb-[calc(env(safe-area-inset-bottom)+68px)] sm:pb-0">
+   <div className="min-h-screen bg-[#fdfcfb] pb-[calc(env(safe-area-inset-bottom)+68px)] sm:pb-0">
       <div className="mx-auto max-w-6xl px-2.5 pb-4 pt-18 sm:px-4 sm:pb-8 sm:pt-14 lg:pt-16">
         <div className="space-y-3 px-0 pt-2 sm:space-y-3 sm:pt-8 lg:pt-6">
-          <section className="overflow-hidden rounded-[24px] border border-[var(--color-cream)] bg-white shadow-[var(--shadow-soft)] sm:rounded-3xl">
-            <div className="h-[2px] bg-gradient-to-r from-[var(--color-forest)] via-[var(--color-caramel)] to-[var(--color-ink)] opacity-70" />
+<section className="relative mb-5 overflow-hidden rounded-[30px] border border-[#eadfce] bg-[#f3eee7] px-5 py-7 shadow-[0_14px_36px_rgba(15,23,42,0.06)] sm:rounded-[34px] sm:px-8 sm:py-9 lg:px-10">
+  <div className="pointer-events-none absolute right-0 top-0 z-0 h-[150px] w-[240px] sm:h-[180px] sm:w-[320px] lg:h-[220px] lg:w-[380px]">
+    <img
+      src={bookingsHero}
+      alt=""
+      aria-hidden="true"
+      className="h-full w-full object-contain object-right"
+    />
+  </div>
 
-            <div className="px-4 pb-7 pt-7 sm:px-6 sm:pb-4 sm:pt-5 lg:px-8 lg:pt-6">
-              <div className="mb-5 space-y-3 sm:space-y-2 lg:mb-5">
-                <div className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-[var(--color-sand)] bg-[var(--color-pending-bg)] px-3 py-1 sm:px-4 sm:py-1.5">
-                  <Sparkles className="h-3.5 w-3.5 text-[var(--color-forest)] sm:h-4 sm:w-4" />
-                  <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--color-forest)] sm:text-xs sm:tracking-[0.22em]">
-                    Мої бронювання
-                  </span>
-                </div>
+  <div className="relative z-10 max-w-[760px]">
+    <h1 className="text-[38px] font-black leading-[0.9] tracking-[-0.06em] text-[#202020] sm:text-[54px] lg:text-[64px]">
+      <span className="block">Мої</span>
+      <span className="block text-[#ff6200]">записи</span>
+    </h1>
 
-                <h1 className="max-w-full !text-[34px] font-black leading-tight tracking-[-0.03em] text-[var(--color-ink)] sm:max-w-none sm:!text-5xl lg:!text-5xl">
-                  Керуйте своїми{" "}
-                  <span className="text-[var(--color-caramel)]">записами</span>
-                </h1>
+    <p className="mt-1 max-w-[240px] text-[12px] font-semibold leading-5 text-[#7a7d87] sm:max-w-[360px] sm:text-[15px]">
+      Усі ваші візити в одному місці
+    </p>
+  </div>
+</section>
 
-              </div>
+<section className="mb-5 grid gap-3 lg:grid-cols-[auto_1fr] lg:items-center lg:justify-between max-[639px]:mb-3 max-[639px]:gap-2">
+<div className="flex justify-center gap-2 overflow-x-auto rounded-[22px] border border-[#eadfce] bg-white p-2 shadow-[0_14px_34px_rgba(15,23,42,0.05)] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden max-[639px]:justify-center max-[639px]:gap-[3px] max-[639px]:rounded-[14px] max-[639px]:px-2 max-[639px]:py-[3px]">
+    {[
+      {
+        key: "all",
+        label: "Усі записи",
+        icon: CalendarDays,
+        count: counters.all,
+      },
+      {
+        key: "upcoming",
+        label: "Майбутні",
+        icon: Clock3,
+        count: counters.upcoming,
+      },
+      {
+        key: "past",
+        label: "Минулі",
+        icon: CheckCheck,
+        count: counters.past,
+      },
+      {
+        key: "canceled",
+        label: "Скасовані",
+        icon: XCircle,
+        count: counters.canceled,
+      },
+    ].map((item) => {
+      const Icon = item.icon;
+      const active = tab === item.key;
 
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-                  <FilterTab
-                    type="success"
-                    active={tab === "upcoming"}
-                    onClick={() => setTab("upcoming")}
-                  >
-                    Активні ({counters.upcoming})
-                  </FilterTab>
+      return (
+        <button
+          key={item.key}
+          type="button"
+          onClick={() => setTab(item.key)}
+          className={cn(
+            "inline-flex h-11 shrink-0 items-center gap-2 rounded-[16px] px-4 text-[13px] font-black transition active:scale-[0.97] max-[639px]:h-10 max-[639px]:gap-1 max-[639px]:rounded-[11px] max-[639px]:px-2.5 max-[639px]:text-[10px]",
+            active
+              ? "text-[#ff6200]"
+              : "bg-white text-[#77716b] hover:bg-[#fbfaf8] hover:text-[#ff6200]",
+          )}
+        >
+          <Icon className="h-4 w-4 max-[639px]:h-[14px] max-[639px]:w-[14px]" />
 
-                  <FilterTab
-                    type="info"
-                    active={tab === "past"}
-                    onClick={() => setTab("past")}
-                  >
-                    Завершені ({counters.past})
-                  </FilterTab>
+          {item.label}
 
-                </div>
+        </button>
+      );
+    })}
+  </div>
 
+  <div className="flex h-14 items-center gap-3 rounded-[22px] border border-[#eadfce] bg-white px-4 shadow-[0_14px_34px_rgba(15,23,42,0.05)] max-[639px]:h-10 max-[639px]:gap-1.5 max-[639px]:rounded-[14px] max-[639px]:px-2.5">
+    <Search className="h-4 w-4 shrink-0 text-[#8b8794] max-[639px]:h-3 max-[639px]:w-3" />
 
-              </div>
-            </div>
-          </section>
+    <input
+      value={q}
+      onChange={(e) => setQ(e.target.value)}
+      placeholder="Пошук..."
+      className="h-full min-w-0 flex-1 bg-transparent text-[13px] font-semibold text-[#202020] outline-none placeholder:text-[#b8afa5] max-[639px]:text-[11px]"
+    />
+
+    <button
+      type="button"
+      className="grid h-10 w-10 shrink-0 place-items-center rounded-[15px] bg-[#f7f5f1] text-[#77716b] transition hover:bg-[#fff3e9] hover:text-[#ff6200] max-[639px]:h-7 max-[639px]:w-7 max-[639px]:rounded-[9px]"
+    >
+      <Search className="h-4 w-4 max-[639px]:h-3 max-[639px]:w-3" />
+    </button>
+  </div>
+</section>
 
           {visibleBookings.length === 0 ? (
             <EmptyState />
           ) : (
-<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+<div className="grid grid-cols-1 gap-3">
   {visibleBookings.map((b, idx) => {
     
                 const status = resolveBookingStatus(b, nowTs);
@@ -858,83 +908,148 @@ return (
       }
     }}
     className={cn(
-      "rounded-[24px] border border-[var(--color-cream)] bg-white px-4 py-4 shadow-[0_14px_38px_rgba(27,27,27,0.08)] transition-all duration-200 hover:border-[var(--border-hover-primary)] hover:shadow-[0_18px_46px_rgba(27,27,27,0.12)] active:scale-[0.99]",
-      bookingPast && "opacity-80",
+      "group overflow-hidden rounded-[24px] border border-[#eadfce] bg-white shadow-[0_10px_28px_rgba(15,23,42,0.055)] transition-all duration-200 hover:border-[#f1dfbf] hover:shadow-[0_18px_46px_rgba(15,23,42,0.09)] active:scale-[0.99]",
+      bookingPast && "opacity-85",
     )}
   >
-   <div className="grid grid-cols-[1fr_115px] gap-4">
-<div className="min-w-0">
-  {/* Майстер */}
-  <div className="grid min-h-[46px] grid-cols-[36px_1fr] items-center gap-3">
-    {masterPhoto ? (
-      <img
-        src={masterPhoto}
-        alt={masterName}
-        className="h-9 w-9 rounded-full object-cover"
-      />
-    ) : (
-      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-cream)] text-sm font-black text-[var(--color-ink)]">
-        {masterName?.[0] || "М"}
+    <div className="grid min-h-[138px] grid-cols-[150px_minmax(0,1fr)_190px_150px] items-center gap-5 px-5 py-4 max-[767px]:min-h-0 max-[767px]:grid-cols-[74px_1fr_82px] max-[767px]:gap-3 max-[767px]:px-3 max-[767px]:py-3">
+      
+      {/* Фото + статус */}
+      <div className="flex flex-col items-center gap-2">
+        <div className="h-[110px] w-full overflow-hidden rounded-[20px] bg-[#f4f0ea] max-[767px]:h-[74px] max-[767px]:w-[74px] max-[767px]:rounded-[16px]">
+          {studioLogo ? (
+            <img
+              src={studioLogo}
+              alt={title}
+              className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+            />
+          ) : (
+            <div className="grid h-full w-full place-items-center text-[10px] font-bold text-[#aaa19a]">
+              Фото
+            </div>
+          )}
+        </div>
+
       </div>
+
+      {/* Текст */}
+      <div className="min-w-0">
+        <h2 className="truncate text-[22px] font-black leading-tight tracking-[-0.04em] text-[#202020] max-[767px]:text-[13px]">
+          {title}
+        </h2>
+
+        {(b.address || b.studioAddress || b.location) && (
+          <div className="mt-2 flex items-center gap-1.5 text-[13px] font-semibold text-[#77716b] max-[767px]:mt-1 max-[767px]:text-[10px]">
+            <MapPin className="h-4 w-4 shrink-0 text-[#77716b] max-[767px]:h-3 max-[767px]:w-3" />
+            <span className="truncate">
+              {b.address || b.studioAddress || b.location}
+            </span>
+          </div>
+        )}
+
+        <div className="mt-2 flex items-center gap-1.5 text-[14px] font-black text-[#202020] max-[767px]:mt-1 max-[767px]:text-[10px]">
+          <Scissors className="h-4 w-4 shrink-0 text-[#77716b] max-[767px]:h-3 max-[767px]:w-3" />
+          <span className="line-clamp-1">{service}</span>
+        </div>
+
+        <div className="mt-3 flex items-center gap-2 text-[13px] font-semibold text-[#77716b] max-[767px]:mt-1.5 max-[767px]:gap-1.5 max-[767px]:text-[10px]">
+          {masterPhoto ? (
+            <img
+              src={masterPhoto}
+              alt={masterName}
+              className="h-7 w-7 rounded-full object-cover max-[767px]:h-5 max-[767px]:w-5"
+            />
+          ) : (
+            <div className="grid h-7 w-7 place-items-center rounded-full bg-[#fff1e8] text-[11px] font-black text-[#ff6200] max-[767px]:h-5 max-[767px]:w-5 max-[767px]:text-[8px]">
+              {masterName?.[0] || "М"}
+            </div>
+          )}
+
+          <span className="truncate">Майстер: {masterName}</span>
+        </div>
+      </div>
+
+      {/* Мобільний блок: дата → деталі → час */}
+<div className="hidden h-full flex-col items-center justify-center gap-1 max-[767px]:flex">
+  <div
+    className={cn(
+      "mb-1 inline-flex h-6 min-w-[82px] items-center justify-center rounded-full px-3 text-[8px] font-black text-white shadow-[0_8px_18px_rgba(15,23,42,0.12)]",
+      statusBadge.className,
     )}
-
-    <div className="min-w-0">
-      <p className="text-[10px] font-black uppercase leading-none tracking-[0.16em] text-[var(--color-ink)]/35">
-        Майстер
-      </p>
-
-      <p className="mt-1 truncate text-[15px] font-black leading-tight tracking-[-0.03em] text-[var(--color-ink)]">
-        {masterName}
-      </p>
-    </div>
+  >
+    {statusBadge.label}
   </div>
+        <div className="text-center">
+          <p className="text-[9px] font-bold capitalize text-[#aaa19a]">
+            {monthLabel}
+          </p>
 
-  <div className="my-3 h-px w-full bg-[var(--color-ink)]/10" />
+          <p className="text-[24px] font-light leading-none tracking-[-0.06em] text-[#202020]">
+            {dayLabel}
+          </p>
+        </div>
 
-  {/* Послуга */}
-  <div className="grid min-h-[46px] grid-cols-[36px_1fr] items-center gap-3">
-    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-cream)] text-[var(--color-ink)]">
-      <Scissors className="h-4 w-4" />
-    </div>
 
-    <div className="min-w-0">
-      <p className="text-[10px] font-black uppercase leading-none tracking-[0.16em] text-[var(--color-ink)]/35">
-        Послуга
-      </p>
+        <p className="text-[10px] font-black text-[#aaa19a]">
+          {timeLabel}
+        </p>
+      </div>
 
-<p className="mt-1 line-clamp-2 text-[15px] font-black leading-[1.15] tracking-[-0.03em] text-[var(--color-ink)]">
-  {service}
-</p>
-    </div>
-  </div>
+<div className="col-span-full hidden pt-1 max-[767px]:flex max-[767px]:justify-center">
+  <button
+    type="button"
+    onClick={(e) => {
+      e.stopPropagation();
+      setActiveBookingId(b.id);
+    }}
+    className="inline-flex h-8 w-full items-center justify-center gap-1 rounded-[14px] border border-[#eadfce] bg-white px-3 text-[10px] font-black text-[#77716b] transition hover:border-[#ff6200] hover:bg-[#fff3e9] hover:text-[#ff6200] active:scale-[0.98]"
+  >
+    <Eye className="h-3.5 w-3.5" />
+    Деталі
+  </button>
 </div>
 
-      <div className="flex flex-col items-center border-l border-[var(--color-ink)]/10 pl-4 text-center">
-       <div
-  className={cn(
-    "mb-4 rounded-full px-3 py-1 text-[11px] font-black leading-none shadow-[0_6px_16px_rgba(0,0,0,0.10)]",
-    statusBadge.className,
-  )}
->
-  {statusBadge.label}
-</div>
+      {/* Desktop: статус + деталі */}
+      <div className="flex flex-col items-center justify-center gap-3 max-[767px]:hidden">
+        <div
+          className={cn(
+            "inline-flex h-11 w-[190px] items-center justify-center rounded-[14px] text-[14px] font-black text-white shadow-[0_8px_18px_rgba(15,23,42,0.12)]",
+            statusBadge.className,
+          )}
+        >
+          {statusBadge.label}
+        </div>
 
-        <span className="text-[12px] font-medium capitalize text-[var(--color-ink)]/45">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setActiveBookingId(b.id);
+          }}
+          className="inline-flex h-11 w-[190px] items-center justify-center gap-2 rounded-[14px] border border-[#eadfce] bg-white px-5 text-[14px] font-black text-[#77716b] transition hover:border-[#ff6200] hover:bg-[#fff3e9] hover:text-[#ff6200] active:scale-[0.98]"
+        >
+          <Eye className="h-4 w-4" />
+          Деталі
+        </button>
+      </div>
+
+      {/* Desktop: дата */}
+      <div className="relative flex h-full min-h-[110px] flex-col items-center justify-center border-l border-[#eee8df] px-4 text-center max-[767px]:hidden">
+        <span className="mt-2 text-[13px] font-semibold capitalize text-[#aaa19a]">
           {monthLabel}
         </span>
 
-        <span className="mt-0.5 text-[34px] font-light leading-none tracking-[-0.06em] text-[var(--color-ink)]">
+        <span className="mt-1 text-[42px] font-light leading-none tracking-[-0.07em] text-[#202020]">
           {dayLabel}
         </span>
 
-<span className="mt-1 text-[14px] font-bold capitalize text-[var(--color-ink)]/45">
-  {timeLabel}
-</span>
+        <span className="mt-1 text-[16px] font-black text-[#aaa19a]">
+          {timeLabel}
+        </span>
       </div>
     </div>
   </div>
-
-                );
+);
               })}
             </div>
           )}
