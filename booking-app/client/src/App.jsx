@@ -35,6 +35,7 @@ import PrivacyOwner from "./pages/dashboard/PrivacyOwner";
 import TermsOwner from "./pages/dashboard/TermsOwner";
 import MessagesClient from "./pages/MessagesClient";
 import Clients from "./pages/dashboard/Clients";
+import Login from "./components/Login";
 
 function StudioDetailsKeyed() {
   const { slug } = useParams();
@@ -62,10 +63,10 @@ export default function App() {
             <Route path="/privacyclient" element={<PrivacyClient />} />
             <Route path="/booking/success" element={<BookingSuccess />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/login" element={<LoginClient />} />
             <Route path="/register" element={<RegisterClient />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/login-owner" element={<LoginOwner />} />
+           <Route path="/login" element={<Login />} />
+<Route path="/login-owner" element={<Login />} />
             <Route path="/register-owner" element={<RegisterOwner />} />
 
             <Route

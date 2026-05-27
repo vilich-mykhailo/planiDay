@@ -2,7 +2,7 @@
 import { useMemo, useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import bookingsHero from "../assets/calendarHero2.png";
+import bookingsHero from "../assets/bookingsHero.png";
 import { api } from "../api/http";
 import {
   Sparkles,
@@ -841,11 +841,11 @@ const statusBadge = {
     className: "bg-[#6b7280] text-white",
   },
   new: {
-    label: "Очікує",
+    label: "Очікує підтвердження",
     className: "bg-[#f59e0b] text-white",
   },
 }[status] || {
-  label: "Очікує",
+  label: "Очікує підтвердження",
   className: "bg-[#f59e0b] text-white",
 };
                 const rowId =
@@ -971,14 +971,17 @@ return (
 
       {/* Мобільний блок: дата → деталі → час */}
 <div className="hidden h-full flex-col items-center justify-center gap-1 max-[767px]:flex">
-  <div
-    className={cn(
-      "mb-1 inline-flex h-6 min-w-[82px] items-center justify-center rounded-full px-3 text-[8px] font-black text-white shadow-[0_8px_18px_rgba(15,23,42,0.12)]",
-      statusBadge.className,
-    )}
-  >
-    {statusBadge.label}
-  </div>
+<div
+  className={cn(
+    "mb-1 flex min-h-[24px] w-full items-center justify-center rounded-full px-2 py-[3px] text-center font-black leading-[1.1] text-white shadow-[0_8px_18px_rgba(15,23,42,0.12)]",
+    status === "new"
+      ? "text-[7px]"
+      : "text-[8px]",
+    statusBadge.className,
+  )}
+>
+  {statusBadge.label}
+</div>
         <div className="text-center">
           <p className="text-[9px] font-bold capitalize text-[#aaa19a]">
             {monthLabel}
@@ -995,7 +998,7 @@ return (
         </p>
       </div>
 
-<div className="col-span-full hidden pt-1 max-[767px]:flex max-[767px]:justify-center">
+{/* <div className="col-span-full hidden pt-1 max-[767px]:flex max-[767px]:justify-center">
   <button
     type="button"
     onClick={(e) => {
@@ -1007,7 +1010,7 @@ return (
     <Eye className="h-3.5 w-3.5" />
     Деталі
   </button>
-</div>
+</div> */}
 
       {/* Desktop: статус + деталі */}
       <div className="flex flex-col items-center justify-center gap-3 max-[767px]:hidden">
@@ -1062,134 +1065,93 @@ return (
     const isConfirmed = activeStatus === "confirmed";
     const isCompleted = activeStatus === "completed";
 
-const statusMeta = isCompleted
-  ? {
-      label: "Завершено",
-      top: "from-[#f3f4f6] to-white",
-      Icon: CheckCheck,
-      className: "bg-[#6b7280] text-white",
-      iconColor: "text-[#6b7280]",
-    }
-  : isConfirmed
-    ? {
-        label: "Підтверджено",
-        top: "from-[#dcfce7] to-white",
-        Icon: Check,
-        className: "bg-[#22c55e] text-white",
-        iconColor: "text-[#22c55e]",
-      }
-    : isCanceled
-      ? {
-          label:
-            activeBooking?.canceledBy === "owner"
-              ? "Скасовано студією"
-              : "Скасовано вами",
-          top: "from-[#fee2e2] to-white",
-          Icon: XCircle,
-          className: "bg-[#ef4444] text-white",
-          iconColor: "text-[#ef4444]",
-        }
-      : {
-          label: "Очікує підтвердження",
-          top: "from-[#fef3c7] to-white",
-          Icon: Clock3,
-          className: "bg-[#f59e0b] text-white",
-          iconColor: "text-[#f59e0b]",
-        };
+const statusMeta = {
+  canceled: {
+    label:
+      activeBooking?.canceledBy === "owner"
+        ? "Скасовано студією"
+        : "Скасовано вами",
+    Icon: XCircle,
+    className: "bg-[#ef4444] text-white",
+    iconColor: "text-[#ef4444]",
+  },
+  confirmed: {
+    label: "Підтверджено",
+    Icon: Check,
+    className: "bg-[#22c55e] text-white",
+    iconColor: "text-[#22c55e]",
+  },
+  completed: {
+    label: "Завершено",
+    Icon: CheckCheck,
+    className: "bg-[#6b7280] text-white",
+    iconColor: "text-[#6b7280]",
+  },
+  new: {
+    label: "Очікує підтвердження",
+    Icon: Clock3,
+    className: "bg-[#f59e0b] text-white",
+    iconColor: "text-[#f59e0b]",
+  },
+}[activeStatus] || {
+  label: "Очікує",
+  Icon: Clock3,
+  className: "bg-[#f59e0b] text-white",
+  iconColor: "text-[#f59e0b]",
+};
 
-const StatusIcon = statusMeta.Icon;
+    const masterLabel = isAnyMasterSelected
+      ? "Будь-який майстер"
+      : activeMasterName || "Не вказано";
 
     return (
       <div
-        className="fixed inset-0 z-[220] flex items-end justify-center bg-[var(--color-bg)]/45 p-0 backdrop-blur-[7px] sm:items-center sm:p-4"
+        className="fixed inset-0 z-[220] flex items-end justify-center bg-[#202020]/45 p-0 backdrop-blur-[7px] sm:items-center sm:p-5"
         onClick={() => {
           setActiveBookingId(null);
           setCopiedId(null);
         }}
       >
         <div
-          className={cn(
-            "relative flex w-full flex-col overflow-hidden bg-white",
-            "h-[100dvh] rounded-none border-0 shadow-none",
-            "sm:h-auto sm:max-h-[76vh] sm:max-w-[420px] sm:rounded-[34px] sm:border sm:border-[var(--color-cream)] sm:shadow-[0_35px_100px_rgba(27,27,27,0.18)]",
-          )}
+          className="relative flex h-[100dvh] w-full flex-col overflow-hidden rounded-none bg-[#fdfcfb] shadow-[0_35px_100px_rgba(15,23,42,0.22)] sm:h-auto sm:max-h-[90dvh] sm:max-w-[590px] sm:rounded-[34px] sm:border sm:border-[#eadfce]"
           onClick={(e) => e.stopPropagation()}
         >
-          <div
-            className={cn(
-              "relative bg-gradient-to-b px-5 pb-5 pt-[max(16px,env(safe-area-inset-top))] sm:pt-5",
-              statusMeta.top,
-            )}
-          >
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.22),transparent_30%)]" />
+          <div className="relative overflow-hidden bg-[#f3eee7] px-5 pb-5 pt-[max(18px,env(safe-area-inset-top))] sm:px-8 sm:pt-8">
+            <div className="absolute right-[-70px] top-[-90px] h-[220px] w-[220px] rounded-full bg-[#ff6200]/10 blur-3xl" />
 
-            <div className="relative flex items-center justify-between">
-<button
-  type="button"
-  onClick={() => {
-    setActiveBookingId(null);
-    setCopiedId(null);
-  }}
-  className="inline-flex h-11 w-11 items-center justify-center rounded-2xl text-[var(--color-ink)] transition-all duration-200 hover:scale-110 active:scale-95"
-  aria-label="Назад"
->
-  <ChevronLeft className="h-8 w-8" />
-</button>
+            <div className="relative z-10 flex items-start justify-between gap-4">
+              <div>
+                <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-white px-3 text-[11px] font-black uppercase tracking-[0.08em] text-[#ff6200] shadow-[0_8px_20px_rgba(255,98,0,0.08)]">
+                  <CalendarDays className="h-3.5 w-3.5" />
+                  Запис
+                </span>
 
-              <div className="w-11" />
+                <h2 className="mt-3 text-[28px] font-black leading-none tracking-[-0.05em] text-[#202020] max-[639px]:text-[24px]">
+                  Деталі запису
+                </h2>
+
+                <p className="mt-2 text-[14px] font-semibold text-[#77716b] max-[639px]:text-[12px]">
+                  Повна інформація про ваш візит
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveBookingId(null);
+                  setCopiedId(null);
+                }}
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white text-[#77716b] shadow-[0_10px_24px_rgba(15,23,42,0.06)] transition hover:bg-[#fff3e9] hover:text-[#ff6200] active:scale-[0.96] max-[639px]:h-10 max-[639px]:w-10"
+                aria-label="Закрити"
+              >
+                <X className="h-5 w-5" />
+              </button>
             </div>
-
-<div className="relative mt-4 flex justify-center">
-  <div
-    className={cn(
-      "inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-black shadow-[0_8px_24px_rgba(0,0,0,0.12)]",
-      statusMeta.className,
-    )}
-  >
-    <StatusIcon className="h-4 w-4" />
-    <span>{statusMeta.label}</span>
-  </div>
-</div>
-
-            <div className="relative mt-5 text-center">
-              <h2 className="text-[24px] font-black leading-tight tracking-[-0.03em] text-[var(--color-ink)]">
-                {activeService || "Послуга"}
-              </h2>
-
-              <p className="mt-1 text-sm font-medium text-[var(--color-ink-soft)]">
-                {formatUA(activeBooking.date) || "—"}
-              </p>
-            </div>
-
-<div className="relative mt-4 grid grid-cols-3 gap-2">
-  <div className="inline-flex min-h-[56px] flex-col items-center justify-center gap-1 rounded-[18px] px-2 py-2 text-sm font-semibold">
-    <Clock3 className={cn("h-4 w-4", statusMeta.iconColor)} />
-    <span className="text-[var(--color-ink)]">
-      {activeBooking.time || "—"}
-    </span>
-  </div>
-
-  <div className="inline-flex min-h-[56px] flex-col items-center justify-center gap-1 rounded-[18px] px-2 py-2 text-sm font-semibold">
-    <Banknote className={cn("h-4 w-4", statusMeta.iconColor)} />
-    <span className="text-[var(--color-ink)]">
-      {activePrice != null ? `${activePrice} грн` : "—"}
-    </span>
-  </div>
-
-  <div className="inline-flex min-h-[56px] flex-col items-center justify-center gap-1 rounded-[18px] px-2 py-2 text-sm font-semibold">
-    <Timer className={cn("h-4 w-4", statusMeta.iconColor)} />
-    <span className="text-[var(--color-ink)]">
-      {activeDuration != null ? `${activeDuration} хв` : "—"}
-    </span>
-  </div>
-</div>
           </div>
 
-          <div className="relative flex min-h-0 flex-1 flex-col px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-4 sm:px-5 sm:pb-5">
-            <div className="min-h-0 flex-1 overflow-y-auto pb-16 sm:pb-6">
-              <div className="space-y-3">
-                <div className="rounded-[26px] border border-[#e6ebe3] p-4 shadow-[0_8px_24px_rgba(120,140,120,0.08)]">
-<div
+          <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 pt-5 sm:px-8">
+            <div className="flex items-center gap-5 max-[639px]:gap-3">
+              <div
   role="button"
   tabIndex={0}
   onClick={() => openStudio(activeBooking)}
@@ -1199,124 +1161,145 @@ const StatusIcon = statusMeta.Icon;
       openStudio(activeBooking);
     }
   }}
-  className="flex cursor-pointer items-center gap-3 rounded-2xl p-2 -m-2 transition hover:bg-[var(--color-cream)] active:scale-[0.99]"
+  className="h-[154px] w-[210px] shrink-0 cursor-pointer overflow-hidden rounded-[24px] bg-[#f4f0ea] shadow-[0_14px_34px_rgba(15,23,42,0.08)] transition duration-200 hover:scale-[1.02] active:scale-[0.99] max-[639px]:h-[106px] max-[639px]:w-[128px] max-[639px]:rounded-[18px]"
 >
-  {activeStudioLogo ? (
-    <img
-      src={activeStudioLogo}
-      alt={activeTitle}
-      className="h-12 w-12 shrink-0 rounded-2xl object-cover shadow-sm"
-    />
-  ) : (
-    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-[var(--color-ink)] shadow-sm">
-      <Sparkles className="h-5 w-5" />
-    </div>
-  )}
-
-  <div className="min-w-0 flex-1">
-    <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-caramel)]">
-      Студія
-    </span>
-
-    <p className="truncate text-left text-[15px] font-extrabold text-[var(--color-ink)] transition hover:text-[var(--color-forest)]">
-      {activeTitle || "Студія"}
-    </p>
-  </div>
-</div>
-                </div>
-
-                <div className="rounded-[26px] border border-[#e6ebe3] p-4 shadow-[0_8px_24px_rgba(120,140,120,0.08)]">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-[var(--color-ink)] shadow-sm">
-                      <MapPin className="h-5 w-5" />
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                      <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-caramel)]">
-                        Адреса
-                      </span>
-                      <p className="truncate text-[15px] font-extrabold text-[var(--color-ink)]">
-                        {activeAddr || "Адресу не вказано"}
-                      </p>
-                    </div>
-
-                    {activeAddr ? (
-                      <button
-                        type="button"
-                        onClick={() => copyText(activeAddr, activeBooking.id)}
-                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-[var(--color-ink)] shadow-sm transition hover:bg-[var(--color-cream)]"
-                        aria-label="Скопіювати адресу"
-                        title="Скопіювати адресу"
-                      >
-                        {copiedId === activeBooking.id ? (
-                          <CheckCheck className="h-4 w-4" />
-                        ) : (
-                          <Copy className="h-4 w-4" />
-                        )}
-                      </button>
-                    ) : (
-                      <div className="h-10 w-10 shrink-0 rounded-2xl bg-white" />
-                    )}
+                {activeStudioLogo ? (
+                  <img
+                    src={activeStudioLogo}
+                    alt={activeTitle}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="grid h-full w-full place-items-center bg-[#fff3e9] text-[#ff6200]">
+                    <Sparkles className="h-8 w-8" />
                   </div>
-                </div>
+                )}
+              </div>
 
-                <div className="rounded-[26px] border border-[#e6ebe3] p-4 shadow-[0_8px_24px_rgba(120,140,120,0.08)]">
-                  <div className="flex items-center gap-3">
-                    {isAnyMasterSelected ? (
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white font-bold text-[var(--color-caramel)] shadow-sm">
-                        ?
-                      </div>
-                    ) : activeMasterPhoto ? (
-                      <img
-                        src={activeMasterPhoto}
-                        alt={activeMasterName}
-                        className="h-12 w-12 shrink-0 rounded-2xl object-cover shadow-sm"
-                      />
-                    ) : (
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white font-bold text-[var(--color-ink)] shadow-sm">
-                        {activeMasterName?.[0] || "—"}
-                      </div>
-                    )}
+              <div className="min-w-0 flex-1">
+                <h3 className="truncate text-[24px] font-black tracking-[-0.04em] text-[#202020] max-[639px]:text-[18px]">
+                  {activeTitle || "Студія"}
+                </h3>
 
-                    <div className="min-w-0 flex-1">
-                      <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-caramel)]">
-                        Майстер
-                      </span>
-
-                      <p className="truncate text-[15px] font-extrabold text-[var(--color-ink)]">
-                        {isAnyMasterSelected
-                          ? "Будь-який майстер"
-                          : activeMasterName}
-                      </p>
-                    </div>
-                  </div>
+                <div className="mt-3 flex items-center gap-2 text-[15px] font-semibold text-[#77716b] max-[639px]:mt-2 max-[639px]:text-[12px]">
+                  <MapPin className="h-5 w-5 shrink-0 text-[#ff6200] max-[639px]:h-4 max-[639px]:w-4" />
+                  <span className="line-clamp-2">
+                    {activeAddr || "Адресу не вказано"}
+                  </span>
                 </div>
               </div>
             </div>
 
-<div className="mt-4 grid grid-cols-2 gap-3 pt-2">
-<button
-  type="button"
-  onClick={() => handleRescheduleClick(activeBooking)}
-  disabled={!canRescheduleBooking(activeBooking)}
-  className="inline-flex h-12 items-center justify-center gap-2 rounded-[22px] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50"
->
-  <RefreshCw className="h-4 w-4" />
-  Перенести
-</button>
+            <div className="mt-7 overflow-hidden rounded-[24px] border border-[#eadfce] bg-white shadow-[0_18px_44px_rgba(15,23,42,0.07)] max-[639px]:mt-5 max-[639px]:rounded-[20px]">
+              {[
+                {
+                  icon: statusMeta.Icon,
+                  label: "Статус",
+                  value: statusMeta.label,
+                  badge: true,
+                },
+                {
+                  icon: Scissors,
+                  label: "Послуга",
+                  value: activeService || "Послуга",
+                },
+                {
+                  icon: Banknote,
+                  label: "Ціна",
+                  value:
+                    activePrice != null
+                      ? `${activePrice} грн`
+                      : "Не вказано",
+                },
+                {
+                  icon: CalendarDays,
+                  label: "Дата",
+                  value: formatUA(activeBooking.date) || "—",
+                },
+                {
+                  icon: Clock3,
+                  label: "Час",
+                  value: activeBooking.time || "—",
+                },
+                {
+                  icon: UserRound,
+                  label: "Майстер",
+                  value: masterLabel,
+                  photo: !isAnyMasterSelected ? activeMasterPhoto : "",
+                },
+              ].map((item) => {
+                const Icon = item.icon;
 
-  <button
-    type="button"
-    onClick={() => {
-      setCancelConfirmId(activeBooking.id);
-    }}
-    disabled={!canRescheduleBooking(activeBooking)}
-    className="inline-flex h-12 items-center justify-center gap-2 rounded-[22px] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50"
-  >
-    <XCircle className="h-4 w-4" />
-    Скасувати запис
-  </button>
-</div>
+                return (
+                  <div
+                    key={item.label}
+                    className="flex min-h-[58px] items-center gap-4 border-b border-[#eee8df] px-5 last:border-b-0 max-[639px]:min-h-[52px] max-[639px]:gap-3 max-[639px]:px-4"
+                  >
+                    <div className="grid h-9 w-9 shrink-0 place-items-center rounded-[14px] bg-[#f8f5f1] text-[#77716b] max-[639px]:h-8 max-[639px]:w-8">
+                      <Icon
+                        className={cn(
+                          "h-4.5 w-4.5 max-[639px]:h-4 max-[639px]:w-4",
+                          item.badge ? statusMeta.iconColor : "",
+                        )}
+                      />
+                    </div>
+
+                    <span className="min-w-0 flex-1 text-[15px] font-bold text-[#77716b] max-[639px]:text-[13px]">
+                      {item.label}
+                    </span>
+
+                    <div className="flex min-w-0 items-center justify-end gap-2">
+                      {item.badge ? (
+                        <span
+                          className={cn(
+                            "inline-flex h-8 items-center justify-center rounded-full px-4 text-[13px] font-black max-[639px]:h-7 max-[639px]:px-3 max-[639px]:text-[11px]",
+                            statusMeta.className,
+                          )}
+                        >
+                          {item.value}
+                        </span>
+                      ) : (
+                        <>
+                          <span className="text-right text-[15px] font-black leading-tight text-[#202020] max-[639px]:max-w-[165px] max-[639px]:text-[12px] sm:max-w-[260px]">
+                            {item.value}
+                          </span>
+
+                          {item.photo ? (
+                            <img
+                              src={item.photo}
+                              alt={item.value}
+                              className="h-8 w-8 shrink-0 rounded-full object-cover ring-2 ring-[#fff3e9] max-[639px]:h-7 max-[639px]:w-7"
+                            />
+                          ) : null}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 border-t border-[#eadfce] bg-[#fbfaf8] px-5 pb-[max(18px,env(safe-area-inset-bottom))] pt-4 sm:px-8 sm:pb-8">
+            <button
+              type="button"
+              onClick={() => handleRescheduleClick(activeBooking)}
+              disabled={!canRescheduleBooking(activeBooking)}
+            className="inline-flex h-14 w-full items-center justify-center gap-2 rounded-[20px] bg-[#ff6200] text-[15px] font-black text-white shadow-[0_16px_34px_rgba(255,98,0,0.24)] transition hover:bg-[#f25c00] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 max-[639px]:h-11 max-[639px]:rounded-[16px] max-[639px]:gap-1.5 max-[639px]:text-[12px]"
+            >
+              <CalendarDays className="h-5 w-5" />
+              Перенести запис
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setCancelConfirmId(activeBooking.id)}
+              disabled={!canRescheduleBooking(activeBooking)}
+              className="inline-flex h-14 w-full items-center justify-center gap-2 rounded-[20px] border border-[#ef4444]/55 bg-white text-[15px] font-black text-[#ef4444] transition hover:bg-[#fff1f1] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 max-[639px]:h-11 max-[639px]:rounded-[16px] max-[639px]:gap-1.5 max-[639px]:text-[12px]"
+            >
+              <XCircle className="h-5 w-5" />
+              Скасувати запис
+            </button>
           </div>
         </div>
       </div>

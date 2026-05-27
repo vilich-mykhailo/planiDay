@@ -38,7 +38,7 @@ export default function AnimatedField({
     filled && "opacity-0",
   )}
 >
-  {label}
+  {label || placeholder}
 </label>
 
 <span

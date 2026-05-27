@@ -31,6 +31,8 @@ import {
   X,
   Settings2,
   LayoutGrid,
+  Home,
+  ChevronRight,
 } from "lucide-react";
 import { api } from "../api/http";
 import { useStudio } from "../context/studio/useStudio";
@@ -197,6 +199,12 @@ export default function Header() {
   const [nowTs, setNowTs] = useState(() => Date.now());
   const isLogin = location.pathname === "/login";
   const isOwnerLogin = location.pathname === "/login-owner";
+  const hideHeader =
+  location.pathname === "/login" ||
+  location.pathname === "/login-owner" ||
+  location.pathname === "/register" ||
+  location.pathname === "/register-owner" ||
+  location.pathname === "/forgot-password";
   const role = useRole();
   const { bookings = [] } = useBookings();
 const [unreadNotifications, setUnreadNotifications] = useState(0);
@@ -449,28 +457,28 @@ const newBookingsCount = useMemo(() => {
       return {
         title: "Меню",
         subtitle: "КАБІНЕТ КЛІЄНТА",
-        links: [
-          {
-            to: "/",
-            label: "Пошук",
-            icon: <Search className="h-5 w-5" />,
-          },
-          {
-            to: "/bookings",
-            label: "Записи",
-            icon: <CalendarDays className="h-5 w-5" />,
-          },
-          {
-            to: "/favourites",
-            label: "Улюблені",
-            icon: <Heart className="h-5 w-5" />,
-          },
-          {
-            to: "/profile",
-            label: "Профіль",
-            icon: <User className="h-5 w-5" />,
-          },
-        ],
+links: [
+  {
+    to: "/",
+    label: "Головна",
+    icon: <Home className="h-6 w-6" />,
+  },
+  {
+    to: "/profile",
+    label: "Профіль",
+    icon: <User className="h-6 w-6" />,
+  },
+  {
+    to: "/bookings",
+    label: "Записи",
+    icon: <CalendarDays className="h-6 w-6" />,
+  },
+  {
+    to: "/favourites",
+    label: "Улюблені",
+    icon: <Heart className="h-6 w-6" />,
+  },
+],
         logout: true,
       };
     }
@@ -562,13 +570,13 @@ const staticRoutes = [
 
   const isStudioPublicPage = !staticRoutes.includes(location.pathname);
 
-  if (isStudioPublicPage) return null;
+  if (isStudioPublicPage || hideHeader) return null;
 
   return (
     <>
 <header className="fixed left-0 right-0 top-3 z-[60]">
   <div className="mx-auto max-w-[1260px] px-4 max-[639px]:px-5 sm:px-6 lg:px-10">
-    <div className="flex h-[58px] items-center justify-between rounded-[28px] border border-[#eadfce] bg-white/82 px-3 shadow-[0_14px_34px_rgba(15,23,42,0.06)] backdrop-blur-2xl sm:h-[64px] sm:px-4 lg:h-[66px]">
+    <div className="flex h-[58px] items-center justify-between rounded-[20px] border border-[#eadfce] bg-white/82 px-3 shadow-[0_14px_34px_rgba(15,23,42,0.06)] backdrop-blur-2xl sm:h-[64px] sm:px-4 lg:h-[66px]">
       <Link
         to="/"
         className="flex min-w-0 items-center gap-2 rounded-2xl px-1.5 py-1 transition active:scale-[0.98]"
@@ -596,14 +604,14 @@ const staticRoutes = [
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="grid h-12 w-12 place-items-center rounded-[18px] border border-[#eadfce] bg-white text-[#111111] shadow-[0_10px_28px_rgba(15,23,42,0.06)] transition hover:border-[#f1dfbf] hover:text-[#ff6200] hover:ring-4 hover:ring-orange-200/20 active:scale-95 lg:hidden"
+        className="grid h-12 w-12 translate-x-[5px] place-items-center rounded-[18px] border border-[#eadfce] bg-white text-[#111111] shadow-[0_10px_28px_rgba(15,23,42,0.06)] transition hover:border-[#f1dfbf] hover:text-[#ff6200] hover:ring-4 hover:ring-orange-200/20 active:scale-95 lg:hidden"
         aria-label="Menu"
         aria-expanded={open}
       >
         {open ? (
           <X className="h-6 w-6" />
         ) : (
-          <LayoutGrid className="h-6 w-6" />
+         <LayoutGrid className=" h-6 w-6" />
         )}
       </button>
     </div>
@@ -628,128 +636,53 @@ const staticRoutes = [
 
 <aside
   className={cx(
-    "absolute right-0 top-0 h-dvh w-[76%] max-w-[360px] overflow-hidden bg-[#fbfaf8] shadow-[0_24px_80px_rgba(0,0,0,0.22)] transition-transform duration-300 ease-out",
-    open ? "translate-x-0" : "translate-x-full",
+    "absolute right-3 top-[calc(env(safe-area-inset-top)+76px)] w-[235px] overflow-hidden rounded-[20px] border border-white/70 bg-white/95 p-2 shadow-[0_16px_40px_rgba(15,23,42,0.14)] backdrop-blur-3xl transition-all duration-250",
+    open
+      ? "translate-y-0 scale-100 opacity-100"
+      : "-translate-y-2 scale-95 opacity-0 pointer-events-none",
   )}
 >
-  <div className="flex h-full flex-col">
-    {/* TOP */}
-    <div className="border-b border-[#eee8df] px-5 pb-5 pt-[calc(env(safe-area-inset-top)+18px)]">
-      <div className="mb-5 flex items-center justify-between">
-        <Link
-          to="/"
-          onClick={() => setOpen(false)}
-          className="flex items-center gap-3"
-        >
-          <span className="grid h-11 w-11 place-items-center rounded-full bg-[#202020] text-sm font-black text-white">
-            P
-          </span>
-
-          <span className="text-[18px] font-black tracking-[-0.05em] text-[#202020]">
-            Plani<span className="text-[#ff6200]">Day</span>
-          </span>
-        </Link>
-
-        <button
-          type="button"
-          onClick={() => setOpen(false)}
-          className="grid h-12 w-12 place-items-center rounded-[18px] border border-[#eadfce] bg-white text-[#111111] shadow-[0_10px_28px_rgba(15,23,42,0.06)] transition hover:border-[#f1dfbf] hover:text-[#ff6200] hover:ring-4 hover:ring-orange-200/20 active:scale-95 lg:hidden"
-          aria-label="Закрити меню"
-        >
-          <X className="h-5 w-5" />
-        </button>
-      </div>
-
-      <div className="flex items-center gap-3 rounded-[28px] bg-[#f4f0ea] p-3">
-        <div className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-[18px] bg-white">
-          {showOwnerIdentity && studioLogo ? (
-            <img src={studioLogo} className="h-full w-full object-cover" />
-          ) : role === "client" && clientPhoto ? (
-            <img src={clientPhoto} className="h-full w-full object-cover" />
-          ) : (
-            <span className="text-lg font-black text-[#ff6200]">
-              P
+  <nav className="space-y-[2px]">
+    {mobileItems.links.map((i) => (
+      <NavLink
+        key={i.to}
+        to={i.to}
+        end={i.to === "/"}
+        onClick={() => {
+          setOpen(false);
+        }}
+        className={({ isActive }) =>
+          cx(
+            "flex h-[50px] items-center gap-3 rounded-[16px] px-3 transition-all duration-200",
+            isActive
+              ? "bg-[#fff4ec] text-[#ff6200]"
+              : "text-[#151515] active:bg-[#f5f3f0]",
+          )
+        }
+      >
+        {({ isActive }) => (
+          <>
+            <span
+              className={cx(
+                "grid h-8 w-8 shrink-0 place-items-center",
+                isActive ? "text-[#ff6200]" : "text-[#93919d]",
+              )}
+            >
+              {i.icon}
             </span>
-          )}
-        </div>
 
-        <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#9b948d]">
-            {mobileItems.subtitle}
-          </p>
+            <span className="flex-1 truncate text-[15px] font-bold">
+              {i.label}
+            </span>
 
-          <h2 className="mt-1 truncate text-[18px] font-black leading-tight text-[#202020]">
-            {showOwnerIdentity && studioName
-              ? studioName
-              : role === "client" && clientFullName
-              ? clientFullName
-              : "PlaniDay"}
-          </h2>
-        </div>
-      </div>
-    </div>
-
-    {/* LINKS */}
-    <div className="flex-1 overflow-y-auto px-4 py-5">
-      <nav className="space-y-3">
-        {mobileItems.links.map((i) => (
-          <NavLink
-            key={i.to}
-            to={i.to}
-            end={i.to === "/dashboard"}
-            onClick={() => {
-              i.onClick?.();
-              setOpen(false);
-            }}
-            className={({ isActive }) =>
-              cx(
-                "group flex min-h-[68px] items-center gap-4 rounded-[26px] px-4 py-2 text-[17px] font-black transition-all duration-200",
-                isActive
-                  ? "bg-[#fff1e8] text-[#202020]"
-                  : "text-[#202020] hover:bg-[#f5f1ec]",
-              )
-            }
-          >
-            {({ isActive }) => (
-              <>
-                <span
-                  className={cx(
-                    "grid h-12 w-12 shrink-0 place-items-center rounded-[18px] transition",
-                    isActive
-                      ? "bg-transparent text-[#ff6200]"
-                      : "bg-[#f5f2ed] text-[#202020]",
-                  )}
-                >
-                  {i.icon}
-                </span>
-
-                <span className="min-w-0 flex-1 truncate">
-                  {i.label}
-                </span>
-              </>
+            {!isActive && (
+              <ChevronRight className="h-4 w-4 shrink-0 text-[#b0afb7]" />
             )}
-          </NavLink>
-        ))}
-      </nav>
-    </div>
-
-    {/* BOTTOM */}
-    <div className="border-t border-[#eee8df] bg-[#fbfaf8] p-4 pb-[calc(env(safe-area-inset-bottom)+16px)]">
-      {mobileItems.logout ? (
-        <button
-          type="button"
-          onClick={() => {
-            handleLogout();
-            setOpen(false);
-          }}
-          className="flex h-14 w-full items-center justify-center gap-2 rounded-[24px] bg-[#f4f0ea] px-4 text-[16px] font-black text-[#202020] transition active:scale-[0.98]"
-        >
-          <LogOut className="h-4 w-4 text-[#ff6200]" />
-          Вийти
-        </button>
-      ) : null}
-    </div>
-  </div>
+          </>
+        )}
+      </NavLink>
+    ))}
+  </nav>
 </aside>
         </div>
       )}

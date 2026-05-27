@@ -867,121 +867,82 @@ const personalDataRef = useRef(null);
   </div>
 </section>
       {/* HERO */}
-<section className="relative mb-5 overflow-hidden rounded-[26px] border border-[#eadfce] bg-[#f3eee7] px-4 py-5 shadow-[0_14px_36px_rgba(15,23,42,0.06)] sm:rounded-[34px] sm:px-8 sm:py-9 lg:px-10">
-  <div className="relative z-10 grid gap-5 lg:grid-cols-[1fr_280px] lg:items-center">
-    <div className="flex items-center gap-4 text-left sm:gap-5">
+{/* PROFILE CARD */}
+<section className="relative mb-5 overflow-hidden rounded-[26px] border border-[#eadfce] bg-[#f3eee7] px-4 py-4 shadow-[0_14px_36px_rgba(15,23,42,0.06)] sm:rounded-[34px] sm:px-8 sm:py-9 lg:px-10">
+  <div className="grid gap-4 sm:grid-cols-[1fr_240px] sm:items-center">
+    <div className="flex items-center gap-4">
       <div className="relative shrink-0">
         <button
           type="button"
           onClick={() => fileRef.current?.click()}
           disabled={saving}
-          className="group relative grid h-[120px] w-[120px] place-items-center overflow-hidden rounded-full border-4 border-white bg-white text-3xl font-black shadow-[0_18px_44px_rgba(255,98,0,0.18)] transition active:scale-[0.98] sm:h-[142px] sm:w-[142px]"
+          className="group relative grid h-[92px] w-[92px] place-items-center overflow-hidden rounded-full border-[3px] border-white bg-white text-2xl font-black shadow-[0_16px_34px_rgba(255,98,0,0.14)] transition active:scale-[0.98] sm:h-[142px] sm:w-[142px]"
         >
           {photoSrc ? (
-            <img
-              src={photoSrc}
-              alt="avatar"
-              className="h-full w-full object-cover"
-            />
+            <img src={photoSrc} alt="avatar" className="h-full w-full object-cover" />
           ) : (
             initials
           )}
 
           <span className="absolute inset-0 grid place-items-center bg-black/40 text-white opacity-0 transition group-hover:opacity-100">
-            <Camera className="h-6 w-6" />
+            <Camera className="h-5 w-5" />
           </span>
         </button>
 
-<span
-  className="
-    absolute left-1/2 bottom-[-10px] z-20
-    inline-flex -translate-x-1/2 items-center gap-[3px]
-
-    h-6 px-2
-    sm:h-8 sm:px-3
-
-    rounded-full border-[2.5px] border-white
-    bg-white
-
-    text-[9px] font-black uppercase tracking-[0.04em]
-    text-[#ff6200]
-
-    shadow-[0_8px_20px_rgba(255,98,0,0.08)]
-    whitespace-nowrap
-  "
->
-  <BadgeCheck className="h-3 w-3 sm:h-4 sm:w-4" />
-  Pro
-</span>
+        <span className="absolute bottom-[-8px] left-1/2 z-20 inline-flex h-6 -translate-x-1/2 items-center gap-1 rounded-full border-[2px] border-white bg-white px-2 text-[9px] font-black uppercase tracking-[0.04em] text-[#ff6200] shadow-[0_8px_18px_rgba(255,98,0,0.08)]">
+          <BadgeCheck className="h-3 w-3" />
+          Pro
+        </span>
       </div>
 
       <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-[20px] font-black leading-[0.9] tracking-[-0.06em] text-[#202020] sm:text-[30px] md:text-[38px] lg:text-[40px]">
-            {fullName || "Ваш профіль"}
-          </h1>
+        <h2 className="max-w-[170px] text-[24px] font-black leading-[1.02] tracking-[-0.06em] text-[#202020] sm:max-w-none sm:text-[38px]">
+          {fullName || "Ваш профіль"}
+        </h2>
 
-        </div>
-
-        <div className="mt-3 space-y-2 text-[12px] font-semibold text-[#77716b] sm:mt-4 sm:text-sm">
+        <div className="mt-2 space-y-1.5 text-[12px] font-semibold text-[#77716b] sm:text-sm">
           <div className="flex items-center gap-2">
-            <Mail className="h-4 w-4 shrink-0" />
-            <span className="truncate">
-              {profile.email || "Email не вказано"}
-            </span>
+            <Mail className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">{profile.email || "Email не вказано"}</span>
           </div>
 
           <div className="flex items-center gap-2">
-            <Phone className="h-4 w-4 shrink-0" />
-            <span>{profile.phone || "Телефон не вказано"}</span>
+            <Phone className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">{profile.phone || "Телефон не вказано"}</span>
           </div>
 
           <div className="flex items-center gap-2">
-            <MapPin className="h-4 w-4 shrink-0" />
-            <span>Україна, Київ</span>
+            <MapPin className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">Україна, Київ</span>
           </div>
         </div>
-
-<button
-  type="button"
-  onClick={() => {
-    personalDataRef.current?.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
-  }}
-  className="mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-[18px] border border-[#eadfce] bg-white px-4 text-[12px] font-black text-[#77716b] shadow-[0_10px_28px_rgba(15,23,42,0.05)] transition hover:border-[#f1dfbf] hover:text-[#ff6200] active:scale-[0.98] sm:hidden"
->
-          <Edit3 className="h-4 w-4" />
-          Редагувати профіль
-        </button>
       </div>
     </div>
 
-    <div className="rounded-[24px] border border-[#ffe2cf] bg-white/80 px-5 py-4 shadow-[0_14px_34px_rgba(255,98,0,0.08)] backdrop-blur-sm">
-      <div className="flex items-center gap-3">
-        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-[16px] bg-[#fff1e8] text-[#ff6200]">
-          <Shield className="h-5 w-5" />
-        </div>
-
-        <div className="min-w-0">
-          <div className="text-[26px] font-black leading-none tracking-[-0.05em] text-[#202020]">
-            {profileCompletion}%
-          </div>
-
-          <p className="mt-1 text-[12px] font-semibold leading-5 text-[#8a847d]">
-            Заповнення профілю
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-4 h-2 overflow-hidden rounded-full bg-[#eee8df]">
-        <div
-          className="h-full rounded-full bg-[#ff6200]"
-          style={{ width: `${profileCompletion}%` }}
-        />
-      </div>
+<div className="hidden lg:block rounded-[18px] bg-white/90 px-3 py-2.5 shadow-[0_10px_24px_rgba(255,98,0,0.06)] backdrop-blur-sm">
+  <div className="flex items-center gap-2.5">
+    <div className="grid h-9 w-9 shrink-0 place-items-center rounded-[12px] bg-[#fff1e8] text-[#ff6200]">
+      <Shield className="h-4 w-4" />
     </div>
+
+    <div>
+      <div className="text-[20px] font-black leading-none tracking-[-0.05em] text-[#202020]">
+        {profileCompletion}%
+      </div>
+
+      <p className="mt-[2px] text-[10px] font-bold leading-[1.1] text-[#8a847d]">
+        Профіль заповнений
+      </p>
+    </div>
+  </div>
+
+  <div className="mt-2 h-[5px] overflow-hidden rounded-full bg-[#eee8df]">
+    <div
+      className="h-full rounded-full bg-[#ff6200]"
+      style={{ width: `${profileCompletion}%` }}
+    />
+  </div>
+</div>
   </div>
 </section>
 
@@ -999,7 +960,7 @@ const personalDataRef = useRef(null);
     <h2 className="mt-2 text-[36px] font-black leading-[0.92] tracking-[-0.06em] text-[#202020]">
       Статус {" "}
       <span className="text-[#ff6200]">
-        Pro 
+        Pro
       </span>
     </h2>
 
@@ -1085,11 +1046,26 @@ const personalDataRef = useRef(null);
   ref={personalDataRef}
  className="overflow-hidden rounded-[30px] border border-[#eadfce] bg-white shadow-[0_14px_36px_rgba(15,23,42,0.06)]"
 >
-          <div className="border-b border-[#eee8df] px-5 py-5 sm:px-7">
-            <h3 className="text-2xl font-black tracking-[-0.05em]">
-              Особисті дані
-            </h3>
-          </div>
+<div className="flex items-center justify-between gap-3 border-b border-[#eee8df] px-5 py-4 sm:px-7">
+<h3 className="text-[24px] font-black tracking-[-0.05em] text-[#202020]">
+  Особисті дані
+</h3>
+
+<div className="flex items-center gap-2 rounded-full bg-[#f8f5f1] px-2.5 py-1.5 lg:hidden">
+  <div className="flex items-center gap-2">
+    <span className="text-[14px] font-black leading-none tracking-[-0.04em] text-[#202020]">
+      {profileCompletion}%
+    </span>
+
+    <div className="h-[4px] w-[52px] overflow-hidden rounded-full bg-[#e9e2d8]">
+      <div
+        className="h-full rounded-full bg-[#ff6200]"
+        style={{ width: `${profileCompletion}%` }}
+      />
+    </div>
+  </div>
+</div>
+</div>
 
           <div>
             {[

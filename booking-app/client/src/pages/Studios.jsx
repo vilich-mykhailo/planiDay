@@ -612,7 +612,6 @@ export default function Studios() {
       .map((r) => ({
         value: r,
         label: r,
-        meta: "Область",
       }));
   }, [studios]);
 
@@ -807,7 +806,7 @@ const heroImageClass =
             />
           </div>
 
-          <div className="relative z-10 max-w-[720px] mt-18">
+          <div className="relative z-10 mt-8 max-w-[720px] sm:mt-12 lg:mt-16">
 <h1 className="max-w-[360px] text-[44px] font-black leading-[1.02] tracking-[-0.06em] text-[#202020] max-[639px]:max-w-[260px] max-[639px]:text-[38px] max-[639px]:leading-[0.98] sm:max-w-[520px] sm:text-[46px] sm:leading-[0.98] md:text-[52px] lg:max-w-[720px] lg:text-[54px]">
   <span className="block">Обирай та</span>
 
@@ -819,13 +818,14 @@ const heroImageClass =
     онлайн
   </span>
 </h1>
-         <p className="mb-14 mt-3 max-w-[250px] text-[13px] font-medium leading-5 text-[#7a7d87] max-[639px]:mb-7 max-[639px]:mt-2.5 max-[639px]:max-w-[210px] max-[639px]:text-[12px] max-[639px]:leading-4 sm:mt-3 sm:max-w-[360px] sm:text-[13px] sm:leading-5 md:max-w-[420px] md:text-[14px]">
-              Пошук послуг і закладів у твоєму місті
-            </p>
+<p className="mb-14 mt-3 max-w-[250px] text-[13px] font-medium leading-5 text-[#7a7d87] max-[639px]:mb-7 max-[639px]:mt-2.5 max-[639px]:max-w-[210px] max-[639px]:text-[12px] max-[639px]:leading-4 sm:mt-3 sm:max-w-[360px] sm:text-[13px] sm:leading-5 md:max-w-[420px] md:text-[14px]">
+  Пошук послуг і закладів <br className="sm:hidden" />
+  у твоєму місті
+</p>
           </div>
         </section>
 
-        <section className="relative z-20 mt-10 sm:mt-8">
+        <section className="relative mt-10 sm:mt-8">
 <div className="flex h-[56px] items-center rounded-[30px] border border-[#eadfce] bg-white pl-5 pr-3 shadow-[0_10px_30px_rgba(15,23,42,0.04)] transition-all duration-200 hover:border-[#f1dfbf] hover:ring-4 hover:ring-orange-200/20 sm:max-w-[450px] md:max-w-[500px] lg:max-w-[660px]">
   <Search className="h-5 w-5 shrink-0 text-[#8b8794] sm:h-6 sm:w-6" />
 
@@ -874,7 +874,6 @@ className={cn(
   options={cities.map((c) => ({
     value: c,
     label: c,
-    meta: "Місто",
   }))}
   regionOptions={regions}
   districtOptions={districts}
