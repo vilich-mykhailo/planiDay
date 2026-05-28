@@ -1,8 +1,7 @@
-// Notifications.jsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { socket } from "../../lib/socket";
-import { Bell, Sparkles, Check, CalendarDays, ChevronUp, ChevronDown } from "lucide-react";
+import { Bell, Sparkles, Check } from "lucide-react";
 import { api } from "../../api/http";
 
 function cn(...classes) {
@@ -37,13 +36,29 @@ function SectionCard({ title, subtitle, actions, children, className = "" }) {
   return (
     <section
       className={cn(
-        "group relative overflow-hidden rounded-3xl border border-[var(--color-cream)] bg-white shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-soft-hover)] transition-all duration-300",
+        "group relative overflow-hidden rounded-[28px] border border-[#eadbc9] bg-white shadow-[0_18px_50px_rgba(17,17,17,0.06)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_24px_70px_rgba(17,17,17,0.09)]",
         className,
       )}
     >
-      <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[var(--color-forest)] via-[var(--color-caramel)] to-[var(--color-ink)] opacity-70" />
+      <div className="absolute inset-x-0 top-0 h-[3px] bg-[#ff5a00]" />
 
+      <div className="border-b border-[#eadbc9] px-5 py-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="text-[26px] font-black tracking-tight text-[#202020]">
+              {title}
+            </h2>
 
+            {subtitle && (
+              <p className="text-sm font-medium text-[#77716b]">
+                {subtitle}
+              </p>
+            )}
+          </div>
+
+          {actions && <div className="flex shrink-0 items-center">{actions}</div>}
+        </div>
+      </div>
 
       <div className="p-5">{children}</div>
     </section>
@@ -52,13 +67,13 @@ function SectionCard({ title, subtitle, actions, children, className = "" }) {
 
 function SkeletonBlock({ className = "" }) {
   return (
-    <div className={cn("animate-pulse rounded-2xl bg-[var(--color-cream)]", className)} />
+    <div className={cn("animate-pulse rounded-2xl bg-[#f2eee8]", className)} />
   );
 }
 
 function NotificationCardSkeleton() {
   return (
-    <div className="rounded-[28px] border border-[var(--color-cream)] bg-white p-4 shadow-[0_10px_30px_rgba(27,27,27,0.06)]">
+    <div className="rounded-[28px] border border-[#eadbc9] bg-white p-4 shadow-[0_12px_32px_rgba(17,17,17,0.05)]">
       <div className="min-w-0">
         <div className="flex items-center justify-between gap-3">
           <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
@@ -85,177 +100,94 @@ function NotificationCardSkeleton() {
 }
 
 function NotificationCard({ item, onRead }) {
-    const isReschedule = item.oldDate || item.newDate;
-  const [expanded, setExpanded] = useState(!item.isRead);
+  const isReschedule = item.oldDate || item.newDate;
 
   return (
-<div
-  onClick={() => {
-    if (isReschedule) {
-      setExpanded((prev) => !prev);
-    }
-  }}
-  className={cn(
-    "group relative overflow-hidden rounded-[30px] border bg-white p-4 transition-all duration-200 sm:p-5",
-    isReschedule && "cursor-pointer",
+    <div
+      className={cn(
+        "relative overflow-hidden rounded-[28px] border p-4 transition-all duration-200",
+        "hover:-translate-y-0.5 hover:border-[#ffd6bd] hover:shadow-[0_18px_44px_rgba(255,90,0,0.10)]",
         item.isRead
-          ? "border-[var(--color-cream)] shadow-sm"
-          : "border-[var(--color-sand)] shadow-[0_16px_44px_rgba(27,27,27,0.09)]",
+          ? "border-[#eadbc9] bg-white shadow-[0_8px_24px_rgba(17,17,17,0.04)]"
+          : "border-[#ffd6bd] bg-[#fffaf6] shadow-[0_16px_44px_rgba(255,90,0,0.10)]",
       )}
     >
       {!item.isRead && (
-        <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[var(--color-caramel)]" />
+        <div className="absolute inset-y-4 left-0 w-1 rounded-r-full bg-[#ff5a00]" />
       )}
 
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-<div
-  className={cn(
-    "inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.14em] transition-all duration-200",
-    
-    isReschedule
-      ? "bg-[var(--color-pending-light)] text-[var(--color-pending-dark)] border border-[var(--color-pending)]/30 shadow-[0_6px_18px_rgba(245,158,11,0.10)]"
-      : "bg-[var(--color-cream)] text-[var(--color-primary-buttom)]",
-  )}
->
-  <Bell
-    className={cn(
-      "h-3.5 w-3.5",
-      isReschedule && "text-[var(--color-pending)]",
-    )}
-  />
+      <div className="min-w-0">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <p className="text-[16px] font-black text-[#202020]">
+              {isReschedule ? "Перенесення запису" : item.title || "Повідомлення"}
+            </p>
 
-  {isReschedule ? "Перенесення" : item.title || "Повідомлення"}
-</div>
-
-          <h3 className="mt-3 text-lg font-black leading-tight text-[var(--color-ink)]">
-            {isReschedule
-              ? `${item.clientName || "Клієнт"} змінив дату запису`
-              : item.message || "Нове повідомлення"}
-          </h3>
-
-          <p className="mt-1 text-xs font-medium text-[var(--color-caramel)]">
-            {formatDateTimeUA(item.createdAt)}
-          </p>
-        </div>
-
-        {item.isRead ? (
-          <span className="shrink-0 rounded-full px-3 py-1.5 text-xs font-bold text-[var(--border-hover-primary)]">
-            Прочитано
-          </span>
-        ) : (
-          <button
-            type="button"
-            onClick={() => onRead(item.id)}
-            className={cn(
-              "shrink-0 rounded-2xl px-3 py-2 text-xs font-bold text-white active:scale-[0.98]",
-              "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
+            {!item.isRead && (
+              <span className="rounded-full border border-[#ffd6bd] bg-[#fff1e8] px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-[#ff5a00]">
+                Нове
+              </span>
             )}
-          >
-            Прочитати
-          </button>
-        )}
-      </div>
-
-{isReschedule && (
-  <>
-    <div className="mt-4 flex justify-center">
-      <button
-        type="button"
-        onClick={() => setExpanded((prev) => !prev)}
-className={cn(
-  "pointer-events-none inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-xl px-3 text-xs font-bold transition-all duration-200 active:scale-[0.98]",
-  expanded
-    ? "text-[var(--color-sidebar-accent-hover)]"
-    : `
-      text-[var(--border-hover-primary)]
-      group-hover:text-slate-700
-    `,
-)} >
-        {expanded ? (
-          <>
-            <ChevronUp className="h-4 w-4" />
-            Сховати
-          </>
-        ) : (
-          <>
-            <ChevronDown className="h-4 w-4" />
-            Розгорнути
-          </>
-        )}
-      </button>
-    </div>
-
-    <div
-      className={cn(
-        "grid transition-all duration-300 ease-out",
-        expanded ? "mt-4 grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
-      )}
-    >
-      <div className="overflow-hidden">
-        <div className="rounded-[26px] bg-[var(--color-cream)]/55 p-4">
-          <div className="mb-4 space-y-3">
-            <div className="flex items-center gap-3 rounded-[22px] bg-white p-3 shadow-sm">
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--color-cream)] text-[var(--color-primary-buttom)]">
-                <Bell className="h-4.5 w-4.5" />
-              </div>
-
-              <div className="min-w-0">
-                <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--color-caramel)]">
-                  Клієнт
-                </p>
-
-                <p className="line-clamp-2 text-sm font-black leading-5 text-[var(--color-ink)]">
-                  {item.clientName || "—"}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 rounded-[22px] bg-white p-3 shadow-sm">
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--color-cream)] text-[var(--color-primary-buttom)]">
-                <CalendarDays className="h-5 w-5" />
-              </div>
-
-              <div className="min-w-0">
-                <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--color-caramel)]">
-                  Послуга
-                </p>
-
-                <p className="line-clamp-2 text-sm font-black leading-5 text-[var(--color-ink)]">
-                  {item.serviceName || "—"}
-                </p>
-              </div>
-            </div>
           </div>
 
-          <div className="relative pl-5">
-            <div className="absolute bottom-4 left-[7px] top-4 w-px bg-[var(--color-mist)]" />
-
-            <div className="relative">
-              <span className="absolute -left-5 top-1 h-3.5 w-3.5 rounded-full bg-[var(--color-canceled)] ring-4 ring-white" />
-              <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--color-canceled-dark)]">
-                Було
-              </p>
-              <p className="mt-1 rounded-2xl bg-white px-3 py-2 text-sm font-bold text-[var(--color-ink)] shadow-sm">
-                {item.oldDate || "—"}
-              </p>
-            </div>
-
-            <div className="relative mt-4">
-              <span className="absolute -left-5 top-1 h-3.5 w-3.5 rounded-full bg-[var(--color-confirmed)] ring-4 ring-white" />
-              <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--color-confirmed-dark)]">
-                Стало
-              </p>
-              <p className="mt-1 rounded-2xl bg-white px-3 py-2 text-sm font-bold text-[var(--color-ink)] shadow-sm">
-                {item.newDate || "—"}
-              </p>
-            </div>
+          <div className="flex shrink-0 items-center">
+            {item.isRead ? (
+              <span className="inline-flex items-center justify-center rounded-xl border border-[#eadbc9] bg-[#f5f1ea] px-3 py-2 text-xs font-black text-[#77716b]">
+                Прочитано
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={() => onRead(item.id)}
+                className="inline-flex items-center gap-2 rounded-xl bg-[#ff5a00] px-3 py-2 text-xs font-black text-white shadow-[0_12px_26px_rgba(255,90,0,0.24)] transition-all duration-200 hover:bg-[#ef4f00] active:scale-[0.98]"
+              >
+                <Check className="h-3.5 w-3.5" />
+                Прочитати
+              </button>
+            )}
           </div>
         </div>
+
+        {isReschedule && (
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-sm font-medium leading-6 text-[#202020]">
+            <span>Клієнт</span>
+
+            {item.clientName && (
+              <span className="rounded-xl border border-[#ffd6bd] bg-[#fff1e8] px-2.5 py-1 text-xs font-black text-[#ff5a00]">
+                {item.clientName}
+              </span>
+            )}
+
+            <span>переніс</span>
+
+            {item.serviceName && (
+              <span className="rounded-xl border border-[#eadbc9] bg-white px-2.5 py-1 text-xs font-black text-[#202020]">
+                {item.serviceName}
+              </span>
+            )}
+
+            <span>з</span>
+
+            {item.oldDate && (
+              <span className="rounded-xl border border-[#eadbc9] bg-white px-2.5 py-1 text-xs font-black text-[#77716b]">
+                {item.oldDate}
+              </span>
+            )}
+
+            <span>на</span>
+
+            {item.newDate && (
+              <span className="rounded-xl border border-[#ffd6bd] bg-[#fff1e8] px-2.5 py-1 text-xs font-black text-[#ff5a00]">
+                {item.newDate}
+              </span>
+            )}
+          </div>
+        )}
+
+        <p className="mt-3 text-xs font-semibold text-[#77716b]">
+          Створено: {formatDateTimeUA(item.createdAt)}
+        </p>
       </div>
-    </div>
-  </>
-)}
     </div>
   );
 }
@@ -264,7 +196,7 @@ export default function Notifications() {
   const queryClient = useQueryClient();
   const studioId = localStorage.getItem("studioId");
 
-  const [visibleCount, setVisibleCount] = useState(5);
+  const [visibleCount, setVisibleCount] = useState(10);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [socketState, setSocketState] = useState(
     socket.connected ? "ok" : "offline",
@@ -284,35 +216,24 @@ export default function Notifications() {
   const notifications = notificationsQuery.data || [];
   const isInitialLoading = notificationsQuery.isLoading;
 
-const liveStatusUi = useMemo(() => {
-  const base =
-    "inline-flex items-center gap-2 rounded-full border border-[var(--border-soft)] bg-white px-3 py-1.5 text-[13px] font-semibold shadow-[var(--shadow-card)]";
-
-  if (!isOnline || socketState === "offline") {
-    return {
-      text: "Немає інтернету",
-      dotClass:
-        "h-2 w-2 rounded-full bg-[var(--color-canceled)] shadow-[0_0_0_3px_var(--color-canceled-light)] animate-[pulse-soft_1.8s_ease-in-out_infinite]",
-      wrapClass: `${base} text-[var(--color-canceled-dark)]`,
-    };
-  }
-
-  if (socketState === "pending") {
-    return {
-      text: "Оновлення...",
-      dotClass:
-        "h-2 w-2 rounded-full bg-[var(--color-pending)] shadow-[0_0_0_3px_var(--color-pending-light)] animate-[pulse-soft_1.8s_ease-in-out_infinite]",
-      wrapClass: `${base} text-[var(--color-pending-dark)]`,
-    };
-  }
-
-  return {
-    text: "Оновлюється автоматично",
-    dotClass:
-      "h-2 w-2 rounded-full bg-emerald-600 shadow-[0_0_0_3px_var(--color-confirmed-light)] animate-[pulse-soft_1s_ease-in-out_infinite]",
-    wrapClass: `${base} text-emerald-600`,
-  };
-}, [isOnline, socketState]);
+  const liveStatusUi =
+    !isOnline || socketState === "offline"
+      ? {
+          text: "Немає інтернету",
+          wrapClass:
+            "border-[var(--color-danger-border)] bg-[var(--color-danger-bg)] text-[var(--color-danger)]",
+        }
+      : socketState === "pending"
+        ? {
+            text: "Оновлення...",
+            wrapClass:
+              "border-[#ffd6bd] bg-[#fff1e8] text-[#ff5a00]",
+          }
+        : {
+            text: "Оновлюється автоматично",
+            wrapClass:
+              "border-[#ffd6bd] bg-[#fff1e8] text-[#ff5a00]",
+          };
 
   const showNotificationsSkeleton =
     isInitialLoading && notifications.length === 0;
@@ -421,50 +342,70 @@ const liveStatusUi = useMemo(() => {
   };
 
   return (
-    <div className="h-full space-y-6">
-      <div className="relative overflow-hidden rounded-3xl border border-[var(--color-cream)] bg-white p-4 shadow-[var(--shadow-soft)] sm:p-6">
-        <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[var(--color-forest)] via-[var(--color-caramel)] to-[var(--color-ink)] opacity-70" />
+    <div className="min-h-screen space-y-6 bg-[#faf8f4] pb-10">
+      <div className="relative overflow-hidden rounded-[28px] border border-[#eadbc9] bg-[#f2eee8] px-6 py-8 shadow-[0_22px_70px_rgba(17,17,17,0.07)] sm:px-8 sm:py-10">
+        <div className="absolute right-5 top-1/2 hidden h-28 w-28 -translate-y-1/2 items-center justify-center rounded-[32px] bg-[#ff5a00] text-white shadow-[0_20px_45px_rgba(255,90,0,0.28)] sm:flex">
+          <Bell className="h-14 w-14" />
+        </div>
+
+        <div className="absolute -right-7 -top-10 hidden h-28 w-28 rounded-full bg-white/40 sm:block" />
+        <div className="absolute bottom-4 right-24 hidden h-5 w-5 rounded-full bg-[#ff5a00]/20 sm:block" />
 
         <div className="relative flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-<div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-slate-700 shadow-[0_4px_14px_rgba(15,23,42,0.05)]">
-  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-900 text-white">
-    <Bell className="h-3 w-3" />
-  </div>
+          <div className="max-w-2xl">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#ffd6bd] bg-white px-3 py-1.5 text-[#ff5a00] shadow-[0_8px_24px_rgba(255,90,0,0.08)]">
+              <Sparkles className="h-3.5 w-3.5" />
+              <span className="text-[11px] font-black uppercase tracking-[0.14em]">
+                Центр сповіщень
+              </span>
+            </div>
 
-  <span>Повідомлення</span>
-
-  <div className="h-1 w-1 rounded-full bg-slate-400" />
-</div>
-                         
-
-            <h1 className="text-3xl font-black tracking-tight text-[var(--color-ink)] sm:text-4xl">
-              Повідомлення
+            <h1 className="max-w-xl text-4xl font-black leading-[0.95] tracking-tight text-[#202020] sm:text-6xl">
+              Повідом<span className="text-[#ff5a00]">лення</span>
             </h1>
 
-            <p className="mt-2 max-w-xl text-sm text-[var(--color-caramel)] sm:text-base">
+            <p className="mt-3 max-w-xl text-sm font-semibold text-[#77716b] sm:text-base">
               Усі оновлення студії, перенесення записів та важливі події в одному
               місці.
             </p>
           </div>
-<div
-  className={cn(
-    "inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-[11px] font-semibold shadow-sm sm:text-xs",
-    liveStatusUi.wrapClass,
-  )}
->
-  <span
-    className={cn(
-      "h-2 w-2 rounded-full shadow-[0_0_0_3px_rgba(255,255,255,0.9)]",
-      liveStatusUi.dotClass,
-    )}
-  />
-  <span className="whitespace-nowrap">{liveStatusUi.text}</span>
-</div>
+
+          <div
+            className={cn(
+              "inline-flex w-fit items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-black shadow-sm sm:mr-32",
+              liveStatusUi.wrapClass,
+            )}
+          >
+            <span className="h-2.5 w-2.5 rounded-full bg-current opacity-80" />
+            <span className="whitespace-nowrap">{liveStatusUi.text}</span>
+          </div>
         </div>
       </div>
 
-<SectionCard>
+      <SectionCard
+        title="Список повідомлень"
+        subtitle="Останні сповіщення та службові оновлення"
+        actions={
+          notifications.some((n) => !n.isRead) ? (
+            <button
+              type="button"
+              onClick={markAllAsRead}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-[#ff5a00] px-4 text-sm font-black text-white shadow-[0_16px_34px_rgba(255,90,0,0.24)] transition-all duration-200 hover:bg-[#ef4f00] active:scale-[0.98]"
+            >
+              <Check className="h-4 w-4" />
+              Прочитати всі
+            </button>
+          ) : (
+            <button
+              type="button"
+              disabled
+              className="inline-flex h-11 cursor-not-allowed items-center justify-center rounded-2xl border border-[#eadbc9] bg-[#f5f1ea] px-4 text-sm font-black text-[#77716b]"
+            >
+              Прочитано все
+            </button>
+          )
+        }
+      >
         {showNotificationsSkeleton ? (
           <div className="space-y-3">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -472,21 +413,18 @@ const liveStatusUi = useMemo(() => {
             ))}
           </div>
         ) : notifications.length === 0 ? (
-<div className="rounded-2xl border-2 border-dashed border-[var(--color-caramel)]/40 bg-[var(--color-cream)] p-6 text-center sm:p-8">
-  <div className="mb-3 flex items-center justify-center">
-    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/70">
-      <Bell className="h-6 w-6 text-[var(--color-caramel)]" />
-    </div>
-  </div>
+          <div className="rounded-[24px] border-2 border-dashed border-[#ffd6bd] bg-[#fff7f0] p-8 text-center">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-[#ff5a00] shadow-sm">
+              <Bell className="h-6 w-6" />
+            </div>
 
-  <p className="text-sm font-medium text-[var(--color-caramel)]">
-    Нових повідомлень немає
-  </p>
-
-<p className="mt-1 text-xs text-[var(--color-caramel)]/80">
-  Щойно з’являться нові події, вони будуть доступні тут.
-</p>
-</div>
+            <p className="text-sm font-black text-[#202020]">
+              Нових повідомлень немає
+            </p>
+            <p className="mt-1 text-xs font-medium text-[#77716b]">
+              Коли з’являться нові події, вони будуть тут.
+            </p>
+          </div>
         ) : (
           <>
             <div className="space-y-3">
@@ -499,8 +437,8 @@ const liveStatusUi = useMemo(() => {
               <div className="mt-5 flex justify-center">
                 <button
                   type="button"
-                  onClick={() => setVisibleCount((prev) => prev + 5)}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-primary-buttom)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
+                  onClick={() => setVisibleCount((prev) => prev + 10)}
+                  className="inline-flex h-11 items-center justify-center rounded-2xl border border-[#eadbc9] bg-white px-5 text-sm font-black text-[#202020] shadow-sm transition-all duration-200 hover:border-[#ffd6bd] hover:bg-[#fff7f0] active:scale-[0.98]"
                 >
                   Показати ще
                 </button>

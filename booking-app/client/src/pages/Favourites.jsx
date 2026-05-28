@@ -449,7 +449,7 @@ export default function Favourites() {
           <div className="rounded-[32px] bg-white px-6 py-12 text-center shadow-[0_14px_34px_rgba(15,23,42,0.06)]">
             <Heart className="mx-auto h-12 w-12 text-[#ff6200]" />
             <h2 className="mt-4 text-xl font-black text-[#202020]">
-              Поки що немає улюблених
+              Немає улюблених студій
             </h2>
             <p className="mt-2 text-sm text-stone-500">
               Додайте студії в обране, щоб швидко знаходити їх тут.

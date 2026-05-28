@@ -18,12 +18,32 @@ import {
   ShieldCheck,
   SlidersHorizontal,
   Star,
-    ChevronLeft,
+  ChevronLeft,
   ChevronRight,
   User,
   Zap,
   X,
   Crown,
+
+  Sparkles,
+  Hand,
+  Eye,
+  BrushCleaning,
+  HandHeart,
+  Activity,
+  Gem,
+  Waves,
+  HeartPulse,
+  Smile,
+  Footprints,
+  Syringe,
+  Leaf,
+  Brain,
+  PawPrint,
+  Wallet,
+  ShoppingBag,
+  HeartHandshake,
+  Brush,
 } from "lucide-react";
 import AnimatedDropdown from "../components/AnimatedDropdown";
 import FavouriteButton from "../components/FavouriteButton";
@@ -114,28 +134,35 @@ const STOP_TOKENS = new Set(["салон", "студ", "послуг", "проц
 const CATEGORY_PILL_ICONS = {
   hair: Scissors,
   barber: Scissors,
-  beauty_salon: Heart,
-  nails: Grid2X2,
-  brows_lashes: Heart,
-  cosmetology: Heart,
-  makeup: Heart,
-  massage: User,
-  physiotherapy: User,
-  depilation: Heart,
-  tattoo_piercing: Grid2X2,
-  spa: Heart,
-  health: Heart,
+
+  beauty_salon: Sparkles,
+  nails: Hand,
+  brows_lashes: Eye,
+  cosmetology: Sparkles,
+  makeup: BrushCleaning,
+
+  massage: HandHeart,
+  physiotherapy: Activity,
+
+  depilation: Zap,
+  tattoo_piercing: Gem,
+
+  spa: Waves,
+  health: HeartPulse,
   fitness_diet: Dumbbell,
-  dentistry: Heart,
-  podiatry: User,
-  aesthetic_medicine: Heart,
-  natural_medicine: Heart,
-  psychotherapy: User,
-  pets: Heart,
-  finance: Grid2X2,
-  shopping: Home,
+  dentistry: Smile,
+  podiatry: Footprints,
+
+  aesthetic_medicine: Syringe,
+  natural_medicine: Leaf,
+  psychotherapy: Brain,
+
+  pets: PawPrint,
+  finance: Wallet,
+  shopping: ShoppingBag,
+
   auto: Car,
-  other: GraduationCap,
+  other: Grid2X2,
 };
 
 function getCategoryLabel(value) {
@@ -144,7 +171,56 @@ function getCategoryLabel(value) {
 }
 
 function getCategoryIcon(value) {
-  return CATEGORY_PILL_ICONS[safeText(value)] || Grid2X2;
+  const key = safeText(value).toLowerCase();
+
+  if (
+    key.includes("манік") ||
+    key.includes("nails")
+  ) {
+    return Hand;
+  }
+
+  if (
+    key.includes("масаж") ||
+    key.includes("massage")
+  ) {
+    return HandHeart;
+  }
+
+  if (
+    key.includes("перук") ||
+    key.includes("hair")
+  ) {
+    return Scissors;
+  }
+
+  if (
+    key.includes("барбер") ||
+    key.includes("barber")
+  ) {
+    return Scissors;
+  }
+
+  if (
+    key.includes("spa") ||
+    key.includes("wellness")
+  ) {
+    return Waves;
+  }
+
+  if (
+    key.includes("стомат")
+  ) {
+    return Smile;
+  }
+
+  if (
+    key.includes("авто")
+  ) {
+    return Car;
+  }
+
+  return CATEGORY_PILL_ICONS[key] || Grid2X2;
 }
 
 function toPublicUrl(v) {
@@ -233,12 +309,19 @@ async function fetchStudios() {
 
   const list = Array.isArray(data?.studios) ? data.studios : [];
 
-  return list.map((s) => ({
-    ...s,
-    slug: s.slug || s.id,
-    coverUrl: toPublicUrl(s.coverUrl),
-    logoUrl: toPublicUrl(s.logoUrl),
-  }));
+return list.map((s) => ({
+  ...s,
+  slug: s.slug || s.id,
+  coverUrl: toPublicUrl(s.coverUrl),
+  logoUrl: toPublicUrl(s.logoUrl),
+  schedule: s.schedule || {},
+  scheduleExceptions: Array.isArray(s.scheduleExceptions)
+    ? s.scheduleExceptions.map((item) => ({
+        ...item,
+        date: String(item?.date || "").slice(0, 10),
+      }))
+    : [],
+}));
 }
 
 function generateFakeRating(seed) {
@@ -345,6 +428,52 @@ function RatingBadge({ rating, reviewsCount }) {
   );
 }
 
+function getTodaySchedule(schedule, exceptions = []) {
+  const now = new Date();
+
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  const todayIso = `${y}-${m}-${d}`;
+
+  const exception = exceptions.find(
+    (item) => String(item.date || "").slice(0, 10) === todayIso,
+  );
+
+  if (exception) {
+    if (!exception.enabled) return null;
+
+    return {
+      enabled: true,
+      start: exception.start,
+      end: exception.end,
+    };
+  }
+
+  const map = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+  const key = map[now.getDay()];
+  const fallback = schedule?.[key];
+
+  if (!fallback?.enabled) return null;
+  return fallback;
+}
+
+function isStudioOpenNow(schedule, exceptions = []) {
+  const today = getTodaySchedule(schedule, exceptions);
+  if (!today?.enabled) return false;
+
+  const [sh, sm] = String(today.start || "00:00").split(":").map(Number);
+  const [eh, em] = String(today.end || "00:00").split(":").map(Number);
+
+  const startMin = sh * 60 + sm;
+  const endMin = eh * 60 + em;
+
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+
+  return nowMin >= startMin && nowMin < endMin;
+}
+
 function StudioCard({ studio, onOpen, mode = "carousel" }) {
   const name = safeText(studio.name) || "Студія";
   const cat = getCategoryLabel(safeText(studio.category)) || "Послуга";
@@ -352,6 +481,11 @@ function StudioCard({ studio, onOpen, mode = "carousel" }) {
   const cityLabel = safeText(studio.city);
   const coverUrl = safeText(studio.coverUrl);
   const logoUrl = safeText(studio.logoUrl);
+  const openNow = isStudioOpenNow(
+  studio?.schedule || {},
+  studio?.scheduleExceptions || [],
+);
+console.log("studio schedule:", studio.name, studio.schedule, studio.scheduleExceptions);
   const { rating, reviewsCount } = generateFakeRating(studio.id || studio.slug || name);
   const address = [studio?.street, studio?.building, studio?.apartment]
     .filter(Boolean)
@@ -428,12 +562,12 @@ isPremium
     </div>
 
     <div className="absolute bottom-3 left-3 right-3 z-10 flex items-end gap-2 sm:bottom-4 sm:left-4 sm:right-4 sm:gap-3">
-      <div className="grid h-[72px] w-[72px] shrink-0 place-items-center overflow-hidden rounded-[18px] bg-white p-2 shadow-[0_12px_28px_rgba(0,0,0,0.22)] sm:h-[58px] sm:w-[58px] sm:rounded-[15px]">
+      <div className="grid h-[72px] w-[72px] shrink-0 place-items-center overflow-hidden rounded-[18px] bg-white shadow-[0_12px_28px_rgba(0,0,0,0.22)] sm:h-[58px] sm:w-[58px] sm:rounded-[15px]">
         {logoUrl ? (
           <img
             src={logoUrl}
             alt={`${name} logo`}
-            className="h-full w-full rounded-[12px] object-contain object-center sm:rounded-[10px]"
+            className="h-full w-full object-cover object-center"
             loading="lazy"
             onError={(event) => {
               event.currentTarget.style.display = "none";
@@ -456,10 +590,23 @@ isPremium
           </p>
         ) : null}
 
-        <p className="mt-1 flex items-center gap-1 text-[10px] font-semibold text-[#13a044] sm:text-xs">
-          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#13a044] shadow-[0_0_0_3px_rgba(19,160,68,0.16)] sm:h-2 sm:w-2" />
-          Відкрито зараз
-        </p>
+<p
+  className={cn(
+    "mt-1 flex items-center gap-1 text-[10px] font-semibold sm:text-xs",
+    openNow ? "text-[#13a044]" : "text-[#ef4444]",
+  )}
+>
+  <span
+    className={cn(
+      "h-1.5 w-1.5 shrink-0 rounded-full sm:h-2 sm:w-2",
+      openNow
+        ? "bg-[#13a044] shadow-[0_0_0_3px_rgba(19,160,68,0.16)]"
+        : "bg-[#ef4444] shadow-[0_0_0_3px_rgba(239,68,68,0.16)]",
+    )}
+  />
+
+  {openNow ? "Відкрито зараз" : "Зачинено зараз"}
+</p>
       </div>
 
       <div

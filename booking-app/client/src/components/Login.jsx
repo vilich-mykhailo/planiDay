@@ -6,8 +6,11 @@ import {
   CalendarDays,
   Lock,
   Mail,
+  PhoneOff,
   ShieldCheck,
   User,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 import { api } from "../api/http";
@@ -52,7 +55,7 @@ export default function Login() {
     password: "",
   });
   const [error, setError] = useState("");
-
+const [showPassword, setShowPassword] = useState(false);
   const isOwner = role === "owner";
 
   const heroTitle = useMemo(() => {
@@ -135,16 +138,17 @@ export default function Login() {
           <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/15 to-black/65" />
 
           <div className="relative flex h-full flex-col px-12 pb-20 pt-[31%] text-white">
-            <div>
-              <p className="text-[48px] font-black leading-none tracking-[-0.065em]">
-                Plani<span className="text-[#fc511e]">Day</span>
-              </p>
-              <p className="mt-9 max-w-[275px] text-[18px] font-semibold leading-[1.6] text-white/95">
-                Онлайн-запис у вашу
-                <br />
-                улюблену студію краси
-              </p>
-            </div>
+<div className="flex flex-col items-center text-center">
+  <p className="text-[88px] font-black leading-none tracking-[-0.065em]">
+    Plani<span className="text-[#fc511e]">Day</span>
+  </p>
+
+  <p className="mt-9 max-w-[320px] text-[18px] font-semibold leading-[1.6] text-white/95">
+    Записуйся на послуги
+    <br />
+    у кілька кліків
+  </p>
+</div>
 
             <div className="mt-auto space-y-8 text-[15px] font-medium leading-6">
               <div className="flex items-start gap-5">
@@ -158,6 +162,18 @@ export default function Login() {
                   24/7 у кілька кліків
                 </p>
               </div>
+<div className="flex items-start gap-5">
+  <PhoneOff
+    className="mt-1 h-8 w-8 shrink-0 text-[#f8783b]"
+    strokeWidth={1.8}
+  />
+
+  <p>
+    Онлайн-запис без
+    <br />
+    дзвінків та очікування
+  </p>
+</div>
               <div className="flex items-start gap-5">
                 <ShieldCheck
                   className="mt-1 h-8 w-8 shrink-0 text-[#f8783b]"
@@ -242,20 +258,49 @@ export default function Login() {
                   }
                 />
 
-                <Input
-                  label="Пароль"
-                  type="password"
-                  placeholder="Введіть пароль"
-                  icon={<Lock className="h-4 w-4 sm:h-5 sm:w-5" />}
-                  value={form.password}
-                  error={!!error}
-                  onChange={(e) =>
-                    setForm((p) => ({
-                      ...p,
-                      password: e.target.value,
-                    }))
-                  }
-                />
+<label className="block">
+  <span className="mb-2 block text-[13px] font-black text-[#202020] sm:text-[14px]">
+    Пароль
+  </span>
+
+  <div
+    className={cn(
+      "flex h-12 items-center gap-2.5 rounded-[16px] border bg-white px-3.5 transition-all sm:h-14 sm:gap-3 sm:rounded-[18px] sm:px-4",
+      error
+        ? "border-[#ef4444]/40 ring-4 ring-[#ef4444]/10"
+        : "border-[#eadfce] focus-within:border-[#ff6200] focus-within:ring-4 focus-within:ring-[#ff6200]/10",
+    )}
+  >
+    <span className="text-[#8a847d]">
+      <Lock className="h-4 w-4 sm:h-5 sm:w-5" />
+    </span>
+
+    <input
+      type={showPassword ? "text" : "password"}
+      placeholder="Введіть пароль"
+      value={form.password}
+      onChange={(e) =>
+        setForm((p) => ({
+          ...p,
+          password: e.target.value,
+        }))
+      }
+      className="w-full bg-transparent text-[13px] font-bold text-[#202020] outline-none placeholder:text-[#b8afa5] sm:text-[14px]"
+    />
+
+    <button
+      type="button"
+      onClick={() => setShowPassword((p) => !p)}
+      className="text-[#8a847d] transition hover:text-[#ff6200]"
+    >
+{showPassword ? (
+  <Eye className="h-4 w-4 sm:h-5 sm:w-5" />
+) : (
+  <EyeOff className="h-4 w-4 sm:h-5 sm:w-5" />
+)}
+    </button>
+  </div>
+</label>
 
                 <div className="flex justify-end">
                   <Link

@@ -100,22 +100,17 @@ function FilterTab({ active, children, type = "default", onClick }) {
 
 function EmptyState() {
   return (
-<div className="rounded-[28px] border-2 border-dashed border-[var(--color-caramel)]/40 bg-[var(--color-cream)] p-8 text-center sm:p-10">
-  <div className="mx-auto max-w-xl">
-    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-[22px] bg-white/70">
-      <CalendarDays className="h-8 w-8 text-[var(--color-caramel)]" />
+    <div className="rounded-[32px] bg-white px-6 py-12 text-center shadow-[0_14px_34px_rgba(15,23,42,0.06)]">
+      <CalendarDays className="mx-auto h-12 w-12 text-[#ff6200]" />
+
+      <h2 className="mt-4 text-xl font-black text-[#202020]">
+        Поки що немає записів
+      </h2>
+
+      <p className="mt-2 text-sm text-stone-500">
+        Коли ви запишетесь у студію, тут зʼявляться всі ваші бронювання.
+      </p>
     </div>
-
-    <h3 className="text-xl font-black tracking-tight text-[var(--color-caramel)] sm:text-2xl">
-      Поки що немає записів
-    </h3>
-
-    <p className="mt-2 text-sm leading-6 text-[var(--color-caramel)]/80 sm:text-[15px]">
-      Коли ви запишетесь у студію, тут зʼявляться всі бронювання — майбутні,
-      минулі та скасовані.
-    </p>
-  </div>
-</div>
   );
 }
 
@@ -691,6 +686,28 @@ function openStudio(booking) {
   });
 }
 
+function handleBookAgainClick(booking) {
+  const studioPath =
+    booking?.studioSlug || booking?.studio?.slug || booking?.studioId;
+
+  if (!studioPath) {
+    alert("Не вдалося відкрити студію для повторного запису");
+    return;
+  }
+
+  setActiveBookingId(null);
+  setCopiedId(null);
+
+  navigate(`/${studioPath}`, {
+    state: {
+      openBooking: true,
+      preselectedService: booking?.serviceId
+        ? { serviceId: booking.serviceId }
+        : null,
+      preselectedMasterId: booking?.masterId || null,
+    },
+  });
+}
 
   function handleRescheduleClick(booking) {
     const studioPath =
@@ -1064,7 +1081,7 @@ return (
     const isCanceled = activeStatus === "canceled";
     const isConfirmed = activeStatus === "confirmed";
     const isCompleted = activeStatus === "completed";
-
+const showBookAgain = isCanceled || isCompleted;
 const statusMeta = {
   canceled: {
     label:
@@ -1280,27 +1297,43 @@ const statusMeta = {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 border-t border-[#eadfce] bg-[#fbfaf8] px-5 pb-[max(18px,env(safe-area-inset-bottom))] pt-4 sm:px-8 sm:pb-8">
-            <button
-              type="button"
-              onClick={() => handleRescheduleClick(activeBooking)}
-              disabled={!canRescheduleBooking(activeBooking)}
-            className="inline-flex h-14 w-full items-center justify-center gap-2 rounded-[20px] bg-[#ff6200] text-[15px] font-black text-white shadow-[0_16px_34px_rgba(255,98,0,0.24)] transition hover:bg-[#f25c00] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 max-[639px]:h-11 max-[639px]:rounded-[16px] max-[639px]:gap-1.5 max-[639px]:text-[12px]"
-            >
-              <CalendarDays className="h-5 w-5" />
-              Перенести запис
-            </button>
+<div className={cn(
+  "border-t border-[#eadfce] bg-[#fbfaf8] px-5 pb-[max(18px,env(safe-area-inset-bottom))] pt-4 sm:px-8 sm:pb-8",
+  showBookAgain ? "grid grid-cols-1" : "grid grid-cols-2 gap-3",
+)}>
+  {showBookAgain ? (
+    <button
+      type="button"
+      onClick={() => handleBookAgainClick(activeBooking)}
+      className="inline-flex h-14 w-full items-center justify-center gap-2 rounded-[20px] bg-[#ff6200] text-[15px] font-black text-white shadow-[0_16px_34px_rgba(255,98,0,0.24)] transition hover:bg-[#f25c00] active:scale-[0.98] max-[639px]:h-11 max-[639px]:rounded-[16px] max-[639px]:gap-1.5 max-[639px]:text-[12px]"
+    >
+      <RefreshCw className="h-5 w-5" />
+      Записатись ще раз
+    </button>
+  ) : (
+    <>
+      <button
+        type="button"
+        onClick={() => handleRescheduleClick(activeBooking)}
+        disabled={!canRescheduleBooking(activeBooking)}
+        className="inline-flex h-14 w-full items-center justify-center gap-2 rounded-[20px] bg-[#ff6200] text-[15px] font-black text-white shadow-[0_16px_34px_rgba(255,98,0,0.24)] transition hover:bg-[#f25c00] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 max-[639px]:h-11 max-[639px]:rounded-[16px] max-[639px]:gap-1.5 max-[639px]:text-[12px]"
+      >
+        <CalendarDays className="h-5 w-5" />
+        Перенести запис
+      </button>
 
-            <button
-              type="button"
-              onClick={() => setCancelConfirmId(activeBooking.id)}
-              disabled={!canRescheduleBooking(activeBooking)}
-              className="inline-flex h-14 w-full items-center justify-center gap-2 rounded-[20px] border border-[#ef4444]/55 bg-white text-[15px] font-black text-[#ef4444] transition hover:bg-[#fff1f1] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 max-[639px]:h-11 max-[639px]:rounded-[16px] max-[639px]:gap-1.5 max-[639px]:text-[12px]"
-            >
-              <XCircle className="h-5 w-5" />
-              Скасувати запис
-            </button>
-          </div>
+      <button
+        type="button"
+        onClick={() => setCancelConfirmId(activeBooking.id)}
+        disabled={!canRescheduleBooking(activeBooking)}
+        className="inline-flex h-14 w-full items-center justify-center gap-2 rounded-[20px] border border-[#ef4444]/55 bg-white text-[15px] font-black text-[#ef4444] transition hover:bg-[#fff1f1] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 max-[639px]:h-11 max-[639px]:rounded-[16px] max-[639px]:gap-1.5 max-[639px]:text-[12px]"
+      >
+        <XCircle className="h-5 w-5" />
+        Скасувати запис
+      </button>
+    </>
+  )}
+</div>
         </div>
       </div>
     );

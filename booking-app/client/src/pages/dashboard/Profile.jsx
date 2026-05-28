@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import profileHero from "../../assets/profileHero.png";
+import Cropper from "react-easy-crop";
 import { useNavigate } from "react-router-dom";
 import {
   AlertTriangle,
@@ -455,6 +456,15 @@ const personalDataRef = useRef(null);
   const [saving, setSaving] = useState(false);
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState("");
+  const [cropModal, setCropModal] = useState({
+  open: false,
+  imageUrl: "",
+  file: null,
+});
+
+const [crop, setCrop] = useState({ x: 0, y: 0 });
+const [zoom, setZoom] = useState(1);
+const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
   const [logoutModalOpen, setLogoutModalOpen] = useState(false);
   const [toast, setToast] = useState({
     id: 0,
@@ -469,7 +479,7 @@ const personalDataRef = useRef(null);
     title: "",
     message: "",
   });
-
+const [isProOpen, setIsProOpen] = useState(false);
   const loading = profileQuery.isLoading && !profileQuery.data;
 
   useEffect(() => {
@@ -711,72 +721,155 @@ const personalDataRef = useRef(null);
     if (!res.ok) throw new Error("Delete failed");
   }
 
-  async function onPickPhoto(file) {
-    if (!file) return;
+  async function getCroppedImage(imageSrc, cropPixels) {
+  const image = new Image();
+  image.src = imageSrc;
 
-    if (file.size > MAX_IMAGE_SIZE) {
-      setErrorModal({
-        open: true,
-        title: "Файл завеликий",
-        message: "Оберіть фото до 5 MB.",
-      });
-      return;
-    }
+  await new Promise((resolve, reject) => {
+    image.onload = resolve;
+    image.onerror = reject;
+  });
 
-    if (!file.type?.startsWith("image/")) {
-      setErrorModal({
-        open: true,
-        title: "Невірний формат",
-        message: "Оберіть файл зображення.",
-      });
-      return;
-    }
+  const canvas = document.createElement("canvas");
+  canvas.width = 900;
+  canvas.height = 900;
 
-    try {
-      setSaving(true);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas error");
 
-      const token = localStorage.getItem("token");
-      const previousPhotoKey = String(profile.photoUrl || "").trim();
-      const compressed = await compressImage(file);
+  ctx.drawImage(
+    image,
+    cropPixels.x,
+    cropPixels.y,
+    cropPixels.width,
+    cropPixels.height,
+    0,
+    0,
+    900,
+    900,
+  );
 
-      setPhotoFile(compressed);
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) {
+          reject(new Error("Crop failed"));
+          return;
+        }
 
-      const out = await uploadClientPhoto(compressed, token);
-      const nextPhotoKey = out?.key || "";
+        resolve(
+          new File([blob], "client-photo.jpg", {
+            type: "image/jpeg",
+            lastModified: Date.now(),
+          }),
+        );
+      },
+      "image/jpeg",
+      0.82,
+    );
+  });
+}
 
-      await patchProfile({
-        firstName: profile.firstName,
-        lastName: profile.lastName,
-        birthDate: profile.birthDate || null,
-        gender: profile.gender,
-        photoUrl: nextPhotoKey || null,
-      });
+async function onPickPhoto(file) {
+  if (!file) return;
 
-      setPhotoFile(null);
-      setPhotoPreviewUrl("");
-
-      showToast({
-        type: "success",
-        title: "Фото оновлено",
-        text: "Нове фото профілю збережено",
-      });
-
-      if (
-        previousPhotoKey &&
-        previousPhotoKey !== nextPhotoKey &&
-        !/^https?:\/\//i.test(previousPhotoKey)
-      ) {
-        await deleteFromR2(previousPhotoKey).catch(console.error);
-      }
-    } catch (error) {
-      console.error(error);
-      setPhotoFile(null);
-      setPhotoPreviewUrl("");
-      showSaveError(error, "Не вдалося оновити фото");
-    } finally {
-      setSaving(false);
-    }
+  if (file.size > MAX_IMAGE_SIZE) {
+    setErrorModal({
+      open: true,
+      title: "Файл завеликий",
+      message: "Оберіть фото до 5 MB.",
+    });
+    return;
   }
+
+  if (!file.type?.startsWith("image/")) {
+    setErrorModal({
+      open: true,
+      title: "Невірний формат",
+      message: "Оберіть файл зображення.",
+    });
+    return;
+  }
+
+  const imageUrl = URL.createObjectURL(file);
+
+  setCrop({ x: 0, y: 0 });
+  setZoom(1);
+  setCroppedAreaPixels(null);
+
+  setCropModal({
+    open: true,
+    imageUrl,
+    file,
+  });
+}
+
+async function confirmCrop() {
+  if (!cropModal.imageUrl || !croppedAreaPixels) return;
+
+  try {
+    setSaving(true);
+
+    const croppedFile = await getCroppedImage(
+      cropModal.imageUrl,
+      croppedAreaPixels,
+    );
+
+    const token = localStorage.getItem("token");
+    const previousPhotoKey = String(profile.photoUrl || "").trim();
+
+    setPhotoFile(croppedFile);
+
+    const out = await uploadClientPhoto(croppedFile, token);
+    const nextPhotoKey = out?.key || "";
+
+    await patchProfile({
+      firstName: profile.firstName,
+      lastName: profile.lastName,
+      birthDate: profile.birthDate || null,
+      gender: profile.gender,
+      photoUrl: nextPhotoKey || null,
+    });
+
+    setPhotoFile(null);
+    setPhotoPreviewUrl("");
+
+    if (cropModal.imageUrl) {
+      URL.revokeObjectURL(cropModal.imageUrl);
+    }
+
+    setCropModal({
+      open: false,
+      imageUrl: "",
+      file: null,
+    });
+
+    setCroppedAreaPixels(null);
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+
+    showToast({
+      type: "success",
+      title: "Фото оновлено",
+      text: "Нове фото профілю збережено",
+    });
+
+    if (
+      previousPhotoKey &&
+      previousPhotoKey !== nextPhotoKey &&
+      !/^https?:\/\//i.test(previousPhotoKey)
+    ) {
+      await deleteFromR2(previousPhotoKey).catch(console.error);
+    }
+  } catch (error) {
+    console.error(error);
+    setPhotoFile(null);
+    setPhotoPreviewUrl("");
+    showSaveError(error, "Не вдалося оновити фото");
+  } finally {
+    setSaving(false);
+  }
+}
 
   async function removePhoto() {
     const currentPhotoKey = String(profile.photoUrl || "").trim();
@@ -821,7 +914,7 @@ const personalDataRef = useRef(null);
 
 
 <section className="relative mb-5 mt-15 overflow-hidden max-[639px]:rounded-[26px] bg-[#f3eee7] px-5 py-7 sm:rounded-[34px] sm:px-8 sm:py-9 lg:px-10">
-  <div className={cn(heroImageBoxClass, "mask-hero-image")}>
+ <div className={cn(heroImageBoxClass, "mask-hero-image hidden sm:block")}>
     <img
       src={profileHero}
       alt=""
@@ -830,7 +923,9 @@ const personalDataRef = useRef(null);
     />
   </div>
 
-  <div className="relative z-10 max-w-[760px]">
+<div className="relative z-10 max-[639px]:flex max-[639px]:items-start max-[639px]:justify-between max-[639px]:gap-5">
+  
+  <div>
     <h1
       className="
         flex flex-wrap items-end gap-x-3
@@ -850,25 +945,58 @@ const personalDataRef = useRef(null);
       </span>
     </h1>
 
-<p
-  className="
-    font-medium text-[#7a7d87]
-    sm:mt-4 sm:max-w-[360px] sm:text-[14px]
-    md:max-w-[420px] md:text-[15px]
-    lg:max-w-[520px] lg:text-[16px]
-    max-[639px]:mt-3
-    max-[639px]:max-w-[220px]
-    max-[639px]:text-[11px]
-  "
->
-  Особисті дані, налаштування <br className="sm:hidden" />
-  та фото вашого акаунта
-</p>
+    <p
+      className="
+        font-medium text-[#7a7d87]
+        sm:mt-4 sm:max-w-[360px] sm:text-[14px]
+        md:max-w-[420px] md:text-[15px]
+        lg:max-w-[520px] lg:text-[16px]
+        max-[639px]:mt-3
+        max-[639px]:max-w-[220px]
+        max-[639px]:text-[11px]
+      "
+    >
+      Особисті дані, налаштування <br className="sm:hidden" />
+      та фото вашого акаунта
+    </p>
   </div>
+
+<div className="relative hidden shrink-0 max-[639px]:block">
+  <button
+    type="button"
+    onClick={() => fileRef.current?.click()}
+    disabled={saving}
+    className="
+      group relative grid h-[96px] w-[96px]
+      place-items-center overflow-hidden
+      rounded-full border-[3px] border-white
+      bg-white text-[28px] font-black text-[#202020]
+      shadow-[0_16px_34px_rgba(255,98,0,0.14)]
+      transition active:scale-[0.98]
+    "
+  >
+    {photoSrc ? (
+      <img
+        src={photoSrc}
+        alt="avatar"
+        className="h-full w-full object-cover"
+      />
+    ) : (
+      initials
+    )}
+
+    <span className="absolute inset-0 grid place-items-center bg-black/40 text-white opacity-0 transition group-hover:opacity-100">
+      <Camera className="h-5 w-5" />
+    </span>
+  </button>
+</div>
+
+</div>
+  
 </section>
       {/* HERO */}
 {/* PROFILE CARD */}
-<section className="relative mb-5 overflow-hidden rounded-[26px] border border-[#eadfce] bg-[#f3eee7] px-4 py-4 shadow-[0_14px_36px_rgba(15,23,42,0.06)] sm:rounded-[34px] sm:px-8 sm:py-9 lg:px-10">
+<section className="relative mb-5 hidden overflow-hidden rounded-[26px] border border-[#eadfce] bg-[#f3eee7] px-4 py-4 shadow-[0_14px_36px_rgba(15,23,42,0.06)] sm:block sm:rounded-[34px] sm:px-8 sm:py-9 lg:px-10">
   <div className="grid gap-4 sm:grid-cols-[1fr_240px] sm:items-center">
     <div className="flex items-center gap-4">
       <div className="relative shrink-0">
@@ -949,34 +1077,72 @@ const personalDataRef = useRef(null);
       {/* CONTENT */}
    <section className="mt-5 grid items-center gap-5 lg:grid-cols-[300px_1fr]">
         {/* SIDE MENU */}
-<aside className="relative overflow-hidden rounded-[32px] border border-[#eadfce] bg-[#f3eee7] p-5 shadow-[0_14px_36px_rgba(15,23,42,0.06)]">
+<aside className="relative overflow-hidden rounded-[28px] border border-[#eadfce] bg-[#f3eee7] p-4 shadow-[0_14px_36px_rgba(15,23,42,0.06)] sm:rounded-[32px] sm:p-5">
   <div className="absolute right-[-50px] top-[-60px] h-[220px] w-[220px] rounded-full bg-[#ff6200]/10 blur-3xl" />
 
-  <div className="relative z-10">
-<span className="inline-flex h-7 items-center gap-1 rounded-full bg-white px-2.5 text-[10px] font-black uppercase tracking-[0.05em] text-[#ff6200] shadow-[0_8px_20px_rgba(255,98,0,0.08)] sm:h-8 sm:px-3 sm:text-xs">
-  <BadgeCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-  Pro
-</span>
+  {/* MOBILE TOGGLE */}
+  <button
+    type="button"
+    onClick={() => setIsProOpen((prev) => !prev)}
+    className="
+      mb-3 hidden w-full items-center justify-between
+      rounded-[18px] bg-white px-4 py-3
+      shadow-[0_10px_24px_rgba(15,23,42,0.05)]
+      max-[639px]:flex
+    "
+  >
+    <div className="flex items-center gap-3">
+      <div className="grid h-10 w-10 place-items-center rounded-[14px] bg-[#fff1e8]">
+        <Crown className="h-5 w-5 fill-[#ff6200] text-[#ff6200]" />
+      </div>
+
+      <div className="text-left">
+        <p className="text-[13px] font-black text-[#202020]">
+          Статус Pro
+        </p>
+
+        <p className="text-[10px] font-semibold text-[#8a847d]">
+          Преміальний акаунт
+        </p>
+      </div>
+    </div>
+
+    <ChevronDown
+      className={cn(
+        "h-5 w-5 text-[#7b766f] transition duration-300",
+        isProOpen && "rotate-180",
+      )}
+    />
+  </button>
+
+  {/* CONTENT */}
+  <div
+    className={cn(
+      "relative z-10",
+      !isProOpen && "max-[639px]:hidden",
+    )}
+  >
+    <span className="inline-flex h-7 items-center gap-1 rounded-full bg-white px-2.5 text-[10px] font-black uppercase tracking-[0.05em] text-[#ff6200] shadow-[0_8px_20px_rgba(255,98,0,0.08)] sm:h-8 sm:px-3 sm:text-xs">
+      <BadgeCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+      Pro
+    </span>
+
     <h2 className="mt-2 text-[36px] font-black leading-[0.92] tracking-[-0.06em] text-[#202020]">
-      Статус {" "}
-      <span className="text-[#ff6200]">
-        Pro
-      </span>
+      Статус <span className="text-[#ff6200]">Pro</span>
     </h2>
 
-<p className="mt-1 max-w-[260px] text-[13px] font-medium leading-6 text-[#77716b]">
-  Преміальний статус клієнта.
-</p>
+    <p className="mt-1 max-w-[260px] text-[13px] font-medium leading-6 text-[#77716b]">
+      Преміальний статус клієнта.
+    </p>
 
-<div className="mt-2 flex items-start gap-3 rounded-[20px] border border-[#ffe2cf] bg-[#fff7f2] p-3">
-  <div>
-
-<p className="mt-1 text-[11px] font-medium leading-5 text-[#8a847d]">
-  Значок <span className="font-black text-[#ff6200]">Pro</span> будуть бачити усі, тому студії та майстри розуміють,
-  що це преміальний клієнт із вищим статусом та довірою на платформі.
-</p>
-  </div>
-</div>
+    <div className="mt-2 flex items-start gap-3 rounded-[20px] border border-[#ffe2cf] bg-[#fff7f2] p-3">
+      <div>
+        <p className="mt-1 text-[11px] font-medium leading-5 text-[#8a847d]">
+          Значок <span className="font-black text-[#ff6200]">Pro</span> будуть бачити усі, тому студії та майстри розуміють,
+          що це преміальний клієнт із вищим статусом та довірою на платформі.
+        </p>
+      </div>
+    </div>
 
     <div className="mt-2 rounded-[24px] bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
       <div className="flex items-center justify-between">
@@ -999,7 +1165,7 @@ const personalDataRef = useRef(null);
         </div>
       </div>
 
-      <div className="mt- space-y-3">
+      <div className="mt-3 space-y-3">
         {[
           "Більше довіри від студій",
           "Преміальний вигляд акаунта",
@@ -1034,10 +1200,8 @@ const personalDataRef = useRef(null);
       "
     >
       <Sparkles className="h-4 w-4" />
-
       Отримати статус Pro
     </button>
-
   </div>
 </aside>
 
@@ -1379,6 +1543,89 @@ const personalDataRef = useRef(null);
     </div>
   </div>
 </EditModal>
+
+{cropModal.open && (
+  <div className="fixed inset-0 z-[9999] flex items-end justify-center bg-[#202020]/45 px-3 pb-3 backdrop-blur-[6px] sm:items-center sm:p-6">
+    <div className="w-full max-w-lg overflow-hidden rounded-[30px] border border-[#f0e2d3] bg-white shadow-[0_30px_90px_rgba(15,23,42,0.24)]">
+      <div className="px-5 py-5 text-center">
+        <h3 className="text-[24px] font-black tracking-[-0.04em] text-[#202020]">
+          Обрізати фото
+        </h3>
+
+        <p className="mt-2 text-sm font-medium text-[#77716b]">
+          Виберіть область, яка буде видима у профілі клієнта.
+        </p>
+      </div>
+
+      <div className="mx-5 h-[340px] overflow-hidden rounded-[26px] bg-black">
+        <div className="relative h-full w-full">
+          <Cropper
+            image={cropModal.imageUrl}
+            crop={crop}
+            zoom={zoom}
+            aspect={1}
+            cropShape="round"
+            showGrid={false}
+            onCropChange={setCrop}
+            onZoomChange={setZoom}
+            onCropComplete={(_, croppedPixels) => {
+              setCroppedAreaPixels(croppedPixels);
+            }}
+          />
+        </div>
+      </div>
+
+      <div className="px-5 py-4">
+        <label className="mb-2 block text-sm font-black text-[#202020]">
+          Масштаб
+        </label>
+
+        <input
+          type="range"
+          min={1}
+          max={3}
+          step={0.1}
+          value={zoom}
+          onChange={(e) => setZoom(Number(e.target.value))}
+          className="w-full"
+        />
+      </div>
+
+      <div className="flex gap-2 border-t border-[#f0e7da] bg-[#fbfaf8] px-5 py-4">
+        <SecondaryButton
+          type="button"
+          className="flex-1"
+          onClick={() => {
+            if (cropModal.imageUrl) URL.revokeObjectURL(cropModal.imageUrl);
+
+            setCropModal({
+              open: false,
+              imageUrl: "",
+              file: null,
+            });
+
+            setCroppedAreaPixels(null);
+            setCrop({ x: 0, y: 0 });
+            setZoom(1);
+          }}
+        >
+          Скасувати
+        </SecondaryButton>
+
+        <PrimaryButton
+          type="button"
+          className="flex-1"
+          disabled={saving}
+          onClick={confirmCrop}
+        >
+          <Check className="h-4 w-4" />
+          Застосувати
+        </PrimaryButton>
+      </div>
+    </div>
+  </div>
+)}
+
     </main>
   );
 }

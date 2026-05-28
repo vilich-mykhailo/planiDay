@@ -80,7 +80,56 @@ export default function AnimatedDropdown({
   };
 
 function getCategoryIcon(optionValue) {
-  return CATEGORY_ICONS[String(optionValue)] || CircleEllipsis;
+  const key = String(optionValue || "").toLowerCase();
+
+  if (
+    key.includes("манік") ||
+    key.includes("nails")
+  ) {
+    return Hand;
+  }
+
+  if (
+    key.includes("масаж") ||
+    key.includes("massage")
+  ) {
+    return HeartPulse;
+  }
+
+  if (
+    key.includes("перук") ||
+    key.includes("hair")
+  ) {
+    return Scissors;
+  }
+
+  if (
+    key.includes("барбер") ||
+    key.includes("barber")
+  ) {
+    return Scissors;
+  }
+
+  if (
+    key.includes("spa") ||
+    key.includes("wellness")
+  ) {
+    return Flower2;
+  }
+
+  if (
+    key.includes("стомат")
+  ) {
+    return Stethoscope;
+  }
+
+  if (
+    key.includes("авто")
+  ) {
+    return Car;
+  }
+
+  return CATEGORY_ICONS[key] || CircleEllipsis;
 }
 
 const filled = Boolean(value);
@@ -494,7 +543,7 @@ lg:w-[860px]
                   onChange={(e) => setSearchValue(e.target.value)}
                   placeholder={
                     locationTab === "city"
-                      ? "Пошук міста..."
+                      ? "Пошук місця..."
                       : locationTab === "region"
                         ? "Пошук області..."
                         : "Пошук району..."
@@ -512,7 +561,7 @@ lg:w-[860px]
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-5 sm:gap-3">
+                <div className="grid gap-1.5 sm:grid-cols-2 sm:gap-2">
                   {filteredOptions.map((option) => {
                     const active = String(option.value) === String(value);
 
@@ -521,28 +570,30 @@ lg:w-[860px]
                         key={option.value}
                         type="button"
                         onClick={() => handleSelect(option)}
-                        className={cn(
-                          "relative flex min-h-[82px] flex-col items-center justify-center rounded-[20px] border p-3 text-center transition active:scale-[0.98]",
-                          active
-                            ? "border-[#ffb26b] bg-[#fff3e9] text-[#ff6200]"
-                            : "border-[#eee7dc] bg-white text-[#5f5a54] hover:bg-[#faf8f4]",
-                        )}
+className={cn(
+  "relative flex min-h-[46px] w-full items-center justify-between gap-3 rounded-[16px] border px-4 py-2 text-left transition active:scale-[0.98]",
+  active
+    ? "border-[#ffb26b] bg-[#fff3e9] text-[#ff6200]"
+    : "border-[#eee7dc] bg-white text-[#5f5a54] hover:bg-[#faf8f4]",
+)}
                       >
-                        <span className="block text-sm font-black leading-5">
-                          {option.label}
-                        </span>
+<div className="min-w-0">
+  <span className="block truncate text-[13px] font-black leading-4 sm:text-sm">
+    {option.label}
+  </span>
 
-                        {option.meta && (
-                          <span className="mt-1 block text-[11px] font-bold text-[#8a8580]">
-                            {option.meta}
-                          </span>
-                        )}
+  {option.meta && (
+    <span className="mt-0.5 block truncate text-[10px] font-bold text-[#8a8580]">
+      {option.meta}
+    </span>
+  )}
+</div>
 
-                        {active && (
-                          <span className="absolute right-2 top-2 grid h-5 w-5 place-items-center rounded-full bg-[#ff6200] text-white">
-                            <Check className="h-3 w-3" />
-                          </span>
-                        )}
+{active && (
+  <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[#ff6200] text-white">
+    <Check className="h-3 w-3" />
+  </span>
+)}
                       </button>
                     );
                   })}

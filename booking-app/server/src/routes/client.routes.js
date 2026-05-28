@@ -221,6 +221,25 @@ clientRouter.get("/", async (req, res) => {
         premium: true,
         createdAt: true,
         updatedAt: true,
+
+        scheduleDays: {
+          select: {
+            day: true,
+            enabled: true,
+            startMin: true,
+            endMin: true,
+          },
+        },
+
+        scheduleExceptions: {
+          select: {
+            id: true,
+            date: true,
+            enabled: true,
+            startMin: true,
+            endMin: true,
+          },
+        },
       },
       orderBy: { updatedAt: "desc" },
     });
@@ -243,6 +262,8 @@ clientRouter.get("/", async (req, res) => {
         slug: s.id,
         priceFrom: minMap.get(s.id) ?? null,
         premium: Boolean(s.premium),
+        schedule: studioScheduleToMap(s.scheduleDays || []),
+        scheduleExceptions: exceptionsToList(s.scheduleExceptions || []),
       })),
     });
   } catch (e) {
