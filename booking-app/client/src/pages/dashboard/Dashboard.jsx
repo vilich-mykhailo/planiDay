@@ -4,29 +4,28 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { socket } from "../../lib/socket";
 import { useBookings } from "../../context/bookings/useBookings";
 import {
-  LayoutDashboard,
   Building2,
   BriefcaseBusiness,
   Clock3,
   CalendarDays,
-  UserStar ,
+  UserStar,
   Users,
   LogOut,
   Sparkles,
   Bell,
   ChartColumn,
-  MonitorCog,
+  Menu,
+  ChevronDown,
 } from "lucide-react";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
 const linkClass = ({ isActive }) =>
   [
-    "group relative flex items-center gap-3 overflow-hidden rounded-[18px] border px-3 py-3 text-sm font-semibold transition-all duration-300 ease-out",
-    "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--color-sand)]/30",
-isActive
-  ? "border-transparent text-white bg-[var(--color-sidebar-accent)] hover:bg-[var(--color-sidebar-accent-hover)]"  
-    : "border-transparent text-[var(--color-caramel)] hover:bg-[var(--color-cream)]",
+    "group flex h-[52px] items-center gap-3 rounded-[16px] px-4 text-[14px] font-semibold transition-all duration-200",
+    isActive
+      ? "bg-[#fff3ed] text-[#ff4f12]"
+      : "text-[#5f6673] hover:bg-[#f8f8f8] hover:text-[#111827]",
   ].join(" ");
 
 function cn(...classes) {
@@ -36,82 +35,45 @@ function cn(...classes) {
 function SkeletonBlock({ className = "" }) {
   return (
     <div
-      className={`animate-pulse rounded-xl bg-[color:var(--color-mist)]/80 ${className}`}
+      className={cn("animate-pulse rounded-xl bg-[#ececec]", className)}
       aria-hidden="true"
     />
   );
 }
 
 function NavItemSkeleton() {
-  return <SkeletonBlock className="h-12 w-full rounded-2xl" />;
+  return <SkeletonBlock className="h-[52px] w-full rounded-[16px]" />;
 }
 
 function DashboardSkeleton() {
   return (
-    <div className="min-h-screen ">
-      <div className="mx-auto max-w-6xl px-4 pt-24 md:pt-22">
-        <div className="grid min-h-[calc(100vh-72px)] grid-cols-1 items-start gap-2 lg:grid-cols-[240px_minmax(0,1fr)] lg:items-start">
-          <aside
-            className="
-              hidden lg:block
-              relative top-auto h-fit overflow-hidden rounded-3xl border border-[var(--color-mist)] bg-white p-4
-              shadow-[var(--shadow-soft)]
-              md:sticky lg:top-[88px]
-            "
-          >
-            <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[var(--color-ink)] via-[var(--color-forest)] to-[var(--color-caramel)]" />
-
-            <div className="mb-4 border-b border-[var(--color-mist)] px-2 pb-4 pt-2 text-center">
-              <SkeletonBlock className="mx-auto h-8 w-24 rounded-full" />
-              <SkeletonBlock className="mx-auto mt-3 h-7 w-40 rounded-xl" />
-            </div>
-
-            <nav className="flex flex-col gap-2 p-1">
-              <NavItemSkeleton />
-              <NavItemSkeleton />
-              <NavItemSkeleton />
-              <NavItemSkeleton />
-              <NavItemSkeleton />
-              <NavItemSkeleton />
-
-              <div className="mt-3 border-t border-[var(--color-mist)] pt-3">
-                <SkeletonBlock className="h-12 w-full rounded-2xl" />
-              </div>
-            </nav>
-          </aside>
-
-          <section
-            className="
-              min-h-[200px] overflow-hidden rounded-3xl border border-[var(--color-mist)] bg-white p-6
-              shadow-[var(--shadow-soft)]
-            "
-          >
-            <div className="space-y-4">
-              <SkeletonBlock className="h-8 w-48 rounded-xl" />
-              <SkeletonBlock className="h-4 w-72 max-w-full" />
-              <SkeletonBlock className="h-32 w-full rounded-2xl" />
-              <SkeletonBlock className="h-32 w-full rounded-2xl" />
-            </div>
-          </section>
+    <div className="min-h-screen bg-[#fbfaf8]">
+      <aside className="fixed left-0 top-0 hidden h-screen w-[250px] border-r border-[#ececec] bg-white lg:block">
+        <div className="flex h-[88px] items-center px-8">
+          <SkeletonBlock className="h-8 w-28 rounded-xl" />
         </div>
-      </div>
-    </div>
-  );
-}
 
-// SidebarLinkIcon
-function SidebarLinkIcon({ children, isActive }) {
-  return (
-    <span
-      className={cn(
-        "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition-all duration-200",
-        isActive
-          ? "border-white/10 bg-white/10 text-white"
-          : "border-slate-200 bg-white text-slate-700 shadow-[0_2px_8px_rgba(15,23,42,0.04)]",
-      )}
-    >
-      {children}
-    </span>
+        <nav className="space-y-2 px-4">
+          <NavItemSkeleton />
+          <NavItemSkeleton />
+          <NavItemSkeleton />
+          <NavItemSkeleton />
+          <NavItemSkeleton />
+          <NavItemSkeleton />
+        </nav>
+      </aside>
+
+      <main className="min-h-screen lg:pl-[250px]">
+        <header className="h-[88px] border-b border-[#ececec] bg-white" />
+
+        <section className="px-4 py-6 sm:px-6 lg:px-10">
+          <SkeletonBlock className="h-8 w-48 rounded-xl" />
+          <SkeletonBlock className="mt-3 h-4 w-80 max-w-full" />
+          <SkeletonBlock className="mt-8 h-40 w-full rounded-[24px]" />
+          <SkeletonBlock className="mt-5 h-72 w-full rounded-[24px]" />
+        </section>
+      </main>
+    </div>
   );
 }
 
@@ -129,6 +91,7 @@ function parseTimeToHHMM(timeStr) {
 
   const hh = Math.min(23, Math.max(0, Number(m[1])));
   const mm = Math.min(59, Math.max(0, Number(m[2])));
+
   return `${pad2(hh)}:${pad2(mm)}`;
 }
 
@@ -206,9 +169,8 @@ export default function Dashboard() {
       const items = Array.isArray(data?.notifications)
         ? data.notifications
         : [];
-      const unread = items.filter((item) => !item.isRead).length;
 
-      setUnreadNotifications(unread);
+      setUnreadNotifications(items.filter((item) => !item.isRead).length);
     } catch (e) {
       console.error("Failed to load unread notifications:", e);
       setUnreadNotifications(0);
@@ -241,6 +203,7 @@ export default function Dashboard() {
 
     const handleNotificationNew = (payload) => {
       if (!payload) return;
+
       if (
         String(payload.studioId) !== String(localStorage.getItem("studioId"))
       ) {
@@ -288,240 +251,118 @@ export default function Dashboard() {
   }
 
   return (
-    <div
-      className="min-h-screen"
-      style={{
-        backgroundImage:
-          "radial-gradient(circle at top left, rgba(180,140,108,0.18), transparent 30%), radial-gradient(circle at bottom right, rgba(50,78,41,0.12), transparent 30%)",
-      }}
-    >
-      <div className="mx-auto w-full max-w-6xl px-0 pt-18 lg:px-4">
-        <div className="grid min-h-[calc(100vh-72px)] grid-cols-1 items-start gap-2 lg:grid-cols-[240px_minmax(0,1fr)] lg:items-start">
-          <aside
-            className="
-    hidden lg:block
-    relative h-fit overflow-hidden rounded-3xl
-    border border-[var(--color-mist)]
-    bg-white p-3
-    shadow-[var(--shadow-soft-hover)]
-    lg:sticky lg:top-[88px] lg:mt-4
-  "
+    <div className="min-h-screen bg-[#fbfaf8] text-[#111827]">
+      <aside className="fixed left-0 top-0 z-40 hidden h-screen w-[250px] border-r border-[#ececec] bg-white lg:flex lg:flex-col">
+        <div className="flex h-[88px] items-center justify-between px-8">
+          <button
+            type="button"
+            onClick={() => navigate("/dashboard")}
+            className="text-[25px] font-black leading-none tracking-[-0.06em] text-[#111827]"
           >
-            <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[var(--color-sidebar-accent)] via-[var(--color-sidebar-accent-hover)] to-[var(--color-sidebar-accent-soft)]" />
+            Plani<span className="text-[#ff4f12]">Day</span>
+          </button>
 
-            <div className="mb-2 border-b border-[var(--color-mist)] px-1 pb-3 pt-2 text-center">
-<div className="mb-3 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-slate-700 shadow-[0_4px_14px_rgba(15,23,42,0.05)]">
-  <div className="h-1 w-1 rounded-full bg-slate-400" />
-  <span>Особистий кабінет</span>
+          <button
+            type="button"
+            className="grid h-10 w-10 place-items-center rounded-[14px] bg-[#f8f8f8] text-[#5f6673] transition hover:bg-[#f1f1f1]"
+            aria-label="Меню"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+        </div>
 
-  <div className="h-1 w-1 rounded-full bg-slate-400" />
-</div>
+        <nav className="flex-1 space-y-1.5 px-4 pt-4">
+          <NavLink to="/dashboard" end className={linkClass}>
+            <ChartColumn className="h-5 w-5 shrink-0" />
+            <span>Головна</span>
+          </NavLink>
 
-              <h2 className="text-lg font-bold tracking-tight text-[var(--color-ink)]">
-                Панель керування
-              </h2>
+          <NavLink to="/dashboard/bookings" className={linkClass}>
+            <CalendarDays className="h-5 w-5 shrink-0" />
+            <span className="flex-1">Записи</span>
+
+            {newBookingsCount > 0 && (
+              <span className="grid h-5 min-w-5 place-items-center rounded-full bg-[#ff4f12] px-1.5 text-[10px] font-black text-white">
+                {newBookingsCount > 9 ? "9+" : newBookingsCount}
+              </span>
+            )}
+          </NavLink>
+
+          <NavLink to="/dashboard/clients" className={linkClass}>
+            <UserStar className="h-5 w-5 shrink-0" />
+            <span>Клієнти</span>
+          </NavLink>
+
+          <NavLink to="/dashboard/services" className={linkClass}>
+            <BriefcaseBusiness className="h-5 w-5 shrink-0" />
+            <span>Послуги</span>
+          </NavLink>
+
+          <NavLink to="/dashboard/masters" className={linkClass}>
+            <Users className="h-5 w-5 shrink-0" />
+            <span>Майстри</span>
+          </NavLink>
+
+          <NavLink to="/dashboard/schedule" className={linkClass}>
+            <Clock3 className="h-5 w-5 shrink-0" />
+            <span>Графік роботи</span>
+          </NavLink>
+
+          <NavLink to="/dashboard/notifications" className={linkClass}>
+            <Bell className="h-5 w-5 shrink-0" />
+            <span className="flex-1 truncate">Повідомлення</span>
+
+            {unreadNotifications > 0 && (
+              <span className="grid h-5 min-w-5 place-items-center rounded-full bg-[#ff4f12] px-1.5 text-[10px] font-black text-white">
+                {unreadNotifications > 9 ? "9+" : unreadNotifications}
+              </span>
+            )}
+          </NavLink>
+
+          <NavLink to="/dashboard/studio" className={linkClass}>
+            <Building2 className="h-5 w-5 shrink-0" />
+            <span>Налаштування</span>
+          </NavLink>
+        </nav>
+
+        <div className="px-4 pb-6">
+          <div className="rounded-[22px] border border-[#f0ebe6] bg-[#fffaf6] p-4 shadow-[0_18px_45px_rgba(15,23,42,0.04)]">
+            <div className="mb-3 grid h-11 w-11 place-items-center rounded-[16px] bg-[#fff0e6] text-[#ff4f12]">
+              <Sparkles className="h-5 w-5" />
             </div>
 
-            <nav className="flex flex-col gap-1 p-1">
-              <NavLink to="/dashboard" end className={linkClass}>
-                {({ isActive }) => (
-                  <>
-                    <span
-                      className={cn(
-                        "absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full transition-all duration-200",
-                        isActive
-  ? "bg-[var(--color-sidebar-accent-soft)]"
-  : "bg-transparent"
-                      )}
-                    />
+            <p className="text-[14px] font-black text-[#18181b]">
+              Преміум план
+            </p>
 
-                    <SidebarLinkIcon isActive={isActive}>
-                      <ChartColumn className="h-4.5 w-4.5" />
-                    </SidebarLinkIcon>
+            <p className="mt-1.5 text-[12px] font-medium leading-5 text-[#6b7280]">
+              Розширте можливості вашої студії
+            </p>
 
-                    <span>Аналітика</span>
-                  </>
-                )}
-              </NavLink>
+            <button
+              type="button"
+              className="mt-4 h-10 w-full rounded-[14px] border border-[#ff865c] bg-white text-[13px] font-bold text-[#ff4f12] transition hover:bg-[#fff3ed]"
+            >
+              Оновити план
+            </button>
+          </div>
 
-              <NavLink to="/dashboard/bookings" className={linkClass}>
-                {({ isActive }) => (
-                  <>
-                    <span
-                      className={cn(
-                        "absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full transition-all duration-200",
-                        isActive ? "bg-white" : "bg-transparent",
-                      )}
-                    />
-
-                    <SidebarLinkIcon isActive={isActive}>
-                      <CalendarDays className="h-4.5 w-4.5" />
-                    </SidebarLinkIcon>
-
-                    <span className="flex-1">Записи</span>
-
-                    {newBookingsCount > 0 && (
-                      <span
-                        className={cn(
-                          "ml-auto inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold",
-                          isActive
-                            ? "bg-[var(--color-danger)] text-white "
-                            : "bg-[var(--color-danger)] text-white ",
-                        )}
-                      >
-                        {newBookingsCount > 9 ? "9+" : newBookingsCount}
-                      </span>
-                    )}
-                  </>
-                )}
-              </NavLink>
-
-              <NavLink to="/dashboard/notifications" className={linkClass}>
-                {({ isActive }) => (
-                  <>
-                    <span
-                      className={cn(
-                        "absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full transition-all duration-200",
-                        isActive ? "bg-white" : "bg-transparent",
-                      )}
-                    />
-
-                    <SidebarLinkIcon isActive={isActive}>
-                      <Bell className="h-4.5 w-4.5" />
-                    </SidebarLinkIcon>
-                    <span className="flex-1 truncate">Повідомлення</span>
-
-                    {unreadNotifications > 0 && (
-                      <span
-                        className={cn(
-                          "ml-auto inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold",
-                          isActive
-                            ? "bg-[var(--color-danger)] text-white "
-                            : "bg-[var(--color-danger)] text-white ",
-                        )}
-                      >
-                        {unreadNotifications > 9 ? "9+" : unreadNotifications}
-                      </span>
-                    )}
-                  </>
-                )}
-              </NavLink>
-
-              <NavLink to="/dashboard/studio" className={linkClass}>
-                {({ isActive }) => (
-                  <>
-                    <span
-                      className={cn(
-                        "absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full transition-all duration-200",
-                        isActive ? "bg-white" : "bg-transparent",
-                      )}
-                    />
-
-                    <SidebarLinkIcon isActive={isActive}>
-                      <Building2 className="h-4.5 w-4.5" />
-                    </SidebarLinkIcon>
-                    <span>Профіль студії</span>
-                  </>
-                )}
-              </NavLink>
-
-              <NavLink to="/dashboard/masters" className={linkClass}>
-                {({ isActive }) => (
-                  <>
-                    <span
-                      className={cn(
-                        "absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full transition-all duration-200",
-                        isActive ? "bg-white" : "bg-transparent",
-                      )}
-                    />
-
-                    <SidebarLinkIcon isActive={isActive}>
-                      <Users className="h-4.5 w-4.5" />
-                    </SidebarLinkIcon>
-                    <span>Майстри</span>
-                  </>
-                )}
-              </NavLink>
-
-              <NavLink to="/dashboard/services" className={linkClass}>
-                {({ isActive }) => (
-                  <>
-                    <span
-                      className={cn(
-                        "absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full transition-all duration-200",
-                        isActive ? "bg-white" : "bg-transparent",
-                      )}
-                    />
-                    <span
-                      className={cn(
-                        "absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full transition-all duration-200",
-                        isActive ? "bg-white" : "bg-transparent",
-                      )}
-                    />
-
-                    <SidebarLinkIcon isActive={isActive}>
-                      <BriefcaseBusiness className="h-4.5 w-4.5" />
-                    </SidebarLinkIcon>
-                    <span>Послуги</span>
-                  </>
-                )}
-              </NavLink>
-
-              <NavLink to="/dashboard/schedule" className={linkClass}>
-                {({ isActive }) => (
-                  <>
-                    <span
-                      className={cn(
-                        "absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full transition-all duration-200",
-                        isActive ? "bg-white" : "bg-transparent",
-                      )}
-                    />
-
-                    <SidebarLinkIcon isActive={isActive}>
-                      <Clock3 className="h-4.5 w-4.5" />
-                    </SidebarLinkIcon>
-                    <span>Графік роботи</span>
-                  </>
-                )}
-              </NavLink>
-
-              <NavLink to="/dashboard/clients" className={linkClass}>
-                {({ isActive }) => (
-                  <>
-                    <span
-                      className={cn(
-                        "absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full transition-all duration-200",
-                        isActive ? "bg-white" : "bg-transparent",
-                      )}
-                    />
-
-                    <SidebarLinkIcon isActive={isActive}>
-                      <UserStar   className="h-4.5 w-4.5" />
-                    </SidebarLinkIcon>
-                    <span>База клієнтів</span>
-                  </>
-                )}
-              </NavLink>
-
-              <div className="mt-3 border-t border-[var(--color-mist)] pt-3">
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
-                >
-                  <LogOut className="h-4 w-4 text-[var(--color-danger)]" />
-                  Вихід
-                </button>
-              </div>
-            </nav>
-          </aside>
-
-          <section
-            className="self-start overflow-hidden px-3 py-2 sm:py-4 ">
-            <Outlet />
-          </section>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-[16px] text-[14px] font-bold text-[#5f6673] transition hover:bg-[#f8f8f8] active:scale-[0.98]"
+          >
+            <LogOut className="h-4 w-4" />
+            Вихід
+          </button>
         </div>
-      </div>
+      </aside>
+
+      <main className="min-h-screen lg:pl-[250px]">
+        <section className="px-4 py-6 sm:px-6 lg:px-8">
+          <Outlet />
+        </section>
+      </main>
     </div>
   );
 }

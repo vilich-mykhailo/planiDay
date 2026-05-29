@@ -1,4 +1,4 @@
-import { useEffect, useRef, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useStudio } from "../../context/studio/useStudio";
 import { Slider } from "../../components/ui/slider";
@@ -9,16 +9,12 @@ import {
   Trash2,
   Users,
   Check,
-  Scissors,
   X,
-  ArrowLeft,
   Sparkles,
   ChevronDown,
   Banknote,
-  Minus,
-  AlertTriangle,
   BriefcaseBusiness,
-  User,
+  Scissors,
 } from "lucide-react";
 
 const UNCATEGORIZED_ID = "__uncategorized__";
@@ -128,7 +124,7 @@ function MasterChip({ master, checked }) {
 
   return (
     <div className="flex min-w-0 items-center gap-3">
-      <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-full border-2 border-[var(--color-cream)] bg-[var(--color-cream)] shadow-sm">
+      <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-full border-2 border-white bg-[#fff1e8] shadow-sm">
         {avatar ? (
           <img
             src={avatar}
@@ -139,20 +135,20 @@ function MasterChip({ master, checked }) {
             }}
           />
         ) : (
-          <div className="grid h-full w-full place-items-center text-xs font-bold text-[var(--color-ink)]">
+          <div className="grid h-full w-full place-items-center text-xs font-black text-[#ff5a00]">
             {initials || "M"}
           </div>
         )}
       </div>
 
       <div className="min-w-0">
-        <p className="truncate text-sm font-semibold text-[var(--color-ink)]">
+        <p className="truncate text-sm font-black text-[#202020]">
           {name}
         </p>
         <p
           className={cn(
             "text-xs transition-colors",
-            checked ? "text-[var(--color-ink)]" : "text-[var(--color-caramel)]",
+            checked ? "text-[#202020]" : "text-[#77716b]",
           )}
         >
           {checked ? "Обрано" : "Доступний"}
@@ -165,10 +161,7 @@ function MasterChip({ master, checked }) {
 function SkeletonBlock({ className = "" }) {
   return (
     <div
-      className={cn(
-        "animate-pulse rounded-xl bg-[var(--color-cream)]",
-        className,
-      )}
+      className={cn("animate-pulse rounded-xl bg-[#f2eee8]", className)}
     />
   );
 }
@@ -187,7 +180,7 @@ function ServicesListSkeleton() {
           }}
         >
           <div className="space-y-3">
-            <div className="rounded-2xl border border-[var(--color-cream)] bg-white p-4">
+            <div className="rounded-2xl border border-[#eadbc9] bg-white p-4">
               <SkeletonBlock className="h-5 w-44" />
               <div className="mt-3 flex flex-wrap gap-3">
                 <SkeletonBlock className="h-4 w-20" />
@@ -196,7 +189,7 @@ function ServicesListSkeleton() {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-[var(--color-cream)] bg-white p-4">
+            <div className="rounded-2xl border border-[#eadbc9] bg-white p-4">
               <SkeletonBlock className="h-5 w-52" />
               <div className="mt-3 flex flex-wrap gap-3">
                 <SkeletonBlock className="h-4 w-24" />
@@ -222,31 +215,31 @@ function SectionCard({
   return (
     <section
       className={cn(
-        "group relative overflow-hidden rounded-3xl border border-[var(--color-cream)] bg-white",
-        "shadow-[0_4px_24px_-4px_rgba(27,27,27,0.10)] hover:shadow-[0_8px_32px_-4px_rgba(27,27,27,0.14)]",
+        "group relative overflow-hidden rounded-[28px] border border-[#eadbc9] bg-white",
+        "shadow-[0_18px_50px_rgba(17,17,17,0.06)] hover:-translate-y-0.5 hover:shadow-[0_24px_70px_rgba(17,17,17,0.09)]",
         "transition-all duration-300",
         className,
       )}
     >
-      <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[var(--color-forest)] via-[var(--color-forest)] to-[var(--color-ink)] opacity-70" />
+      <div className="absolute inset-x-0 top-0 h-[3px] bg-[#ff5a00]" />
 
-      <div className="border-b border-[var(--color-cream)] px-4 py-3 sm:px-5 sm:py-4">
+      <div className="border-b border-[#eadbc9] px-4 py-3 sm:px-5 sm:py-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <h2 className="line-clamp-3 text-base font-bold leading-snug tracking-tight text-[var(--color-ink)] sm:text-lg">
+            <h2 className="line-clamp-3 text-base font-black leading-snug tracking-tight text-[#202020] sm:text-lg">
               {title}
             </h2>
 
-{badge && (
-  <div className="">
-     <span className="inline-flex max-w-full items-center text-xs font-semibold text-[var(--border-hover-primary)]">
-      {badge}
-    </span>
-  </div>
-)}
+            {badge && (
+              <div className="mt-1.5">
+                <span className="inline-flex max-w-full items-center rounded-full border border-[#ffd6bd] bg-[#fff1e8] px-2.5 py-1 text-[11px] font-black text-[#ff5a00] sm:text-xs">
+                  {badge}
+                </span>
+              </div>
+            )}
 
             {subtitle && (
-              <p className="mt-2 text-sm leading-5 text-[var(--color-caramel)]">
+              <p className="mt-2 text-sm font-medium leading-5 text-[#77716b]">
                 {subtitle}
               </p>
             )}
@@ -287,17 +280,17 @@ function CustomSelect({ value, onChange, options, placeholder = "Оберіть"
         className={cn(
           "flex w-full items-center justify-between rounded-2xl border bg-white px-4 py-3 text-left text-sm font-medium transition-all outline-none",
           open
-            ? "border-[var(--color-forest)] ring-4 ring-[var(--color-forest)]/10"
-            : "border-[var(--color-cream)] hover:border-[var(--color-forest)]",
+            ? "border-[#ff5a00] ring-4 ring-[#ff5a00]/10"
+            : "border-[#eadbc9] hover:border-[#ffd6bd] hover:bg-[#fff7f0]",
         )}
       >
-        <span className="truncate text-[var(--color-ink)]">
+        <span className="truncate text-[#202020]">
           {selected?.label || placeholder}
         </span>
 
         <ChevronDown
           className={cn(
-            "h-5 w-5 flex-shrink-0 text-[var(--color-caramel)] transition-transform duration-200",
+            "h-5 w-5 flex-shrink-0 text-[#ff5a00] transition-transform duration-200",
             open && "rotate-180",
           )}
         />
@@ -312,7 +305,7 @@ function CustomSelect({ value, onChange, options, placeholder = "Оберіть"
             aria-label="Закрити список"
           />
 
-          <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-2xl border border-[var(--color-cream)] bg-white shadow-[0_20px_50px_-12px_rgba(0,0,0,0.18)]">
+          <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-2xl border border-[#eadbc9] bg-white shadow-[0_20px_50px_-12px_rgba(0,0,0,0.18)]">
             <div className="max-h-64 overflow-y-auto py-2">
               {options.map((opt) => {
                 const isActive = String(opt.value) === String(value);
@@ -328,8 +321,8 @@ function CustomSelect({ value, onChange, options, placeholder = "Оберіть"
                     className={cn(
                       "flex w-full items-center justify-between px-4 py-3 text-left text-sm transition-colors",
                       isActive
-                        ? "bg-[var(--color-cream)] text-[var(--color-ink)]"
-                        : "text-[var(--color-ink)] hover:bg-[var(--color-cream)]",
+                        ? "bg-[#fff1e8] text-[#ff5a00]"
+                        : "text-[#202020] hover:bg-[#fff7f0]",
                     )}
                   >
                     <span className="truncate">{opt.label}</span>
@@ -353,38 +346,95 @@ function Modal({
   children,
   footer,
   size = "md",
-  mobileFullscreen = false,
-  mobileBackLabel = "Назад",
 }) {
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden";
+
+      const handleEscape = (e) => {
+        if (e.key === "Escape") onClose?.();
+      };
+
+      document.addEventListener("keydown", handleEscape);
+
+      return () => {
+        document.body.style.overflow = "";
+        document.removeEventListener("keydown", handleEscape);
+      };
+    }
+
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open, onClose]);
+
   if (!open) return null;
 
+  const sizeClasses = {
+    sm: "max-w-md",
+    md: "max-w-lg",
+    lg: "max-w-2xl",
+  };
+
   return (
-    <div className="fixed inset-0 z-999 flex items-end justify-center bg-black/30 backdrop-blur-sm sm:items-center sm:p-4">
-<div
-  className={cn(
-    "relative flex w-full flex-col overflow-hidden bg-white shadow-2xl",
-    "sm:rounded-3xl sm:border sm:border-white/60",
+    <div
+       className="fixed inset-0 z-[9999] flex items-stretch justify-center bg-[#202020]/45 p-0 backdrop-blur-[6px] sm:items-center sm:p-6"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose?.();
+      }}
+    >
+      <div className="contents">
+        <div
+          className={cn(
+           "flex h-dvh w-full flex-col overflow-hidden rounded-none border-0 bg-[#f7f5f1] shadow-[0_30px_90px_rgba(15,23,42,0.24)] sm:h-auto sm:max-h-[calc(100dvh-48px)] sm:rounded-[30px] sm:border sm:border-[#f0e2d3]",
+            "animate-in fade-in-0 zoom-in-95 duration-200",
+            sizeClasses[size],
+          )}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="relative shrink-0 overflow-hidden bg-[#f3eee7] px-5 py-5 sm:px-6 sm:py-6">
+            <div className="absolute right-[-55px] top-[-70px] h-[180px] w-[180px] rounded-full bg-[#ff6200]/10 blur-3xl" />
 
-    mobileFullscreen
-      ? "h-[100dvh] max-h-[100dvh] rounded-none sm:h-auto sm:max-h-[90vh] sm:rounded-3xl"
-      : "max-h-[90vh] rounded-t-3xl",
+            <div className="relative z-10 flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-white px-3 text-[11px] font-black uppercase tracking-[0.08em] text-[#ff6200] shadow-[0_8px_20px_rgba(255,98,0,0.08)]">
+                  <Pencil className="h-3.5 w-3.5" />
+                  Редагування
+                </span>
 
-    size === "sm" && "sm:max-w-md",
-    size === "md" && "sm:max-w-xl",
-    size === "lg" && "sm:max-w-3xl",
-  )}
->
+                <h3 className="mt-3 text-[26px] font-black leading-[0.95] tracking-[-0.05em] text-[#202020] sm:text-[32px]">
+                  {title}
+                </h3>
 
-  <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6">
-    {children}
-  </div>
+                {subtitle && (
+                  <p className="mt-2 max-w-md text-sm font-medium leading-5 text-[#77716b]">
+                    {subtitle}
+                  </p>
+                )}
+              </div>
 
-  {footer && (
-    <div className="shrink-0 border-t border-[var(--border-soft)] bg-white px-4 py-3 sm:px-6 sm:py-4">
-      {footer}
-    </div>
-  )}
-</div>
+              <button
+                type="button"
+                onClick={() => onClose?.()}
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white text-[#77716b] shadow-[0_10px_24px_rgba(15,23,42,0.06)] transition hover:bg-[#fff3e9] hover:text-[#ff6200] active:scale-[0.96]"
+                aria-label="Закрити"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+
+          <div className="min-h-0 flex-1 overflow-y-auto bg-white px-5 py-5 sm:px-6">
+            {children}
+          </div>
+
+          {footer && (
+            <div className="shrink-0 border-t border-[#f0e7da] bg-[#fbfaf8] px-5 py-4 sm:px-6">
+              {footer}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -398,12 +448,12 @@ function Button({
 }) {
   const variants = {
     primary:
-      "inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-smduration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]",
+      "bg-[#ff5a00] text-white shadow-[0_16px_34px_rgba(255,90,0,0.24)] hover:bg-[#ef4f00]",
     secondary:
-      " bg-white text-[var(--color-ink)] shadow-sm hover:bg-[var(--color-cream)]",
+      "bg-white border border-[#eadbc9] text-[#202020] hover:bg-[#fff7f0] hover:border-[#ffd6bd]",
     danger:
-      "bg-white text-[var(--color-canceled)] shadow-sm hover:bg-[var(--color-cream)]",
-    ghost: "text-[var(--color-caramel)] hover:bg-[var(--color-cream)]",
+      "border border-[#ffd6bd] bg-[#fff1e8] text-[#ff5a00] hover:border-[#ff5a00] hover:bg-[#ffe5d4]",
+    ghost: "text-[#77716b] hover:bg-[#fff7f0]",
   };
 
   const sizes = {
@@ -416,7 +466,7 @@ function Button({
     <button
       type="button"
       className={cn(
-        "inline-flex items-center justify-center gap-2 font-semibold",
+        "inline-flex items-center justify-center gap-2 font-black transition-all duration-200",
         "active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50",
         variants[variant],
         sizes[size],
@@ -436,13 +486,10 @@ function IconButton({
   ...props
 }) {
   const variants = {
-    primary:
-      "inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]",
     secondary:
-      " bg-white text-[var(--color-ink)] shadow-sm hover:bg-[var(--color-cream)]",
+      "bg-white border border-[#eadbc9] text-[#77716b] hover:bg-[#fff7f0] hover:text-[#202020]",
     danger:
-      "bg-white text-[var(--color-canceled)] shadow-sm hover:bg-[var(--color-cream)]",
-    ghost: "text-[var(--color-caramel)] hover:bg-[var(--color-cream)]",
+      "bg-white border border-[var(--color-danger-border)] text-[var(--color-danger-dark)] hover:bg-[var(--color-danger)] hover:text-white",
   };
 
   return (
@@ -462,8 +509,7 @@ function IconButton({
 
 function DurationSlider({ value, onChange }) {
   const minVal = 5;
-  const sliderMax = 240; // тільки для слайдера
-  const absoluteMax = 24 * 60; // для кнопок (+ / -)
+  const maxVal = 720;
   const step = 5;
 
   const presets = [
@@ -473,47 +519,43 @@ function DurationSlider({ value, onChange }) {
     { label: "1.5 год", value: 90 },
     { label: "2 год", value: 120 },
     { label: "3 год", value: 180 },
-    { label: "4 год", value: 240 },
   ];
 
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
         <div className="relative min-w-0">
-          <div className="absolute inset-0 rounded-2xl bg-[var(--color-caramel)] opacity-20 blur-xl" />
-          <div className="relative flex h-full items-center justify-center gap-2 rounded-2xl border border-[var(--color-cream)] bg-[var(--color-cream)] px-4 py-3 sm:gap-3 sm:px-6 sm:py-3">
-            <Clock className="h-4.5 w-4.5 flex-shrink-0 text-[var(--color-ink)] sm:h-5 sm:w-5" />
-            <span className="truncate text-center text-lg font-bold text-[var(--color-ink)] sm:text-2xl">
+          <div className="absolute inset-0 rounded-2xl bg-[#ff5a00] opacity-20 blur-xl" />
+          <div className="relative flex h-full items-center justify-center gap-2 rounded-2xl border border-[#eadbc9] bg-[#fff7f0] px-4 py-3 sm:gap-3 sm:px-6 sm:py-3">
+            <Clock className="h-4.5 w-4.5 flex-shrink-0 text-[#202020] sm:h-5 sm:w-5" />
+            <span className="truncate text-center text-lg font-bold text-[#202020] sm:text-2xl">
               {formatDuration(value)}
             </span>
           </div>
         </div>
 
-        <div className="flex flex-col items-center gap-2">
-          {/* ± 5 хв */}
-          <div className="inline-flex items-center justify-center gap-2 bg-white px-2 py-1.5 sm:gap-3 sm:px-3 sm:py-2">
-            <button
-              type="button"
-              onClick={() => onChange(Math.max(minVal, value - 5))}
-              disabled={value <= minVal}
-              className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--border-soft)] bg-white text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98] disabled:opacity-40"
-            >
-              <Minus className="h-5 w-5" />
-            </button>
+        <div className="flex items-center justify-center gap-2 rounded-2xl border border-[#eadbc9] bg-white px-2.5 py-2 sm:gap-3 sm:px-3">
+          <button
+            type="button"
+            onClick={() => onChange(Math.max(minVal, value - 5))}
+            disabled={value <= minVal}
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-[#fff7f0] text-[#77716b] transition-all hover:bg-[#ffe5d4] disabled:opacity-40 sm:h-10 sm:w-10"
+          >
+            <span className="text-lg font-bold">−</span>
+          </button>
 
-            <span className="min-w-[56px] text-center text-xs font-semibold text-[var(--color-caramel)] sm:text-sm">
-              ± 5 хв
-            </span>
+          <span className="text-xs text-[#77716b] sm:text-sm">
+            ±5 хв
+          </span>
 
-            <button
-              type="button"
-              onClick={() => onChange(Math.min(absoluteMax, value + 5))}
-              disabled={value >= absoluteMax}
-              className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--border-soft)] bg-white text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98] disabled:opacity-40"
-            >
-              <Plus className="h-5 w-5" />
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => onChange(Math.min(maxVal, value + 5))}
+            disabled={value >= maxVal}
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-[#fff7f0] text-[#77716b] transition-all hover:bg-[#ffe5d4] disabled:opacity-40 sm:h-10 sm:w-10"
+          >
+            <span className="text-lg font-bold">+</span>
+          </button>
         </div>
       </div>
 
@@ -522,20 +564,20 @@ function DurationSlider({ value, onChange }) {
           value={[value]}
           onValueChange={([v]) => onChange(v)}
           min={minVal}
-          max={sliderMax}
+          max={maxVal}
           step={step}
           className="w-full"
         />
 
         <div className="mt-2 flex justify-between px-1">
-          <span className="text-[11px] text-[var(--color-caramel)] sm:text-xs">
+          <span className="text-[11px] text-[#77716b] sm:text-xs">
             5 хв
           </span>
-          <span className="text-[11px] text-[var(--color-caramel)] sm:text-xs">
-            2 год
+          <span className="text-[11px] text-[#77716b] sm:text-xs">
+            6 год
           </span>
-          <span className="text-[11px] text-[var(--color-caramel)] sm:text-xs">
-            4 год
+          <span className="text-[11px] text-[#77716b] sm:text-xs">
+            12 год
           </span>
         </div>
       </div>
@@ -547,26 +589,17 @@ function DurationSlider({ value, onChange }) {
             type="button"
             onClick={() => onChange(preset.value)}
             className={cn(
-              [180, 240].includes(preset.value)
-                ? "hidden sm:inline-flex"
-                : "inline-flex",
-              "items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] px-2 py-2 text-sm font-bold shadow-sm transition-all duration-200 active:scale-[0.98]",
-
+              preset.value === 180 ? "hidden sm:inline-flex" : "inline-flex",
+              "items-center justify-center rounded-xl px-3 py-2 text-xs font-medium sm:px-4 sm:text-sm",
               value === preset.value
-                ? "border-transparent bg-[var(--color-ink)] text-white"
-                : "bg-white text-[var(--color-ink)] hover:bg-[var(--color-cream)]",
+                ? "bg-[#ff5a00] text-white shadow-md"
+                : "bg-[#fff7f0] text-[#77716b] hover:bg-[#ffe5d4]",
             )}
           >
             {preset.label}
           </button>
         ))}
       </div>
-      <p className="mt-2 text-center text-xs text-[var(--color-caramel)]/80 sm:text-sm">
-        Тривалість послуги більша ніж 4 год? <br />
-        Натискай{" "}
-        <span className="font-semibold text-[var(--color-ink)]">+ 5хв</span>,
-        щоб збільшити тривалість
-      </p>
     </div>
   );
 }
@@ -583,7 +616,7 @@ function CategoryFilters({ value, onChange, categories }) {
 
   return (
     <div className="mb-6">
-      <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:justify-center sm:overflow-visible sm:px-0">
+      <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
         {items.map((item) => {
           const active = String(value) === String(item.id);
 
@@ -593,10 +626,10 @@ function CategoryFilters({ value, onChange, categories }) {
               type="button"
               onClick={() => onChange(item.id)}
               className={cn(
-                "inline-flex h-9 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-2xl border border-[var(--border-soft)] px-4 text-sm font-bold shadow-sm transition-all duration-200 active:scale-[0.98]",
+                "shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold border",
                 active
-                  ? "bg-[var(--color-primary-buttom)] text-white hover:bg-[var(--color-primary-buttom)]"
-                  : "bg-white text-[var(--color-ink)] hover:bg-[var(--color-cream)]",
+                  ? "border-transparent bg-[#ff5a00] text-white shadow-md"
+                  : "border-[#eadbc9] bg-white text-[#77716b] hover:border-[#ff5a00] hover:bg-[#fff7f0]",
               )}
             >
               {item.label}
@@ -612,7 +645,7 @@ export default function Services() {
   const { studio } = useStudio();
   const queryClient = useQueryClient();
   const studioId = studio?.id ?? null;
-  const mastersRef = useRef(null);
+
   const servicesQuery = useQuery({
     queryKey: ["services", studioId],
     queryFn: () => fetchServicesData(studioId),
@@ -629,8 +662,7 @@ export default function Services() {
     refetchOnWindowFocus: false,
   });
 
-  const serviceCategories =
-    servicesQuery.data?.serviceCategories ?? EMPTY_ARRAY;
+  const serviceCategories = servicesQuery.data?.serviceCategories ?? EMPTY_ARRAY;
   const uncategorizedServices =
     servicesQuery.data?.uncategorizedServices ?? EMPTY_ARRAY;
   const masters = mastersQuery.data ?? EMPTY_ARRAY;
@@ -653,12 +685,7 @@ export default function Services() {
 
   const servicesLoading = servicesQuery.isLoading && !servicesQuery.data;
   const mastersLoading = mastersQuery.isLoading && !mastersQuery.data;
-const [deleteConfirm, setDeleteConfirm] = useState({
-  open: false,
-  type: null,
-  catId: null,
-  serviceId: null,
-});
+
   const [categoryModal, setCategoryModal] = useState({
     open: false,
     catId: null,
@@ -792,27 +819,23 @@ const [deleteConfirm, setDeleteConfirm] = useState({
     }
   }
 
-async function deleteCategory(catId) {
-  if (catId === UNCATEGORIZED_ID || !studio?.id) return;
+  async function deleteCategory(catId) {
+    if (catId === UNCATEGORIZED_ID || !studio?.id) return;
 
-  try {
-    const token = localStorage.getItem("token");
+    try {
+      const token = localStorage.getItem("token");
 
-    await api(`/media/studio/${studio.id}/categories/${catId}`, {
-      method: "DELETE",
-      token,
-    });
+      await api(`/media/studio/${studio.id}/categories/${catId}`, {
+        method: "DELETE",
+        token,
+      });
 
-    await refreshServices();
-
-    if (String(activeCategoryFilter) === String(catId)) {
-      setActiveCategoryFilter("all");
+      await refreshServices();
+    } catch (e) {
+      console.error(e);
+      alert(e.message || "Не вдалося видалити категорію");
     }
-  } catch (e) {
-    console.error(e);
-    alert(e.message || "Не вдалося видалити категорію");
   }
-}
 
   function openAddService(catId) {
     setServiceModal({ open: true, mode: "add", catId, serviceId: null });
@@ -928,10 +951,7 @@ async function deleteCategory(catId) {
     }
   }
 
-  const totalServices = blocks.reduce(
-    (acc, b) => acc + (b.services?.length || 0),
-    0,
-  );
+  const totalServices = blocks.reduce((acc, b) => acc + (b.services?.length || 0), 0);
   const showTips = totalServices === 0;
   const isModalOpen = categoryModal.open || serviceModal.open;
 
@@ -943,28 +963,30 @@ async function deleteCategory(catId) {
   }, [blocks, activeCategoryFilter]);
 
   return (
-    <div className="min-h-screen ">
-      <div className="mx-auto max-w-5xl">
+    <div className="min-h-screen bg-[#faf8f4] pb-10">
+      <div className="mx-auto max-w-6xl px-4 py-4 sm:px-6 lg:px-8">
         {!isModalOpen && (
-          <div className="relative mb-6 overflow-hidden rounded-3xl border border-[var(--color-cream)] bg-white p-5 shadow-[0_4px_24px_-4px_rgba(27,27,27,0.10)] sm:p-6">
-            <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[var(--color-forest)] via-[var(--color-forest)] to-[var(--color-ink)] opacity-70" />
+          <div className="relative mb-6 overflow-hidden rounded-[28px] border border-[#eadbc9] bg-[#f2eee8] px-6 py-8 shadow-[0_22px_70px_rgba(17,17,17,0.07)] sm:px-8 sm:py-10">
+            <div className="absolute right-5 top-1/2 hidden h-28 w-28 -translate-y-1/2 items-center justify-center rounded-[32px] bg-[#ff5a00] text-white shadow-[0_20px_45px_rgba(255,90,0,0.28)] sm:flex">
+              <BriefcaseBusiness className="h-14 w-14" />
+            </div>
 
-            <div className="relative">
-<div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-slate-700 shadow-[0_4px_14px_rgba(15,23,42,0.05)]">
-  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-900 text-white">
-    <BriefcaseBusiness className="h-3 w-3" />
-  </div>
+            <div className="absolute -right-7 -top-10 hidden h-28 w-28 rounded-full bg-white/40 sm:block" />
+            <div className="absolute bottom-4 right-24 hidden h-5 w-5 rounded-full bg-[#ff5a00]/20 sm:block" />
 
-  <span>Послуги</span>
+            <div className="relative max-w-2xl">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#ffd6bd] bg-white px-3 py-1.5 text-[#ff5a00] shadow-[0_8px_24px_rgba(255,90,0,0.08)]">
+                <Sparkles className="h-3.5 w-3.5" />
+                <span className="text-[11px] font-black uppercase tracking-[0.14em]">
+                  Меню студії
+                </span>
+              </div>
 
-  <div className="h-1 w-1 rounded-full bg-slate-400" />
-</div>
-
-              <h1 className="text-3xl font-black tracking-tight text-[var(--color-ink)] sm:text-4xl">
-                Послуги
+              <h1 className="max-w-xl text-4xl font-black leading-[0.95] tracking-tight text-[#202020] sm:text-6xl">
+                Пос<span className="text-[#ff5a00]">луги</span>
               </h1>
 
-              <p className="mt-2 max-w-xl text-sm text-[var(--color-caramel)] sm:text-base">
+              <p className="mt-3 max-w-xl text-sm font-semibold text-[#77716b] sm:text-base">
                 Налаштуйте категорії та послуги — саме так їх бачитимуть клієнти
                 під час онлайн-запису.
               </p>
@@ -972,50 +994,25 @@ async function deleteCategory(catId) {
           </div>
         )}
 
-<SectionCard
-  className="mb-6"
-  title={
-    <div className="flex items-center gap-3">
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-primary-buttom)] text-white shadow-sm">
-        <Sparkles className="h-5 w-5" />
-      </div>
-
-      <div className="min-w-0">
-        <h2 className="text-lg font-black tracking-[-0.03em] text-[var(--color-ink)]">
-          Нова категорія
-        </h2>
-
-        <p className="mt-1 text-sm font-medium text-[var(--color-caramel)]">
-          Згрупуйте схожі послуги (наприклад: Вії, Нігті, Брови)
-        </p>
-      </div>
-    </div>
-  }
->
+        <SectionCard
+          title="Нова категорія"
+          subtitle="Згрупуйте схожі послуги (наприклад: Вії, Нігті, Брови)"
+          className="mb-6"
+        >
           <div className="flex flex-col gap-2.5 sm:flex-row">
             <input
               value={newCategoryName}
               onChange={(e) => setNewCategoryName(e.target.value)}
               placeholder="Введіть назву категорії..."
-              className="flex-1 rounded-xl border border-[var(--color-cream)] bg-white px-3.5 py-2.5 text-sm font-medium text-[var(--color-ink)] outline-none transition-all placeholder:text-[var(--color-caramel)] focus:border-[var(--color-forest)] focus:ring-4 focus:ring-[var(--color-forest)]/10 sm:rounded-2xl sm:px-4 sm:py-3"
+              className="flex-1 rounded-xl border border-[#eadbc9] bg-white px-3.5 py-2.5 text-sm font-semibold text-[#202020] outline-none transition-all placeholder:text-[#9b948c] hover:border-[#ffd6bd] hover:bg-[#fff7f0] focus:border-[#ff5a00] focus:ring-4 focus:ring-[#ff5a00]/10 sm:rounded-2xl sm:px-4 sm:py-3"
               onKeyDown={(e) => e.key === "Enter" && addCategory()}
             />
 
             <Button
+              variant="primary"
               onClick={addCategory}
               disabled={!newCategoryName.trim() || !studio?.id}
-              className={cn(
-                "whitespace-nowrap inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] active:scale-[0.98] hover:bg-[var(--color-cream)]",
-
-                // 👉 active (CTA стиль через nude-green)
-                newCategoryName.trim() &&
-                  studio?.id &&
-                  "border-transparent text-white bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))] hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]",
-
-                // 👉 disabled
-                (!newCategoryName.trim() || !studio?.id) &&
-                  "cursor-not-allowed opacity-50 hover:bg-white",
-              )}
+              className="whitespace-nowrap"
             >
               <Plus className="h-4 w-4" />
               Додати категорію
@@ -1047,18 +1044,9 @@ async function deleteCategory(catId) {
                       desktop: (
                         <>
                           <Button
+                            variant="primary"
                             size="md"
                             onClick={() => openAddService(cat.id)}
-                            className={cn(
-                              "cursor-pointer inline-flex items-center justify-center gap-2 rounded-2xl font-semibold text-white",
-                              "transition-all duration-200 active:scale-[0.98]",
-
-                              // 👉 gradient через nude-green
-                              "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
-
-                              // 👉 hover
-                              "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]",
-                            )}
                           >
                             <Plus className="h-4 w-4" />
                             Додати послугу
@@ -1076,14 +1064,7 @@ async function deleteCategory(catId) {
 
                               <IconButton
                                 variant="danger"
-                                onClick={() =>
-  setDeleteConfirm({
-    open: true,
-    type: "category",
-    catId: cat.id,
-    serviceId: null,
-  })
-}
+                                onClick={() => deleteCategory(cat.id)}
                                 title="Видалити"
                                 className="h-[42px] w-[42px] shrink-0"
                               >
@@ -1103,62 +1084,42 @@ async function deleteCategory(catId) {
                             <Pencil className="h-4 w-4" />
                           </IconButton>
 
-<IconButton
-  variant="danger"
-  onClick={() =>
-    setDeleteConfirm({
-      open: true,
-      type: "category",
-      catId: cat.id,
-      serviceId: null,
-    })
-  }
-  title="Видалити"
-  className="h-[42px] w-[42px] shrink-0"
->
-  <Trash2 className="h-4 w-4" />
-</IconButton>
+                          <IconButton
+                            variant="danger"
+                            onClick={() => deleteCategory(cat.id)}
+                            title="Видалити"
+                            className="h-[42px] w-[42px] shrink-0"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </IconButton>
                         </>
                       ) : null,
                       mobileBottom: (
-<Button
-  size="md"
-  onClick={() => openAddService(cat.id)}
-  className={cn(
-    "w-full h-11 inline-flex items-center justify-center gap-2 rounded-2xl font-semibold text-white",
-    "transition-all duration-200 active:scale-[0.98]",
-
-    // 👉 nude-green
-    "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
-
-    // 👉 hover
-    "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]"
-  )}
->
-  <Plus className="h-4 w-4" />
-  Додати послугу
-</Button>
+                        <Button
+                          variant="primary"
+                          size="md"
+                          onClick={() => openAddService(cat.id)}
+                          className="w-full"
+                        >
+                          <Plus className="h-4 w-4" />
+                          Додати послугу
+                        </Button>
                       ),
                     }}
                   >
                     {servicesCount === 0 ? (
-                      <div className="rounded-2xl border-2 border-dashed border-[var(--color-caramel)]/40 bg-[var(--color-cream)] p-6 text-center sm:p-8">
+                      <div className="rounded-[24px] border-2 border-dashed border-[#ffd6bd] bg-[#fff7f0] p-6 text-center sm:p-8">
                         <div className="mb-3 flex items-center justify-center">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/70">
-                            <Scissors className="h-7 w-7 text-[var(--color-caramel)]" />
+                          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-[#ff5a00] shadow-sm">
+                            <Scissors className="h-6 w-6" />
                           </div>
                         </div>
 
-                        <p className="text-sm font-medium text-[var(--color-caramel)]">
+                        <p className="text-sm font-black text-[#202020]">
                           Тут ще немає послуг
                         </p>
-
-                        <p className="mt-1 text-xs text-[var(--color-caramel)]/80">
-                          Натисніть{" "}
-                          <span className="font-semibold">
-                            «Додати послугу»
-                          </span>
-                         
+                        <p className="mt-1 text-xs font-medium text-[#77716b]">
+                          Натисніть "Додати послугу" щоб створити
                         </p>
                       </div>
                     ) : (
@@ -1166,63 +1127,49 @@ async function deleteCategory(catId) {
                         {cat.services.map((srv) => (
                           <div
                             key={srv.id}
-                            className="group/service rounded-2xl border border-[var(--color-cream)] bg-white p-3.5 transition-all  hover:shadow-md hover:shadow-black/5 sm:p-4"
+                            className="group/service rounded-[24px] border border-[#eadbc9] bg-white p-3.5 shadow-[0_8px_24px_rgba(17,17,17,0.04)] transition-all hover:-translate-y-0.5 hover:border-[#ffd6bd] hover:shadow-[0_18px_44px_rgba(255,90,0,0.10)] sm:p-4"
                           >
                             <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0 flex-1">
-                                <h3 className="line-clamp-2 break-words text-sm font-semibold text-[var(--color-ink)] sm:text-base">
+                                <h3 className="line-clamp-2 break-words text-sm font-black text-[#202020] sm:text-base">
                                   {srv.name}
                                 </h3>
 
-<div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--color-caramel)] sm:text-sm">
-  <span className="inline-flex items-center gap-1">
-    <Clock className="h-3.5 w-3.5" />
-    {formatDuration(srv.duration)}
-  </span>
+                                <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium text-[#77716b] sm:text-sm">
+                                  <span className="inline-flex items-center gap-1">
+                                    <Clock className="h-3.5 w-3.5" />
+                                    {formatDuration(srv.duration)}
+                                  </span>
 
-  <span className="inline-flex items-center gap-1  text-[var(--color-ink)]">
-    <Banknote className="h-3.5 w-3.5" />
-    {srv.price} грн
-  </span>
+                                  <span className="inline-flex items-center gap-1 font-black text-[#202020]">
+                                    <Banknote className="h-3.5 w-3.5" />
+                                    {srv.price} грн
+                                  </span>
 
-  <span className="inline-flex w-full items-center gap-1">
-{srv.allMasters || (srv.masters?.length || 0) !== 1 ? (
-  <Users className="h-3.5 w-3.5" />
-) : (
-  <User className="h-3.5 w-3.5" />
-)}
-
-{resolveServiceMastersText(srv)}
-  </span>
-</div>
+                                  <span className="inline-flex items-center gap-1">
+                                    <Users className="h-3.5 w-3.5" />
+                                    {resolveServiceMastersText(srv)}
+                                  </span>
+                                </div>
                               </div>
 
                               <div className="flex shrink-0 items-center gap-2">
                                 <IconButton
-                                  onClick={() =>
-                                    openEditService(cat.id, srv.id)
-                                  }
+                                  onClick={() => openEditService(cat.id, srv.id)}
                                   title="Редагувати"
                                   className="h-11 w-11"
                                 >
                                   <Pencil className="h-4 w-4" />
                                 </IconButton>
 
-<IconButton
-  variant="danger"
-  onClick={() =>
-    setDeleteConfirm({
-      open: true,
-      type: "service",
-      catId: cat.id,
-      serviceId: srv.id,
-    })
-  }
-  title="Видалити"
-  className="h-11 w-11"
->
-  <Trash2 className="h-4 w-4" />
-</IconButton>
+                                <IconButton
+                                  variant="danger"
+                                  onClick={() => deleteService(cat.id, srv.id)}
+                                  title="Видалити"
+                                  className="h-11 w-11"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </IconButton>
                               </div>
                             </div>
                           </div>
@@ -1237,236 +1184,44 @@ async function deleteCategory(catId) {
         </div>
 
         {showTips && (
-          <div className="mt-8 rounded-3xl border border-[var(--color-sand)] bg-[var(--color-cream)] p-6">
-            <div className="mb-3 flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/70">
-                <Sparkles className="h-4 w-4 text-[var(--color-caramel)]" />
-              </div>
+          <div className="mt-8 rounded-[28px] border border-[#ffd6bd] bg-[#fff1e8] p-6">
+            <h2 className="mb-3 flex items-center gap-2 text-lg font-black text-[#202020]">
+              <Sparkles className="h-5 w-5 text-[#ff5a00]" />
+              Як організувати послуги
+            </h2>
 
-              <h2 className="text-sm font-bold text-[var(--color-caramel)]">
-                Як організувати послуги
-              </h2>
-            </div>
-
-            <ul className="space-y-2 text-sm text-[var(--color-caramel)] leading-relaxed">
+            <ul className="space-y-2 text-sm font-medium leading-relaxed text-[#77716b]">
               <li>
-                Створіть <span className="font-semibold">категорії</span> для
-                групування схожих послуг
+                • Створіть <strong>категорії</strong> для групування схожих
+                послуг
               </li>
-              <li>Наприклад: «Вії», «Брови», «Манікюр»</li>
-              <li>Послуги без категорії відображаються окремим блоком</li>
+              <li>• Наприклад: "Вії", "Брови", "Манікюр"</li>
+              <li>• Послуги без категорії відображаються окремим блоком</li>
             </ul>
           </div>
         )}
       </div>
-<Modal
-  open={deleteConfirm.open}
-  onClose={() =>
-    setDeleteConfirm({
-      open: false,
-      type: null,
-      catId: null,
-      serviceId: null,
-    })
-  }
-  size="sm"
-  footer={
-    <div className="flex justify-end gap-2">
-      <Button
-        variant="secondary"
-        onClick={() =>
-          setDeleteConfirm({
-            open: false,
-            type: null,
-            catId: null,
-            serviceId: null,
-          })
-        }
-        className="w-full sm:w-auto"
-      >
-        Назад
-      </Button>
 
-      <button
-        type="button"
-        onClick={async () => {
-          try {
-            if (deleteConfirm.type === "category") {
-              await deleteCategory(deleteConfirm.catId);
-            }
-
-            if (deleteConfirm.type === "service") {
-              await deleteService(deleteConfirm.catId, deleteConfirm.serviceId);
-            }
-
-            setDeleteConfirm({
-              open: false,
-              type: null,
-              catId: null,
-              serviceId: null,
-            });
-          } catch (e) {
-            alert(e.message || "Не вдалося видалити");
-          }
-        }}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-danger)] px-4 py-2.5 text-sm font-bold text-white transition-all duration-200 hover:bg-[var(--color-danger-dark)] active:scale-[0.98] sm:w-auto"
-      >
-        <Trash2 className="h-4 w-4" />
-        Так, видалити
-      </button>
-    </div>
-  }
->
-  <div className="space-y-4">
-    <div className="flex justify-center">
-      <div className="relative">
-        <div className="absolute inset-0 rounded-full bg-[var(--color-danger-bg)]/90 blur-2xl" />
-
-        <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--color-danger)] text-white shadow-[0_16px_36px_rgba(213,92,82,0.24)]">
-          <Trash2 className="h-7 w-7" />
-        </div>
-      </div>
-    </div>
-
-    <div className="text-center">
-      <h3 className="text-xl font-black tracking-tight text-[var(--color-ink)]">
-        {deleteConfirm.type === "category"
-          ? "Видалити категорію?"
-          : "Видалити послугу?"}
-      </h3>
-
-      <p className="mt-2 text-sm leading-6 text-[var(--color-caramel)]">
-        {deleteConfirm.type === "category"
-          ? "Категорія буде видалена зі списку послуг студії."
-          : "Послуга буде видалена зі списку та більше не відображатиметься клієнтам."}
-      </p>
-    </div>
-
-    <div className="rounded-2xl bg-[var(--color-danger-bg)] p-3.5">
-      <div className="flex items-start gap-3">
-        <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-[var(--color-danger-dark)] shadow-sm">
-          <AlertTriangle className="h-4.5 w-4.5" />
-        </div>
-
-        <div className="min-w-0">
-          <p className="text-sm font-bold text-[var(--color-danger-dark)]">
-            Увага
-          </p>
-
-          <p className="mt-1 text-xs leading-5 text-[var(--color-ink)]">
-            Видалені дані не можна буде повернути назад.
-          </p>
-        </div>
-      </div>
-    </div>
-  </div>
-</Modal>
-<Modal
-  open={categoryModal.open}
-  onClose={() => setCategoryModal({ open: false, catId: null })}
-  title=""
-  subtitle=""
-  size="sm"
-  footer={
-    <div className="flex w-full items-center justify-end gap-2">
-      <Button
-        onClick={() => setCategoryModal({ open: false, catId: null })}
-        className="h-11 flex-1 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98] sm:flex-none"
-      >
-        Скасувати
-      </Button>
-
-      <Button
-        onClick={saveCategoryName}
-        disabled={!categoryDraftName.trim()}
-        className={cn(
-          "inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold text-white transition-all duration-200 active:scale-[0.98] sm:flex-none",
-          "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
-          "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]",
-          !categoryDraftName.trim() &&
-            "cursor-not-allowed bg-[var(--color-cream)] text-[var(--color-caramel)] hover:from-[var(--color-cream)] hover:to-[var(--color-cream)]"
-        )}
-      >
-        <Check className="h-4 w-4" />
-        Зберегти
-      </Button>
-    </div>
-  }
->
-  <button
-    type="button"
-    onClick={() => setCategoryModal({ open: false, catId: null })}
-    className="absolute left-4 top-4 z-30 inline-flex items-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white/90 px-3 py-2 text-sm font-bold text-[var(--color-ink)] shadow-sm backdrop-blur transition-all hover:bg-[var(--color-cream)] active:scale-[0.98]"
-  >
-    <ArrowLeft className="h-4 w-4" />
-    Назад
-  </button>
-
-  <div className="space-y-5 pt-10">
-    <div className="flex justify-center">
-      <div className="relative">
-        <div className="absolute inset-0 rounded-full bg-[var(--color-forest)]/60 blur-2xl" />
-        <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--color-primary-buttom)] text-white shadow-sm">
-          <Pencil className="h-6 w-6" />
-        </div>
-      </div>
-    </div>
-
-    <div className="text-center">
-      <h3 className="text-xl font-black tracking-tight text-[var(--color-ink)]">
-        Редагування категорії
-      </h3>
-
-      <p className="mt-2 text-sm text-[var(--color-caramel)]">
-        Введіть нову назву категорії
-      </p>
-    </div>
-
-    <div>
-      <label className="mb-2 block text-sm font-medium text-[var(--color-ink)]">
-        Назва категорії
-      </label>
-
-      <input
-        value={categoryDraftName}
-        onChange={(e) => setCategoryDraftName(e.target.value)}
-        className="w-full rounded-2xl border border-[var(--color-cream)] px-4 py-3 text-sm font-medium text-[var(--color-ink)] outline-none transition-all placeholder:text-[var(--color-caramel)] focus:border-[var(--color-forest)] focus:ring-4 focus:ring-[var(--color-forest)]/10"
-        placeholder="Введіть назву..."
-      />
-    </div>
-  </div>
-</Modal>
-
-<Modal
-  open={serviceModal.open}
-  onClose={closeServiceModal}
-  title=""
-  subtitle=""
-  size="lg"
-  mobileFullscreen
-  mobileBackLabel="Назад"
-  footer={
-          <div className="flex w-full items-center justify-end gap-2">
+      <Modal
+        open={categoryModal.open}
+        onClose={() => setCategoryModal({ open: false, catId: null })}
+        title="Редагування категорії"
+        size="sm"
+        footer={
+          <div className="flex w-full flex-row gap-2 sm:justify-end">
             <Button
-              onClick={closeServiceModal}
-              className="flex-1 sm:flex-none rounded-2xl h-11 border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
+              variant="secondary"
+              onClick={() => setCategoryModal({ open: false, catId: null })}
+              className="flex-1 sm:flex-none"
             >
               Скасувати
             </Button>
 
             <Button
-              onClick={saveService}
-              disabled={!canSaveServiceDraft(serviceDraft)}
-              className={cn(
-                "inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold text-white transition-all duration-200 active:scale-[0.98] sm:flex-none",
-
-                "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
-
-                "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]",
-
-                !canSaveServiceDraft(serviceDraft) &&
-                  "cursor-not-allowed bg-[var(--color-cream)] text-[var(--color-caramel)] hover:from-[var(--color-cream)] hover:to-[var(--color-cream)]",
-              )}
+              variant="primary"
+              onClick={saveCategoryName}
+              disabled={!categoryDraftName.trim()}
+              className="flex-1 sm:flex-none"
             >
               <Check className="h-4 w-4" />
               Зберегти
@@ -1474,43 +1229,54 @@ async function deleteCategory(catId) {
           </div>
         }
       >
-        <button
-  type="button"
-  onClick={closeServiceModal}
-  className="absolute left-4 top-4 z-30 inline-flex items-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white/90 px-3 py-2 text-sm font-bold text-[var(--color-ink)] shadow-sm backdrop-blur transition-all hover:bg-[var(--color-cream)] active:scale-[0.98]"
->
-  <ArrowLeft className="h-4 w-4" />
-  Назад
-</button>
-        <div className="space-y-6">
-  <div className="space-y-4 pt-2">
-    <div className="flex justify-center">
-      <div className="relative">
-        <div className="absolute inset-0 rounded-full bg-[var(--color-forest)]/60 blur-2xl" />
-        <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--color-primary-buttom)] text-white shadow-sm">
-          <Scissors className="h-7 w-7" />
+        <div>
+          <label className="mb-2 block text-sm font-medium text-[#202020]">
+            Назва категорії
+          </label>
+
+          <input
+            value={categoryDraftName}
+            onChange={(e) => setCategoryDraftName(e.target.value)}
+            className="w-full rounded-xl border border-[#eadbc9] px-3 py-2.5 text-sm font-medium text-[#202020] outline-none transition-all placeholder:text-[#77716b] focus:border-[#ff5a00] focus:ring-4 focus:ring-[#ff5a00]/10"
+            placeholder="Введіть назву..."
+          />
         </div>
-      </div>
-    </div>
+      </Modal>
 
-    <div className="text-center">
-      <h3 className="text-xl font-black tracking-tight text-[var(--color-ink)]">
-        {serviceModal.mode === "add"
-          ? "Нова послуга"
-          : "Редагування послуги"}
-      </h3>
+      <Modal
+        open={serviceModal.open}
+        onClose={closeServiceModal}
+        title={
+          serviceModal.mode === "add" ? "Нова послуга" : "Редагування послуги"
+        }
+        subtitle="Заповніть деталі послуги"
+        size="lg"
+        footer={
+          <div className="flex w-full flex-row gap-2 sm:justify-end">
+            <Button
+              variant="secondary"
+              onClick={closeServiceModal}
+              className="flex-1 sm:flex-none"
+            >
+              Скасувати
+            </Button>
 
-      <p className="mt-2 text-sm leading-6 text-[var(--color-caramel)]">
-        Заповніть деталі послуги
-      </p>
-    </div>
-  </div>
-
-  {/* далі твоя форма */}
+            <Button
+              variant="primary"
+              onClick={saveService}
+              disabled={!canSaveServiceDraft(serviceDraft)}
+              className="flex-1 sm:flex-none"
+            >
+              <Check className="h-4 w-4" />
+              Зберегти
+            </Button>
+          </div>
+        }
+      >
         <div className="space-y-6">
           <div className="grid grid-cols-[1fr_130px] gap-3 sm:grid-cols-2">
             <div className="min-w-0">
-              <label className="mb-2 block text-sm font-medium text-[var(--color-ink)]">
+              <label className="mb-2 block text-sm font-medium text-[#202020]">
                 Категорія
               </label>
 
@@ -1530,8 +1296,8 @@ async function deleteCategory(catId) {
             </div>
 
             <div className="min-w-0">
-              <label className="mb-2 block text-sm font-medium text-[var(--color-ink)]">
-                Ціна (грн)
+              <label className="mb-2 block text-sm font-medium text-[#202020]">
+                Ціна (грн) *
               </label>
 
               <input
@@ -1542,13 +1308,13 @@ async function deleteCategory(catId) {
                 }
                 placeholder="0"
                 min="0"
-                className="w-full rounded-2xl border border-[var(--color-cream)] px-4 py-3 text-sm font-medium text-[var(--color-ink)] outline-none transition-all placeholder:text-[var(--color-caramel)] focus:border-[var(--color-forest)] focus:ring-4 focus:ring-[var(--color-forest)]/10"
+                className="w-full rounded-2xl border border-[#eadbc9] px-4 py-3 text-sm font-medium text-[#202020] outline-none transition-all placeholder:text-[#77716b] focus:border-[#ff5a00] focus:ring-4 focus:ring-[#ff5a00]/10"
               />
             </div>
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-[var(--color-ink)]">
+            <label className="mb-2 block text-sm font-medium text-[#202020]">
               Назва послуги *
             </label>
 
@@ -1558,12 +1324,12 @@ async function deleteCategory(catId) {
                 setServiceDraft((p) => ({ ...p, name: e.target.value }))
               }
               placeholder="Наприклад: Нарощування вій"
-              className="w-full rounded-xl border border-[var(--color-cream)] px-3.5 py-2.5 text-sm font-medium text-[var(--color-ink)] outline-none transition-all placeholder:text-[var(--color-caramel)] focus:border-[var(--color-forest)] focus:ring-4 focus:ring-[var(--color-forest)]/10 sm:rounded-2xl sm:px-4 sm:py-3"
+              className="w-full rounded-xl border border-[#eadbc9] px-3.5 py-2.5 text-sm font-medium text-[#202020] outline-none transition-all placeholder:text-[#77716b] focus:border-[#ff5a00] focus:ring-4 focus:ring-[#ff5a00]/10 sm:rounded-2xl sm:px-4 sm:py-3"
             />
           </div>
 
           <div>
-            <label className="mb-4 block text-sm font-medium text-[var(--color-ink)]">
+            <label className="mb-4 block text-sm font-medium text-[#202020]">
               Тривалість
             </label>
 
@@ -1573,12 +1339,10 @@ async function deleteCategory(catId) {
             />
           </div>
 
-          <div className="rounded-2xl border border-[var(--color-cream)] bg-[var(--color-cream-secon)] p-3.5 sm:p-4">
+          <div className="rounded-2xl border border-[#eadbc9] bg-[#fff7f0] p-3.5 sm:p-4">
             <div className="mb-3 flex items-center gap-2">
-              <Users className="h-5 w-5 text-[var(--color-caramel)]" />
-              <span className="font-medium text-[var(--color-ink)]">
-                Виконавці
-              </span>
+              <Users className="h-5 w-5 text-[#77716b]" />
+              <span className="font-medium text-[#202020]">Виконавці</span>
             </div>
 
             <div className="mb-4 flex flex-wrap gap-2">
@@ -1592,11 +1356,10 @@ async function deleteCategory(catId) {
                   }))
                 }
                 className={cn(
-                  "inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold shadow-sm transition-all duration-200 active:scale-[0.98]",
-
+                  "rounded-xl px-3 py-2 text-sm font-medium transition-all sm:px-4",
                   serviceDraft.allMasters
-                    ? "border-transparent bg-[var(--color-ink)] text-white"
-                    : "border border-[var(--border-soft)] bg-white text-[var(--color-ink)] hover:bg-[var(--color-cream)]",
+                    ? "border-2 border-[#ff5a00] bg-[#ff5a00] text-white"
+                    : "border border-[#eadbc9] bg-white text-[#77716b] hover:bg-[#ffe5d4]",
                 )}
               >
                 Всі майстри
@@ -1604,26 +1367,18 @@ async function deleteCategory(catId) {
 
               <button
                 type="button"
-                onClick={() => {
+                onClick={() =>
                   setServiceDraft((p) => ({
                     ...p,
                     allMasters: false,
                     masters: [],
-                  }));
-
-                  // даємо React час відрендерити блок
-                  setTimeout(() => {
-                    mastersRef.current?.scrollIntoView({
-                      behavior: "smooth",
-                      block: "start",
-                    });
-                  }, 100);
-                }}
+                  }))
+                }
                 className={cn(
-                  "inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold shadow-sm transition-all duration-200 active:scale-[0.98]",
+                  "rounded-xl px-4 py-2 text-sm font-medium transition-all",
                   !serviceDraft.allMasters
-                    ? "border-transparent bg-[var(--color-ink)] text-white"
-                    : "border border-[var(--border-soft)] bg-white text-[var(--color-ink)] hover:bg-[var(--color-cream)]",
+                    ? "border-2 border-[#ff5a00] bg-[#ff5a00] text-white"
+                    : "border border-[#eadbc9] bg-white text-[#77716b] hover:bg-[#ffe5d4]",
                 )}
               >
                 Обрати майстрів
@@ -1631,13 +1386,13 @@ async function deleteCategory(catId) {
             </div>
 
             {!serviceDraft.allMasters && (
-              <div ref={mastersRef} className="space-y-2">
+              <div className="space-y-2">
                 {mastersLoading ? (
                   <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                     {Array.from({ length: 4 }).map((_, i) => (
                       <div
                         key={i}
-                        className="rounded-2xl border border-[var(--border-soft)] bg-white p-3 shadow-sm"
+                        className="rounded-2xl border border-[#eadbc9] bg-white p-3"
                       >
                         <div className="flex items-center gap-3">
                           <SkeletonBlock className="h-4 w-4 rounded" />
@@ -1651,9 +1406,9 @@ async function deleteCategory(catId) {
                     ))}
                   </div>
                 ) : masters.length === 0 ? (
-                  <div className="rounded-2xl border border-[var(--border-soft)] bg-white px-4 py-3 text-sm font-medium text-[var(--color-caramel)] shadow-sm">
+                  <p className="text-sm text-[#77716b]">
                     Спочатку додайте майстрів
-                  </div>
+                  </p>
                 ) : (
                   <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                     {masters.map((m) => {
@@ -1664,10 +1419,10 @@ async function deleteCategory(catId) {
                         <label
                           key={id}
                           className={cn(
-                            "group flex cursor-pointer items-center gap-3 rounded-2xl border bg-white p-3 shadow-sm transition-all duration-200 active:scale-[0.99]",
+                            "flex cursor-pointer items-center gap-3 rounded-2xl border p-3 transition-all",
                             checked
-                              ? "border-[var(--color-ink)] bg-[var(--color-cream)]"
-                              : "border-[var(--border-soft)] hover:bg-[var(--color-cream)]",
+                              ? "border-[#ff5a00] bg-[#fff7f0]"
+                              : "border-[#eadbc9] bg-white hover:bg-[#fff7f0]",
                           )}
                         >
                           <input
@@ -1681,7 +1436,7 @@ async function deleteCategory(catId) {
 
                               setServiceDraft((p) => ({ ...p, masters: next }));
                             }}
-                            className="h-4 w-4 rounded border-[var(--border-soft)] text-[var(--color-ink)] focus:ring-[var(--color-ink)]"
+                            className="h-4 w-4 rounded border-[#eadbc9] text-[#ff5a00] focus:ring-[#ff5a00]"
                           />
 
                           <MasterChip master={m} checked={checked} />
@@ -1693,7 +1448,6 @@ async function deleteCategory(catId) {
               </div>
             )}
           </div>
-        </div>
         </div>
       </Modal>
     </div>

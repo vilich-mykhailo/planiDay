@@ -1,6 +1,6 @@
-// StudioSettings.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import Cropper from "react-easy-crop";
 import {
   Sparkles,
   ChevronDown,
@@ -12,11 +12,12 @@ import {
   ChevronRight,
   CheckCircle2,
   AlertTriangle,
-  Info,
-  MapPin,
-  FileText,
-  XCircle,
   Building2,
+  MapPin,
+  Phone,
+  Mail,
+  PencilLine,
+  FileText,
 } from "lucide-react";
 import { useStudio } from "../../context/studio/useStudio";
 import { api } from "../../api/http";
@@ -147,29 +148,23 @@ function SectionCard({
   return (
     <section
       className={cn(
-        "group relative overflow-hidden rounded-3xl border border-[var(--color-cream)] bg-white shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-soft-hover)] transition-all duration-300",
+        "group relative overflow-hidden rounded-[28px] border border-[#eadbc9] bg-white shadow-[0_18px_50px_rgba(17,17,17,0.06)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_24px_70px_rgba(17,17,17,0.09)]",
         className,
       )}
     >
-      <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[var(--color-sidebar-accent)] via-[var(--color-sidebar-accent-hover)] to-[var(--color-sidebar-accent-soft)] opacity-80" />
+      <div className="absolute inset-x-0 top-0 h-[3px] bg-[#ff5a00]" />
 
-      <div className="flex flex-col gap-3 border-b border-[var(--color-cream)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 border-b border-[#eadbc9] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <h2 className="text-lg font-bold tracking-tight text-[var(--color-ink)]">
-              {title}
-            </h2>
+            <h2 className="text-lg font-black tracking-tight text-[#202020]">{title}</h2>
             {badge && (
-              <span className="inline-flex items-center rounded-full border border-[var(--color-sidebar-accent-soft)] bg-[var(--color-white)] px-2.5 py-0.5 text-xs font-semibold text-[var(--color-sidebar-accent)]">
+              <span className="inline-flex items-center rounded-full border border-[#ffd6bd] bg-[#fff1e8] px-2.5 py-0.5 text-xs font-black text-[#ff5a00]">
                 {badge}
               </span>
             )}
           </div>
-          {subtitle && (
-            <p className="mt-0.5 text-sm text-[var(--color-caramel)]">
-              {subtitle}
-            </p>
-          )}
+          {subtitle && <p className="mt-0.5 text-sm font-medium text-[#77716b]">{subtitle}</p>}
         </div>
 
         {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
@@ -189,15 +184,14 @@ function Button({
 }) {
   const variants = {
     primary:
-      "bg-[var(--color-sidebar-accent)] text-[var(--color-white)] hover:bg-[var(--color-sidebar-accent-hover)] shadow-[var(--shadow-button)]",
+      "bg-[#ff5a00] text-white shadow-[0_16px_34px_rgba(255,90,0,0.24)] hover:bg-[#ef4f00]",
     secondary:
-      "bg-white border border-[var(--color-cream)] text-[var(--color-ink)] hover:bg-[var(--color-cream)] hover:border-[var(--color-mist)]",
+      "border border-[#eadbc9] bg-white text-[#202020] hover:border-[#ffd6bd] hover:bg-[#fff7f0]",
     danger:
-      "border border-[var(--color-danger-border)] bg-[var(--color-danger-bg)] text-[var(--color-danger)] hover:border-[var(--color-danger)] hover:bg-[rgba(213,92,82,0.12)]",
-    ghost:
-      "text-[var(--color-caramel)] hover:bg-[var(--color-cream)] hover:text-[var(--color-ink)]",
+      "border border-[#ffd8d8] bg-[#fff7f7] text-[#e5484d] hover:border-[#e5484d] hover:bg-[#fff1f1]",
+    ghost: "text-[#77716b] hover:bg-[#fff7f0] hover:text-[#202020]",
     warning:
-      "border border-[var(--color-sidebar-accent-soft)] bg-[var(--color-white)] text-[var(--color-sidebar-accent)] hover:bg-[var(--color-cream)]",
+      "border border-[#ffd6bd] bg-[#fff1e8] text-[#ff5a00] hover:bg-[#ffe5d4]",
   };
 
   const sizes = {
@@ -210,7 +204,7 @@ function Button({
     <button
       type="button"
       className={cn(
-        "inline-flex items-center justify-center gap-2 font-semibold active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50",
+        "inline-flex items-center justify-center gap-2 font-black transition-all duration-200 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50",
         variants[variant],
         sizes[size],
         className,
@@ -230,9 +224,9 @@ function IconButton({
 }) {
   const variants = {
     secondary:
-      "bg-white border border-[var(--color-cream)] text-[var(--color-caramel)] hover:bg-[var(--color-cream)] hover:text-[var(--color-ink)]",
+      "border border-[#eadbc9] bg-white text-[#77716b] hover:bg-[#fff7f0] hover:text-[#202020]",
     danger:
-      "border border-[var(--color-danger-border)] bg-[var(--color-danger-bg)] text-[var(--color-danger)] hover:bg-[rgba(213,92,82,0.12)]",
+      "border border-[#ffd8d8] bg-[#fff7f7] text-[#e5484d] hover:bg-[#fff1f1]",
   };
 
   return (
@@ -335,6 +329,7 @@ function CustomSelect({
     };
   }, [open]);
 
+
   return (
     <div ref={rootRef} className="relative">
       <button
@@ -344,22 +339,22 @@ function CustomSelect({
         className={cn(
           "group flex w-full items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-left text-sm font-medium outline-none transition-all duration-200",
           open
-            ? "border-[var(--color-caramel)] bg-white shadow-[0_10px_30px_rgba(180,140,108,0.18)] ring-2 ring-[rgba(180,140,108,0.18)]"
-            : "border-[var(--color-cream)] bg-white hover:border-[var(--color-mist)] hover:bg-[var(--color-cream)]",
+            ? "border-[#ff5a00] bg-white shadow-[0_10px_30px_rgba(255,90,0,0.16)] ring-2 ring-[#ff5a00]/10"
+            : "border-[#eadbc9] bg-white hover:border-[#ffd6bd] hover:bg-[#fff7f0]",
           className,
         )}
         aria-haspopup="listbox"
         aria-expanded={open}
       >
-        <span className="min-w-0 truncate text-[var(--color-ink)]">
+        <span className="min-w-0 truncate text-[#202020]">
           {selected?.label || placeholder}
         </span>
 
         <ChevronDown
           className={cn(
-            "h-4.5 w-4.5 shrink-0 text-[var(--color-caramel)] transition-all duration-200",
-            "group-hover:text-[var(--color-ink)]",
-            open && "rotate-180 text-[var(--color-sidebar-accent)]",
+            "h-4.5 w-4.5 shrink-0 text-[#ff5a00] transition-all duration-200",
+            "group-hover:text-[#202020]",
+            open && "rotate-180 text-[#ff5a00]",
           )}
         />
       </button>
@@ -367,7 +362,7 @@ function CustomSelect({
       {open && (
         <div
           className={cn(
-            "fixed z-[200] overflow-hidden rounded-2xl border border-[var(--color-cream)] bg-white shadow-[0_24px_70px_rgba(27,27,27,0.18)]",
+            "fixed z-[200] overflow-hidden rounded-2xl border border-[#eadbc9] bg-white shadow-[0_24px_70px_rgba(17,17,17,0.16)]",
             menuClassName,
           )}
           style={{
@@ -392,8 +387,8 @@ function CustomSelect({
                   className={cn(
                     "flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm transition-colors duration-150",
                     isSelected
-                      ? "bg-[var(--color-cream)] text-[var(--color-sidebar-accent)]"
-                      : "text-[var(--color-ink)] hover:bg-[var(--color-cream)]",
+                      ? "bg-[#fff1e8] text-[#ff5a00]"
+                      : "text-[#202020] hover:bg-[#fff7f0]",
                   )}
                   role="option"
                   aria-selected={isSelected}
@@ -411,7 +406,7 @@ function CustomSelect({
                   </span>
 
                   {isSelected && (
-                    <Check className="h-4 w-4 shrink-0 text-[var(--color-sidebar-accent)]" />
+                    <Check className="h-4 w-4 shrink-0 text-[#ff5a00]" />
                   )}
                 </button>
               );
@@ -427,15 +422,11 @@ function Field({ label, hint, error, children }) {
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between gap-3">
-        <label className="text-sm font-medium text-[var(--color-ink)]">
-          {label}
-        </label>
-        {hint && (
-          <span className="text-xs text-[var(--color-caramel)]">{hint}</span>
-        )}
+        <label className="text-sm font-black text-[#202020]">{label}</label>
+        {hint && <span className="text-xs font-medium text-[#77716b]">{hint}</span>}
       </div>
       {children}
-      {error && <p className="text-xs text-[var(--color-danger)]">{error}</p>}
+      {error && <p className="text-xs font-semibold text-[#e5484d]">{error}</p>}
     </div>
   );
 }
@@ -443,10 +434,7 @@ function Field({ label, hint, error, children }) {
 function SkeletonBlock({ className = "" }) {
   return (
     <div
-      className={cn(
-        "animate-pulse rounded-xl bg-[var(--color-cream)]",
-        className,
-      )}
+      className={cn("animate-pulse rounded-xl bg-[#f2eee8]", className)}
       aria-hidden="true"
     />
   );
@@ -454,14 +442,14 @@ function SkeletonBlock({ className = "" }) {
 
 function StudioPreviewSkeleton() {
   return (
-    <section className="overflow-hidden rounded-3xl border border-[var(--color-cream)] bg-white shadow-[var(--shadow-soft)]">
-      <div className="relative h-44 bg-[var(--color-cream)]">
+    <section className="overflow-hidden rounded-[28px] border border-[#eadbc9] bg-white shadow-[0_18px_50px_rgba(17,17,17,0.06)]">
+      <div className="relative h-44 bg-[#f2eee8]">
         <SkeletonBlock className="h-full w-full rounded-none" />
 
         <div className="absolute -bottom-10 left-3 right-3 flex items-end gap-2">
           <SkeletonBlock className="h-20 w-20 shrink-0 rounded-[22px]" />
 
-          <div className="min-h-[44px] min-w-0 flex-1 rounded-2xl border border-[var(--color-cream)] bg-white px-3 py-2 shadow-sm">
+          <div className="min-h-[44px] min-w-0 flex-1 rounded-2xl border border-[#eadbc9] bg-white px-3 py-2 shadow-sm">
             <SkeletonBlock className="h-5 w-40 max-w-full" />
             <SkeletonBlock className="mt-2 h-4 w-28 max-w-full" />
           </div>
@@ -469,7 +457,7 @@ function StudioPreviewSkeleton() {
       </div>
 
       <div className="px-3 pb-3 pt-14">
-        <div className="rounded-2xl border border-[var(--color-cream)] bg-[var(--color-cream)] p-4">
+        <div className="rounded-2xl border border-[#eadbc9] bg-[#fff7f0] p-4">
           <SkeletonBlock className="h-3 w-14" />
           <SkeletonBlock className="mt-2 h-4 w-full" />
           <SkeletonBlock className="mt-1 h-4 w-4/5" />
@@ -523,7 +511,7 @@ function StudioProfileFormSkeleton() {
 function StudioLocationFormSkeleton() {
   return (
     <SectionCard
-      title="Адреса"
+      title="Локація"
       subtitle="Адреса відображається клієнтам і впливає на пошук."
     >
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -547,7 +535,7 @@ function StudioLocationFormSkeleton() {
           <SkeletonBlock className="h-12 w-full rounded-2xl" />
         </div>
 
-        <div className="sm:col-span-2 rounded-2xl border border-[var(--color-cream)] bg-[var(--color-cream)] p-4">
+        <div className="sm:col-span-2 rounded-2xl border border-[#eadbc9] bg-[#fff7f0] p-4">
           <SkeletonBlock className="h-3 w-16" />
           <SkeletonBlock className="mt-2 h-4 w-full" />
         </div>
@@ -592,19 +580,13 @@ function completeness(form) {
     { key: "category", label: "Категорія", ok: Boolean(form.category) },
     { key: "phone", label: "Номер телефону", ok: Boolean(form.phone?.trim()) },
     { key: "email", label: "Пошта", ok: Boolean(form.email?.trim()) },
-    {
-      key: "description",
-      label: "Опис",
-      ok: Boolean(form.description?.trim()),
-    },
+    { key: "description", label: "Опис", ok: Boolean(form.description?.trim()) },
     { key: "coverUrl", label: "Обкладинка", ok: hasCover },
     { key: "logoUrl", label: "Логотип", ok: hasLogo },
     {
       key: "address",
       label: "Адреса",
-      ok: Boolean(
-        form.city?.trim() && form.street?.trim() && form.building?.trim(),
-      ),
+      ok: Boolean(form.city?.trim() && form.street?.trim() && form.building?.trim()),
     },
     { key: "portfolio", label: "Портфоліо", ok: portfolioCount >= 1 },
   ];
@@ -626,9 +608,23 @@ export default function StudioSettings() {
   const initialTab = ["profile", "location", "links"].includes(tabFromUrl)
     ? tabFromUrl
     : "profile";
-
+  const [menuOpen, setMenuOpen] = useState(false);
+const [editModal, setEditModal] = useState({
+  open: false,
+  field: "",
+  title: "",
+  value: "",
+});
   const [tab, setTab] = useState(initialTab);
+const [cropModal, setCropModal] = useState({
+  open: false,
+  imageUrl: "",
+  target: "",
+});
 
+const [crop, setCrop] = useState({ x: 0, y: 0 });
+const [zoom, setZoom] = useState(1);
+const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
   function setTabUrl(nextTab) {
     setTab(nextTab);
     setSearchParams(
@@ -668,11 +664,11 @@ export default function StudioSettings() {
 
   const highlightClass =
     highlightTone === "green"
-      ? "ring-2 ring-[rgba(50,78,41,0.28)] bg-[var(--color-confirmed-bg)] border-[var(--color-sand)]"
-      : "ring-2 ring-[rgba(180,140,108,0.22)] bg-[var(--color-pending-bg)] border-[var(--color-sand)]";
+      ? "ring-2 ring-[#ff5a00]/25 bg-[#fff1e8] border-[#ffd6bd]"
+      : "ring-2 ring-[#ff5a00]/20 bg-[#fff7f0] border-[#ffd6bd]";
 
   const baseFieldClass =
-    "w-full rounded-2xl border border-[var(--color-cream)] bg-white p-3 text-sm font-medium text-[var(--color-ink)] outline-none transition-all duration-200 placeholder:text-[var(--color-caramel)] hover:bg-[var(--color-cream)] hover:border-[var(--color-mist)] focus:border-[var(--color-caramel)] focus:ring-4 focus:ring-[rgba(180,140,108,0.12)] focus:bg-white";
+    "w-full rounded-2xl border border-[#eadbc9] bg-white p-3 text-sm font-semibold text-[#202020] outline-none transition-all duration-200 placeholder:text-[#9b948c] hover:border-[#ffd6bd] hover:bg-[#fff7f0] focus:border-[#ff5a00] focus:bg-white focus:ring-4 focus:ring-[#ff5a00]/10";
 
   const [pendingDeletes, setPendingDeletes] = useState([]);
 
@@ -707,13 +703,12 @@ export default function StudioSettings() {
   });
 
   function showToast({ type = "success", title, text }) {
-    const safeType = type === "warning" ? "error" : type;
     const duration = 2600;
 
     setToast({
       id: Date.now(),
       open: true,
-      type: safeType,
+      type,
       title,
       text,
       duration,
@@ -731,11 +726,19 @@ export default function StudioSettings() {
     message: "",
   });
 
-  const hasCover = Boolean(form.coverFile || form.coverUrl?.trim());
-  const hasLogo = Boolean(form.logoFile || form.logoUrl?.trim());
-  const coverSrc = coverPreviewUrl || toPublicUrl(form.coverUrl);
-  const logoSrc = logoPreviewUrl || toPublicUrl(form.logoUrl);
+const hasCover = Boolean(form.coverFile || form.coverUrl?.trim());
+const hasLogo = Boolean(form.logoFile || form.logoUrl?.trim());
+const coverSrc = coverPreviewUrl || toPublicUrl(form.coverUrl);
+const logoSrc = logoPreviewUrl || toPublicUrl(form.logoUrl);
 
+const addressPreview = [
+  form.city,
+  form.street,
+  form.building,
+  form.apartment,
+]
+  .filter(Boolean)
+  .join(", ") || "Адреса студії";
   const [portfolioPreview, setPortfolioPreview] = useState({
     open: false,
     src: "",
@@ -904,8 +907,7 @@ export default function StudioSettings() {
       (studio?.apartment || "") !== form.apartment ||
       (studio?.coverUrl || "") !== form.coverUrl ||
       (studio?.logoUrl || "") !== form.logoUrl ||
-      JSON.stringify(currentPortfolio) !==
-        JSON.stringify(form.portfolioUrls || []) ||
+      JSON.stringify(currentPortfolio) !== JSON.stringify(form.portfolioUrls || []) ||
       Boolean(form.coverFile) ||
       Boolean(form.logoFile) ||
       (form.portfolioFiles?.length || 0) > 0
@@ -928,9 +930,7 @@ export default function StudioSettings() {
       apartment: studio?.apartment || "",
       coverUrl: studio?.coverUrl || "",
       logoUrl: studio?.logoUrl || "",
-      portfolioUrls: Array.isArray(studio?.portfolioUrls)
-        ? studio.portfolioUrls
-        : [],
+      portfolioUrls: Array.isArray(studio?.portfolioUrls) ? studio.portfolioUrls : [],
       coverFile: null,
       logoFile: null,
       portfolioFiles: [],
@@ -938,7 +938,11 @@ export default function StudioSettings() {
   }
 
   const dirty = hydrated ? rawDirty : false;
-  const hasPendingChanges = dirty;
+  const hasPendingChanges =
+  dirty &&
+  !saving &&
+  !cropModal.open &&
+  !editModal.open;
   const canSave = dirty && Object.keys(errors).length === 0 && !saving;
   const [clearingPortfolio, setClearingPortfolio] = useState(false);
 
@@ -965,6 +969,54 @@ export default function StudioSettings() {
     return data;
   }
 
+  async function getCroppedImage(imageSrc, cropPixels) {
+  const image = new Image();
+  image.src = imageSrc;
+
+  await new Promise((resolve, reject) => {
+    image.onload = resolve;
+    image.onerror = reject;
+  });
+
+  const canvas = document.createElement("canvas");
+  canvas.width = 900;
+  canvas.height = 900;
+
+  const ctx = canvas.getContext("2d");
+
+  ctx.drawImage(
+    image,
+    cropPixels.x,
+    cropPixels.y,
+    cropPixels.width,
+    cropPixels.height,
+    0,
+    0,
+    900,
+    900,
+  );
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) {
+          reject(new Error("Crop failed"));
+          return;
+        }
+
+        resolve(
+          new File([blob], "studio-image.jpg", {
+            type: "image/jpeg",
+            lastModified: Date.now(),
+          }),
+        );
+      },
+      "image/jpeg",
+      0.82,
+    );
+  });
+}
+
   async function uploadMany(studioId, files, token) {
     const fd = new FormData();
     for (const f of files) fd.append("files", f);
@@ -983,124 +1035,130 @@ export default function StudioSettings() {
     return data;
   }
 
-async function pickImage(e, fieldKey) {
-  const file = e.target.files?.[0];
-  e.target.value = "";
+  function pickImage(e, fieldKey) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
 
-  if (!file) return;
-
-  if (file.size > MAX_IMAGE_SIZE) {
-    setErrorModal({
-      open: true,
-      title: "Файл завеликий",
-      message: "До 10 MB.",
-    });
-    return;
-  }
-
-  if (!file.type?.startsWith("image/")) {
-    setErrorModal({
-      open: true,
-      title: "Невірний формат",
-      message: "Обери зображення.",
-    });
-    return;
-  }
-
-  try {
-    const compressed = await compressImage(file, {
-      maxWidth: fieldKey === "logoUrl" ? 700 : 1600,
-      maxHeight: fieldKey === "logoUrl" ? 700 : 1600,
-      quality: 0.82,
-    });
-
-    if (fieldKey === "coverUrl") {
-      setForm((p) => ({ ...p, coverFile: compressed }));
-    } else {
-      setForm((p) => ({ ...p, logoFile: compressed }));
+    if (file.size > MAX_IMAGE_SIZE) {
+      setErrorModal({
+        open: true,
+        title: "Файл завеликий",
+        message: "До 5 MB.",
+      });
+      return;
     }
-  } catch (err) {
-    console.error(err);
 
-    setErrorModal({
-      open: true,
-      title: "Помилка",
-      message: "Не вдалося обробити фото.",
-    });
-  }
-}
+    if (!file.type?.startsWith("image/")) {
+      setErrorModal({
+        open: true,
+        title: "Невірний формат",
+        message: "Обери зображення.",
+      });
+      return;
+    }
 
-async function pickPortfolioImages(e) {
-  const files = Array.from(e.target.files || []);
-  e.target.value = "";
+const imageUrl = URL.createObjectURL(file);
 
-  if (!files.length) return;
+setCrop({ x: 0, y: 0 });
+setZoom(1);
+setCroppedAreaPixels(null);
 
-  const left =
-    MAX_PORTFOLIO -
-    ((form.portfolioUrls?.length || 0) +
-      (form.portfolioFiles?.length || 0));
-
-  if (left <= 0) {
-    setErrorModal({
-      open: true,
-      title: "Ліміт фото",
-      message: `Можна додати максимум ${MAX_PORTFOLIO} фото.`,
-    });
-    return;
-  }
-
-  const take = files.slice(0, Math.max(0, left));
-const validFiles = take.filter((file) => {
-  return file.type?.startsWith("image/") && file.size <= MAX_IMAGE_SIZE;
+setCropModal({
+  open: true,
+  imageUrl,
+  target: fieldKey,
 });
-
-if (!validFiles.length) {
-  setErrorModal({
-    open: true,
-    title: "Не вдалося додати фото",
-    message: "Фото мають бути зображеннями до 10 MB.",
-  });
-  return;
-}
-const skippedCount = take.length - validFiles.length;
-
-if (skippedCount > 0) {
-  showToast({
-    type: "warning",
-    title: "Деякі фото пропущено",
-    text: `Пропущено ${skippedCount} файл(и): не зображення або більше 10 MB.`,
-  });
-}
-
-  try {
-const compressedFiles = await Promise.all(
-  validFiles.map((file) =>
-    compressImage(file, {
-      maxWidth: 1400,
-      maxHeight: 1400,
-      quality: 0.82,
-    }),
-  ),
-);
-
-    setForm((prev) => ({
-      ...prev,
-      portfolioFiles: [
-        ...(prev.portfolioFiles || []),
-        ...compressedFiles,
-      ].slice(0, MAX_PORTFOLIO),
-    }));
-  } catch (err) {
-    console.error(err);
-
-    setErrorModal({
-      open: true,
-      title: "Помилка",
-      message: "Не вдалося обробити фото.",
-    });
   }
+
+async function confirmCrop() {
+  if (!cropModal.imageUrl || !croppedAreaPixels) return;
+
+  const croppedFile = await getCroppedImage(
+    cropModal.imageUrl,
+    croppedAreaPixels,
+  );
+
+  const target = cropModal.target;
+
+  URL.revokeObjectURL(cropModal.imageUrl);
+
+  setCropModal({
+    open: false,
+    imageUrl: "",
+    target: "",
+  });
+
+  setCrop({ x: 0, y: 0 });
+  setZoom(1);
+  setCroppedAreaPixels(null);
+
+  const nextForm = {
+    ...form,
+    ...(target === "coverUrl" ? { coverFile: croppedFile } : {}),
+    ...(target === "logoUrl" ? { logoFile: croppedFile } : {}),
+  };
+
+  setForm(nextForm);
+
+  setTimeout(() => {
+    save({ preventDefault: () => {} }, nextForm);
+  }, 0);
 }
+
+  function pickPortfolioImages(e) {
+    const files = Array.from(e.target.files || []);
+    e.target.value = "";
+    if (!files.length) return;
+
+    const left =
+      MAX_PORTFOLIO -
+      ((form.portfolioUrls?.length || 0) + (form.portfolioFiles?.length || 0));
+
+    const take = files.slice(0, Math.max(0, left));
+
+    const okFiles = [];
+    let skipped = 0;
+
+    for (const f of take) {
+      if (!f.type?.startsWith("image/") || f.size > MAX_IMAGE_SIZE) {
+        skipped++;
+        continue;
+      }
+      okFiles.push(f);
+    }
+
+    if (!okFiles.length) {
+      setErrorModal({
+        open: true,
+        title: "Не вдалося додати фото",
+        message: "Фото завеликі або не підтримуються. Обери інші (до 5MB).",
+      });
+      return;
+    }
+
+const nextForm = {
+  ...form,
+  portfolioFiles: [...(form.portfolioFiles || []), ...okFiles].slice(
+    0,
+    MAX_PORTFOLIO,
+  ),
+};
+
+setForm(nextForm);
+
+setTimeout(() => {
+  save({ preventDefault: () => {} }, nextForm);
+}, 0);
+
+    if (skipped) {
+      showToast({
+        type: "error",
+        title: "Деякі фото пропущено",
+        text: `Пропущено ${skipped} файл(и) — завеликі або не підходять.`,
+      });
+    }
+  }
 
   async function deleteFromR2(key) {
     const token = localStorage.getItem("token");
@@ -1156,11 +1214,17 @@ const compressedFiles = await Promise.all(
       else nextFiles.push(form.portfolioFiles[x.i]);
     }
 
-    setForm((p) => ({
-      ...p,
-      portfolioUrls: nextUrls.slice(0, MAX_PORTFOLIO),
-      portfolioFiles: nextFiles.slice(0, MAX_PORTFOLIO),
-    }));
+const nextForm = {
+  ...form,
+  portfolioUrls: nextUrls.slice(0, MAX_PORTFOLIO),
+  portfolioFiles: nextFiles.slice(0, MAX_PORTFOLIO),
+};
+
+setForm(nextForm);
+
+setTimeout(() => {
+  save({ preventDefault: () => {} }, nextForm);
+}, 0);
   }
 
   function removePortfolioMixed(idx) {
@@ -1172,10 +1236,22 @@ const compressedFiles = await Promise.all(
 
       stageDelete(key);
 
-      setForm((p) => ({
-        ...p,
-        portfolioUrls: (p.portfolioUrls || []).filter((_, i) => i !== idx),
-      }));
+const nextForm = {
+  ...form,
+  portfolioUrls: (form.portfolioUrls || []).filter((_, i) => i !== idx),
+};
+
+setForm(nextForm);
+
+setTimeout(() => {
+  save({ preventDefault: () => {} }, nextForm);
+}, 0);
+
+      showToast({
+        type: "warning",
+        title: "Зміна підготовлена",
+        text: "Фото буде видалено після “Зберегти”.",
+      });
 
       return;
     }
@@ -1184,9 +1260,7 @@ const compressedFiles = await Promise.all(
 
     setForm((p) => ({
       ...p,
-      portfolioFiles: (p.portfolioFiles || []).filter(
-        (_, i) => i !== localIndex,
-      ),
+      portfolioFiles: (p.portfolioFiles || []).filter((_, i) => i !== localIndex),
     }));
   }
 
@@ -1259,119 +1333,89 @@ const compressedFiles = await Promise.all(
     });
   }
 
-  async function save(e) {
-    e?.preventDefault?.();
-    if (!canSave) return;
-    if (!studio?.id) return;
+async function save(e, overrideForm = null) {
+  e?.preventDefault?.();
 
-    setSaving(true);
+  const data = overrideForm || form;
 
-    try {
-      const token = localStorage.getItem("token");
+  if (!studio?.id) return;
 
-      let nextCoverKey = form.coverUrl || "";
-      let nextLogoKey = form.logoUrl || "";
-      let nextPortfolioKeys = Array.isArray(form.portfolioUrls)
-        ? [...form.portfolioUrls]
-        : [];
+  setSaving(true);
 
-      const deletesAfterSave = [...pendingDeletes];
+  try {
+    const token = localStorage.getItem("token");
 
-      if (form.coverFile) {
-        const out = await uploadOne(studio.id, form.coverFile, "cover", token);
-        nextCoverKey = out.key;
+    let nextCoverKey = data.coverUrl || "";
+    let nextLogoKey = data.logoUrl || "";
+    let nextPortfolioKeys = Array.isArray(data.portfolioUrls)
+      ? [...data.portfolioUrls]
+      : [];
 
-        if (form.coverUrl && form.coverUrl !== out.key) {
-          deletesAfterSave.push(form.coverUrl);
-        }
-      }
+    const deletesAfterSave = [...pendingDeletes];
 
-      if (form.logoFile) {
-        const out = await uploadOne(studio.id, form.logoFile, "logo", token);
-        nextLogoKey = out.key;
-
-        if (form.logoUrl && form.logoUrl !== out.key) {
-          deletesAfterSave.push(form.logoUrl);
-        }
-      }
-
-      if ((form.portfolioFiles?.length || 0) > 0) {
-        const out = await uploadMany(studio.id, form.portfolioFiles, token);
-        const newKeys = out.keys || [];
-        nextPortfolioKeys = [...nextPortfolioKeys, ...newKeys].slice(
-          0,
-          MAX_PORTFOLIO,
-        );
-      }
-
-      await updateStudio({
-        name: form.name.trim(),
-        category: form.category,
-        phone: form.phone.trim(),
-        email: form.email.trim(),
-        description: form.description.trim(),
-        city: form.city.trim(),
-        street: form.street.trim(),
-        building: form.building.trim(),
-        apartment: form.apartment.trim(),
-        coverUrl: nextCoverKey,
-        logoUrl: nextLogoKey,
-        portfolioUrls: nextPortfolioKeys,
-      });
-
-      setForm((p) => ({
-        ...p,
-        coverUrl: nextCoverKey,
-        logoUrl: nextLogoKey,
-        portfolioUrls: nextPortfolioKeys,
-        coverFile: null,
-        logoFile: null,
-        portfolioFiles: [],
-      }));
-
-      setPendingDeletes([]);
-
-      let hasDeleteWarning = false;
-
-      const uniq = Array.from(new Set(deletesAfterSave)).filter(Boolean);
-
-      if (uniq.length) {
-        try {
-          await deleteManyFromR2(uniq);
-        } catch (err) {
-          console.error(err);
-          hasDeleteWarning = true;
-        }
-      }
-
-      showToast({
-        type: hasDeleteWarning ? "warning" : "success",
-        title: hasDeleteWarning ? "Збережено з зауваженням" : "Збережено",
-        text: hasDeleteWarning
-          ? "Не всі файли вдалося видалити"
-          : "Профіль оновлено",
-      });
-    } catch (error) {
-      console.error(error);
-
-      const rawMessage = String(error?.message || "").toLowerCase();
-      const isOffline =
-        !navigator.onLine ||
-        rawMessage.includes("failed to fetch") ||
-        rawMessage.includes("networkerror") ||
-        rawMessage.includes("network error") ||
-        rawMessage.includes("load failed") ||
-        rawMessage.includes("fetch");
-
-      showToast({
-        type: "error",
-        title: isOffline ? "Немає підключення" : "Помилка",
-        text: isOffline ? "Перевірте інтернет" : "Не вдалося зберегти зміни",
-      });
-    } finally {
-      setSaving(false);
+    if (data.coverFile) {
+      const out = await uploadOne(studio.id, data.coverFile, "cover", token);
+      nextCoverKey = out.key;
     }
+
+    if (data.logoFile) {
+      const out = await uploadOne(studio.id, data.logoFile, "logo", token);
+      nextLogoKey = out.key;
+    }
+
+    if ((data.portfolioFiles?.length || 0) > 0) {
+      const out = await uploadMany(studio.id, data.portfolioFiles, token);
+      const newKeys = out.keys || [];
+      nextPortfolioKeys = [...nextPortfolioKeys, ...newKeys].slice(0, MAX_PORTFOLIO);
+    }
+
+    await updateStudio({
+      name: data.name.trim(),
+      category: data.category,
+      phone: data.phone.trim(),
+      email: data.email.trim(),
+      description: data.description.trim(),
+      city: data.city.trim(),
+      street: data.street.trim(),
+      building: data.building.trim(),
+      apartment: data.apartment.trim(),
+      coverUrl: nextCoverKey,
+      logoUrl: nextLogoKey,
+      portfolioUrls: nextPortfolioKeys,
+    });
+setPendingDeletes([]);
+setHighlightId("");
+setHighlightAddress(false);
+    setForm((p) => ({
+      ...p,
+      ...data,
+      coverUrl: nextCoverKey,
+      logoUrl: nextLogoKey,
+      portfolioUrls: nextPortfolioKeys,
+      coverFile: null,
+      logoFile: null,
+      portfolioFiles: [],
+    }));
+
+    setPendingDeletes([]);
+
+    showToast({
+      type: "success",
+      title: "Збережено",
+      text: "Профіль оновлено",
+    });
+  } catch (error) {
+    console.error(error);
+
+    showToast({
+      type: "error",
+      title: "Помилка",
+      text: "Не вдалося зберегти зміни",
+    });
+  } finally {
+    setSaving(false);
   }
+}
 
   const headerTriggerRef = useRef(null);
   const [showTopSave, setShowTopSave] = useState(false);
@@ -1435,17 +1479,23 @@ const compressedFiles = await Promise.all(
 
   const profile = useMemo(() => completeness(form), [form]);
 
-  const FIELD_ID = {
-    name: "studio-field-name",
-    category: "studio-field-category",
-    phone: "studio-field-phone",
-    email: "studio-field-email",
-    description: "studio-field-description",
-    portfolio: "studio-field-portfolio-add",
-    coverUrl: "studio-field-coverUrl",
-    logoUrl: "studio-field-logoUrl",
-    address: "studio-field-city",
-  };
+const FIELD_ID = {
+  name: "studio-field-name",
+  category: "studio-field-category",
+  phone: "studio-field-phone",
+  email: "studio-field-email",
+  description: "studio-field-description",
+
+  city: "studio-field-city",
+  street: "studio-field-street",
+  building: "studio-field-building",
+  apartment: "studio-field-apartment",
+
+  coverUrl: "studio-field-coverUrl",
+  logoUrl: "studio-field-logoUrl",
+  portfolio: "studio-field-portfolio-add",
+  address: "studio-field-city",
+};
 
   function highlightAddressFields() {
     setHighlightTone("green");
@@ -1469,99 +1519,123 @@ const compressedFiles = await Promise.all(
     goToField(profile.next.key, { tone: "green" });
   }
 
-  function goToField(key, opts = {}) {
-    const tone = opts.tone || "green";
-    setHighlightTone(tone);
+function goToField(key, opts = {}) {
+  const tone = opts.tone || "green";
+  setHighlightTone(tone);
 
-    const nextTab = resolveTabByKey(key);
-    setTabUrl(nextTab);
+  if (["name", "category", "phone", "email", "description"].includes(key)) {
+    setTabUrl("profile");
 
-    if (key === "portfolio") {
-      setTabUrl("links");
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        const id = FIELD_ID[key];
 
-      requestAnimationFrame(() => {
-        setTimeout(() => {
-          document.getElementById("studio-field-portfolio")?.scrollIntoView({
+        if (id) {
+          document.getElementById(id)?.scrollIntoView({
             behavior: "smooth",
             block: "center",
           });
 
-          setHighlightId("studio-field-portfolio-add");
-          window.setTimeout(() => setHighlightId(""), 2800);
-        }, 140);
-      });
+          setHighlightId(id);
+          window.setTimeout(() => setHighlightId(""), 1800);
+        }
 
-      return;
-    }
+        openStudioEditModal(key);
+      }, 180);
+    });
 
-    if (key === "coverUrl") {
-      setTabUrl("profile");
-      requestAnimationFrame(() => {
+    return;
+  }
+
+  if (key === "address") {
+    setTabUrl("location");
+
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        highlightAddressFields();
+
+        const firstEmpty =
+          !form.city?.trim()
+            ? "city"
+            : !form.street?.trim()
+              ? "street"
+              : !form.building?.trim()
+                ? "building"
+                : "apartment";
+
+        const targetId = FIELD_ID[firstEmpty] || "studio-field-city";
+
+        document.getElementById(targetId)?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+
+        setHighlightId(targetId);
+        window.setTimeout(() => setHighlightId(""), 1800);
+
+        openStudioEditModal(firstEmpty);
+      }, 180);
+    });
+
+    return;
+  }
+
+  if (key === "coverUrl") {
+    setTabUrl("profile");
+
+    requestAnimationFrame(() => {
+      setTimeout(() => {
         document.getElementById("studio-field-coverUrl")?.scrollIntoView({
           behavior: "smooth",
           block: "center",
         });
-        setHighlightId("studio-field-coverUrl");
-        setTimeout(() => setHighlightId(""), 2800);
-      });
-      return;
-    }
 
-    if (key === "logoUrl") {
-      setTabUrl("profile");
-      requestAnimationFrame(() => {
+        setHighlightId("studio-field-coverUrl");
+        window.setTimeout(() => setHighlightId(""), 1800);
+
+        openCoverPicker();
+      }, 180);
+    });
+
+    return;
+  }
+
+  if (key === "logoUrl") {
+    setTabUrl("profile");
+
+    requestAnimationFrame(() => {
+      setTimeout(() => {
         document.getElementById("studio-field-logoUrl")?.scrollIntoView({
           behavior: "smooth",
           block: "center",
         });
+
         setHighlightId("studio-field-logoUrl");
-        setTimeout(() => setHighlightId(""), 2800);
-      });
-      return;
-    }
+        window.setTimeout(() => setHighlightId(""), 1800);
 
-    if (key === "address") {
-      requestAnimationFrame(() => {
-        setTimeout(() => {
-          highlightAddressFields();
+        openLogoPicker();
+      }, 180);
+    });
 
-          const cityEl = document.getElementById("studio-field-city");
-          if (!cityEl) return;
+    return;
+  }
 
-          cityEl.scrollIntoView({ behavior: "smooth", block: "center" });
-          cityEl.focus?.({ preventScroll: true });
-        }, 140);
-      });
-      return;
-    }
-
-    const id = FIELD_ID[key];
-    if (!id) {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      return;
-    }
+  if (key === "portfolio") {
+    setTabUrl("links");
 
     requestAnimationFrame(() => {
       setTimeout(() => {
-        const el = document.getElementById(id);
-        if (!el) return;
+        document.getElementById("studio-field-portfolio")?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
 
-        el.scrollIntoView({ behavior: "smooth", block: "center" });
-
-        if (typeof el.focus === "function") {
-          el.focus({ preventScroll: true });
-        } else {
-          const focusable = el.querySelector?.(
-            "input, textarea, select, button",
-          );
-          focusable?.focus?.({ preventScroll: true });
-        }
-
-        setHighlightId(id);
-        window.setTimeout(() => setHighlightId(""), 2800);
-      }, 120);
+        setHighlightId("studio-field-portfolio-add");
+        window.setTimeout(() => setHighlightId(""), 1800);
+      }, 180);
     });
   }
+}
 
   const coverInputRef = useRef(null);
   const logoInputRef = useRef(null);
@@ -1606,8 +1680,6 @@ const compressedFiles = await Promise.all(
     return [...remote, ...local].slice(0, MAX_PORTFOLIO);
   }, [form.portfolioUrls, form.portfolioFiles, portfolioPreviewUrls]);
 
-  const [menuOpen, setMenuOpen] = useState(false);
-
   useEffect(() => {
     const syncMenuState = () => {
       setMenuOpen(document.body.classList.contains("menu-open"));
@@ -1628,9 +1700,85 @@ const compressedFiles = await Promise.all(
     ? getCategoryLabel(form.category)
     : "Категорія";
 
+    function openStudioEditModal(field) {
+  const config = {
+    name: {
+      title: "Назва студії",
+      value: form.name,
+    },
+    category: {
+      title: "Категорія",
+      value: form.category,
+    },
+    phone: {
+      title: "Номер телефону",
+      value: form.phone,
+    },
+    email: {
+      title: "Електронна пошта",
+      value: form.email,
+    },
+    description: {
+      title: "Опис студії",
+      value: form.description,
+    },
+    city: {
+      title: "Місто",
+      value: form.city,
+    },
+    street: {
+      title: "Вулиця",
+      value: form.street,
+    },
+    building: {
+      title: "Будинок",
+      value: form.building,
+    },
+    apartment: {
+      title: "Квартира / Офіс",
+      value: form.apartment,
+    },
+  };
+
+  setEditModal({
+    open: true,
+    field,
+    title: config[field]?.title || "Редагування",
+    value: config[field]?.value || "",
+  });
+}
+
+function closeStudioEditModal() {
+  setEditModal({
+    open: false,
+    field: "",
+    title: "",
+    value: "",
+  });
+}
+
+async function saveStudioEditModal() {
+  if (!editModal.field) return;
+
+  const field = editModal.field;
+  const value = editModal.value;
+
+  closeStudioEditModal();
+
+  setForm((prev) => {
+    const next = { ...prev, [field]: value };
+
+    setTimeout(() => {
+      save({ preventDefault: () => {} }, next);
+    }, 0);
+
+    return next;
+  });
+}
+
   return (
-    <div className="h-full">
-      <div className="mx-auto h-full max-w-6xl">
+    <div className="min-h-screen bg-[#faf8f4] pb-28">
+      <div className="mx-auto min-h-[100svh] max-w-6xl px-4 py-4 sm:px-6 lg:px-8">
         <input
           ref={coverInputRef}
           type="file"
@@ -1647,16 +1795,21 @@ const compressedFiles = await Promise.all(
           className="hidden"
         />
 
-        <div>
+        <div className="mb-6">
           <div
             ref={headerTriggerRef}
-            className="relative overflow-hidden rounded-3xl border border-[var(--color-cream)] bg-white p-5 shadow-[var(--shadow-soft)] sm:p-6"
+            className="relative overflow-hidden rounded-[28px] border border-[#eadbc9] bg-[#f2eee8] px-6 py-8 shadow-[0_22px_70px_rgba(17,17,17,0.07)] sm:px-8 sm:py-10"
           >
-            <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[var(--color-forest)] via-[var(--color-caramel)] to-[var(--color-ink)] opacity-70" />
+            <div className="absolute right-5 top-1/2 hidden h-28 w-28 -translate-y-1/2 items-center justify-center rounded-[32px] bg-[#ff5a00] text-white shadow-[0_20px_45px_rgba(255,90,0,0.28)] sm:flex">
+              <Building2 className="h-14 w-14" />
+            </div>
+
+            <div className="absolute -right-7 -top-10 hidden h-28 w-28 rounded-full bg-white/40 sm:block" />
+            <div className="absolute bottom-4 right-24 hidden h-5 w-5 rounded-full bg-[#ff5a00]/20 sm:block" />
 
             {profile.percent === 100 && (
               <div className="absolute right-4 top-4">
-                <div className="rounded-2xl bg-[var(--color-sidebar-accent)] px-3 py-2 text-[var(--color-white)]">
+                <div className="rounded-2xl bg-[#ff5a00] px-3 py-2 text-white shadow-[0_14px_28px_rgba(255,90,0,0.22)]">
                   <div className="flex items-center gap-2">
                     <div className="hidden h-7 w-7 items-center justify-center rounded-lg bg-white/20 sm:flex">
                       <Check className="h-4 w-4 text-white" />
@@ -1670,33 +1823,30 @@ const compressedFiles = await Promise.all(
               </div>
             )}
 
-            <div className="relative">
-              <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-slate-700 shadow-[0_4px_14px_rgba(15,23,42,0.05)]">
-                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-900 text-white">
-                  <Building2 className="h-3 w-3" />
-                </div>
-
-                <span>Профіль студії</span>
-
-                <div className="h-1 w-1 rounded-full bg-slate-400" />
+            <div className="relative max-w-2xl">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#ffd6bd] bg-white px-3 py-1.5 text-[#ff5a00] shadow-[0_8px_24px_rgba(255,90,0,0.08)]">
+                <Sparkles className="h-3.5 w-3.5" />
+                <span className="text-[11px] font-black uppercase tracking-[0.14em]">
+                  Профіль студії
+                </span>
               </div>
 
-              <h1 className="text-3xl font-black tracking-tight text-[var(--color-ink)] sm:text-4xl">
-                Профіль студії
+              <h1 className="max-w-xl text-4xl font-black leading-[0.95] tracking-tight text-[#202020] sm:text-6xl">
+                Профіль <span className="text-[#ff5a00]">студії</span>
               </h1>
 
-              <p className="mt-2 max-w-xl text-sm text-[var(--color-caramel)] sm:text-base">
+              <p className="mt-3 max-w-xl text-sm font-semibold text-[#77716b] sm:text-base">
                 Створіть профіль, який підвищує довіру та виглядає професійно.
               </p>
             </div>
           </div>
 
-          <div className="mt-4 rounded-2xl border border-[var(--color-cream)] bg-white px-0 py-2 shadow-sm sm:p-2">
+          <div className="mt-4 rounded-[24px] border border-[#eadbc9] bg-white px-0 py-2 shadow-[0_10px_32px_rgba(17,17,17,0.04)] sm:p-2">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div className="flex w-full justify-center gap-1 overflow-x-auto px-0 sm:gap-2 md:justify-center">
+              <div className="flex justify-center gap-1 overflow-x-auto px-0 sm:gap-2">
                 {[
                   { id: "profile", label: "Профіль" },
-                  { id: "location", label: "Адреса" },
+                  { id: "location", label: "Локація" },
                   { id: "links", label: "Портфоліо" },
                 ].map((t) => (
                   <button
@@ -1704,10 +1854,10 @@ const compressedFiles = await Promise.all(
                     type="button"
                     onClick={() => setTabUrl(t.id)}
                     className={cn(
-                      "shrink-0 whitespace-nowrap rounded-xl px-3 py-2 text-[13px] font-semibold sm:px-4 sm:py-2.5 sm:text-sm",
+                      "shrink-0 whitespace-nowrap rounded-2xl px-3 py-2 text-[13px] font-black transition-all duration-200 sm:px-4 sm:py-2.5 sm:text-sm",
                       tab === t.id
-                        ? "bg-[var(--color-sidebar-accent)] text-[var(--color-white)]"
-                        : "bg-white text-[var(--color-caramel)] hover:bg-[var(--color-cream)] hover:text-[var(--color-ink)]",
+                        ? "bg-[#ff5a00] text-white shadow-[0_12px_24px_rgba(255,90,0,0.20)]"
+                        : "bg-white text-[#77716b] hover:bg-[#fff7f0] hover:text-[#202020]",
                     )}
                   >
                     {t.label}
@@ -1716,35 +1866,31 @@ const compressedFiles = await Promise.all(
               </div>
 
               {profile.percent !== 100 && (
-                <div className="mx-auto flex w-fit max-w-full shrink-0 items-center gap-3 rounded-2xl border border-[var(--color-sand)] bg-[var(--color-cream)] px-3 py-2 sm:mx-0 sm:w-auto sm:min-w-[220px] sm:justify-between">
+                <div className="mx-auto flex w-fit max-w-full shrink-0 items-center gap-3 rounded-2xl border border-[#ffd6bd] bg-[#fff1e8] px-3 py-2 sm:mx-0 sm:w-auto sm:min-w-[220px] sm:justify-between">
                   <div className="flex items-center gap-3">
                     <div className="relative flex h-10 w-10 items-center justify-center rounded-2xl bg-white shadow-sm">
-                      <span className="absolute inline-flex h-3 w-3 animate-ping rounded-full bg-[var(--color-caramel)] opacity-75" />
-                      <span className="relative inline-flex h-3 w-3 rounded-full bg-[var(--color-sidebar-accent)]" />
+                      <span className="absolute inline-flex h-3 w-3 animate-ping rounded-full bg-[#ff5a00] opacity-75" />
+                      <span className="relative inline-flex h-3 w-3 rounded-full bg-[#ff5a00]" />
                     </div>
 
                     <div>
-                      <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--color-sidebar-accent)]">
+                      <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#ff5a00]">
                         Заповненість
                       </p>
 
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-black text-[var(--color-ink)]">
+                        <p className="text-sm font-black text-[#202020]">
                           {profile.percent}%
                         </p>
 
-                        <span className="text-xs text-[var(--color-caramel)]">
+                        <span className="text-xs font-medium text-[#77716b]">
                           {profile.done}/{profile.total}
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={goToNextIncomplete}
-                  >
+                  <Button variant="primary" size="sm" onClick={goToNextIncomplete}>
                     Заповнити
                   </Button>
                 </div>
@@ -1752,672 +1898,646 @@ const compressedFiles = await Promise.all(
             </div>
           </div>
         </div>
-        <div className="mt-4">
-          <div className="mb-20 grid grid-cols-1 gap-2 lg:grid-cols-12">
-            {tab === "profile" && (
-              <div className="space-y-6 self-start lg:col-span-12">
-                {initialLoading ? (
-                  <StudioPreviewSkeleton />
-                ) : (
-                  <section className="overflow-hidden rounded-3xl border border-[var(--color-cream)] bg-white shadow-[var(--shadow-soft)]">
-                    <div
-                      id="studio-field-coverUrl"
-                      className="relative h-44 bg-[var(--color-cream)]"
-                    >
-                      {hasCover ? (
-                        <button
-                          type="button"
-                          onClick={pickCoverFromPreview}
-                          className="h-full w-full"
-                        >
-                          <img
-                            src={coverSrc}
-                            alt="Обкладинка"
-                            className="h-full w-full object-cover"
-                            onError={(e) => {
-                              if (!coverPreviewUrl)
-                                e.currentTarget.style.display = "none";
-                            }}
-                          />
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={pickCoverFromPreview}
-                          onKeyDown={onKeyboardPick(pickCoverFromPreview)}
-                          className="flex h-full w-full items-center justify-center gap-2 px-6 text-center text-sm font-medium text-[var(--color-caramel)] transition hover:text-[var(--color-ink)]"
-                          title="Завантажити обкладинку"
-                        >
-                          <Plus className="h-4 w-4" />
-                          Додати обкладинку
-                          {highlightId === "studio-field-coverUrl" && (
-                            <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-[rgba(180,140,108,0.18)] backdrop-blur-[1px]">
-                              <span className="flex h-full w-full items-center justify-center gap-2 px-6 text-center text-sm font-medium text-[var(--color-caramel)]">
-                                <Plus className="h-4 w-4" />
-                                Додати обкладинку
-                              </span>
-                            </div>
-                          )}
-                        </button>
-                      )}
 
-                      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/55 via-black/20 to-transparent" />
+        <div className="space-y-6">
+          {tab === "profile" && (
+            <div className="space-y-6">
+              {initialLoading ? (
+                <StudioPreviewSkeleton />
+              ) : (
+<section className="overflow-hidden rounded-[30px] border border-[#eadbc9] bg-white p-3 shadow-[0_18px_50px_rgba(17,17,17,0.06)]">
+  <div className="relative h-[410px] overflow-hidden rounded-[30px] bg-[#202020] text-white shadow-[0_14px_34px_rgba(0,0,0,0.16)] max-[639px]:h-[200px] max-[639px]:rounded-[20px] sm:h-[215px] sm:rounded-[18px]">
+    <button
+      id="studio-field-coverUrl"
+      type="button"
+      onClick={() => coverInputRef.current?.click()}
+      disabled={saving}
+      className="group absolute inset-0 block h-full w-full overflow-hidden"
+    >
+      {coverSrc ? (
+        <img
+          src={coverSrc}
+          alt="Обкладинка"
+          className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
+          onError={(e) => (e.currentTarget.style.display = "none")}
+        />
+      ) : (
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_15%,#5c5248,#191919_56%)]" />
+      )}
 
-                      {hasCover && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeImage("coverUrl");
-                          }}
-                          className="absolute right-2 top-2 z-10 grid h-8 w-8 place-items-center rounded-xl border border-[var(--color-cream)] bg-white/90 text-[var(--color-caramel)] shadow-sm backdrop-blur transition hover:border-[var(--color-danger-border)] hover:bg-[var(--color-danger-bg)] hover:text-[var(--color-danger)]"
-                          title="Видалити обкладинку"
-                          aria-label="Remove cover"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      )}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-black/10" />
 
-                      <div className="absolute -bottom-10 left-3 right-3 flex min-w-0 items-end gap-2">
-                        <div
-                          id="studio-field-logoUrl"
-                          className={cn(
-                            "relative h-20 w-20 shrink-0 overflow-hidden rounded-[22px] border border-[var(--color-cream)] bg-white shadow-sm transition-all duration-300",
-                            highlightId === "studio-field-logoUrl" &&
-                              cn(highlightClass, "scale-105"),
-                          )}
-                        >
-                          <button
-                            type="button"
-                            onClick={pickLogoFromPreview}
-                            onKeyDown={onKeyboardPick(pickLogoFromPreview)}
-                            className="relative h-full w-full"
-                            title="Завантажити логотип"
-                          >
-                            {hasLogo ? (
-                              <img
-                                src={logoSrc}
-                                alt="Лого"
-                                className="h-full w-full object-cover"
-                                onError={(e) =>
-                                  (e.currentTarget.style.display = "none")
-                                }
-                              />
-                            ) : (
-                              <div className="flex h-full w-full items-center justify-center text-[var(--color-caramel)]">
-                                <span className="flex items-center justify-center">
-                                  <Camera className="h-7 w-7" />
-                                </span>
-                              </div>
-                            )}
+      <div className="absolute inset-0 grid place-items-center bg-black/25 opacity-0 transition group-hover:opacity-100">
+        <span className="inline-flex items-center gap-2 rounded-full bg-white/95 px-4 py-2 text-xs font-black text-[#202020] shadow-lg">
+          <Camera className="h-4 w-4 text-[#ff5a00]" />
+          Змінити обкладинку
+        </span>
+      </div>
+    </button>
 
-                            {highlightId === "studio-field-logoUrl" && (
-                              <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-[rgba(180,140,108,0.20)] backdrop-blur-[1px]">
-                                <span className="flex items-center justify-center rounded-lg bg-white/90 p-1.5 text-[var(--color-forest)] shadow">
-                                  <Camera className="h-7 w-7" />
-                                </span>
-                              </div>
-                            )}
-                          </button>
-                        </div>
+    <div className="absolute left-2.5 top-2.5 z-10 inline-flex h-6 max-w-[58%] items-center gap-1 rounded-full border border-white/40 bg-white/92 px-2 shadow-[0_8px_18px_rgba(20,20,20,0.1)] backdrop-blur-md sm:left-4 sm:top-4 sm:h-7 sm:px-3">
+      <span className="grid h-4 w-4 place-items-center rounded-full bg-[#fff3e9] text-[#ff6200] sm:h-5 sm:w-5">
+        <Building2 className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
+      </span>
 
-                        <div className="min-h-[44px] min-w-0 rounded-2xl border border-[var(--color-cream)] bg-white px-3 py-2 shadow-sm">
-                          <p
-                            className="line-clamp-2 w-full min-w-0 break-words text-sm font-bold leading-5 text-[var(--color-ink)] sm:text-base"
-                            title={
-                              form.name.trim() ? form.name : "Назва студії"
-                            }
-                          >
-                            {form.name.trim() ? form.name : "Назва студії"}
-                          </p>
+      <span className="truncate text-[9px] font-bold tracking-[-0.01em] text-[#1c1c1c] sm:text-[11px]">
+        {categoryLabel}
+      </span>
+    </div>
 
-                          <p
-                            className="line-clamp-2 w-full min-w-0 break-words text-xs text-[var(--color-caramel)] sm:text-sm"
-                            title={`${categoryLabel} • ${form.city.trim() ? form.city : "Місто"}`}
-                          >
-                            {categoryLabel +
-                              " • " +
-                              (form.city.trim() ? form.city : "Місто")}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
+    <div className="absolute bottom-3 left-3 right-3 z-10 flex items-end gap-2 sm:bottom-4 sm:left-4 sm:right-4 sm:gap-3">
+      <button
+        id="studio-field-logoUrl"
+        type="button"
+        onClick={() => logoInputRef.current?.click()}
+        disabled={saving}
+        className="group relative grid h-[72px] w-[72px] shrink-0 place-items-center overflow-hidden rounded-[18px] bg-white text-black shadow-[0_12px_28px_rgba(0,0,0,0.22)] transition active:scale-[0.98] sm:h-[58px] sm:w-[58px] sm:rounded-[15px]"
+      >
+        {logoSrc ? (
+          <img
+            src={logoSrc}
+            alt="Лого"
+            className="h-full w-full object-cover object-center"
+            onError={(e) => (e.currentTarget.style.display = "none")}
+          />
+        ) : (
+          <Camera className="h-9 w-9 text-black sm:h-7 sm:w-7" />
+        )}
 
-                    <div className="px-3 pb-3 pt-10"></div>
-                  </section>
-                )}
-              </div>
-            )}
+        <span className="absolute inset-0 grid place-items-center bg-black/40 text-white opacity-0 transition group-hover:opacity-100">
+          <Camera className="h-5 w-5" />
+        </span>
+      </button>
 
-            <div className={cn("space-y-6", "lg:col-span-12")}>
-              <form onSubmit={save} className="space-y-6">
-                {tab === "profile" &&
-                  (initialLoading ? (
-                    <StudioProfileFormSkeleton />
-                  ) : (
-                    <SectionCard
-                      title={
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-sidebar-accent)] text-white shadow-sm">
-                            <Building2 className="h-5 w-5" />
-                          </div>
+      <div className="min-w-0 flex-1">
+        <h2 className="truncate text-[16px] font-black leading-none tracking-[-0.04em] sm:text-[17px]">
+          {form.name.trim() || "Назва студії"}
+        </h2>
 
-                          <div>
-                            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--color-sidebar-accent)]">
-                              Основна інформація
-                            </p>
+        <p className="mt-1 flex items-center gap-1 truncate leading-none text-[10px] font-medium text-white sm:text-[10px] md:text-[10px] lg:text-[11px]">
+          <MapPin className="-mt-[1px] h-3 w-3 shrink-0 text-[#ff6200]" />
+          {addressPreview}
+        </p>
 
-                            <h2 className="text-xl font-black tracking-[-0.03em] text-[var(--color-ink)]">
-                              Профіль студії
-                            </h2>
-                          </div>
-                        </div>
-                      }
-                      subtitle="Назва, категорія та опис — ключові для довіри клієнтів."
-                    >
-                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <Field label="Назва студії" error={errors.name}>
-                          <input
-                            id="studio-field-name"
-                            value={form.name}
-                            onChange={(e) => setField("name", e.target.value)}
-                            placeholder="Напр. PlanDay Studio"
-                            className={fieldClass("studio-field-name")}
-                          />
-                        </Field>
-
-                        <Field label="Категорія" error={errors.category}>
-                          <CustomSelect
-                            id="studio-field-category"
-                            value={form.category}
-                            onChange={(nextValue) =>
-                              setField("category", nextValue)
-                            }
-                            placeholder="Оберіть категорію"
-                            className={cn(
-                              baseFieldClass,
-                              "justify-between px-4 py-3",
-                              highlightId === "studio-field-category"
-                                ? highlightClass
-                                : "",
-                            )}
-                            options={[
-                              { value: "", label: "Оберіть категорію" },
-                              ...STUDIO_CATEGORIES.map((cat) => ({
-                                value: cat.value,
-                                label: cat.label,
-                              })),
-                            ]}
-                          />
-                        </Field>
-
-                        <Field label="Номер телефону" error={errors.phone}>
-                          <input
-                            id="studio-field-phone"
-                            value={form.phone}
-                            onChange={(e) => setField("phone", e.target.value)}
-                            placeholder="+380 67 123 45 67"
-                            inputMode="tel"
-                            className={fieldClass("studio-field-phone")}
-                          />
-                        </Field>
-
-                        <Field label="Пошта" error={errors.email}>
-                          <input
-                            id="studio-field-email"
-                            type="email"
-                            autoComplete="email"
-                            value={form.email || ""}
-                            onChange={(e) => setField("email", e.target.value)}
-                            placeholder="name@email.com"
-                            className={fieldClass("studio-field-email")}
-                          />
-                        </Field>
-
-                        <div className="sm:col-span-2">
-                          <Field
-                            label="Опис"
-                            hint={`${form.description.length}/${MAX_DESC}`}
-                            error={errors.description}
-                          >
-                            <textarea
-                              id="studio-field-description"
-                              value={form.description}
-                              onChange={(e) =>
-                                setField("description", e.target.value)
-                              }
-                              rows={5}
-                              placeholder="2–4 речення: розкажіть про себе: досвід, підхід до роботи та що робить ваш сервіс особливим."
-                              className={fieldClass("studio-field-description")}
-                            />
-                          </Field>
-                          {!form.description.trim() && (
-                            <div className="mt-3 overflow-hidden rounded-[30px] border border-[var(--color-sidebar-accent-soft)]/40 bg-gradient-to-br from-white via-[var(--color-cream)] to-white shadow-[0_18px_44px_rgba(27,27,27,0.07)]">
-                              <div className="p-4 sm:p-5">
-                                <div className="min-w-0">
-                                  <h3 className="mt-1 flex items-center justify-center gap-2 text-center text-lg font-black leading-tight tracking-[-0.03em] text-[var(--color-ink)]">
-                                    <Sparkles className="h-5 w-5 shrink-0 text-[var(--color-sidebar-accent)]" />
-                                    <span>Підказка для опису</span>
-                                  </h3>
-
-                                  <p className="mt-2 text-center text-sm leading-6 text-[var(--color-caramel)]">
-                                    Напишіть коротко, чому клієнтам варто обрати
-                                    саме вас <br />
-                                    Достатньо 2–4 речень про спеціалізацію,
-                                    підхід до роботи та головні переваги студії.
-                                  </p>
-
-                                  <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-                                    {[
-                                      "Досвід",
-                                      "Стиль роботи",
-                                      "Стерильність",
-                                      "Бренди",
-                                      "Атмосфера",
-                                      "Якість роботи",
-                                    ].map((item) => (
-                                      <span
-                                        key={item}
-                                        className="rounded-full border border-[var(--color-cream)] bg-white px-3 py-1.5 text-xs font-bold text-[var(--color-sidebar-accent)] shadow-sm"
-                                      >
-                                        {item}
-                                      </span>
-                                    ))}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </SectionCard>
-                  ))}
-
-                {tab === "location" &&
-                  (initialLoading ? (
-                    <StudioLocationFormSkeleton />
-                  ) : (
-                    <SectionCard
-                      title={
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-sidebar-accent)] text-white shadow-sm">
-                            <MapPin className="h-5 w-5" />
-                          </div>
-
-                          <div>
-                            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--color-sidebar-accent)]">
-                              Адреса студії
-                            </p>
-
-                            <h2 className="text-xl font-black tracking-[-0.03em] text-[var(--color-ink)]">
-                              Адреса
-                            </h2>
-                          </div>
-                        </div>
-                      }
-                      subtitle="Адреса відображається клієнтам і впливає на пошук."
-                    >
-                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <Field label="Місто">
-                          <input
-                            id="studio-field-city"
-                            value={form.city}
-                            onChange={(e) => setField("city", e.target.value)}
-                            placeholder="Київ"
-                            className={fieldClass("studio-field-city")}
-                          />
-                        </Field>
-
-                        <Field label="Вулиця">
-                          <input
-                            id="studio-field-street"
-                            value={form.street}
-                            onChange={(e) => setField("street", e.target.value)}
-                            placeholder="Хрещатик"
-                            className={fieldClass("studio-field-street")}
-                          />
-                        </Field>
-
-                        <Field label="Будинок">
-                          <input
-                            id="studio-field-building"
-                            value={form.building}
-                            onChange={(e) =>
-                              setField("building", e.target.value)
-                            }
-                            placeholder="10"
-                            className={fieldClass("studio-field-building")}
-                          />
-                        </Field>
-
-                        <Field label="Квартира/Офіс">
-                          <input
-                            id="studio-field-apartment"
-                            value={form.apartment}
-                            onChange={(e) =>
-                              setField("apartment", e.target.value)
-                            }
-                            placeholder="23"
-                            className={fieldClass("studio-field-apartment")}
-                          />
-                        </Field>
-                      </div>
-                    </SectionCard>
-                  ))}
-
-                {tab === "links" &&
-                  (initialLoading ? (
-                    <StudioPortfolioSkeleton />
-                  ) : (
-                    <SectionCard
-                      title={
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-sidebar-accent)] text-white shadow-sm">
-                            <Camera className="h-5 w-5" />
-                          </div>
-
-                          <div>
-                            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--color-sidebar-accent)]">
-                              Роботи студії
-                            </p>
-
-                            <h2 className="text-xl font-black tracking-[-0.03em] text-[var(--color-ink)]">
-                              Портфоліо
-                            </h2>
-                          </div>
-                        </div>
-                      }
-                     subtitle="Додай до 6 фото робіт — це сильніше за будь-який текст."
-                    >
-                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <div
-                          id="studio-field-portfolio"
-                          className="pb-12 sm:col-span-2 md:pb-0"
-                        >
-                          <Field
-                            label="Портфоліо (фото робіт)"
-                            error={errors.portfolioUrls}
-                            hint={`${portfolioCount}/${MAX_PORTFOLIO}`}
-                          >
-                            <div className="flex flex-wrap items-center gap-2">
-                              <label
-                                id="studio-field-portfolio-add"
-                                className={cn(
-                                  "inline-flex cursor-pointer items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-semibold text-white transition-all duration-200 active:scale-[0.98]",
-
-                                  // 👉 gradient через nude-green
-                                  "bg-[var(--color-sidebar-accent)] hover:bg-[var(--color-sidebar-accent-hover)]",
-
-                                  // 👉 hover
-                                  "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]",
-
-                                  highlightId ===
-                                    "studio-field-portfolio-add" &&
-                                    highlightClass,
-                                )}
-                              >
-                                <Plus className="h-4 w-4" />
-                                Додати фото
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  multiple
-                                  onChange={pickPortfolioImages}
-                                  className="hidden"
-                                />
-                              </label>
-
-                            </div>
-
-                            <div className="mt-4">
-                              {!hasAnyPortfolio ? (
-                                <div className="rounded-2xl border-2 border-dashed border-[var(--color-caramel)]/40 bg-[var(--color-cream)] p-4 text-sm text-center">
-                                  <div className="mb-3 flex items-center justify-center">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/70">
-                                      <Camera className="h-5 w-5 text-[var(--color-caramel)]" />
-                                    </div>
-                                  </div>
-
-                                  <p className="text-[var(--color-caramel)] leading-relaxed">
-                                    Додай фото робіт — це{" "}
-                                    <span className="font-semibold">
-                                      найсильніший доказ якості
-                                    </span>
-                                    .
-                                  </p>
-                                </div>
-                              ) : (
-                                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-[repeat(auto-fill,minmax(180px,1fr))]">
-                                  {portfolioItems.map((item, idx) => {
-                                    const src = item.src;
-                                    const isFirst = idx === 0;
-                                    const isLast =
-                                      idx === portfolioItems.length - 1;
-
-                                    return (
-                                      <div key={item.key} className="relative">
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            setPortfolioPreview({
-                                              open: true,
-                                              src,
-                                            })
-                                          }
-                                          className="group relative block w-full overflow-hidden rounded-[22px] border border-[var(--color-cream)] bg-[var(--color-cream)] transition hover:shadow-[0_10px_24px_rgba(27,27,27,0.10)]"
-                                          style={{ aspectRatio: "1 / 1" }}
-                                        >
-                                          <img
-                                            src={src}
-                                            alt={`work ${idx + 1}`}
-                                            className="h-full w-full object-cover"
-                                          />
-
-<div className="pointer-events-none absolute inset-0">
-  {/* X зверху справа */}
-  <button
-    type="button"
-    onClick={(e) => {
-      e.stopPropagation();
-      removePortfolioMixed(idx);
-    }}
-    className="
-      pointer-events-auto
-      absolute right-2 top-[4%]
-      flex h-9 w-9 items-center justify-center
-      rounded-full
-      bg-white/95
-      text-[var(--color-windows-cancel)]
-      shadow-[0_4px_12px_rgba(0,0,0,0.18)]
-      backdrop-blur-md
-      transition-all duration-200
-      hover:bg-[var(--color-danger-bg)]
-      hover:text-[var(--color-danger)]
-      active:scale-95
-    "
-    title="Видалити"
-    aria-label="Remove"
-  >
-    <X className="h-4 w-4" />
-  </button>
-
-  {/* Стрілка вліво */}
-  <button
-    type="button"
-    onClick={(e) => {
-      e.stopPropagation();
-      movePortfolioMixed(idx, idx - 1);
-    }}
-    disabled={isFirst}
-    className="
-      pointer-events-auto
-      absolute left-2 top-[86%]
-      flex h-9 w-9 -translate-y-1/2
-      items-center justify-center
-      rounded-full
-      bg-white/95
-      text-[var(--color-ink)]
-      shadow-[0_4px_12px_rgba(0,0,0,0.18)]
-      backdrop-blur-md
-      transition-all duration-200
-      hover:bg-white
-      active:scale-95
-      disabled:opacity-30
-    "
-    title="Вліво"
-    aria-label="Move left"
-  >
-    <ChevronLeft className="h-4 w-4" />
-  </button>
-
-  {/* Стрілка вправо */}
-  <button
-    type="button"
-    onClick={(e) => {
-      e.stopPropagation();
-      movePortfolioMixed(idx, idx + 1);
-    }}
-    disabled={isLast}
-    className="
-      pointer-events-auto
-      absolute right-2 top-[86%]
-      flex h-9 w-9 -translate-y-1/2
-      items-center justify-center
-      rounded-full
-      bg-white/95
-      text-[var(--color-ink)]
-      shadow-[0_4px_12px_rgba(0,0,0,0.18)]
-      backdrop-blur-md
-      transition-all duration-200
-      hover:bg-white
-      active:scale-95
-      disabled:opacity-30
-    "
-    title="Вправо"
-    aria-label="Move right"
-  >
-    <ChevronRight className="h-4 w-4" />
-  </button>
-</div>
-                                        </button>
-
-                                        <div className="mt-1 text-center text-xs text-[var(--color-caramel)]">
-                                          #{idx + 1}
-                                        </div>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              )}
-                            </div>
-                          </Field>
-                        </div>
-                      </div>
-                    </SectionCard>
-                  ))}
-              </form>
+        <p className="mt-1 flex items-center gap-1 text-[10px] font-semibold text-[#13a044] sm:text-xs">
+          <span className="h-1.5 w-1.5 rounded-full bg-[#13a044] shadow-[0_0_0_3px_rgba(19,160,68,0.16)]" />
+          Попередній вигляд
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+              )}
             </div>
+          )}
+
+          <div className="space-y-6">
+            <form onSubmit={save} className="space-y-6">
+              {tab === "profile" &&
+                (initialLoading ? (
+                  <StudioProfileFormSkeleton />
+                ) : (
+<section className="overflow-hidden rounded-[30px] border border-[#eadfce] bg-white shadow-[0_14px_36px_rgba(15,23,42,0.06)]">
+  <div className="flex items-center justify-between gap-3 border-b border-[#eee8df] px-5 py-4 sm:px-7">
+    <h3 className="text-[24px] font-black tracking-[-0.05em] text-[#202020]">
+      Дані студії
+    </h3>
+  </div>
+
+  <div>
+    {[
+{
+  icon: <Building2 className="h-5 w-5" />,
+  label: "Назва студії",
+  value: form.name || "Не вказано",
+  id: "studio-field-name",
+  field: "name",
+},
+{
+  icon: <Sparkles className="h-5 w-5" />,
+  label: "Категорія",
+  value: getCategoryLabel(form.category) || "Не вказано",
+  id: "studio-field-category",
+  field: "category",
+},
+{
+  icon: <Phone className="h-5 w-5" />,
+  label: "Номер телефону",
+  value: form.phone || "Не вказано",
+  id: "studio-field-phone",
+  field: "phone",
+},
+{
+  icon: <Mail className="h-5 w-5" />,
+  label: "Електронна пошта",
+  value: form.email || "Не вказано",
+  id: "studio-field-email",
+  field: "email",
+},
+{
+  icon: <FileText className="h-5 w-5" />,
+  label: "Опис студії",
+  value: form.description || "Не вказано",
+  id: "studio-field-description",
+  field: "description",
+},
+    ].map((item) => (
+      <button
+        key={item.id}
+        type="button"
+onClick={() => openStudioEditModal(item.field)}
+        className={cn(
+  "group flex w-full items-center justify-between gap-4 border-b border-[#eee8df] px-5 py-4 text-left transition last:border-b-0 hover:bg-[#fbfaf8] sm:px-7",
+  highlightId === item.id &&
+    "bg-[#fff1e8] ring-2 ring-[#ff6200]/20"
+)}>
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[16px] bg-[#f7f5f1] text-[#77716b] transition group-hover:bg-[#fff1e8] group-hover:text-[#ff6200]">
+          {item.icon}
+        </div>
+
+        <div className="flex min-w-0 flex-1 items-center gap-4">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold text-[#77716b]">
+              {item.label}
+            </p>
+<p
+  className={cn(
+    "mt-1 text-sm font-black text-[#202020]",
+    item.id === "studio-field-description"
+      ? "line-clamp-2"
+      : "truncate",
+  )}
+>
+  {item.value}
+</p>
           </div>
 
-          <div
-            className={cn(
-              "fixed z-[90] transition-all duration-300",
-              "left-1/2 top-[calc(1rem+env(safe-area-inset-top))] w-[calc(100%-2rem)] max-w-[430px] -translate-x-1/2",
-              "md:bottom-6 md:left-6 md:top-auto md:w-auto md:min-w-[300px] md:max-w-[360px] md:translate-x-0",
-              toast.open
-                ? "translate-y-0 opacity-100"
-                : "pointer-events-none -translate-y-2 opacity-0 md:translate-y-2",
-            )}
-            role="status"
-            aria-live="polite"
-          >
-            <div
-              className={cn(
-                "relative overflow-hidden rounded-[24px] border bg-white/95 backdrop-blur-xl shadow-[0_18px_50px_rgba(27,27,27,0.16)]",
-                toast.type === "success"
-                  ? "border-[var(--color-sand)] ring-1 ring-[var(--color-confirmed-bg)]"
-                  : "border-[var(--color-danger-border)] ring-1 ring-[rgba(213,92,82,0.10)]",
-              )}
-            >
-              <div
-                className={cn(
-                  "absolute inset-x-0 top-0 h-1",
-                  toast.type === "success"
-                    ? "bg-gradient-to-r from-[var(--color-sidebar-accent)] via-[var(--color-sidebar-accent-hover)] to-[var(--color-sidebar-accent-soft)]"
-                    : "bg-gradient-to-r from-[var(--color-danger-border)] via-[var(--color-danger)] to-[var(--color-danger-dark)]",
-                )}
-              />
-
-              <div className="relative flex items-start gap-3 px-4 py-4 sm:px-5">
-                <div
-                  className={cn(
-                    "mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full shadow-[0_8px_22px_rgba(27,27,27,0.08)]",
-                    toast.type === "success"
-                      ? "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))] text-white"
-                      : "border border-[var(--color-danger-border)] bg-[var(--color-danger-bg)] text-[var(--color-danger)]",
-                  )}
-                >
-                  {toast.type === "success" ? (
-                    <Check className="h-5 w-5" />
-                  ) : (
-                    <XCircle className="h-5 w-5" />
-                  )}
-                </div>
-
-                <div className="min-w-0 flex-1">
-                  <p className="mt-2 text-[15px] font-black leading-5 text-[var(--color-ink)]">
-                    {toast.title ||
-                      (toast.type === "success" ? "Збережено" : "Помилка")}
-                  </p>
-
-                  {toast.text && (
-                    <p className="mt-1 text-sm leading-5 text-[var(--color-caramel)]">
-                      {toast.text}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="h-[3px] w-full bg-[var(--color-cream)]">
-                <div
-                  key={toast.id}
-                  className={cn(
-                    "h-full w-full origin-left",
-                    toast.type === "success"
-                      ? "bg-[var(--color-forest)]"
-                      : "bg-[var(--color-danger)]",
-                  )}
-                  style={{
-                    animation: `toastbar ${toast.duration}ms linear forwards`,
-                  }}
-                />
-              </div>
-            </div>
-
-            <style>{`
-    @keyframes toastbar {
-      from { transform: scaleX(1); }
-      to   { transform: scaleX(0); }
-    }
-  `}</style>
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#fff3e9] text-[#ff6200] transition-all duration-200 group-hover:scale-105 group-hover:bg-[#ff6200] group-hover:text-white">
+            <PencilLine className="h-3.5 w-3.5" />
           </div>
         </div>
+        
+      </button>
+    ))}
+  </div>
+  
+</section>
+                ))}
+
+{tab === "location" &&
+  (initialLoading ? (
+    <StudioLocationFormSkeleton />
+  ) : (
+    <>
+      <section className="overflow-hidden rounded-[30px] border border-[#eadfce] bg-white shadow-[0_14px_36px_rgba(15,23,42,0.06)]">
+        <div className="flex items-center justify-between gap-3 border-b border-[#eee8df] px-5 py-4 sm:px-7">
+          <h3 className="text-[24px] font-black tracking-[-0.05em] text-[#202020]">
+            Локація студії
+          </h3>
+        </div>
+
+        <div>
+          {[
+            {
+  icon: <MapPin className="h-5 w-5" />,
+  label: "Місто",
+  value: form.city || "Не вказано",
+  targetId: "studio-field-city",
+  field: "city",
+},
+{
+  icon: <MapPin className="h-5 w-5" />,
+  label: "Вулиця",
+  value: form.street || "Не вказано",
+  targetId: "studio-field-street",
+  field: "street",
+},
+{
+  icon: <Building2 className="h-5 w-5" />,
+  label: "Будинок",
+  value: form.building || "Не вказано",
+  targetId: "studio-field-building",
+  field: "building",
+},
+{
+  icon: <Building2 className="h-5 w-5" />,
+  label: "Квартира / Офіс",
+  value: form.apartment || "Не вказано",
+  targetId: "studio-field-apartment",
+  field: "apartment",
+},
+          ].map((item) => (
+            <button
+              key={item.targetId}
+              type="button"
+onClick={() => openStudioEditModal(item.field)}
+              className={cn(
+                "group flex w-full items-center justify-between gap-4 border-b border-[#eee8df] px-5 py-4 text-left transition last:border-b-0 hover:bg-[#fbfaf8] sm:px-7",
+                highlightId === item.targetId &&
+                  "bg-[#fff1e8] ring-2 ring-[#ff6200]/20"
+              )}
+            >
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[16px] bg-[#f7f5f1] text-[#77716b] transition group-hover:bg-[#fff1e8] group-hover:text-[#ff6200]">
+                {item.icon}
+              </div>
+
+              <div className="flex min-w-0 flex-1 items-center gap-4">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-bold text-[#77716b]">
+                    {item.label}
+                  </p>
+
+                  <p className="mt-1 truncate text-sm font-black text-[#202020]">
+                    {item.value}
+                  </p>
+                </div>
+
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#fff3e9] text-[#ff6200] transition-all duration-200 group-hover:scale-105 group-hover:bg-[#ff6200] group-hover:text-white">
+                  <PencilLine className="h-3.5 w-3.5" />
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+
+        <div className="border-t border-[#eee8df] px-5 py-5 sm:px-7">
+          <div className="rounded-[22px] border border-[#eadbc9] bg-[#f8f5f1] p-4">
+            <p className="text-xs font-black uppercase tracking-[0.12em] text-[#ff6200]">
+              Повна адреса
+            </p>
+
+            <p className="mt-2 text-sm font-black text-[#202020]">
+              {AddressLine}
+            </p>
+          </div>
+        </div>
+      </section>
+    </>
+  ))}
+
+              {tab === "links" &&
+                (initialLoading ? (
+                  <StudioPortfolioSkeleton />
+                ) : (
+                  <SectionCard
+                    title="Портфоліо"
+                    subtitle="Додай 4–12 фото робіт — це сильніше за будь-який текст."
+                  >
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div
+                        id="studio-field-portfolio"
+                        className="pb-12 sm:col-span-2 md:pb-0"
+                      >
+                        <Field
+                          label="Портфоліо (фото робіт)"
+                          error={errors.portfolioUrls}
+                          hint={`${portfolioCount}/${MAX_PORTFOLIO}`}
+                        >
+                          <div className="flex flex-wrap items-center gap-2">
+                            <label
+                              id="studio-field-portfolio-add"
+                              className={cn(
+                                "inline-flex cursor-pointer items-center justify-center gap-2 rounded-2xl bg-[#ff5a00] px-4 py-2.5 text-sm font-black text-white shadow-[0_14px_30px_rgba(255,90,0,0.22)] transition hover:bg-[#ef4f00] active:scale-[0.98]",
+                                highlightId === "studio-field-portfolio-add" &&
+                                  highlightClass,
+                              )}
+                            >
+                              <Plus className="h-4 w-4" />
+                              Додати фото
+                              <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                onChange={pickPortfolioImages}
+                                className="hidden"
+                              />
+                            </label>
+
+                            {portfolioCount > 0 && (
+                              <Button
+                                variant="danger"
+                                onClick={clearPortfolio}
+                                disabled={!portfolioCount || clearingPortfolio || saving}
+                              >
+                                {clearingPortfolio ? "Очищення..." : "Очистити"}
+                              </Button>
+                            )}
+                          </div>
+
+                          <div className="mt-4">
+                            {!hasAnyPortfolio ? (
+                              <div className="rounded-2xl border border-dashed border-[#ffd6bd] bg-[#fff1e8] p-4 text-sm font-semibold text-[#77716b]">
+                                Додай фото робіт — це найсильніший доказ якості.
+                              </div>
+                            ) : (
+                              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-[repeat(auto-fill,minmax(180px,1fr))]">
+                                {portfolioItems.map((item, idx) => {
+                                  const src = item.src;
+                                  const isFirst = idx === 0;
+                                  const isLast = idx === portfolioItems.length - 1;
+
+                                  return (
+                                    <div key={item.key} className="relative">
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          setPortfolioPreview({ open: true, src })
+                                        }
+                                        className="group block w-full overflow-hidden rounded-[22px] border border-[#eadbc9] bg-[#fff7f0] transition hover:shadow-[0_10px_24px_rgba(27,27,27,0.10)]"
+                                        style={{ aspectRatio: "1 / 1" }}
+                                      >
+                                        <img
+                                          src={src}
+                                          alt={`work ${idx + 1}`}
+                                          className="h-full w-full object-cover"
+                                        />
+
+                                        <div className="pointer-events-none absolute inset-x-0 bottom-0 p-2">
+                                          <div className="absolute inset-x-0 bottom-0 h-16 rounded-b-2xl bg-gradient-to-t from-black/60 via-black/25 to-transparent" />
+
+                                          <div className="pointer-events-auto relative flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                              <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  movePortfolioMixed(idx, idx - 1);
+                                                }}
+                                                disabled={isFirst}
+                                                className="flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-[#202020] backdrop-blur-md shadow-sm ring-1 ring-black/5 transition-all hover:bg-white hover:shadow-md active:scale-95 disabled:opacity-30"
+                                                title="Вліво"
+                                                aria-label="Move left"
+                                              >
+                                                <ChevronLeft className="h-4 w-4" />
+                                              </button>
+
+                                              <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  movePortfolioMixed(idx, idx + 1);
+                                                }}
+                                                disabled={isLast}
+                                                className="flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-[#202020] backdrop-blur-md shadow-sm ring-1 ring-black/5 transition-all hover:bg-white hover:shadow-md active:scale-95 disabled:opacity-30"
+                                                title="Вправо"
+                                                aria-label="Move right"
+                                              >
+                                                <ChevronRight className="h-4 w-4" />
+                                              </button>
+                                            </div>
+
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                removePortfolioMixed(idx);
+                                              }}
+                                              className="flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-[#77716b] backdrop-blur-md shadow-sm ring-1 ring-black/5 transition-all hover:bg-[#fff1f1] hover:text-[#e5484d] hover:ring-[#ffd8d8] hover:shadow-md active:scale-95"
+                                              title="Видалити"
+                                              aria-label="Remove"
+                                            >
+                                              <X className="h-4 w-4" />
+                                            </button>
+                                          </div>
+                                        </div>
+                                      </button>
+
+                                      <div className="mt-1 text-center text-xs text-[#77716b]">
+                                        #{idx + 1}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        </Field>
+                      </div>
+                    </div>
+                  </SectionCard>
+                ))}
+                {editModal.open && (
+  <div className="fixed inset-0 z-[9999] flex items-end justify-center bg-[#202020]/45 px-3 pb-3 backdrop-blur-[6px] sm:items-center sm:p-6">
+    <div className="w-full max-w-lg overflow-hidden rounded-[30px] border border-[#f0e2d3] bg-[#f7f5f1] shadow-[0_30px_90px_rgba(15,23,42,0.24)]">
+      <div className="relative overflow-hidden bg-[#f3eee7] px-5 py-5 sm:px-6 sm:py-6">
+        <div className="absolute right-[-55px] top-[-70px] h-[180px] w-[180px] rounded-full bg-[#ff6200]/10 blur-3xl" />
+
+        <div className="relative z-10 flex items-start justify-between gap-4">
+          <div>
+            <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-white px-3 text-[11px] font-black uppercase tracking-[0.08em] text-[#ff6200] shadow-[0_8px_20px_rgba(255,98,0,0.08)]">
+              <PencilLine className="h-3.5 w-3.5" />
+              Редагування
+            </span>
+
+            <h3 className="mt-3 text-[26px] font-black leading-[0.95] tracking-[-0.05em] text-[#202020] sm:text-[32px]">
+              {editModal.title}
+            </h3>
+          </div>
+
+          <button
+            type="button"
+            onClick={closeStudioEditModal}
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white text-[#77716b] shadow-[0_10px_24px_rgba(15,23,42,0.06)] transition hover:bg-[#fff3e9] hover:text-[#ff6200] active:scale-[0.96]"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-white px-5 py-5 sm:px-6">
+        {editModal.field === "category" ? (
+          <CustomSelect
+            value={editModal.value}
+            onChange={(value) =>
+              setEditModal((prev) => ({ ...prev, value }))
+            }
+            options={STUDIO_CATEGORIES}
+            placeholder="Оберіть категорію"
+          />
+        ) : editModal.field === "description" ? (
+          <textarea
+            value={editModal.value}
+            onChange={(e) =>
+              setEditModal((prev) => ({
+                ...prev,
+                value: e.target.value.slice(0, MAX_DESC),
+              }))
+            }
+            rows={5}
+            placeholder="Коротко опишіть студію"
+            className={baseFieldClass}
+          />
+        ) : (
+          <input
+            value={editModal.value}
+            onChange={(e) =>
+              setEditModal((prev) => ({ ...prev, value: e.target.value }))
+            }
+            placeholder={editModal.title}
+            className={baseFieldClass}
+          />
+        )}
+      </div>
+
+      <div className="flex flex-row gap-2 border-t border-[#f0e7da] bg-[#fbfaf8] px-5 py-4 sm:justify-end sm:px-6">
+        <Button
+          type="button"
+          variant="secondary"
+          className="flex-1 sm:flex-none"
+          onClick={closeStudioEditModal}
+        >
+          Скасувати
+        </Button>
+
+        <Button
+          type="button"
+          variant="primary"
+          className="flex-1 sm:flex-none"
+          onClick={saveStudioEditModal}
+        >
+          Зберегти
+        </Button>
+      </div>
+    </div>
+  </div>
+)}
+            </form>
+          </div>
+        </div>
+
+        <div
+          className={cn(
+            "fixed left-1/2 top-[calc(12px+env(safe-area-inset-top))] z-[120] -translate-x-1/2 transition-all duration-200 ease-out",
+            "md:bottom-5 md:left-5 md:top-auto md:translate-x-0",
+            toast.open
+              ? "translate-y-0 scale-100 opacity-100"
+              : "pointer-events-none -translate-y-2 scale-[0.98] opacity-0 md:translate-y-2",
+          )}
+          role="status"
+          aria-live="polite"
+        >
+          <div
+            className={cn(
+              "relative w-fit max-w-[85vw] overflow-hidden rounded-2xl border bg-white shadow-[0_16px_40px_rgba(27,27,27,0.12)]",
+              toast.type === "success" && "border-[#ffd6bd]",
+              toast.type === "error" && "border-[#ffd8d8]",
+              toast.type === "warning" && "border-[#ffd6bd]",
+            )}
+          >
+            <div className="flex items-start gap-3 px-4 py-3.5">
+              <div
+                className={cn(
+                  "mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white",
+                  toast.type === "success" && "bg-[#ff5a00]",
+                  toast.type === "error" && "bg-[#e5484d]",
+                  toast.type === "warning" && "bg-[#ff5a00]",
+                )}
+              >
+                {toast.type === "success" && (
+                  <CheckCircle2 className="h-4.5 w-4.5" />
+                )}
+                {toast.type === "error" && <X className="h-4.5 w-4.5" />}
+                {toast.type === "warning" && <AlertTriangle className="h-4.5 w-4.5" />}
+              </div>
+
+              <div className="min-w-0">
+                <p className="whitespace-nowrap text-[14px] font-semibold text-[#202020]">
+                  {toast.title}
+                </p>
+
+                {toast.text && (
+                  <p className="mt-0.5 text-[13px] text-[#77716b]">
+                    {toast.text}
+                  </p>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setToast((prev) => ({ ...prev, open: false }))}
+                className="ml-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[#77716b] transition hover:bg-[#fff7f0] hover:text-[#202020]"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div
+                className={cn(
+                  "h-[2px] w-full",
+                  toast.type === "success" && "bg-[#fff1e8]",
+                  toast.type === "error" && "bg-[#fff1f1]",
+                  toast.type === "warning" && "bg-[#fff1e8]",
+                )}
+            >
+              <div
+                key={toast.id}
+                className={cn(
+                  "h-full w-full origin-left",
+                  toast.type === "success" && "bg-[#ff5a00]",
+                  toast.type === "error" && "bg-[#e5484d]",
+                  toast.type === "warning" && "bg-[#ff5a00]",
+                )}
+                style={{
+                  animation: `toastbar ${toast.duration}ms linear forwards`,
+                }}
+              />
+            </div>
+          </div>
+
+          <style>{`
+            @keyframes toastbar {
+              from { transform: scaleX(1); }
+              to { transform: scaleX(0); }
+            }
+          `}</style>
+        </div>
+
         {portfolioPreview.open && (
           <div
-            className="fixed inset-0 z-[80] flex items-center justify-center bg-[rgba(5,5,5,0.55)] p-4 backdrop-blur-[2px]"
+            className="fixed inset-0 z-[9999] flex items-end justify-center bg-[#202020]/45 px-3 pb-3 backdrop-blur-[6px] sm:items-center sm:p-6"
             onClick={() => setPortfolioPreview({ open: false, src: "" })}
           >
-            <div className="w-full max-w-3xl">
-              <img
-                src={portfolioPreview.src}
-                alt="Portfolio preview"
-                className="max-h-[80dvh] w-full rounded-2xl bg-black object-contain"
-                onClick={(e) => e.stopPropagation()}
-              />
-              <div className="mt-3 flex justify-end">
+            <div
+              className="flex w-full max-w-3xl max-h-[calc(100dvh-24px)] flex-col overflow-hidden rounded-[30px] border border-[#f0e2d3] bg-[#f7f5f1] shadow-[0_30px_90px_rgba(15,23,42,0.24)]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="relative shrink-0 overflow-hidden bg-[#f3eee7] px-5 py-5 sm:px-6">
+                <div className="absolute right-[-55px] top-[-70px] h-[180px] w-[180px] rounded-full bg-[#ff6200]/10 blur-3xl" />
+                <div className="relative z-10 flex items-start justify-between gap-4">
+                  <div>
+                    <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-white px-3 text-[11px] font-black uppercase tracking-[0.08em] text-[#ff6200] shadow-[0_8px_20px_rgba(255,98,0,0.08)]">
+                      <Camera className="h-3.5 w-3.5" />
+                      Портфоліо
+                    </span>
+                    <h3 className="mt-3 text-[26px] font-black leading-[0.95] tracking-[-0.05em] text-[#202020] sm:text-[32px]">
+                      Перегляд фото
+                    </h3>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setPortfolioPreview({ open: false, src: "" })}
+                    className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white text-[#77716b] shadow-[0_10px_24px_rgba(15,23,42,0.06)] transition hover:bg-[#fff3e9] hover:text-[#ff6200] active:scale-[0.96]"
+                    aria-label="Закрити"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="min-h-0 flex-1 bg-white p-5 sm:p-6">
+                <img
+                  src={portfolioPreview.src}
+                  alt="Portfolio preview"
+                  className="max-h-[62dvh] w-full rounded-[24px] bg-black object-contain"
+                />
+              </div>
+
+              <div className="flex flex-row gap-2 border-t border-[#f0e7da] bg-[#fbfaf8] px-5 py-4 sm:justify-end sm:px-6">
                 <Button
                   variant="secondary"
                   onClick={() => setPortfolioPreview({ open: false, src: "" })}
+                  className="flex-1 sm:flex-none"
                 >
                   Закрити
                 </Button>
@@ -2427,20 +2547,43 @@ const compressedFiles = await Promise.all(
         )}
 
         {errorModal.open && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[rgba(5,5,5,0.40)] px-4">
-            <div className="w-full max-w-md rounded-3xl border border-[var(--color-cream)] bg-white p-6 shadow-[0_24px_80px_rgba(27,27,27,0.18)]">
-              <h3 className="text-lg font-bold text-[var(--color-ink)]">
-                {errorModal.title}
-              </h3>
-              <p className="mt-2 text-sm text-[var(--color-caramel)]">
-                {errorModal.message}
-              </p>
-              <div className="mt-5 flex justify-end">
+          <div className="fixed inset-0 z-[9999] flex items-end justify-center bg-[#202020]/45 px-3 pb-3 backdrop-blur-[6px] sm:items-center sm:p-6">
+            <div className="w-full max-w-md overflow-hidden rounded-[30px] border border-[#f0e2d3] bg-[#f7f5f1] shadow-[0_30px_90px_rgba(15,23,42,0.24)]">
+              <div className="relative overflow-hidden bg-[#f3eee7] px-5 py-5 sm:px-6 sm:py-6">
+                <div className="absolute right-[-55px] top-[-70px] h-[180px] w-[180px] rounded-full bg-[#ff6200]/10 blur-3xl" />
+                <div className="relative z-10 flex items-start justify-between gap-4">
+                  <div>
+                    <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-white px-3 text-[11px] font-black uppercase tracking-[0.08em] text-[#ff6200] shadow-[0_8px_20px_rgba(255,98,0,0.08)]">
+                      <AlertTriangle className="h-3.5 w-3.5" />
+                      Увага
+                    </span>
+                    <h3 className="mt-3 text-[26px] font-black leading-[0.95] tracking-[-0.05em] text-[#202020]">
+                      {errorModal.title}
+                    </h3>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setErrorModal({ open: false, title: "", message: "" })}
+                    className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white text-[#77716b] shadow-[0_10px_24px_rgba(15,23,42,0.06)] transition hover:bg-[#fff3e9] hover:text-[#ff6200] active:scale-[0.96]"
+                    aria-label="Закрити"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="bg-white px-5 py-5 sm:px-6">
+                <p className="text-sm font-medium leading-6 text-[#77716b]">
+                  {errorModal.message}
+                </p>
+              </div>
+
+              <div className="flex flex-row gap-2 border-t border-[#f0e7da] bg-[#fbfaf8] px-5 py-4 sm:justify-end sm:px-6">
                 <Button
                   variant="primary"
-                  onClick={() =>
-                    setErrorModal({ open: false, title: "", message: "" })
-                  }
+                  onClick={() => setErrorModal({ open: false, title: "", message: "" })}
+                  className="flex-1 sm:flex-none"
                 >
                   Зрозуміло
                 </Button>
@@ -2460,14 +2603,15 @@ const compressedFiles = await Promise.all(
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-white via-white/95 to-transparent" />
 
           <div className="relative mx-auto max-w-5xl px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-            <div className="relative overflow-hidden rounded-[26px] border border-[var(--color-sand)] bg-white/95 px-4 py-4 shadow-[0_24px_80px_rgba(27,27,27,0.18)] ring-1 ring-[var(--color-pending-bg)] backdrop-blur-xl">
-              <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[var(--color-sidebar-accent)] via-[var(--color-sidebar-accent-hover)] to-[var(--color-sidebar-accent-soft)]" />
+            <div className="relative overflow-hidden rounded-[26px] border border-[#eadbc9] bg-white/95 px-4 py-4 shadow-[0_24px_80px_rgba(27,27,27,0.18)] ring-1 ring-[#fff1e8] backdrop-blur-xl">
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-[#ff5a00]" />
 
               <div className="flex items-center gap-2">
                 <Button
+                  variant="secondary"
                   onClick={resetChanges}
                   disabled={!dirty || saving}
-                  className="flex-1 inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
+                  className="flex-1"
                 >
                   Скасувати
                 </Button>
@@ -2476,14 +2620,7 @@ const compressedFiles = await Promise.all(
                   variant="primary"
                   onClick={save}
                   disabled={!canSave}
-                  className={cn(
-                    "flex-1",
-                    "inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold text-white",
-                    "active:scale-[0.98]",
-                    "bg-[var(--color-sidebar-accent)] hover:bg-[var(--color-sidebar-accent-hover)]",
-                    !canSave &&
-                      "cursor-not-allowed bg-[var(--color-cream)] text-[var(--color-caramel)] hover:from-[var(--color-cream)] hover:to-[var(--color-cream)]",
-                  )}
+                  className="flex-1"
                 >
                   {saving ? "Збереження..." : "Зберегти"}
                 </Button>
@@ -2495,53 +2632,46 @@ const compressedFiles = await Promise.all(
         <div className="fixed bottom-6 left-1/2 z-[80] hidden -translate-x-1/2 md:block">
           <div
             className={cn(
-              "relative overflow-hidden rounded-[28px] border border-[var(--color-sand)] bg-white/95 px-5 py-4 shadow-[0_24px_80px_rgba(27,27,27,0.18)] ring-1 ring-[var(--color-pending-bg)] backdrop-blur-xl transition-all duration-300",
+              "relative overflow-hidden rounded-[28px] border border-[#eadbc9] bg-white/95 px-5 py-4 shadow-[0_24px_80px_rgba(27,27,27,0.18)] ring-1 ring-[#fff1e8] backdrop-blur-xl transition-all duration-300",
               hasPendingChanges
                 ? "translate-y-0 scale-100 opacity-100"
                 : "pointer-events-none translate-y-4 scale-[0.98] opacity-0",
             )}
           >
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[var(--color-forest)] via-[var(--color-caramel)] to-[var(--color-ink)]" />
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-[#ff5a00]" />
 
-            <div className="flex items-center gap-2">
-              <Button
-                onClick={resetChanges}
-                disabled={!dirty || saving}
-                className={cn(
-                  "w-[160px]", // 👈 однакова ширина
-                  "inline-flex h-11 items-center justify-center gap-2 rounded-2xl",
-                  "border border-[var(--border-soft)] bg-white",
-                  "text-sm font-bold text-[var(--color-ink)]",
-                  "shadow-sm transition-all duration-200",
-                  "hover:bg-[var(--color-cream)] active:scale-[0.98]",
-                  "disabled:opacity-60 disabled:cursor-not-allowed",
-                )}
-              >
-                Скасувати
-              </Button>
+            <div className="flex items-center gap-4">
+              <div className="flex min-w-0 items-center gap-3 pr-2">
+                <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#fff1e8] shadow-[0_8px_20px_rgba(180,140,108,0.20)]">
+                  <span className="absolute inline-flex h-3 w-3 animate-ping rounded-full bg-[#ff5a00] opacity-75" />
+                  <span className="relative inline-flex h-3 w-3 rounded-full bg-[#ff5a00]" />
+                </div>
 
-              <Button
-                onClick={save}
-                disabled={!canSave}
-                className={cn(
-                  "w-[160px]", // 👈 однакова ширина
-                  "inline-flex h-11 items-center justify-center gap-2 rounded-2xl",
-                  "text-sm font-bold text-white",
-                  "transition-all duration-200 active:scale-[0.98]",
+                <div className="min-w-0">
+                  <p className="text-[17px] font-black leading-none text-[#202020]">
+                    Маєте незбережені зміни
+                  </p>
+                </div>
+              </div>
 
-                  // nude-green
-                  "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="secondary"
+                  onClick={resetChanges}
+                  disabled={!dirty || saving}
+                >
+                  Скасувати
+                </Button>
 
-                  // hover
-                  "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]",
-
-                  // disabled
-                  !canSave &&
-                    "cursor-not-allowed bg-[var(--color-cream)] text-[var(--color-caramel)] hover:from-[var(--color-cream)] hover:to-[var(--color-cream)]",
-                )}
-              >
-                {saving ? "Збереження..." : "Зберегти"}
-              </Button>
+                <Button
+                  variant="primary"
+                  onClick={save}
+                  disabled={!canSave}
+                  className="min-w-[160px]"
+                >
+                  {saving ? "Збереження..." : "Зберегти"}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -2555,6 +2685,89 @@ const compressedFiles = await Promise.all(
           )}
         />
       </div>
+      {cropModal.open && (
+  <div className="fixed inset-0 z-[9999] flex items-end justify-center bg-[#202020]/45 px-3 pb-3 backdrop-blur-[6px] sm:items-center sm:p-6">
+    <div className="w-full max-w-lg overflow-hidden rounded-[30px] border border-[#f0e2d3] bg-white shadow-[0_30px_90px_rgba(15,23,42,0.24)]">
+      <div className="px-5 py-5 text-center">
+        <h3 className="text-[24px] font-black tracking-[-0.04em] text-[#202020]">
+          Обрізати фото
+        </h3>
+
+        <p className="mt-2 text-sm font-medium text-[#77716b]">
+          Виберіть область, яка буде видима у профілі клієнта.
+        </p>
+      </div>
+
+      <div className="mx-5 h-[340px] overflow-hidden rounded-[26px] bg-black">
+        <div className="relative h-full w-full">
+          <Cropper
+            image={cropModal.imageUrl}
+            crop={crop}
+            zoom={zoom}
+            aspect={1}
+            cropShape="round"
+            showGrid={false}
+            onCropChange={setCrop}
+            onZoomChange={setZoom}
+            onCropComplete={(_, croppedPixels) => {
+              setCroppedAreaPixels(croppedPixels);
+            }}
+          />
+        </div>
+      </div>
+
+      <div className="px-5 py-4">
+        <label className="mb-2 block text-sm font-black text-[#202020]">
+          Масштаб
+        </label>
+
+        <input
+          type="range"
+          min={1}
+          max={3}
+          step={0.1}
+          value={zoom}
+          onChange={(e) => setZoom(Number(e.target.value))}
+          className="w-full"
+        />
+      </div>
+
+      <div className="flex gap-2 border-t border-[#f0e7da] bg-[#fbfaf8] px-5 py-4">
+<Button
+  type="button"
+  variant="secondary"
+  className="flex-1"
+  onClick={() => {
+    if (cropModal.imageUrl) URL.revokeObjectURL(cropModal.imageUrl);
+
+    setCropModal({
+      open: false,
+      imageUrl: "",
+      target: "",
+    });
+
+    setCroppedAreaPixels(null);
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+  }}
+>
+  Скасувати
+</Button>
+
+<Button
+  type="button"
+  variant="primary"
+  className="flex-1"
+  disabled={saving}
+  onClick={confirmCrop}
+>
+  <Check className="h-4 w-4" />
+  Застосувати
+</Button>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 }

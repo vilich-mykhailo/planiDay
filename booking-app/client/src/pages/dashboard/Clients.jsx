@@ -6,12 +6,14 @@ import {
   AlertTriangle,
   CalendarDays,
   CheckCircle2,
+  Download,
   ChevronDown,
   ChevronUp,
   Clock,
+  X,
   XCircle,
   ChevronLeft,
-ChevronRight,
+  ChevronRight,
   CheckCheck,
   Check,
   Crown,
@@ -34,8 +36,11 @@ ChevronRight,
   User,
   Cake,
   Phone,
+  Mail,
   Copy,
   ContactRound,
+  MoreVertical,
+  Plus,
 } from "lucide-react";
 
 const PUBLIC = import.meta.env.VITE_R2_PUBLIC_BASE_URL;
@@ -98,13 +103,13 @@ function formatDateUA(value) {
 
 function getBookingStatusUi(status, canceledBy = null) {
   const base =
-    "bg-[var(--color-white)] border border-[var(--border-soft)] shadow-[var(--shadow-card)]";
+    "border border-[#eadbc9] bg-white shadow-[0_8px_22px_rgba(17,17,17,0.05)]";
 
   if (status === "CONFIRMED") {
     return {
       text: "Підтверджено",
       icon: Check,
-      badge: `${base} text-[var(--color-confirmed-dark)]`,
+      badge: `${base} text-[#0f8a5f]`,
     };
   }
 
@@ -117,7 +122,7 @@ function getBookingStatusUi(status, canceledBy = null) {
     return {
       text: canceledText,
       icon: XCircle,
-      badge: `${base} text-[var(--color-canceled-dark)]`,
+      badge: `${base} text-[#e5484d]`,
     };
   }
 
@@ -125,14 +130,14 @@ function getBookingStatusUi(status, canceledBy = null) {
     return {
       text: "Завершено",
       icon: CheckCheck,
-      badge: `${base} text-[var(--color-archived-dark)]`,
+      badge: `${base} text-[#77716b]`,
     };
   }
 
   return {
     text: "Очікує підтвердження",
     icon: Clock,
-    badge: `${base} text-[var(--color-pending-dark)]`,
+    badge: `${base} text-[#ff5a00]`,
   };
 }
 
@@ -143,7 +148,7 @@ function Avatar({ name, photoUrl, className = "" }) {
   return (
     <div
       className={cn(
-        "relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-[22px] border border-white bg-gradient-to-br from-emerald-50 via-white to-amber-50 shadow-[0_10px_26px_rgba(15,23,42,0.10)]",
+        "relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-[22px] border border-white bg-[#fff1e8] shadow-[0_10px_26px_rgba(255,90,0,0.10)]",
         className,
       )}
     >
@@ -155,12 +160,12 @@ function Avatar({ name, photoUrl, className = "" }) {
         />
       ) : (
         <>
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(16,185,129,0.24),transparent_35%),radial-gradient(circle_at_80%_90%,rgba(180,140,108,0.22),transparent_38%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,90,0,0.18),transparent_35%),radial-gradient(circle_at_80%_90%,rgba(255,214,189,0.65),transparent_38%)]" />
 
           <div className="absolute -right-3 -top-3 h-10 w-10 rounded-full bg-white/55 blur-sm" />
-          <div className="absolute -bottom-4 -left-4 h-12 w-12 rounded-full bg-[var(--color-cream)]/80 blur-sm" />
+          <div className="absolute -bottom-4 -left-4 h-12 w-12 rounded-full bg-[#f3eee7]/80 blur-sm" />
 
-          <span className="relative z-10 text-[25px] font-black tracking-[-0.03em] text-[var(--color-sidebar-accent-soft)]">
+          <span className="relative z-10 text-[25px] font-black tracking-[-0.03em] text-[#ff5a00]">
             {initials}
           </span>
         </>
@@ -172,10 +177,10 @@ function Avatar({ name, photoUrl, className = "" }) {
 function Button({ variant = "secondary", className = "", children, ...props }) {
   const variants = {
     primary:
-      "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))] text-white hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]",
+      "bg-[#ff5a00] text-white shadow-[0_16px_34px_rgba(255,90,0,0.24)] hover:bg-[#ef4f00]",
     secondary:
-      "border border-[var(--border-soft)] bg-white text-[var(--color-ink)] shadow-sm hover:bg-[var(--color-cream)]",
-    ghost: "text-[var(--color-ink)] hover:bg-[var(--color-cream)]",
+      "border border-[#eadbc9] bg-white text-[#202020] shadow-sm hover:border-[#ffd6bd] hover:bg-[#fff7f0]",
+    ghost: "text-[#202020] hover:bg-[#fff7f0]",
   };
 
   return (
@@ -264,18 +269,27 @@ function SectionCard({ title, subtitle, actions, children, className = "" }) {
   return (
     <section
       className={cn(
-        "group relative overflow-hidden rounded-3xl border border-[var(--color-cream)] bg-white shadow-[0_4px_24px_-4px_rgba(27,27,27,0.10)] transition-all duration-300 hover:shadow-[0_8px_32px_-4px_rgba(27,27,27,0.14)]",
+        "group relative overflow-hidden rounded-[28px] border border-[#eadbc9] bg-white shadow-[0_18px_50px_rgba(17,17,17,0.06)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_24px_70px_rgba(17,17,17,0.09)]",
         className,
       )}
     >
-      <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[var(--color-forest)] via-[var(--color-forest)] to-[var(--color-ink)] opacity-70" />
+      <div className="absolute inset-x-0 top-0 h-[3px] bg-[#ff5a00]" />
 
       <div className="p-5">{children}</div>
     </section>
   );
 }
 
-function Modal({ open, onClose, children, footer, size = "md" }) {
+function Modal({
+  open,
+  onClose,
+  title,
+  badge = "Редагування",
+  icon: Icon = NotebookText,
+  children,
+  footer,
+  size = "md",
+}) {
   useEffect(() => {
     if (!open) return undefined;
 
@@ -303,25 +317,54 @@ function Modal({ open, onClose, children, footer, size = "md" }) {
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-[var(--color-bg)]/45 p-4 backdrop-blur-sm sm:p-6"
+       className="fixed inset-0 z-[9999] flex items-stretch justify-center bg-[#202020]/45 p-0 backdrop-blur-[6px] sm:items-center sm:p-6"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose?.();
       }}
     >
       <div
-        className={cn(
-          "relative w-full overflow-hidden rounded-3xl bg-white shadow-2xl",
-          "animate-in fade-in-0 zoom-in-95 duration-200",
-          sizeClasses[size],
-        )}
+className={cn(
+  "flex h-dvh w-full flex-col overflow-hidden rounded-none border-0 bg-[#f7f5f1] shadow-[0_30px_90px_rgba(15,23,42,0.24)]",
+  "animate-in fade-in-0 zoom-in-95 duration-200",
+  "sm:h-auto sm:max-h-[calc(100dvh-48px)] sm:rounded-[30px] sm:border sm:border-[#f0e2d3]",
+  sizeClasses[size],
+)}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="max-h-[calc(100vh-180px)] overflow-y-auto px-6 py-6">
+        {title && (
+          <div className="relative shrink-0 overflow-hidden bg-[#f3eee7] px-5 py-5 sm:px-6 sm:py-6">
+            <div className="absolute right-[-55px] top-[-70px] h-[180px] w-[180px] rounded-full bg-[#ff6200]/10 blur-3xl" />
+
+            <div className="relative z-10 flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-white px-3 text-[11px] font-black uppercase tracking-[0.08em] text-[#ff6200] shadow-[0_8px_20px_rgba(255,98,0,0.08)]">
+                  <Icon className="h-3.5 w-3.5" />
+                  {badge}
+                </span>
+
+                <h3 className="mt-3 text-[26px] font-black leading-[0.95] tracking-[-0.05em] text-[#202020] sm:text-[32px]">
+                  {title}
+                </h3>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => onClose?.()}
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white text-[#77716b] shadow-[0_10px_24px_rgba(15,23,42,0.06)] transition hover:bg-[#fff3e9] hover:text-[#ff6200] active:scale-[0.96]"
+                aria-label="Закрити"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        )}
+
+       <div className="min-h-0 flex-1 overflow-y-auto bg-white px-5 py-5 pb-[110px] sm:px-6 sm:pb-5">
           {children}
         </div>
 
         {footer && (
-          <div className="border-t border-[var(--color-cream)] px-6 py-4">
+          <div className="sticky bottom-0 shrink-0 border-t border-[#f0e7da] bg-[#fbfaf8] px-5 py-4 sm:px-6">
             {footer}
           </div>
         )}
@@ -345,19 +388,19 @@ function StatCard({
 
   const trendStyles = {
     up: {
-      text: "text-emerald-600",
-      bg: "from-emerald-50 via-white to-emerald-50/40",
-      iconBg: "from-emerald-100 to-white",
+      text: "text-[#ff5a00]",
+      bg: "from-[#fff1e8] via-white to-[#fff7f0]",
+      iconBg: "from-[#fff1e8] to-white",
     },
     flat: {
-      text: "text-sky-600",
-      bg: "from-sky-50 via-white to-sky-50/40",
-      iconBg: "from-sky-100 to-white",
+      text: "text-[#77716b]",
+      bg: "from-[#f3eee7] via-white to-[#fff7f0]",
+      iconBg: "from-[#f3eee7] to-white",
     },
     down: {
-      text: "text-rose-600",
-      bg: "from-rose-50 via-white to-rose-50/40",
-      iconBg: "from-rose-100 to-white",
+      text: "text-[#e5484d]",
+      bg: "from-[#fff1f1] via-white to-[#fff7f7]",
+      iconBg: "from-[#fff1f1] to-white",
     },
   };
 
@@ -366,7 +409,7 @@ function StatCard({
   return (
     <div
       className={cn(
-        "group relative min-h-[112px] overflow-hidden rounded-[26px] border border-white/80 bg-gradient-to-br p-3.5 shadow-[0_10px_30px_rgba(15,23,42,0.07)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(15,23,42,0.11)] sm:min-h-[128px] sm:p-4 lg:min-h-[138px] lg:rounded-[30px] lg:p-5",
+        "group relative min-h-[112px] overflow-hidden rounded-[26px] border border-[#eadbc9] bg-gradient-to-br p-3.5 shadow-[0_12px_32px_rgba(17,17,17,0.06)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(17,17,17,0.09)] sm:min-h-[128px] sm:p-4 lg:min-h-[138px] lg:rounded-[30px] lg:p-5",
         style.bg,
       )}
     >
@@ -386,16 +429,16 @@ function StatCard({
         </div>
 
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[9px] font-black uppercase tracking-[0.16em] text-slate-500 sm:text-[10px] lg:text-[11px]">
+          <p className="truncate text-[9px] font-black uppercase tracking-[0.16em] text-[#77716b] sm:text-[10px] lg:text-[11px]">
             {label}
           </p>
 
-          <p className="mt-2 truncate text-[20px] font-black leading-none tracking-tight text-slate-900 sm:text-2xl lg:text-[28px]">
+          <p className="mt-2 truncate text-[20px] font-black leading-none tracking-tight text-[#202020] sm:text-2xl lg:text-[28px]">
             {value}
           </p>
 
           {hint && (
-            <p className="mt-2 truncate text-[11px] font-semibold text-slate-500 sm:text-xs lg:text-sm">
+            <p className="mt-2 truncate text-[11px] font-semibold text-[#77716b] sm:text-xs lg:text-sm">
               {hint}
             </p>
           )}
@@ -411,7 +454,7 @@ const statusMeta = {
   loyal: {
     label: "Постійний",
     icon: Repeat,
-    className: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    className: "border-violet-100 bg-violet-50 text-violet-700",
   },
 
   new: {
@@ -421,25 +464,25 @@ const statusMeta = {
   },
 
   attention: {
-    label: "Потрібна увага",
+    label: "Активний",
     icon: AlertTriangle,
-    className: "border-amber-200 bg-amber-50 text-amber-700",
+    className: "border-emerald-100 bg-emerald-50 text-emerald-700",
   },
 
   risk: {
-    label: "Ризик втрати",
+    label: "Неактивний",
     icon: TrendingDown,
-    className: "border-rose-200 bg-rose-50 text-rose-700",
+    className: "border-slate-200 bg-slate-100 text-slate-600",
   },
 
   vip: {
     label: "VIP",
     icon: Crown,
-    className: "bg-yellow-50 text-yellow-700 border-yellow-200",
+    className: "border-yellow-200 bg-yellow-50 text-yellow-700",
   },
 
   favorite: {
-    label: "Особливий клієнт",
+    label: "Особливий",
     icon: UserStar,
     className: "border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700",
   },
@@ -466,7 +509,7 @@ function SalonFavoriteBadge() {
   return (
     <span className="inline-flex items-center gap-1.5 rounded-full border border-fuchsia-200 bg-fuchsia-50 px-3 py-1 text-xs font-bold text-fuchsia-700">
       <UserStar className="h-3.5 w-3.5 text-fuchsia-600" />
-      Особливий клієнт
+      Особливий
     </span>
   );
 }
@@ -496,16 +539,16 @@ const filterItems = [
   { value: "all", label: "Усі" },
   { value: "new", label: "Нові" },
   { value: "loyal", label: "Постійні" },
-  { value: "attention", label: "Потрібна увага" },
-  { value: "risk", label: "Давно без записів" },
+  { value: "attention", label: "Активні" },
+  { value: "risk", label: "Неактивні" },
   { value: "vip", label: "VIP" },
 ];
 
 const sortItems = [
+  { value: "newest", label: "За датою додавання" },
   { value: "lastVisit", label: "За останнім візитом" },
   { value: "bookings", label: "За кількістю бронювань" },
   { value: "spent", label: "За витратами" },
-  { value: "newest", label: "Нові зверху" },
 ];
 
 const emptyFilterInfo = {
@@ -524,11 +567,7 @@ const emptyFilterInfo = {
     title: "Поки що немає нових клієнтів",
     description: (
       <span className="flex flex-col gap-1">
-        <span>
-          Тут зʼявляться клієнти, які мають тільки один нескасований запис.
-        </span>
-
-        <span>Або ще не мають сформованої історії відвідувань.</span>
+        <span>Тут зʼявляться клієнти з першими записами.</span>
       </span>
     ),
   },
@@ -538,39 +577,27 @@ const emptyFilterInfo = {
     title: "Поки що немає постійних клієнтів",
     description: (
       <span className="flex flex-col gap-1">
-        <span>
-          Тут зʼявляться клієнти, які мають 2 або більше нескасованих записів.
-        </span>
-
-        <span>Останній візит був протягом останніх 30 днів.</span>
+        <span>Постійні клієнти зʼявляться після повторних відвідувань.</span>
       </span>
     ),
   },
 
   attention: {
     icon: AlertTriangle,
-    title: "Поки що немає клієнтів, яким потрібна увага",
+    title: "Поки що немає активних клієнтів",
     description: (
       <span className="flex flex-col gap-1">
-        <span>
-          Тут зʼявляться клієнти, чий останній запис був більше 30 днів тому.
-        </span>
-
-        <span>Але не більше 60 днів.</span>
+        <span>Тут будуть клієнти, які нещодавно записувались до студії.</span>
       </span>
     ),
   },
 
   risk: {
     icon: TrendingDown,
-    title: "Поки що немає клієнтів у ризику втрати",
+    title: "Поки що немає неактивних клієнтів",
     description: (
       <span className="flex flex-col gap-1">
-        <span>
-          Тут зʼявляться клієнти, які не були у студії більше 60 днів.
-        </span>
-
-        <span>Їм варто нагадати про себе або запропонувати повернутись.</span>
+        <span>Неактивні клієнти зʼявляться, якщо давно не було записів.</span>
       </span>
     ),
   },
@@ -580,10 +607,7 @@ const emptyFilterInfo = {
     title: "Поки що немає VIP клієнтів",
     description: (
       <span className="flex flex-col gap-1">
-        <span>
-          Тут зʼявляться лояльні клієнти, яким платформа автоматично надала
-          VIP-статус.
-        </span>
+        <span>VIP-статус зʼявиться у найцінніших клієнтів студії.</span>
       </span>
     ),
   },
@@ -614,11 +638,12 @@ export default function Clients() {
   const studioId = studio?.id ?? null;
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("all");
-  const [sort, setSort] = useState("lastVisit");
+  const [sort, setSort] = useState("newest");
   const [sortOpen, setSortOpen] = useState(false);
-  const [expandedClientId, setExpandedClientId] = useState(null);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [selectedClientId, setSelectedClientId] = useState(null);
   const [clientTabs, setClientTabs] = useState({});
-  const [visibleCount, setVisibleCount] = useState(10);
+  const [visibleCount, setVisibleCount] = useState(8);
   const [noteClient, setNoteClient] = useState(null);
   const [noteDraft, setNoteDraft] = useState("");
   const [allClients, setAllClients] = useState([]);
@@ -796,6 +821,17 @@ const [statsTabIndex, setStatsTabIndex] = useState(() => {
 
   const visibleClients = clients.slice(0, visibleCount);
   const hasMoreClients = visibleCount < clients.length;
+  const shownCount = Math.min(visibleCount, clients.length);
+  const currentPage = Math.max(1, Math.ceil(shownCount / 8));
+  const totalPages = Math.max(1, Math.ceil(clients.length / 8));
+  const selectedClient = useMemo(() => {
+    if (!selectedClientId) return null;
+
+    return (
+      allClients.find((client) => String(client.id) === String(selectedClientId)) ||
+      null
+    );
+  }, [allClients, selectedClientId]);
 
   const totalSpent = allClients.reduce((sum, client) => sum + client.spent, 0);
   const totalBookings = allClients.reduce(
@@ -819,6 +855,11 @@ const [statsTabIndex, setStatsTabIndex] = useState(() => {
           100,
       )
     : 0;
+
+  const selectedFilterLabel =
+    filterItems.find((item) => item.value === filter)?.label || "Усі статуси";
+  const selectedSortLabel =
+    sortItems.find((item) => item.value === sort)?.label || "За датою додавання";
 
   const filterItemsWithCounts = filterItems.map((item) => {
     let count = 0;
@@ -1070,182 +1111,119 @@ const filteredMostActiveHour = useMemo(() => {
 }, [statsBookings]);
 
   return (
-    <div className="h-full">
-      <div className="mx-auto max-w-7xl space-y-6">
-        <div className="relative overflow-hidden rounded-3xl border border-[var(--color-cream)] bg-white p-5 shadow-[0_4px_24px_-4px_rgba(27,27,27,0.10)] sm:p-6">
-          <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[var(--color-forest)] via-[var(--color-forest)] to-[var(--color-ink)] opacity-70" />
+    <div className="min-h-screen bg-[#fbfaf8] pb-8">
+      <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+        <header className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
 
-          <div className="relative">
-            <div>
-              <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-slate-700 shadow-[0_4px_14px_rgba(15,23,42,0.05)]">
-                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-900 text-white">
-                  <ContactRound className="h-3 w-3" />
-                </div>
+          <div className="relative max-w-2xl">
 
-                <span>База клієнтів</span>
 
-                <div className="h-1 w-1 rounded-full bg-slate-400" />
-              </div>
+            <h1 className="max-w-xl text-4xl font-black leading-[0.95] tracking-tight text-[#202020] sm:text-6xl">
+              Клі<span className="text-[#ff5a00]">єнти</span>
+            </h1>
 
-              <h1 className="text-3xl font-black tracking-tight text-[var(--color-ink)] sm:text-4xl">
-                Клієнти
-              </h1>
+            <p className="mt-3 max-w-xl text-sm font-semibold text-[#77716b] sm:text-base">
+              Додай майстрів, щоб привʼязувати їх до послуг, графіка та записів клієнтів.
+            </p>
+          </div>
 
-              <p className="mt-2 max-w-2xl text-sm text-[var(--color-caramel)] sm:text-base">
-                Вся інформація про клієнтів, їхні записи, витрати, нотатки та
-                ризик втрати в одному місці.
-              </p>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button variant="secondary" className="h-12 rounded-[14px] px-5">
+              <Download className="h-4 w-4" />
+              Експорт
+            </Button>
+
+            <Button variant="primary" className="h-12 rounded-[14px] px-5">
+              <Plus className="h-4 w-4" />
+              Додати клієнта
+            </Button>
+          </div>
+        </header>
+
+        <section className="space-y-6">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="relative w-full lg:max-w-[390px]">
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8b95a5]" />
+              <input
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setVisibleCount(8);
+                  setSelectedClientId(null);
+                  setClientTabs({});
+                }}
+                placeholder="Пошук клієнтів..."
+                className="h-12 w-full rounded-[14px] border border-[#e5eaf0] bg-white pl-12 pr-4 text-sm font-semibold text-[#202020] outline-none transition placeholder:text-[#9aa3af] hover:border-[#d8dee8] focus:border-[#ff6200] focus:ring-4 focus:ring-[#ff6200]/10"
+              />
             </div>
-          </div>
 
-          <div className="mt-5 flex justify-center">
-  <div className="flex items-center justify-center gap-2">
-    <button
-      type="button"
-      disabled={statsTabIndex === 0}
-      onClick={() => setStatsTabIndex((prev) => Math.max(0, prev - 1))}
-      className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--border-soft)] bg-white text-[var(--color-ink)] shadow-sm transition hover:bg-[var(--color-cream)] active:scale-[0.98] disabled:opacity-40"
-    >
-      <ChevronLeft className="h-5 w-5" />
-    </button>
-
-    <button
-      type="button"
-      className="inline-flex h-11 min-w-[180px] items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-black text-[var(--color-primary-buttom)] shadow-sm"
-    >
-      <CalendarDays className="h-4 w-4" />
-     <span className="capitalize">
-  {activeStatsTab?.label || "Сьогодні"}
-</span>
-    </button>
-
-    <button
-      type="button"
-      disabled={statsTabIndex === statsTabs.length - 1}
-      onClick={() =>
-        setStatsTabIndex((prev) => Math.min(statsTabs.length - 1, prev + 1))
-      }
-      className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--border-soft)] bg-white text-[var(--color-ink)] shadow-sm transition hover:bg-[var(--color-cream)] active:scale-[0.98] disabled:opacity-40"
-    >
-      <ChevronRight className="h-5 w-5" />
-    </button>
-  </div>
-</div>
-
-          <div className="grid grid-cols-2 gap-3 mt-5 md:grid-cols-2">
-            <StatCard
-              tone="green"
-              icon={Users}
-              label="Всього"
-              value={filteredClientsForStats.length}
-              hint="записаних клієнтів"
-              chartData={[1, 2, 2, 3, 3, 4, 4]}
-            />
-
-<StatCard
-  tone="blue"
-  icon={UserPlus}
-  label="Нових"
-  value={`+${filteredNewClientsCount}`}
-  hint={
-    activeStatsTab?.typeype === "today"
-      ? "за сьогодні"
-      : "за вибраний період"
-  }
-  chartData={
-    filteredNewClientsCount <= 0
-      ? [0, 0, 0, 0, 0, 0, 0]
-      : [0, 1, 1, 2, 2, 3, filteredNewClientsCount]
-  }
-/>
-
-            <StatCard
-              tone="violet"
-              icon={Repeat}
-              label="Постійні"
-              value={`${filteredLoyalPercent}%`}
-              hint="повертаються"
-              chartData={[40, 52, 58, 70, 82, 91, loyalPercent]}
-            />
-
-<StatCard
-  tone="amber"
-  icon={Wallet}
-  label="Дохід"
-  value={formatMoney(filteredTotalSpent)}
-  hint={
-    activeStatsTab?.typeype === "today"
-      ? "за сьогодні"
-      : "за вибраний період"
-  }
-  chartData={[0, filteredTotalSpent]}
-/>
-
-<StatCard
-  tone="rose"
-  icon={BadgeCheck}
-  label="Бронювань"
-  value={filteredTotalBookings}
-  hint={
-    activeStatsTab?.typeype === "today"
-      ? "за сьогодні"
-      : "за вибраний період"
-  }
-  chartData={[1, 3, 5, 8, 10, 13, totalBookings]}
-/>
-
-<StatCard
-  tone="blue"
-  icon={CalendarDays}
-  label={activeStatsTab?.typeype === "today" ? "Найактивніша година" : "Найактивніший день"}
-  value={
-    activeStatsTab?.typeype === "today"
-      ? filteredMostActiveHour.label
-      : filteredMostActiveDay.label
-  }
-  hint={
-    activeStatsTab?.typeype === "today"
-      ? filteredMostActiveHour.count > 0
-        ? `${filteredMostActiveHour.count} записів`
-        : "ще немає записів"
-      : filteredMostActiveDay.count > 0
-        ? `${filteredMostActiveDay.count} записів`
-        : "ще немає записів"
-  }
-  hideChart
-/>
-          </div>
-        </div>
-
-        <SectionCard>
-          <div className="sticky top-0 z-10 -mx-5 -mt-5 border-b border-[var(--color-cream)] bg-white/95 px-5 py-4 backdrop-blur md:static md:m-0 md:border-0 md:bg-transparent md:p-0">
-            <div className="grid items-end gap-3 md:grid-cols-[minmax(0,1fr)_minmax(220px,280px)]">
-              <div className="relative w-full">
-                <label className="mb-2 ml-2 block text-xs font-bold text-[var(--color-ink)]">
-                  Сортування
-                </label>
+            <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+              <div className="relative">
                 <button
                   type="button"
-                  onClick={() => setSortOpen((current) => !current)}
-                  className={cn(
-                    "flex h-12 w-full items-center justify-between gap-3 rounded-2xl border bg-white px-4 text-left text-sm font-bold text-[var(--color-ink)] shadow-sm outline-none transition-all",
-                    sortOpen
-                      ? "border-[var(--color-caramel)] ring-4 ring-[var(--color-forest)]/10"
-                      : "border-[var(--color-cream)] hover:bg-[var(--color-cream)]",
-                  )}
+                  onClick={() => {
+                    setFilterOpen((current) => !current);
+                    setSortOpen(false);
+                  }}
+                  className="inline-flex h-12 w-full min-w-[180px] items-center justify-between gap-3 rounded-[14px] border border-[#e5eaf0] bg-white px-4 text-sm font-bold text-[#202020] shadow-sm transition hover:border-[#d8dee8] hover:bg-[#fff8f3] sm:w-auto"
                 >
-                  <span className="truncate">
-                    {sortItems.find((item) => item.value === sort)?.label}
-                  </span>
-                  {sortOpen ? (
-                    <ChevronUp className="h-4 w-4 shrink-0 text-[var(--color-ink)]" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4 shrink-0 text-[var(--color-caramel)]" />
-                  )}
+                  <span>{filter === "all" ? "Усі статуси" : selectedFilterLabel}</span>
+                  <ChevronDown
+                    className={cn(
+                      "h-4 w-4 text-[#6b7280] transition",
+                      filterOpen && "rotate-180 text-[#ff6200]",
+                    )}
+                  />
+                </button>
+
+                {filterOpen && (
+                  <div className="absolute right-0 z-30 mt-2 w-full min-w-[220px] overflow-hidden rounded-[16px] border border-[#e5eaf0] bg-white py-2 shadow-[0_18px_42px_rgba(15,23,42,0.14)]">
+                    {filterItemsWithCounts.map((item) => (
+                      <button
+                        key={item.value}
+                        type="button"
+                        onClick={() => {
+                          setFilter(item.value);
+                          setFilterOpen(false);
+                          setVisibleCount(8);
+                          setSelectedClientId(null);
+                          setClientTabs({});
+                        }}
+                        className={cn(
+                          "flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm font-bold transition",
+                          filter === item.value
+                            ? "bg-[#fff1e8] text-[#ff6200]"
+                            : "text-[#202020] hover:bg-[#fbfaf8]",
+                        )}
+                      >
+                        <span>{item.label}</span>
+                        <span className="text-xs text-[#8b95a5]">{item.count}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSortOpen((current) => !current);
+                    setFilterOpen(false);
+                  }}
+                  className="inline-flex h-12 w-full min-w-[210px] items-center justify-between gap-3 rounded-[14px] border border-[#e5eaf0] bg-white px-4 text-sm font-bold text-[#202020] shadow-sm transition hover:border-[#d8dee8] hover:bg-[#fff8f3] sm:w-auto"
+                >
+                  <span>{selectedSortLabel}</span>
+                  <ChevronDown
+                    className={cn(
+                      "h-4 w-4 text-[#6b7280] transition",
+                      sortOpen && "rotate-180 text-[#ff6200]",
+                    )}
+                  />
                 </button>
 
                 {sortOpen && (
-                  <div className="absolute right-0 z-30 mt-2 max-h-64 w-full overflow-y-auto rounded-2xl border border-[var(--color-cream)] bg-white py-2 shadow-[0_18px_42px_rgba(27,27,27,0.16)]">
+                  <div className="absolute right-0 z-30 mt-2 w-full min-w-[240px] overflow-hidden rounded-[16px] border border-[#e5eaf0] bg-white py-2 shadow-[0_18px_42px_rgba(15,23,42,0.14)]">
                     {sortItems.map((item) => (
                       <button
                         key={item.value}
@@ -1253,15 +1231,15 @@ const filteredMostActiveHour = useMemo(() => {
                         onClick={() => {
                           setSort(item.value);
                           setSortOpen(false);
-                          setVisibleCount(10);
-                          setExpandedClientId(null);
+                          setVisibleCount(8);
+                          setSelectedClientId(null);
                           setClientTabs({});
                         }}
                         className={cn(
-                          "block w-full px-4 py-3 text-left text-sm font-medium transition-colors",
+                          "block w-full px-4 py-3 text-left text-sm font-bold transition",
                           sort === item.value
-                            ? "bg-[var(--color-cream)] text-[var(--color-ink)]"
-                            : "text-[var(--color-ink)] hover:bg-[var(--color-cream)]/70",
+                            ? "bg-[#fff1e8] text-[#ff6200]"
+                            : "text-[#202020] hover:bg-[#fbfaf8]",
                         )}
                       >
                         {item.label}
@@ -1270,127 +1248,148 @@ const filteredMostActiveHour = useMemo(() => {
                   </div>
                 )}
               </div>
-              <div className="relative">
-                <label className="mb-2 block text-xs font-bold text-transparent">
-                  Пошук
-                </label>
-                <Search className="pointer-events-none absolute left-4 top-[calc(50%+0.625rem)] h-4 w-4 -translate-y-1/2 text-[var(--color-caramel)]" />
-                <input
-                  value={query}
-                  onChange={(e) => {
-                    setQuery(e.target.value);
-                    setVisibleCount(10);
-                    setExpandedClientId(null);
-                    setClientTabs({});
-                  }}
-                  placeholder="Пошук за іменем, телефоном або email"
-                  className="h-12 w-full rounded-2xl border border-[var(--color-cream)] bg-white pl-11 pr-4 text-sm font-medium text-[var(--color-ink)] outline-none transition-all placeholder:text-[var(--color-caramel)] hover:bg-[var(--color-cream)] focus:border-[var(--color-forest)] focus:ring-4 focus:ring-[var(--color-forest)]/10"
-                />
-              </div>
-            </div>
-            <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-              {filterItemsWithCounts.map((item) => (
-                <button
-                  key={item.value}
-                  type="button"
-                  onClick={() => {
-                    setFilter(item.value);
-                    setVisibleCount(10);
-                    setExpandedClientId(null);
-                    setClientTabs({});
-                  }}
-                  className={cn(
-                    "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold",
-                    filter === item.value
-                      ? "inline-flex h-9 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-[var(--color-primary-buttom)] px-2 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:bg-[var(--color-primary-buttom)] active:scale-[0.98]"
-                      : "inline-flex h-9 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-2 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]",
-                  )}
-                >
-                  <span>{item.label}</span>
-                </button>
-              ))}
-            </div>
-            <div className="mt-1 flex justify-end">
-              <span className="inline-flex items-center rounded-full  px-3  text-xs font-semibold text-[var(--border-hover-primary)]">
-                К-ть клієнтів: {clients.length}
-              </span>
             </div>
           </div>
+
           {loading && (
-            <div className="mt-5 rounded-2xl border border-[var(--color-cream)] bg-white p-6 text-center text-sm font-bold text-[var(--color-caramel)]">
+            <div className="rounded-[20px] border border-[#e5eaf0] bg-white p-6 text-center text-sm font-bold text-[#77716b] shadow-sm">
               Завантажуємо клієнтів...
             </div>
           )}
 
           {error && !loading && (
-            <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 p-6 text-center text-sm font-bold text-rose-700">
+            <div className="rounded-[20px] border border-[#ffd8d8] bg-[#fff7f7] p-6 text-center text-sm font-bold text-[#e5484d] shadow-sm">
               {error}
             </div>
           )}
+
           {!loading && !error && clients.length === 0 ? (
-            <div className="mt-5 rounded-2xl border-2 border-dashed border-[var(--color-caramel)]/40 bg-[var(--color-cream)] p-6 text-center sm:p-8">
+            <div className="rounded-[24px] border-2 border-dashed border-[#e5d7c7] bg-white p-8 text-center shadow-sm">
               <div className="mb-3 flex items-center justify-center">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/70">
-                  <EmptyIcon className="h-6 w-6 text-[var(--color-caramel)]" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-[16px] bg-[#fff1e8]">
+                  <EmptyIcon className="h-6 w-6 text-[#ff6200]" />
                 </div>
               </div>
 
-              <p className="text-sm font-medium text-[var(--color-caramel)]">
+              <p className="text-sm font-black text-[#202020]">
                 {emptyInfo.title}
               </p>
 
-              <p className="mt-1 text-xs text-[var(--color-caramel)]/80">
+              <p className="mt-1 text-xs font-medium text-[#77716b]">
                 {emptyInfo.description}
               </p>
             </div>
           ) : !loading && !error ? (
-            <div className="mt-5 space-y-3">
-              {visibleClients.map((client) => (
-                <ClientAccordion
-                  key={client.id}
-                  client={{
-                    ...client,
-                    notes: client.notes || [],
-                  }}
-                  isExpanded={expandedClientId === client.id}
-                  onToggle={() =>
-                    setExpandedClientId((current) =>
-                      current === client.id ? null : client.id,
-                    )
-                  }
-                  activeTab={clientTabs[client.id] || "history"}
-                  onTabChange={(tab) =>
-                    setClientTabs((current) => ({
-                      ...current,
-                      [client.id]: tab,
-                    }))
-                  }
-                  onAddNote={() => {
-                    setNoteClient(client);
-                    setNoteDraft("");
-                  }}
-                  onDeleteNote={(noteId) => handleDeleteNote(client.id, noteId)}
-                  onToggleVip={() => handleToggleVip(client)}
-                  onCopyPhone={handleCopyPhone}
-                  copiedPhone={copiedPhone}
-                />
-              ))}
+            <>
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+                {visibleClients.map((client) => (
+                  <ClientAccordion
+                    key={client.id}
+                    client={{
+                      ...client,
+                      notes: client.notes || [],
+                    }}
+                    onOpenDetails={() => {
+                      setSelectedClientId(client.id);
+                      setClientTabs((current) => ({
+                        ...current,
+                        [client.id]: current[client.id] || "history",
+                      }));
+                    }}
+                    onAddNote={() => {
+                      setNoteClient(client);
+                      setNoteDraft("");
+                    }}
+                    onDeleteNote={(noteId) => handleDeleteNote(client.id, noteId)}
+                    onToggleVip={() => handleToggleVip(client)}
+                    onCopyPhone={handleCopyPhone}
+                    copiedPhone={copiedPhone}
+                  />
+                ))}
+              </div>
 
-              {hasMoreClients && (
-                <div className="flex justify-center pt-3">
-                  <Button
-                    onClick={() => setVisibleCount((current) => current + 10)}
-                    className="w-full sm:w-auto"
+              <div className="flex flex-col gap-4 pt-2 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm font-medium text-[#6b7280]">
+                  Показано {clients.length ? 1 : 0}-{shownCount} з {clients.length} клієнтів
+                </p>
+
+                <div className="flex items-center gap-2 self-end sm:self-auto">
+                  <button
+                    type="button"
+                    disabled={currentPage <= 1}
+                    onClick={() => setVisibleCount((current) => Math.max(8, current - 8))}
+                    className="grid h-10 w-10 place-items-center rounded-[12px] border border-[#e5eaf0] bg-white text-[#6b7280] transition hover:bg-[#fff8f3] active:scale-[0.98] disabled:opacity-40"
+                    aria-label="Попередня сторінка"
                   >
-                    Показати ще
-                    <ChevronDown className="h-4 w-4" />
-                  </Button>
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+
+                  {Array.from({ length: Math.min(totalPages, 3) }).map((_, index) => {
+                    const page = index + 1;
+
+                    return (
+                      <button
+                        key={page}
+                        type="button"
+                        onClick={() => setVisibleCount(page * 8)}
+                        className={cn(
+                          "grid h-10 w-10 place-items-center rounded-[12px] border text-sm font-black transition active:scale-[0.98]",
+                          currentPage === page
+                            ? "border-[#ff6200] bg-[#fff7f0] text-[#ff6200]"
+                            : "border-[#e5eaf0] bg-white text-[#202020] hover:bg-[#fff8f3]",
+                        )}
+                      >
+                        {page}
+                      </button>
+                    );
+                  })}
+
+                  <button
+                    type="button"
+                    disabled={!hasMoreClients}
+                    onClick={() => setVisibleCount((current) => current + 8)}
+                    className="grid h-10 w-10 place-items-center rounded-[12px] border border-[#e5eaf0] bg-white text-[#6b7280] transition hover:bg-[#fff8f3] active:scale-[0.98] disabled:opacity-40"
+                    aria-label="Наступна сторінка"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
                 </div>
-              )}
-            </div>
+              </div>
+            </>
           ) : null}
-        </SectionCard>
+        </section>
       </div>
+
+      <Modal
+        open={selectedClient != null}
+        onClose={() => setSelectedClientId(null)}
+        title={selectedClient?.name || "Профіль клієнта"}
+        badge="Дані клієнта"
+        icon={ContactRound}
+        size="lg"
+      >
+        {selectedClient && (
+          <ClientDetails
+            client={{
+              ...selectedClient,
+              notes: selectedClient.notes || [],
+            }}
+            activeTab={clientTabs[selectedClient.id] || "history"}
+            onTabChange={(tab) =>
+              setClientTabs((current) => ({
+                ...current,
+                [selectedClient.id]: tab,
+              }))
+            }
+            onAddNote={() => {
+              setNoteClient(selectedClient);
+              setNoteDraft("");
+            }}
+            onDeleteNote={(noteId) => handleDeleteNote(selectedClient.id, noteId)}
+            onToggleVip={() => handleToggleVip(selectedClient)}
+          />
+        )}
+      </Modal>
 
       <Modal
         open={noteClient != null}
@@ -1398,62 +1397,53 @@ const filteredMostActiveHour = useMemo(() => {
           setNoteClient(null);
           setNoteDraft("");
         }}
+        title="Додати нотатку"
+        badge="Нотатка"
+        icon={NotebookText}
         size="sm"
         footer={
-          <div className="flex justify-end gap-2">
+          <div className="flex w-full flex-row gap-2 sm:justify-end">
             <Button
               variant="secondary"
               onClick={() => {
                 setNoteClient(null);
                 setNoteDraft("");
               }}
-              className="w-full sm:w-auto"
+              className="flex-1 sm:flex-none"
             >
-              Назад
+              Скасувати
             </Button>
 
-            <button
-              type="button"
+            <Button
+              variant="primary"
               disabled={!noteDraft.trim()}
               onClick={handleAddNote}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-primary-buttom)] px-4 py-2.5 text-sm font-bold text-white hover:bg-[var(--color-primary-buttom)]/90 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 sm:w-auto"
+              className="flex-1 sm:flex-none"
             >
               <Check className="h-4 w-4" />
               Додати
-            </button>
+            </Button>
           </div>
         }
       >
         <div className="space-y-4">
-          <div className="flex justify-center">
-            <div className="relative">
-              <div className="absolute inset-0 rounded-full bg-[var(--color-forest)]/70 blur-2xl" />
-              <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--color-forest)] text-white">
-                <NotebookText className="h-7 w-7" />
-              </div>
-            </div>
-          </div>
-
           <div className="text-center">
-            <h3 className="text-xl font-black tracking-tight text-[var(--color-ink)]">
-              Додати нотатку
-            </h3>
-            <p className="mt-2 text-sm leading-6 text-[var(--color-caramel)]">
+            <p className="text-sm font-medium leading-6 text-[#77716b]">
               Нотатка буде додана до профілю клієнта {noteClient?.name || ""}.
             </p>
           </div>
 
-          <div className="rounded-2xl border border-[var(--color-cream)] bg-[var(--color-cream)] p-3.5">
+          <div className="rounded-[22px] border border-[#ffd6bd] bg-[#fff7f0] p-3.5">
             <div className="flex items-start gap-3">
-              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-[var(--color-forest)] shadow-sm">
+              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-[#ff5a00] shadow-sm">
                 <AlertTriangle className="h-4.5 w-4.5" />
               </div>
 
               <div className="min-w-0">
-                <p className="text-sm font-bold text-[var(--color-ink)]">
+                <p className="text-sm font-bold text-[#202020]">
                   Внутрішня інформація
                 </p>
-                <p className="mt-1 text-xs leading-5 text-[var(--color-ink)]">
+                <p className="mt-1 text-xs font-medium leading-5 text-[#77716b]">
                   Додавайте побажання, алергії, звички або важливі деталі перед
                   наступним візитом.
                 </p>
@@ -1467,9 +1457,9 @@ const filteredMostActiveHour = useMemo(() => {
             onChange={(e) => setNoteDraft(e.target.value.slice(0, 100))}
             rows={5}
             placeholder="Напр. Любить коротку стрижку, алергія на фарбу, просить каву..."
-            className="w-full resize-none rounded-2xl border border-[var(--color-cream)] bg-white px-4 py-3 text-sm font-medium text-[var(--color-ink)] outline-none transition-all placeholder:text-[var(--color-caramel)] hover:bg-[var(--color-cream)] focus:border-[var(--color-forest)] focus:ring-4 focus:ring-[var(--color-forest)]/10"
+            className="w-full resize-none rounded-2xl border border-[#eadbc9] bg-white px-4 py-3 text-sm font-medium text-[#202020] outline-none transition-all placeholder:text-[#77716b] hover:bg-[#fff7f0] focus:border-[#ff5a00] focus:ring-4 focus:ring-[#ff5a00]/10"
           />
-          <div className="text-right text-[11px] font-medium text-[var(--color-caramel)]">
+          <div className="text-right text-[11px] font-medium text-[#77716b]">
             {noteDraft.length}/100
           </div>
         </div>
@@ -1480,15 +1470,15 @@ const filteredMostActiveHour = useMemo(() => {
 
 function MiniMetric({ label, value, icon: Icon, danger = false }) {
   return (
-    <div className="min-w-0 rounded-2xl border border-[var(--color-cream)] bg-white px-2.5 py-3">
+    <div className="min-w-0 rounded-2xl border border-[#eadbc9] bg-white px-2.5 py-3 shadow-[0_8px_22px_rgba(17,17,17,0.04)]">
       <div className="flex items-center gap-2.5">
         {Icon && (
           <div
             className={cn(
               "ml-0.5 flex h-10 w-10 shrink-0 items-center justify-center",
               danger
-                ? "text-[rgb(201,122,114)]"
-                : "text-[var(--color-caramel)]",
+                ? "text-[#e5484d]"
+                : "text-[#ff5a00]",
             )}
           >
             <Icon className="h-5 w-5" />
@@ -1496,9 +1486,9 @@ function MiniMetric({ label, value, icon: Icon, danger = false }) {
         )}
 
         <div className="min-w-0 flex-1">
-          <p className="truncate !text-[9px] font-bold uppercase tracking-[0.08em] text-[var(--color-caramel)] sm:text-[11px]">
-            {label}
-          </p>
+<p className="whitespace-normal text-[9px] font-bold uppercase tracking-[0.08em] leading-tight text-[#77716b] sm:text-[11px]">
+  {label}
+</p>
 
           <p className={cn("mt-1 truncate !text-[13px] font-black sm:text-sm")}>
             {value}
@@ -1523,133 +1513,58 @@ function daysAgo(date) {
 
 function ClientAccordion({
   client,
-  isExpanded,
-  onToggle,
-  activeTab,
-  onTabChange,
-  onAddNote,
-  onDeleteNote,
-  onToggleVip,
+  onOpenDetails,
   onCopyPhone,
   copiedPhone,
 }) {
   return (
-    <article className="overflow-hidden rounded-3xl border border-[var(--color-cream)] bg-white shadow-[0_4px_24px_-4px_rgba(27,27,27,0.08)] transition-all hover:shadow-[0_8px_28px_-4px_rgba(27,27,27,0.12)]">
-      <div className="flex w-full items-start justify-between gap-3 p-4 text-left sm:p-5">
+    <article className="overflow-hidden rounded-[18px] border border-[#e5eaf0] bg-white shadow-[0_10px_30px_rgba(15,23,42,0.045)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_44px_rgba(15,23,42,0.08)]">
+      <div className="p-3">
+        <div className="flex items-center justify-between gap-3">
+          <ClientStatusBadges client={client} />
+
+          <button
+            type="button"
+            onClick={onOpenDetails}
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-[#657084] transition hover:bg-[#f4f6f8] hover:text-[#202020]"
+            title="Деталі клієнта"
+            aria-label="Деталі клієнта"
+          >
+            <MoreVertical className="h-5 w-5" />
+          </button>
+        </div>
+
         <button
           type="button"
-          onClick={onToggle}
-          className="flex min-w-0 flex-1 items-center gap-3 text-left"
+          onClick={onOpenDetails}
+          className="mt-4 flex w-full flex-col items-center text-center"
         >
           <Avatar
             name={client.name}
             photoUrl={client.photoUrl}
-            className="h-16 w-16 rounded-[22px]"
+            className="h-14 w-14 rounded-full border-[#eef1f5] shadow-[0_10px_26px_rgba(15,23,42,0.10)]"
           />
 
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
-              <div className="sm:hidden">
-                <ClientStatusBadges client={client} />
-              </div>
-
-              <h3 className="truncate text-lg font-black text-[var(--color-ink)]">
-                {client.name}
-              </h3>
-
-              <div className="hidden sm:block">
-                <ClientStatusBadges client={client} />
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onCopyPhone?.(client.phone);
-              }}
-              className="mt-1 flex max-w-full items-center gap-1.5 truncate text-sm font-medium text-[var(--color-caramel)] transition hover:text-[var(--color-ink)] active:scale-[0.98]"
-              title="Скопіювати телефон"
-            >
-              <span className="truncate">{client.phone}</span>
-
-              {copiedPhone ? (
-                <CheckCheck className="ml-2 h-3.5 w-3.5 shrink-0" />
-              ) : (
-                <Copy className="ml-2 h-3.5 w-3.5 shrink-0" />
-              )}
-            </button>
-            <p className="truncate text-sm text-[var(--color-caramel)]">
-              {client.email}
-            </p>
-          </div>
+          <h3 className="mt-2 line-clamp-1 text-[14px] font-black">
+            {client.name || "Клієнт"}
+          </h3>
         </button>
 
-        <div className="ml-2 flex shrink-0 flex-col items-end gap-7">
-          <button
-            type="button"
-            onClick={onToggle}
-            className="inline-flex items-center gap-2 pt-1 text-xs font-bold text-[var(--color-caramel)]"
-          >
-            {isExpanded ? (
-              <ChevronUp className="h-4 w-4" />
-            ) : (
-              <ChevronDown className="h-4 w-4" />
-            )}
+<div className="mt-4 space-y-3 text-center">
+  <button
+    type="button"
+    onClick={() => onCopyPhone?.(client.phone)}
+    className="flex w-full justify-center gap-2 text-sm font-medium text-[#586174] transition hover:text-[#ff6200]"
+  >
+    <Phone className="relative top-[1px] h-4 w-4 shrink-0" />
+    <span>{client.phone || "Телефон не вказано"}</span>
+  </button>
 
-            <span className="hidden sm:inline">
-              {isExpanded ? "Сховати" : "Розгорнути"}
-            </span>
-          </button>
-          {isExpanded && (
-            <div className="hidden shrink-0 items-center sm:flex">
-              <Button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onToggleVip?.();
-                }}
-                className={cn(
-                  client.isFavorite &&
-                    " bg-[var(--color-cream)] text-[var(--color-ink)] hover:bg-[var(--color-sand)]/40",
-                )}
-              >
-                <UserStar className="h-4 w-4" />
-                {client.isFavorite ? (
-                  <span className="leading-tight text-center">
-                    Прибрати статус
-                    <br />
-                    Особливого клієнта
-                  </span>
-                ) : (
-                  <span className="leading-tight text-center">
-                    Додати статус
-                    <br />
-                    Особливого клієнта
-                  </span>
-                )}
-              </Button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div
-        className={cn(
-          "grid transition-all duration-300 ease-out",
-          isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
-        )}
-      >
-        <div className="overflow-hidden">
-          <ClientDetails
-            client={client}
-            activeTab={activeTab}
-            onTabChange={onTabChange}
-            onAddNote={onAddNote}
-            onDeleteNote={onDeleteNote}
-            onToggleVip={onToggleVip}
-            compactHeader
-          />
-        </div>
+  <div className="flex w-full justify-center gap-2 text-sm font-medium text-[#586174]">
+   <Mail className="relative top-[1px] h-4 w-4 shrink-0" />
+    <span>{client.email || "Email не вказано"}</span>
+  </div>
+</div>
       </div>
     </article>
   );
@@ -1722,11 +1637,11 @@ function ClientDetails({
       className={cn(
         "h-fit overflow-hidden bg-white",
         compactHeader
-          ? "border-t border-[var(--color-cream)]"
-          : "rounded-3xl border border-[var(--color-cream)] shadow-[0_4px_24px_-4px_rgba(27,27,27,0.10)]",
+          ? "border-t border-[#eadbc9]"
+          : "",
       )}
     >
-      <div className="border-b border-[var(--color-cream)] p-5">
+      <div className="">
         {!compactHeader && (
           <div className="flex items-start gap-3">
             <Avatar
@@ -1737,18 +1652,18 @@ function ClientDetails({
 
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <h3 className="truncate text-lg font-black text-[var(--color-ink)]">
+                <h3 className="truncate text-lg font-black text-[#202020]">
                   {client.name}
                 </h3>
 
                 <ClientStatusBadges client={client} />
               </div>
 
-              <p className="mt-1 text-sm font-medium text-[var(--color-caramel)]">
+              <p className="mt-1 text-sm font-medium text-[#77716b]">
                 {client.phone}
               </p>
 
-              <p className="truncate text-sm text-[var(--color-caramel)]">
+              <p className="truncate text-sm text-[#77716b]">
                 {client.email}
               </p>
             </div>
@@ -1761,7 +1676,7 @@ function ClientDetails({
             className={cn(
               "w-full",
               client.isFavorite &&
-                "bg-[var(--color-cream)] text-[var(--color-ink)] hover:bg-[var(--color-sand)]/40",
+                "bg-[#fff1e8] text-[#ff5a00] hover:bg-[#ffe5d4]",
             )}
           >
             <UserStar className="h-4 w-4" />
@@ -1791,12 +1706,12 @@ function ClientDetails({
           <MiniMetric
             icon={CalendarDays}
             label="Останній запис"
-            value={formatDateUA(client.lastBooking.date)}
+            value={formatDateUA(client.lastBooking?.date)}
           />
           <MiniMetric
             icon={User}
             label="Майстер"
-            value={client.lastBooking.master}
+            value={client.lastBooking?.master || "Не вказано"}
           />
 
           <MiniMetric
@@ -1821,7 +1736,7 @@ function ClientDetails({
         </div>
       </div>
 
-      <div className="flex gap-1.5 overflow-x-auto border-b border-[var(--color-cream)] px-3 py-3 md:justify-center md:gap-2 md:px-4">
+      <div className="flex gap-1.5 overflow-x-auto border-b border-[#eadbc9] px-3 py-3 md:justify-center md:gap-2 md:px-4">
         {tabs.map((tab) => {
           const Icon = tab.icon;
 
@@ -1833,8 +1748,8 @@ function ClientDetails({
               className={cn(
                 "inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1.5 text-[11px] font-bold transition-all md:gap-1.5 md:px-3 md:py-2 md:text-xs",
                 activeTab === tab.value
-                  ? "bg-[var(--color-primary-buttom)] text-white hover:bg-[var(--color-primary-buttom)]/90"
-                  : "text-[var(--color-caramel)] hover:bg-[var(--color-cream)]",
+                  ? "bg-[#ff5a00] text-white hover:bg-[#ff5a00]/90"
+                  : "text-[#77716b] hover:bg-[#fff7f0]",
               )}
             >
               <Icon className="h-3.5 w-3.5" />
@@ -1850,18 +1765,18 @@ function ClientDetails({
             {visibleBookings.map((booking) => (
               <div
                 key={`${client.id}-${booking.date}-${booking.service}`}
-                className="rounded-2xl border border-[var(--color-cream)] p-3"
+                className="rounded-2xl border border-[#eadbc9] bg-white p-3"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="truncate font-bold text-[var(--color-ink)]">
+                    <p className="truncate font-bold text-[#202020]">
                       {booking.service}
                     </p>
-                    <p className="mt-1 text-xs text-[var(--color-caramel)]">
+                    <p className="mt-1 text-xs text-[#77716b]">
                       {formatDateUA(booking.date)} • {booking.master}
                     </p>
                   </div>
-                  <p className="shrink-0 font-black text-[var(--color-ink)]">
+                  <p className="shrink-0 font-black text-[#202020]">
                     {formatMoney(booking.price)}
                   </p>
                 </div>
@@ -1915,18 +1830,18 @@ function ClientDetails({
         {activeTab === "notes" && (
           <div className="space-y-3">
             {client.notes.length === 0 ? (
-              <div className="rounded-2xl border-2 border-dashed border-[var(--color-caramel)]/40 bg-[var(--color-cream)] p-6 text-center sm:p-8">
+              <div className="rounded-2xl border-2 border-dashed border-[#ffd6bd] bg-[#fff1e8] p-6 text-center sm:p-8">
                 <div className="mb-3 flex items-center justify-center">
                   <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/70">
-                    <NotebookText className="h-7 w-7 text-[var(--color-caramel)]" />
+                    <NotebookText className="h-7 w-7 text-[#77716b]" />
                   </div>
                 </div>
 
-                <p className="text-sm font-medium text-[var(--color-caramel)]">
+                <p className="text-sm font-medium text-[#77716b]">
                   Нотаток ще немає
                 </p>
 
-                <p className="mt-1 text-xs text-[var(--color-caramel)]/80">
+                <p className="mt-1 text-xs text-[#77716b]/80">
                   Тут можна додати внутрішню примітку про клієнта. Клієнт її не
                   бачитиме.
                 </p>
@@ -1935,7 +1850,7 @@ function ClientDetails({
               client.notes.map((note) => (
                 <div
                   key={note.id}
-                  className="flex items-center justify-between gap-3 rounded-2xl border border-[var(--color-cream)] bg-[var(--color-cream)]/45 p-3 text-sm font-medium text-[var(--color-ink)]"
+                  className="flex items-center justify-between gap-3 rounded-2xl border border-[#eadbc9] bg-[#fff7f0] p-3 text-sm font-medium text-[#202020]"
                 >
                   <span className="min-w-0 flex-1 break-words">
                     {note.text}
@@ -1944,7 +1859,7 @@ function ClientDetails({
                   <button
                     type="button"
                     onClick={() => onDeleteNote?.(note.id)}
-                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[var(--color-danger)] transition-all hover:bg-[rgba(201,122,114,0.10)] active:scale-[0.98]"
+                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[#e5484d] transition-all hover:bg-[#fff1f1] active:scale-[0.98]"
                     title="Видалити нотатку"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -1999,7 +1914,7 @@ function ClientDetails({
                     "rounded-2xl border p-3 transition-all",
                     isActive
                       ? `${meta.className} shadow-sm ring-2 ring-current/10`
-                      : "border-[var(--color-cream)] bg-white text-[var(--color-ink)]",
+                      : "border-[#eadbc9] bg-white text-[#202020]",
                   )}
                 >
                   <div className="flex items-center gap-3">
@@ -2008,7 +1923,7 @@ function ClientDetails({
                         "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border",
                         isActive
                           ? "border-current/20 bg-white/70"
-                          : "border-[var(--color-cream)] bg-[var(--color-cream)] text-[var(--color-caramel)]",
+                          : "border-[#eadbc9] bg-[#fff7f0] text-[#77716b]",
                       )}
                     >
                       <Icon className="h-4 w-4" />
@@ -2047,7 +1962,7 @@ function Insight({ icon: Icon, text, danger = false }) {
         "flex items-start gap-3 rounded-2xl border p-3",
         danger
           ? "border-rose-200 bg-rose-50 text-rose-700"
-          : "border-[var(--color-cream)] bg-white text-[var(--color-ink)]",
+          : "border-[#eadbc9] bg-white text-[#202020]",
       )}
     >
       <Icon className="mt-0.5 h-4 w-4 shrink-0" />

@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Sparkles,
+  Download,
   Plus,
   Pencil,
   Trash2,
@@ -11,7 +12,9 @@ import {
   CalendarDays,
   ChevronDown,
   ChevronUp,
+  Search,
   Users,
+  MoreVertical,
 } from "lucide-react";
 import DatePicker from "../../components/ui/DatePicker";
 import TimeSelect from "../../components/TimeSelect";
@@ -189,6 +192,8 @@ function Modal({
   open,
   onClose,
   title,
+  badge = "Редагування",
+  icon: Icon = Pencil,
   subtitle,
   children,
   footer,
@@ -225,36 +230,44 @@ function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#202020]/45 p-4 backdrop-blur-sm sm:p-6"
+      className="fixed inset-0 z-[9999] flex items-end justify-center bg-[#202020]/45 px-3 pb-3 backdrop-blur-[6px] sm:items-center sm:p-6"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose?.();
       }}
     >
       <div
         className={cn(
-          "relative w-full overflow-hidden rounded-[28px] border border-[#eadbc9] bg-white shadow-2xl",
+          "flex w-full max-h-[calc(100dvh-24px)] flex-col overflow-hidden rounded-[30px] border border-[#f0e2d3] bg-[#f7f5f1] shadow-[0_30px_90px_rgba(15,23,42,0.24)]",
           "animate-in fade-in-0 zoom-in-95 duration-200",
           sizeClasses[size],
         )}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-[#fff1e8] to-transparent" />
+        <div className="relative shrink-0 overflow-hidden bg-[#f3eee7] px-5 py-5 sm:px-6 sm:py-6">
+          <div className="absolute right-[-55px] top-[-70px] h-[180px] w-[180px] rounded-full bg-[#ff6200]/10 blur-3xl" />
 
-        <div className="relative border-b border-[#eadbc9] px-6 py-5">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="text-[11px] font-black uppercase tracking-[0.15em] text-[#ff5a00]">
+          <div className="relative z-10 flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-white px-3 text-[11px] font-black uppercase tracking-[0.08em] text-[#ff6200] shadow-[0_8px_20px_rgba(255,98,0,0.08)]">
+                <Icon className="h-3.5 w-3.5" />
+                {badge}
+              </span>
+
+              <h3 className="mt-3 text-[26px] font-black leading-[0.95] tracking-[-0.05em] text-[#202020] sm:text-[32px]">
                 {title}
-              </p>
+              </h3>
+
               {subtitle && (
-                <p className="mt-1 text-sm font-medium text-[#77716b]">{subtitle}</p>
+                <p className="mt-2 text-sm font-medium leading-6 text-[#77716b]">
+                  {subtitle}
+                </p>
               )}
             </div>
 
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl p-2 text-[#77716b] transition-colors hover:bg-[#fff1e8] hover:text-[#202020]"
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white text-[#77716b] shadow-[0_10px_24px_rgba(15,23,42,0.06)] transition hover:bg-[#fff3e9] hover:text-[#ff6200] active:scale-[0.96]"
               aria-label="Закрити"
             >
               <X className="h-5 w-5" />
@@ -262,12 +275,12 @@ function Modal({
           </div>
         </div>
 
-        <div className="max-h-[calc(100vh-220px)] overflow-y-auto px-6 py-6">
+        <div className="min-h-0 flex-1 overflow-y-auto bg-white px-5 py-5 sm:px-6">
           {children}
         </div>
 
         {footer && (
-          <div className="border-t border-[#eadbc9] bg-[#fffaf6] px-6 py-4">
+          <div className="shrink-0 border-t border-[#f0e7da] bg-[#fbfaf8] px-5 py-4 sm:px-6">
             {footer}
           </div>
         )}
@@ -481,8 +494,12 @@ export default function Masters() {
     photoUrl: "",
   });
 
-  const masters = mastersQuery.data || [];
+  const masters = useMemo(
+  () => mastersQuery.data || [],
+  [mastersQuery.data],
+);
   const loading = mastersQuery.isLoading;
+  const [query, setQuery] = useState("");
 
   const [form, setForm] = useState({
     name: "",
@@ -1043,256 +1060,282 @@ export default function Masters() {
   }
 
   const total = masters.length;
+  const filteredMasters = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return masters;
+
+    return masters.filter((master) =>
+      `${master.name || ""} ${master.role || ""} ${master.bio || ""}`
+        .toLowerCase()
+        .includes(q),
+    );
+  }, [masters, query]);
   const [photoBroken, setPhotoBroken] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#faf8f4] pb-10">
-      <div className="mx-auto max-w-6xl space-y-6 px-4 py-4 sm:px-6 lg:px-8">
-        <div className="relative overflow-hidden rounded-[28px] border border-[#eadbc9] bg-[#f2eee8] px-6 py-8 shadow-[0_22px_70px_rgba(17,17,17,0.07)] sm:px-8 sm:py-10">
-          <div className="absolute right-5 top-1/2 hidden h-28 w-28 -translate-y-1/2 items-center justify-center rounded-[32px] bg-[#ff5a00] text-white shadow-[0_20px_45px_rgba(255,90,0,0.28)] sm:flex">
-            <Users className="h-14 w-14" />
-          </div>
-
-          <div className="absolute -right-7 -top-10 hidden h-28 w-28 rounded-full bg-white/40 sm:block" />
-          <div className="absolute bottom-4 right-24 hidden h-5 w-5 rounded-full bg-[#ff5a00]/20 sm:block" />
-
+    <div className="min-h-screen bg-[#fbfaf8] pb-10">
+      <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+        <header className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
           <div className="relative max-w-2xl">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#ffd6bd] bg-white px-3 py-1.5 text-[#ff5a00] shadow-[0_8px_24px_rgba(255,90,0,0.08)]">
-              <Sparkles className="h-3.5 w-3.5" />
-              <span className="text-[11px] font-black uppercase tracking-[0.14em]">
-                Команда студії
-              </span>
-            </div>
-
             <h1 className="max-w-xl text-4xl font-black leading-[0.95] tracking-tight text-[#202020] sm:text-6xl">
               Май<span className="text-[#ff5a00]">стри</span>
             </h1>
 
             <p className="mt-3 max-w-xl text-sm font-semibold text-[#77716b] sm:text-base">
-              Додай майстрів, щоб привʼязувати їх до послуг, графіка та записів клієнтів.
+              Керуйте командою студії, профілями майстрів та їхніми особливими датами.
             </p>
           </div>
-        </div>
 
-        <SectionCard
-          title="Новий майстер"
-          subtitle="Фото, імʼя та короткий опис — як у професійних профілях."
-          actions={
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button variant="secondary" className="h-12 rounded-[14px] px-5">
+              <Download className="h-4 w-4" />
+              Експорт
+            </Button>
+
             <Button
-              variant={addOpen ? "secondary" : "primary"}
-              onClick={() => setAddOpen((prev) => !prev)}
-              className="w-full justify-center md:w-auto"
+              variant="primary"
+              onClick={() => setAddOpen(true)}
+              className="h-12 rounded-[14px] px-5"
             >
               <Plus className="h-4 w-4" />
-              {addOpen ? "Сховати форму" : "Додати майстра"}
-              {addOpen ? (
-                <ChevronUp className="h-4 w-4" />
-              ) : (
-                <ChevronDown className="h-4 w-4" />
-              )}
+              Додати майстра
             </Button>
-          }
-        >
-          <div
-            className={cn(
-              "grid transition-all duration-300 ease-out",
-              addOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
-            )}
-          >
-            <div className="overflow-hidden">
-              <div className="pt-1">
-                <form onSubmit={addMaster} className="space-y-5">
-                  <div className="flex flex-col gap-4">
-                    <div className="flex items-center gap-3 sm:gap-4">
-                      <div className="relative">
-                        <Avatar
-                          name={form.name || "Фото"}
-                          photoUrl={!photoBroken ? form.photoUrl : ""}
-                          size="md"
-                          className="h-16 w-16 rounded-2xl sm:h-20 sm:w-20 sm:rounded-[22px]"
-                        />
-                      </div>
+          </div>
+        </header>
 
-                      <div className="flex flex-wrap items-center gap-2">
-                        <label className="cursor-pointer">
-                          <span className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#ff5a00] px-4 py-2.5 text-sm font-black text-white shadow-[0_12px_26px_rgba(255,90,0,0.22)] transition-all hover:bg-[#ef4f00]">
-                            <Plus className="h-4 w-4" />
-                            Додати фото
-                          </span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handlePickPhoto}
-                            className="hidden"
-                          />
-                        </label>
+        <section className="space-y-6">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="relative w-full lg:max-w-[390px]">
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8b95a5]" />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Пошук майстрів..."
+                className="h-12 w-full rounded-[14px] border border-[#e5eaf0] bg-white pl-12 pr-4 text-sm font-semibold text-[#202020] outline-none transition placeholder:text-[#9aa3af] hover:border-[#d8dee8] focus:border-[#ff6200] focus:ring-4 focus:ring-[#ff6200]/10"
+              />
+            </div>
 
-                        {form.photoUrl && (
-                          <Button variant="danger" onClick={removePhoto}>
-                            <Trash2 className="h-4 w-4" />
-                            Видалити
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="mb-2 block text-sm font-black text-[#202020]">
-                      Імʼя
-                    </label>
-                    <input
-                      name="name"
-                      placeholder="Напр. Наталія"
-                      value={form.name}
-                      onChange={handleChange}
-                      className={inputBaseClass}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-2 block text-sm font-black text-[#202020]">
-                      Посада / Спеціалізація
-                    </label>
-                    <input
-                      name="role"
-                      value={form.role}
-                      onChange={handleChange}
-                      className={inputBaseClass}
-                      placeholder="Напр. Стиліст або Барбер"
-                    />
-                    <p className="mt-1 text-xs font-medium text-[#77716b]">
-                      Вкажіть посаду чи спеціалізацію.
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="mb-2 block text-sm font-black text-[#202020]">
-                      Опис
-                    </label>
-                    <textarea
-                      name="bio"
-                      placeholder="Напр. 6 років досвіду, спеціалізація: фарбування, укладки..."
-                      value={form.bio}
-                      onChange={handleChange}
-                      rows={4}
-                      className={cn(inputBaseClass, "resize-none")}
-                    />
-                    <p className="mt-1 text-xs font-medium text-[#77716b]">
-                      Коротко і по суті (2–4 речення).
-                    </p>
-                  </div>
-
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                    <Button
-                      type="submit"
-                      variant="primary"
-                      disabled={adding || !String(form.name || "").trim()}
-                    >
-                      <Check className="h-4 w-4" />
-                      {adding ? "Додаємо..." : "Додати майстра"}
-                    </Button>
-                  </div>
-                </form>
-              </div>
+            <div className="inline-flex h-12 items-center justify-center rounded-[14px] border border-[#e5eaf0] bg-white px-4 text-sm font-black text-[#ff6200] shadow-sm">
+              К-ть майстрів: {total}
             </div>
           </div>
-        </SectionCard>
 
-        <SectionCard
-          title="Список майстрів"
-          subtitle={
-            total
-              ? "Клікни “Редагувати”, щоб оновити профіль."
-              : "Додай першого майстра вище."
-          }
-          badge={`К-ть майстрів: ${total}`}
-        >
           {loading ? (
             <MastersListSkeleton />
           ) : total === 0 ? (
-            <div className="rounded-[24px] border-2 border-dashed border-[#ffd6bd] bg-[#fff7f0] p-8 text-center">
-              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-[#ff5a00] shadow-sm">
+            <div className="rounded-[24px] border-2 border-dashed border-[#e5d7c7] bg-white p-8 text-center shadow-sm">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-[16px] bg-[#fff1e8] text-[#ff6200]">
                 <Plus className="h-6 w-6" />
               </div>
               <p className="text-sm font-black text-[#202020]">Поки що немає майстрів</p>
               <p className="mt-1 text-xs font-medium text-[#77716b]">
-                Додай першого майстра зверху
+                Натисніть “Додати майстра”, щоб створити перший профіль.
+              </p>
+            </div>
+          ) : filteredMasters.length === 0 ? (
+            <div className="rounded-[24px] border-2 border-dashed border-[#e5d7c7] bg-white p-8 text-center shadow-sm">
+              <p className="text-sm font-black text-[#202020]">Нічого не знайдено</p>
+              <p className="mt-1 text-xs font-medium text-[#77716b]">
+                Спробуйте інший запит у пошуку.
               </p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {masters.map((m) => (
-                <div
-                  key={m.id}
-                  className="group rounded-[24px] border border-[#eadbc9] bg-white p-4 shadow-[0_8px_24px_rgba(17,17,17,0.04)] transition-all hover:-translate-y-0.5 hover:border-[#ffd6bd] hover:shadow-[0_18px_44px_rgba(255,90,0,0.10)]"
-                >
-                  <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex min-w-0 items-start gap-3">
-                        <Avatar name={m.name} photoUrl={m.photoUrl} size="sm" />
+            <>
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+                {filteredMasters.map((m) => (
+                  <article
+                    key={m.id}
+                    className="overflow-hidden rounded-[18px] border border-[#e5eaf0] bg-white shadow-[0_10px_30px_rgba(15,23,42,0.045)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_44px_rgba(15,23,42,0.08)]"
+                  >
+                    <div className="p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="inline-flex items-center rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+                          Активний
+                        </span>
 
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate font-black text-[#202020]">
-                            {m.name}
-                          </p>
+                        <button
+                          type="button"
+                          onClick={() => openEdit(m)}
+                          className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-[#657084] transition hover:bg-[#f4f6f8] hover:text-[#202020]"
+                          title="Редагувати майстра"
+                          aria-label="Редагувати майстра"
+                        >
+                          <MoreVertical className="h-5 w-5" />
+                        </button>
+                      </div>
 
-                          {m.role ? (
-                            <p className="mt-1 truncate text-sm font-semibold text-[#77716b]">
-                              {m.role}
-                            </p>
-                          ) : (
-                            <p className="mt-1 text-sm font-medium text-[#77716b]">
-                              Спеціалізація не вказана
-                            </p>
-                          )}
+                      <button
+                        type="button"
+                        onClick={() => openEdit(m)}
+                        className="mt-4 flex w-full flex-col items-center text-center"
+                      >
+                        <Avatar
+                          name={m.name}
+                          photoUrl={m.photoUrl}
+                          size="md"
+                          className="h-14 w-14 rounded-full border-[#eef1f5] shadow-[0_10px_26px_rgba(15,23,42,0.10)]"
+                        />
 
-                          {m.bio ? (
-                            <p className="mt-1 line-clamp-2 break-words text-sm font-medium text-[#77716b]">
-                              {m.bio}
-                            </p>
-                          ) : (
-                            <p className="mt-1 text-sm font-medium text-[#77716b]">Без опису</p>
-                          )}
-                        </div>
+                        <h3 className="mt-2 line-clamp-1 text-[14px] font-black text-[#202020]">
+                          {m.name || "Майстер"}
+                        </h3>
+                      </button>
+
+                      <div className="mt-4 space-y-2 text-center">
+                        <p className="line-clamp-1 text-sm font-semibold text-[#586174]">
+                          {m.role || "Спеціалізація не вказана"}
+                        </p>
+
+                        <p className="line-clamp-2 min-h-[40px] text-xs font-medium leading-5 text-[#77716b]">
+                          {m.bio || "Без опису"}
+                        </p>
                       </div>
                     </div>
 
-                    <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row lg:w-auto lg:shrink-0">
-                      <Button
-                        variant="accent"
-                        className="h-11 w-full justify-center sm:flex-[3] lg:flex-none lg:min-w-[170px]"
+                    <div className="grid grid-cols-3 border-t border-[#edf0f4] bg-[#fbfcfd]">
+                      <button
+                        type="button"
                         onClick={() => openMasterExceptions(m)}
+                        className="grid h-11 place-items-center text-[#657084] transition hover:bg-[#fff7f0] hover:text-[#ff6200]"
+                        title="Особливі дати"
+                        aria-label="Особливі дати"
                       >
                         <CalendarDays className="h-4 w-4" />
-                        Особливі дати
-                      </Button>
+                      </button>
 
-                      <div className="flex w-full gap-2 sm:contents">
-                        <IconButton
-                          className="h-11 w-1/2 sm:flex-[1] lg:w-11"
-                          onClick={() => openEdit(m)}
-                          title="Редагувати"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </IconButton>
+                      <button
+                        type="button"
+                        onClick={() => openEdit(m)}
+                        className="grid h-11 place-items-center border-x border-[#edf0f4] text-[#657084] transition hover:bg-[#fff7f0] hover:text-[#ff6200]"
+                        title="Редагувати"
+                        aria-label="Редагувати"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
 
-                        <IconButton
-                          className="h-11 w-1/2 sm:flex-[1] lg:w-11"
-                          variant="danger"
-                          onClick={() => deleteMaster(m)}
-                          title="Видалити"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </IconButton>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => deleteMaster(m)}
+                        className="grid h-11 place-items-center text-[#e5484d] transition hover:bg-[#fff7f7]"
+                        title="Видалити"
+                        aria-label="Видалити"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                  </article>
+                ))}
+              </div>
+
+              <p className="text-sm font-medium text-[#6b7280]">
+                Показано {filteredMasters.length} з {total} майстрів
+              </p>
+            </>
           )}
-        </SectionCard>
+        </section>
+
+        <Modal
+          open={addOpen}
+          onClose={() => setAddOpen(false)}
+          title="Додати майстра"
+          badge="Майстер"
+          icon={Plus}
+          subtitle="Заповніть фото, імʼя, спеціалізацію та короткий опис."
+          size="md"
+          footer={
+            <div className="flex flex-row gap-2 sm:justify-end">
+              <Button
+                variant="secondary"
+                onClick={() => setAddOpen(false)}
+                className="flex-1 sm:flex-none"
+              >
+                Скасувати
+              </Button>
+              <Button
+                type="submit"
+                form="add-master-form"
+                variant="primary"
+                disabled={adding || !String(form.name || "").trim()}
+                className="flex-1 sm:flex-none"
+              >
+                <Check className="h-4 w-4" />
+                {adding ? "Додаємо..." : "Додати"}
+              </Button>
+            </div>
+          }
+        >
+          <form id="add-master-form" onSubmit={addMaster} className="space-y-5">
+            <div className="flex items-center gap-4">
+              <Avatar
+                name={form.name || "Фото"}
+                photoUrl={!photoBroken ? form.photoUrl : ""}
+                size="md"
+              />
+
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="cursor-pointer">
+                  <span className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[#eadbc9] bg-white px-4 py-2.5 text-sm font-black text-[#202020] transition hover:border-[#ffd6bd] hover:bg-[#fff7f0]">
+                    <Camera className="h-4 w-4" />
+                    Додати фото
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePickPhoto}
+                    className="hidden"
+                  />
+                </label>
+
+                {form.photoUrl && (
+                  <Button variant="danger" onClick={removePhoto}>
+                    <Trash2 className="h-4 w-4" />
+                    Прибрати
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-black text-[#202020]">
+                Імʼя
+              </label>
+              <input
+                name="name"
+                placeholder="Напр. Наталія"
+                value={form.name}
+                onChange={handleChange}
+                className={inputBaseClass}
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-black text-[#202020]">
+                Посада / Спеціалізація
+              </label>
+              <input
+                name="role"
+                value={form.role}
+                onChange={handleChange}
+                className={inputBaseClass}
+                placeholder="Напр. Стиліст або Барбер"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-black text-[#202020]">
+                Опис
+              </label>
+              <textarea
+                name="bio"
+                placeholder="Напр. 6 років досвіду, спеціалізація: фарбування, укладки..."
+                value={form.bio}
+                onChange={handleChange}
+                rows={4}
+                className={cn(inputBaseClass, "resize-none")}
+              />
+            </div>
+          </form>
+        </Modal>
 
         <Modal
           open={Boolean(editMaster)}

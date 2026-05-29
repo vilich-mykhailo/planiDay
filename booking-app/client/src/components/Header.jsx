@@ -303,15 +303,17 @@ const newBookingsCount = useMemo(() => {
   };
 }, [role]);
 
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 640);
-    };
+useEffect(() => {
+  const handleResize = () => {
+    setIsMobile(window.innerWidth < 640);
+     };
 
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  handleResize();
+
+  window.addEventListener("resize", handleResize);
+
+  return () => window.removeEventListener("resize", handleResize);
+}, []);
 
   useEffect(() => {
     document.body.classList.toggle("overflow-hidden", open);
@@ -570,11 +572,19 @@ const staticRoutes = [
 
   const isStudioPublicPage = !staticRoutes.includes(location.pathname);
 
-  if (isStudioPublicPage || hideHeader) return null;
-
+if (isStudioPublicPage || hideHeader) {
+  return null;
+}
   return (
     <>
-<header className="fixed left-0 right-0 top-3 z-[60]">
+<header
+  className={cx(
+    "fixed left-0 right-0 top-3 z-[60]",
+    role === "owner" &&
+      location.pathname.startsWith("/dashboard") &&
+      "lg:hidden",
+  )}
+>
   <div className="mx-auto max-w-[1260px] px-4 max-[639px]:px-5 sm:px-6 lg:px-10">
     <div className="flex h-[58px] items-center justify-between rounded-[20px] border border-[#eadfce] bg-white/82 px-3 shadow-[0_14px_34px_rgba(15,23,42,0.06)] backdrop-blur-2xl sm:h-[64px] sm:px-4 lg:h-[66px]">
       <Link
