@@ -1,6 +1,7 @@
 // Clients.jsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../api/http";
+import XLSX from "xlsx-js-style";
 import { useStudio } from "../../context/studio/useStudio";
 import {
   AlertTriangle,
@@ -9,6 +10,7 @@ import {
   Download,
   ChevronDown,
   ChevronUp,
+  FileSpreadsheet,
   Clock,
   X,
   XCircle,
@@ -41,6 +43,12 @@ import {
   ContactRound,
   MoreVertical,
   Plus,
+  CircleCheckBig,
+  CookingPot,
+  PartyPopper,
+  Banknote,
+  Receipt,
+  CircleAlert,
 } from "lucide-react";
 
 const PUBLIC = import.meta.env.VITE_R2_PUBLIC_BASE_URL;
@@ -108,7 +116,7 @@ function getBookingStatusUi(status, canceledBy = null) {
   if (status === "CONFIRMED") {
     return {
       text: "Підтверджено",
-      icon: Check,
+      icon: CircleCheckBig,
       badge: `${base} text-[#0f8a5f]`,
     };
   }
@@ -129,8 +137,8 @@ function getBookingStatusUi(status, canceledBy = null) {
   if (status === "COMPLETED") {
     return {
       text: "Завершено",
-      icon: CheckCheck,
-      badge: `${base} text-[#77716b]`,
+      icon: PartyPopper,
+      badge: "border border-[#e5e7eb] bg-[#f8f9fa] text-[#6b7280]",
     };
   }
 
@@ -313,22 +321,23 @@ function Modal({
     sm: "max-w-md",
     md: "max-w-lg",
     lg: "max-w-2xl",
+    xl: "max-w-4xl",
   };
 
   return (
     <div
-       className="fixed inset-0 z-[9999] flex items-stretch justify-center bg-[#202020]/45 p-0 backdrop-blur-[6px] sm:items-center sm:p-6"
+      className="fixed inset-0 z-[9999] flex items-stretch justify-center bg-[#202020]/45 p-0 backdrop-blur-[6px] sm:items-center sm:p-6"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose?.();
       }}
     >
       <div
-className={cn(
-  "flex h-dvh w-full flex-col overflow-hidden rounded-none border-0 bg-[#f7f5f1] shadow-[0_30px_90px_rgba(15,23,42,0.24)]",
-  "animate-in fade-in-0 zoom-in-95 duration-200",
-  "sm:h-auto sm:max-h-[calc(100dvh-48px)] sm:rounded-[30px] sm:border sm:border-[#f0e2d3]",
-  sizeClasses[size],
-)}
+        className={cn(
+          "flex h-dvh w-full flex-col overflow-hidden rounded-none border-0 bg-[#f7f5f1] shadow-[0_30px_90px_rgba(15,23,42,0.24)]",
+          "animate-in fade-in-0 zoom-in-95 duration-200",
+          "sm:h-auto sm:max-h-[calc(100dvh-48px)] sm:rounded-[30px] sm:border sm:border-[#f0e2d3]",
+          sizeClasses[size],
+        )}
         onClick={(e) => e.stopPropagation()}
       >
         {title && (
@@ -359,7 +368,7 @@ className={cn(
           </div>
         )}
 
-       <div className="min-h-0 flex-1 overflow-y-auto bg-white px-5 py-5 pb-[110px] sm:px-6 sm:pb-5">
+        <div className="min-h-0 flex-1 overflow-y-auto bg-white px-5 py-5 pb-[110px] sm:px-6 sm:pb-5">
           {children}
         </div>
 
@@ -488,27 +497,67 @@ const statusMeta = {
   },
 };
 
+const statusDescriptions = {
+  new: {
+    title: "Новий",
+    description:
+      "Клієнт має тільки один нескасований запис або ще не має сформованої історії відвідувань.",
+  },
+
+  loyal: {
+    title: "Постійний",
+    description:
+      "Клієнт має 2 або більше нескасованих записів, а останній візит був протягом останніх 30 днів.",
+  },
+
+  attention: {
+    title: "Активний",
+    description:
+      "Останній нескасований запис був більше 30 днів тому, але не більше 60 днів.",
+  },
+
+  risk: {
+    title: "Неактивний",
+    description: "Клієнт не відвідував студію більше 60 днів.",
+  },
+
+  favorite: {
+    title: "Особливий клієнт",
+    description:
+      "Статус встановлюється вручну власником студії для важливих клієнтів.",
+  },
+
+  vip: {
+    title: "VIP-клієнт",
+    description:
+      "Статус лояльного клієнта, який автоматично встановлюється платформою. Його не можна змінити або прибрати вручну.",
+  },
+};
+
 function StatusBadge({ status }) {
   const meta = statusMeta[status] || statusMeta.new;
+  const info = statusDescriptions[status];
   const Icon = meta.icon;
 
   return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold",
-        meta.className,
-      )}
-    >
-      <Icon className="h-3.5 w-3.5" />
-      {meta.label}
-    </span>
+    <div className="relative inline-flex">
+      <span
+        className={cn(
+          "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold sm:gap-1.5 sm:px-3 sm:py-1 sm:text-xs",
+          meta.className,
+        )}
+      >
+        <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+        {meta.label}
+      </span>
+    </div>
   );
 }
 
 function SalonFavoriteBadge() {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-fuchsia-200 bg-fuchsia-50 px-3 py-1 text-xs font-bold text-fuchsia-700">
-      <UserStar className="h-3.5 w-3.5 text-fuchsia-600" />
+    <span className="inline-flex items-center gap-1 rounded-full border border-fuchsia-200 bg-fuchsia-50 px-2 py-0.5 text-[10px] font-bold text-fuchsia-700 sm:gap-1.5 sm:px-3 sm:py-1 sm:text-xs">
+      <UserStar className="h-3 w-3 text-fuchsia-600 sm:h-3.5 sm:w-3.5" />
       Особливий
     </span>
   );
@@ -524,13 +573,13 @@ function ClientStatusBadges({ client }) {
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      {client.isFavorite ? (
+      {isVip ? (
+        <StatusBadge status="vip" />
+      ) : client.isFavorite ? (
         <SalonFavoriteBadge />
       ) : (
         <StatusBadge status={mainStatus} />
       )}
-
-      {isVip && <StatusBadge status="vip" />}
     </div>
   );
 }
@@ -545,6 +594,7 @@ const filterItems = [
 ];
 
 const sortItems = [
+  { value: "nameAsc", label: "За алфавітом" },
   { value: "newest", label: "За датою додавання" },
   { value: "lastVisit", label: "За останнім візитом" },
   { value: "bookings", label: "За кількістю бронювань" },
@@ -643,27 +693,77 @@ export default function Clients() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState(null);
   const [clientTabs, setClientTabs] = useState({});
-  const [visibleCount, setVisibleCount] = useState(8);
+  const clientsListRef = useRef(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(8);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
+  const [exportFields, setExportFields] = useState({
+    name: true,
+    phone: true,
+    email: true,
+    status: true,
+    birthDate: true,
+
+    bookings: true,
+    cancellations: true,
+    spent: true,
+    averageCheck: true,
+
+    lastVisit: true,
+    nextVisit: true,
+    favoriteService: true,
+
+    notes: false,
+    registeredAt: false,
+    vip: false,
+    favorite: false,
+  });
+  useEffect(() => {
+    function calculateItemsPerPage() {
+      const width = window.innerWidth;
+
+      if (width >= 1280) {
+        setItemsPerPage(12); // 4 колонки × 3 рядки
+      } else if (width >= 1024) {
+        setItemsPerPage(9); // 3 колонки × 3 рядки
+      } else if (width >= 640) {
+        setItemsPerPage(8); // 2 колонки × 4 рядки
+      } else {
+        setItemsPerPage(6); // телефон
+      }
+    }
+
+    calculateItemsPerPage();
+
+    window.addEventListener("resize", calculateItemsPerPage);
+
+    return () => {
+      window.removeEventListener("resize", calculateItemsPerPage);
+    };
+  }, []);
+
   const [noteClient, setNoteClient] = useState(null);
   const [noteDraft, setNoteDraft] = useState("");
   const [allClients, setAllClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [copiedPhone, setCopiedPhone] = useState(false);
-const studioCreatedMonth = useMemo(() => {
-  const source = studio?.ownerCreatedAt || studio?.createdAt || new Date();
 
-  const d = new Date(source);
-  d.setDate(1);
-  d.setHours(0, 0, 0, 0);
+  const studioCreatedMonth = useMemo(() => {
+    const source = studio?.ownerCreatedAt || studio?.createdAt || new Date();
 
-  return d;
-}, [studio?.ownerCreatedAt, studio?.createdAt]);
+    const d = new Date(source);
+    d.setDate(1);
+    d.setHours(0, 0, 0, 0);
 
-const [statsTabIndex, setStatsTabIndex] = useState(() => {
-  const saved = Number(localStorage.getItem("clientsStatsTabIndex"));
-  return Number.isFinite(saved) ? saved : 0;
-});
+    return d;
+  }, [studio?.ownerCreatedAt, studio?.createdAt]);
+
+  const [statsTabIndex, setStatsTabIndex] = useState(() => {
+    const saved = Number(localStorage.getItem("clientsStatsTabIndex"));
+    return Number.isFinite(saved) ? saved : 0;
+  });
 
   const emptyInfo = emptyFilterInfo[filter] || emptyFilterInfo.all;
   const EmptyIcon = emptyInfo.icon;
@@ -792,6 +892,128 @@ const [statsTabIndex, setStatsTabIndex] = useState(() => {
     );
   }
 
+  function handleExportClients() {
+    const sortedClients = [...clients].sort((a, b) => {
+      const firstNameCompare = (a.firstName || "").localeCompare(
+        b.firstName || "",
+        "uk",
+        { sensitivity: "base" },
+      );
+
+      if (firstNameCompare !== 0) {
+        return firstNameCompare;
+      }
+
+      return (a.lastName || "").localeCompare(b.lastName || "", "uk", {
+        sensitivity: "base",
+      });
+    });
+
+    const rows = sortedClients.map((client) => {
+      const row = {};
+
+      if (exportFields.name) {
+        row["Ім'я"] = client.firstName || "-";
+        row["Прізвище"] = client.lastName || "-";
+      }
+
+      // решта полів...
+      if (exportFields.phone) row["Телефон"] = client.phone || "-";
+      if (exportFields.email) row["Email"] = client.email || "-";
+      if (exportFields.birthDate) {
+        row["Дата народження"] = client.birthDate
+          ? formatDateUA(client.birthDate)
+          : "-";
+      }
+      if (exportFields.bookings) row["Всього записів"] = client.bookings || 0;
+      if (exportFields.cancellations)
+        row["Скасовано"] = client.cancellations || 0;
+      if (exportFields.lastVisit) {
+        row["Останній візит"] = client.lastVisit
+          ? formatDateUA(client.lastVisit)
+          : "-";
+      }
+
+      if (exportFields.nextVisit) {
+        row["Наступний візит"] = client.nextBooking?.date
+          ? formatDateUA(client.nextBooking.date)
+          : "-";
+      }
+      if (exportFields.spent) row["Витрачено"] = client.spent || 0;
+      if (exportFields.averageCheck)
+        row["Середній чек"] = client.averageCheck || 0;
+      if (exportFields.status) {
+        row["Статус"] =
+          statusMeta[client.status]?.label || client.status || "-";
+      }
+
+      if (exportFields.favoriteService)
+        row["Улюблена послуга"] = client.favoriteService || "-";
+
+      return row;
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    const columnWidths = Object.keys(rows[0] || {}).map((key) => {
+      const maxLength = Math.max(
+        key.length,
+        ...rows.map((row) => String(row[key] ?? "").length),
+      );
+
+      return {
+        wch: Math.max(maxLength + 8, 18),
+      };
+    });
+
+    worksheet["!cols"] = columnWidths;
+
+    const range = XLSX.utils.decode_range(worksheet["!ref"]);
+
+    for (let row = range.s.r; row <= range.e.r; row++) {
+      for (let col = range.s.c; col <= range.e.c; col++) {
+        const cellAddress = XLSX.utils.encode_cell({
+          r: row,
+          c: col,
+        });
+
+        if (!worksheet[cellAddress]) continue;
+
+        worksheet[cellAddress].s = {
+          font: {
+            bold: row === 0,
+          },
+          alignment: {
+            horizontal: "center",
+            vertical: "center",
+          },
+        };
+      }
+    }
+
+    // Дані
+    for (let row = 1; row <= range.e.r; row++) {
+      for (let col = range.s.c; col <= range.e.c; col++) {
+        const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+
+        if (worksheet[cellAddress] && worksheet[cellAddress].v === "-") {
+          worksheet[cellAddress].s = {
+            alignment: {
+              horizontal: "center",
+              vertical: "center",
+            },
+          };
+        }
+      }
+    }
+    const workbook = XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Клієнти");
+    XLSX.writeFile(
+      workbook,
+      `clients-${new Date().toISOString().slice(0, 10)}.xlsx`,
+    );
+  }
+
   const clients = useMemo(() => {
     const q = query.trim().toLowerCase();
 
@@ -804,32 +1026,60 @@ const [statsTabIndex, setStatsTabIndex] = useState(() => {
           filter === "all" ||
           client.status === filter ||
           (filter === "vip" && client.isVip);
-        const haystack =
-          `${client.name || ""} ${client.phone || ""} ${client.email || ""}`.toLowerCase();
+        const haystack = `${
+          [client.firstName, client.lastName].filter(Boolean).join(" ") || ""
+        } ${client.phone || ""} ${client.email || ""}`.toLowerCase();
 
         return matchesFilter && (!q || haystack.includes(q));
       })
       .sort((a, b) => {
-        if (sort === "bookings") return (b.bookings || 0) - (a.bookings || 0);
-        if (sort === "spent") return (b.spent || 0) - (a.spent || 0);
-        if (sort === "newest")
+        if (sort === "bookings") {
+          return (b.bookings || 0) - (a.bookings || 0);
+        }
+
+        if (sort === "spent") {
+          return (b.spent || 0) - (a.spent || 0);
+        }
+
+        if (sort === "nameAsc") {
+          return `${a.lastName || ""} ${a.firstName || ""}`.localeCompare(
+            `${b.lastName || ""} ${b.firstName || ""}`,
+            "uk",
+          );
+        }
+
+        if (sort === "newest") {
           return dateScore(b.registeredAt) - dateScore(a.registeredAt);
+        }
 
         return dateScore(b.lastVisit) - dateScore(a.lastVisit);
       });
   }, [allClients, filter, query, sort]);
 
-  const visibleClients = clients.slice(0, visibleCount);
-  const hasMoreClients = visibleCount < clients.length;
-  const shownCount = Math.min(visibleCount, clients.length);
-  const currentPage = Math.max(1, Math.ceil(shownCount / 8));
-  const totalPages = Math.max(1, Math.ceil(clients.length / 8));
+  const totalPages = Math.max(1, Math.ceil(clients.length / itemsPerPage));
+
+  const visibleClients = clients.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage,
+  );
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [itemsPerPage]);
+
+  useEffect(() => {
+    clientsListRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }, [currentPage]);
+
   const selectedClient = useMemo(() => {
     if (!selectedClientId) return null;
 
     return (
-      allClients.find((client) => String(client.id) === String(selectedClientId)) ||
-      null
+      allClients.find(
+        (client) => String(client.id) === String(selectedClientId),
+      ) || null
     );
   }, [allClients, selectedClientId]);
 
@@ -859,7 +1109,8 @@ const [statsTabIndex, setStatsTabIndex] = useState(() => {
   const selectedFilterLabel =
     filterItems.find((item) => item.value === filter)?.label || "Усі статуси";
   const selectedSortLabel =
-    sortItems.find((item) => item.value === sort)?.label || "За датою додавання";
+    sortItems.find((item) => item.value === sort)?.label ||
+    "За датою додавання";
 
   const filterItemsWithCounts = filterItems.map((item) => {
     let count = 0;
@@ -921,234 +1172,255 @@ const [statsTabIndex, setStatsTabIndex] = useState(() => {
     };
   }, [allClients]);
 
-
-  
   const currentMonth = useMemo(() => {
-  const d = new Date();
-  d.setDate(1);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}, []);
+    const d = new Date();
+    d.setDate(1);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
 
-const statsTabs = useMemo(() => {
-  const tabs = [];
+  const statsTabs = useMemo(() => {
+    const tabs = [];
 
-  let cursor = new Date(studioCreatedMonth);
+    let cursor = new Date(studioCreatedMonth);
 
-  for (let i = 0; i < 120; i++) {
-    const date = new Date(cursor);
+    for (let i = 0; i < 120; i++) {
+      const date = new Date(cursor);
 
-    if (isSameMonth(date, currentMonth)) {
+      if (isSameMonth(date, currentMonth)) {
+        tabs.push({
+          type: "today",
+          date: null,
+          label: "Сьогодні",
+        });
+      }
+
       tabs.push({
-        type: "today",
-        date: null,
-        label: "Сьогодні",
+        type: "month",
+        date,
+        label: isSameMonth(date, currentMonth)
+          ? "Поточний місяць"
+          : date.toLocaleDateString("uk-UA", {
+              month: "long",
+              year: "numeric",
+            }),
       });
+
+      cursor = addMonthsSafe(cursor, 1);
     }
 
-    tabs.push({
-      type: "month",
-      date,
-      label: isSameMonth(date, currentMonth)
-        ? "Поточний місяць"
-        : date.toLocaleDateString("uk-UA", {
-            month: "long",
-            year: "numeric",
-          }),
-    });
+    return tabs;
+  }, [studioCreatedMonth, currentMonth]);
 
-    cursor = addMonthsSafe(cursor, 1);
-  }
+  useEffect(() => {
+    if (!statsTabs.length) return;
 
-  return tabs;
-}, [studioCreatedMonth, currentMonth]);
+    if (statsTabIndex < 0 || statsTabIndex >= statsTabs.length) {
+      setStatsTabIndex(0);
+      localStorage.setItem("clientsStatsTabIndex", "0");
+      return;
+    }
 
+    localStorage.setItem("clientsStatsTabIndex", String(statsTabIndex));
+  }, [statsTabIndex, statsTabs.length]);
 
-useEffect(() => {
-  if (!statsTabs.length) return;
+  const activeStatsTab = statsTabs[statsTabIndex] || statsTabs[0] || null;
 
-  if (statsTabIndex < 0 || statsTabIndex >= statsTabs.length) {
-    setStatsTabIndex(0);
-    localStorage.setItem("clientsStatsTabIndex", "0");
-    return;
-  }
+  const filteredClientsForStats = useMemo(() => {
+    if (!activeStatsTab) return [];
 
-  localStorage.setItem("clientsStatsTabIndex", String(statsTabIndex));
-}, [statsTabIndex, statsTabs.length]);
+    if (activeStatsTab?.type === "today") {
+      const todayKey = toISODateKey(new Date());
 
-const activeStatsTab =
-  statsTabs[statsTabIndex] || statsTabs[0] || null;
+      return allClients
+        .map((client) => {
+          const history = (client.history || []).filter(
+            (booking) => String(booking.date || "").slice(0, 10) === todayKey,
+          );
 
-const filteredClientsForStats = useMemo(() => {
-  if (!activeStatsTab) return [];
+          return { ...client, history };
+        })
+        .filter((client) => client.history.length > 0);
+    }
 
-  if (activeStatsTab?.type === "today") {
-    const todayKey = toISODateKey(new Date());
+    const year = activeStatsTab.date.getFullYear();
+    const month = activeStatsTab.date.getMonth();
 
     return allClients
       .map((client) => {
-        const history = (client.history || []).filter(
-          (booking) => String(booking.date || "").slice(0, 10) === todayKey,
-        );
+        const history = (client.history || []).filter((booking) => {
+          const d = new Date(booking.date);
+          if (Number.isNaN(d.getTime())) return false;
+
+          return d.getFullYear() === year && d.getMonth() === month;
+        });
 
         return { ...client, history };
       })
       .filter((client) => client.history.length > 0);
-  }
+  }, [allClients, activeStatsTab]);
 
-  const year = activeStatsTab.date.getFullYear();
-  const month = activeStatsTab.date.getMonth();
+  const statsBookings = useMemo(() => {
+    return filteredClientsForStats.flatMap((client) => client.history || []);
+  }, [filteredClientsForStats]);
 
-  return allClients
-    .map((client) => {
-      const history = (client.history || []).filter((booking) => {
-        const d = new Date(booking.date);
-        if (Number.isNaN(d.getTime())) return false;
+  const filteredTotalBookings = statsBookings.length;
 
-        return d.getFullYear() === year && d.getMonth() === month;
-      });
-
-      return { ...client, history };
-    })
-    .filter((client) => client.history.length > 0);
-}, [allClients, activeStatsTab]);
-
-const statsBookings = useMemo(() => {
-  return filteredClientsForStats.flatMap((client) => client.history || []);
-}, [filteredClientsForStats]);
-
-const filteredTotalBookings = statsBookings.length;
-
-const filteredTotalSpent = statsBookings.reduce(
-  (sum, booking) => sum + Number(booking.price || 0),
-  0,
-);
-
-const filteredAverageCheck = Math.round(
-  filteredTotalSpent / Math.max(filteredTotalBookings, 1),
-);
-
-const filteredNewClientsCount = filteredClientsForStats.filter(
-  (client) => client.status === "new",
-).length;
-
-const filteredLoyalPercent = filteredClientsForStats.length
-  ? Math.round(
-      (filteredClientsForStats.filter((client) =>
-        ["loyal", "vip"].includes(client.status),
-      ).length /
-        filteredClientsForStats.length) *
-        100,
-    )
-  : 0;
-
-const filteredMostActiveDay = useMemo(() => {
-  const dayNames = [
-    "Неділя",
-    "Понеділок",
-    "Вівторок",
-    "Середа",
-    "Четвер",
-    "Пʼятниця",
-    "Субота",
-  ];
-
-  const counts = Array(7).fill(0);
-
-  statsBookings.forEach((booking) => {
-    if (!booking?.date) return;
-
-    const date = new Date(booking.date);
-    if (Number.isNaN(date.getTime())) return;
-
-    counts[date.getDay()] += 1;
-  });
-
-  const max = Math.max(...counts);
-
-  if (max === 0) {
-    return { label: "—", count: 0 };
-  }
-
-  const dayIndex = counts.indexOf(max);
-
-  return {
-    label: dayNames[dayIndex],
-    count: max,
-  };
-}, [statsBookings]);
-
-
-
-const filteredMostActiveHour = useMemo(() => {
-  const counts = Array.from({ length: 24 }, (_, hour) => ({
-    label: `${String(hour).padStart(2, "0")}:00`,
-    count: 0,
-  }));
-
-  statsBookings.forEach((booking) => {
-    if (!booking?.date) return;
-    if (booking.status === "CANCELED" || booking.status === "canceled") return;
-
-    const date = new Date(booking.date);
-
-    if (Number.isNaN(date.getTime())) return;
-
-    const hour = date.getHours();
-
-    counts[hour].count += 1;
-  });
-
-  const best = counts.reduce((max, item) =>
-    item.count > max.count ? item : max,
+  const filteredTotalSpent = statsBookings.reduce(
+    (sum, booking) => sum + Number(booking.price || 0),
+    0,
   );
 
-  if (best.count === 0) {
-    return { label: "—", count: 0 };
-  }
+  const filteredAverageCheck = Math.round(
+    filteredTotalSpent / Math.max(filteredTotalBookings, 1),
+  );
 
-  return best;
-}, [statsBookings]);
+  const filteredNewClientsCount = filteredClientsForStats.filter(
+    (client) => client.status === "new",
+  ).length;
+
+  const filteredLoyalPercent = filteredClientsForStats.length
+    ? Math.round(
+        (filteredClientsForStats.filter((client) =>
+          ["loyal", "vip"].includes(client.status),
+        ).length /
+          filteredClientsForStats.length) *
+          100,
+      )
+    : 0;
+
+  const filteredMostActiveDay = useMemo(() => {
+    const dayNames = [
+      "Неділя",
+      "Понеділок",
+      "Вівторок",
+      "Середа",
+      "Четвер",
+      "Пʼятниця",
+      "Субота",
+    ];
+
+    const counts = Array(7).fill(0);
+
+    statsBookings.forEach((booking) => {
+      if (!booking?.date) return;
+
+      const date = new Date(booking.date);
+      if (Number.isNaN(date.getTime())) return;
+
+      counts[date.getDay()] += 1;
+    });
+
+    const max = Math.max(...counts);
+
+    if (max === 0) {
+      return { label: "—", count: 0 };
+    }
+
+    const dayIndex = counts.indexOf(max);
+
+    return {
+      label: dayNames[dayIndex],
+      count: max,
+    };
+  }, [statsBookings]);
+
+  const filteredMostActiveHour = useMemo(() => {
+    const counts = Array.from({ length: 24 }, (_, hour) => ({
+      label: `${String(hour).padStart(2, "0")}:00`,
+      count: 0,
+    }));
+
+    statsBookings.forEach((booking) => {
+      if (!booking?.date) return;
+      if (booking.status === "CANCELED" || booking.status === "canceled")
+        return;
+
+      const date = new Date(booking.date);
+
+      if (Number.isNaN(date.getTime())) return;
+
+      const hour = date.getHours();
+
+      counts[hour].count += 1;
+    });
+
+    const best = counts.reduce((max, item) =>
+      item.count > max.count ? item : max,
+    );
+
+    if (best.count === 0) {
+      return { label: "—", count: 0 };
+    }
+
+    return best;
+  }, [statsBookings]);
 
   return (
     <div className="min-h-screen bg-[#fbfaf8] pb-8">
-      <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
-        <header className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-
-          <div className="relative max-w-2xl">
-
-
-            <h1 className="max-w-xl text-4xl font-black leading-[0.95] tracking-tight text-[#202020] sm:text-6xl">
+      <div className="mx-auto max-w-7xl space-y-6 ">
+        <header className="space-y-4">
+          <div className="flex items-center justify-between gap-3">
+            <h1 className="text-4xl font-black leading-[0.95] tracking-tight text-[#202020] sm:text-6xl">
               Клі<span className="text-[#ff5a00]">єнти</span>
             </h1>
 
-            <p className="mt-3 max-w-xl text-sm font-semibold text-[#77716b] sm:text-base">
-              Додай майстрів, щоб привʼязувати їх до послуг, графіка та записів клієнтів.
-            </p>
+            <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
+              <button
+  type="button"
+  onClick={() => setInfoOpen(true)}
+  className="
+    hidden sm:grid
+    h-12 w-12
+    place-items-center
+    rounded-full
+    text-[#ff6200]
+    transition-all duration-200
+    hover:scale-110
+    active:scale-95
+  "
+>
+  <CircleAlert className="h-5 w-5" />
+</button>
+<div className="hidden sm:block">
+  <Button
+    variant="ghost"
+    className="
+      h-12 px-5
+      border border-[#eadbc9]
+      bg-white shadow-sm
+      hover:bg-[#fff7f0]
+    "
+    onClick={() => setExportOpen(true)}
+  >
+    <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
+    Експорт
+  </Button>
+</div>
+
+              <Button variant="primary" className="h-10 px-3 sm:h-12 sm:px-5">
+                <Plus className="h-4 w-4 shrink-0" />
+
+                <span className="leading-[1.05] text-left">Додати клієнта</span>
+              </Button>
+            </div>
           </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <Button variant="secondary" className="h-12 rounded-[14px] px-5">
-              <Download className="h-4 w-4" />
-              Експорт
-            </Button>
-
-            <Button variant="primary" className="h-12 rounded-[14px] px-5">
-              <Plus className="h-4 w-4" />
-              Додати клієнта
-            </Button>
-          </div>
+          <p className="w-full text-sm font-semibold text-[#77716b] sm:text-base">
+            Переглядай базу клієнтів, відстежуй історію візитів, статуси,
+            фінанси та взаємодію зі студією.
+          </p>
         </header>
 
         <section className="space-y-6">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div className="relative w-full lg:max-w-[390px]">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between lg:flex-col lg:items-stretch">
+      <div className="relative w-full md:max-w-[390px]">
               <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8b95a5]" />
               <input
                 value={query}
                 onChange={(e) => {
                   setQuery(e.target.value);
-                  setVisibleCount(8);
+                  setCurrentPage(1);
                   setSelectedClientId(null);
                   setClientTabs({});
                 }}
@@ -1157,7 +1429,7 @@ const filteredMostActiveHour = useMemo(() => {
               />
             </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+          <div className="grid grid-cols-2 gap-3 md:flex md:justify-end">
               <div className="relative">
                 <button
                   type="button"
@@ -1167,7 +1439,9 @@ const filteredMostActiveHour = useMemo(() => {
                   }}
                   className="inline-flex h-12 w-full min-w-[180px] items-center justify-between gap-3 rounded-[14px] border border-[#e5eaf0] bg-white px-4 text-sm font-bold text-[#202020] shadow-sm transition hover:border-[#d8dee8] hover:bg-[#fff8f3] sm:w-auto"
                 >
-                  <span>{filter === "all" ? "Усі статуси" : selectedFilterLabel}</span>
+                  <span>
+                    {filter === "all" ? "Усі статуси" : selectedFilterLabel}
+                  </span>
                   <ChevronDown
                     className={cn(
                       "h-4 w-4 text-[#6b7280] transition",
@@ -1185,7 +1459,7 @@ const filteredMostActiveHour = useMemo(() => {
                         onClick={() => {
                           setFilter(item.value);
                           setFilterOpen(false);
-                          setVisibleCount(8);
+                          setCurrentPage(1);
                           setSelectedClientId(null);
                           setClientTabs({});
                         }}
@@ -1197,7 +1471,9 @@ const filteredMostActiveHour = useMemo(() => {
                         )}
                       >
                         <span>{item.label}</span>
-                        <span className="text-xs text-[#8b95a5]">{item.count}</span>
+                        <span className="text-xs text-[#8b95a5]">
+                          {item.count}
+                        </span>
                       </button>
                     ))}
                   </div>
@@ -1231,7 +1507,7 @@ const filteredMostActiveHour = useMemo(() => {
                         onClick={() => {
                           setSort(item.value);
                           setSortOpen(false);
-                          setVisibleCount(8);
+                          setCurrentPage(1);
                           setSelectedClientId(null);
                           setClientTabs({});
                         }}
@@ -1281,7 +1557,10 @@ const filteredMostActiveHour = useMemo(() => {
             </div>
           ) : !loading && !error ? (
             <>
-              <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+              <div
+                ref={clientsListRef}
+                className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4"
+              >
                 {visibleClients.map((client) => (
                   <ClientAccordion
                     key={client.id}
@@ -1300,7 +1579,9 @@ const filteredMostActiveHour = useMemo(() => {
                       setNoteClient(client);
                       setNoteDraft("");
                     }}
-                    onDeleteNote={(noteId) => handleDeleteNote(client.id, noteId)}
+                    onDeleteNote={(noteId) =>
+                      handleDeleteNote(client.id, noteId)
+                    }
                     onToggleVip={() => handleToggleVip(client)}
                     onCopyPhone={handleCopyPhone}
                     copiedPhone={copiedPhone}
@@ -1309,45 +1590,56 @@ const filteredMostActiveHour = useMemo(() => {
               </div>
 
               <div className="flex flex-col gap-4 pt-2 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-sm font-medium text-[#6b7280]">
-                  Показано {clients.length ? 1 : 0}-{shownCount} з {clients.length} клієнтів
+                <p className="text-center text-sm font-medium text-[#6b7280]">
+                  Показано{" "}
+                  {clients.length === 0
+                    ? 0
+                    : (currentPage - 1) * itemsPerPage + 1}
+                  -{Math.min(currentPage * itemsPerPage, clients.length)} з{" "}
+                  {clients.length}
                 </p>
 
-                <div className="flex items-center gap-2 self-end sm:self-auto">
+                <div className="flex items-center justify-center gap-2 self-center sm:self-auto">
                   <button
                     type="button"
                     disabled={currentPage <= 1}
-                    onClick={() => setVisibleCount((current) => Math.max(8, current - 8))}
+                    onClick={() =>
+                      setCurrentPage((page) => Math.max(1, page - 1))
+                    }
                     className="grid h-10 w-10 place-items-center rounded-[12px] border border-[#e5eaf0] bg-white text-[#6b7280] transition hover:bg-[#fff8f3] active:scale-[0.98] disabled:opacity-40"
                     aria-label="Попередня сторінка"
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </button>
 
-                  {Array.from({ length: Math.min(totalPages, 3) }).map((_, index) => {
-                    const page = index + 1;
+                  {Array.from({ length: Math.min(totalPages, 3) }).map(
+                    (_, index) => {
+                      const page = index + 1;
 
-                    return (
-                      <button
-                        key={page}
-                        type="button"
-                        onClick={() => setVisibleCount(page * 8)}
-                        className={cn(
-                          "grid h-10 w-10 place-items-center rounded-[12px] border text-sm font-black transition active:scale-[0.98]",
-                          currentPage === page
-                            ? "border-[#ff6200] bg-[#fff7f0] text-[#ff6200]"
-                            : "border-[#e5eaf0] bg-white text-[#202020] hover:bg-[#fff8f3]",
-                        )}
-                      >
-                        {page}
-                      </button>
-                    );
-                  })}
+                      return (
+                        <button
+                          key={page}
+                          type="button"
+                          onClick={() => setCurrentPage(page)}
+                          className={cn(
+                            "grid h-10 w-10 place-items-center rounded-[12px] border text-sm font-black transition active:scale-[0.98]",
+                            currentPage === page
+                              ? "border-[#ff6200] bg-[#fff7f0] text-[#ff6200]"
+                              : "border-[#e5eaf0] bg-white text-[#202020] hover:bg-[#fff8f3]",
+                          )}
+                        >
+                          {page}
+                        </button>
+                      );
+                    },
+                  )}
 
                   <button
                     type="button"
-                    disabled={!hasMoreClients}
-                    onClick={() => setVisibleCount((current) => current + 8)}
+                    disabled={currentPage >= totalPages}
+                    onClick={() =>
+                      setCurrentPage((page) => Math.min(totalPages, page + 1))
+                    }
                     className="grid h-10 w-10 place-items-center rounded-[12px] border border-[#e5eaf0] bg-white text-[#6b7280] transition hover:bg-[#fff8f3] active:scale-[0.98] disabled:opacity-40"
                     aria-label="Наступна сторінка"
                   >
@@ -1363,8 +1655,8 @@ const filteredMostActiveHour = useMemo(() => {
       <Modal
         open={selectedClient != null}
         onClose={() => setSelectedClientId(null)}
-        title={selectedClient?.name || "Профіль клієнта"}
-        badge="Дані клієнта"
+        title={"Профіль клієнта"}
+        badge="Клієнт"
         icon={ContactRound}
         size="lg"
       >
@@ -1385,7 +1677,9 @@ const filteredMostActiveHour = useMemo(() => {
               setNoteClient(selectedClient);
               setNoteDraft("");
             }}
-            onDeleteNote={(noteId) => handleDeleteNote(selectedClient.id, noteId)}
+            onDeleteNote={(noteId) =>
+              handleDeleteNote(selectedClient.id, noteId)
+            }
             onToggleVip={() => handleToggleVip(selectedClient)}
           />
         )}
@@ -1427,12 +1721,6 @@ const filteredMostActiveHour = useMemo(() => {
         }
       >
         <div className="space-y-4">
-          <div className="text-center">
-            <p className="text-sm font-medium leading-6 text-[#77716b]">
-              Нотатка буде додана до профілю клієнта {noteClient?.name || ""}.
-            </p>
-          </div>
-
           <div className="rounded-[22px] border border-[#ffd6bd] bg-[#fff7f0] p-3.5">
             <div className="flex items-start gap-3">
               <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-[#ff5a00] shadow-sm">
@@ -1464,31 +1752,161 @@ const filteredMostActiveHour = useMemo(() => {
           </div>
         </div>
       </Modal>
+      <Modal
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        title="Експорт клієнтів"
+        badge="Excel"
+        icon={Download}
+        size="sm"
+        footer={
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              className="flex-1"
+              onClick={() => setExportOpen(false)}
+            >
+              Скасувати
+            </Button>
+
+            <Button
+              variant="primary"
+              className="flex-1"
+              onClick={() => {
+                handleExportClients();
+                setExportOpen(false);
+              }}
+            >
+              <Download className="h-4 w-4" />
+              Експортувати
+            </Button>
+          </div>
+        }
+      >
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {[
+            ["name", "Ім'я та прізвище"],
+            ["phone", "Телефон"],
+            ["email", "Email"],
+            ["birthDate", "Дата народження"],
+            ["nextVisit", "Наступний візит"],
+            ["lastVisit", "Останній візит"],
+            ["bookings", "Всього записів"],
+            ["cancellations", "Скасовано"],
+            ["spent", "Витрачено"],
+            ["averageCheck", "Середній чек"],
+            ["status", "Статус"],
+            ["favoriteService", "Улюблена послуга"],
+          ].map(([key, label]) => (
+            <label
+              key={key}
+              className="flex cursor-pointer items-center justify-between rounded-xl border border-[#eadbc9] p-3"
+            >
+              <span className="text-sm font-semibold">{label}</span>
+
+              <input
+                type="checkbox"
+                checked={exportFields[key]}
+                onChange={(e) =>
+                  setExportFields((prev) => ({
+                    ...prev,
+                    [key]: e.target.checked,
+                  }))
+                }
+                className="cursor-pointer"
+              />
+            </label>
+          ))}
+        </div>
+      </Modal>
+      <Modal
+        open={infoOpen}
+        onClose={() => setInfoOpen(false)}
+        title="Інструкція сторінки"
+        badge="Клієнти"
+        icon={CircleAlert}
+        size="lg"
+      >
+        <div className="space-y-5 text-sm font-medium leading-6 text-[#77716b]">
+          <div>
+            <h4 className="text-base font-black text-[#202020]">
+              Що показує ця сторінка
+            </h4>
+            <p className="mt-1">
+              Тут зібрані всі клієнти студії, які мали записи. Клієнти додаються
+              автоматично після бронювання.
+            </p>
+          </div>
+
+          <div>
+            <h4 className="text-base font-black text-[#202020]">
+              Статуси клієнтів
+            </h4>
+
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              {statusInfoItems.map((item) => (
+                <div
+                  key={item.value}
+                  className="rounded-[18px] border border-[#eadbc9] bg-[#fbfaf8] p-4"
+                >
+                  <div className="mb-2">
+                    <StatusBadge status={item.value} />
+                  </div>
+
+                  <p className="text-[13px] font-semibold leading-5 text-[#77716b]">
+                    {item.description}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h4 className="text-base font-black text-[#202020]">
+              Можливості сторінки
+            </h4>
+
+            <ul className="mt-2 list-disc space-y-1 pl-5">
+              <li>Пошук клієнтів за іменем, прізвищем, телефоном або email.</li>
+              <li>
+                Фільтрація за статусами: нові, постійні, активні, неактивні,
+                VIP.
+              </li>
+              <li>
+                Сортування за алфавітом, датою додавання, останнім візитом,
+                бронюваннями та витратами.
+              </li>
+              <li>
+                Перегляд історії записів, фінансів, статусів і нотаток клієнта.
+              </li>
+              <li>Експорт клієнтів у Excel з вибором потрібних колонок.</li>
+            </ul>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
 
 function MiniMetric({ label, value, icon: Icon, danger = false }) {
   return (
-    <div className="min-w-0 rounded-2xl border border-[#eadbc9] bg-white px-2.5 py-3 shadow-[0_8px_22px_rgba(17,17,17,0.04)]">
+    <div className="min-w-0 rounded-[18px] border border-[#ececec] bg-white px-3 py-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
       <div className="flex items-center gap-2.5">
         {Icon && (
           <div
             className={cn(
-              "ml-0.5 flex h-10 w-10 shrink-0 items-center justify-center",
-              danger
-                ? "text-[#e5484d]"
-                : "text-[#ff5a00]",
+              "ml-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
+              danger ? "text-[#e5484d]" : "text-[#ff5a00]",
             )}
           >
-            <Icon className="h-5 w-5" />
+            <Icon className="h-4 w-4" />
           </div>
         )}
 
         <div className="min-w-0 flex-1">
-<p className="whitespace-normal text-[9px] font-bold uppercase tracking-[0.08em] leading-tight text-[#77716b] sm:text-[11px]">
-  {label}
-</p>
+          <p className="text-[11px] font-medium leading-tight text-[#7b7b7b]">
+            {label}
+          </p>
 
           <p className={cn("mt-1 truncate !text-[13px] font-black sm:text-sm")}>
             {value}
@@ -1511,27 +1929,38 @@ function daysAgo(date) {
   return Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
 }
 
-function ClientAccordion({
-  client,
-  onOpenDetails,
-  onCopyPhone,
-  copiedPhone,
-}) {
+function ClientAccordion({ client, onOpenDetails, onCopyPhone, copiedPhone }) {
   return (
-    <article className="overflow-hidden rounded-[18px] border border-[#e5eaf0] bg-white shadow-[0_10px_30px_rgba(15,23,42,0.045)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_44px_rgba(15,23,42,0.08)]">
-      <div className="p-3">
-        <div className="flex items-center justify-between gap-3">
+    <article
+      onClick={onOpenDetails}
+      className="
+    relative z-0
+    cursor-pointer
+    overflow-visible
+    rounded-[18px]
+    border border-[#e5eaf0]
+    bg-white
+    shadow-[0_10px_30px_rgba(15,23,42,0.045)]
+    transition
+    hover:z-20
+    hover:-translate-y-0.5
+    hover:shadow-[0_18px_44px_rgba(15,23,42,0.08)]
+    active:scale-[0.99]
+  "
+    >
+      <div className="p-4">
+        <div className="relative flex justify-center">
           <ClientStatusBadges client={client} />
 
-          <button
-            type="button"
-            onClick={onOpenDetails}
-            className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-[#657084] transition hover:bg-[#f4f6f8] hover:text-[#202020]"
-            title="Деталі клієнта"
-            aria-label="Деталі клієнта"
-          >
-            <MoreVertical className="h-5 w-5" />
-          </button>
+          {/* <button
+    type="button"
+    onClick={onOpenDetails}
+    className="absolute right-0 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full text-[#657084] transition hover:bg-[#f4f6f8] hover:text-[#202020]"
+    title="Деталі клієнта"
+    aria-label="Деталі клієнта"
+  >
+            <ChevronRight className="h-5 w-5" />
+          </button> */}
         </div>
 
         <button
@@ -1540,31 +1969,27 @@ function ClientAccordion({
           className="mt-4 flex w-full flex-col items-center text-center"
         >
           <Avatar
-            name={client.name}
+            name={[client.firstName, client.lastName].filter(Boolean).join(" ")}
             photoUrl={client.photoUrl}
-            className="h-14 w-14 rounded-full border-[#eef1f5] shadow-[0_10px_26px_rgba(15,23,42,0.10)]"
+            className="h-12 w-12 rounded-full border-[#eef1f5] shadow-[0_10px_26px_rgba(15,23,42,0.10)]"
           />
 
-          <h3 className="mt-2 line-clamp-1 text-[14px] font-black">
-            {client.name || "Клієнт"}
+          <h3 className="mt-2 line-clamp-2 text-[13px] font-black leading-4">
+            {[client.firstName, client.lastName].filter(Boolean).join(" ") ||
+              "Клієнт"}
           </h3>
         </button>
 
-<div className="mt-4 space-y-3 text-center">
-  <button
-    type="button"
-    onClick={() => onCopyPhone?.(client.phone)}
-    className="flex w-full justify-center gap-2 text-sm font-medium text-[#586174] transition hover:text-[#ff6200]"
-  >
-    <Phone className="relative top-[1px] h-4 w-4 shrink-0" />
-    <span>{client.phone || "Телефон не вказано"}</span>
-  </button>
-
-  <div className="flex w-full justify-center gap-2 text-sm font-medium text-[#586174]">
-   <Mail className="relative top-[1px] h-4 w-4 shrink-0" />
-    <span>{client.email || "Email не вказано"}</span>
-  </div>
-</div>
+        <div className="mt-4 space-y-3 text-center">
+          <button
+            type="button"
+            onClick={() => onCopyPhone?.(client.phone)}
+            className="flex w-full justify-center gap-1.5 text-[12px] font-medium text-[#586174] transition hover:text-[#ff6200] sm:text-sm"
+          >
+            <Phone className="relative top-[1px] h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
+            <span>{client.phone || "Номер відсутній"}</span>
+          </button>
+        </div>
       </div>
     </article>
   );
@@ -1609,6 +2034,29 @@ const statusInfoItems = [
   },
 ];
 
+function FinanceItem({ icon: Icon, label, value, color }) {
+  return (
+    <div className="min-w-0 rounded-[18px] bg-[#fbfaf8] px-3 py-3">
+      <div
+        className={cn(
+          "mb-2 flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-sm",
+          color,
+        )}
+      >
+        <Icon className="h-4 w-4" />
+      </div>
+
+      <p className="text-[11px] font-bold leading-tight text-[#8a837c]">
+        {label}
+      </p>
+
+      <p className="mt-1 line-clamp-2 text-[14px] font-black leading-5 text-[#202020]">
+        {value}
+      </p>
+    </div>
+  );
+}
+
 function ClientDetails({
   client,
   activeTab,
@@ -1619,6 +2067,7 @@ function ClientDetails({
   compactHeader = false,
 }) {
   const [visibleHistoryCount, setVisibleHistoryCount] = useState(3);
+  const [copiedPhone, setCopiedPhone] = useState(false);
 
   if (!client) return null;
 
@@ -1627,118 +2076,198 @@ function ClientDetails({
   const hasMoreBookings = visibleHistoryCount < bookings.length;
   const tabs = [
     { value: "history", label: "Історія", icon: CalendarDays },
-    { value: "notes", label: "Нотатки", icon: NotebookText },
     { value: "finance", label: "Фінанси", icon: Wallet },
-    { value: "statuses", label: "Статуси", icon: BadgeCheck },
+    { value: "statuses", label: "Статус", icon: BadgeCheck },
+    { value: "notes", label: "Нотатки", icon: NotebookText },
   ];
 
   return (
     <aside
       className={cn(
         "h-fit overflow-hidden bg-white",
-        compactHeader
-          ? "border-t border-[#eadbc9]"
-          : "",
+        compactHeader ? "border-t border-[#eadbc9]" : "",
       )}
     >
       <div className="">
         {!compactHeader && (
           <div className="flex items-start gap-3">
             <Avatar
-              name={client.name}
+              name={[client.firstName, client.lastName]
+                .filter(Boolean)
+                .join(" ")}
               photoUrl={client.photoUrl}
-              className="h-16 w-16 rounded-[22px]"
+              className="h-20 w-20 rounded-full border-[#eef1f5] shadow-[0_10px_26px_rgba(15,23,42,0.10)]"
             />
 
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <h3 className="truncate text-lg font-black text-[#202020]">
-                  {client.name}
+                <h3 className="mt-3 line-clamp-1 text-[16px] font-black text-[#202020]">
+                  {[client.firstName, client.lastName]
+                    .filter(Boolean)
+                    .join(" ")}
                 </h3>
 
                 <ClientStatusBadges client={client} />
               </div>
 
-              <p className="mt-1 text-sm font-medium text-[#77716b]">
-                {client.phone}
-              </p>
+              <div className="mt-1 flex items-center gap-2">
+                <p className="text-sm font-medium text-[#77716b]">
+                  {client.phone || "Номер відсутній"}
+                </p>
 
-              <p className="truncate text-sm text-[#77716b]">
-                {client.email}
-              </p>
+                {client.phone && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(client.phone);
+
+                        setCopiedPhone(true);
+
+                        setTimeout(() => {
+                          setCopiedPhone(false);
+                        }, 1500);
+                      } catch {
+                        // fallback
+                      }
+                    }}
+                    className="flex h-6 w-6 items-center justify-center rounded-full text-[#77716b] transition hover:bg-[#fff1e8] hover:text-[#ff6200]"
+                    title="Скопіювати номер"
+                  >
+                    {copiedPhone ? (
+                      <CheckCheck className="h-3.5 w-3.5 text-emerald-600" />
+                    ) : (
+                      <Copy className="h-3.5 w-3.5" />
+                    )}
+                  </button>
+                )}
+              </div>
+
+              <p className="truncate text-sm text-[#77716b]">{client.email}</p>
             </div>
           </div>
         )}
 
-        <div className="mb-4 flex justify-end sm:hidden">
-          <Button
-            onClick={onToggleVip}
-            className={cn(
-              "w-full",
-              client.isFavorite &&
-                "bg-[#fff1e8] text-[#ff5a00] hover:bg-[#ffe5d4]",
-            )}
-          >
-            <UserStar className="h-4 w-4" />
-            {client.isFavorite
-              ? "Прибрати статус Особливого клієнта"
-              : "Додати статус Особливого клієнта"}
-          </Button>
-        </div>
+        <div className={cn(!compactHeader && "mt-4")}>
+          {/* Телефон + планшет */}
+          <div className="grid gap-2 lg:hidden">
+            <div className="grid grid-cols-2 gap-2">
+              <InfoRow
+                icon={BadgeCheck}
+                label="Усього записів"
+                value={client.bookings}
+                color="text-[#ff6200]"
+              />
+              <InfoRow
+                icon={XCircle}
+                label="Скасовано клієнтом"
+                value={client.cancellations}
+                color="text-[#e5484d]"
+              />
+            </div>
 
-        <div
-          className={cn(
-            "grid grid-cols-2 gap-2 md:grid-cols-3",
-            !compactHeader && "mt-4",
-          )}
-        >
-          <MiniMetric
-            icon={BadgeCheck}
-            label="Усього записів"
-            value={client.bookings}
-          />
-          <MiniMetric
-            icon={XCircle}
-            danger
-            label="Скасовано клієнтом"
-            value={client.cancellations}
-          />
-          <MiniMetric
-            icon={CalendarDays}
-            label="Останній запис"
-            value={formatDateUA(client.lastBooking?.date)}
-          />
-          <MiniMetric
-            icon={User}
-            label="Майстер"
-            value={client.lastBooking?.master || "Не вказано"}
-          />
+            <div className="grid grid-cols-2 gap-2">
+              <InfoRow
+                icon={CalendarDays}
+                label="Наступний візит"
+                value={
+                  client.nextBooking?.date
+                    ? formatDateUA(client.nextBooking.date)
+                    : "Не заплановано"
+                }
+                color="text-[#3b82f6]"
+              />
 
-          <MiniMetric
-            icon={Repeat}
-            label="Візит"
-            value={
-              !client.lastVisit || new Date(client.lastVisit) > new Date()
-                ? "Ще не було візитів"
-                : daysAgo(client.lastVisit) === 0
-                  ? "Сьогодні"
-                  : `${daysAgo(client.lastVisit)} дн. тому`
-            }
-          />
+              <InfoRow
+                icon={CalendarDays}
+                label="Останній візит"
+                value={
+                  client.lastVisit
+                    ? formatDateUA(client.lastVisit)
+                    : "Ще не було"
+                }
+                color="text-[#3b82f6]"
+              />
+            </div>
 
-          <MiniMetric
-            icon={Cake}
-            label="Дата народження"
-            value={
-              client.birthDate ? formatDateUA(client.birthDate) : "Не вказана"
-            }
-          />
+            <div className="grid grid-cols-2 gap-2">
+              <InfoRow
+                icon={Star}
+                label="Улюблена послуга"
+                value={client.favoriteService || "Ще не сформовано"}
+                color="text-[#ff6200]"
+              />
+
+              <InfoRow
+                icon={Cake}
+                label="Дата народження"
+                value={
+                  client.birthDate
+                    ? formatDateUA(client.birthDate)
+                    : "Не вказана"
+                }
+                color="text-[#f59e0b]"
+              />
+            </div>
+          </div>
+
+          {/* Комп'ютер */}
+          <div className="hidden lg:grid lg:grid-cols-3 lg:gap-3">
+            <InfoRow
+              icon={BadgeCheck}
+              label="Усього записів"
+              value={client.bookings}
+              color="text-[#ff6200]"
+            />
+
+            <InfoRow
+              icon={CalendarDays}
+              label="Наступний візит"
+              value={
+                client.nextBooking?.date
+                  ? formatDateUA(client.nextBooking.date)
+                  : "Не заплановано"
+              }
+              color="text-[#3b82f6]"
+            />
+
+            <InfoRow
+              icon={Star}
+              label="Улюблена послуга"
+              value={client.favoriteService || "Ще не сформовано"}
+              color="text-[#ff6200]"
+            />
+
+            <InfoRow
+              icon={XCircle}
+              label="Скасовано клієнтом"
+              value={client.cancellations}
+              color="text-[#e5484d]"
+            />
+
+            <InfoRow
+              icon={CalendarDays}
+              label="Останній візит"
+              value={formatDateUA(client.lastBooking?.date)}
+              color="text-[#3b82f6]"
+            />
+
+            <InfoRow
+              icon={Cake}
+              label="Дата народження"
+              value={
+                client.birthDate ? formatDateUA(client.birthDate) : "Не вказана"
+              }
+              color="text-[#f59e0b]"
+            />
+          </div>
         </div>
       </div>
 
-      <div className="flex gap-1.5 overflow-x-auto border-b border-[#eadbc9] px-3 py-3 md:justify-center md:gap-2 md:px-4">
+      <div className="mt-3 flex overflow-x-auto border-b border-[#edf0f4] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {tabs.map((tab) => {
           const Icon = tab.icon;
+          const active = activeTab === tab.value;
 
           return (
             <button
@@ -1746,61 +2275,76 @@ function ClientDetails({
               type="button"
               onClick={() => onTabChange(tab.value)}
               className={cn(
-                "inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1.5 text-[11px] font-bold transition-all md:gap-1.5 md:px-3 md:py-2 md:text-xs",
-                activeTab === tab.value
-                  ? "bg-[#ff5a00] text-white hover:bg-[#ff5a00]/90"
-                  : "text-[#77716b] hover:bg-[#fff7f0]",
+                "relative flex h-8 flex-1 items-center justify-center gap-0.5 px-1 text-[10px] font-bold transition",
+                "sm:h-10 sm:gap-1 sm:px-2 sm:text-[11px]",
+                active ? "text-[#ff5a00]" : "text-[#77716b]",
               )}
             >
-              <Icon className="h-3.5 w-3.5" />
-              {tab.label}
+              <Icon className="h-3 w-3 mr-1 shrink-0 sm:h-3.5 sm:w-3.5 " />
+
+              <span className="truncate">{tab.label}</span>
+
+              {active && (
+                <span className="absolute bottom-0 left-1 right-1 h-[2px] rounded-full bg-[#ff5a00] sm:left-2 sm:right-2" />
+              )}
             </button>
           );
         })}
       </div>
 
-      <div className="p-5">
+      <div className="py-4">
         {activeTab === "history" && (
           <div className="space-y-3">
-            {visibleBookings.map((booking) => (
-              <div
-                key={`${client.id}-${booking.date}-${booking.service}`}
-                className="rounded-2xl border border-[#eadbc9] bg-white p-3"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="truncate font-bold text-[#202020]">
-                      {booking.service}
-                    </p>
-                    <p className="mt-1 text-xs text-[#77716b]">
-                      {formatDateUA(booking.date)} • {booking.master}
+            {visibleBookings.map((booking) => {
+              const statusUi = getBookingStatusUi(
+                booking.status,
+                booking.canceledBy,
+              );
+
+              const StatusIcon = statusUi.icon;
+
+              return (
+                <div
+                  key={`${client.id}-${booking.date}-${booking.service}`}
+                  className="rounded-[18px] bg-[#fbfaf8] px-3 py-3"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <h4 className="line-clamp-1 text-[14px] font-black text-[#202020]">
+                        {booking.service}
+                      </h4>
+
+                      <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] font-medium text-[#77716b]">
+                        <span>{formatDateUA(booking.date)}</span>
+                        <span>•</span>
+                        <span>{booking.master}</span>
+                      </div>
+                    </div>
+
+                    <p className="shrink-0 text-[14px] font-black text-[#202020]">
+                      {formatMoney(booking.price)}
                     </p>
                   </div>
-                  <p className="shrink-0 font-black text-[#202020]">
-                    {formatMoney(booking.price)}
-                  </p>
-                </div>
-                {(() => {
-                  const statusUi = getBookingStatusUi(
-                    booking.status,
-                    booking.canceledBy,
-                  );
-                  const StatusIcon = statusUi.icon;
 
-                  return (
-                    <div
-                      className={cn(
-                        "mt-2 inline-flex items-center justify-center gap-2 rounded-2xl px-2.5 py-1 text-xs font-semibold",
-                        statusUi.badge,
-                      )}
-                    >
-                      <StatusIcon className="h-3.5 w-3.5" />
-                      {statusUi.text}
-                    </div>
-                  );
-                })()}
-              </div>
-            ))}
+                  <div
+                    className={cn(
+                      "mt-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold",
+                      booking.status === "CONFIRMED" &&
+                        "bg-emerald-50 text-emerald-700",
+                      booking.status === "COMPLETED" &&
+                        "bg-[#f3f4f6] text-[#6b7280]",
+                      booking.status === "CANCELED" &&
+                        "bg-rose-50 text-rose-700",
+                      (!booking.status || booking.status === "PENDING") &&
+                        "bg-amber-50 text-amber-700",
+                    )}
+                  >
+                    <StatusIcon className="h-3 w-3" />
+                    <span>{statusUi.text}</span>
+                  </div>
+                </div>
+              );
+            })}
 
             {bookings.length > 3 && (
               <div className="flex justify-center pt-1">
@@ -1830,18 +2374,16 @@ function ClientDetails({
         {activeTab === "notes" && (
           <div className="space-y-3">
             {client.notes.length === 0 ? (
-              <div className="rounded-2xl border-2 border-dashed border-[#ffd6bd] bg-[#fff1e8] p-6 text-center sm:p-8">
-                <div className="mb-3 flex items-center justify-center">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/70">
-                    <NotebookText className="h-7 w-7 text-[#77716b]" />
-                  </div>
+              <div className="x-4 py-4 text-center">
+                <div className="mx-auto mb-2 flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#ff6200] shadow-sm">
+                  <NotebookText className="h-4 w-4" />
                 </div>
 
-                <p className="text-sm font-medium text-[#77716b]">
-                  Нотаток ще немає
+                <p className="text-[13px] font-black text-[#202020]">
+                  Нотаток немає
                 </p>
 
-                <p className="mt-1 text-xs text-[#77716b]/80">
+                <p className="mt-1 text-[11px] leading-4 text-[#77716b]">
                   Тут можна додати внутрішню примітку про клієнта. Клієнт її не
                   бачитиме.
                 </p>
@@ -1876,85 +2418,112 @@ function ClientDetails({
 
         {activeTab === "finance" && (
           <div className="space-y-3">
-            <MiniMetric
-              label="Всього витрачено"
-              value={formatMoney(client.spent)}
-            />
-            <MiniMetric
-              label="Середній чек"
-              value={formatMoney(client.averageCheck)}
-            />
+            <div className="flex items-center justify-between rounded-[20px] bg-[#fff7f0] px-4 py-4">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#ff6200]">
+                  Всього витрачено
+                </p>
 
-            <MiniMetric
-              label="Найдорожча послуга"
-              value={client.favoriteService}
-            />
+                <p className="mt-1 text-[28px] font-black leading-none tracking-[-0.04em] text-[#202020]">
+                  {formatMoney(client.spent)}
+                </p>
+              </div>
+
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/80">
+                <Wallet className="h-6 w-6 text-[#ff6200]" />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between rounded-[20px] bg-[#fbfaf8] px-4 py-4">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#10b981]">
+                  Середній чек
+                </p>
+
+                <p className="mt-1 text-[22px] font-black leading-none tracking-[-0.04em] text-[#202020]">
+                  {formatMoney(client.averageCheck)}
+                </p>
+              </div>
+
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white">
+                <Receipt className="h-5 w-5 text-[#10b981]" />
+              </div>
+            </div>
           </div>
         )}
 
-        {activeTab === "statuses" && (
-          <div className="space-y-3">
-            {statusInfoItems.map((item) => {
-              const isVip = client.isVip || client.status === "vip";
+        {activeTab === "statuses" &&
+          (() => {
+            const isVip = client.isVip || client.status === "vip";
 
-              const isActive =
-                item.value === "vip"
-                  ? isVip
-                  : item.value === "favorite"
-                    ? client.isFavorite
-                    : client.status === item.value;
+            const currentStatus = isVip
+              ? "vip"
+              : client.isFavorite
+                ? "favorite"
+                : client.status;
 
-              const meta = statusMeta[item.value] || statusMeta.new;
-              const Icon = meta.icon;
+            const item = statusInfoItems.find(
+              (status) => status.value === currentStatus,
+            );
 
-              return (
-                <div
-                  key={item.value}
-                  className={cn(
-                    "rounded-2xl border p-3 transition-all",
-                    isActive
-                      ? `${meta.className} shadow-sm ring-2 ring-current/10`
-                      : "border-[#eadbc9] bg-white text-[#202020]",
-                  )}
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={cn(
-                        "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border",
-                        isActive
-                          ? "border-current/20 bg-white/70"
-                          : "border-[#eadbc9] bg-[#fff7f0] text-[#77716b]",
-                      )}
-                    >
-                      <Icon className="h-4 w-4" />
-                    </div>
+            if (!item) return null;
 
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-sm font-black">{item.title}</p>
+            const meta = statusMeta[item.value] || statusMeta.new;
+            const Icon = meta.icon;
 
-                        {isActive && (
-                          <span className="rounded-full border  bg-white px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.1em]">
-                            Поточний
-                          </span>
-                        )}
-                      </div>
+            return (
+              <div className={cn("rounded-[18px] px-4 py-3", meta.className)}>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/80">
+                    <Icon className="h-4 w-4" />
+                  </div>
 
-                      <p className="mt-1 text-xs font-medium leading-5">
-                        {item.description}
-                      </p>
-                    </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[14px] font-black">{item.title}</p>
+
+                    <p className="mt-0.5 text-[12px] leading-4 opacity-80">
+                      {item.description}
+                    </p>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        )}
+              </div>
+            );
+          })()}
       </div>
     </aside>
   );
 }
+function InfoRow({ icon: Icon, label, value, color }) {
+  return (
+    <div className="flex min-w-0 items-center gap-2 rounded-[16px] bg-[#fbfaf8] px-2.5 py-2">
+      <div
+        className={cn(
+          "flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white shadow-sm",
+          color,
+        )}
+      >
+        <Icon className="h-3.5 w-3.5" />
+      </div>
 
+      <div className="min-w-0 flex-1">
+        <p className="text-[10px] font-bold leading-tight text-[#8a837c]">
+          {label}
+        </p>
+
+        <p
+          className={cn(
+            "font-black text-[#202020]",
+            label === "Улюблена послуга"
+              ? "line-clamp-3 text-[11px] leading-4 sm:text-[12px]"
+              : "truncate text-[13px]",
+          )}
+        >
+          {value}
+        </p>
+      </div>
+    </div>
+  );
+}
 function Insight({ icon: Icon, text, danger = false }) {
   return (
     <div

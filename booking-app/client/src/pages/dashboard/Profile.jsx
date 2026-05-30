@@ -55,6 +55,21 @@ function toPublicUrl(value) {
   return PUBLIC ? `${PUBLIC}/${src}` : src;
 }
 
+function formatBirthDate(date) {
+  if (!date) return "Не вказано";
+
+  const d = new Date(date);
+
+  if (Number.isNaN(d.getTime())) {
+    return date;
+  }
+
+  return d.toLocaleDateString("uk-UA", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+});
+}
 
 async function compressImage(
   file,
@@ -1257,12 +1272,12 @@ async function confirmCrop() {
                 value: genderLabel,
                 type: "gender",
               },
-              {
-                icon: <CalendarDays className="h-5 w-5" />,
-                label: "Дата народження",
-                value: profile.birthDate || "Не вказано",
-                type: "birthDate",
-              },
+{
+  icon: <CalendarDays className="h-5 w-5" />,
+  label: "Дата народження",
+  value: formatBirthDate(profile.birthDate),
+  type: "birthDate",
+},
             ].map((item) => (
 <button
   key={item.type}

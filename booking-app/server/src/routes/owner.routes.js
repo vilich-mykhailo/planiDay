@@ -8,7 +8,8 @@ export const ownerRouter = Router();
 // CREATE studio
 ownerRouter.post("/", requireAuth, requireOwner, async (req, res) => {
   const { name, address, city } = req.body;
-  if (!name) return res.status(400).json({ message: "Studio name is required" });
+  if (!name)
+    return res.status(400).json({ message: "Studio name is required" });
 
   const studio = await prisma.studio.create({
     data: {
@@ -68,9 +69,9 @@ ownerRouter.get(
           isRead: true,
           createdAt: true,
           clientName: true,
-serviceName: true,
-oldDate: true,
-newDate: true,
+          serviceName: true,
+          oldDate: true,
+          newDate: true,
         },
       });
 
@@ -133,7 +134,7 @@ ownerRouter.patch(
           createdAt: true,
         },
       });
-io.to(`studio:${studioId}`).emit("notifications:updated");
+      io.to(`studio:${studioId}`).emit("notifications:updated");
       res.json({ notification: updated });
     } catch (e) {
       console.error(e);
@@ -175,7 +176,7 @@ ownerRouter.patch(
           isRead: true,
         },
       });
-io.to(`studio:${studioId}`).emit("notifications:updated");
+      io.to(`studio:${studioId}`).emit("notifications:updated");
       res.json({
         ok: true,
         updatedCount: result.count,
@@ -215,21 +216,21 @@ ownerRouter.get(
         where: { studioId },
         orderBy: { startAt: "desc" },
         include: {
-client: {
-  select: {
-    id: true,
-    name: true,
-    firstName: true,
-    lastName: true,
-    phone: true,
-    email: true,
-    photoUrl: true,
-    createdAt: true,
-     birthDate: true,
-    isVip: true,
-    vipSince: true,
-  },
-},
+          client: {
+            select: {
+              id: true,
+              name: true,
+              firstName: true,
+              lastName: true,
+              phone: true,
+              email: true,
+              photoUrl: true,
+              createdAt: true,
+              birthDate: true,
+              isVip: true,
+              vipSince: true,
+            },
+          },
           service: {
             select: {
               id: true,
@@ -254,27 +255,35 @@ client: {
         if (!client?.id) continue;
 
         if (!map.has(client.id)) {
-          map.set(client.id, {
-            id: client.id,
-            name:
-              client.name ||
-              [client.firstName, client.lastName].filter(Boolean).join(" ") ||
-              "Клієнт",
-            phone: client.phone || "—",
-            email: client.email || "—",
-            birthDate: client.birthDate || null,
-            photoUrl: client.photoUrl || "",
-registeredAt: client.createdAt,
-isVip: client.isVip || false,
-vipSince: client.vipSince || null,
-bookings: 0,
-            cancellations: 0,
-            noShows: 0,
-            spent: 0,
-            servicesCount: {},
-            mastersCount: {},
-            allBookings: [],
-          });
+map.set(client.id, {
+  id: client.id,
+
+  firstName: client.firstName || "",
+  lastName: client.lastName || "",
+
+  name:
+    [client.firstName, client.lastName]
+      .filter(Boolean)
+      .join(" ")
+      .trim() ||
+    client.name ||
+    "Клієнт",
+
+  phone: client.phone || null,
+  email: client.email || null,
+  birthDate: client.birthDate || null,
+  photoUrl: client.photoUrl || "",
+  registeredAt: client.createdAt,
+  isVip: client.isVip || false,
+  vipSince: client.vipSince || null,
+  bookings: 0,
+  cancellations: 0,
+  noShows: 0,
+  spent: 0,
+  servicesCount: {},
+  mastersCount: {},
+  allBookings: [],
+});
         }
 
         const item = map.get(client.id);
@@ -292,148 +301,212 @@ bookings: 0,
         const serviceName = booking.service?.name || "—";
         const masterName = booking.master?.name || "—";
 
-        item.servicesCount[serviceName] = (item.servicesCount[serviceName] || 0) + 1;
-        item.mastersCount[masterName] = (item.mastersCount[masterName] || 0) + 1;
+        if (booking.status !== "CANCELED") {
+          item.servicesCount[serviceName] =
+            (item.servicesCount[serviceName] || 0) + 1;
 
-const startAt = booking.startAt ? new Date(booking.startAt) : null;
+          item.mastersCount[masterName] =
+            (item.mastersCount[masterName] || 0) + 1;
+        }
 
-item.allBookings.push({
-  id: booking.id,
-  date: booking.startAt,
-  time: startAt
-    ? `${String(startAt.getHours()).padStart(2, "0")}:${String(
-        startAt.getMinutes(),
-      ).padStart(2, "0")}`
-    : "",
-  service: serviceName,
-  master: masterName,
-  price: booking.service?.price || 0,
-  status: booking.status,
-  canceledBy: booking.canceledBy || null,
-});
+        const startAt = booking.startAt ? new Date(booking.startAt) : null;
+const isPast =
+  booking.startAt &&
+  new Date(booking.startAt).getTime() < Date.now();
+
+let bookingStatus = booking.status;
+
+if (
+  booking.status !== "CANCELED" &&
+  isPast
+) {
+  bookingStatus = "COMPLETED";
+}
+        item.allBookings.push({
+          id: booking.id,
+          date: booking.startAt,
+          time: startAt
+            ? `${String(startAt.getHours()).padStart(2, "0")}:${String(
+                startAt.getMinutes(),
+              ).padStart(2, "0")}`
+            : "",
+          service: serviceName,
+          master: masterName,
+          price: booking.service?.price || 0,
+         status: bookingStatus,
+          canceledBy: booking.canceledBy || null,
+        });
       }
 
       const clientIds = Array.from(map.keys());
 
-const notes = clientIds.length
-  ? await prisma.clientNote.findMany({
-      where: {
-        studioId,
-        clientId: {
-          in: clientIds,
-        },
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-      select: {
-        id: true,
-        clientId: true,
-        text: true,
-        createdAt: true,
-      },
-    })
-  : [];
+      const notes = clientIds.length
+        ? await prisma.clientNote.findMany({
+            where: {
+              studioId,
+              clientId: {
+                in: clientIds,
+              },
+            },
+            orderBy: {
+              createdAt: "desc",
+            },
+            select: {
+              id: true,
+              clientId: true,
+              text: true,
+              createdAt: true,
+            },
+          })
+        : [];
 
-const notesByClientId = new Map();
+      const notesByClientId = new Map();
 
-const salonStatuses = clientIds.length
-  ? await prisma.clientSalonStatus.findMany({
-      where: {
-        studioId,
-        clientId: {
-          in: clientIds,
-        },
-      },
-      select: {
-        clientId: true,
-        isFavorite: true,
-        favoriteSince: true,
-      },
-    })
-  : [];
+      const salonStatuses = clientIds.length
+        ? await prisma.clientSalonStatus.findMany({
+            where: {
+              studioId,
+              clientId: {
+                in: clientIds,
+              },
+            },
+            select: {
+              clientId: true,
+              isFavorite: true,
+              favoriteSince: true,
+            },
+          })
+        : [];
 
-const salonStatusByClientId = new Map();
+      const salonStatusByClientId = new Map();
 
-for (const status of salonStatuses) {
-  salonStatusByClientId.set(status.clientId, status);
-}
+      for (const status of salonStatuses) {
+        salonStatusByClientId.set(status.clientId, status);
+      }
 
-for (const note of notes) {
-  if (!notesByClientId.has(note.clientId)) {
-    notesByClientId.set(note.clientId, []);
-  }
+      for (const note of notes) {
+        if (!notesByClientId.has(note.clientId)) {
+          notesByClientId.set(note.clientId, []);
+        }
 
-  notesByClientId.get(note.clientId).push({
-    id: note.id,
-    text: note.text,
-    createdAt: note.createdAt,
-  });
-}
+        notesByClientId.get(note.clientId).push({
+          id: note.id,
+          text: note.text,
+          createdAt: note.createdAt,
+        });
+      }
 
       const clients = Array.from(map.values()).map((client) => {
         const completedBookings = client.allBookings.filter(
           (booking) => booking.status !== "CANCELED",
         );
-
-        const lastBooking = completedBookings[0] || client.allBookings[0] || null;
+        const currentDate = new Date();
+const lastCompletedBooking =
+  client.allBookings
+    .filter(
+      (booking) =>
+        booking.status !== "CANCELED" &&
+        booking.date &&
+        new Date(booking.date) <= currentDate,
+    )
+    .sort((a, b) => new Date(b.date) - new Date(a.date))[0] || null;
+        const lastBooking =
+        completedBookings[0] || client.allBookings[0] || null;
+        const nextBooking =
+          client.allBookings
+            .filter(
+              (booking) =>
+                booking.status !== "CANCELED" &&
+                booking.date &&
+                new Date(booking.date) > currentDate
+            )
+            .sort((a, b) => new Date(a.date) - new Date(b.date))[0] || null;
         const averageCheck = Math.round(
           client.spent / Math.max(completedBookings.length, 1),
         );
 
-        const favoriteService =
-          Object.entries(client.servicesCount).sort((a, b) => b[1] - a[1])[0]?.[0] ||
-          "—";
+        const serviceEntries = Object.entries(client.servicesCount);
+
+        let favoriteService = "Ще не сформовано";
+
+        if (serviceEntries.length === 1) {
+          favoriteService = serviceEntries[0][0];
+        } else if (serviceEntries.length > 1) {
+          const sortedServices = [...serviceEntries].sort(
+            (a, b) => b[1] - a[1],
+          );
+
+          const maxCount = sortedServices[0][1];
+
+          const leaders = sortedServices.filter(
+            ([, count]) => count === maxCount,
+          );
+
+          if (leaders.length === 1) {
+            favoriteService = leaders[0][0];
+          }
+        }
 
         const favoriteMaster =
-          Object.entries(client.mastersCount).sort((a, b) => b[1] - a[1])[0]?.[0] ||
-          "—";
+          Object.entries(client.mastersCount).sort(
+            (a, b) => b[1] - a[1],
+          )[0]?.[0] || "—";
 
-let status = "new";
+        let status = "new";
 
-const activeBookingsCount = completedBookings.length;
-const now = Date.now();
+        const activeBookingsCount = completedBookings.length;
+        const nowTs = Date.now();
 
-const lastActiveBooking = completedBookings[0] || null;
+        const lastActiveBooking = completedBookings[0] || null;
 
-const lastVisitTime = lastActiveBooking?.date
-  ? new Date(lastActiveBooking.date).getTime()
-  : 0;
+        const lastVisitTime = lastActiveBooking?.date
+          ? new Date(lastActiveBooking.date).getTime()
+          : 0;
 
-const daysSinceLastVisit = lastVisitTime
-  ? Math.floor((now - lastVisitTime) / (1000 * 60 * 60 * 24))
-  : null;
+        const daysSinceLastVisit = lastVisitTime
+          ? Math.floor((nowTs - lastVisitTime) / (1000 * 60 * 60 * 24))
+          : null;
 
-if (activeBookingsCount <= 1) {
-  status = "new";
-} else if (daysSinceLastVisit !== null && daysSinceLastVisit <= 30) {
-  status = "loyal";
-} else if (
-  daysSinceLastVisit !== null &&
-  daysSinceLastVisit > 30 &&
-  daysSinceLastVisit <= 60
-) {
-  status = "attention";
-} else if (daysSinceLastVisit !== null && daysSinceLastVisit > 60) {
-  status = "risk";
-}
+        if (activeBookingsCount <= 1) {
+          status = "new";
+        } else if (daysSinceLastVisit !== null && daysSinceLastVisit <= 30) {
+          status = "loyal";
+        } else if (
+          daysSinceLastVisit !== null &&
+          daysSinceLastVisit > 30 &&
+          daysSinceLastVisit <= 60
+        ) {
+          status = "attention";
+        } else if (daysSinceLastVisit !== null && daysSinceLastVisit > 60) {
+          status = "risk";
+        }
         return {
           id: client.id,
-          name: client.name,
+          // name: client.name,
+            firstName: client.firstName,
+  lastName: client.lastName,
           phone: client.phone,
           email: client.email,
           photoUrl: client.photoUrl,
           registeredAt: client.registeredAt,
           birthDate: client.birthDate,
-status,
-isVip: client.isVip,
-vipSince: client.vipSince,
-isFavorite: salonStatusByClientId.get(client.id)?.isFavorite || false,
-favoriteSince: salonStatusByClientId.get(client.id)?.favoriteSince || null,
-bookings: client.bookings,
+          status,
+          isVip: client.isVip,
+          vipSince: client.vipSince,
+          isFavorite: salonStatusByClientId.get(client.id)?.isFavorite || false,
+          favoriteSince:
+            salonStatusByClientId.get(client.id)?.favoriteSince || null,
+          bookings: client.bookings,
           cancellations: client.cancellations,
           noShows: client.noShows,
-          lastVisit: lastBooking?.date || null,
+          lastVisit: lastCompletedBooking?.date || null,
+          nextBooking: nextBooking
+  ? {
+      date: nextBooking.date,
+      service: nextBooking.service,
+      master: nextBooking.master,
+    }
+  : null,
           lastBooking: {
             date: lastBooking?.date || null,
             master: lastBooking?.master || "—",
@@ -647,7 +720,6 @@ ownerRouter.patch(
   },
 );
 
-
 // ✅ REMOVE salon favorite
 ownerRouter.delete(
   "/studio/:studioId/clients/:clientId/favorite",
@@ -717,7 +789,6 @@ ownerRouter.delete(
     }
   },
 );
- 
 
 // ✅ UPDATE my studio
 ownerRouter.patch("/:id", requireAuth, requireOwner, async (req, res) => {

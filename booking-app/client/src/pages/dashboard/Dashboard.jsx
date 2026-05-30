@@ -358,7 +358,7 @@ export default function Dashboard() {
         </div>
       </aside>
 
-      <main className="min-h-screen lg:pl-[250px]">
+     <main className="min-h-screen pt-[72px] sm:pt-[80px] lg:pl-[250px] lg:pt-0">
         <section className="px-4 py-6 sm:px-6 lg:px-8">
           <Outlet />
         </section>
