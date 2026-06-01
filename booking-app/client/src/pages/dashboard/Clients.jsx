@@ -273,15 +273,52 @@ function MiniChart({ data = [], trend = "flat" }) {
   );
 }
 
-function SectionCard({ title, subtitle, actions, children, className = "" }) {
+function SectionCard({
+  title,
+  subtitle,
+  badge,
+  actions,
+  children,
+  className = "",
+}) {
   return (
     <section
       className={cn(
-        "group relative overflow-hidden rounded-[28px] border border-[#eadbc9] bg-white shadow-[0_18px_50px_rgba(17,17,17,0.06)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_24px_70px_rgba(17,17,17,0.09)]",
+        "group relative overflow-hidden rounded-[32px] border border-[#ebe7df] bg-white shadow-[0_14px_44px_rgba(15,23,42,0.05)] transition-all duration-300 hover:shadow-[0_20px_60px_rgba(15,23,42,0.08)]",
         className,
       )}
     >
-      <div className="absolute inset-x-0 top-0 h-[3px] bg-[#ff5a00]" />
+      <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#ff7a18] via-[#ff6200] to-[#ff8c42]" />
+
+      {(title || subtitle || badge || actions) && (
+        <div className="flex flex-col gap-3 border-b border-[#f1ece5] px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              {typeof title === "string" ? (
+                <h2 className="text-lg font-black tracking-[-0.03em] text-[#202020]">
+                  {title}
+                </h2>
+              ) : (
+                title
+              )}
+
+              {badge && (
+                <span className="inline-flex items-center rounded-full bg-[#fff4ec] px-2.5 py-1 text-xs font-black text-[#ff6200]">
+                  {badge}
+                </span>
+              )}
+            </div>
+
+            {subtitle && (
+              <p className="mt-1 text-sm font-medium leading-5 text-[#7b766f]">
+                {subtitle}
+              </p>
+            )}
+          </div>
+
+          {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
+        </div>
+      )}
 
       <div className="p-5">{children}</div>
     </section>
@@ -1359,173 +1396,171 @@ export default function Clients() {
   return (
     <div className="min-h-screen bg-[#fbfaf8] pb-8">
       <div className="mx-auto max-w-7xl space-y-6 ">
-        <header className="space-y-4">
-          <div className="flex items-center justify-between gap-3">
-            <h1 className="text-4xl font-black leading-[0.95] tracking-tight text-[#202020] sm:text-6xl">
-              Клі<span className="text-[#ff5a00]">єнти</span>
-            </h1>
-
-            <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
-              <button
-  type="button"
-  onClick={() => setInfoOpen(true)}
-  className="
-    hidden sm:grid
-    h-12 w-12
-    place-items-center
-    rounded-full
-    text-[#ff6200]
-    transition-all duration-200
-    hover:scale-110
-    active:scale-95
-  "
+<SectionCard className="bg-white/95 backdrop-blur-xl">
+  <div className="flex items-start justify-between gap-3">
+    <div className="min-w-0 flex-1">
+     <h1 className="text-5xl font-black leading-[0.95] tracking-tight text-[#202020] sm:text-6xl">
+        Клі<span className="text-[#ff5a00]">єнти</span>
+      </h1>
+    </div>
+<div className="flex shrink-0 items-center gap-1 sm:gap-2">
+      <button
+        type="button"
+        onClick={() => setInfoOpen(true)}
+        className="hidden grid h-12 w-12 place-items-center rounded-full text-[#ff6200] transition-all duration-200 hover:scale-110 hover:bg-[#fff7f0] active:scale-95"
+      >
+        <CircleAlert className="h-5 w-5" />
+      </button>
+<Button
+  variant="ghost"
+  className="!hidden h-12 hover:bg-[#fff7f0] sm:inline-flex"
+  onClick={() => setExportOpen(true)}
 >
-  <CircleAlert className="h-5 w-5" />
-</button>
-<div className="hidden sm:block">
-  <Button
-    variant="ghost"
-    className="
-      h-12 px-5
-      border border-[#eadbc9]
-      bg-white shadow-sm
-      hover:bg-[#fff7f0]
-    "
-    onClick={() => setExportOpen(true)}
-  >
-    <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
-    Експорт
-  </Button>
-</div>
+  <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
+  Експорт
+</Button>
 
-              <Button variant="primary" className="h-10 px-3 sm:h-12 sm:px-5">
-                <Plus className="h-4 w-4 shrink-0" />
+<Button
+  variant="primary"
+  className="h-10 w-10 p-0 sm:h-12 sm:w-auto sm:px-5"
+>
+  <Plus className="h-4 w-4 shrink-0" />
 
-                <span className="leading-[1.05] text-left">Додати клієнта</span>
-              </Button>
-            </div>
-          </div>
+  <span className="hidden sm:inline">
+    Додати клієнта
+  </span>
+</Button>
+      
+    </div>
+  </div>
 
-          <p className="w-full text-sm font-semibold text-[#77716b] sm:text-base">
-            Переглядай базу клієнтів, відстежуй історію візитів, статуси,
-            фінанси та взаємодію зі студією.
-          </p>
-        </header>
+  <p className="mt-3 w-full text-[13px] font-semibold leading-5 text-[#77716b] sm:text-[14px] sm:leading-6">
+    Переглядай базу клієнтів, відстежуй історію візитів, статуси, фінанси та
+    взаємодію зі студією.
+  </p>
 
+</SectionCard>
+
+<SectionCard
+  title="Список клієнтів"
+  subtitle="Пошук, фільтрація, сортування та картки клієнтів."
+  badge={`${clients.length} клієнт(ів)`}
+>
         <section className="space-y-6">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between lg:flex-col lg:items-stretch">
-      <div className="relative w-full md:max-w-[390px]">
-              <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8b95a5]" />
-              <input
-                value={query}
-                onChange={(e) => {
-                  setQuery(e.target.value);
-                  setCurrentPage(1);
-                  setSelectedClientId(null);
-                  setClientTabs({});
-                }}
-                placeholder="Пошук клієнтів..."
-                className="h-12 w-full rounded-[14px] border border-[#e5eaf0] bg-white pl-12 pr-4 text-sm font-semibold text-[#202020] outline-none transition placeholder:text-[#9aa3af] hover:border-[#d8dee8] focus:border-[#ff6200] focus:ring-4 focus:ring-[#ff6200]/10"
-              />
-            </div>
+<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+ <div className="relative w-full sm:max-w-[390px]">
+    <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8b95a5]" />
 
-          <div className="grid grid-cols-2 gap-3 md:flex md:justify-end">
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFilterOpen((current) => !current);
-                    setSortOpen(false);
-                  }}
-                  className="inline-flex h-12 w-full min-w-[180px] items-center justify-between gap-3 rounded-[14px] border border-[#e5eaf0] bg-white px-4 text-sm font-bold text-[#202020] shadow-sm transition hover:border-[#d8dee8] hover:bg-[#fff8f3] sm:w-auto"
-                >
-                  <span>
-                    {filter === "all" ? "Усі статуси" : selectedFilterLabel}
-                  </span>
-                  <ChevronDown
-                    className={cn(
-                      "h-4 w-4 text-[#6b7280] transition",
-                      filterOpen && "rotate-180 text-[#ff6200]",
-                    )}
-                  />
-                </button>
+    <input
+      value={query}
+      onChange={(e) => {
+        setQuery(e.target.value);
+        setCurrentPage(1);
+        setSelectedClientId(null);
+        setClientTabs({});
+      }}
+      placeholder="Пошук клієнтів..."
+      className="h-12 w-full rounded-[14px] border border-[#e5eaf0] bg-white pl-12 pr-4 text-sm font-semibold text-[#202020] outline-none transition placeholder:text-[#9aa3af] hover:border-[#d8dee8] focus:border-[#ff6200] focus:ring-4 focus:ring-[#ff6200]/10"
+    />
+  </div>
 
-                {filterOpen && (
-                  <div className="absolute right-0 z-30 mt-2 w-full min-w-[220px] overflow-hidden rounded-[16px] border border-[#e5eaf0] bg-white py-2 shadow-[0_18px_42px_rgba(15,23,42,0.14)]">
-                    {filterItemsWithCounts.map((item) => (
-                      <button
-                        key={item.value}
-                        type="button"
-                        onClick={() => {
-                          setFilter(item.value);
-                          setFilterOpen(false);
-                          setCurrentPage(1);
-                          setSelectedClientId(null);
-                          setClientTabs({});
-                        }}
-                        className={cn(
-                          "flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm font-bold transition",
-                          filter === item.value
-                            ? "bg-[#fff1e8] text-[#ff6200]"
-                            : "text-[#202020] hover:bg-[#fbfaf8]",
-                        )}
-                      >
-                        <span>{item.label}</span>
-                        <span className="text-xs text-[#8b95a5]">
-                          {item.count}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+  <div className="grid w-full grid-cols-2 gap-3 sm:flex sm:w-auto sm:shrink-0">
+    <div className="relative min-w-0">
+      <button
+        type="button"
+        onClick={() => {
+          setFilterOpen((current) => !current);
+          setSortOpen(false);
+        }}
+        className="inline-flex h-12 w-full items-center justify-between gap-3 rounded-[14px] border border-[#e5eaf0] bg-white px-4 text-sm font-bold text-[#202020] shadow-sm transition hover:border-[#d8dee8] hover:bg-[#fff8f3] sm:min-w-[180px]"
+      >
+        <span className="truncate">
+          {filter === "all" ? "Усі статуси" : selectedFilterLabel}
+        </span>
 
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSortOpen((current) => !current);
-                    setFilterOpen(false);
-                  }}
-                  className="inline-flex h-12 w-full min-w-[210px] items-center justify-between gap-3 rounded-[14px] border border-[#e5eaf0] bg-white px-4 text-sm font-bold text-[#202020] shadow-sm transition hover:border-[#d8dee8] hover:bg-[#fff8f3] sm:w-auto"
-                >
-                  <span>{selectedSortLabel}</span>
-                  <ChevronDown
-                    className={cn(
-                      "h-4 w-4 text-[#6b7280] transition",
-                      sortOpen && "rotate-180 text-[#ff6200]",
-                    )}
-                  />
-                </button>
+        <ChevronDown
+          className={cn(
+            "h-4 w-4 shrink-0 text-[#6b7280] transition",
+            filterOpen && "rotate-180 text-[#ff6200]",
+          )}
+        />
+      </button>
 
-                {sortOpen && (
-                  <div className="absolute right-0 z-30 mt-2 w-full min-w-[240px] overflow-hidden rounded-[16px] border border-[#e5eaf0] bg-white py-2 shadow-[0_18px_42px_rgba(15,23,42,0.14)]">
-                    {sortItems.map((item) => (
-                      <button
-                        key={item.value}
-                        type="button"
-                        onClick={() => {
-                          setSort(item.value);
-                          setSortOpen(false);
-                          setCurrentPage(1);
-                          setSelectedClientId(null);
-                          setClientTabs({});
-                        }}
-                        className={cn(
-                          "block w-full px-4 py-3 text-left text-sm font-bold transition",
-                          sort === item.value
-                            ? "bg-[#fff1e8] text-[#ff6200]"
-                            : "text-[#202020] hover:bg-[#fbfaf8]",
-                        )}
-                      >
-                        {item.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+      {filterOpen && (
+      <div className="absolute left-0 right-0 z-30 mt-2 w-full overflow-hidden rounded-[16px] border border-[#e5eaf0] bg-white py-2 shadow-[0_18px_42px_rgba(15,23,42,0.14)] sm:right-0 sm:left-auto sm:min-w-[220px]">
+          {filterItemsWithCounts.map((item) => (
+            <button
+              key={item.value}
+              type="button"
+              onClick={() => {
+                setFilter(item.value);
+                setFilterOpen(false);
+                setCurrentPage(1);
+                setSelectedClientId(null);
+                setClientTabs({});
+              }}
+              className={cn(
+                "flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm font-bold transition",
+                filter === item.value
+                  ? "bg-[#fff1e8] text-[#ff6200]"
+                  : "text-[#202020] hover:bg-[#fbfaf8]",
+              )}
+            >
+              <span>{item.label}</span>
+              <span className="text-xs text-[#8b95a5]">{item.count}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+
+    <div className="relative min-w-0">
+      <button
+        type="button"
+        onClick={() => {
+          setSortOpen((current) => !current);
+          setFilterOpen(false);
+        }}
+        className="inline-flex h-12 w-full items-center justify-between gap-3 rounded-[14px] border border-[#e5eaf0] bg-white px-4 text-sm font-bold text-[#202020] shadow-sm transition hover:border-[#d8dee8] hover:bg-[#fff8f3] sm:min-w-[210px]"
+      >
+        <span className="truncate">{selectedSortLabel}</span>
+
+        <ChevronDown
+          className={cn(
+            "h-4 w-4 shrink-0 text-[#6b7280] transition",
+            sortOpen && "rotate-180 text-[#ff6200]",
+          )}
+        />
+      </button>
+
+      {sortOpen && (
+      <div className="absolute left-0 right-0 z-30 mt-2 w-full overflow-hidden rounded-[16px] border border-[#e5eaf0] bg-white py-2 shadow-[0_18px_42px_rgba(15,23,42,0.14)] sm:right-0 sm:left-auto sm:min-w-[240px]">
+          {sortItems.map((item) => (
+            <button
+              key={item.value}
+              type="button"
+              onClick={() => {
+                setSort(item.value);
+                setSortOpen(false);
+                setCurrentPage(1);
+                setSelectedClientId(null);
+                setClientTabs({});
+              }}
+              className={cn(
+                "block w-full px-4 py-3 text-left text-sm font-bold transition",
+                sort === item.value
+                  ? "bg-[#fff1e8] text-[#ff6200]"
+                  : "text-[#202020] hover:bg-[#fbfaf8]",
+              )}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  </div>
+</div>
 
           {loading && (
             <div className="rounded-[20px] border border-[#e5eaf0] bg-white p-6 text-center text-sm font-bold text-[#77716b] shadow-sm">
@@ -1650,6 +1685,8 @@ export default function Clients() {
             </>
           ) : null}
         </section>
+</SectionCard>
+
       </div>
 
       <Modal

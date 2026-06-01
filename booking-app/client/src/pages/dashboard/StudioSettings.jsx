@@ -147,10 +147,10 @@ function SectionCard({
 }) {
   return (
     <section
-      className={cn(
-        "group relative overflow-hidden rounded-[28px] border border-[#eadbc9] bg-white shadow-[0_18px_50px_rgba(17,17,17,0.06)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_24px_70px_rgba(17,17,17,0.09)]",
-        className,
-      )}
+className={cn(
+  "group relative overflow-hidden rounded-[32px] border border-[#ebe7df] bg-white shadow-[0_14px_44px_rgba(15,23,42,0.05)] transition-all duration-300 hover:shadow-[0_20px_60px_rgba(15,23,42,0.08)]",
+  className,
+)}
     >
       <div className="absolute inset-x-0 top-0 h-[3px] bg-[#ff5a00]" />
 
@@ -1778,7 +1778,7 @@ async function saveStudioEditModal() {
 
   return (
     <div className="min-h-screen bg-[#faf8f4] pb-28">
-      <div className="mx-auto min-h-[100svh] max-w-6xl px-4 py-4 sm:px-6 lg:px-8">
+     <div className="mx-auto max-w-5xl space-y-6">
         <input
           ref={coverInputRef}
           type="file"
@@ -1796,52 +1796,28 @@ async function saveStudioEditModal() {
         />
 
         <div className="mb-6">
-          <div
-            ref={headerTriggerRef}
-            className="relative overflow-hidden rounded-[28px] border border-[#eadbc9] bg-[#f2eee8] px-6 py-8 shadow-[0_22px_70px_rgba(17,17,17,0.07)] sm:px-8 sm:py-10"
-          >
-            <div className="absolute right-5 top-1/2 hidden h-28 w-28 -translate-y-1/2 items-center justify-center rounded-[32px] bg-[#ff5a00] text-white shadow-[0_20px_45px_rgba(255,90,0,0.28)] sm:flex">
-              <Building2 className="h-14 w-14" />
-            </div>
+<div
+  ref={headerTriggerRef}
+  className="relative overflow-hidden rounded-[32px] border border-[#ebe7df] bg-white/95 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.06)] backdrop-blur-xl sm:p-7"
+>
+  <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#ff7a18] via-[#ff6200] to-[#ff8c42]" />
 
             <div className="absolute -right-7 -top-10 hidden h-28 w-28 rounded-full bg-white/40 sm:block" />
             <div className="absolute bottom-4 right-24 hidden h-5 w-5 rounded-full bg-[#ff5a00]/20 sm:block" />
 
-            {profile.percent === 100 && (
-              <div className="absolute right-4 top-4">
-                <div className="rounded-2xl bg-[#ff5a00] px-3 py-2 text-white shadow-[0_14px_28px_rgba(255,90,0,0.22)]">
-                  <div className="flex items-center gap-2">
-                    <div className="hidden h-7 w-7 items-center justify-center rounded-lg bg-white/20 sm:flex">
-                      <Check className="h-4 w-4 text-white" />
-                    </div>
-
-                    <p className="text-[11px] font-bold leading-4">
-                      Профіль заповнено
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
 
             <div className="relative max-w-2xl">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#ffd6bd] bg-white px-3 py-1.5 text-[#ff5a00] shadow-[0_8px_24px_rgba(255,90,0,0.08)]">
-                <Sparkles className="h-3.5 w-3.5" />
-                <span className="text-[11px] font-black uppercase tracking-[0.14em]">
-                  Профіль студії
-                </span>
-              </div>
-
               <h1 className="max-w-xl text-4xl font-black leading-[0.95] tracking-tight text-[#202020] sm:text-6xl">
                 Профіль <span className="text-[#ff5a00]">студії</span>
               </h1>
 
-              <p className="mt-3 max-w-xl text-sm font-semibold text-[#77716b] sm:text-base">
-                Створіть профіль, який підвищує довіру та виглядає професійно.
-              </p>
+  <p className="mt-3 max-w-[640px] text-[14px] leading-6 text-[#7b766f] sm:text-[16px]">
+  Налаштуйте профіль студії, контактні дані, адресу та портфоліо робіт.
+</p>
             </div>
           </div>
 
-          <div className="mt-4 rounded-[24px] border border-[#eadbc9] bg-white px-0 py-2 shadow-[0_10px_32px_rgba(17,17,17,0.04)] sm:p-2">
+         <div className="mt-4 rounded-[32px] border border-[#ebe7df] bg-white p-2 shadow-[0_10px_32px_rgba(15,23,42,0.04)]">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div className="flex justify-center gap-1 overflow-x-auto px-0 sm:gap-2">
                 {[
@@ -1997,7 +1973,8 @@ async function saveStudioEditModal() {
                 (initialLoading ? (
                   <StudioProfileFormSkeleton />
                 ) : (
-<section className="overflow-hidden rounded-[30px] border border-[#eadfce] bg-white shadow-[0_14px_36px_rgba(15,23,42,0.06)]">
+<section className="relative overflow-hidden rounded-[30px] border border-[#eadfce] bg-white shadow-[0_14px_36px_rgba(15,23,42,0.06)]">
+  <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#ff7a18] via-[#ff6200] to-[#ff8c42]" />
   <div className="flex items-center justify-between gap-3 border-b border-[#eee8df] px-5 py-4 sm:px-7">
     <h3 className="text-[24px] font-black tracking-[-0.05em] text-[#202020]">
       Дані студії
@@ -2089,7 +2066,8 @@ onClick={() => openStudioEditModal(item.field)}
     <StudioLocationFormSkeleton />
   ) : (
     <>
-      <section className="overflow-hidden rounded-[30px] border border-[#eadfce] bg-white shadow-[0_14px_36px_rgba(15,23,42,0.06)]">
+<section className="relative overflow-hidden rounded-[30px] border border-[#eadfce] bg-white shadow-[0_14px_36px_rgba(15,23,42,0.06)]">
+  <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#ff7a18] via-[#ff6200] to-[#ff8c42]" />
         <div className="flex items-center justify-between gap-3 border-b border-[#eee8df] px-5 py-4 sm:px-7">
           <h3 className="text-[24px] font-black tracking-[-0.05em] text-[#202020]">
             Локація студії

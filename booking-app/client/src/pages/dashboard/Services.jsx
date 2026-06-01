@@ -215,31 +215,29 @@ function SectionCard({
   return (
     <section
       className={cn(
-        "group relative overflow-hidden rounded-[28px] border border-[#eadbc9] bg-white",
-        "shadow-[0_18px_50px_rgba(17,17,17,0.06)] hover:-translate-y-0.5 hover:shadow-[0_24px_70px_rgba(17,17,17,0.09)]",
-        "transition-all duration-300",
+        "group relative overflow-hidden rounded-[32px] border border-[#ebe7df] bg-white shadow-[0_14px_44px_rgba(15,23,42,0.05)] transition-all duration-300 hover:shadow-[0_20px_60px_rgba(15,23,42,0.08)]",
         className,
       )}
     >
-      <div className="absolute inset-x-0 top-0 h-[3px] bg-[#ff5a00]" />
+      <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#ff7a18] via-[#ff6200] to-[#ff8c42]" />
 
-      <div className="border-b border-[#eadbc9] px-4 py-3 sm:px-5 sm:py-4">
+      <div className="border-b border-[#f1ece5] px-4 py-4 sm:px-5 sm:py-5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <h2 className="line-clamp-3 text-base font-black leading-snug tracking-tight text-[#202020] sm:text-lg">
+            <h2 className="line-clamp-3 text-base font-black leading-snug tracking-[-0.03em] text-[#202020] sm:text-lg">
               {title}
             </h2>
 
             {badge && (
               <div className="mt-1.5">
-                <span className="inline-flex max-w-full items-center rounded-full border border-[#ffd6bd] bg-[#fff1e8] px-2.5 py-1 text-[11px] font-black text-[#ff5a00] sm:text-xs">
+                <span className="inline-flex max-w-full items-center rounded-full bg-[#fff4ec] px-2.5 py-1 text-[11px] font-black text-[#ff6200] sm:text-xs">
                   {badge}
                 </span>
               </div>
             )}
 
             {subtitle && (
-              <p className="mt-2 text-sm font-medium leading-5 text-[#77716b]">
+              <p className="mt-2 text-sm font-medium leading-5 text-[#7b766f]">
                 {subtitle}
               </p>
             )}
@@ -616,7 +614,7 @@ function CategoryFilters({ value, onChange, categories }) {
 
   return (
     <div className="mb-6">
-      <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+      <div className="no-scrollbar -mx-1 flex justify-center gap-2 overflow-x-auto px-1 pb-1">
         {items.map((item) => {
           const active = String(value) === String(item.id);
 
@@ -963,36 +961,24 @@ export default function Services() {
   }, [blocks, activeCategoryFilter]);
 
   return (
-    <div className="min-h-screen bg-[#faf8f4] pb-10">
-      <div className="mx-auto max-w-6xl px-4 py-4 sm:px-6 lg:px-8">
-        {!isModalOpen && (
-          <div className="relative mb-6 overflow-hidden rounded-[28px] border border-[#eadbc9] bg-[#f2eee8] px-6 py-8 shadow-[0_22px_70px_rgba(17,17,17,0.07)] sm:px-8 sm:py-10">
-            <div className="absolute right-5 top-1/2 hidden h-28 w-28 -translate-y-1/2 items-center justify-center rounded-[32px] bg-[#ff5a00] text-white shadow-[0_20px_45px_rgba(255,90,0,0.28)] sm:flex">
-              <BriefcaseBusiness className="h-14 w-14" />
-            </div>
+    <div className="min-h-screen ">
+<div className="mx-auto max-w-5xl space-y-6">
+  {!isModalOpen && (
+    <div className="relative mb-6 overflow-hidden rounded-[32px] border border-[#ebe7df] bg-white/95 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.06)] backdrop-blur-xl sm:p-7">
+      <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#ff7a18] via-[#ff6200] to-[#ff8c42]" />
 
-            <div className="absolute -right-7 -top-10 hidden h-28 w-28 rounded-full bg-white/40 sm:block" />
-            <div className="absolute bottom-4 right-24 hidden h-5 w-5 rounded-full bg-[#ff5a00]/20 sm:block" />
+      <div className="relative">
+        <h1 className="text-[40px] font-black leading-[0.95] tracking-tight text-[#202020] sm:text-6xl">
+          Пос<span className="text-[#ff5a00]">луги</span>
+        </h1>
 
-            <div className="relative max-w-2xl">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#ffd6bd] bg-white px-3 py-1.5 text-[#ff5a00] shadow-[0_8px_24px_rgba(255,90,0,0.08)]">
-                <Sparkles className="h-3.5 w-3.5" />
-                <span className="text-[11px] font-black uppercase tracking-[0.14em]">
-                  Меню студії
-                </span>
-              </div>
-
-              <h1 className="max-w-xl text-4xl font-black leading-[0.95] tracking-tight text-[#202020] sm:text-6xl">
-                Пос<span className="text-[#ff5a00]">луги</span>
-              </h1>
-
-              <p className="mt-3 max-w-xl text-sm font-semibold text-[#77716b] sm:text-base">
-                Налаштуйте категорії та послуги — саме так їх бачитимуть клієнти
-                під час онлайн-запису.
-              </p>
-            </div>
-          </div>
-        )}
+        <p className="mt-3 max-w-[640px] text-[12px] font-semibold text-[#77716b] sm:text-[16px]">
+          Налаштуйте категорії та послуги — саме так їх бачитимуть клієнти
+          під час онлайн-запису.
+        </p>
+      </div>
+    </div>
+  )}
 
         <SectionCard
           title="Нова категорія"

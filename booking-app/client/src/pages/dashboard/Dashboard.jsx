@@ -323,6 +323,7 @@ export default function Dashboard() {
             <Building2 className="h-5 w-5 shrink-0" />
             <span>Налаштування</span>
           </NavLink>
+          
         </nav>
 
         <div className="px-4 pb-6">
@@ -359,7 +360,7 @@ export default function Dashboard() {
       </aside>
 
      <main className="min-h-screen pt-[72px] sm:pt-[80px] lg:pl-[250px] lg:pt-0">
-        <section className="px-4 py-6 sm:px-6 lg:px-8">
+        <section className="px-4 py-4 sm:px-4 lg:px-4">
           <Outlet />
         </section>
       </main>

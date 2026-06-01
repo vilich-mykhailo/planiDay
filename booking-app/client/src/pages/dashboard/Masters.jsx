@@ -69,39 +69,39 @@ function SectionCard({
   return (
     <section
       className={cn(
-        "group relative overflow-hidden rounded-[28px] border border-[#eadbc9] bg-white shadow-[0_18px_50px_rgba(17,17,17,0.06)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_24px_70px_rgba(17,17,17,0.09)]",
+        "group relative overflow-hidden rounded-[32px] border border-[#ebe7df] bg-white shadow-[0_14px_44px_rgba(15,23,42,0.05)] transition-all duration-300 hover:shadow-[0_20px_60px_rgba(15,23,42,0.08)]",
         className,
       )}
     >
-      <div className="absolute inset-x-0 top-0 h-[3px] bg-[#ff5a00]" />
+      <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#ff7a18] via-[#ff6200] to-[#ff8c42]" />
 
-      <div className="border-b border-[#eadbc9] px-5 py-4">
-        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-start justify-between gap-3">
-              <h2 className="text-lg font-black tracking-tight text-[#202020]">
+      {(title || subtitle || badge || actions) && (
+        <div className="flex flex-col gap-3 border-b border-[#f1ece5] px-4 py-5 sm:px-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-black tracking-[-0.03em] text-[#202020]">
                 {title}
               </h2>
 
               {badge && (
-                <span className="inline-flex shrink-0 items-center rounded-full border border-[#ffd6bd] bg-[#fff1e8] px-3 py-1 text-xs font-black text-[#ff5a00]">
+                <span className="inline-flex items-center rounded-full bg-[#fff4ec] px-2.5 py-1 text-xs font-black text-[#ff6200]">
                   {badge}
                 </span>
               )}
             </div>
 
             {subtitle && (
-              <p className="mt-1.5 text-sm font-medium text-[#77716b]">{subtitle}</p>
+              <p className="mt-1 text-sm font-medium leading-5 text-[#7b766f]">
+                {subtitle}
+              </p>
             )}
           </div>
 
-          {actions && (
-            <div className="w-full md:w-auto md:shrink-0">{actions}</div>
-          )}
+          {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
         </div>
-      </div>
+      )}
 
-      <div className="p-5">{children}</div>
+      <div className="p-4 sm:p-5">{children}</div>
     </section>
   );
 }
@@ -229,15 +229,13 @@ function Modal({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-[9999] flex items-end justify-center bg-[#202020]/45 px-3 pb-3 backdrop-blur-[6px] sm:items-center sm:p-6"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose?.();
-      }}
-    >
-      <div
-        className={cn(
-          "flex w-full max-h-[calc(100dvh-24px)] flex-col overflow-hidden rounded-[30px] border border-[#f0e2d3] bg-[#f7f5f1] shadow-[0_30px_90px_rgba(15,23,42,0.24)]",
+<div
+  className="fixed inset-0 z-[9999] flex items-stretch justify-center bg-[#202020]/45 p-0 backdrop-blur-[6px] sm:items-center sm:p-6"
+>
+     <div
+  className={cn(
+    "flex h-dvh w-full flex-col overflow-hidden rounded-none border-0 bg-[#f7f5f1] shadow-[0_30px_90px_rgba(15,23,42,0.24)]",
+    "sm:h-auto sm:max-h-[calc(100dvh-48px)] sm:rounded-[30px] sm:border sm:border-[#f0e2d3]",
           "animate-in fade-in-0 zoom-in-95 duration-200",
           sizeClasses[size],
         )}
@@ -275,15 +273,16 @@ function Modal({
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto bg-white px-5 py-5 sm:px-6">
-          {children}
-        </div>
+<div className="min-h-0 flex-1 overflow-y-auto bg-white px-5 py-5 pb-[110px] sm:px-6 sm:pb-5">
+  {children}
+</div>
 
-        {footer && (
-          <div className="shrink-0 border-t border-[#f0e7da] bg-[#fbfaf8] px-5 py-4 sm:px-6">
-            {footer}
-          </div>
-        )}
+{footer && (
+  <div className="sticky bottom-0 shrink-0 border-t border-[#f0e7da] bg-[#fbfaf8] px-5 py-4 sm:px-6">
+    {footer}
+  </div>
+)}
+    
       </div>
     </div>
   );
@@ -1072,53 +1071,80 @@ export default function Masters() {
   }, [masters, query]);
   const [photoBroken, setPhotoBroken] = useState(false);
 
-  return (
-    <div className="min-h-screen bg-[#fbfaf8] pb-10">
-      <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
-        <header className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-          <div className="relative max-w-2xl">
-            <h1 className="max-w-xl text-4xl font-black leading-[0.95] tracking-tight text-[#202020] sm:text-6xl">
-              Май<span className="text-[#ff5a00]">стри</span>
-            </h1>
+ return (
+  <div className="min-h-screen bg-[#fbfaf8]">
+   <div className="mx-auto max-w-5xl space-y-6">
+  <div className="relative mb-6 overflow-hidden rounded-[32px] border border-[#ebe7df] bg-white/95 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.06)] backdrop-blur-xl sm:p-7">
+    <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#ff7a18] via-[#ff6200] to-[#ff8c42]" />
 
-            <p className="mt-3 max-w-xl text-sm font-semibold text-[#77716b] sm:text-base">
-              Керуйте командою студії, профілями майстрів та їхніми особливими датами.
-            </p>
-          </div>
+    <div className="relative flex items-start justify-between gap-4">
+      <div className="min-w-0">
+        <h1 className="text-5xl font-black leading-[0.95] tracking-tight text-[#202020] sm:text-6xl">
+          Май<span className="text-[#ff5a00]">стри</span>
+        </h1>
 
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <Button variant="secondary" className="h-12 rounded-[14px] px-5">
-              <Download className="h-4 w-4" />
-              Експорт
-            </Button>
+        <p className="mt-3 max-w-[640px] text-[14px] leading-6 text-[#7b766f] sm:text-[16px]">
+          Керуйте командою студії, профілями майстрів та їхніми особливими
+          датами.
+        </p>
+      </div>
 
-            <Button
-              variant="primary"
-              onClick={() => setAddOpen(true)}
-              className="h-12 rounded-[14px] px-5"
-            >
-              <Plus className="h-4 w-4" />
-              Додати майстра
-            </Button>
-          </div>
-        </header>
+      <Button
+        variant="primary"
+        onClick={() => setAddOpen(true)}
+        className="h-10 shrink-0 px-3 sm:h-12 sm:px-5"
+      >
+        <Plus className="h-4 w-4" />
+        <span className="hidden sm:inline">Додати майстра</span>
+      </Button>
+    </div>
+  </div>
 
-        <section className="space-y-6">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div className="relative w-full lg:max-w-[390px]">
-              <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8b95a5]" />
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Пошук майстрів..."
-                className="h-12 w-full rounded-[14px] border border-[#e5eaf0] bg-white pl-12 pr-4 text-sm font-semibold text-[#202020] outline-none transition placeholder:text-[#9aa3af] hover:border-[#d8dee8] focus:border-[#ff6200] focus:ring-4 focus:ring-[#ff6200]/10"
-              />
-            </div>
+  <SectionCard
+    title="Майстри"
+    subtitle="Керуйте майстрами, редагуйте профілі та додавайте особливі дати."
+    badge={`${filteredMasters.length} майстра(ів)`}
+  >
 
-            <div className="inline-flex h-12 items-center justify-center rounded-[14px] border border-[#e5eaf0] bg-white px-4 text-sm font-black text-[#ff6200] shadow-sm">
-              К-ть майстрів: {total}
-            </div>
-          </div>
+
+
+<div className="flex flex-col mb-3 gap-2 sm:flex-row sm:items-center sm:justify-between">
+<div className="relative w-full sm:max-w-[360px]">
+  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8a847d]" />
+
+  <input
+    value={query}
+    onChange={(e) => setQuery(e.target.value)}
+    placeholder="Пошук майстрів..."
+    className="
+      h-10 w-full
+      rounded-xl
+      border border-[#ebe7df]
+      bg-[#fcfbf9]
+      pl-9 pr-3
+      text-[13px]
+      font-semibold
+      text-[#202020]
+      outline-none
+      transition-all
+      placeholder:text-[#9b948c]
+
+      sm:h-12
+      sm:rounded-2xl
+      sm:pl-11
+      sm:pr-4
+      sm:text-[14px]
+
+      hover:border-[#ffd8c2]
+      hover:bg-white
+      focus:border-[#ff6200]
+      focus:ring-4
+      focus:ring-[#ff6200]/10
+    "
+  />
+</div>
+
+</div>
 
           {loading ? (
             <MastersListSkeleton />
@@ -1141,7 +1167,7 @@ export default function Masters() {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {filteredMasters.map((m) => (
                   <article
                     key={m.id}
@@ -1227,12 +1253,12 @@ export default function Masters() {
                 ))}
               </div>
 
-              <p className="text-sm font-medium text-[#6b7280]">
+              <p className="text-sm mt-6 mb-2 font-medium text-[#6b7280]">
                 Показано {filteredMasters.length} з {total} майстрів
               </p>
             </>
           )}
-        </section>
+      </SectionCard>
 
         <Modal
           open={addOpen}

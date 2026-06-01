@@ -530,6 +530,11 @@ links: [
             label: "База клієнтів",
             icon: <UserStar className="h-4 w-4" />,
           },
+          {
+  to: "#logout",
+  label: "Вихід",
+  icon: <LogOut className="h-4 w-4" />,
+},
         ],
         logout: true,
       };
@@ -653,45 +658,67 @@ if (isStudioPublicPage || hideHeader) {
   )}
 >
   <nav className="space-y-[2px]">
-    {mobileItems.links.map((i) => (
-      <NavLink
-        key={i.to}
-        to={i.to}
-        end={i.to === "/"}
-        onClick={() => {
-          setOpen(false);
-        }}
-        className={({ isActive }) =>
-          cx(
-            "flex h-[50px] items-center gap-3 rounded-[16px] px-3 transition-all duration-200",
-            isActive
-              ? "bg-[#fff4ec] text-[#ff6200]"
-              : "text-[#151515] active:bg-[#f5f3f0]",
-          )
-        }
-      >
-        {({ isActive }) => (
-          <>
-            <span
-              className={cx(
-                "grid h-8 w-8 shrink-0 place-items-center",
-                isActive ? "text-[#ff6200]" : "text-[#93919d]",
-              )}
-            >
-              {i.icon}
-            </span>
+{mobileItems.links.map((i) =>
+  i.to === "#logout" ? (
+    <button
+      key="logout"
+      type="button"
+      onClick={() => {
+        setOpen(false);
+        handleLogout();
+      }}
+      className="flex h-[50px] w-full items-center gap-3 rounded-[16px] px-3 text-[#ef4444] active:bg-[#fef2f2]"
+    >
+      <span className="grid h-8 w-8 shrink-0 place-items-center text-[#ef4444]">
+        {i.icon}
+      </span>
 
-            <span className="flex-1 truncate text-[15px] font-bold">
-              {i.label}
-            </span>
+      <span className="flex-1 truncate text-left text-[15px] font-bold">
+        {i.label}
+      </span>
 
-            {!isActive && (
-              <ChevronRight className="h-4 w-4 shrink-0 text-[#b0afb7]" />
+      <ChevronRight className="h-4 w-4 shrink-0 text-[#ef4444]" />
+    </button>
+  ) : (
+    <NavLink
+      key={i.to}
+      to={i.to}
+      end={i.to === "/"}
+      onClick={() => {
+        setOpen(false);
+      }}
+      className={({ isActive }) =>
+        cx(
+          "flex h-[50px] items-center gap-3 rounded-[16px] px-3 transition-all duration-200",
+          isActive
+            ? "bg-[#fff4ec] text-[#ff6200]"
+            : "text-[#151515] active:bg-[#f5f3f0]",
+        )
+      }
+    >
+      {({ isActive }) => (
+        <>
+          <span
+            className={cx(
+              "grid h-8 w-8 shrink-0 place-items-center",
+              isActive ? "text-[#ff6200]" : "text-[#93919d]",
             )}
-          </>
-        )}
-      </NavLink>
-    ))}
+          >
+            {i.icon}
+          </span>
+
+          <span className="flex-1 truncate text-[15px] font-bold">
+            {i.label}
+          </span>
+
+          {!isActive && (
+            <ChevronRight className="h-4 w-4 shrink-0 text-[#b0afb7]" />
+          )}
+        </>
+      )}
+    </NavLink>
+  ),
+)}
   </nav>
 </aside>
         </div>

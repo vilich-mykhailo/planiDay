@@ -8,6 +8,7 @@ import {
   ChevronUp,
   RefreshCw,
   Trash2,
+  X,
   Clock3,
   PhoneOff,
   ShieldCheck,
@@ -531,6 +532,100 @@ function createEmptyException() {
   };
 }
 
+function Modal({
+  open,
+  onClose,
+  title,
+  badge = "Редагування",
+  icon: Icon = CalendarDays,
+  children,
+  footer,
+  size = "md",
+}) {
+  useEffect(() => {
+    if (!open) return undefined;
+
+    document.body.style.overflow = "hidden";
+
+    const handleEscape = (e) => {
+      if (e.key === "Escape") onClose?.();
+    };
+
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.body.style.overflow = "";
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  const sizeClasses = {
+    sm: "max-w-md",
+    md: "max-w-lg",
+    lg: "max-w-2xl",
+    xl: "max-w-4xl",
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[9999] flex items-stretch justify-center bg-[#202020]/45 p-0 backdrop-blur-[6px] sm:items-center sm:p-6"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose?.();
+      }}
+    >
+      <div
+        className={cn(
+          "flex h-dvh w-full flex-col overflow-hidden rounded-none border-0 bg-[#f7f5f1] shadow-[0_30px_90px_rgba(15,23,42,0.24)]",
+          "animate-in fade-in-0 zoom-in-95 duration-200",
+          "sm:h-auto sm:max-h-[calc(100dvh-48px)] sm:rounded-[30px] sm:border sm:border-[#f0e2d3]",
+          sizeClasses[size],
+        )}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {title && (
+          <div className="relative shrink-0 overflow-hidden bg-[#f3eee7] px-5 py-5 sm:px-6 sm:py-6">
+            <div className="absolute right-[-55px] top-[-70px] h-[180px] w-[180px] rounded-full bg-[#ff6200]/10 blur-3xl" />
+
+            <div className="relative z-10 flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-white px-3 text-[11px] font-black uppercase tracking-[0.08em] text-[#ff6200] shadow-[0_8px_20px_rgba(255,98,0,0.08)]">
+                  <Icon className="h-3.5 w-3.5" />
+                  {badge}
+                </span>
+
+                <h3 className="mt-3 text-[26px] font-black leading-[0.95] tracking-[-0.05em] text-[#202020] sm:text-[32px]">
+                  {title}
+                </h3>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => onClose?.()}
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white text-[#77716b] shadow-[0_10px_24px_rgba(15,23,42,0.06)] transition hover:bg-[#fff3e9] hover:text-[#ff6200] active:scale-[0.96]"
+                aria-label="Закрити"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="min-h-0 flex-1 overflow-y-auto bg-white px-5 py-5 pb-[110px] sm:px-6 sm:pb-5">
+          {children}
+        </div>
+
+        {footer && (
+          <div className="sticky bottom-0 shrink-0 border-t border-[#f0e7da] bg-[#fbfaf8] px-5 py-4 sm:px-6">
+            {footer}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function Schedule() {
   const { studio } = useStudio();
   const queryClient = useQueryClient();
@@ -548,7 +643,10 @@ export default function Schedule() {
   const [saving, setSaving] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [expandedExceptions, setExpandedExceptions] = useState({});
-
+const [exceptionModal, setExceptionModal] = useState({
+  open: false,
+  draft: createEmptyException(),
+});
   const toastTimeoutRef = useRef(null);
 
   const [toast, setToast] = useState({
@@ -824,6 +922,57 @@ export default function Schedule() {
 
     return (list || []).filter((item) => !isPastExceptionDate(item.date));
   }
+
+  function openAddExceptionModal() {
+  setExceptionModal({
+    open: true,
+    draft: createEmptyException(),
+  });
+}
+
+function closeExceptionModal() {
+  if (saving) return;
+
+  setExceptionModal({
+    open: false,
+    draft: createEmptyException(),
+  });
+}
+
+function updateExceptionDraft(field, value) {
+  setExceptionModal((prev) => ({
+    ...prev,
+    draft: {
+      ...prev.draft,
+      [field]: value,
+    },
+  }));
+}
+
+async function saveExceptionFromModal() {
+  const item = exceptionModal.draft;
+
+  const duplicate = exceptions.find((row) => row.date === item.date);
+
+  if (duplicate) {
+    showToast({
+      type: "error",
+      title: "Дата вже існує",
+      text: "Для цієї дати вже додано особливий графік.",
+    });
+    return;
+  }
+
+  setExceptions((prev) => sortExceptions([...prev, item]));
+
+  const nextIndex = sortExceptions([...exceptions, item]).findIndex(
+    (row) => row === item,
+  );
+
+  await saveException(item, nextIndex);
+
+  closeExceptionModal();
+}
 
   function generateSlots() {
     const result = {};
@@ -1221,18 +1370,9 @@ export default function Schedule() {
           <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#ff7a18] via-[#ff6200] to-[#ff8c42]" />
 
           <div className="relative">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#ebe7df] bg-[#f8f6f2] px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-[#202020] shadow-[0_4px_14px_rgba(15,23,42,0.04)]">
-              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#202020] text-white">
-                <Clock3 className="h-3.5 w-3.5" />
-              </div>
 
-              <span>Графік роботи</span>
-
-              <div className="h-1 w-1 rounded-full bg-[#ff6200]" />
-            </div>
-
-            <h1 className="text-[32px] font-black leading-[0.95] tracking-[-0.06em] text-[#202020] sm:text-[48px]">
-              Графік роботи
+            <h1 className="text-4xl font-black leading-[0.95] tracking-tight text-[#202020] sm:text-6xl">
+              Графік <span className="text-[#ff5a00]">роботи</span>
             </h1>
 
             <p className="mt-3 max-w-[640px] text-[14px] leading-6 text-[#7b766f] sm:text-[16px]">
@@ -1357,7 +1497,7 @@ export default function Schedule() {
           badge={`К-ть днів: ${exceptions.length}`}
           actions={
             <Button
-              onClick={addExceptionRow}
+             onClick={openAddExceptionModal}
               variant="primary"
               className="h-11 w-full justify-center whitespace-nowrap rounded-2xl px-4 text-sm sm:w-auto"
             >
@@ -1735,7 +1875,102 @@ export default function Schedule() {
             </div>
           </div>
         </div>
+        
       </div>
+<Modal
+  open={exceptionModal.open}
+  title="Додати особливу дату"
+  onClose={closeExceptionModal}
+  icon={CalendarDays}
+  footer={
+    <div className="flex flex-row gap-2 sm:justify-end">
+      <Button
+        variant="secondary"
+        className="flex-1 sm:flex-none"
+        onClick={closeExceptionModal}
+      >
+        Скасувати
+      </Button>
+
+      <Button
+        variant="primary"
+        className="flex-1 sm:flex-none"
+        onClick={saveExceptionFromModal}
+        disabled={!exceptionModal.draft.date || saving}
+      >
+        {saving ? "Завантаження..." : "Зберегти"}
+      </Button>
+    </div>
+  }
+>
+  <div className="grid gap-4">
+    <DatePicker
+      label="Дата"
+      value={exceptionModal.draft.date}
+      onChange={(value) => updateExceptionDraft("date", value)}
+    />
+
+    <div>
+      <label className="mb-1.5 block text-xs font-black uppercase tracking-wide text-[#8a847d]">
+        Статус
+      </label>
+
+      <button
+        type="button"
+        onClick={() =>
+          updateExceptionDraft("enabled", !exceptionModal.draft.enabled)
+        }
+        className="flex h-[50px] w-full items-center gap-3 rounded-2xl border border-[#ebe7df] bg-white px-4 transition hover:bg-[#fffaf6]"
+      >
+        <Toggle checked={exceptionModal.draft.enabled} />
+
+        <span className="text-sm font-black text-[#202020]">
+          {exceptionModal.draft.enabled ? "Робочий день" : "Вихідний"}
+        </span>
+      </button>
+    </div>
+
+    {exceptionModal.draft.enabled ? (
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="mb-1.5 block text-xs font-black uppercase tracking-wide text-[#8a847d]">
+            Початок
+          </label>
+
+          <div className="flex h-[50px] items-center overflow-hidden rounded-2xl border border-[#ebe7df] bg-white px-2">
+            <TimeSelect
+              value={exceptionModal.draft.start}
+              label="Початок"
+              dayLabel={exceptionModal.draft.date || "Особлива дата"}
+              onChange={(value) => updateExceptionDraft("start", value)}
+              onCommit={(value) => updateExceptionDraft("start", value)}
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-xs font-black uppercase tracking-wide text-[#8a847d]">
+            Завершення
+          </label>
+
+          <div className="flex h-[50px] items-center overflow-hidden rounded-2xl border border-[#ebe7df] bg-white px-2">
+            <TimeSelect
+              value={exceptionModal.draft.end}
+              label="Завершення"
+              dayLabel={exceptionModal.draft.date || "Особлива дата"}
+              onChange={(value) => updateExceptionDraft("end", value)}
+              onCommit={(value) => updateExceptionDraft("end", value)}
+            />
+          </div>
+        </div>
+      </div>
+    ) : (
+      <div className="rounded-2xl border border-[#f0b8b0] bg-[#fff4f2] px-4 py-3 text-center text-sm font-bold text-[#c8483d]">
+        У цей день студія не працюватиме
+      </div>
+    )}
+  </div>
+</Modal>
     </div>
   );
 }

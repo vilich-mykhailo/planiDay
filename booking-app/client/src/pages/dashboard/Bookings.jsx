@@ -134,13 +134,13 @@ function getBookingDateTime(b) {
 
 function getStatusUi(status, isArchived = false, canceledBy = null) {
   const base =
-    "bg-[var(--color-white)] border border-[var(--border-soft)] shadow-[var(--shadow-card)]";
+  "border border-[#eadbc9] bg-white shadow-sm";
 
   if (isArchived) {
     return {
       text: "Завершено",
       icon: CalendarCheck,
-      badge: `${base} text-[var(--color-archived-dark)]`,
+      badge: `${base} text-[#64748b]`,
       button:
         "bg-[var(--color-archived)] text-white hover:bg-[var(--color-archived-dark)]",
       side: "border-[var(--color-archived-light)]",
@@ -152,7 +152,7 @@ function getStatusUi(status, isArchived = false, canceledBy = null) {
     return {
       text: "Підтверджено",
       icon: CheckCheck,
-      badge: `${base} text-[var(--color-confirmed-dark)]`,
+      badge: `${base} text-[#16a34a]`,
       button:
         "bg-[var(--color-confirmed)] text-white hover:bg-[var(--color-confirmed-dark)]",
       side: "border-[var(--color-confirmed-light)]",
@@ -167,7 +167,7 @@ function getStatusUi(status, isArchived = false, canceledBy = null) {
     return {
       text: canceledText,
       icon: XCircle,
-      badge: `${base} text-[var(--color-canceled-dark)]`,
+     badge: `${base} text-[#dc2626]`,
       button:
         "bg-[var(--color-canceled)] text-white hover:bg-[var(--color-canceled-dark)]",
       side: "border-[var(--color-canceled-light)]",
@@ -178,7 +178,7 @@ function getStatusUi(status, isArchived = false, canceledBy = null) {
   return {
     text: "Очікує підтвердження",
     icon: Clock,
-    badge: `${base} text-[var(--color-pending-dark)]`,
+    badge: `${base} text-[#ff5a00]`,
     button:
       "bg-[var(--color-pending)] text-white hover:bg-[var(--color-pending-dark)]",
     side: "border-[var(--color-pending-light)]",
@@ -199,14 +199,13 @@ function SectionCard({
   return (
     <section
       className={cn(
-        "group relative overflow-hidden rounded-3xl border bg-white transition-all duration-300",
-        "border-[var(--color-cream)] shadow-[0_4px_24px_-4px_rgba(27,27,27,0.10)] hover:shadow-[0_8px_32px_-4px_rgba(27,27,27,0.14)]",
+      "group relative overflow-hidden rounded-[32px] border border-[#ebe7df] bg-white shadow-[0_14px_44px_rgba(15,23,42,0.05)] transition-all duration-300 hover:shadow-[0_20px_60px_rgba(15,23,42,0.08)]",
         className,
       )}
     >
       {hasHeader && (
         <>
-          <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[var(--color-forest)] via-[var(--color-forest)] to-[var(--color-ink)] opacity-70" />
+         <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#ff7a18] via-[#ff6200] to-[#ff8c42]" />
 
           <div className="border-b border-[var(--color-cream)] px-5 py-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -256,16 +255,15 @@ function Button({
   children,
   ...props
 }) {
-  const variants = {
-    primary:
-      "bg-[var(--color-ink)] text-white hover:bg-[var(--color-ink-soft)] shadow-[0_10px_24px_rgba(27,27,27,0.22)]",
-    secondary:
-      "inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]",
-
-    danger:
-      "bg-[var(--color-forest)] border border-[var(--color-forest)] text-white hover:bg-[var(--color-ink)]",
-    ghost: "text-[var(--color-ink)] hover:bg-[var(--color-cream)]",
-  };
+const variants = {
+  primary:
+    "bg-[#ff5a00] text-white shadow-[0_16px_34px_rgba(255,90,0,0.24)] hover:bg-[#ef4f00]",
+  secondary:
+    "border border-[#eadbc9] bg-white text-[#202020] hover:border-[#ffd6bd] hover:bg-[#fff7f0]",
+  danger:
+    "border border-[#ffd8d8] bg-[#fff7f7] text-[#e5484d] hover:border-[#e5484d] hover:bg-[#fff1f1]",
+  ghost: "text-[#77716b] hover:bg-[#fff7f0] hover:text-[#202020]",
+};
 
   const sizes = {
     sm: "px-3 py-1.5 text-xs rounded-xl",
@@ -277,8 +275,8 @@ function Button({
     <button
       type="button"
       className={cn(
-        "inline-flex items-center justify-center gap-2 font-semibold",
-        "active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50",
+"inline-flex items-center justify-center gap-2 font-black transition-all duration-200",
+"active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50",
         variants[variant],
         sizes[size],
         className,
@@ -296,18 +294,18 @@ function IconButton({
   children,
   ...props
 }) {
-  const variants = {
-    secondary:
-      "bg-white border border-[var(--color-cream)] text-[var(--color-ink)] hover:bg-[var(--color-cream)] hover:text-[var(--color-ink-soft)]",
-    danger:
-      "bg-[var(--color-cream)] border border-[var(--color-forest)] text-[var(--color-ink)] hover:bg-[var(--color-forest)]",
-  };
+const variants = {
+  secondary:
+    "border border-[#eadbc9] bg-white text-[#77716b] hover:bg-[#fff7f0] hover:text-[#202020]",
+  danger:
+    "border border-[#ffd8d8] bg-[#fff7f7] text-[#e5484d] hover:bg-[#fff1f1]",
+};
 
   return (
     <button
       type="button"
       className={cn(
-        "inline-flex items-center justify-center rounded-xl p-2.5 transition-all duration-200 active:scale-95",
+    "inline-flex items-center justify-center rounded-xl p-2.5 transition-all duration-200 active:scale-95 hover:shadow-sm",
         variants[variant],
         className,
       )}
@@ -325,9 +323,9 @@ function Pill({ active, count, showCount = false, children, onClick }) {
       onClick={onClick}
       className={cn(
         "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold",
-        active
-          ? "inline-flex h-9 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-[var(--color-primary-buttom)] px-2 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:bg-[var(--color-primary-buttom)] active:scale-[0.98]"
-          : "inline-flex h-9 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-2 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]",
+      active
+  ? "inline-flex h-9 items-center justify-center gap-2 rounded-2xl border border-[#ff5a00] bg-[#ff5a00] px-2 text-sm font-bold text-white shadow-[0_12px_24px_rgba(255,90,0,0.20)] transition-all duration-200 hover:bg-[#ef4f00] active:scale-[0.98]"
+          : "inline-flex h-9 items-center justify-center gap-2 rounded-2xl border border-[#eadbc9] bg-white px-2 text-sm font-bold text-[#202020] shadow-sm transition-all duration-200 hover:border-[#ffd6bd] hover:bg-[#fff7f0] active:scale-[0.98]",
       )}
     >
       <span>{children}</span>
@@ -337,8 +335,8 @@ function Pill({ active, count, showCount = false, children, onClick }) {
           className={cn(
             "text-[11px] font-medium tracking-tight",
             active
-              ? "text-white/80"
-              : "text-emerald-600 drop-shadow-[0_0_10px_rgba(5,150,105,0.18)]",
+             ? "text-white/80"
+: "text-[#ff5a00]"
           )}
         >
           +{count ?? 0}
@@ -955,72 +953,66 @@ if (b.status === "canceled") {
   return (
     <div className="h-full">
       <div className="mx-auto max-w-6xl space-y-6">
-        <div className="relative mb-3 overflow-hidden rounded-3xl border border-[var(--color-cream)] bg-white p-3.5 shadow-[0_4px_24px_-4px_rgba(27,27,27,0.10)] sm:p-6">
-          <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[var(--color-forest)] via-[var(--color-forest)] to-[var(--color-ink)] opacity-70" />
+<div className="relative overflow-hidden rounded-[32px] border border-[#ebe7df] bg-white/95 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.06)] backdrop-blur-xl sm:p-7">
+  <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#ff7a18] via-[#ff6200] to-[#ff8c42]" />
 
-          <div className="relative flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div className="relative">
-              <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-slate-700 shadow-[0_4px_14px_rgba(15,23,42,0.05)]">
-                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-900 text-white">
-                  <Users className="h-3 w-3" />
-                </div>
+  <div className="absolute -right-7 -top-10 hidden h-28 w-28 rounded-full bg-white/40 sm:block" />
+  <div className="absolute bottom-4 right-24 hidden h-5 w-5 rounded-full bg-[#ff5a00]/20 sm:block" />
 
-                <span>Записи клієнтів</span>
 
-                <div className="h-1 w-1 rounded-full bg-slate-400" />
-              </div>
+  <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div className="max-w-2xl">
+      <h1 className="max-w-xl text-4xl font-black leading-[0.95] tracking-tight text-[#202020] sm:text-6xl">
+        Зап<span className="text-[#ff5a00]">иси</span>
+      </h1>
 
-              <h1 className="text-3xl font-black tracking-tight text-[var(--color-ink)] sm:text-4xl">
-                Записи
-              </h1>
+      <p className="mt-3 max-w-[640px] text-[14px] leading-6 text-[#7b766f] sm:text-[16px]">
+        Перегляд записів списком або через календар у зручному форматі.
+      </p>
+    </div>
 
-              <p className="mt-2 max-w-xl text-sm text-[var(--color-caramel)] sm:text-base">
-                Перегляд записів списком або через календар у зручному форматі.
-              </p>
-            </div>
+    <div className="inline-flex self-center rounded-2xl border border-[#eadbc9] bg-white p-1 shadow-sm sm:self-start">
+      <button
+        type="button"
+        onClick={() => setTab("list")}
+        className={cn(
+          "inline-flex items-center gap-2 rounded-xl px-3 py-2 text-[13px] font-semibold sm:px-4 sm:py-2.5 sm:text-sm",
+          tab === "list"
+            ? "bg-[#ff5a00] text-white shadow-[0_10px_24px_rgba(255,90,0,0.22)]"
+            : "text-[#202020] hover:bg-[#fff7f0]",
+        )}
+      >
+        <List className="h-4 w-4" />
+        Список
+      </button>
 
-            <div className="inline-flex self-center rounded-2xl border border-[var(--color-cream)] bg-white p-1 shadow-sm sm:self-start">
-              <button
-                type="button"
-                onClick={() => setTab("list")}
-                className={cn(
-                  "inline-flex items-center gap-2 rounded-xl px-3 py-2 text-[13px] font-semibold sm:px-4 sm:py-2.5 sm:text-sm",
-                  tab === "list"
-                    ? "bg-[var(--color-primary-buttom)] text-white shadow-[0_10px_24px_rgba(27,27,27,0.18)]"
-                    : "text-[var(--color-ink)] hover:bg-[var(--color-cream)]",
-                )}
-              >
-                <List className="h-4 w-4" />
-                Список
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setTab("calendar")}
-                className={cn(
-                  "inline-flex items-center gap-2 rounded-xl px-3 py-2 text-[13px] font-semibold sm:px-4 sm:py-2.5 sm:text-sm",
-                  tab === "calendar"
-                    ? "bg-[var(--color-primary-buttom)] text-white"
-                    : "text-[var(--color-ink)] hover:bg-[var(--color-cream)]",
-                )}
-              >
-                <CalendarDays className="h-4 w-4" />
-                Календар
-              </button>
-            </div>
-          </div>
-        </div>
+      <button
+        type="button"
+        onClick={() => setTab("calendar")}
+        className={cn(
+          "inline-flex items-center gap-2 rounded-xl px-3 py-2 text-[13px] font-semibold sm:px-4 sm:py-2.5 sm:text-sm",
+          tab === "calendar"
+            ? "bg-[#ff5a00] text-white shadow-[0_10px_24px_rgba(255,90,0,0.22)]"
+            : "text-[#202020] hover:bg-[#fff7f0]",
+        )}
+      >
+        <CalendarDays className="h-4 w-4" />
+        Календар
+      </button>
+    </div>
+  </div>
+</div>
 
         {tab === "list" && (
           <SectionCard
             title={
               <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-primary-buttom)] text-white shadow-sm">
-                  <ListTodo className="h-5 w-5" />
-                </div>
+<div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#ff5a00] text-white shadow-[0_14px_28px_rgba(255,90,0,0.22)]">
+  <ListTodo className="h-5 w-5" />
+</div>
 
                 <div className="min-w-0">
-                  <h2 className="text-lg font-black tracking-[-0.03em] text-[var(--color-ink)]">
+                  <h2 className="text-lg font-black tracking-[-0.03em]text-[#202020]">
                     Усі записи
                   </h2>
 
@@ -1106,34 +1098,34 @@ if (b.status === "canceled") {
                 const items = grouped.map[key] || [];
 
                 return (
-                  <section
-                    key={key}
-                    className="overflow-hidden rounded-[28px] border border-[var(--color-cream)] bg-white shadow-[0_8px_28px_rgba(27,27,27,0.08)]"
-                  >
+<section
+  key={key}
+  className="overflow-hidden rounded-[28px] border border-[#eadbc9] bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]"
+>
                     <button
                       type="button"
                       onClick={() => toggleGroup(key)}
-                      className="flex w-full items-center justify-between gap-3 border-b border-[var(--color-cream)] px-4 py-4 text-left transition hover:bg-[var(--color-cream)] sm:px-5"
+                      className="flex w-full items-center justify-between gap-3 border-b border-[#eadbc9] px-4 py-4 text-left transition hover:bg-[#fff7f0] sm:px-5"
                     >
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <h2 className="text-base font-black text-[var(--color-ink)] sm:text-lg">
+                          <h2 className="text-base font-black text-[#202020] sm:text-lg">
                             {renderGroupTitle(key)}
                           </h2>
 
-                          <span className="inline-flex items-center rounded-full border border-[var(--color-cream)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--color-ink)]">
+                          <span className="inline-flex items-center rounded-full border border-[#eadbc9] bg-white px-2.5 py-1 text-xs font-bold text-[#202020]">
                             {items.length}
                           </span>
                         </div>
 
-                        <p className="mt-1 text-xs text-[var(--color-caramel)] sm:text-sm">
+                        <p className="mt-1 text-xs text-[#77716b] sm:text-sm">
                           {isCollapsed
                             ? "Натисни, щоб розгорнути записи"
                             : "Натисни, щоб згорнути записи"}
                         </p>
                       </div>
 
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[var(--color-cream)] bg-white text-[var(--color-ink)]">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[#eadbc9] bg-white text-[#202020]">
                         {isCollapsed ? (
                           <ChevronDown className="h-5 w-5" />
                         ) : (
@@ -1179,7 +1171,7 @@ if (b.status === "canceled") {
                               key={b.id}
                               className={cn(
                                 "rounded-[28px] border border-[var(--color-cream)] bg-white p-3.5 shadow-[0_10px_30px_rgba(27,27,27,0.06)] transition-all duration-200 hover:border-[var(--border-hover-primary)] hover:shadow-[0_14px_34px_rgba(27,27,27,0.10)] sm:p-4",
-                                isArchived && "bg-[var(--color-sand)]",
+                               isArchived && "bg-[#fbfaf8]",
                               )}
                             >
                               <div className="relative grid grid-cols-[1fr_auto] gap-3">
@@ -1194,22 +1186,21 @@ if (b.status === "canceled") {
                                     {statusUi.text}
                                   </div>
 
-                                  <h3 className="mt-3 line-clamp-2 text-[18px] font-black leading-[1.05] tracking-[-0.03em] text-[var(--color-ink)]">
+                                  <h3 className="mt-3 line-clamp-2 text-[18px] font-black leading-[1.05] tracking-[-0.03em] text-[#202020]">
                                     {b.serviceName || "Послуга"}
                                   </h3>
 
                                   <div className="mt-1 flex min-w-0 items-center gap-2">
-                                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[var(--color-cream)] bg-[var(--color-cream)]">
-                                      <UserRound className="h-3.5 w-3.5 text-[var(--color-forest)]" />
-                                    </div>
-
-                                    <p className="truncate text-[15px] font-medium text-[var(--color-ink)]">
+<div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#ffd6bd] bg-[#fff1e8]">
+  <UserRound className="h-3.5 w-3.5 text-[#ff5a00]" />
+</div>
+                                    <p className="truncate text-[15px] font-medium text-[#202020]">
                                       {b.clientName || "Клієнт"}
                                     </p>
                                   </div>
 
                                   {b.clientPhone && (
-                                    <p className="mt-2 text-[13px] text-[var(--color-caramel)]">
+                                    <p className="mt-2 text-[13px] text-[#77716b]">
                                       телефон:{" "}
                                       <a
                                         href={`tel:${b.clientPhone}`}
@@ -1225,7 +1216,7 @@ if (b.status === "canceled") {
                                     <button
                                       type="button"
                                       onClick={() => setDetailsId(b.id)}
-                                      className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
+                                      className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[#eadbc9] bg-white px-4 text-sm font-semibold text-[#202020] shadow-sm transition-all duration-200 hover:border-[#ffd6bd] hover:bg-[#fff7f0] active:scale-[0.98]"
                                     >
                                       <Eye className="h-4 w-4" />
                                       Переглянути
@@ -1246,7 +1237,7 @@ if (b.status === "canceled") {
                                               );
                                             }
                                           }}
-                                          className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
+                                          className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[#eadbc9] bg-white px-4 text-sm font-semibold text-[#202020] shadow-sm transition-all duration-200 hover:border-[#ffd6bd] hover:bg-[#fff7f0] active:scale-[0.98]"
                                         >
                                           <CheckCheck className="h-4 w-4" />
                                           Підтвердити
@@ -1258,7 +1249,7 @@ if (b.status === "canceled") {
                                         type="button"
                                         onClick={() => setCancelConfirmId(b.id)}
                                         disabled={isCanceled || isArchived}
-                                        className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
+                                        className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[#eadbc9] bg-white px-4 text-sm font-semibold text-[#202020] shadow-sm transition-all duration-200 hover:border-[#ffd6bd] hover:bg-[#fff7f0] active:scale-[0.98]"
                                       >
                                         Скасувати запис
                                       </button>
