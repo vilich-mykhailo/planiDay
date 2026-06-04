@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import Cropper from "react-easy-crop";
 import {
   Sparkles,
   Download,
@@ -15,6 +16,11 @@ import {
   Search,
   Users,
   MoreVertical,
+  ArrowRight,
+  CalendarCheck,
+  Clock3,
+  Banknote,
+  ChevronRight,
 } from "lucide-react";
 import DatePicker from "../../components/ui/DatePicker";
 import TimeSelect from "../../components/TimeSelect";
@@ -39,6 +45,7 @@ async function uploadMasterPhoto(studioId, file) {
     throw new Error(data?.message || `Upload failed (${res.status})`);
   return data;
 }
+
 
 function initialsFromName(name) {
   const s = String(name || "").trim();
@@ -314,7 +321,16 @@ function Avatar({ name, photoUrl, size = "md", className = "" }) {
           }}
         />
       ) : initials ? (
-        <span className="font-black text-[#ff5a00]">{initials}</span>
+       <span
+  className={cn(
+    "font-black tracking-[-0.08em] text-[#ff5a00]",
+    size === "sm" && "text-xl",
+    size === "md" && "text-4xl",
+    size === "lg" && "text-6xl",
+  )}
+>
+  {initials}
+</span>
       ) : (
         <Camera className="h-6 w-6 text-[#ff5a00]" />
       )}
@@ -408,6 +424,7 @@ function MastersListSkeleton() {
 export default function Masters() {
   const { studio } = useStudio();
   const queryClient = useQueryClient();
+
   const studioId = studio?.id ?? null;
   const mastersQuery = useQuery({
     queryKey: ["masters", studioId],
@@ -426,6 +443,76 @@ export default function Masters() {
   const [masterExceptions, setMasterExceptions] = useState([]);
   const [exceptionsLoading, setExceptionsLoading] = useState(false);
   const [expandedExceptions, setExpandedExceptions] = useState({});
+  const [bookingsMaster, setBookingsMaster] = useState(null);
+  const [bookingsFilter, setBookingsFilter] = useState("all");
+const [bookingsModalOpen, setBookingsModalOpen] = useState(false);
+const bookingsQuery = useQuery({
+  queryKey: ["bookings", studioId],
+  queryFn: () => fetchStudioBookings(studioId),
+  enabled: Boolean(studioId),
+});
+const todayDate = new Date();
+
+const masterBookings = (bookingsQuery.data || []).filter(
+  (b) => String(b.masterId) === String(bookingsMaster?.id),
+);
+
+const filteredMasterBookings = masterBookings.filter((booking) => {
+  if (bookingsFilter === "all") return true;
+
+  const bookingDate = new Date(`${booking.date}T00:00:00`);
+  const today = new Date(
+    todayDate.getFullYear(),
+    todayDate.getMonth(),
+    todayDate.getDate(),
+  );
+
+  const diffDays = Math.floor((bookingDate - today) / 86400000);
+
+  if (bookingsFilter === "today") return diffDays === 0;
+  if (bookingsFilter === "week") return diffDays >= 0 && diffDays <= 7;
+  if (bookingsFilter === "month") return diffDays >= 0 && diffDays <= 30;
+
+  return true;
+});
+const [deleteConfirm, setDeleteConfirm] = useState({
+  open: false,
+  master: null,
+  loading: false,
+});
+const [cropModal, setCropModal] = useState({
+  open: false,
+  imageUrl: "",
+  file: null,
+  target: "", // "add" або "edit"
+});
+
+const [crop, setCrop] = useState({ x: 0, y: 0 });
+const [zoom, setZoom] = useState(1);
+const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+
+async function fetchStudioBookings(studioId) {
+  if (!studioId) return [];
+
+  const token = localStorage.getItem("token");
+
+  const res = await fetch(
+    `${import.meta.env.VITE_API_URL}/bookings/studio/${studioId}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+
+  const data = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    throw new Error(data?.message || "Load bookings failed");
+  }
+
+  return Array.isArray(data?.bookings) ? data.bookings : [];
+}
 
   async function syncMastersRelatedQueries() {
     if (!studioId) return;
@@ -464,6 +551,73 @@ export default function Masters() {
 
     return Array.isArray(data?.masters) ? data.masters : [];
   }
+
+  async function getCroppedImage(imageSrc, cropPixels) {
+  const image = new Image();
+  image.src = imageSrc;
+
+  await new Promise((resolve, reject) => {
+    image.onload = resolve;
+    image.onerror = reject;
+  });
+
+  const canvas = document.createElement("canvas");
+  canvas.width = 900;
+  canvas.height = 900;
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas error");
+
+  ctx.drawImage(
+    image,
+    cropPixels.x,
+    cropPixels.y,
+    cropPixels.width,
+    cropPixels.height,
+    0,
+    0,
+    900,
+    900,
+  );
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) {
+          reject(new Error("Crop failed"));
+          return;
+        }
+
+        resolve(
+          new File([blob], "master-photo.jpg", {
+            type: "image/jpeg",
+            lastModified: Date.now(),
+          }),
+        );
+      },
+      "image/jpeg",
+      0.82,
+    );
+  });
+}
+
+  async function confirmDeleteMaster() {
+  if (!deleteConfirm.master || deleteConfirm.loading) return;
+
+  setDeleteConfirm((prev) => ({ ...prev, loading: true }));
+
+  try {
+    await deleteMaster(deleteConfirm.master);
+
+    setDeleteConfirm({
+      open: false,
+      master: null,
+      loading: false,
+    });
+  } catch {
+    setDeleteConfirm((prev) => ({ ...prev, loading: false }));
+  }
+}
 
   async function deleteMasterPhoto(currentStudioId, key) {
     if (!key) return;
@@ -524,22 +678,25 @@ export default function Masters() {
     setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
   }
 
-  async function handlePickPhoto(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+async function handlePickPhoto(e) {
+  const file = e.target.files?.[0];
+  e.target.value = "";
 
-    const localUrl = URL.createObjectURL(file);
+  if (!file) return;
 
-    setForm((p) => ({
-      ...p,
-      photoUrl: localUrl,
-      photoFile: file,
-      photoKey: null,
-    }));
+  const imageUrl = URL.createObjectURL(file);
 
-    setPhotoBroken(false);
-    e.target.value = "";
-  }
+  setCrop({ x: 0, y: 0 });
+  setZoom(1);
+  setCroppedAreaPixels(null);
+
+  setCropModal({
+    open: true,
+    imageUrl,
+    file,
+    target: "add",
+  });
+}
 
   function removePhoto() {
     setPhotoBroken(false);
@@ -869,15 +1026,31 @@ export default function Masters() {
 
       return next;
     });
+
+await queryClient.invalidateQueries({
+  queryKey: ["masters", studioId],
+  exact: true,
+});
+
+await mastersQuery.refetch();
   }
+
 
   async function removeException(item, index) {
     if (!exceptionsMaster?.id) return;
 
-    if (!item.id) {
-      setMasterExceptions((prev) => prev.filter((_, i) => i !== index));
-      return;
-    }
+if (!item.id) {
+  setMasterExceptions((prev) => prev.filter((_, i) => i !== index));
+
+  await queryClient.invalidateQueries({
+    queryKey: ["masters", studioId],
+    exact: true,
+  });
+
+  await mastersQuery.refetch();
+
+  return;
+}
 
     const token = localStorage.getItem("token");
 
@@ -899,6 +1072,12 @@ export default function Masters() {
     }
 
     setMasterExceptions((prev) => prev.filter((_, i) => i !== index));
+    await queryClient.invalidateQueries({
+  queryKey: ["masters", studioId],
+  exact: true,
+});
+
+await mastersQuery.refetch();
   }
 
   function openEdit(master) {
@@ -947,24 +1126,80 @@ export default function Masters() {
     setEditOriginal({ photoKey: null, photoUrl: "" });
   }
 
-  async function editPickPhoto(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+async function editPickPhoto(e) {
+  const file = e.target.files?.[0];
+  e.target.value = "";
 
-    const localUrl = URL.createObjectURL(file);
+  if (!file) return;
 
-    setEditDraft((p) => {
-      if (p.photoUrl?.startsWith("blob:")) URL.revokeObjectURL(p.photoUrl);
+  const imageUrl = URL.createObjectURL(file);
+
+  setCrop({ x: 0, y: 0 });
+  setZoom(1);
+  setCroppedAreaPixels(null);
+
+  setCropModal({
+    open: true,
+    imageUrl,
+    file,
+    target: "edit",
+  });
+}
+
+async function confirmCrop() {
+  if (!cropModal.imageUrl || !croppedAreaPixels) return;
+
+  const croppedFile = await getCroppedImage(
+    cropModal.imageUrl,
+    croppedAreaPixels,
+  );
+
+  const localUrl = URL.createObjectURL(croppedFile);
+
+  if (cropModal.target === "add") {
+    setForm((p) => {
+      if (p.photoUrl?.startsWith("blob:")) {
+        URL.revokeObjectURL(p.photoUrl);
+      }
 
       return {
         ...p,
         photoUrl: localUrl,
-        photoFile: file,
+        photoFile: croppedFile,
+        photoKey: null,
       };
     });
 
-    e.target.value = "";
+    setPhotoBroken(false);
   }
+
+  if (cropModal.target === "edit") {
+    setEditDraft((p) => {
+      if (p.photoUrl?.startsWith("blob:")) {
+        URL.revokeObjectURL(p.photoUrl);
+      }
+
+      return {
+        ...p,
+        photoUrl: localUrl,
+        photoFile: croppedFile,
+      };
+    });
+  }
+
+  URL.revokeObjectURL(cropModal.imageUrl);
+
+  setCropModal({
+    open: false,
+    imageUrl: "",
+    file: null,
+    target: "",
+  });
+
+  setCrop({ x: 0, y: 0 });
+  setZoom(1);
+  setCroppedAreaPixels(null);
+}
 
   const inputBaseClass =
     "w-full rounded-2xl border border-[#eadbc9] bg-white px-4 py-3 " +
@@ -1168,16 +1403,34 @@ export default function Masters() {
           ) : (
             <>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {filteredMasters.map((m) => (
-                  <article
-                    key={m.id}
+{filteredMasters.map((m) => {
+  const now = new Date();
+const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+const todayException = m.scheduleExceptions?.find(
+  (e) => String(e.date || "").slice(0, 10) === today,
+);
+
+  const isWorkingToday =
+    !todayException || todayException.enabled;
+
+  return (
+    <article key={m.id}
+                  
                     className="overflow-hidden rounded-[18px] border border-[#e5eaf0] bg-white shadow-[0_10px_30px_rgba(15,23,42,0.045)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_44px_rgba(15,23,42,0.08)]"
                   >
                     <div className="p-3">
                       <div className="flex items-center justify-between gap-3">
-                        <span className="inline-flex items-center rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
-                          Активний
-                        </span>
+<span
+  className={cn(
+    "inline-flex items-center rounded-full px-3 py-1 text-xs font-bold",
+    isWorkingToday
+      ? "border border-emerald-100 bg-emerald-50 text-emerald-700"
+      : "border border-red-100 bg-red-50 text-red-700",
+  )}
+>
+  {isWorkingToday ? "Працює" : "Вихідний"}
+</span>
 
                         <button
                           type="button"
@@ -1218,16 +1471,32 @@ export default function Masters() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-3 border-t border-[#edf0f4] bg-[#fbfcfd]">
-                      <button
-                        type="button"
-                        onClick={() => openMasterExceptions(m)}
-                        className="grid h-11 place-items-center text-[#657084] transition hover:bg-[#fff7f0] hover:text-[#ff6200]"
-                        title="Особливі дати"
-                        aria-label="Особливі дати"
-                      >
-                        <CalendarDays className="h-4 w-4" />
-                      </button>
+                   <div className="grid grid-cols-4 border-t border-[#edf0f4] bg-[#fbfcfd]">
+<button
+  type="button"
+  onClick={() => openMasterExceptions(m)}
+  className="relative grid h-11 place-items-center text-[#657084] transition hover:bg-[#fff7f0] hover:text-[#ff6200]"
+>
+  <CalendarDays className="h-4 w-4" />
+
+  {m.exceptionsCount > 0 && (
+    <span className="absolute left-[52%] top-[18%] flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#ff5a00] px-1 text-[9px] font-black text-white">
+      {m.exceptionsCount}
+    </span>
+  )}
+</button>
+<button
+  type="button"
+  onClick={() => {
+    setBookingsMaster(m);
+    setBookingsModalOpen(true);
+  }}
+  className="grid h-11 place-items-center border-l border-[#edf0f4] text-[#657084] transition hover:bg-[#fff7f0] hover:text-[#ff6200]"
+  title="Записи майстра"
+  aria-label="Записи майстра"
+>
+  <CalendarCheck className="h-4 w-4" />
+</button>
 
                       <button
                         type="button"
@@ -1241,7 +1510,13 @@ export default function Masters() {
 
                       <button
                         type="button"
-                        onClick={() => deleteMaster(m)}
+                       onClick={() =>
+  setDeleteConfirm({
+    open: true,
+    master: m,
+    loading: false,
+  })
+}
                         className="grid h-11 place-items-center text-[#e5484d] transition hover:bg-[#fff7f7]"
                         title="Видалити"
                         aria-label="Видалити"
@@ -1249,8 +1524,9 @@ export default function Masters() {
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
-                  </article>
-                ))}
+    </article>
+  );
+})}
               </div>
 
               <p className="text-sm mt-6 mb-2 font-medium text-[#6b7280]">
@@ -1367,7 +1643,7 @@ export default function Masters() {
           open={Boolean(editMaster)}
           onClose={closeEdit}
           title="Редагування майстра"
-          subtitle="Онови фото, імʼя або опис і збережи зміни."
+          subtitle="Онови фото, імʼя або опис для майстра."
           size="md"
           footer={
             <div className="flex items-center justify-end gap-2">
@@ -1430,7 +1706,7 @@ export default function Masters() {
                     }
                   >
                     <Trash2 className="h-4 w-4" />
-                    Прибрати
+                    Видалити
                   </Button>
                 )}
               </div>
@@ -1715,6 +1991,311 @@ export default function Masters() {
           )}
         </Modal>
       </div>
+<Modal
+  open={bookingsModalOpen}
+  onClose={() => {
+    setBookingsModalOpen(false);
+    setBookingsMaster(null);
+  }}
+  title={`Записи — ${bookingsMaster?.name || ""}`}
+  badge="Записи"
+  icon={CalendarCheck}
+  subtitle={`Усі записи вибраного майстра: ${filteredMasterBookings.length}`}
+  size="md"
+>
+  {bookingsQuery.isLoading ? (
+    <div className="rounded-[24px] border border-[#eadbc9] bg-white p-5 text-center text-sm font-bold text-[#77716b]">
+      Завантажуємо записи...
+    </div>
+ ) : masterBookings.length === 0 ? (
+    <div className="rounded-[24px] border-2 border-dashed border-[#ffd6bd] bg-[#fff7f0] p-8 text-center">
+      <CalendarCheck className="mx-auto h-10 w-10 text-[#ff6200]" />
+
+      <p className="mt-3 text-sm font-black text-[#202020]">
+        Записів поки немає
+      </p>
+
+      <p className="mt-1 text-xs font-medium text-[#77716b]">
+        Для цього майстра ще немає записів.
+      </p>
+    </div>
+  ) : (
+    <div className="space-y-3">
+      <div className="mb-4 grid grid-cols-4 gap-2">
+  {[
+    ["today", "Сьогодні"],
+    ["week", "Тиждень"],
+    ["month", "Місяць"],
+    ["all", "Усі"],
+  ].map(([value, label]) => (
+    <button
+      key={value}
+      type="button"
+      onClick={() => setBookingsFilter(value)}
+      className={cn(
+        "h-9 rounded-xl border px-2 text-[11px] font-black transition",
+        bookingsFilter === value
+          ? "border-[#ff6200] bg-[#ff6200] text-white"
+          : "border-[#eadbc9] bg-white text-[#77716b] hover:bg-[#fff7f0]",
+      )}
+    >
+      {label}
+    </button>
+  ))}
+</div>
+  {filteredMasterBookings.length === 0 ? (
+      <div className="rounded-[24px] border border-[#eadbc9] bg-white p-5 text-center text-sm font-bold text-[#77716b]">
+        За вибраний період записів немає.
+      </div>
+    ) : (
+filteredMasterBookings.map((booking) => (
+<div
+  key={booking.id}
+  className="
+    group
+    rounded-[20px]
+    border
+    border-[#eee4d8]
+    bg-white
+    px-3
+    py-3
+    shadow-[0_8px_22px_rgba(17,17,17,0.04)]
+    transition-all
+    duration-200
+    cursor-pointer
+    hover:-translate-y-0.5
+    hover:border-[#ffd6bd]
+    hover:bg-[#fff7f0]
+    hover:shadow-[0_18px_44px_rgba(255,90,0,0.10)]
+  "
+>
+    <div className="flex items-start justify-between gap-3">
+      <div className="flex min-w-0 items-start gap-2.5">
+        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-2xl bg-[#fff1e8] text-[#ff6200]">
+          <Users className="h-4 w-4" />
+        </div>
+
+        <div className="min-w-0">
+          <p className="line-clamp-1 text-[13px] font-black text-[#202020]">
+            {booking.clientName || "Клієнт"}
+          </p>
+
+          <p className="mt-0.5 line-clamp-1 text-[11px] font-bold text-[#77716b]">
+            {booking.clientPhone || "Телефон не вказано"}
+          </p>
+          <p className="mt-0.5 line-clamp-1 text-[11px] font-bold text-[#77716b]">
+            {booking.serviceName || "Послуга"}
+          </p>
+
+
+        </div>
+      </div>
+
+<div className="flex shrink-0 flex-col items-end gap-5">
+  <span
+    className={cn(
+      "rounded-full px-2 py-0.5 text-[10px] font-black",
+      booking.status === "confirmed"
+        ? "bg-emerald-50 text-emerald-700"
+        : booking.status === "canceled"
+          ? "bg-red-50 text-red-700"
+          : "bg-[#fff1e8] text-[#ff6200]",
+    )}
+  >
+    {booking.status === "confirmed"
+      ? "Підтверджено"
+      : booking.status === "canceled"
+        ? "Скасовано"
+        : "Новий"}
+  </span>
+
+<ChevronRight
+  className="
+    h-4
+    w-4
+    text-[#ff6200]
+    transition-all
+    duration-200
+    group-hover:translate-x-1.5
+    group-hover:scale-125
+  "
+/>
+</div>
+    </div>
+
+<div className="mt-3 flex flex-wrap items-center gap-2">
+  <div className="flex items-center gap-1.5 rounded-xl bg-[#fbfaf8] px-2 py-1.5">
+    <CalendarDays className="h-3.5 w-3.5 shrink-0 text-[#ff6200]" />
+    <span className="text-[11px] font-bold text-[#202020]">
+      {booking.date}
+    </span>
+  </div>
+
+  <div className="flex items-center gap-1.5 rounded-xl bg-[#fbfaf8] px-2 py-1.5">
+    <Clock3 className="h-3.5 w-3.5 shrink-0 text-[#ff6200]" />
+    <span className="text-[11px] font-bold text-[#202020]">
+      {booking.time}
+    </span>
+  </div>
+
+  {booking.price != null && (
+    <div className="flex items-center gap-1.5 rounded-xl bg-[#fbfaf8] px-2 py-1.5">
+      <Banknote className="h-3.5 w-3.5 shrink-0 text-[#ff6200]" />
+      <span className="text-[11px] font-bold text-[#202020]">
+        {booking.price} грн
+      </span>
+    </div>
+  )}
+</div>
+
+  </div>
+))
+    )}
+  </div>
+)}
+  
+</Modal>
+<Modal
+  open={deleteConfirm.open}
+  onClose={() =>
+    !deleteConfirm.loading &&
+    setDeleteConfirm({ open: false, master: null, loading: false })
+  }
+  title="Видалити майстра?"
+  badge="Підтвердження"
+  icon={Trash2}
+  size="sm"
+  footer={
+    <div className="flex flex-row gap-2 sm:justify-end">
+      <Button
+        variant="secondary"
+        disabled={deleteConfirm.loading}
+        onClick={() =>
+          setDeleteConfirm({ open: false, master: null, loading: false })
+        }
+        className="flex-1 sm:flex-none"
+      >
+        Скасувати
+      </Button>
+
+      <Button
+        variant="danger"
+        disabled={deleteConfirm.loading}
+        onClick={confirmDeleteMaster}
+        className="flex-1 sm:flex-none"
+      >
+        <Trash2 className="h-4 w-4" />
+        {deleteConfirm.loading ? "Видаляємо..." : "Видалити"}
+      </Button>
+    </div>
+  }
+>
+  <div className="py-4 text-center">
+<div className="mb-5 flex items-center justify-center gap-4">
+  <Avatar
+    name={deleteConfirm.master?.name || "Майстер"}
+    photoUrl={deleteConfirm.master?.photoUrl}
+    size="md"
+    className="h-20 w-20 rounded-full border-4 border-white shadow-[0_12px_32px_rgba(15,23,42,0.12)]"
+  />
+
+  <div className="flex h-10 w-10 items-center justify-center rounded-full">
+    <ArrowRight className="h-5 w-5 text-[#ff6200]" />
+  </div>
+
+  <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#fff1f1] shadow-[0_12px_32px_rgba(229,72,77,0.12)]">
+    <Trash2 className="h-9 w-9 text-[#e5484d]" />
+  </div>
+</div>
+
+    <h4 className="text-lg font-black text-[#202020]">
+      Майстер {deleteConfirm.master?.name || "Без імені"} {" "}
+      буде видалений зі списку майстрів.
+    </h4>
+
+  </div>
+</Modal>
+{cropModal.open && (
+  <div className="fixed inset-0 z-[9999] flex items-end justify-center bg-[#202020]/45 px-3 pb-3 backdrop-blur-[6px] sm:items-center sm:p-6">
+    <div className="w-full max-w-lg overflow-hidden rounded-[30px] border border-[#f0e2d3] bg-white shadow-[0_30px_90px_rgba(15,23,42,0.24)]">
+      <div className="px-5 py-5 text-center">
+        <h3 className="text-[24px] font-black tracking-[-0.04em] text-[#202020]">
+          Обрізати фото
+        </h3>
+
+        <p className="mt-2 text-sm font-medium text-[#77716b]">
+          Виберіть область, яка буде видима у профілі майстра.
+        </p>
+      </div>
+
+      <div className="mx-5 h-[340px] overflow-hidden rounded-[26px] bg-black">
+        <div className="relative h-full w-full">
+          <Cropper
+            image={cropModal.imageUrl}
+            crop={crop}
+            zoom={zoom}
+            aspect={1}
+            cropShape="round"
+            showGrid={false}
+            onCropChange={setCrop}
+            onZoomChange={setZoom}
+            onCropComplete={(_, croppedPixels) => {
+              setCroppedAreaPixels(croppedPixels);
+            }}
+          />
+        </div>
+      </div>
+
+      <div className="px-5 py-4">
+        <label className="mb-2 block text-sm font-black text-[#202020]">
+          Масштаб
+        </label>
+
+        <input
+          type="range"
+          min={1}
+          max={3}
+          step={0.1}
+          value={zoom}
+          onChange={(e) => setZoom(Number(e.target.value))}
+          className="w-full"
+        />
+      </div>
+
+      <div className="flex gap-2 border-t border-[#f0e7da] bg-[#fbfaf8] px-5 py-4">
+        <Button
+          variant="secondary"
+          className="flex-1"
+          onClick={() => {
+            if (cropModal.imageUrl) URL.revokeObjectURL(cropModal.imageUrl);
+
+            setCropModal({
+              open: false,
+              imageUrl: "",
+              file: null,
+              target: "",
+            });
+
+            setCroppedAreaPixels(null);
+            setCrop({ x: 0, y: 0 });
+            setZoom(1);
+          }}
+        >
+          Скасувати
+        </Button>
+
+        <Button
+          variant="primary"
+          className="flex-1"
+          onClick={confirmCrop}
+        >
+          <Check className="h-4 w-4" />
+          Застосувати
+        </Button>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 }

@@ -1040,19 +1040,19 @@ export default function Services() {
 
                           {!isUnc && (
                             <>
-                              <IconButton
-                                onClick={() => openEditCategory(cat.id)}
-                                title="Редагувати"
-                                className="h-[42px] w-[42px] shrink-0"
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </IconButton>
+<IconButton
+  onClick={() => openEditCategory(cat.id)}
+  title="Редагувати"
+  className="!border-x !border-[#edf0f4] text-[#657084] hover:!bg-[#fff7f0] hover:text-[#ff6200]"
+>
+  <Pencil className="h-4 w-4" />
+</IconButton>
 
                               <IconButton
                                 variant="danger"
                                 onClick={() => deleteCategory(cat.id)}
                                 title="Видалити"
-                                className="h-[42px] w-[42px] shrink-0"
+                                className="h-[42px] w-[42px] shrink-0 !border-x !border-[#edf0f4] !text-[#e5484d] !transition hover:!bg-[#fff7f7]"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </IconButton>
@@ -1065,7 +1065,7 @@ export default function Services() {
                           <IconButton
                             onClick={() => openEditCategory(cat.id)}
                             title="Редагувати"
-                            className="h-[42px] w-[42px] shrink-0"
+                            className="h-[42px] w-[42px] shrink-0 !border-x !border-[#edf0f4] text-[#657084] hover:!bg-[#fff7f0] hover:text-[#ff6200]"
                           >
                             <Pencil className="h-4 w-4" />
                           </IconButton>
@@ -1074,7 +1074,7 @@ export default function Services() {
                             variant="danger"
                             onClick={() => deleteCategory(cat.id)}
                             title="Видалити"
-                            className="h-[42px] w-[42px] shrink-0"
+                            className="h-[42px] w-[42px] shrink-0 !border-x !border-[#edf0f4] !text-[#e5484d] !transition hover:!bg-[#fff7f7]"
                           >
                             <Trash2 className="h-4 w-4" />
                           </IconButton>
@@ -1143,7 +1143,7 @@ export default function Services() {
                                 <IconButton
                                   onClick={() => openEditService(cat.id, srv.id)}
                                   title="Редагувати"
-                                  className="h-11 w-11"
+                                  className="h-11 w-11 !border-x !border-[#edf0f4] text-[#657084] hover:!bg-[#fff7f0] hover:text-[#ff6200]"
                                 >
                                   <Pencil className="h-4 w-4" />
                                 </IconButton>
@@ -1152,7 +1152,7 @@ export default function Services() {
                                   variant="danger"
                                   onClick={() => deleteService(cat.id, srv.id)}
                                   title="Видалити"
-                                  className="h-11 w-11"
+                                  className="h-11 w-11 !border-x !border-[#edf0f4] !text-[#e5484d] !transition hover:!bg-[#fff7f7]"
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </IconButton>

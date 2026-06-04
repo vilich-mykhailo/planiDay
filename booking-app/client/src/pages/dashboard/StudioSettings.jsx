@@ -18,6 +18,13 @@ import {
   Mail,
   PencilLine,
   FileText,
+  Eye,
+  Pencil,
+  Trash2,
+  DoorOpen,
+  House,
+  Signpost,
+  MapPinned,
 } from "lucide-react";
 import { useStudio } from "../../context/studio/useStudio";
 import { api } from "../../api/http";
@@ -188,7 +195,7 @@ function Button({
     secondary:
       "border border-[#eadbc9] bg-white text-[#202020] hover:border-[#ffd6bd] hover:bg-[#fff7f0]",
     danger:
-      "border border-[#ffd8d8] bg-[#fff7f7] text-[#e5484d] hover:border-[#e5484d] hover:bg-[#fff1f1]",
+      "border border-[#ffd6bd] bg-[#fff1e8] text-[#ff5a00] hover:border-[#ff5a00] hover:bg-[#ffe5d4]",
     ghost: "text-[#77716b] hover:bg-[#fff7f0] hover:text-[#202020]",
     warning:
       "border border-[#ffd6bd] bg-[#fff1e8] text-[#ff5a00] hover:bg-[#ffe5d4]",
@@ -1777,7 +1784,7 @@ async function saveStudioEditModal() {
 }
 
   return (
-    <div className="min-h-screen bg-[#faf8f4] pb-28">
+    <div className="min-h-screen ">
      <div className="mx-auto max-w-5xl space-y-6">
         <input
           ref={coverInputRef}
@@ -2076,29 +2083,29 @@ onClick={() => openStudioEditModal(item.field)}
 
         <div>
           {[
-            {
-  icon: <MapPin className="h-5 w-5" />,
+          {
+  icon: <MapPinned className="h-5 w-5" />,
   label: "Місто",
   value: form.city || "Не вказано",
   targetId: "studio-field-city",
   field: "city",
 },
 {
-  icon: <MapPin className="h-5 w-5" />,
+  icon: <Signpost className="h-5 w-5" />,
   label: "Вулиця",
   value: form.street || "Не вказано",
   targetId: "studio-field-street",
   field: "street",
 },
 {
-  icon: <Building2 className="h-5 w-5" />,
+  icon: <House className="h-5 w-5" />,
   label: "Будинок",
   value: form.building || "Не вказано",
   targetId: "studio-field-building",
   field: "building",
 },
 {
-  icon: <Building2 className="h-5 w-5" />,
+  icon: <DoorOpen className="h-5 w-5" />,
   label: "Квартира / Офіс",
   value: form.apartment || "Не вказано",
   targetId: "studio-field-apartment",
@@ -2197,6 +2204,7 @@ onClick={() => openStudioEditModal(item.field)}
                                 onClick={clearPortfolio}
                                 disabled={!portfolioCount || clearingPortfolio || saving}
                               >
+                                <Trash2 className="h-4 w-4" />
                                 {clearingPortfolio ? "Очищення..." : "Очистити"}
                               </Button>
                             )}
@@ -2224,65 +2232,59 @@ onClick={() => openStudioEditModal(item.field)}
                                         className="group block w-full overflow-hidden rounded-[22px] border border-[#eadbc9] bg-[#fff7f0] transition hover:shadow-[0_10px_24px_rgba(27,27,27,0.10)]"
                                         style={{ aspectRatio: "1 / 1" }}
                                       >
-                                        <img
-                                          src={src}
-                                          alt={`work ${idx + 1}`}
-                                          className="h-full w-full object-cover"
-                                        />
+<img
+  src={src}
+  alt={`work ${idx + 1}`}
+  className="h-full w-full object-cover"
+/>
+
+<button
+  type="button"
+  onClick={(e) => {
+    e.stopPropagation();
+    removePortfolioMixed(idx);
+  }}
+  className="absolute right-2 top-2 z-20 flex h-9 w-9 items-center justify-center rounded-xl bg-[#e5484d] text-white opacity-100 shadow-[0_8px_20px_rgba(229,72,77,0.35)] transition-all duration-300 active:scale-95 sm:right-3 sm:top-3 sm:h-10 sm:w-10 sm:bg-black/70 sm:opacity-0 sm:backdrop-blur-xl sm:hover:scale-105 sm:hover:bg-[#e5484d] sm:group-hover:opacity-100"
+  title="Видалити"
+  aria-label="Remove"
+>
+  <Trash2 className="h-4 w-4 sm:h-5 sm:w-5" />
+</button>
 
                                         <div className="pointer-events-none absolute inset-x-0 bottom-0 p-2">
                                           <div className="absolute inset-x-0 bottom-0 h-16 rounded-b-2xl bg-gradient-to-t from-black/60 via-black/25 to-transparent" />
 
                                           <div className="pointer-events-auto relative flex items-center justify-between">
                                             <div className="flex items-center gap-2">
-                                              <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  movePortfolioMixed(idx, idx - 1);
-                                                }}
-                                                disabled={isFirst}
-                                                className="flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-[#202020] backdrop-blur-md shadow-sm ring-1 ring-black/5 transition-all hover:bg-white hover:shadow-md active:scale-95 disabled:opacity-30"
-                                                title="Вліво"
-                                                aria-label="Move left"
-                                              >
-                                                <ChevronLeft className="h-4 w-4" />
-                                              </button>
+<button
+  type="button"
+  onClick={(e) => {
+    e.stopPropagation();
+    movePortfolioMixed(idx, idx - 1);
+  }}
+  disabled={isFirst}
+  className="group absolute bottom-1 left-1 sm:bottom-3 sm:left-3 z-20 flex h-9 w-9 sm:h-11 sm:w-11 items-center justify-center rounded-xl bg-white/80 text-black opacity-100 shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-all duration-300 sm:opacity-0 sm:hover:bg-white sm:group-hover:opacity-100 disabled:hidden"
+>
+  <ChevronLeft className="h-4 w-4 transition-all duration-300 group-hover:scale-150 group-hover:text-[#ff6200]" />
+</button>
 
-                                              <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  movePortfolioMixed(idx, idx + 1);
-                                                }}
-                                                disabled={isLast}
-                                                className="flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-[#202020] backdrop-blur-md shadow-sm ring-1 ring-black/5 transition-all hover:bg-white hover:shadow-md active:scale-95 disabled:opacity-30"
-                                                title="Вправо"
-                                                aria-label="Move right"
-                                              >
-                                                <ChevronRight className="h-4 w-4" />
-                                              </button>
+<button
+  type="button"
+  onClick={(e) => {
+    e.stopPropagation();
+    movePortfolioMixed(idx, idx + 1);
+  }}
+  disabled={isLast}
+  className="group absolute bottom-1 right-1 sm:bottom-3 sm:right-3 z-20 flex h-9 w-9 sm:h-11 sm:w-11 items-center justify-center rounded-xl bg-white/80 text-black opacity-100 shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-all duration-300 sm:opacity-0 sm:hover:bg-white sm:group-hover:opacity-100 disabled:hidden"
+>
+  <ChevronRight className="h-4 w-4 transition-all duration-300 group-hover:scale-150 group-hover:text-[#ff6200]" />
+</button>
                                             </div>
-
-                                            <button
-                                              type="button"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                removePortfolioMixed(idx);
-                                              }}
-                                              className="flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-[#77716b] backdrop-blur-md shadow-sm ring-1 ring-black/5 transition-all hover:bg-[#fff1f1] hover:text-[#e5484d] hover:ring-[#ffd8d8] hover:shadow-md active:scale-95"
-                                              title="Видалити"
-                                              aria-label="Remove"
-                                            >
-                                              <X className="h-4 w-4" />
-                                            </button>
                                           </div>
                                         </div>
                                       </button>
 
-                                      <div className="mt-1 text-center text-xs text-[#77716b]">
-                                        #{idx + 1}
-                                      </div>
+
                                     </div>
                                   );
                                 })}
@@ -2472,7 +2474,7 @@ onClick={() => openStudioEditModal(item.field)}
 
         {portfolioPreview.open && (
           <div
-            className="fixed inset-0 z-[9999] flex items-end justify-center bg-[#202020]/45 px-3 pb-3 backdrop-blur-[6px] sm:items-center sm:p-6"
+         className="fixed left-0 top-0 z-[9999] flex h-[100dvh] w-screen items-center justify-center overflow-y-auto bg-[#202020]/45 p-3 backdrop-blur-[6px]"
             onClick={() => setPortfolioPreview({ open: false, src: "" })}
           >
             <div
@@ -2511,15 +2513,7 @@ onClick={() => openStudioEditModal(item.field)}
                 />
               </div>
 
-              <div className="flex flex-row gap-2 border-t border-[#f0e7da] bg-[#fbfaf8] px-5 py-4 sm:justify-end sm:px-6">
-                <Button
-                  variant="secondary"
-                  onClick={() => setPortfolioPreview({ open: false, src: "" })}
-                  className="flex-1 sm:flex-none"
-                >
-                  Закрити
-                </Button>
-              </div>
+
             </div>
           </div>
         )}

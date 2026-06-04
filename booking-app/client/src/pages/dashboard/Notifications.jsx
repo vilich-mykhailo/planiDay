@@ -5,8 +5,11 @@ import {
   ArrowRight,
   Bell,
   CalendarClock,
+  CalendarDays,
   Check,
+  ChevronRight,
   Clock3,
+  OctagonAlert,
   Scissors,
   Sparkles,
   UserRound,
@@ -49,6 +52,53 @@ function splitDateTime(value) {
   return { date: raw, time: "" };
 }
 
+function getRescheduleInfo(item) {
+  if (!item?.oldDate || !item?.newDate) {
+    return {
+      text: "змінив запис",
+      type: "datetime",
+      modalTitle: "Запис оновлено",
+    };
+  }
+
+  const oldParts = splitDateTime(item.oldDate);
+  const newParts = splitDateTime(item.newDate);
+
+  const dateChanged = oldParts.date !== newParts.date;
+  const timeChanged = oldParts.time !== newParts.time;
+
+
+  if (dateChanged && timeChanged) {
+    return {
+      text: "змінив(ла) дату та час запису",
+      type: "datetime",
+      modalTitle: "Нові дата та час оновлені",
+    };
+  }
+
+  if (dateChanged) {
+    return {
+      text: "змінив(ла) дату запису",
+      type: "date",
+      modalTitle: "Нову дату оновлено",
+    };
+  }
+
+  if (timeChanged) {
+    return {
+      text: "змінив(ла) час запису",
+      type: "time",
+      modalTitle: "Новий час оновлено",
+    };
+  }
+
+  return {
+    text: "оновив(ла) запис",
+    type: "datetime",
+    modalTitle: "Запис оновлено",
+  };
+}
+
 async function fetchNotifications(studioId) {
   if (!studioId) return [];
 
@@ -64,7 +114,7 @@ function SectionCard({ title, subtitle, actions, children, className = "" }) {
   return (
     <section
       className={cn(
-        "group relative overflow-hidden rounded-[28px] border border-[#eadbc9] bg-white shadow-[0_18px_50px_rgba(17,17,17,0.06)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_24px_70px_rgba(17,17,17,0.09)]",
+        "group relative overflow-hidden rounded-[28px] border border-[#eadbc9] bg-white shadow-[0_18px_50px_rgba(17,17,17,0.06)] transition-all duration-300 hover:shadow-[0_24px_70px_rgba(17,17,17,0.09)]",
         className,
       )}
     >
@@ -121,7 +171,7 @@ function NotificationCardSkeleton() {
           <SkeletonBlock className="h-6 w-24 rounded-xl" />
         </div>
 
-        <SkeletonBlock className="mt-4 h-4 w-40" />
+        <SkeletonBlock className="mt-4 h-4.5 w-4.50" />
       </div>
     </div>
   );
@@ -176,6 +226,10 @@ function DetailItem({ icon: Icon, label, value, accent = false, dateTime = false
 function RescheduleModal({ item, onClose, onRead }) {
   if (!item) return null;
 
+  const oldTime = splitDateTime(item.oldDate);
+  const newTime = splitDateTime(item.newDate);
+  const rescheduleInfo = getRescheduleInfo(item);
+
   return (
     <div
       className="fixed inset-0 z-[9999] flex items-stretch justify-center bg-[#202020]/45 p-0 backdrop-blur-[6px] sm:items-center sm:p-6"
@@ -183,30 +237,53 @@ function RescheduleModal({ item, onClose, onRead }) {
         if (e.target === e.currentTarget) onClose?.();
       }}
     >
-      <div className="flex h-dvh w-full max-w-2xl flex-col overflow-hidden rounded-none border-0 bg-[#f7f5f1] shadow-[0_30px_90px_rgba(15,23,42,0.24)] sm:h-auto sm:max-h-[calc(100dvh-48px)] sm:rounded-[30px] sm:border sm:border-[#f0e2d3]">
-        <div className="relative shrink-0 overflow-hidden bg-[#f3eee7] px-5 py-5 sm:px-6 sm:py-6">
+      <div className="flex h-dvh w-full max-w-2xl flex-col overflow-hidden rounded-none border-0 bg-[#fbfaf8] shadow-[0_30px_90px_rgba(15,23,42,0.24)] sm:h-auto sm:max-h-[calc(100dvh-48px)] sm:rounded-[32px] sm:border sm:border-[#f0e2d3]">
+        <div className="relative shrink-0 overflow-hidden bg-[#202020] px-4 pb-5 pt-4 text-white sm:px-6 sm:pb-6 sm:pt-5">
           <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#ff7a18] via-[#ff6200] to-[#ff8c42]" />
 
-          <div className="relative z-10 flex items-start justify-between gap-4">
+          <div className="relative z-10 flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-white px-3 text-[11px] font-black uppercase tracking-[0.08em] text-[#ff6200] shadow-[0_8px_20px_rgba(255,98,0,0.08)]">
-                <CalendarClock className="h-3.5 w-3.5" />
-                Перенесення
+              <span className="inline-flex h-7 items-center gap-1.5 rounded-full bg-white/10 px-3 text-[10px] font-black uppercase tracking-[0.12em] text-[#ffd6bd] ring-1 ring-white/10">
+                <Sparkles className="h-3.5 w-3.5" />
+                Перенесення запису
               </span>
 
-              <h3 className="mt-3 text-[28px] font-black leading-[0.95] tracking-[-0.04em] text-[#202020] sm:text-[34px]">
-                Запис перенесено
-              </h3>
+<h3 className="mt-3 text-[28px] font-black leading-[0.95] tracking-[-0.045em] sm:text-[36px]">
+  {rescheduleInfo.modalTitle}
+</h3>
 
-              <p className="mt-2 max-w-xl text-sm font-medium leading-5 text-[#77716b]">
-                Клієнт змінив час візиту. Нижче зібрані всі деталі перенесення.
-              </p>
+              <div className="mt-4 rounded-[26px] border border-white/10 bg-white/[0.08] p-4 backdrop-blur">
+                <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#ffd6bd]">
+                  Актуальний слот
+                </p>
+
+                <div className="mt-2 flex items-end justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[42px] font-black leading-none tracking-[-0.05em] text-white sm:text-[52px]">
+                      {newTime.time || "—"}
+                    </p>
+                    <p className="mt-1 text-sm font-bold text-white/70">
+                      {newTime.date}
+                    </p>
+                  </div>
+
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#ff6200] text-white shadow-[0_16px_34px_rgba(255,98,0,0.28)]">
+                   {rescheduleInfo.type === "time" ? (
+  <Clock3 className="h-6 w-6" />
+) : rescheduleInfo.type === "date" ? (
+  <CalendarDays className="h-6 w-6" />
+) : (
+  <CalendarClock className="h-6 w-6" />
+)}
+                  </div>
+                </div>
+              </div>
             </div>
 
             <button
               type="button"
               onClick={onClose}
-              className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white text-[#77716b] shadow-[0_10px_24px_rgba(15,23,42,0.06)] transition hover:bg-[#fff3e9] hover:text-[#ff6200] active:scale-[0.96]"
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/10 text-white transition hover:bg-white/15 active:scale-[0.96]"
               aria-label="Закрити"
             >
               <X className="h-5 w-5" />
@@ -214,145 +291,199 @@ function RescheduleModal({ item, onClose, onRead }) {
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto bg-white px-5 py-5 sm:px-6">
-          <div className="grid grid-cols-2 gap-3">
-            <DetailItem icon={UserRound} label="Клієнт" value={item.clientName} />
-            <DetailItem icon={Scissors} label="Послуга" value={item.serviceName} />
-          </div>
-
-          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
-            <DetailItem icon={Clock3} label="Було" value={item.oldDate} dateTime />
-
-            <div className="hidden h-11 w-11 items-center justify-center rounded-full border border-[#ffd6bd] bg-[#fff7f0] text-[#ff5a00] sm:flex">
-              <ArrowRight className="h-5 w-5" />
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="rounded-[24px] border border-[#eadbc9] bg-white p-3 shadow-[0_12px_30px_rgba(17,17,17,0.05)]">
+              <div className="flex items-center gap-2">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#fff1e8] text-[#ff5a00]">
+                  <UserRound className="h-5 w-5" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#8a837c]">
+                    Клієнт
+                  </p>
+                  <p className="mt-0.5 line-clamp-2 text-sm font-black leading-5 text-[#202020]">
+                    {item.clientName || "—"}
+                  </p>
+                </div>
+              </div>
             </div>
 
-            <DetailItem icon={CalendarClock} label="Стало" value={item.newDate} accent dateTime />
+            <div className="rounded-[24px] border border-[#eadbc9] bg-white p-3 shadow-[0_12px_30px_rgba(17,17,17,0.05)]">
+              <div className="flex items-center gap-2">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#f5f1ea] text-[#77716b]">
+                  <Scissors className="h-5 w-5" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#8a837c]">
+                    Послуга
+                  </p>
+                  <p className="mt-0.5 line-clamp-2 text-sm font-black leading-5 text-[#202020]">
+                    {item.serviceName || "—"}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="mt-4 rounded-[22px] border border-[#eadbc9] bg-[#fbfaf8] px-4 py-3">
-            <p className="text-[11px] font-black uppercase tracking-[0.12em] text-[#8a837c]">
-              Створено
-            </p>
-            <p className="mt-1 text-sm font-bold text-[#202020]">
-              {formatDateTimeUA(item.createdAt)}
-            </p>
-          </div>
-        </div>
+          <div className="mt-4 overflow-hidden rounded-[28px] border border-[#eadbc9] bg-white shadow-[0_14px_36px_rgba(17,17,17,0.05)]">
+            <div className="flex items-center justify-between border-b border-[#f0e7da] px-4 py-3">
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-[0.12em] text-[#ff6200]">
+                  Маршрут перенесення
+                </p>
+                <p className="mt-0.5 text-xs font-semibold text-[#77716b]">
+                  Було → стало
+                </p>
+              </div>
+            </div>
 
-        <div className="sticky bottom-0 shrink-0 border-t border-[#f0e7da] bg-[#fbfaf8] px-5 py-4 sm:px-6">
-          <div className="flex flex-row gap-2 sm:justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              className="inline-flex h-11 flex-1 items-center justify-center rounded-2xl border border-[#eadbc9] bg-white px-4 text-sm font-black text-[#202020] transition hover:border-[#ffd6bd] hover:bg-[#fff7f0] sm:flex-none"
-            >
-              Закрити
-            </button>
+            <div className="relative grid grid-cols-2">
+           <div className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2">
+  <span className="flex h-10 w-10 items-center justify-center rounded-full border border-[#ffd6bd] bg-white text-[#ff5a00] shadow-[0_8px_20px_rgba(255,90,0,0.12)]">
+    <ArrowRight className="h-4 w-4" />
+  </span>
+</div>
+              <div className="p-4 text-center">
+                <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-2xl bg-[#f5f1ea] text-[#77716b]">
+                  <Clock3 className="h-5 w-5" />
+                </div>
+                <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#8a837c]">
+                  Було
+                </p>
+                <p className="mt-1 text-[24px] font-black leading-none tracking-[-0.04em] text-[#202020]">
+                  {oldTime.time || "—"}
+                </p>
+                <p className="mt-1 text-[12px] font-bold leading-4 text-[#77716b]">
+                  {oldTime.date}
+                </p>
+              </div>
 
-            {!item.isRead && (
-              <button
-                type="button"
-                onClick={() => {
-                  onRead?.(item.id);
-                  onClose?.();
-                }}
-                className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-2xl bg-[#ff5a00] px-4 text-sm font-black text-white shadow-[0_16px_34px_rgba(255,90,0,0.24)] transition-all duration-200 hover:bg-[#ef4f00] active:scale-[0.98] sm:flex-none"
-              >
-                <Check className="h-4 w-4" />
-                Прочитати
-              </button>
-            )}
+              <div className="relative bg-[#fff7f0] p-4 text-center">
+                <div className="absolute inset-x-5 top-0 h-[3px] rounded-b-full bg-[#ff6200]" />
+                <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-[#ff5a00] shadow-sm">
+                  {rescheduleInfo.type === "time" ? (
+  <Clock3 className="h-5 w-5" />
+) : rescheduleInfo.type === "date" ? (
+  <CalendarDays className="h-5 w-5" />
+) : (
+  <CalendarClock className="h-5 w-5" />
+)}
+                </div>
+                <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#ff6200]">
+                  Стало
+                </p>
+                <p className="mt-1 text-[24px] font-black leading-none tracking-[-0.04em] text-[#202020]">
+                  {newTime.time || "—"}
+                </p>
+                <p className="mt-1 text-[12px] font-bold leading-4 text-[#77716b]">
+                  {newTime.date}
+                </p>
+              </div>
+            </div>
           </div>
+
+<div className="mt-3 text-right text-[11px] font-semibold text-[#8a837c]">
+  Створено: {formatDateTimeUA(item.createdAt)}
+</div>
         </div>
       </div>
     </div>
   );
 }
 
+
 function NotificationCard({ item, onRead, onOpenDetails }) {
   const isReschedule = item.oldDate || item.newDate;
+  const rescheduleInfo = getRescheduleInfo(item);
 
   return (
-    <div
-      className={cn(
-        "relative overflow-hidden rounded-[24px] border p-3 transition-all duration-200 sm:p-4",
-        "hover:-translate-y-0.5 hover:border-[#ffd6bd] hover:shadow-[0_18px_44px_rgba(255,90,0,0.10)]",
-        item.isRead
-          ? "border-[#eadbc9] bg-white shadow-[0_8px_24px_rgba(17,17,17,0.04)]"
-          : "border-[#ffd6bd] bg-[#fffaf6] shadow-[0_16px_44px_rgba(255,90,0,0.10)]",
-      )}
-    >
+<div
+  onClick={() => {
+    if (isReschedule) {
+      if (!item.isRead) {
+        onRead?.(item.id);
+      }
+
+      onOpenDetails?.(item);
+    }
+  }}
+  className={cn(
+    "reschedule-card relative overflow-hidden rounded-[24px] border p-3 transition-all duration-200 cursor-pointer",
+    "hover:bg-[#fff7f0] hover:-translate-y-0.5 hover:border-[#ffd6bd] hover:shadow-[0_18px_44px_rgba(255,90,0,0.10)]",
+    item.isRead
+      ? "border-[#eadbc9] bg-white shadow-[0_8px_24px_rgba(17,17,17,0.04)]"
+      : "border-[#ffd6bd] bg-[#fffaf6] shadow-[0_16px_44px_rgba(255,90,0,0.10)]",
+  )}
+>
       {!item.isRead && (
         <div className="absolute inset-y-4 left-0 w-1 rounded-r-full bg-[#ff5a00]" />
       )}
 
-      <div className="min-w-0">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <p className="line-clamp-1 text-[15px] font-black text-[#202020] sm:text-[16px]">
-              {isReschedule ? "Перенесення запису" : item.title || "Повідомлення"}
-            </p>
+<div className="min-w-0">
+  <div className="flex items-center justify-between gap-3">
+    <p className="line-clamp-1 text-[15px] font-black text-[#202020] sm:text-[16px]">
+      {isReschedule ? "Перенесення запису" : item.title || "Повідомлення"}
+    </p>
 
-            {!item.isRead && (
-              <span className="rounded-full border border-[#ffd6bd] bg-[#fff1e8] px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-[#ff5a00]">
-                Нове
-              </span>
-            )}
-          </div>
+    {item.isRead ? (
+      <span className="shrink-0 text-xs font-black text-[#77716b]/60">
+        Прочитано
+      </span>
+    ) : (
+      <button
+        type="button"
+        onClick={() => onRead(item.id)}
+        className="inline-flex h-7 shrink-0 items-center gap-1 rounded-xl bg-[#fff1e8] px-2.5 text-[11px] font-black text-[#ff5a00] transition hover:bg-[#ff5a00] hover:text-white active:scale-[0.98]"
+      >
+     
+        Нове
+      </button>
+    )}
+  </div>
 
-          <div className="flex shrink-0 items-center">
-            {item.isRead ? (
-              <span className="inline-flex h-8 items-center justify-center rounded-xl border border-[#eadbc9] bg-[#f5f1ea] px-3 text-xs font-black text-[#77716b]">
-                Прочитано
-              </span>
-            ) : (
-              <button
-                type="button"
-                onClick={() => onRead(item.id)}
-                className="inline-flex h-8 items-center gap-1.5 rounded-xl bg-[#ff5a00] px-3 text-xs font-black text-white shadow-[0_12px_26px_rgba(255,90,0,0.24)] transition-all duration-200 hover:bg-[#ef4f00] active:scale-[0.98]"
-              >
-                <Check className="h-3.5 w-3.5" />
-                Прочитати
-              </button>
-            )}
-          </div>
+  {isReschedule && (
+<button
+  type="button"
+  onClick={() => {
+    if (!item.isRead) onRead?.(item.id);
+    onOpenDetails?.(item);
+  }}
+className="reschedule-group mt-2 flex w-full items-center justify-between gap-3 rounded-[16px] bg-white px-2.5 py-2 text-left transition-all duration-200 sm:hover:bg-[#fff7f0] sm:[.reschedule-card:hover_&]:bg-[#fff7f0]"
+>
+      <div className="flex min-w-0 items-center gap-2">
+<span className="grid h-8 w-8 shrink-0 -ml-1 place-items-center rounded-xl bg-[#fff1e8] text-[#ff5a00] transition-all duration-200 sm:[.reschedule-group:hover_&]:bg-[#ff6200] sm:[.reschedule-group:hover_&]:text-white sm:[.reschedule-card:hover_&]:bg-[#ff6200] sm:[.reschedule-card:hover_&]:text-white">
+ {rescheduleInfo.type === "time" ? (
+  <Clock3 className="h-4.5 w-4.5" />
+) : rescheduleInfo.type === "date" ? (
+  <CalendarDays className="h-4.5 w-4.5" />
+) : (
+  <CalendarClock className="h-4.5 w-4.5" />
+)}
+</span>
+
+        <div className="min-w-0">
+          <p className="line-clamp-2 text-[13px] font-black leading-4 text-[#202020] sm:line-clamp-1 sm:text-sm">
+          {item.clientName || "Клієнт"} {rescheduleInfo.text}
+          </p>
+
+<div className="mt-0.5 min-w-0 text-[11px] font-bold text-[#77716b] sm:text-xs">
+  <p className="line-clamp-2 leading-4">
+    {item.serviceName || "Послуга"}
+  </p>
+
+  <p className="mt-0.5 line-clamp-1 text-[#ff5a00]">
+    {item.newDate || "Новий час"}
+  </p>
+</div>
         </div>
-
-        {isReschedule && (
-          <button
-            type="button"
-            onClick={() => onOpenDetails?.(item)}
-            className="mt-2 w-full rounded-[18px] border border-[#eadbc9] bg-white px-3 py-2.5 text-left transition-all duration-200 hover:border-[#ffd6bd] hover:bg-[#fff7f0]"
-          >
-            <div className="flex items-center justify-between gap-2">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-[#fff1e8] text-[#ff5a00]">
-                    <CalendarClock className="h-3.5 w-3.5" />
-                  </span>
-
-<p className="line-clamp-2 min-h-[36px] text-[13px] font-black text-[#202020] sm:text-sm">
-  {item.clientName || "Клієнт"} змінив час запису
-</p>
-                </div>
-
-
-              </div>
-            
-              <span className="inline-flex h-8 shrink-0 items-center gap-1 rounded-xl border border-[#ffd6bd] bg-[#fff1e8] px-2.5 text-xs font-black text-[#ff5a00]">
-                Деталі
-                <ArrowRight className="h-3.5 w-3.5" />
-              </span>
-
-            </div>
-          </button>
-        )}
-
-        <p className="mt-2 text-[11px] font-semibold text-[#77716b] sm:text-xs">
-          Створено: {formatDateTimeUA(item.createdAt)}
-        </p>
       </div>
+
+<ChevronRight className="h-5 w-5 shrink-0 text-[#ff5a00] transition-all duration-200 sm:[.reschedule-group:hover_&]:translate-x-1 sm:[.reschedule-card:hover_&]:translate-x-1" />
+    </button>
+  )}
+
+</div>
     </div>
   );
 }
@@ -531,26 +662,7 @@ export default function Notifications() {
       <SectionCard
         title="Список повідомлень"
         subtitle="Останні сповіщення та службові оновлення"
-        actions={
-          notifications.some((n) => !n.isRead) ? (
-            <button
-              type="button"
-              onClick={markAllAsRead}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-[#ff5a00] px-4 text-sm font-black text-white shadow-[0_16px_34px_rgba(255,90,0,0.24)] transition-all duration-200 hover:bg-[#ef4f00] active:scale-[0.98]"
-            >
-              <Check className="h-4 w-4" />
-              Прочитати всі
-            </button>
-          ) : (
-            <button
-              type="button"
-              disabled
-              className="inline-flex h-11 cursor-not-allowed items-center justify-center rounded-2xl border border-[#eadbc9] bg-[#f5f1ea] px-4 text-sm font-black text-[#77716b]"
-            >
-              Прочитано все
-            </button>
-          )
-        }
+
       >
         {showNotificationsSkeleton ? (
           <div className="space-y-3">

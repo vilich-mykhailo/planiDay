@@ -256,6 +256,8 @@ return {
   status: uiStatus(b.status),
   canceledBy: b.canceledBy || null,
 
+  masterId: b.masterId,
+
   clientName:
     b.client?.name ||
     [b.client?.firstName, b.client?.lastName]

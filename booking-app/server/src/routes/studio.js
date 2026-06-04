@@ -370,12 +370,26 @@ router.get(
     try {
       const { studioId } = req.params;
 
-      const masters = await prisma.master.findMany({
-        where: { studioId },
-        orderBy: { createdAt: "asc" },
-      });
+const masters = await prisma.master.findMany({
+  where: { studioId },
+  include: {
+    scheduleExceptions: {
+      select: {
+        id: true,
+        date: true,
+        enabled: true,
+      },
+    },
+  },
+  orderBy: { createdAt: "asc" },
+});
 
-      res.json({ masters });
+const mastersWithCounts = masters.map((master) => ({
+  ...master,
+  exceptionsCount: master.scheduleExceptions.length,
+}));
+
+     res.json({ masters: mastersWithCounts });
     } catch (e) {
       console.error(e);
       res.status(500).json({ message: "Load masters failed" });
