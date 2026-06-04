@@ -599,6 +599,63 @@ clientRouter.patch(
         },
       });
 
+      const clientData = await prisma.clientAccount.findUnique({
+  where: { id: updated.clientId },
+  select: {
+    name: true,
+    firstName: true,
+    lastName: true,
+  },
+});
+
+const serviceData = await prisma.service.findUnique({
+  where: { id: updated.serviceId },
+  select: {
+    name: true,
+  },
+});
+
+const clientDisplayName =
+  [clientData?.firstName, clientData?.lastName]
+    .filter(Boolean)
+    .join(" ")
+    || clientData?.name
+    || "Клієнт";
+
+const bookingDate = formatNotificationDateTime(updated.startAt);
+
+const notification = await prisma.notification.create({
+  data: {
+    studioId: updated.studioId,
+    clientId: updated.clientId,
+    bookingId: updated.id,
+    type: "BOOKING_CANCELED",
+
+    title: "Скасування запису",
+
+    message: `Клієнт ${clientDisplayName} скасував запис на ${serviceData?.name || "Послуга"}`,
+
+    clientName: clientDisplayName,
+    serviceName: serviceData?.name || "Послуга",
+
+    newDate: bookingDate,
+  },
+  select: {
+    id: true,
+    studioId: true,
+    clientId: true,
+    bookingId: true,
+    type: true,
+    title: true,
+    message: true,
+    isRead: true,
+    createdAt: true,
+    clientName: true,
+    serviceName: true,
+    newDate: true,
+  },
+});
+
       const io = req.app.get("io");
 
       if (io) {
@@ -619,6 +676,7 @@ const payload = {
 
         io.to(`studio:${updated.studioId}`).emit("booking:updated", payload);
         io.to(`client:${updated.clientId}`).emit("booking:updated", payload);
+        io.to(`studio:${updated.studioId}`).emit("notification:new", notification);
          
       }
 

@@ -1404,21 +1404,25 @@ export default function Clients() {
       </h1>
     </div>
 <div className="flex shrink-0 items-center gap-1 sm:gap-2">
-      <button
-        type="button"
-        onClick={() => setInfoOpen(true)}
-        className="hidden grid h-12 w-12 place-items-center rounded-full text-[#ff6200] transition-all duration-200 hover:scale-110 hover:bg-[#fff7f0] active:scale-95"
-      >
-        <CircleAlert className="h-5 w-5" />
-      </button>
-<Button
-  variant="ghost"
-  className="!hidden h-12 hover:bg-[#fff7f0] sm:inline-flex"
-  onClick={() => setExportOpen(true)}
->
-  <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
-  Експорт
-</Button>
+  <button
+    type="button"
+    onClick={() => setInfoOpen(true)}
+    className="grid h-10 w-10 place-items-center rounded-full text-[#ff6200] transition-all duration-200 hover:scale-110 hover:bg-[#fff7f0] active:scale-95 sm:h-12 sm:w-12"
+    title="Інформація"
+  >
+    <CircleAlert className="h-5 w-5" />
+  </button>
+
+<div className="hidden sm:block">
+  <Button
+    variant="ghost"
+    className="h-12 hover:bg-[#fff7f0]"
+    onClick={() => setExportOpen(true)}
+  >
+    <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
+    Експорт
+  </Button>
+</div>
 
 <Button
   variant="primary"

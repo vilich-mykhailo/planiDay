@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import XLSX from "xlsx-js-style";
 import Cropper from "react-easy-crop";
 import {
   Sparkles,
@@ -8,6 +9,8 @@ import {
   Pencil,
   Trash2,
   X,
+  FileSpreadsheet,
+CircleAlert,
   Check,
   Camera,
   CalendarDays,
@@ -653,7 +656,16 @@ async function fetchStudioBookings(studioId) {
 );
   const loading = mastersQuery.isLoading;
   const [query, setQuery] = useState("");
+const [exportOpen, setExportOpen] = useState(false);
+const [infoOpen, setInfoOpen] = useState(false);
 
+const [exportFields, setExportFields] = useState({
+  name: true,
+  role: true,
+  bio: true,
+  status: true,
+  exceptionsCount: true,
+});
   const [form, setForm] = useState({
     name: "",
     role: "",
@@ -1306,6 +1318,77 @@ async function confirmCrop() {
   }, [masters, query]);
   const [photoBroken, setPhotoBroken] = useState(false);
 
+  function handleExportMasters() {
+  const sortedMasters = [...filteredMasters].sort((a, b) =>
+    String(a.name || "").localeCompare(String(b.name || ""), "uk", {
+      sensitivity: "base",
+    }),
+  );
+
+  const rows = sortedMasters.map((master) => {
+    const row = {};
+
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+    const todayException = master.scheduleExceptions?.find(
+      (e) => String(e.date || "").slice(0, 10) === today,
+    );
+
+    const isWorkingToday = !todayException || todayException.enabled;
+
+    if (exportFields.name) row["Імʼя"] = master.name || "-";
+    if (exportFields.role) row["Спеціалізація"] = master.role || "-";
+    if (exportFields.bio) row["Опис"] = master.bio || "-";
+    if (exportFields.status) row["Статус сьогодні"] = isWorkingToday ? "Працює" : "Вихідний";
+    if (exportFields.exceptionsCount) row["Особливі дати"] = master.exceptionsCount || 0;
+
+    return row;
+  });
+
+  if (!rows.length) {
+    alert("Немає майстрів для експорту");
+    return;
+  }
+
+  const worksheet = XLSX.utils.json_to_sheet(rows);
+
+  worksheet["!cols"] = Object.keys(rows[0] || {}).map((key) => {
+    const maxLength = Math.max(
+      key.length,
+      ...rows.map((row) => String(row[key] ?? "").length),
+    );
+
+    return { wch: Math.max(maxLength + 8, 18) };
+  });
+
+  const range = XLSX.utils.decode_range(worksheet["!ref"]);
+
+  for (let row = range.s.r; row <= range.e.r; row++) {
+    for (let col = range.s.c; col <= range.e.c; col++) {
+      const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+
+      if (!worksheet[cellAddress]) continue;
+
+      worksheet[cellAddress].s = {
+        font: { bold: row === 0 },
+        alignment: {
+          horizontal: "center",
+          vertical: "center",
+        },
+      };
+    }
+  }
+
+  const workbook = XLSX.utils.book_new();
+
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Майстри");
+  XLSX.writeFile(
+    workbook,
+    `masters-${new Date().toISOString().slice(0, 10)}.xlsx`,
+  );
+}
+
  return (
   <div className="min-h-screen bg-[#fbfaf8]">
    <div className="mx-auto max-w-5xl space-y-6">
@@ -1324,14 +1407,36 @@ async function confirmCrop() {
         </p>
       </div>
 
-      <Button
-        variant="primary"
-        onClick={() => setAddOpen(true)}
-        className="h-10 shrink-0 px-3 sm:h-12 sm:px-5"
-      >
-        <Plus className="h-4 w-4" />
-        <span className="hidden sm:inline">Додати майстра</span>
-      </Button>
+<div className="flex shrink-0 items-center gap-1 sm:gap-2">
+  <button
+    type="button"
+    onClick={() => setInfoOpen(true)}
+    className="grid h-10 w-10 place-items-center rounded-full text-[#ff6200] transition-all duration-200 hover:scale-110 hover:bg-[#fff7f0] active:scale-95 sm:h-12 sm:w-12"
+    title="Інформація"
+  >
+    <CircleAlert className="h-5 w-5" />
+  </button>
+
+<div className="hidden sm:block">
+  <Button
+    variant="ghost"
+    className="h-12 hover:bg-[#fff7f0]"
+    onClick={() => setExportOpen(true)}
+  >
+    <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
+    Експорт
+  </Button>
+</div>
+
+  <Button
+    variant="primary"
+    onClick={() => setAddOpen(true)}
+    className="h-10 shrink-0 px-3 sm:h-12 sm:px-5"
+  >
+    <Plus className="h-4 w-4" />
+    <span className="hidden sm:inline">Додати майстра</span>
+  </Button>
+</div>
     </div>
   </div>
 
@@ -1476,6 +1581,8 @@ const todayException = m.scheduleExceptions?.find(
   type="button"
   onClick={() => openMasterExceptions(m)}
   className="relative grid h-11 place-items-center text-[#657084] transition hover:bg-[#fff7f0] hover:text-[#ff6200]"
+  title="Особливі дні"
+  aria-label="Особливі дні"
 >
   <CalendarDays className="h-4 w-4" />
 
@@ -2296,6 +2403,94 @@ filteredMasterBookings.map((booking) => (
     </div>
   </div>
 )}
+<Modal
+  open={exportOpen}
+  onClose={() => setExportOpen(false)}
+  title="Експорт майстрів"
+  badge="Експорт"
+  icon={FileSpreadsheet}
+  subtitle="Оберіть, які дані майстрів потрібно додати в Excel-файл."
+  size="sm"
+  footer={
+    <div className="flex gap-2">
+      <Button
+        variant="secondary"
+        className="flex-1"
+        onClick={() => setExportOpen(false)}
+      >
+        Скасувати
+      </Button>
+
+      <Button
+        variant="primary"
+        className="flex-1"
+        onClick={() => {
+          handleExportMasters();
+          setExportOpen(false);
+        }}
+      >
+        <Download className="h-4 w-4" />
+        Експорт
+      </Button>
+    </div>
+  }
+>
+  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+    {[
+      ["name", "Імʼя"],
+      ["role", "Спеціалізація"],
+      ["bio", "Опис"],
+      ["status", "Статус сьогодні"],
+      ["exceptionsCount", "Особливі дати"],
+    ].map(([key, label]) => (
+      <label
+        key={key}
+        className="flex cursor-pointer items-center justify-between rounded-xl border border-[#eadbc9] p-3"
+      >
+        <span className="text-sm font-semibold">{label}</span>
+
+        <input
+          type="checkbox"
+          checked={exportFields[key]}
+          onChange={(e) =>
+            setExportFields((prev) => ({
+              ...prev,
+              [key]: e.target.checked,
+            }))
+          }
+          className="h-4 w-4 rounded border-[#eadbc9] text-[#ff5a00] focus:ring-[#ff5a00]"
+        />
+      </label>
+    ))}
+  </div>
+</Modal>
+
+<Modal
+  open={infoOpen}
+  onClose={() => setInfoOpen(false)}
+  title="Інформація про майстрів"
+  badge="Інформація"
+  icon={CircleAlert}
+  subtitle="Ця сторінка відповідає за майстрів студії, їхні профілі, записи та особливі дати."
+  size="lg"
+>
+  <div className="space-y-5 text-sm font-medium leading-6 text-[#77716b]">
+    <div>
+      <h4 className="text-base font-black text-[#202020]">
+        Можливості сторінки
+      </h4>
+
+      <ul className="mt-2 list-disc space-y-1 pl-5">
+        <li>Додавання нових майстрів.</li>
+        <li>Редагування фото, імені, спеціалізації та опису.</li>
+        <li>Перегляд записів конкретного майстра.</li>
+        <li>Додавання особливих дат або вихідних.</li>
+        <li>Видалення майстрів із підтвердженням.</li>
+        <li>Експорт списку майстрів у Excel.</li>
+      </ul>
+    </div>
+  </div>
+</Modal>
     </div>
   );
 }

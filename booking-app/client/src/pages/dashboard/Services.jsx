@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useStudio } from "../../context/studio/useStudio";
+import XLSX from "xlsx-js-style";
 import { Slider } from "../../components/ui/slider";
 import {
   Clock,
@@ -10,6 +11,9 @@ import {
   Users,
   Check,
   X,
+  Download,
+FileSpreadsheet,
+CircleAlert,
   Sparkles,
   ChevronDown,
   Banknote,
@@ -345,26 +349,37 @@ function Modal({
   footer,
   size = "md",
 }) {
-  useEffect(() => {
-    if (open) {
-      document.body.style.overflow = "hidden";
+useEffect(() => {
+  if (!open) return;
 
-      const handleEscape = (e) => {
-        if (e.key === "Escape") onClose?.();
-      };
+  const scrollY = window.scrollY;
 
-      document.addEventListener("keydown", handleEscape);
+  document.body.style.position = "fixed";
+  document.body.style.top = `-${scrollY}px`;
+  document.body.style.left = "0";
+  document.body.style.right = "0";
+  document.body.style.width = "100%";
+  document.body.style.overflow = "hidden";
 
-      return () => {
-        document.body.style.overflow = "";
-        document.removeEventListener("keydown", handleEscape);
-      };
-    }
+  const handleEscape = (e) => {
+    if (e.key === "Escape") onClose?.();
+  };
 
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [open, onClose]);
+  document.addEventListener("keydown", handleEscape);
+
+  return () => {
+    document.body.style.position = "";
+    document.body.style.top = "";
+    document.body.style.left = "";
+    document.body.style.right = "";
+    document.body.style.width = "";
+    document.body.style.overflow = "";
+
+    window.scrollTo(0, scrollY);
+
+    document.removeEventListener("keydown", handleEscape);
+  };
+}, [open, onClose]);
 
   if (!open) return null;
 
@@ -422,9 +437,12 @@ function Modal({
             </div>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto bg-white px-5 py-5 sm:px-6">
-            {children}
-          </div>
+<div
+  data-modal-scroll
+  className="min-h-0 flex-1 overflow-y-auto bg-white px-5 py-5 sm:px-6"
+>
+  {children}
+</div>
 
           {footer && (
             <div className="shrink-0 border-t border-[#f0e7da] bg-[#fbfaf8] px-5 py-4 sm:px-6">
@@ -507,7 +525,7 @@ function IconButton({
 
 function DurationSlider({ value, onChange }) {
   const minVal = 5;
-  const maxVal = 720;
+  const maxVal = 240;
   const step = 5;
 
   const presets = [
@@ -572,10 +590,10 @@ function DurationSlider({ value, onChange }) {
             5 хв
           </span>
           <span className="text-[11px] text-[#77716b] sm:text-xs">
-            6 год
+            2 год
           </span>
           <span className="text-[11px] text-[#77716b] sm:text-xs">
-            12 год
+            4 год
           </span>
         </div>
       </div>
@@ -614,7 +632,7 @@ function CategoryFilters({ value, onChange, categories }) {
 
   return (
     <div className="mb-6">
-      <div className="no-scrollbar -mx-1 flex justify-center gap-2 overflow-x-auto px-1 pb-1">
+     <div className="no-scrollbar -mx-4 flex justify-start gap-2 overflow-x-auto px-4 pb-1">
         {items.map((item) => {
           const active = String(value) === String(item.id);
 
@@ -659,7 +677,16 @@ export default function Services() {
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
+const [exportOpen, setExportOpen] = useState(false);
+const [infoOpen, setInfoOpen] = useState(false);
 
+const [exportFields, setExportFields] = useState({
+  name: true,
+  category: true,
+  duration: true,
+  price: true,
+  masters: true,
+});
   const serviceCategories = servicesQuery.data?.serviceCategories ?? EMPTY_ARRAY;
   const uncategorizedServices =
     servicesQuery.data?.uncategorizedServices ?? EMPTY_ARRAY;
@@ -960,6 +987,79 @@ export default function Services() {
     );
   }, [blocks, activeCategoryFilter]);
 
+  const allServicesForExport = useMemo(() => {
+  return blocks.flatMap((cat) =>
+    (cat.services || []).map((service) => ({
+      ...service,
+      categoryName: cat.name,
+    })),
+  );
+}, [blocks]);
+
+function handleExportServices() {
+  const sortedServices = [...allServicesForExport].sort((a, b) =>
+    String(a.name || "").localeCompare(String(b.name || ""), "uk", {
+      sensitivity: "base",
+    }),
+  );
+
+  const rows = sortedServices.map((service) => {
+    const row = {};
+
+    if (exportFields.name) row["Назва"] = service.name || "-";
+    if (exportFields.category) row["Категорія"] = service.categoryName || "-";
+    if (exportFields.duration) row["Тривалість"] = formatDuration(service.duration);
+    if (exportFields.price) row["Вартість"] = service.price || 0;
+    if (exportFields.masters) {
+      row["Майстри"] = resolveServiceMastersText(service) || "-";
+    }
+
+    return row;
+  });
+
+  if (!rows.length) {
+    alert("Немає послуг для експорту");
+    return;
+  }
+
+  const worksheet = XLSX.utils.json_to_sheet(rows);
+
+  worksheet["!cols"] = Object.keys(rows[0] || {}).map((key) => {
+    const maxLength = Math.max(
+      key.length,
+      ...rows.map((row) => String(row[key] ?? "").length),
+    );
+
+    return { wch: Math.max(maxLength + 8, 18) };
+  });
+
+  const range = XLSX.utils.decode_range(worksheet["!ref"]);
+
+  for (let row = range.s.r; row <= range.e.r; row++) {
+    for (let col = range.s.c; col <= range.e.c; col++) {
+      const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+
+      if (!worksheet[cellAddress]) continue;
+
+      worksheet[cellAddress].s = {
+        font: { bold: row === 0 },
+        alignment: {
+          horizontal: "center",
+          vertical: "center",
+        },
+      };
+    }
+  }
+
+  const workbook = XLSX.utils.book_new();
+
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Послуги");
+  XLSX.writeFile(
+    workbook,
+    `services-${new Date().toISOString().slice(0, 10)}.xlsx`,
+  );
+}
+
   return (
     <div className="min-h-screen ">
 <div className="mx-auto max-w-5xl space-y-6">
@@ -967,16 +1067,40 @@ export default function Services() {
     <div className="relative mb-6 overflow-hidden rounded-[32px] border border-[#ebe7df] bg-white/95 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.06)] backdrop-blur-xl sm:p-7">
       <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#ff7a18] via-[#ff6200] to-[#ff8c42]" />
 
-      <div className="relative">
-        <h1 className="text-[40px] font-black leading-[0.95] tracking-tight text-[#202020] sm:text-6xl">
-          Пос<span className="text-[#ff5a00]">луги</span>
-        </h1>
+<div className="relative flex items-start justify-between gap-3">
+  <div className="min-w-0 flex-1">
+    <h1 className="text-[40px] font-black leading-[0.95] tracking-tight text-[#202020] sm:text-6xl">
+      Пос<span className="text-[#ff5a00]">луги</span>
+    </h1>
 
-        <p className="mt-3 max-w-[640px] text-[12px] font-semibold text-[#77716b] sm:text-[16px]">
-          Налаштуйте категорії та послуги — саме так їх бачитимуть клієнти
-          під час онлайн-запису.
-        </p>
-      </div>
+    <p className="mt-3 max-w-[640px] text-[12px] font-semibold text-[#77716b] sm:text-[16px]">
+      Налаштуйте категорії та послуги — саме так їх бачитимуть клієнти
+      під час онлайн-запису.
+    </p>
+  </div>
+
+<div className="flex shrink-0 items-center gap-1 sm:gap-2">
+  <button
+    type="button"
+    onClick={() => setInfoOpen(true)}
+    className="grid h-10 w-10 place-items-center rounded-full text-[#ff6200] transition-all duration-200 hover:scale-110 hover:bg-[#fff7f0] active:scale-95 sm:h-12 sm:w-12"
+    title="Інформація"
+  >
+    <CircleAlert className="h-5 w-5" />
+  </button>
+
+<div className="hidden sm:block">
+  <Button
+    variant="ghost"
+    className="h-12 hover:bg-[#fff7f0]"
+    onClick={() => setExportOpen(true)}
+  >
+    <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
+    Експорт
+  </Button>
+</div>
+  </div>
+</div>
     </div>
   )}
 
@@ -1127,10 +1251,10 @@ export default function Services() {
                                     {formatDuration(srv.duration)}
                                   </span>
 
-                                  <span className="inline-flex items-center gap-1 font-black text-[#202020]">
-                                    <Banknote className="h-3.5 w-3.5" />
-                                    {srv.price} грн
-                                  </span>
+                           <span className="inline-flex items-center gap-1">
+  <Banknote className="h-3.5 w-3.5" />
+  {srv.price} грн
+</span>
 
                                   <span className="inline-flex items-center gap-1">
                                     <Users className="h-3.5 w-3.5" />
@@ -1353,13 +1477,30 @@ export default function Services() {
 
               <button
                 type="button"
-                onClick={() =>
-                  setServiceDraft((p) => ({
-                    ...p,
-                    allMasters: false,
-                    masters: [],
-                  }))
-                }
+onClick={() => {
+  setServiceDraft((p) => ({
+    ...p,
+    allMasters: false,
+    masters: [],
+  }));
+
+  setTimeout(() => {
+    const mastersSection = document.getElementById("masters-section");
+    const scrollBox = mastersSection?.closest("[data-modal-scroll]");
+
+    if (!mastersSection || !scrollBox) return;
+
+    const y =
+      mastersSection.offsetTop -
+      scrollBox.offsetTop -
+      120;
+
+    scrollBox.scrollTo({
+      top: y,
+      behavior: "smooth",
+    });
+  }, 100);
+}}
                 className={cn(
                   "rounded-xl px-4 py-2 text-sm font-medium transition-all",
                   !serviceDraft.allMasters
@@ -1371,8 +1512,8 @@ export default function Services() {
               </button>
             </div>
 
-            {!serviceDraft.allMasters && (
-              <div className="space-y-2">
+{!serviceDraft.allMasters && (
+  <div id="masters-section" className="space-y-2">
                 {mastersLoading ? (
                   <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                     {Array.from({ length: 4 }).map((_, i) => (
@@ -1436,6 +1577,90 @@ export default function Services() {
           </div>
         </div>
       </Modal>
+      <Modal
+  open={exportOpen}
+  onClose={() => setExportOpen(false)}
+  title="Експорт послуг"
+  subtitle="Оберіть, які колонки потрібно додати в Excel-файл."
+  size="sm"
+  footer={
+    <div className="flex gap-2">
+      <Button
+        variant="secondary"
+        className="flex-1"
+        onClick={() => setExportOpen(false)}
+      >
+        Скасувати
+      </Button>
+
+      <Button
+        variant="primary"
+        className="flex-1"
+        onClick={() => {
+          handleExportServices();
+          setExportOpen(false);
+        }}
+      >
+        <Download className="h-4 w-4" />
+        Експорт
+      </Button>
+    </div>
+  }
+>
+  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+    {[
+      ["name", "Назва"],
+      ["category", "Категорія"],
+      ["duration", "Тривалість"],
+      ["price", "Вартість"],
+      ["masters", "Майстри"],
+    ].map(([key, label]) => (
+      <label
+        key={key}
+        className="flex cursor-pointer items-center justify-between rounded-xl border border-[#eadbc9] p-3"
+      >
+        <span className="text-sm font-semibold">{label}</span>
+
+        <input
+          type="checkbox"
+          checked={exportFields[key]}
+          onChange={(e) =>
+            setExportFields((prev) => ({
+              ...prev,
+              [key]: e.target.checked,
+            }))
+          }
+          className="h-4 w-4 rounded border-[#eadbc9] text-[#ff5a00] focus:ring-[#ff5a00]"
+        />
+      </label>
+    ))}
+  </div>
+</Modal>
+
+<Modal
+  open={infoOpen}
+  onClose={() => setInfoOpen(false)}
+  title="Інформація про послуги"
+  subtitle="Ця сторінка відповідає за послуги, категорії, ціни, тривалість і майстрів."
+  size="lg"
+>
+  <div className="space-y-5 text-sm font-medium leading-6 text-[#77716b]">
+    <div>
+      <h4 className="text-base font-black text-[#202020]">
+        Можливості сторінки
+      </h4>
+
+      <ul className="mt-2 list-disc space-y-1 pl-5">
+        <li>Створення категорій для групування послуг.</li>
+        <li>Додавання, редагування та видалення послуг.</li>
+        <li>Налаштування назви, тривалості та вартості послуги.</li>
+        <li>Привʼязка послуги до всіх майстрів або до конкретних майстрів.</li>
+        <li>Фільтрація послуг за категоріями.</li>
+        <li>Експорт послуг у Excel з вибором потрібних колонок.</li>
+      </ul>
+    </div>
+  </div>
+</Modal>
     </div>
   );
 }

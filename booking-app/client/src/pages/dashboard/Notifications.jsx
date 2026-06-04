@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { socket } from "../../lib/socket";
 import {
   ArrowRight,
+  Ban,
   Bell,
   CalendarClock,
   CalendarDays,
@@ -223,6 +224,100 @@ function DetailItem({ icon: Icon, label, value, accent = false, dateTime = false
   );
 }
 
+function CancelBookingModal({ item, onClose }) {
+  if (!item) return null;
+
+const canceledTime = splitDateTime(
+  item.newDate || item.bookingDate || item.date || item.startAt,
+);
+
+  return (
+    <div
+      className="fixed inset-0 z-[9999] flex items-stretch justify-center bg-[#202020]/45 p-0 backdrop-blur-[6px] sm:items-center sm:p-6"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose?.();
+      }}
+    >
+      <div className="flex h-dvh w-full max-w-2xl flex-col overflow-hidden rounded-none border-0 bg-[#fbfaf8] shadow-[0_30px_90px_rgba(15,23,42,0.24)] sm:h-auto sm:max-h-[calc(100dvh-48px)] sm:rounded-[32px] sm:border sm:border-[#f0e2d3]">
+        <div className="relative shrink-0 overflow-hidden bg-[#202020] px-4 pb-5 pt-4 text-white sm:px-6 sm:pb-6 sm:pt-5">
+          <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#ef4444] via-[#dc2626] to-[#b91c1c]" />
+
+          <div className="relative z-10 flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <span className="inline-flex h-7 items-center gap-1.5 rounded-full bg-white/10 px-3 text-[10px] font-black uppercase tracking-[0.12em] text-[#fecaca] ring-1 ring-white/10">
+                <Ban className="h-3.5 w-3.5" />
+                Скасування запису
+              </span>
+
+              <h3 className="mt-3 text-[28px] font-black leading-[0.95] tracking-[-0.045em] sm:text-[36px]">
+                Запис скасовано
+              </h3>
+
+              <div className="mt-4 rounded-[26px] border border-white/10 bg-white/[0.08] p-4 backdrop-blur">
+                <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#fecaca]">
+                  Скасований слот
+                </p>
+
+                <div className="mt-2 flex items-end justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[42px] font-black leading-none tracking-[-0.05em] text-white sm:text-[52px]">
+                      {canceledTime.time || "—"}
+                    </p>
+
+                    <p className="mt-1 text-sm font-bold text-white/70">
+                      {canceledTime.date}
+                    </p>
+                  </div>
+
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#dc2626] text-white shadow-[0_16px_34px_rgba(220,38,38,0.28)]">
+                    <Ban className="h-6 w-6" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/10 text-white transition hover:bg-white/15 active:scale-[0.96]"
+              aria-label="Закрити"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <DetailItem icon={UserRound} label="Клієнт" value={item.clientName} />
+
+            <DetailItem icon={Scissors} label="Послуга" value={item.serviceName} />
+
+            <DetailItem
+              icon={CalendarDays}
+              label="Дата і час"
+            value={item.newDate || item.bookingDate || item.date || item.startAt}
+              dateTime
+              accent
+            />
+
+            <DetailItem
+              icon={Ban}
+              label="Статус"
+              value="Скасовано клієнтом"
+              accent
+            />
+          </div>
+
+          <div className="mt-3 text-right text-[11px] font-semibold text-[#8a837c]">
+            Створено: {formatDateTimeUA(item.createdAt)}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function RescheduleModal({ item, onClose, onRead }) {
   if (!item) return null;
 
@@ -392,22 +487,33 @@ function RescheduleModal({ item, onClose, onRead }) {
   );
 }
 
+function NotificationCard({ item, onRead, onOpenDetails, onOpenCanceled }) {
+const isCanceled = item.type === "BOOKING_CANCELED";
 
-function NotificationCard({ item, onRead, onOpenDetails }) {
-  const isReschedule = item.oldDate || item.newDate;
+const isReschedule =
+  item.type === "BOOKING_RESCHEDULED" ||
+  (!isCanceled && item.oldDate && item.newDate);
   const rescheduleInfo = getRescheduleInfo(item);
-
   return (
 <div
-  onClick={() => {
-    if (isReschedule) {
-      if (!item.isRead) {
-        onRead?.(item.id);
-      }
-
-      onOpenDetails?.(item);
+onClick={() => {
+  if (isReschedule) {
+    if (!item.isRead) {
+      onRead?.(item.id);
     }
-  }}
+
+    onOpenDetails?.(item);
+    return;
+  }
+
+  if (isCanceled) {
+    if (!item.isRead) {
+      onRead?.(item.id);
+    }
+
+    onOpenCanceled?.(item);
+  }
+}}
   className={cn(
     "reschedule-card relative overflow-hidden rounded-[24px] border p-3 transition-all duration-200 cursor-pointer",
     "hover:bg-[#fff7f0] hover:-translate-y-0.5 hover:border-[#ffd6bd] hover:shadow-[0_18px_44px_rgba(255,90,0,0.10)]",
@@ -423,7 +529,11 @@ function NotificationCard({ item, onRead, onOpenDetails }) {
 <div className="min-w-0">
   <div className="flex items-center justify-between gap-3">
     <p className="line-clamp-1 text-[15px] font-black text-[#202020] sm:text-[16px]">
-      {isReschedule ? "Перенесення запису" : item.title || "Повідомлення"}
+      {isCanceled
+  ? "Скасування запису"
+  : isReschedule
+    ? "Перенесення запису"
+    : item.title || "Повідомлення"}
     </p>
 
     {item.isRead ? (
@@ -482,7 +592,40 @@ className="reschedule-group mt-2 flex w-full items-center justify-between gap-3 
 <ChevronRight className="h-5 w-5 shrink-0 text-[#ff5a00] transition-all duration-200 sm:[.reschedule-group:hover_&]:translate-x-1 sm:[.reschedule-card:hover_&]:translate-x-1" />
     </button>
   )}
+{isCanceled && (
+  <button
+    type="button"
+    onClick={() => {
+      if (!item.isRead) onRead?.(item.id);
+      onOpenCanceled?.(item);
+    }}
+    className="cancel-group mt-2 flex w-full items-center justify-between gap-3  px-2.5 py-2 text-left transition-all duration-200 "
+  >
+    <div className="flex min-w-0 items-center gap-2">
+     <span className="grid h-8 w-8 shrink-0 -ml-1 place-items-center rounded-xl bg-[#fef2f2] text-[#dc2626] transition-all duration-200 sm:[.cancel-group:hover_&]:bg-[#dc2626] sm:[.cancel-group:hover_&]:text-white sm:[.reschedule-card:hover_&]:bg-[#dc2626] sm:[.reschedule-card:hover_&]:text-white">
+        <Ban className="h-4.5 w-4.5" />
+      </span>
 
+      <div className="min-w-0">
+        <p className="line-clamp-2 text-[13px] font-black leading-4 text-[#202020] sm:line-clamp-1 sm:text-sm">
+          {item.clientName || "Клієнт"} скасував(ла) запис
+        </p>
+
+        <div className="mt-0.5 min-w-0 text-[11px] font-bold text-[#77716b] sm:text-xs">
+          <p className="line-clamp-2 leading-4">
+            {item.serviceName || "Послуга"}
+          </p>
+
+          <p className="mt-0.5 line-clamp-1 text-[#dc2626]">
+            {item.newDate || item.bookingDate || item.date || item.startAt || "Дата запису"}
+          </p>
+        </div>
+      </div>
+    </div>
+
+   <ChevronRight className="h-5 w-5 shrink-0 text-[#dc2626] transition-all duration-200 sm:[.cancel-group:hover_&]:translate-x-1 sm:[.reschedule-card:hover_&]:translate-x-1" />
+  </button>
+)}
 </div>
     </div>
   );
@@ -491,10 +634,10 @@ className="reschedule-group mt-2 flex w-full items-center justify-between gap-3 
 export default function Notifications() {
   const queryClient = useQueryClient();
   const studioId = localStorage.getItem("studioId");
-
-  const [visibleCount, setVisibleCount] = useState(10);
-  const [selectedReschedule, setSelectedReschedule] = useState(null);
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
+const [visibleCount, setVisibleCount] = useState(10);
+const [selectedReschedule, setSelectedReschedule] = useState(null);
+const [selectedCanceled, setSelectedCanceled] = useState(null);
+const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [socketState, setSocketState] = useState(
     socket.connected ? "ok" : "offline",
   );
@@ -600,6 +743,18 @@ export default function Notifications() {
     };
   }, [studioId, queryClient]);
 
+useEffect(() => {
+  if (selectedReschedule || selectedCanceled) {
+    document.body.classList.add("modal-open");
+  } else {
+    document.body.classList.remove("modal-open");
+  }
+
+  return () => {
+    document.body.classList.remove("modal-open");
+  };
+}, [selectedReschedule, selectedCanceled]);
+
   const markAsRead = async (id) => {
     const token = localStorage.getItem("token");
     const previous = queryClient.getQueryData(["notifications", studioId]) || [];
@@ -687,12 +842,13 @@ export default function Notifications() {
           <>
             <div className="space-y-3">
               {notifications.slice(0, visibleCount).map((n) => (
-                <NotificationCard
-                  key={n.id}
-                  item={n}
-                  onRead={markAsRead}
-                  onOpenDetails={setSelectedReschedule}
-                />
+<NotificationCard
+  key={n.id}
+  item={n}
+  onRead={markAsRead}
+  onOpenDetails={setSelectedReschedule}
+  onOpenCanceled={setSelectedCanceled}
+/>
               ))}
             </div>
 
@@ -716,6 +872,10 @@ export default function Notifications() {
         onClose={() => setSelectedReschedule(null)}
         onRead={markAsRead}
       />
+      <CancelBookingModal
+  item={selectedCanceled}
+  onClose={() => setSelectedCanceled(null)}
+/>
     </div>
   );
 }

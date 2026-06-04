@@ -61,6 +61,10 @@ const STUDIO_CATEGORIES = [
   { value: "other", label: "Інше" },
 ];
 
+const SORTED_STUDIO_CATEGORIES = [...STUDIO_CATEGORIES].sort((a, b) =>
+  a.label.localeCompare(b.label, "uk"),
+);
+
 const getCategoryLabel = (value) => {
   return STUDIO_CATEGORIES.find((c) => c.value === value)?.label || value;
 };
@@ -261,6 +265,7 @@ function CustomSelect({
   menuClassName = "",
 }) {
   const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
   const [menuPosition, setMenuPosition] = useState({
     top: undefined,
     bottom: undefined,
@@ -272,11 +277,25 @@ function CustomSelect({
 
   const selected = options.find((opt) => String(opt.value) === String(value));
 
+  const sortedOptions = useMemo(() => {
+    return [...options].sort((a, b) => a.label.localeCompare(b.label, "uk"));
+  }, [options]);
+
+  const filteredOptions = useMemo(() => {
+    const q = search.trim().toLowerCase();
+
+    if (!q) return sortedOptions;
+
+    return sortedOptions.filter((opt) =>
+      opt.label.toLowerCase().includes(q),
+    );
+  }, [search, sortedOptions]);
+
   function updateMenuPosition() {
     const rect = rootRef.current?.getBoundingClientRect();
     if (!rect) return;
 
-    const dropdownHeight = 320;
+    const dropdownHeight = 380;
     const spaceBelow = window.innerHeight - rect.bottom;
     const spaceAbove = rect.top;
     const shouldOpenUp =
@@ -293,6 +312,7 @@ function CustomSelect({
   function toggleOpen() {
     if (open) {
       setOpen(false);
+      setSearch("");
       return;
     }
 
@@ -304,11 +324,15 @@ function CustomSelect({
     function handleClickOutside(e) {
       if (!rootRef.current?.contains(e.target)) {
         setOpen(false);
+        setSearch("");
       }
     }
 
     function handleEscape(e) {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") {
+        setOpen(false);
+        setSearch("");
+      }
     }
 
     document.addEventListener("mousedown", handleClickOutside);
@@ -335,7 +359,6 @@ function CustomSelect({
       window.removeEventListener("scroll", handleUpdate, true);
     };
   }, [open]);
-
 
   return (
     <div ref={rootRef} className="relative">
@@ -379,45 +402,62 @@ function CustomSelect({
             width: menuPosition.width,
           }}
         >
+          <div className="border-b border-[#f0e7da] bg-white p-2">
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Пошук категорії..."
+              className="w-full rounded-xl border border-[#eadbc9] bg-white px-3 py-2 text-sm font-semibold text-[#202020] outline-none transition-all duration-200 placeholder:text-[#9b948c] focus:border-[#ff5a00] focus:ring-2 focus:ring-[#ff5a00]/10"
+              autoFocus
+            />
+          </div>
+
           <div className="max-h-72 overflow-y-auto py-2">
-            {options.map((opt) => {
-              const isSelected = String(opt.value) === String(value);
+            {filteredOptions.length > 0 ? (
+              filteredOptions.map((opt) => {
+                const isSelected = String(opt.value) === String(value);
 
-              return (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => {
-                    onChange(opt.value);
-                    setOpen(false);
-                  }}
-                  className={cn(
-                    "flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm transition-colors duration-150",
-                    isSelected
-                      ? "bg-[#fff1e8] text-[#ff5a00]"
-                      : "text-[#202020] hover:bg-[#fff7f0]",
-                  )}
-                  role="option"
-                  aria-selected={isSelected}
-                >
-                  <span
-                    className="min-w-0 text-left"
-                    style={{
-                      display: "-webkit-box",
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: "vertical",
-                      overflow: "hidden",
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => {
+                      onChange(opt.value);
+                      setOpen(false);
+                      setSearch("");
                     }}
+                    className={cn(
+                      "flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm transition-colors duration-150",
+                      isSelected
+                        ? "bg-[#fff1e8] text-[#ff5a00]"
+                        : "text-[#202020] hover:bg-[#fff7f0]",
+                    )}
+                    role="option"
+                    aria-selected={isSelected}
                   >
-                    {opt.label}
-                  </span>
+                    <span
+                      className="min-w-0 text-left"
+                      style={{
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                      }}
+                    >
+                      {opt.label}
+                    </span>
 
-                  {isSelected && (
-                    <Check className="h-4 w-4 shrink-0 text-[#ff5a00]" />
-                  )}
-                </button>
-              );
-            })}
+                    {isSelected && (
+                      <Check className="h-4 w-4 shrink-0 text-[#ff5a00]" />
+                    )}
+                  </button>
+                );
+              })
+            ) : (
+              <div className="px-4 py-5 text-center text-sm font-bold text-[#77716b]">
+                Нічого не знайдено
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -669,6 +709,8 @@ const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
   const [portfolioPreviewUrls, setPortfolioPreviewUrls] = useState([]);
   const [highlightTone, setHighlightTone] = useState("green");
 
+
+
   const highlightClass =
     highlightTone === "green"
       ? "ring-2 ring-[#ff5a00]/25 bg-[#fff1e8] border-[#ffd6bd]"
@@ -750,6 +792,33 @@ const addressPreview = [
     open: false,
     src: "",
   });
+
+  
+  useEffect(() => {
+  const isAnyModalOpen =
+    editModal.open ||
+    cropModal.open ||
+    portfolioPreview.open ||
+    errorModal.open;
+
+  if (isAnyModalOpen) {
+    document.body.style.overflow = "hidden";
+    document.body.style.touchAction = "none";
+  } else {
+    document.body.style.overflow = "";
+    document.body.style.touchAction = "";
+  }
+
+  return () => {
+    document.body.style.overflow = "";
+    document.body.style.touchAction = "";
+  };
+}, [
+  editModal.open,
+  cropModal.open,
+  portfolioPreview.open,
+  errorModal.open,
+]);
 
   useEffect(() => {
     if (!form.coverFile) {
@@ -1825,7 +1894,14 @@ async function saveStudioEditModal() {
           </div>
 
          <div className="mt-4 rounded-[32px] border border-[#ebe7df] bg-white p-2 shadow-[0_10px_32px_rgba(15,23,42,0.04)]">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div
+  className={cn(
+    "flex flex-col gap-3 md:flex-row md:items-center",
+    profile.percent === 100
+      ? "justify-center"
+      : "md:justify-between",
+  )}
+>
               <div className="flex justify-center gap-1 overflow-x-auto px-0 sm:gap-2">
                 {[
                   { id: "profile", label: "Профіль" },
@@ -1839,7 +1915,7 @@ async function saveStudioEditModal() {
                     className={cn(
                       "shrink-0 whitespace-nowrap rounded-2xl px-3 py-2 text-[13px] font-black transition-all duration-200 sm:px-4 sm:py-2.5 sm:text-sm",
                       tab === t.id
-                        ? "bg-[#ff5a00] text-white shadow-[0_12px_24px_rgba(255,90,0,0.20)]"
+                        ? "bg-[#ff5a00] text-white"
                         : "bg-white text-[#77716b] hover:bg-[#fff7f0] hover:text-[#202020]",
                     )}
                   >
@@ -1953,11 +2029,11 @@ async function saveStudioEditModal() {
       </button>
 
       <div className="min-w-0 flex-1">
-        <h2 className="truncate text-[16px] font-black leading-none tracking-[-0.04em] sm:text-[17px]">
-          {form.name.trim() || "Назва студії"}
-        </h2>
+<h2 className="truncate pb-0.5 text-[16px] font-black leading-[1.15] tracking-[-0.04em] sm:text-[17px]">
+  {form.name.trim() || "Назва студії"}
+</h2>
 
-        <p className="mt-1 flex items-center gap-1 truncate leading-none text-[10px] font-medium text-white sm:text-[10px] md:text-[10px] lg:text-[11px]">
+        <p className="mt-1 flex items-center gap-1 truncate leading-[1.25] text-[10px] font-medium text-white sm:text-[10px] md:text-[10px] lg:text-[11px]">
           <MapPin className="-mt-[1px] h-3 w-3 shrink-0 text-[#ff6200]" />
           {addressPreview}
         </p>
@@ -2331,7 +2407,7 @@ onClick={() => openStudioEditModal(item.field)}
             onChange={(value) =>
               setEditModal((prev) => ({ ...prev, value }))
             }
-            options={STUDIO_CATEGORIES}
+          options={SORTED_STUDIO_CATEGORIES}
             placeholder="Оберіть категорію"
           />
         ) : editModal.field === "description" ? (
