@@ -1238,27 +1238,29 @@ className={cn(
     </section>
   </>
 ) : (
-  <section className="mt-8">
-    <div className="rounded-[28px] border-2 border-dashed border-[#eadfce] bg-white/70 p-8 text-center backdrop-blur-sm">
-      <Search className="mx-auto h-8 w-8 text-[#6f7280]" />
-
-      <h3 className="mt-4 text-xl font-black">
-        Нічого не знайдено
-      </h3>
-
-      <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-[#6f7280]">
-        Спробуй змінити фільтри або ввести простіший запит.
-      </p>
-
-      <button
-        type="button"
-        onClick={clearAll}
-        className="mt-5 h-11 rounded-full bg-[#ff6200] px-5 text-sm font-black text-white"
-           >
-        Очистити фільтри
-      </button>
+<section className="mt-8">
+  <div className="rounded-[32px] border-2 border-dashed border-[#ffd6bd] bg-[#fff7f0] px-6 py-12 text-center">
+    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-[#ff6200] shadow-sm">
+      <Search className="h-7 w-7" />
     </div>
-  </section>
+
+    <h2 className="mt-4 text-xl font-black text-[#202020]">
+      Нічого не знайдено
+    </h2>
+
+    <p className="mx-auto mt-2 max-w-sm text-sm text-[#77716b]">
+      Спробуйте змінити фільтри або ввести інший пошуковий запит.
+    </p>
+
+    <button
+      type="button"
+      onClick={clearAll}
+      className="mt-6 inline-flex h-11 items-center justify-center rounded-2xl bg-[#ff6200] px-5 text-sm font-black text-white shadow-[0_12px_28px_rgba(255,98,0,0.22)] transition-all hover:bg-[#ef5700] active:scale-[0.98]"
+    >
+      Очистити фільтри
+    </button>
+  </div>
+</section>
 )}
 </div>
 

@@ -50,6 +50,9 @@ import {
   Receipt,
   CircleAlert,
   ArrowDownToLine,
+  Eye,
+  TrendingUp,
+  PhoneOff,
 } from "lucide-react";
 
 const PUBLIC = import.meta.env.VITE_R2_PUBLIC_BASE_URL;
@@ -514,7 +517,7 @@ const statusMeta = {
 
   attention: {
     label: "Активний",
-    icon: AlertTriangle,
+    icon: TrendingUp,
     className: "border-emerald-100 bg-emerald-50 text-emerald-700",
   },
 
@@ -524,49 +527,37 @@ const statusMeta = {
     className: "border-slate-200 bg-slate-100 text-slate-600",
   },
 
-  vip: {
-    label: "VIP",
-    icon: Crown,
-    className: "border-yellow-200 bg-yellow-50 text-yellow-700",
-  },
-
-  favorite: {
-    label: "Особливий",
-    icon: UserStar,
-    className: "border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700",
-  },
+vip: {
+  label: "VIP",
+  icon: Crown,
+  className:
+    "border-[#f6d365] bg-gradient-to-r from-[#fff8dc] via-[#fff3b0] to-[#ffe08a] text-[#9a6700] shadow-[0_0_12px_rgba(246,211,101,0.35)]",
+},
 };
 
 const statusDescriptions = {
   new: {
     title: "Новий",
     description:
-      "Клієнт має тільки один нескасований запис або ще не має сформованої історії відвідувань.",
+      "Клієнт має тільки один запис або ще не має сформованої історії відвідувань.",
   },
 
   loyal: {
     title: "Постійний",
     description:
-      "Клієнт має 2 або більше нескасованих записів, а останній візит був протягом останніх 30 днів.",
+      "Клієнт має 2 або більше записів, а останній візит був протягом останніх 30 днів.",
   },
 
   attention: {
     title: "Активний",
     description:
-      "Останній нескасований запис був більше 30 днів тому, але не більше 60 днів.",
+      "Останній запис був більше 30 днів тому, але не більше 60 днів.",
   },
 
   risk: {
     title: "Неактивний",
     description: "Клієнт не відвідував студію більше 60 днів.",
   },
-
-  favorite: {
-    title: "Особливий клієнт",
-    description:
-      "Статус встановлюється вручну власником студії для важливих клієнтів.",
-  },
-
   vip: {
     title: "VIP-клієнт",
     description:
@@ -582,24 +573,16 @@ function StatusBadge({ status }) {
   return (
     <div className="relative inline-flex">
       <span
-        className={cn(
-          "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold sm:gap-1.5 sm:px-3 sm:py-1 sm:text-xs",
-          meta.className,
-        )}
+className={cn(
+  "inline-flex items-center gap-1 rounded-full border px-1.5 py-[2px] text-[9px] font-bold sm:px-2 sm:py-0.5 sm:text-[10px]",
+  meta.className,
+)}
+
       >
-        <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+     <Icon className="h-2 w-2 sm:h-3 sm:w-3" />
         {meta.label}
       </span>
     </div>
-  );
-}
-
-function SalonFavoriteBadge() {
-  return (
-    <span className="inline-flex items-center gap-1 rounded-full border border-fuchsia-200 bg-fuchsia-50 px-2 py-0.5 text-[10px] font-bold text-fuchsia-700 sm:gap-1.5 sm:px-3 sm:py-1 sm:text-xs">
-      <UserStar className="h-3 w-3 text-fuchsia-600 sm:h-3.5 sm:w-3.5" />
-      Особливий
-    </span>
   );
 }
 
@@ -613,13 +596,11 @@ function ClientStatusBadges({ client }) {
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      {isVip ? (
-        <StatusBadge status="vip" />
-      ) : client.isFavorite ? (
-        <SalonFavoriteBadge />
-      ) : (
-        <StatusBadge status={mainStatus} />
-      )}
+{isVip ? (
+  <StatusBadge status="vip" />
+) : (
+  <StatusBadge status={mainStatus} />
+)}
     </div>
   );
 }
@@ -673,7 +654,7 @@ const emptyFilterInfo = {
   },
 
   attention: {
-    icon: AlertTriangle,
+    icon: TrendingUp,
     title: "Поки що немає активних клієнтів",
     description: (
       <span className="flex flex-col gap-1">
@@ -734,6 +715,7 @@ export default function Clients() {
   const [selectedClientId, setSelectedClientId] = useState(null);
   const [clientTabs, setClientTabs] = useState({});
   const clientsListRef = useRef(null);
+  const [statusInfoClient, setStatusInfoClient] = useState(null);
   const filterRef = useRef(null);
 const sortRef = useRef(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -894,27 +876,31 @@ const sortRef = useRef(null);
     const text = noteDraft.trim();
     if (!text || !noteClient?.id) return;
 
-    const data = await api(
-      `/owner/studio/${studioId}/clients/${noteClient.id}/notes`,
-      {
-        method: "POST",
-        body: { text },
-      },
-    );
+const data = await api(
+  `/owner/studio/${studioId}/clients/${noteClient.id}/notes`,
+  {
+    method: "POST",
+    body: { text },
+  },
+);
 
-    setAllClients((current) =>
-      current.map((client) =>
-        client.id === noteClient.id
-          ? {
-              ...client,
-              notes: [data.note, ...(client.notes || [])],
-            }
-          : client,
-      ),
-    );
+setAllClients((current) =>
+  current.map((client) =>
+    client.id === noteClient.id
+      ? {
+          ...client,
+          notes: [data.note, ...(client.notes || [])],
+        }
+      : client,
+  ),
+);
 
-    setNoteClient(null);
-    setNoteDraft("");
+setNoteClient((current) => ({
+  ...current,
+  notes: [data.note, ...(current?.notes || [])],
+}));
+
+setNoteDraft("");
   }
 
   async function handleDeleteNote(clientId, noteId) {
@@ -936,28 +922,7 @@ const sortRef = useRef(null);
     );
   }
 
-  async function handleToggleVip(client) {
-    if (!studioId) return;
 
-    const data = await api(
-      `/owner/studio/${studioId}/clients/${client.id}/favorite`,
-      {
-        method: client.isFavorite ? "DELETE" : "PATCH",
-      },
-    );
-
-    setAllClients((current) =>
-      current.map((item) =>
-        item.id === client.id
-          ? {
-              ...item,
-              isFavorite: data.favorite.isFavorite,
-              favoriteSince: data.favorite.favoriteSince,
-            }
-          : item,
-      ),
-    );
-  }
 
   function handleExportClients() {
     const sortedClients = [...clients].sort((a, b) => {
@@ -1625,35 +1590,34 @@ const sortRef = useRef(null);
   </div>
 ) : !loading && !error ? (
             <>
-              <div
-                ref={clientsListRef}
-                className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4"
-              >
+<div
+  ref={clientsListRef}
+  className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+>
                 {visibleClients.map((client) => (
-                  <ClientAccordion
-                    key={client.id}
-                    client={{
-                      ...client,
-                      notes: client.notes || [],
-                    }}
-                    onOpenDetails={() => {
-                      setSelectedClientId(client.id);
-                      setClientTabs((current) => ({
-                        ...current,
-                        [client.id]: current[client.id] || "history",
-                      }));
-                    }}
-                    onAddNote={() => {
-                      setNoteClient(client);
-                      setNoteDraft("");
-                    }}
-                    onDeleteNote={(noteId) =>
-                      handleDeleteNote(client.id, noteId)
-                    }
-                    onToggleVip={() => handleToggleVip(client)}
-                    onCopyPhone={handleCopyPhone}
-                    copiedPhone={copiedPhone}
-                  />
+<ClientAccordion
+  key={client.id}
+  client={{
+    ...client,
+    notes: client.notes || [],
+  }}
+  onOpenDetails={() => {
+    setSelectedClientId(client.id);
+    setClientTabs((current) => ({
+      ...current,
+      [client.id]: current[client.id] || "history",
+    }));
+  }}
+  onAddNote={() => {
+    setNoteClient(client);
+    setNoteDraft("");
+  }}
+  onOpenStatusInfo={() => setStatusInfoClient(client)}
+  onDeleteNote={(noteId) => handleDeleteNote(client.id, noteId)}
+
+  onCopyPhone={handleCopyPhone}
+  copiedPhone={copiedPhone}
+/>
                 ))}
               </div>
 
@@ -1750,7 +1714,7 @@ const sortRef = useRef(null);
             onDeleteNote={(noteId) =>
               handleDeleteNote(selectedClient.id, noteId)
             }
-            onToggleVip={() => handleToggleVip(selectedClient)}
+          
           />
         )}
       </Modal>
@@ -1767,16 +1731,6 @@ const sortRef = useRef(null);
         size="sm"
         footer={
           <div className="flex w-full flex-row gap-2 sm:justify-end">
-            <Button
-              variant="secondary"
-              onClick={() => {
-                setNoteClient(null);
-                setNoteDraft("");
-              }}
-              className="flex-1 sm:flex-none"
-            >
-              Скасувати
-            </Button>
 
             <Button
               variant="primary"
@@ -1791,23 +1745,26 @@ const sortRef = useRef(null);
         }
       >
         <div className="space-y-4">
-          <div className="rounded-[22px] border border-[#ffd6bd] bg-[#fff7f0] p-3.5">
-            <div className="flex items-start gap-3">
-              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-[#ff5a00] shadow-sm">
-                <AlertTriangle className="h-4.5 w-4.5" />
-              </div>
+{(!noteClient?.notes || noteClient.notes.length === 0) && (
+  <div className="rounded-[22px] border border-[#ffd6bd] bg-[#fff7f0] p-3.5">
+    <div className="flex items-start gap-3">
+      <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-[#ff5a00] shadow-sm">
+        <AlertTriangle className="h-4.5 w-4.5" />
+      </div>
 
-              <div className="min-w-0">
-                <p className="text-sm font-bold text-[#202020]">
-                  Внутрішня інформація
-                </p>
-                <p className="mt-1 text-xs font-medium leading-5 text-[#77716b]">
-                  Додавайте побажання, алергії, звички або важливі деталі перед
-                  наступним візитом.
-                </p>
-              </div>
-            </div>
-          </div>
+      <div className="min-w-0">
+        <p className="text-sm font-bold text-[#202020]">
+          Внутрішня інформація
+        </p>
+
+        <p className="mt-1 text-xs font-medium leading-5 text-[#77716b]">
+          Додавайте побажання, алергії, звички або важливі деталі перед
+          наступним візитом.
+        </p>
+      </div>
+    </div>
+  </div>
+)}
 
           <textarea
             value={noteDraft}
@@ -1817,6 +1774,49 @@ const sortRef = useRef(null);
             placeholder="Напр. Любить коротку стрижку, алергія на фарбу, просить каву..."
             className="w-full resize-none rounded-2xl border border-[#eadbc9] bg-white px-4 py-3 text-sm font-medium text-[#202020] outline-none transition-all placeholder:text-[#77716b] hover:bg-[#fff7f0] focus:border-[#ff5a00] focus:ring-4 focus:ring-[#ff5a00]/10"
           />
+{noteClient?.notes?.length > 0 && (
+  <div className="space-y-2 border-t border-[#f0e7da] pt-4">
+    <p className="text-sm font-black text-[#202020]">
+      Нотатки клієнта
+    </p>
+
+    {noteClient.notes.map((note) => (
+      <div
+        key={note.id}
+        className="flex items-start justify-between gap-3 rounded-2xl border border-[#eadbc9] bg-[#fbfaf8] p-3"
+      >
+        <div className="min-w-0 flex-1">
+          <p className="break-words text-sm font-medium text-[#202020]">
+            {note.text}
+          </p>
+
+          <p className="mt-1 text-[11px] font-medium text-[#77716b]">
+            {formatDateUA(note.createdAt)}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => {
+            handleDeleteNote(noteClient.id, note.id);
+
+            setNoteClient((current) => ({
+              ...current,
+              notes: (current?.notes || []).filter(
+                (item) => item.id !== note.id,
+              ),
+            }));
+          }}
+          className="grid h-8 w-8 shrink-0 place-items-center rounded-xl text-[#e5484d] transition hover:bg-[#fff1f1] active:scale-95"
+          title="Видалити нотатку"
+          aria-label="Видалити нотатку"
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      </div>
+    ))}
+  </div>
+)}
           <div className="text-right text-[11px] font-medium text-[#77716b]">
             {noteDraft.length}/100
           </div>
@@ -1954,6 +1954,18 @@ const sortRef = useRef(null);
           </div>
         </div>
       </Modal>
+      <Modal
+  open={statusInfoClient != null}
+  onClose={() => setStatusInfoClient(null)}
+  title="Статус клієнта"
+  badge="Пояснення"
+  icon={CircleAlert}
+  size="sm"
+>
+  {statusInfoClient && (
+    <ClientStatusInfoModal client={statusInfoClient} />
+  )}
+</Modal>
     </div>
   );
 }
@@ -1999,70 +2011,235 @@ function daysAgo(date) {
   return Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
 }
 
-function ClientAccordion({ client, onOpenDetails, onCopyPhone, copiedPhone }) {
+function ClientAccordion({
+  client,
+  onOpenDetails,
+  onAddNote,
+  onOpenStatusInfo,
+  onToggleVip,
+  onCopyPhone,
+}) {
+  const fullName =
+    [client.firstName, client.lastName].filter(Boolean).join(" ") || "Клієнт";
+const clientStatus =
+  client.isVip || client.status === "vip"
+    ? "vip"
+    : client.status || "new";
+
+const ClientStatusIcon = statusMeta[clientStatus]?.icon || User;
+const clientStatusLabel = statusMeta[clientStatus]?.label || "Новий";
   return (
-    <article
-      onClick={onOpenDetails}
-      className="
-    relative z-0
-    cursor-pointer
-    overflow-visible
-    rounded-[18px]
-    border border-[#e5eaf0]
-    bg-white
-    shadow-[0_10px_30px_rgba(15,23,42,0.045)]
-    transition
-    hover:z-20
-    hover:-translate-y-0.5
-    hover:shadow-[0_18px_44px_rgba(15,23,42,0.08)]
-    active:scale-[0.99]
-  "
-    >
-      <div className="p-4">
-        <div className="relative flex justify-center">
-          <ClientStatusBadges client={client} />
+<article
+  className={cn(
+    "relative flex h-full flex-col overflow-hidden rounded-[18px] border bg-white transition hover:-translate-y-0.5",
+    client.isVip
+      ? "border-[#f6d365] shadow-[0_0_0_1px_rgba(246,211,101,0.4),0_12px_32px_rgba(246,211,101,0.18)] hover:shadow-[0_0_0_1px_rgba(246,211,101,0.5),0_20px_44px_rgba(246,211,101,0.25)]"
+      : "border-[#e5eaf0] shadow-[0_10px_30px_rgba(15,23,42,0.045)] hover:shadow-[0_18px_44px_rgba(15,23,42,0.08)]",
+  )}
+>
 
-          {/* <button
-    type="button"
-    onClick={onOpenDetails}
-    className="absolute right-0 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full text-[#657084] transition hover:bg-[#f4f6f8] hover:text-[#202020]"
-    title="Деталі клієнта"
-    aria-label="Деталі клієнта"
-  >
-            <ChevronRight className="h-5 w-5" />
-          </button> */}
-        </div>
+  {client.isVip && (
+  <div className="absolute left-0 top-0 h-1 w-full bg-gradient-to-r from-[#f6d365] via-[#fbbf24] to-[#fde68a]" />
+)}
 
+  <div className="flex flex-1 flex-col px-3">
         <button
           type="button"
           onClick={onOpenDetails}
-          className="mt-4 flex w-full flex-col items-center text-center"
+          className="mt-3 block w-full text-left"
         >
-          <Avatar
-            name={[client.firstName, client.lastName].filter(Boolean).join(" ")}
-            photoUrl={client.photoUrl}
-            className="h-12 w-12 rounded-full border-[#eef1f5] shadow-[0_10px_26px_rgba(15,23,42,0.10)]"
-          />
+          <div className="flex gap-3">
+            <div className="relative shrink-0">
+              <Avatar
+                name={fullName}
+                photoUrl={client.photoUrl}
+                className="h-20 w-20 rounded-[20px] border-[#eef1f5]"
+              />
 
-          <h3 className="mt-2 line-clamp-2 text-[13px] font-black leading-4">
-            {[client.firstName, client.lastName].filter(Boolean).join(" ") ||
-              "Клієнт"}
-          </h3>
+              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2">
+                <ClientStatusBadges client={client} />
+              </div>
+            </div>
+
+            <div className="flex min-h-[48px] min-w-0 flex-1 flex-col justify-center">
+              <h3 className="line-clamp-2 text-[15px] font-black text-[#202020]">
+                {fullName}
+              </h3>
+
+              <p className="mt-1 line-clamp-1 text-[12px] font-bold text-[#77716b]">
+                {client.phone || "Номер відсутній"}
+              </p>
+
+            </div>
+          </div>
+
+          <div className="mt-2.5 mb-2.5 grid grid-cols-2 gap-2">
+            <div className="rounded-[14px] bg-[#fbfcfd] px-2.5 py-2">
+<p className="text-[9px] font-black uppercase tracking-[0.12em] text-[#9b948c]">
+  Активні записи
+</p>
+<p className="mt-1 text-[13px] font-black text-[#202020]">
+  {(client.history || []).filter(
+    (b) => b.status === "PENDING" || b.status === "CONFIRMED"
+  ).length}
+</p>
+            </div>
+
+            <div className="rounded-[14px] bg-[#fbfcfd] px-2.5 py-2">
+              <p className="text-[9px] font-black uppercase tracking-[0.12em] text-[#9b948c]">
+                Витрачено
+              </p>
+              <p className="mt-1 truncate text-[13px] font-black text-[#202020]">
+                {formatMoney(client.spent || 0)}
+              </p>
+            </div>
+          </div>
+        </button>
+      </div>
+
+    <div className="mt-auto grid grid-cols-4 border-t border-[#edf0f4] bg-[#fbfcfd]">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpenDetails?.();
+          }}
+          className="grid h-11 place-items-center text-[#657084] transition hover:bg-[#fff7f0] hover:text-[#ff6200]"
+          title="Деталі"
+          aria-label="Деталі"
+        >
+          <Eye className="h-4 w-4" />
         </button>
 
-        <div className="mt-4 space-y-3 text-center">
-          <button
-            type="button"
-            onClick={() => onCopyPhone?.(client.phone)}
-            className="flex w-full justify-center gap-1.5 text-[12px] font-medium text-[#586174] transition hover:text-[#ff6200] sm:text-sm"
-          >
-            <Phone className="relative top-[1px] h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
-            <span>{client.phone || "Номер відсутній"}</span>
-          </button>
-        </div>
+<button
+  type="button"
+  onClick={(e) => {
+    e.stopPropagation();
+    onAddNote?.();
+  }}
+  className="relative grid h-11 place-items-center border-l border-[#edf0f4] text-[#657084] transition hover:bg-[#fff7f0] hover:text-[#ff6200]"
+  title="Нотатки"
+  aria-label="Нотатки"
+>
+  <NotebookText className="h-4 w-4" />
+
+  {client.notes?.length > 0 && (
+    <span className="absolute left-[52%] top-[18%] flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#ff5a00] px-1 text-[9px] font-black text-white">
+      {client.notes.length}
+    </span>
+  )}
+</button>
+
+<button
+  type="button"
+  onClick={(e) => {
+    e.stopPropagation();
+    onOpenStatusInfo?.();
+  }}
+  className="grid h-11 place-items-center border-x border-[#edf0f4] text-[#657084] transition hover:bg-[#fff7f0] hover:text-[#ff6200]"
+  title={`Статус: ${clientStatusLabel}`}
+  aria-label={`Статус: ${clientStatusLabel}`}
+>
+  <ClientStatusIcon className="h-4 w-4" />
+</button>
+
+<button
+  type="button"
+  onClick={(e) => {
+    e.stopPropagation();
+
+    if (client.phone) {
+      window.location.href = `tel:${client.phone}`;
+    }
+  }}
+  className="grid h-11 place-items-center text-[#657084] transition hover:bg-[#fff7f0] hover:text-[#ff6200]"
+  title="Зателефонувати"
+  aria-label="Зателефонувати"
+>
+ {client.phone ? (
+  <Phone className="h-4 w-4" />
+) : (
+  <PhoneOff className="h-4 w-4 text-[#ef4444]" />
+)}
+</button>
       </div>
     </article>
   );
+}
+
+function ClientStatusInfoModal({ client }) {
+  const fullName =
+    [client.firstName, client.lastName].filter(Boolean).join(" ") || "Клієнт";
+
+const clientStatus =
+  client.isVip || client.status === "vip"
+    ? "vip"
+    : client.status || "new";
+
+  const meta = statusMeta[clientStatus] || statusMeta.new;
+  const description = statusDescriptions[clientStatus];
+
+  const Icon = meta.icon || User;
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-[24px] border border-[#eadbc9] bg-[#fff7f0] p-4">
+        <div className="flex items-start gap-3">
+          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white text-[#ff6200] shadow-sm">
+            <Icon className="h-6 w-6" />
+          </div>
+
+          <div className="min-w-0">
+            <p className="text-sm font-black text-[#202020]">
+              {fullName} має статус “{meta.label}”
+            </p>
+
+            <p className="mt-2 text-sm font-medium leading-6 text-[#77716b]">
+              {description?.description ||
+                "Цей статус показує поточний рівень активності клієнта у студії."}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-[20px] border border-[#e5eaf0] bg-white p-4">
+        <p className="text-[11px] font-black uppercase tracking-[0.12em] text-[#9b948c]">
+          Чому саме цей статус
+        </p>
+
+        <p className="mt-2 text-sm font-semibold leading-6 text-[#202020]">
+          {getClientStatusReason(client, clientStatus)}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function getClientStatusReason(client, status) {
+  const fullName =
+    [client.firstName, client.lastName].filter(Boolean).join(" ") || "Клієнт";
+
+  if (status === "vip") {
+    return `${fullName} має VIP-статус, тому що це один із найцінніших клієнтів платформи PlaniDay. Такий статус визначається платформою або логікою лояльності.`;
+  }
+
+  if (status === "new") {
+    return `${fullName} має статус “Новий”, бо клієнт має тільки перший запис або ще не має достатньої історії відвідувань.`;
+  }
+
+  if (status === "loyal") {
+    return `${fullName} має статус “Постійний”, бо має повторні записи та нещодавно відвідував студію.`;
+  }
+
+  if (status === "attention") {
+    return `${fullName} має статус “Активний”, бо останній візит був більше 30 днів тому, але не більше 60 днів.`;
+  }
+
+  if (status === "risk") {
+    return `${fullName} має статус “Неактивний”, бо давно не було записів.`;
+  }
+
+  return `${fullName} має цей статус на основі історії записів у студії.`;
 }
 
 const statusInfoItems = [
@@ -2070,13 +2247,13 @@ const statusInfoItems = [
     value: "new",
     title: "Новий",
     description:
-      "Клієнт має тільки один нескасований запис або ще не має сформованої історії відвідувань.",
+      "Клієнт має тільки один запис або ще не має сформованої історії відвідувань.",
   },
   {
     value: "loyal",
     title: "Постійний",
     description:
-      "Клієнт має 2 або більше нескасованих записів, а останній візит був протягом останніх 30 днів.",
+      "Клієнт має 2 або більше записів, а останній візит був протягом останніх 30 днів.",
   },
   {
     value: "attention",
@@ -2148,8 +2325,7 @@ function ClientDetails({
     { value: "history", label: "Історія", icon: CalendarDays },
     { value: "finance", label: "Фінанси", icon: Wallet },
     { value: "statuses", label: "Статус", icon: BadgeCheck },
-    { value: "notes", label: "Нотатки", icon: NotebookText },
-  ];
+    ];
 
   return (
     <aside
@@ -2345,12 +2521,12 @@ function ClientDetails({
               type="button"
               onClick={() => onTabChange(tab.value)}
               className={cn(
-                "relative flex h-8 flex-1 items-center justify-center gap-0.5 px-1 text-[10px] font-bold transition",
-                "sm:h-10 sm:gap-1 sm:px-2 sm:text-[11px]",
+                "relative flex h-10 flex-1 items-center justify-center gap-0.5 px-1 text-[12px] font-bold transition",
+                "sm:h-10 sm:gap-1 sm:px-2 sm:text-[12px]",
                 active ? "text-[#ff5a00]" : "text-[#77716b]",
               )}
             >
-              <Icon className="h-3 w-3 mr-1 shrink-0 sm:h-3.5 sm:w-3.5 " />
+              <Icon className="h-3.5 w-3.5 mr-1 shrink-0 sm:h-3.5 sm:w-3.5 " />
 
               <span className="truncate">{tab.label}</span>
 
@@ -2441,51 +2617,6 @@ function ClientDetails({
           </div>
         )}
 
-        {activeTab === "notes" && (
-          <div className="space-y-3">
-            {client.notes.length === 0 ? (
-              <div className="x-4 py-4 text-center">
-                <div className="mx-auto mb-2 flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#ff6200] shadow-sm">
-                  <NotebookText className="h-4 w-4" />
-                </div>
-
-                <p className="text-[13px] font-black text-[#202020]">
-                  Нотаток немає
-                </p>
-
-                <p className="mt-1 text-[11px] leading-4 text-[#77716b]">
-                  Тут можна додати внутрішню примітку про клієнта. Клієнт її не
-                  бачитиме.
-                </p>
-              </div>
-            ) : (
-              client.notes.map((note) => (
-                <div
-                  key={note.id}
-                  className="flex items-center justify-between gap-3 rounded-2xl border border-[#eadbc9] bg-[#fff7f0] p-3 text-sm font-medium text-[#202020]"
-                >
-                  <span className="min-w-0 flex-1 break-words">
-                    {note.text}
-                  </span>
-
-                  <button
-                    type="button"
-                    onClick={() => onDeleteNote?.(note.id)}
-                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[#e5484d] transition-all hover:bg-[#fff1f1] active:scale-[0.98]"
-                    title="Видалити нотатку"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              ))
-            )}
-            <Button className="w-full" onClick={onAddNote}>
-              <NotebookText className="h-4 w-4" />
-              Додати нотатку
-            </Button>
-          </div>
-        )}
-
         {activeTab === "finance" && (
           <div className="space-y-3">
             <div className="flex items-center justify-between rounded-[20px] bg-[#fff7f0] px-4 py-4">
@@ -2556,10 +2687,12 @@ function ClientDetails({
                     </p>
                   </div>
                 </div>
+                
               </div>
             );
           })()}
       </div>
+      
     </aside>
   );
 }
