@@ -457,12 +457,14 @@ function Modal({
   const hasHeader = Boolean(title || subtitle);
 
   return (
-    <div
-      className="fixed inset-0 z-[950] flex items-center justify-center bg-[var(--color-bg)]/45 p-4 backdrop-blur-[8px] sm:p-6"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose?.();
-      }}
-    >
+<div
+  className="fixed inset-0 z-[950] flex items-center justify-center bg-[var(--color-bg)]/45 p-4 backdrop-blur-[8px] sm:p-6"
+  onMouseDown={(e) => {
+    if (e.target === e.currentTarget) {
+      onClose?.();
+    }
+  }}
+>
       <div
         className={cn(
           "relative w-full max-h-[90vh] overflow-hidden rounded-[32px] border bg-white shadow-[0_35px_120px_rgba(27,27,27,0.24)]",
@@ -1023,12 +1025,12 @@ if (b.status === "canceled") {
               </div>
             }
             actions={
-              <div
-                className={cn(
-                  "inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-[11px] font-semibold shadow-sm sm:text-xs",
-                  liveStatusUi.wrapClass,
-                )}
-              >
+<div
+  className={cn(
+    "!hidden md:inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-[11px] font-semibold shadow-sm",
+    liveStatusUi.wrapClass,
+  )}
+>
                 <span
                   className={cn(
                     "h-2 w-2 rounded-full shadow-[0_0_0_3px_rgba(255,255,255,0.9)]",
@@ -1759,22 +1761,25 @@ isPastDay
               "Довільний майстер";
 
             return (
-              <div
-                className="fixed inset-0 z-[220] flex items-end justify-center bg-[var(--color-bg)]/45 p-0 backdrop-blur-[7px] sm:items-center sm:p-4"
-                onClick={() => {
-                  setDetailsId(null);
-                  setCopiedPhone(false);
-                  setShowDetailsScrollHint(true);
-                }}
-              >
+<div
+  className="fixed inset-0 z-[220] flex items-end justify-center bg-[var(--color-bg)]/45 p-0 backdrop-blur-[7px] sm:items-center sm:p-4"
+  onMouseDown={(e) => {
+    if (e.target === e.currentTarget) {
+      setDetailsId(null);
+      setCopiedPhone(false);
+      setShowDetailsScrollHint(true);
+    }
+  }}
+>
                 <div
                   className={cn(
                     "relative flex w-full flex-col overflow-hidden bg-white",
                     "h-[100dvh] rounded-none border-0 shadow-none",
                     "sm:h-auto sm:max-h-[76vh] sm:max-w-[420px] sm:rounded-[34px] sm:border sm:border-[var(--color-cream)] sm:shadow-[0_35px_100px_rgba(27,27,27,0.18)]",
                   )}
-                  onClick={(e) => e.stopPropagation()}
-                >
+ onMouseDown={(e) => e.stopPropagation()}
+  onClick={(e) => e.stopPropagation()}
+>
                   <div
                     className={cn(
                       "relative px-5 pb-5 pt-[max(16px,env(safe-area-inset-top))] sm:pt-5",
@@ -1998,20 +2003,23 @@ isPastDay
               bookingsByDateKey.get(calendarDayKey)?.count ?? 0;
 
             return (
-              <div
-                className="fixed inset-0 z-[220] flex items-end justify-center bg-[var(--color-bg)]/45 p-0 backdrop-blur-[7px] sm:items-center sm:p-4"
-                onClick={() => {
-                  setCalendarDayKey(null);
-                  setExpandedCalendarCards({});
-                }}
-              >
+<div
+  className="fixed inset-0 z-[220] flex items-end justify-center bg-[var(--color-bg)]/45 p-0 backdrop-blur-[7px] sm:items-center sm:p-4"
+  onMouseDown={(e) => {
+    if (e.target === e.currentTarget) {
+      setCalendarDayKey(null);
+      setExpandedCalendarCards({});
+    }
+  }}
+>
                 <div
                   className={cn(
                     "relative flex w-full flex-col overflow-hidden border-[var(--border-soft)] bg-white",
                     "h-[100dvh] rounded-none border-0 shadow-none",
                     "sm:h-auto sm:max-h-[85vh] sm:max-w-[460px] sm:rounded-[30px] sm:border sm:shadow-[0_35px_100px_rgba(27,27,27,0.18)]",
                   )}
-                  onClick={(e) => e.stopPropagation()}
+                 onMouseDown={(e) => e.stopPropagation()}
+onClick={(e) => e.stopPropagation()}
                 >
                   <div className="relative overflow-hidden bg-gradient-to-b from-[var(--color-pending-light)] via-white to-white px-5 pb-5 pt-[max(16px,env(safe-area-inset-top))] sm:pt-4">
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.20),transparent_30%)]" />

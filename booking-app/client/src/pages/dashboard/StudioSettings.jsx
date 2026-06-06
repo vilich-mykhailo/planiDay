@@ -25,6 +25,8 @@ import {
   House,
   Signpost,
   MapPinned,
+  Images,
+  Image as ImageIcon,
 } from "lucide-react";
 import { useStudio } from "../../context/studio/useStudio";
 import { api } from "../../api/http";
@@ -87,7 +89,7 @@ async function compressImage(
   } = {},
 ) {
   return new Promise((resolve, reject) => {
-    const img = new Image();
+    const img = new window.Image();
     const objectUrl = URL.createObjectURL(file);
 
     img.onload = () => {
@@ -788,10 +790,10 @@ const addressPreview = [
 ]
   .filter(Boolean)
   .join(", ") || "Адреса студії";
-  const [portfolioPreview, setPortfolioPreview] = useState({
-    open: false,
-    src: "",
-  });
+const [portfolioPreview, setPortfolioPreview] = useState({
+  open: false,
+  index: 0,
+});
 
   
   useEffect(() => {
@@ -862,7 +864,7 @@ const addressPreview = [
     if (!portfolioPreview.open) return;
 
     const onKeyDown = (e) => {
-      if (e.key === "Escape") setPortfolioPreview({ open: false, src: "" });
+      if (e.key === "Escape") closePortfolioPreview();
     };
 
     document.addEventListener("keydown", onKeyDown);
@@ -1014,11 +1016,7 @@ const addressPreview = [
   }
 
   const dirty = hydrated ? rawDirty : false;
-  const hasPendingChanges =
-  dirty &&
-  !saving &&
-  !cropModal.open &&
-  !editModal.open;
+const hasPendingChanges = false;
   const canSave = dirty && Object.keys(errors).length === 0 && !saving;
   const [clearingPortfolio, setClearingPortfolio] = useState(false);
 
@@ -1045,8 +1043,9 @@ const addressPreview = [
     return data;
   }
 
-  async function getCroppedImage(imageSrc, cropPixels) {
-  const image = new Image();
+async function getCroppedImage(imageSrc, cropPixels) {
+  const image = new window.Image();
+
   image.src = imageSrc;
 
   await new Promise((resolve, reject) => {
@@ -1054,18 +1053,26 @@ const addressPreview = [
     image.onerror = reject;
   });
 
+  const safeCrop = cropPixels || {
+    x: 0,
+    y: 0,
+    width: image.naturalWidth || image.width,
+    height: image.naturalHeight || image.height,
+  };
+
   const canvas = document.createElement("canvas");
   canvas.width = 900;
   canvas.height = 900;
 
   const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas error");
 
   ctx.drawImage(
     image,
-    cropPixels.x,
-    cropPixels.y,
-    cropPixels.width,
-    cropPixels.height,
+    safeCrop.x,
+    safeCrop.y,
+    safeCrop.width,
+    safeCrop.height,
     0,
     0,
     900,
@@ -1081,7 +1088,7 @@ const addressPreview = [
         }
 
         resolve(
-          new File([blob], "studio-image.jpg", {
+          new File([blob], "studio-logo.jpg", {
             type: "image/jpeg",
             lastModified: Date.now(),
           }),
@@ -1111,49 +1118,74 @@ const addressPreview = [
     return data;
   }
 
-  function pickImage(e, fieldKey) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
+async function pickImage(e, fieldKey) {
+  const file = e.target.files?.[0];
+  e.target.value = "";
+  if (!file) return;
 
-    if (file.size > MAX_IMAGE_SIZE) {
-      setErrorModal({
-        open: true,
-        title: "Файл завеликий",
-        message: "До 5 MB.",
-      });
-      return;
-    }
-
-    if (!file.type?.startsWith("image/")) {
-      setErrorModal({
-        open: true,
-        title: "Невірний формат",
-        message: "Обери зображення.",
-      });
-      return;
-    }
-
-const imageUrl = URL.createObjectURL(file);
-
-setCrop({ x: 0, y: 0 });
-setZoom(1);
-setCroppedAreaPixels(null);
-
-setCropModal({
-  open: true,
-  imageUrl,
-  target: fieldKey,
-});
+  if (file.size > MAX_IMAGE_SIZE) {
+    setErrorModal({
+      open: true,
+      title: "Файл завеликий",
+      message: "До 10 MB.",
+    });
+    return;
   }
 
-async function confirmCrop() {
-  if (!cropModal.imageUrl || !croppedAreaPixels) return;
+  if (!file.type?.startsWith("image/")) {
+    setErrorModal({
+      open: true,
+      title: "Невірний формат",
+      message: "Обери зображення.",
+    });
+    return;
+  }
 
-  const croppedFile = await getCroppedImage(
-    cropModal.imageUrl,
-    croppedAreaPixels,
-  );
+  if (fieldKey === "coverUrl") {
+    const compressed = await compressImage(file, {
+      maxWidth: 1920,
+      maxHeight: 1080,
+      quality: 0.82,
+    });
+
+    const nextForm = {
+      ...form,
+      coverFile: compressed,
+    };
+
+    setForm(nextForm);
+
+    setTimeout(() => {
+      save({ preventDefault: () => {} }, nextForm);
+    }, 0);
+
+    return;
+  }
+
+  const imageUrl = URL.createObjectURL(file);
+
+  setCrop({ x: 0, y: 0 });
+  setZoom(1);
+  setCroppedAreaPixels(null);
+
+  setCropModal({
+    open: true,
+    imageUrl,
+    target: fieldKey,
+  });
+}
+
+async function confirmCrop() {
+  if (!cropModal.imageUrl) return;
+
+  const cropPixels = croppedAreaPixels || {
+    x: 0,
+    y: 0,
+    width: 900,
+    height: 900,
+  };
+
+  const croppedFile = await getCroppedImage(cropModal.imageUrl, cropPixels);
 
   const target = cropModal.target;
 
@@ -1171,7 +1203,6 @@ async function confirmCrop() {
 
   const nextForm = {
     ...form,
-    ...(target === "coverUrl" ? { coverFile: croppedFile } : {}),
     ...(target === "logoUrl" ? { logoFile: croppedFile } : {}),
   };
 
@@ -1182,27 +1213,34 @@ async function confirmCrop() {
   }, 0);
 }
 
-  function pickPortfolioImages(e) {
-    const files = Array.from(e.target.files || []);
-    e.target.value = "";
-    if (!files.length) return;
+async function pickPortfolioImages(e) {
+  const files = Array.from(e.target.files || []);
+  e.target.value = "";
+  if (!files.length) return;
 
-    const left =
-      MAX_PORTFOLIO -
-      ((form.portfolioUrls?.length || 0) + (form.portfolioFiles?.length || 0));
+  const left =
+    MAX_PORTFOLIO -
+    ((form.portfolioUrls?.length || 0) + (form.portfolioFiles?.length || 0));
 
-    const take = files.slice(0, Math.max(0, left));
+  const take = files.slice(0, Math.max(0, left));
 
-    const okFiles = [];
-    let skipped = 0;
+  const okFiles = [];
+  let skipped = 0;
 
-    for (const f of take) {
-      if (!f.type?.startsWith("image/") || f.size > MAX_IMAGE_SIZE) {
-        skipped++;
-        continue;
-      }
-      okFiles.push(f);
+  for (const f of take) {
+    if (!f.type?.startsWith("image/") || f.size > MAX_IMAGE_SIZE) {
+      skipped++;
+      continue;
     }
+
+    const compressed = await compressImage(f, {
+      maxWidth: 1600,
+      maxHeight: 1600,
+      quality: 0.82,
+    });
+
+    okFiles.push(compressed);
+  }
 
     if (!okFiles.length) {
       setErrorModal({
@@ -1303,42 +1341,38 @@ setTimeout(() => {
 }, 0);
   }
 
-  function removePortfolioMixed(idx) {
-    const remoteCount = form.portfolioUrls?.length || 0;
+function removePortfolioMixed(idx) {
+  const remoteCount = form.portfolioUrls?.length || 0;
 
-    if (idx < remoteCount) {
-      const key = form.portfolioUrls[idx];
-      if (!key) return;
+  if (idx < remoteCount) {
+    const key = form.portfolioUrls[idx];
+    if (!key) return;
 
-      stageDelete(key);
+    const nextForm = {
+      ...form,
+      portfolioUrls: (form.portfolioUrls || []).filter((_, i) => i !== idx),
+    };
 
-const nextForm = {
-  ...form,
-  portfolioUrls: (form.portfolioUrls || []).filter((_, i) => i !== idx),
-};
+    setForm(nextForm);
 
-setForm(nextForm);
+    setTimeout(() => {
+      save(
+        { preventDefault: () => {} },
+        nextForm,
+        [key],
+      );
+    }, 0);
 
-setTimeout(() => {
-  save({ preventDefault: () => {} }, nextForm);
-}, 0);
-
-      showToast({
-        type: "warning",
-        title: "Зміна підготовлена",
-        text: "Фото буде видалено після “Зберегти”.",
-      });
-
-      return;
-    }
-
-    const localIndex = idx - remoteCount;
-
-    setForm((p) => ({
-      ...p,
-      portfolioFiles: (p.portfolioFiles || []).filter((_, i) => i !== localIndex),
-    }));
+    return;
   }
+
+  const localIndex = idx - remoteCount;
+
+  setForm((p) => ({
+    ...p,
+    portfolioFiles: (p.portfolioFiles || []).filter((_, i) => i !== localIndex),
+  }));
+}
 
   const portfolioCount =
     (form.portfolioUrls?.length || 0) + (form.portfolioFiles?.length || 0);
@@ -1409,17 +1443,21 @@ setTimeout(() => {
     });
   }
 
-async function save(e, overrideForm = null) {
+async function save(e, overrideForm = null, extraDeletes = []) {
   e?.preventDefault?.();
 
   const data = overrideForm || form;
-
   if (!studio?.id) return;
+
+  const uploadedNewKeys = [];
 
   setSaving(true);
 
   try {
     const token = localStorage.getItem("token");
+
+    const prevCoverKey = data.coverUrl || "";
+    const prevLogoKey = data.logoUrl || "";
 
     let nextCoverKey = data.coverUrl || "";
     let nextLogoKey = data.logoUrl || "";
@@ -1427,22 +1465,37 @@ async function save(e, overrideForm = null) {
       ? [...data.portfolioUrls]
       : [];
 
-    const deletesAfterSave = [...pendingDeletes];
+    const deletesAfterSave = [...pendingDeletes, ...extraDeletes];
 
     if (data.coverFile) {
       const out = await uploadOne(studio.id, data.coverFile, "cover", token);
       nextCoverKey = out.key;
+      uploadedNewKeys.push(out.key);
+
+      if (prevCoverKey && prevCoverKey !== nextCoverKey) {
+        deletesAfterSave.push(prevCoverKey);
+      }
     }
 
     if (data.logoFile) {
       const out = await uploadOne(studio.id, data.logoFile, "logo", token);
       nextLogoKey = out.key;
+      uploadedNewKeys.push(out.key);
+
+      if (prevLogoKey && prevLogoKey !== nextLogoKey) {
+        deletesAfterSave.push(prevLogoKey);
+      }
     }
 
     if ((data.portfolioFiles?.length || 0) > 0) {
       const out = await uploadMany(studio.id, data.portfolioFiles, token);
       const newKeys = out.keys || [];
-      nextPortfolioKeys = [...nextPortfolioKeys, ...newKeys].slice(0, MAX_PORTFOLIO);
+
+      uploadedNewKeys.push(...newKeys);
+      nextPortfolioKeys = [...nextPortfolioKeys, ...newKeys].slice(
+        0,
+        MAX_PORTFOLIO,
+      );
     }
 
     await updateStudio({
@@ -1459,9 +1512,13 @@ async function save(e, overrideForm = null) {
       logoUrl: nextLogoKey,
       portfolioUrls: nextPortfolioKeys,
     });
-setPendingDeletes([]);
-setHighlightId("");
-setHighlightAddress(false);
+
+    await deleteManyFromR2(deletesAfterSave);
+
+    setPendingDeletes([]);
+    setHighlightId("");
+    setHighlightAddress(false);
+
     setForm((p) => ({
       ...p,
       ...data,
@@ -1473,8 +1530,6 @@ setHighlightAddress(false);
       portfolioFiles: [],
     }));
 
-    setPendingDeletes([]);
-
     showToast({
       type: "success",
       title: "Збережено",
@@ -1482,6 +1537,10 @@ setHighlightAddress(false);
     });
   } catch (error) {
     console.error(error);
+
+    if (uploadedNewKeys.length) {
+      await deleteManyFromR2(uploadedNewKeys);
+    }
 
     showToast({
       type: "error",
@@ -1492,6 +1551,7 @@ setHighlightAddress(false);
     setSaving(false);
   }
 }
+
 
   const headerTriggerRef = useRef(null);
   const [showTopSave, setShowTopSave] = useState(false);
@@ -1756,6 +1816,37 @@ function goToField(key, opts = {}) {
     return [...remote, ...local].slice(0, MAX_PORTFOLIO);
   }, [form.portfolioUrls, form.portfolioFiles, portfolioPreviewUrls]);
 
+  function openPortfolioPreview(index) {
+  setPortfolioPreview({
+    open: true,
+    index,
+  });
+}
+
+function closePortfolioPreview() {
+  setPortfolioPreview({
+    open: false,
+    index: 0,
+  });
+}
+
+function nextPortfolioPreview() {
+  setPortfolioPreview((prev) => ({
+    ...prev,
+    index: (prev.index + 1) % portfolioItems.length,
+  }));
+}
+
+function prevPortfolioPreview() {
+  setPortfolioPreview((prev) => ({
+    ...prev,
+    index:
+      prev.index === 0
+        ? portfolioItems.length - 1
+        : prev.index - 1,
+  }));
+}
+
   useEffect(() => {
     const syncMenuState = () => {
       setMenuOpen(document.body.classList.contains("menu-open"));
@@ -1973,25 +2064,56 @@ async function saveStudioEditModal() {
       disabled={saving}
       className="group absolute inset-0 block h-full w-full overflow-hidden"
     >
-      {coverSrc ? (
-        <img
-          src={coverSrc}
-          alt="Обкладинка"
-          className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
-          onError={(e) => (e.currentTarget.style.display = "none")}
-        />
-      ) : (
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_15%,#5c5248,#191919_56%)]" />
-      )}
 
-      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-black/10" />
+{coverSrc ? (
+  <>
+    <img
+      src={coverSrc}
+      alt="Обкладинка"
+      className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
+      onError={(e) => (e.currentTarget.style.display = "none")}
+    />
 
-      <div className="absolute inset-0 grid place-items-center bg-black/25 opacity-0 transition group-hover:opacity-100">
-        <span className="inline-flex items-center gap-2 rounded-full bg-white/95 px-4 py-2 text-xs font-black text-[#202020] shadow-lg">
-          <Camera className="h-4 w-4 text-[#ff5a00]" />
-          Змінити обкладинку
-        </span>
+  <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/15 to-transparent" />
+  </>
+) : (
+  <div className="absolute inset-0 overflow-hidden bg-[#fff7f0]">
+    <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(255,98,0,0.16),transparent_28%),radial-gradient(circle_at_82%_20%,rgba(255,255,255,0.9),transparent_30%),linear-gradient(135deg,#fffdfb_0%,#fff4ec_45%,#ffe4cf_100%)]" />
+
+    <div className="absolute -left-12 -top-12 h-44 w-44 rounded-full bg-[#ff6200]/10 blur-3xl" />
+    <div className="absolute -bottom-16 right-0 h-56 w-56 rounded-full bg-[#ffb37d]/25 blur-3xl" />
+
+    <div className="absolute left-8 top-8 h-24 w-24 rounded-full border border-[#ff6200]/10" />
+    <div className="absolute right-12 top-10 h-14 w-14 rounded-full border border-white/70" />
+    <div className="absolute bottom-12 left-[42%] h-20 w-20 rounded-full border border-[#ff6200]/10" />
+
+    <div className="absolute inset-0 flex items-center justify-center px-6 pb-10 text-center">
+      <div className="max-w-[320px]">
+        <h3 className="mt-4 text-xl font-black tracking-[-0.04em] text-[#202020]">
+          Додайте обкладинку
+        </h3>
+
+        <p className="mt-1.5 text-sm font-semibold leading-5 text-[#77716b]">
+          Покажіть інтер'єр та атмосферу вашої студії
+        </p>
       </div>
+    </div>
+  </div>
+)}
+
+<div
+  className={cn(
+    "absolute inset-0 grid place-items-center transition",
+    coverSrc
+      ? "bg-black/25 opacity-0 group-hover:opacity-100"
+      : "bg-[#202020]/0 opacity-0 group-hover:bg-[#202020]/5 group-hover:opacity-100",
+  )}
+>
+  <span className="inline-flex items-center gap-2 rounded-full bg-white/95 px-4 py-2 text-xs font-black text-[#202020] shadow-lg">
+    <Camera className="h-4 w-4 text-[#ff5a00]" />
+    {coverSrc ? "Змінити обкладинку" : "Додати обкладинку"}
+  </span>
+</div>
     </button>
 
     <div className="absolute left-2.5 top-2.5 z-10 inline-flex h-6 max-w-[58%] items-center gap-1 rounded-full border border-white/40 bg-white/92 px-2 shadow-[0_8px_18px_rgba(20,20,20,0.1)] backdrop-blur-md sm:left-4 sm:top-4 sm:h-7 sm:px-3">
@@ -2010,7 +2132,7 @@ async function saveStudioEditModal() {
         type="button"
         onClick={() => logoInputRef.current?.click()}
         disabled={saving}
-        className="group relative grid h-[72px] w-[72px] shrink-0 place-items-center overflow-hidden rounded-[18px] bg-white text-black shadow-[0_12px_28px_rgba(0,0,0,0.22)] transition active:scale-[0.98] sm:h-[58px] sm:w-[58px] sm:rounded-[15px]"
+       className="group relative grid h-[72px] w-[72px] shrink-0 place-items-center overflow-hidden rounded-[18px] border border-white/70 bg-white text-black shadow-[0_0_18px_rgba(255,255,255,0.28),0_12px_28px_rgba(0,0,0,0.22)] transition active:scale-[0.98] sm:h-[58px] sm:w-[58px] sm:rounded-[15px]"
       >
         {logoSrc ? (
           <img
@@ -2029,11 +2151,21 @@ async function saveStudioEditModal() {
       </button>
 
       <div className="min-w-0 flex-1">
-<h2 className="truncate pb-0.5 text-[16px] font-black leading-[1.15] tracking-[-0.04em] sm:text-[17px]">
+<h2
+  className={cn(
+    "truncate pb-0.5 text-[16px] font-black leading-[1.15] tracking-[-0.04em] sm:text-[17px]",
+    coverSrc ? "text-white" : "text-[#202020]",
+  )}
+>
   {form.name.trim() || "Назва студії"}
 </h2>
 
-        <p className="mt-1 flex items-center gap-1 truncate leading-[1.25] text-[10px] font-medium text-white sm:text-[10px] md:text-[10px] lg:text-[11px]">
+      <p
+  className={cn(
+    "mt-1 flex items-center gap-1 truncate leading-[1.25] text-[10px] font-medium sm:text-[10px] md:text-[10px] lg:text-[11px]",
+    coverSrc ? "text-white" : "text-[#5f5b56]",
+  )}
+>
           <MapPin className="-mt-[1px] h-3 w-3 shrink-0 text-[#ff6200]" />
           {addressPreview}
         </p>
@@ -2288,9 +2420,19 @@ onClick={() => openStudioEditModal(item.field)}
 
                           <div className="mt-4">
                             {!hasAnyPortfolio ? (
-                              <div className="rounded-2xl border border-dashed border-[#ffd6bd] bg-[#fff1e8] p-4 text-sm font-semibold text-[#77716b]">
-                                Додай фото робіт — це найсильніший доказ якості.
-                              </div>
+<div className="rounded-[32px] border-2 border-dashed border-[#ffd6bd] bg-[#fff7f0] px-6 py-12 text-center">
+  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-[#ff6200] shadow-sm">
+    <ImageIcon className="h-7 w-7" />
+  </div>
+
+  <h2 className="mt-4 text-xl font-black text-[#202020]">
+    Портфоліо поки що порожнє
+  </h2>
+
+  <p className="mt-2 text-sm text-[#77716b]">
+    Додайте перші фото робіт, щоб клієнти могли оцінити якість ваших послуг.
+  </p>
+</div>
                             ) : (
                               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-[repeat(auto-fill,minmax(180px,1fr))]">
                                 {portfolioItems.map((item, idx) => {
@@ -2302,9 +2444,7 @@ onClick={() => openStudioEditModal(item.field)}
                                     <div key={item.key} className="relative">
                                       <button
                                         type="button"
-                                        onClick={() =>
-                                          setPortfolioPreview({ open: true, src })
-                                        }
+                                        onClick={() => openPortfolioPreview(idx)}
                                         className="group block w-full overflow-hidden rounded-[22px] border border-[#eadbc9] bg-[#fff7f0] transition hover:shadow-[0_10px_24px_rgba(27,27,27,0.10)]"
                                         style={{ aspectRatio: "1 / 1" }}
                                       >
@@ -2548,51 +2688,79 @@ onClick={() => openStudioEditModal(item.field)}
           `}</style>
         </div>
 
-        {portfolioPreview.open && (
-          <div
-         className="fixed left-0 top-0 z-[9999] flex h-[100dvh] w-screen items-center justify-center overflow-y-auto bg-[#202020]/45 p-3 backdrop-blur-[6px]"
-            onClick={() => setPortfolioPreview({ open: false, src: "" })}
+{portfolioPreview.open && portfolioItems[portfolioPreview.index]?.src && (
+  <div
+    className="fixed left-0 top-0 z-[9999] flex h-[100dvh] w-screen items-center justify-center overflow-y-auto bg-[#202020]/45 p-3 backdrop-blur-[6px]"
+    onClick={closePortfolioPreview}
+  >
+    <div
+      className="relative flex max-h-[calc(100dvh-24px)] w-full max-w-3xl flex-col overflow-hidden rounded-[30px] border border-[#f0e2d3] bg-[#f7f5f1] shadow-[0_30px_90px_rgba(15,23,42,0.24)]"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="relative shrink-0 overflow-hidden bg-[#f3eee7] px-5 py-5 sm:px-6">
+        <div className="absolute right-[-55px] top-[-70px] h-[180px] w-[180px] rounded-full bg-[#ff6200]/10 blur-3xl" />
+
+        <div className="relative z-10 flex items-start justify-between gap-4">
+          <div>
+            <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-white px-3 text-[11px] font-black uppercase tracking-[0.08em] text-[#ff6200] shadow-[0_8px_20px_rgba(255,98,0,0.08)]">
+              <Camera className="h-3.5 w-3.5" />
+              Портфоліо
+            </span>
+
+            <h3 className="mt-3 text-[26px] font-black leading-[0.95] tracking-[-0.05em] text-[#202020] sm:text-[32px]">
+              Перегляд фото
+            </h3>
+          </div>
+
+          <button
+            type="button"
+            onClick={closePortfolioPreview}
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white text-[#77716b] shadow-[0_10px_24px_rgba(15,23,42,0.06)] transition hover:bg-[#fff3e9] hover:text-[#ff6200] active:scale-[0.96]"
+            aria-label="Закрити"
           >
-            <div
-              className="flex w-full max-w-3xl max-h-[calc(100dvh-24px)] flex-col overflow-hidden rounded-[30px] border border-[#f0e2d3] bg-[#f7f5f1] shadow-[0_30px_90px_rgba(15,23,42,0.24)]"
-              onClick={(e) => e.stopPropagation()}
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+      </div>
+
+      <div className="relative min-h-0 flex-1 bg-white p-5 sm:p-6">
+        {portfolioItems.length > 1 && (
+          <>
+            <button
+              type="button"
+              onClick={prevPortfolioPreview}
+              className="absolute left-7 top-1/2 z-10 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/95 text-[#202020] shadow-[0_10px_30px_rgba(15,23,42,0.18)] transition hover:bg-[#fff3e9] hover:text-[#ff6200]"
             >
-              <div className="relative shrink-0 overflow-hidden bg-[#f3eee7] px-5 py-5 sm:px-6">
-                <div className="absolute right-[-55px] top-[-70px] h-[180px] w-[180px] rounded-full bg-[#ff6200]/10 blur-3xl" />
-                <div className="relative z-10 flex items-start justify-between gap-4">
-                  <div>
-                    <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-white px-3 text-[11px] font-black uppercase tracking-[0.08em] text-[#ff6200] shadow-[0_8px_20px_rgba(255,98,0,0.08)]">
-                      <Camera className="h-3.5 w-3.5" />
-                      Портфоліо
-                    </span>
-                    <h3 className="mt-3 text-[26px] font-black leading-[0.95] tracking-[-0.05em] text-[#202020] sm:text-[32px]">
-                      Перегляд фото
-                    </h3>
-                  </div>
+              <ChevronLeft className="h-6 w-6" />
+            </button>
 
-                  <button
-                    type="button"
-                    onClick={() => setPortfolioPreview({ open: false, src: "" })}
-                    className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white text-[#77716b] shadow-[0_10px_24px_rgba(15,23,42,0.06)] transition hover:bg-[#fff3e9] hover:text-[#ff6200] active:scale-[0.96]"
-                    aria-label="Закрити"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
-                </div>
-              </div>
+            <button
+              type="button"
+              onClick={nextPortfolioPreview}
+              className="absolute right-7 top-1/2 z-10 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/95 text-[#202020] shadow-[0_10px_30px_rgba(15,23,42,0.18)] transition hover:bg-[#fff3e9] hover:text-[#ff6200]"
+            >
+              <ChevronRight className="h-6 w-6" />
+            </button>
+          </>
+        )}
 
-              <div className="min-h-0 flex-1 bg-white p-5 sm:p-6">
-                <img
-                  src={portfolioPreview.src}
-                  alt="Portfolio preview"
-                  className="max-h-[62dvh] w-full rounded-[24px] bg-black object-contain"
-                />
-              </div>
+        <img
+          src={portfolioItems[portfolioPreview.index].src}
+          alt="Portfolio preview"
+          className="max-h-[62dvh] w-full rounded-[24px] bg-black object-contain"
+        />
 
-
-            </div>
+        {portfolioItems.length > 1 && (
+          <div className="mt-4 flex justify-center">
+            <span className="rounded-full bg-[#fff3e9] px-4 py-2 text-xs font-black text-[#ff6200]">
+              {portfolioPreview.index + 1} / {portfolioItems.length}
+            </span>
           </div>
         )}
+      </div>
+    </div>
+  </div>
+)}
 
         {errorModal.open && (
           <div className="fixed inset-0 z-[9999] flex items-end justify-center bg-[#202020]/45 px-3 pb-3 backdrop-blur-[6px] sm:items-center sm:p-6">
@@ -2648,82 +2816,7 @@ onClick={() => openStudioEditModal(item.field)}
               : "pointer-events-auto translate-y-0 opacity-100",
           )}
         >
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-white via-white/95 to-transparent" />
-
-          <div className="relative mx-auto max-w-5xl px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-            <div className="relative overflow-hidden rounded-[26px] border border-[#eadbc9] bg-white/95 px-4 py-4 shadow-[0_24px_80px_rgba(27,27,27,0.18)] ring-1 ring-[#fff1e8] backdrop-blur-xl">
-              <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-[#ff5a00]" />
-
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="secondary"
-                  onClick={resetChanges}
-                  disabled={!dirty || saving}
-                  className="flex-1"
-                >
-                  Скасувати
-                </Button>
-
-                <Button
-                  variant="primary"
-                  onClick={save}
-                  disabled={!canSave}
-                  className="flex-1"
-                >
-                  {saving ? "Збереження..." : "Зберегти"}
-                </Button>
-              </div>
-            </div>
-          </div>
         </div>
-
-        <div className="fixed bottom-6 left-1/2 z-[80] hidden -translate-x-1/2 md:block">
-          <div
-            className={cn(
-              "relative overflow-hidden rounded-[28px] border border-[#eadbc9] bg-white/95 px-5 py-4 shadow-[0_24px_80px_rgba(27,27,27,0.18)] ring-1 ring-[#fff1e8] backdrop-blur-xl transition-all duration-300",
-              hasPendingChanges
-                ? "translate-y-0 scale-100 opacity-100"
-                : "pointer-events-none translate-y-4 scale-[0.98] opacity-0",
-            )}
-          >
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-[#ff5a00]" />
-
-            <div className="flex items-center gap-4">
-              <div className="flex min-w-0 items-center gap-3 pr-2">
-                <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#fff1e8] shadow-[0_8px_20px_rgba(180,140,108,0.20)]">
-                  <span className="absolute inline-flex h-3 w-3 animate-ping rounded-full bg-[#ff5a00] opacity-75" />
-                  <span className="relative inline-flex h-3 w-3 rounded-full bg-[#ff5a00]" />
-                </div>
-
-                <div className="min-w-0">
-                  <p className="text-[17px] font-black leading-none text-[#202020]">
-                    Маєте незбережені зміни
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="secondary"
-                  onClick={resetChanges}
-                  disabled={!dirty || saving}
-                >
-                  Скасувати
-                </Button>
-
-                <Button
-                  variant="primary"
-                  onClick={save}
-                  disabled={!canSave}
-                  className="min-w-[160px]"
-                >
-                  {saving ? "Збереження..." : "Зберегти"}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <div
           className={cn(
             "fixed right-4 top-4 z-[9999] transition-all duration-300",
@@ -2742,7 +2835,7 @@ onClick={() => openStudioEditModal(item.field)}
         </h3>
 
         <p className="mt-2 text-sm font-medium text-[#77716b]">
-          Виберіть область, яка буде видима у профілі клієнта.
+          Виберіть область, яка буде видима у профілі студії.
         </p>
       </div>
 

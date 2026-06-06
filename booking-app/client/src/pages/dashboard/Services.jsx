@@ -19,6 +19,7 @@ CircleAlert,
   Banknote,
   BriefcaseBusiness,
   Scissors,
+  ArrowDownToLine,
 } from "lucide-react";
 
 const UNCATEGORIZED_ID = "__uncategorized__";
@@ -390,12 +391,14 @@ useEffect(() => {
   };
 
   return (
-    <div
-       className="fixed inset-0 z-[9999] flex items-stretch justify-center bg-[#202020]/45 p-0 backdrop-blur-[6px] sm:items-center sm:p-6"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose?.();
-      }}
-    >
+<div
+  className="fixed inset-0 z-[9999] flex items-stretch justify-center bg-[#202020]/45 p-0 backdrop-blur-[6px] sm:items-center sm:p-6"
+  onMouseDown={(e) => {
+    if (e.target === e.currentTarget) {
+      onClose?.();
+    }
+  }}
+>
       <div className="contents">
         <div
           className={cn(
@@ -637,19 +640,19 @@ function CategoryFilters({ value, onChange, categories }) {
           const active = String(value) === String(item.id);
 
           return (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => onChange(item.id)}
-              className={cn(
-                "shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold border",
-                active
-                  ? "border-transparent bg-[#ff5a00] text-white shadow-md"
-                  : "border-[#eadbc9] bg-white text-[#77716b] hover:border-[#ff5a00] hover:bg-[#fff7f0]",
-              )}
-            >
-              {item.label}
-            </button>
+<button
+  key={item.id}
+  type="button"
+  onClick={() => onChange(item.id)}
+  className={cn(
+    "shrink-0 max-w-[320px] overflow-hidden text-ellipsis whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold border",
+    active
+      ? "border-transparent bg-[#ff5a00] text-white shadow-md"
+      : "border-[#eadbc9] bg-white text-[#77716b] hover:border-[#ff5a00] hover:bg-[#fff7f0]",
+  )}
+>
+  {item.label}
+</button>
           );
         })}
       </div>
@@ -1079,11 +1082,11 @@ function handleExportServices() {
     </p>
   </div>
 
-<div className="flex shrink-0 items-center gap-1 sm:gap-2">
+<div className="flex shrink-0 items-center">
   <button
     type="button"
     onClick={() => setInfoOpen(true)}
-    className="grid h-10 w-10 place-items-center rounded-full text-[#ff6200] transition-all duration-200 hover:scale-110 hover:bg-[#fff7f0] active:scale-95 sm:h-12 sm:w-12"
+    className="grid !px-0 h-10 w-10 place-items-center rounded-full text-[#ff6200] transition-all  hover:bg-[#fff7f0] active:scale-95 "
     title="Інформація"
   >
     <CircleAlert className="h-5 w-5" />
@@ -1092,14 +1095,23 @@ function handleExportServices() {
 <div className="hidden sm:block">
   <Button
     variant="ghost"
-    className="h-12 hover:bg-[#fff7f0]"
+    className="h-12 !px-1.5 transition-all active:scale-95 mr-2"
     onClick={() => setExportOpen(true)}
   >
-    <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
+    <ArrowDownToLine className="h-4 w-4 text-emerald-600" />
     Експорт
   </Button>
 </div>
-  </div>
+
+  <Button
+    variant="primary"
+    onClick={() =>  setExportOpen(true)}
+    className="h-10 shrink-0 px-3 sm:h-12 sm:px-5"
+  >
+    <Plus className="h-4 w-4" />
+    <span className="hidden sm:inline">Додати майстра</span>
+  </Button>
+</div>
 </div>
     </div>
   )}

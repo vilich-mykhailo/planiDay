@@ -10,6 +10,7 @@ import {
   Star,
   Clock3,
   Scissors,
+  Sparkles,
   User,
   Dumbbell,
   Home,
@@ -446,15 +447,19 @@ export default function Favourites() {
             ))}
           </div>
         ) : (
-          <div className="rounded-[32px] bg-white px-6 py-12 text-center shadow-[0_14px_34px_rgba(15,23,42,0.06)]">
-            <Heart className="mx-auto h-12 w-12 text-[#ff6200]" />
-            <h2 className="mt-4 text-xl font-black text-[#202020]">
-              Немає улюблених студій
-            </h2>
-            <p className="mt-2 text-sm text-stone-500">
-              Додайте студії в обране, щоб швидко знаходити їх тут.
-            </p>
-          </div>
+<div className="rounded-[24px] border-2 border-dashed border-[#ffd6bd] bg-[#fff7f0] p-8 text-center">
+  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-[#ff5a00] shadow-sm">
+    <Sparkles className="h-6 w-6" />
+  </div>
+
+  <p className="text-sm font-black text-[#202020]">
+    Немає улюблених студій
+  </p>
+
+  <p className="mt-1 text-xs font-medium text-[#77716b]">
+    Додавайте студії в обране, щоб швидко знаходити їх у майбутньому.
+  </p>
+</div>
         )}
       </div>
     </main>

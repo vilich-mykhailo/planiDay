@@ -49,6 +49,7 @@ import {
   Banknote,
   Receipt,
   CircleAlert,
+  ArrowDownToLine,
 } from "lucide-react";
 
 const PUBLIC = import.meta.env.VITE_R2_PUBLIC_BASE_URL;
@@ -362,12 +363,14 @@ function Modal({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-[9999] flex items-stretch justify-center bg-[#202020]/45 p-0 backdrop-blur-[6px] sm:items-center sm:p-6"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose?.();
-      }}
-    >
+<div
+  className="fixed inset-0 z-[9999] flex items-stretch justify-center bg-[#202020]/45 p-0 backdrop-blur-[6px] sm:items-center sm:p-6"
+  onMouseDown={(e) => {
+    if (e.target === e.currentTarget) {
+      onClose?.();
+    }
+  }}
+>
       <div
         className={cn(
           "flex h-dvh w-full flex-col overflow-hidden rounded-none border-0 bg-[#f7f5f1] shadow-[0_30px_90px_rgba(15,23,42,0.24)]",
@@ -725,12 +728,14 @@ export default function Clients() {
   const studioId = studio?.id ?? null;
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("all");
-  const [sort, setSort] = useState("newest");
+  const [sort, setSort] = useState("nameAsc");
   const [sortOpen, setSortOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState(null);
   const [clientTabs, setClientTabs] = useState({});
   const clientsListRef = useRef(null);
+  const filterRef = useRef(null);
+const sortRef = useRef(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(8);
   const [exportOpen, setExportOpen] = useState(false);
@@ -756,6 +761,31 @@ export default function Clients() {
     vip: false,
     favorite: false,
   });
+
+  useEffect(() => {
+  function handleClickOutside(event) {
+    if (
+      filterRef.current &&
+      !filterRef.current.contains(event.target)
+    ) {
+      setFilterOpen(false);
+    }
+
+    if (
+      sortRef.current &&
+      !sortRef.current.contains(event.target)
+    ) {
+      setSortOpen(false);
+    }
+  }
+
+  document.addEventListener("mousedown", handleClickOutside);
+
+  return () => {
+    document.removeEventListener("mousedown", handleClickOutside);
+  };
+}, []);
+
   useEffect(() => {
     function calculateItemsPerPage() {
       const width = window.innerWidth;
@@ -1403,11 +1433,11 @@ export default function Clients() {
         Клі<span className="text-[#ff5a00]">єнти</span>
       </h1>
     </div>
-<div className="flex shrink-0 items-center gap-1 sm:gap-2">
+<div className="flex shrink-0 items-center">
   <button
     type="button"
     onClick={() => setInfoOpen(true)}
-    className="grid h-10 w-10 place-items-center rounded-full text-[#ff6200] transition-all duration-200 hover:scale-110 hover:bg-[#fff7f0] active:scale-95 sm:h-12 sm:w-12"
+    className="grid !px-0 h-10 w-10 place-items-center rounded-full text-[#ff6200] transition-all  hover:bg-[#fff7f0] active:scale-95 "
     title="Інформація"
   >
     <CircleAlert className="h-5 w-5" />
@@ -1416,26 +1446,23 @@ export default function Clients() {
 <div className="hidden sm:block">
   <Button
     variant="ghost"
-    className="h-12 hover:bg-[#fff7f0]"
+    className="h-12 !px-1.5 transition-all active:scale-95 mr-2"
     onClick={() => setExportOpen(true)}
   >
-    <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
+    <ArrowDownToLine className="h-4 w-4 text-emerald-600" />
     Експорт
   </Button>
 </div>
 
-<Button
-  variant="primary"
-  className="h-10 w-10 p-0 sm:h-12 sm:w-auto sm:px-5"
->
-  <Plus className="h-4 w-4 shrink-0" />
-
-  <span className="hidden sm:inline">
-    Додати клієнта
-  </span>
-</Button>
-      
-    </div>
+  <Button
+    variant="primary"
+    onClick={() =>  setExportOpen(true)}
+    className="h-10 shrink-0 px-3 sm:h-12 sm:px-5"
+  >
+    <Plus className="h-4 w-4" />
+    <span className="hidden sm:inline">Додати майстра</span>
+  </Button>
+</div>
   </div>
 
   <p className="mt-3 w-full text-[13px] font-semibold leading-5 text-[#77716b] sm:text-[14px] sm:leading-6">
@@ -1469,7 +1496,7 @@ export default function Clients() {
   </div>
 
   <div className="grid w-full grid-cols-2 gap-3 sm:flex sm:w-auto sm:shrink-0">
-    <div className="relative min-w-0">
+    <div ref={filterRef} className="relative min-w-0">
       <button
         type="button"
         onClick={() => {
@@ -1504,7 +1531,7 @@ export default function Clients() {
                 setClientTabs({});
               }}
               className={cn(
-                "flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm font-bold transition",
+                "flex w-full items-center justify-between gap-3 px-4 py-2 text-left text-sm font-bold transition",
                 filter === item.value
                   ? "bg-[#fff1e8] text-[#ff6200]"
                   : "text-[#202020] hover:bg-[#fbfaf8]",
@@ -1518,7 +1545,7 @@ export default function Clients() {
       )}
     </div>
 
-    <div className="relative min-w-0">
+    <div ref={sortRef} className="relative min-w-0">
       <button
         type="button"
         onClick={() => {
@@ -1551,7 +1578,7 @@ export default function Clients() {
                 setClientTabs({});
               }}
               className={cn(
-                "block w-full px-4 py-3 text-left text-sm font-bold transition",
+                "block w-full px-4 py-2 text-left text-sm font-bold transition",
                 sort === item.value
                   ? "bg-[#fff1e8] text-[#ff6200]"
                   : "text-[#202020] hover:bg-[#fbfaf8]",
@@ -1578,23 +1605,25 @@ export default function Clients() {
             </div>
           )}
 
-          {!loading && !error && clients.length === 0 ? (
-            <div className="rounded-[24px] border-2 border-dashed border-[#e5d7c7] bg-white p-8 text-center shadow-sm">
-              <div className="mb-3 flex items-center justify-center">
-                <div className="flex h-12 w-12 items-center justify-center rounded-[16px] bg-[#fff1e8]">
-                  <EmptyIcon className="h-6 w-6 text-[#ff6200]" />
-                </div>
-              </div>
+{!loading && !error && clients.length === 0 ? (
+  <div className="rounded-[32px] border-2 border-dashed border-[#ffd6bd] bg-[#fff7f0] px-6 py-12 text-center">
+    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-[#ff6200] shadow-sm">
+      <EmptyIcon className="h-7 w-7" />
+    </div>
 
-              <p className="text-sm font-black text-[#202020]">
-                {emptyInfo.title}
-              </p>
+<h2 className="mt-4 text-xl font-black text-[#202020]">
+  {query.trim()
+    ? "Нічого не знайдено"
+    : emptyInfo.title}
+</h2>
 
-              <p className="mt-1 text-xs font-medium text-[#77716b]">
-                {emptyInfo.description}
-              </p>
-            </div>
-          ) : !loading && !error ? (
+<p className="mt-2 text-sm text-[#77716b]">
+  {query.trim()
+    ? `За запитом "${query}" не знайдено жодного клієнта.`
+    : emptyInfo.description}
+</p>
+  </div>
+) : !loading && !error ? (
             <>
               <div
                 ref={clientsListRef}

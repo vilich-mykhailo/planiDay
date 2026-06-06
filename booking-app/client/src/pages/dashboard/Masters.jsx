@@ -24,6 +24,7 @@ CircleAlert,
   Clock3,
   Banknote,
   ChevronRight,
+  ArrowDownToLine,
 } from "lucide-react";
 import DatePicker from "../../components/ui/DatePicker";
 import TimeSelect from "../../components/TimeSelect";
@@ -1407,11 +1408,11 @@ async function confirmCrop() {
         </p>
       </div>
 
-<div className="flex shrink-0 items-center gap-1 sm:gap-2">
+<div className="flex shrink-0 items-center">
   <button
     type="button"
     onClick={() => setInfoOpen(true)}
-    className="grid h-10 w-10 place-items-center rounded-full text-[#ff6200] transition-all duration-200 hover:scale-110 hover:bg-[#fff7f0] active:scale-95 sm:h-12 sm:w-12"
+    className="grid !px-0 h-10 w-10 place-items-center rounded-full text-[#ff6200] transition-all  hover:bg-[#fff7f0] active:scale-95 "
     title="Інформація"
   >
     <CircleAlert className="h-5 w-5" />
@@ -1420,10 +1421,10 @@ async function confirmCrop() {
 <div className="hidden sm:block">
   <Button
     variant="ghost"
-    className="h-12 hover:bg-[#fff7f0]"
+    className="h-12 !px-1.5 transition-all active:scale-95 mr-2"
     onClick={() => setExportOpen(true)}
   >
-    <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
+    <ArrowDownToLine className="h-4 w-4 text-emerald-600" />
     Експорт
   </Button>
 </div>
@@ -1489,15 +1490,19 @@ async function confirmCrop() {
           {loading ? (
             <MastersListSkeleton />
           ) : total === 0 ? (
-            <div className="rounded-[24px] border-2 border-dashed border-[#e5d7c7] bg-white p-8 text-center shadow-sm">
-              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-[16px] bg-[#fff1e8] text-[#ff6200]">
-                <Plus className="h-6 w-6" />
-              </div>
-              <p className="text-sm font-black text-[#202020]">Поки що немає майстрів</p>
-              <p className="mt-1 text-xs font-medium text-[#77716b]">
-                Натисніть “Додати майстра”, щоб створити перший профіль.
-              </p>
-            </div>
+<div className="rounded-[32px] border-2 border-dashed border-[#ffd6bd] bg-[#fff7f0] px-6 py-12 text-center">
+  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-[#ff6200] shadow-sm">
+    <Users className="h-7 w-7" />
+  </div>
+
+  <h2 className="mt-4 text-xl font-black text-[#202020]">
+    Поки що немає майстрів
+  </h2>
+
+  <p className="mt-2 text-sm text-[#77716b]">
+    Додайте першого майстра, щоб почати приймати записи клієнтів.
+  </p>
+</div>
           ) : filteredMasters.length === 0 ? (
             <div className="rounded-[24px] border-2 border-dashed border-[#e5d7c7] bg-white p-8 text-center shadow-sm">
               <p className="text-sm font-black text-[#202020]">Нічого не знайдено</p>
@@ -1524,56 +1529,56 @@ const todayException = m.scheduleExceptions?.find(
                   
                     className="overflow-hidden rounded-[18px] border border-[#e5eaf0] bg-white shadow-[0_10px_30px_rgba(15,23,42,0.045)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_44px_rgba(15,23,42,0.08)]"
                   >
-                    <div className="p-3">
-                      <div className="flex items-center justify-between gap-3">
-<span
-  className={cn(
-    "inline-flex items-center rounded-full px-3 py-1 text-xs font-bold",
-    isWorkingToday
-      ? "border border-emerald-100 bg-emerald-50 text-emerald-700"
-      : "border border-red-100 bg-red-50 text-red-700",
-  )}
+                    <div className="px-3">
+<button
+  type="button"
+  onClick={() => openEdit(m)}
+  className="mt-3 block w-full text-left"
 >
-  {isWorkingToday ? "Працює" : "Вихідний"}
-</span>
+  <div className="flex gap-3">
+    <div className="relative shrink-0">
+      <Avatar
+        name={m.name}
+        photoUrl={m.photoUrl}
+        size="md"
+        className="h-20 w-20 rounded-[20px] border-[#eef1f5]"
+      />
 
-                        <button
-                          type="button"
-                          onClick={() => openEdit(m)}
-                          className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-[#657084] transition hover:bg-[#f4f6f8] hover:text-[#202020]"
-                          title="Редагувати майстра"
-                          aria-label="Редагувати майстра"
-                        >
-                          <MoreVertical className="h-5 w-5" />
-                        </button>
-                      </div>
+      <div
+        className={cn(
+          "absolute -bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-2 py-0.5 text-[9px] font-black shadow-sm",
+          isWorkingToday
+            ? "bg-emerald-500 text-white"
+            : "bg-red-500 text-white",
+        )}
+      >
+        {isWorkingToday ? "Працює" : "Вихідний"}
+      </div>
+    </div>
 
-                      <button
-                        type="button"
-                        onClick={() => openEdit(m)}
-                        className="mt-4 flex w-full flex-col items-center text-center"
-                      >
-                        <Avatar
-                          name={m.name}
-                          photoUrl={m.photoUrl}
-                          size="md"
-                          className="h-14 w-14 rounded-full border-[#eef1f5] shadow-[0_10px_26px_rgba(15,23,42,0.10)]"
-                        />
+<div className="flex min-h-[48px] min-w-0 flex-1 flex-col justify-center">
+  <h3 className="line-clamp-2 text-[15px] font-black text-[#202020]">
+    {m.name || "Майстер"}
+  </h3>
 
-                        <h3 className="mt-2 line-clamp-1 text-[14px] font-black text-[#202020]">
-                          {m.name || "Майстер"}
-                        </h3>
-                      </button>
+  <p className="mt-1 line-clamp-2 text-[12px] font-bold text-[#77716b]">
+    {m.role || "Спеціалізація не вказана"}
+  </p>
+</div>
+  </div>
 
-                      <div className="mt-4 space-y-2 text-center">
-                        <p className="line-clamp-1 text-sm font-semibold text-[#586174]">
-                          {m.role || "Спеціалізація не вказана"}
-                        </p>
-
-                        <p className="line-clamp-2 min-h-[40px] text-xs font-medium leading-5 text-[#77716b]">
-                          {m.bio || "Без опису"}
-                        </p>
-                      </div>
+{m.bio ? (
+  <p className="mt-2.5 mb-2.5 min-h-[36px] line-clamp-2 text-[11px] font-medium leading-4 text-[#77716b]">
+    {m.bio}
+  </p>
+) : (
+  <div className="mt-2.5 mb-2.5 flex min-h-[36px] items-center justify-center px-2 text-center">
+    <p className="text-[11px] font-semibold italic text-[#b8afa5] leading-4">
+      Додайте опис майстра
+    </p>
+  </div>
+)}
+</button>
                     </div>
 
                    <div className="grid grid-cols-4 border-t border-[#edf0f4] bg-[#fbfcfd]">

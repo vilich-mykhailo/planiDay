@@ -324,7 +324,7 @@ masterScheduleRouter.get(
       });
     } catch (err) {
       console.error(err);
-      res.status(500).json({ message: "Не вдалося завантажити особливі дати" });
+      res.status(500).json({ message: "Не вдалося завантажити додаткові вихідні" });
     }
   },
 );

@@ -1337,19 +1337,22 @@ function Modal({ open, onClose, children, footer, size = "md" }) {
   };
 
   return (
-    <div
-      className="fixed inset-0 z-[950] flex items-center justify-center bg-[rgba(5,5,5,0.40)] p-4 backdrop-blur-sm sm:p-6"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose?.();
-      }}
-    >
+<div
+  className="fixed inset-0 z-[950] flex items-center justify-center bg-[rgba(5,5,5,0.40)] p-4 backdrop-blur-sm sm:p-6"
+  onMouseDown={(e) => {
+    if (e.target === e.currentTarget) {
+      onClose?.();
+    }
+  }}
+>
       <div
         className={cn(
           "relative w-full max-h-[90vh] overflow-hidden rounded-3xl bg-white shadow-2xl",
           "animate-in fade-in-0 slide-in-from-bottom duration-200",
           sizeClasses[size],
         )}
-        onClick={(e) => e.stopPropagation()}
+       onMouseDown={(e) => e.stopPropagation()}
+onClick={(e) => e.stopPropagation()}
       >
         <div className="max-h-[calc(90vh-72px)] overflow-y-auto px-4 py-6 sm:px-5 sm:py-7">
           {children}
@@ -2221,21 +2224,24 @@ const todayEmptyText = {
             "Довільний майстер";
 
           return (
-            <div
-              className="fixed inset-0 z-[220] flex items-end justify-center bg-[var(--color-bg)]/45 p-0 backdrop-blur-[7px] sm:items-center sm:p-4"
-              onClick={() => {
-                setDetailsId(null);
-                setCopiedPhone(false);
-                setShowDetailsScrollHint?.(true);
-              }}
-            >
+<div
+  className="fixed inset-0 z-[220] flex items-end justify-center bg-[var(--color-bg)]/45 p-0 backdrop-blur-[7px] sm:items-center sm:p-4"
+  onMouseDown={(e) => {
+    if (e.target === e.currentTarget) {
+      setDetailsId(null);
+      setCopiedPhone(false);
+      setShowDetailsScrollHint?.(true);
+    }
+  }}
+>
               <div
                 className={cn(
                   "relative flex w-full flex-col overflow-hidden bg-white",
                   "h-[100dvh] rounded-none border-0 shadow-none",
                   "sm:h-auto sm:max-h-[80vh] sm:max-w-[420px] sm:rounded-[34px] sm:border sm:border-[var(--color-cream)] sm:shadow-[0_35px_100px_rgba(27,27,27,0.18)]",
                 )}
-                onClick={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+onClick={(e) => e.stopPropagation()}
               >
                 <div
                   className={cn(
