@@ -355,10 +355,9 @@ function Toggle({ checked }) {
       className={cn(
         "relative inline-flex h-7 w-12 items-center rounded-full transition-all",
         checked
-          ? "bg-gradient-to-r from-[#ff7a18] to-[#ff6200]"
+          ? "bg-gradient-to-r from-[#22c55e] to-[#16a34a]"
           : "bg-[#d8d2ca]",
       )}
-      aria-hidden="true"
     >
       <span
         className={cn(

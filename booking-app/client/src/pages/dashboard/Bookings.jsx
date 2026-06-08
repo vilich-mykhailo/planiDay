@@ -13,11 +13,13 @@ import {
   FolderClock,
   XCircle,
   Clock,
+    MapPin,
+  Scissors,
+  Clock3,
+  CheckCheck,
   UserRound,
   Phone,
   Copy,
-  Scissors,
-  Clock3,
   Banknote,
   Timer,
   ChevronDown,
@@ -27,10 +29,11 @@ import {
   UserPlus,
   CircleUser,
   CircleCheck,
-  CheckCheck,
   CopyCheck,
   ListTodo,
   CalendarCheck,
+  ClipboardPen,
+  PhoneCall,
 } from "lucide-react";
 import { useBookings } from "../../context/bookings/useBookings";
 import { socket } from "../../lib/socket";
@@ -554,6 +557,26 @@ function BookingCardSkeleton() {
   );
 }
 
+function toPublicUrl(v) {
+  const PUBLIC = import.meta.env.VITE_R2_PUBLIC_BASE_URL;
+  const s = String(v || "").trim();
+
+  if (!s) return "";
+  if (/^https?:\/\//i.test(s)) return s;
+
+  return PUBLIC ? `${PUBLIC}/${s}` : s;
+}
+
+function getOwnerBookingStatus(booking) {
+  const raw = booking?.status || "new";
+
+  if (raw === "canceled" || raw === "CANCELED") return "canceled";
+  if (raw === "confirmed" || raw === "CONFIRMED") return "confirmed";
+  if (raw === "completed" || raw === "COMPLETED") return "completed";
+
+  return "new";
+}
+
 export default function Bookings() {
   const { bookings, confirmBooking, cancelBooking, deleteBooking, loading } =
     useBookings();
@@ -1009,7 +1032,7 @@ if (b.status === "canceled") {
           <SectionCard
             title={
               <div className="flex items-center gap-3">
-<div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#ff5a00] text-white shadow-[0_14px_28px_rgba(255,90,0,0.22)]">
+<div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#ff5a00] text-white">
   <ListTodo className="h-5 w-5" />
 </div>
 
@@ -1138,11 +1161,37 @@ if (b.status === "canceled") {
 
                     {!isCollapsed && (
                       <div className="space-y-3 p-3 sm:p-4">
-                        {items.map((b) => {
-                          const isCanceled = b.status === "canceled";
-                          const isConfirmed = b.status === "confirmed";
-                          const dt = getBookingDateTime(b);
-                          const isArchived = dt ? dt.getTime() < nowTs : false;
+{items.map((b) => {
+
+  const status = getOwnerBookingStatus(b);
+
+  const clientName =
+    b.clientName ||
+    b.client?.name ||
+    "Клієнт";
+
+  const service =
+    b.serviceName ||
+    b.service?.name ||
+    "Послуга";
+
+  const masterName =
+    b.masterName ||
+    b.master?.name ||
+    "Майстер";
+
+  const clientPhoto = toPublicUrl(
+    b.clientPhoto ||
+    b.client?.photoUrl ||
+    b.client?.avatar ||
+    "",
+  );
+
+  const isCanceled = b.status === "canceled";
+  const isConfirmed = b.status === "confirmed";
+
+  const dt = getBookingDateTime(b);
+  const isArchived = dt ? dt.getTime() < nowTs : false;
                           const statusKey = isCanceled
                             ? "canceled"
                             : isConfirmed
@@ -1167,136 +1216,205 @@ if (b.status === "canceled") {
                               })
                             : "";
                           const timeLabel = b.time || "";
+                          const statusBadge =
+  {
+    canceled: {
+      label:
+        b.canceledBy === "client"
+          ? "Скасовано клієнтом"
+          : "Скасовано",
+      className: "border-[#fecaca] bg-[#fff5f5] text-[#ef4444]",
+      icon: XCircle,
+    },
+    confirmed: {
+      label: "Підтверджено",
+      className: "border-[#bbf7d0] bg-[#f0fdf4] text-[#22c55e]",
+      icon: Check,
+    },
+    completed: {
+      label: "Завершено",
+      className: "border-[#d1d5db] bg-[#f9fafb] text-[#6b7280]",
+      icon: CheckCheck,
+    },
+    new: {
+      label: "Очікує підтвердження",
+      className: "border-[#fed7aa] bg-[#fff7ed] text-[#ff6200]",
+      icon: Clock3,
+    },
+  }[status] || {
+    label: "Очікує підтвердження",
+    className: "border-[#fed7aa] bg-[#fff7ed] text-[#ff6200]",
+    icon: Clock3,
+  };
 
-                          return (
-                            <div
-                              key={b.id}
-                              className={cn(
-                                "rounded-[28px] border border-[var(--color-cream)] bg-white p-3.5 shadow-[0_10px_30px_rgba(27,27,27,0.06)] transition-all duration-200 hover:border-[var(--border-hover-primary)] hover:shadow-[0_14px_34px_rgba(27,27,27,0.10)] sm:p-4",
-                               isArchived && "bg-[#fbfaf8]",
-                              )}
-                            >
-                              <div className="relative grid grid-cols-[1fr_auto] gap-3">
-                                <div className="min-w-0">
-                                  <div
-                                    className={cn(
-                                      "inline-flex items-center justify-center gap-2 px-2.5 py-1.5 text-xs font-semibold rounded-2xl border border-[var(--border-soft)] bg-white shadow-sm transition-all duration-200",
-                                      statusUi.badge,
-                                    )}
-                                  >
-                                    <statusUi.icon className="h-3.5 w-3.5" />
-                                    {statusUi.text}
-                                  </div>
+const StatusIcon = statusBadge.icon;
 
-                                  <h3 className="mt-3 line-clamp-2 text-[18px] font-black leading-[1.05] tracking-[-0.03em] text-[#202020]">
-                                    {b.serviceName || "Послуга"}
-                                  </h3>
+return (
+  <div
+    key={b.id}
+    role="button"
+    tabIndex={0}
+    onClick={() => setDetailsId(b.id)}
+    onKeyDown={(e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        setDetailsId(b.id);
+      }
+    }}
+    className={cn(
+      "group cursor-pointer overflow-hidden rounded-[24px] border border-[#eadfce] bg-white transition-all duration-200",
+      "hover:-translate-y-0.5 hover:border-[#ffd6bd] hover:bg-[#fff7f0] hover:shadow-[0_18px_44px_rgba(255,90,0,0.10)]",
+      "active:scale-[0.99]",
+      status === "completed" && "opacity-85",
+    )}
+  >
+    <div className="grid min-h-[108px] grid-cols-[92px_minmax(0,1fr)_132px_96px] items-center gap-3 px-4 py-3 max-[639px]:min-h-0 max-[639px]:grid-cols-[1fr_82px] max-[639px]:gap-3 max-[639px]:px-3 max-[639px]:py-3">
+      <div className="contents max-[639px]:block max-[639px]:min-w-0">
+        <div className="mb-2 hidden justify-center max-[639px]:flex">
+          <div
+            className={cn(
+              "inline-flex items-center justify-center gap-1.5 rounded-full border px-3 py-1 text-center text-[10px] font-black",
+              statusBadge.className,
+            )}
+          >
+            <StatusIcon className="h-3.5 w-3.5" />
+            {statusBadge.label}
+          </div>
+        </div>
 
-                                  <div className="mt-1 flex min-w-0 items-center gap-2">
-<div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#ffd6bd] bg-[#fff1e8]">
-  <UserRound className="h-3.5 w-3.5 text-[#ff5a00]" />
-</div>
-                                    <p className="truncate text-[15px] font-medium text-[#202020]">
-                                      {b.clientName || "Клієнт"}
-                                    </p>
-                                  </div>
+        <div className="contents max-[639px]:flex max-[639px]:items-center max-[639px]:gap-3">
+       <div className="grid h-[70px] w-[70px] shrink-0 place-items-center overflow-hidden rounded-full border border-[#eadfce] bg-white p-1 shadow-[0_8px_24px_rgba(15,23,42,0.06)] md:ml-2 lg:ml-3 max-[639px]:h-[64px] max-[639px]:w-[64px]">
+            {clientPhoto ? (
+              <img
+                src={clientPhoto}
+                alt={clientName}
+                className="h-full w-full rounded-full object-cover transition duration-500 group-hover:scale-105"
+              />
+            ) : (
+              <div className="grid h-full w-full place-items-center rounded-full bg-[#fff1e8] text-[#ff6200]">
+                <UserRound className="h-9 w-9 max-[639px]:h-6 max-[639px]:w-6" />
+              </div>
+            )}
+          </div>
 
-                                  {b.clientPhone && (
-                                    <p className="mt-2 text-[13px] text-[#77716b]">
-                                      телефон:{" "}
-                                      <a
-                                        href={`tel:${b.clientPhone}`}
-                                        onClick={(e) => e.stopPropagation()}
-                                        className="font-medium text-[var(--color-ink)] hover:underline"
-                                      >
-                                        {b.clientPhone}
-                                      </a>
-                                    </p>
-                                  )}
+          <div className="min-w-0">
+            <h2 className="line-clamp-1 text-[16px] font-black leading-tight tracking-[-0.04em] text-[#202020] max-[639px]:text-[13px] lg:text-[18px]">
+              {clientName}
+            </h2>
 
-                                  <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-                                    <button
-                                      type="button"
-                                      onClick={() => setDetailsId(b.id)}
-                                      className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[#eadbc9] bg-white px-4 text-sm font-semibold text-[#202020] shadow-sm transition-all duration-200 hover:border-[#ffd6bd] hover:bg-[#fff7f0] active:scale-[0.98]"
-                                    >
-                                      <Eye className="h-4 w-4" />
-                                      Переглянути
-                                    </button>
+            {b.clientPhone && (
+              <div className="mt-2 flex items-center gap-1.5 text-[12px] font-semibold text-[#77716b] max-[767px]:mt-1 max-[767px]:text-[10px] lg:text-[13px]">
+                 <Phone className="h-4 w-4 shrink-0 text-[#77716b] max-[767px]:h-3 max-[767px]:w-3" />
+                <span className="line-clamp-1">{b.clientPhone}</span>
+              </div>
+            )}
 
-                                    {!isConfirmed &&
-                                      !isCanceled &&
-                                      !isArchived && (
-                                        <button
-                                          type="button"
-                                          onClick={async () => {
-                                            try {
-                                              await confirmBooking(b.id);
-                                            } catch (e) {
-                                              alert(
-                                                e.message ||
-                                                  "Не вдалося підтвердити запис",
-                                              );
-                                            }
-                                          }}
-                                          className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[#eadbc9] bg-white px-4 text-sm font-semibold text-[#202020] shadow-sm transition-all duration-200 hover:border-[#ffd6bd] hover:bg-[#fff7f0] active:scale-[0.98]"
-                                        >
-                                          <CheckCheck className="h-4 w-4" />
-                                          Підтвердити
-                                        </button>
-                                      )}
+            <div className="mt-2 flex items-center gap-1.5 text-[12px] font-semibold text-[#77716b] max-[767px]:mt-1 max-[767px]:text-[10px] lg:text-[13px]">
+              <ClipboardPen className="h-4 w-4 shrink-0 text-[#77716b] max-[767px]:h-3 max-[767px]:w-3" />
+              <span className="line-clamp-2">{service}</span>
+            </div>
 
-                                    {!isCanceled && (
-                                      <button
-                                        type="button"
-                                        onClick={() => setCancelConfirmId(b.id)}
-                                        disabled={isCanceled || isArchived}
-                                        className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[#eadbc9] bg-white px-4 text-sm font-semibold text-[#202020] shadow-sm transition-all duration-200 hover:border-[#ffd6bd] hover:bg-[#fff7f0] active:scale-[0.98]"
-                                      >
-                                        Скасувати запис
-                                      </button>
-                                    )}
-                                  </div>
-                                </div>
+            <div className="mt-3 flex items-center gap-2 text-[12px] font-semibold text-[#77716b] max-[767px]:mt-1.5 max-[767px]:gap-1.5 max-[767px]:text-[10px] lg:text-[13px]">
+              <div className="grid h-7 w-7 place-items-center rounded-full bg-[#fff1e8] text-[11px] font-black text-[#ff6200] max-[767px]:h-5 max-[767px]:w-5 max-[767px]:text-[8px]">
+                {masterName?.[0] || "М"}
+              </div>
 
-                                {isCanceled && !isArchived && (
-                                  <button
-                                    type="button"
-                                    onClick={() => setConfirmId(b.id)}
-                                    className="absolute right-[92px] top-0 inline-flex h-9 w-9 items-center justify-center rounded-full text-[var(--color-danger-dark)] transition hover:scale-110 hover:bg-[var(--color-cream)] active:scale-95"
-                                    aria-label="Видалити запис"
-                                    title="Видалити"
-                                  >
-                                    <Trash2 className="h-5 w-5" />
-                                  </button>
-                                )}
+              <span className="truncate">Майстер: {masterName}</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
-                                <div
-                                  className={cn(
-                                    "relative flex min-w-[78px] flex-col items-center justify-center border-l pl-3 text-center",
-                                    statusUi.side,
-                                  )}
-                                >
-                                  <span className="text-[14px] font-medium capitalize text-[var(--color-caramel)]">
-                                    {monthLabel}
-                                  </span>
+      <div
+        className={cn(
+          "hidden h-full items-center justify-center border-l pl-3 max-[639px]:flex",
+          status === "confirmed"
+            ? "border-[#bbf7d0]"
+            : status === "new"
+              ? "border-[#fed7aa]"
+              : status === "canceled"
+                ? "border-[#fecaca]"
+                : "border-[#d1d5db]",
+        )}
+      >
+        <div className="flex h-[74px] w-[58px] flex-col items-center justify-center">
+          <p className="text-center text-[11px] font-bold capitalize text-[#aaa19a]">
+            {monthLabel}
+          </p>
 
-                                  <span className="mt-1 text-[28px] font-light leading-none tracking-[-0.05em] text-[var(--color-ink)]">
-                                    {dayLabel}
-                                  </span>
+          <p
+            className={cn(
+              "text-[28px] font-[300] leading-none tracking-[-0.05em]",
+              status === "confirmed"
+                ? "text-[#41a85f]"
+                : status === "new"
+                  ? "text-[#ff6200]"
+                  : status === "canceled"
+                    ? "text-[#ef4444]"
+                    : "text-[#6b7280]",
+            )}
+          >
+            {dayLabel}
+          </p>
 
-                                  <span
-                                    className={cn(
-                                      "mt-2 text-[16px] font-semibold",
-                                      statusUi.time,
-                                    )}
-                                  >
-                                    {timeLabel}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          );
+          <p className="text-[12px] font-semibold tracking-[0.08em] text-[#5f5a55]">
+           {timeLabel}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex flex-col items-center justify-center gap-3 max-[639px]:hidden">
+<div
+  className={cn(
+    "mr-10 inline-flex items-center justify-center gap-2 rounded-full border px-3 py-2 text-center text-[11px] font-black",
+    statusBadge.className,
+  )}
+>
+          <StatusIcon className="h-4 w-4" />
+          <span className="whitespace-nowrap">{statusBadge.label}</span>
+        </div>
+      </div>
+
+      <div
+        className={cn(
+          "flex items-center justify-center border-l pl-5 max-[639px]:hidden",
+          status === "confirmed"
+            ? "border-[#bbf7d0]"
+            : status === "new"
+              ? "border-[#fed7aa]"
+              : status === "canceled"
+                ? "border-[#fecaca]"
+                : "border-[#d1d5db]",
+        )}
+      >
+        <div className="flex h-[82px] w-[78px] flex-col items-center justify-center">
+<span className="text-[13px] font-bold capitalize text-[#aaa19a]">
+  {monthLabel}
+</span>
+
+          <span
+            className={cn(
+              "mt-0.5 text-[36px] font-[300] leading-none tracking-[-0.05em]",
+              status === "confirmed"
+                ? "text-[#41a85f]"
+                : status === "new"
+                  ? "text-[#ff6200]"
+                  : status === "canceled"
+                    ? "text-[#ef4444]"
+                    : "text-[#6b7280]",
+            )}
+          >
+            {dayLabel}
+          </span>
+
+          <span className="mt-1 text-[15px] font-black text-[#77716b]">
+            {timeLabel}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+);
                         })}
                       </div>
                     )}
@@ -1447,13 +1565,13 @@ const allCanceled = count > 0 && canceledCount === count;
 !isPastDay &&
   !allCanceled &&
   hasPending &&
-  "border-[var(--color-pending)] bg-[var(--color-pending-light)] shadow-[0_6px_18px_rgba(0,0,0,0.06)]",
+  "!border-[#ff6200] bg-[#ffe5d4] shadow-[0_8px_24px_rgba(255,98,0,0.25)]",
 
 !isPastDay &&
   !allCanceled &&
   !hasPending &&
   hasConfirmed &&
-  "border-[var(--color-buttom-ok)] hover:border-[var(--color-pending)] hover:shadow-[0_6px_18px_rgba(0,0,0,0.08)]",
+  "border-[var(--color-buttom-ok)] hover:border-[var(--color-buttom-ok)] hover:shadow-[0_6px_18px_rgba(0,0,0,0.08)]",
                         // пустий день
                         !isPastDay &&
                           count === 0 &&
@@ -1513,8 +1631,8 @@ isPastDay
   ? "bg-[var(--color-archived-light)] text-[var(--color-archived-dark)]"
   : allCanceled
     ? "bg-[var(--color-canceled)] text-white"
-    : hasPending
-      ? "bg-[var(--color-pending)] text-white"
+: hasPending
+  ? "bg-[#ff6200] text-white"
       : hasConfirmed
         ? "bg-[var(--color-confirmed)] text-white"
         : "bg-[var(--color-confirmed)] text-white",
@@ -1531,8 +1649,8 @@ isPastDay
             </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-[var(--color-caramel)]">
-<span className="inline-flex items-center gap-2">
-  <span className="h-2 w-2 rounded-full bg-[var(--color-pending)]" />
+<span className="inline-flex items-center gap-2 font-semibold">
+  <span className="h-2 w-2 rounded-full bg-[#ff6200]" />
   Є записи, що очікують підтвердження
 </span>
 
@@ -1668,8 +1786,7 @@ isPastDay
                 Скасувати запис?
               </h3>
               <p className="mt-2 text-sm leading-6 text-[var(--color-caramel)]">
-                Запис залишиться в системі, але буде позначений як скасований і
-                більше не вважатиметься активним.
+                Запис вважатиметься не активним і буде позначений як скасований.
               </p>
             </div>
 
@@ -1881,115 +1998,130 @@ isPastDay
                         setShowScrollHint(isScrollable && !isAtBottom);
                       }}
                     >
-                      <div className="space-y-3">
-                        <div className="rounded-[26px] border border-[#e6ebe3]  from-[#f6faf4] via-[#edf4ea] to-[#fbfdf9] p-4 shadow-[0_8px_24px_rgba(120,140,120,0.08)]">
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-[var(--color-ink)] shadow-sm">
-                              <UserRound className="h-5 w-5" />
-                            </div>
+<div className="space-y-3">
+<div className="rounded-[28px] border border-[#eadfce] bg-white p-4 shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
+  <div className="flex items-center gap-4">
+    <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#fff1e8] text-[#ff6200]">
+      {selectedBooking.clientPhoto ? (
+        <img
+          src={toPublicUrl(selectedBooking.clientPhoto)}
+          alt={clientName}
+          className="h-full w-full object-cover"
+        />
+      ) : (
+        <CircleUser className="h-5 w-5" />
+      )}
+    </div>
 
-                            <div className="min-w-0 flex-1">
-                              <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-caramel)]">
-                                Клієнт
-                              </span>
-                              <p className="truncate text-[15px] font-extrabold text-[var(--color-ink)]">
-                                {clientName}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
+    <div className="min-w-0 flex-1">
+      <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#aaa19a]">
+        Клієнт
+      </p>
 
-                        <div className="rounded-[26px] border border-[#e6ebe3]  from-[#f6faf4] via-[#edf4ea] to-[#fbfdf9] p-4 shadow-[0_8px_24px_rgba(120,140,120,0.08)]">
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white font-bold text-[var(--color-ink)] shadow-sm">
-                              {masterName?.[0] || "—"}
-                            </div>
+      <p className="truncate text-[17px] font-black text-[#202020]">
+        {clientName}
+      </p>
 
-                            <div className="min-w-0 flex-1">
-                              <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-caramel)]">
-                                Майстер
-                              </span>
-                              <p className="truncate text-[15px] font-extrabold text-[var(--color-ink)]">
-                                {masterName}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
+    </div>
+  </div>
+</div>
 
-                        <div className="rounded-[26px] border border-[#e6ebe3]  from-[#f6faf4] via-[#edf4ea] to-[#fbfdf9] p-4 shadow-[0_8px_24px_rgba(120,140,120,0.08)]">
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-[var(--color-ink)] shadow-sm">
-                              <Phone className="h-5 w-5" />
-                            </div>
+  <div className="rounded-[28px] border border-[#eadfce] bg-white p-4 shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
+    <div className="flex items-center gap-4">
+      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#fff1e8] font-black text-[#ff6200]">
+        {masterName?.[0] || "М"}
+      </div>
 
-                            <div className="min-w-0 flex-1">
-                              <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-caramel)]">
-                                Телефон клієнта
-                              </span>
-                              <p className="truncate text-[15px] font-extrabold text-[var(--color-ink)]">
-                                {phone || "—"}
-                              </p>
-                            </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#aaa19a]">
+          Майстер
+        </p>
 
-                            {phone ? (
-                              <button
-                                type="button"
-                                onClick={() => handleCopyPhone(phone)}
-                                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-[var(--color-ink)] shadow-sm transition hover:bg-[var(--color-cream)]"
-                                aria-label="Скопіювати телефон"
-                                title="Скопіювати телефон"
-                              >
-                                {copiedPhone ? (
-                                  <FolderClock className="h-4 w-4" />
-                                ) : (
-                                  <Copy className="h-4 w-4" />
-                                )}
-                              </button>
-                            ) : (
-                              <div className="h-10 w-10 shrink-0 rounded-2xl bg-white" />
-                            )}
-                          </div>
-                        </div>
-                      </div>
+        <p className="truncate text-[17px] font-black text-[#202020]">
+          {masterName}
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div className="rounded-[28px] border border-[#eadfce] bg-white p-4 shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
+  <div className="flex items-center gap-4">
+    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#fff1e8] text-[#ff6200]">
+      <Phone className="h-5 w-5" />
+    </div>
+
+    <div className="min-w-0 flex-1">
+      <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#aaa19a]">
+        Телефон
+      </p>
+
+      <p className="truncate text-[17px] font-black text-[#202020]">
+        {phone || "—"}
+      </p>
+    </div>
+
+<div className="flex items-center gap-2">
+
+
+  {phone && (
+    <button
+      type="button"
+      onClick={() => handleCopyPhone(phone)}
+      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[#eadfce] bg-white text-[#77716b] transition-all duration-200 hover:bg-[#fff7f0] hover:text-[#202020]"
+      title="Скопіювати номер"
+    >
+      {copiedPhone ? (
+        <CheckCheck className="h-4 w-4 text-emerald-600" />
+      ) : (
+        <Copy className="h-4 w-4" />
+      )}
+    </button>
+  )}
+    {phone && (
+    <a
+      href={`tel:${phone}`}
+      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[#eadfce] bg-white text-[#ff6200] transition-all duration-200 hover:bg-[#fff7f0] hover:scale-105 active:scale-[0.95]"
+      title="Подзвонити"
+    >
+      <PhoneCall className="h-4 w-4" />
+    </a>
+  )}
+</div>
+  </div>
+</div>
+</div>
                     </div>
 
-                    <div className="mt-4 grid grid-cols-2 gap-3 pt-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (phone) window.location.href = `tel:${phone}`;
-                        }}
-                        disabled={!phone}
-                        className={cn(
-                          "inline-flex h-12 items-center justify-center gap-2 rounded-[22px] px-4 text-sm font-bold text-white transition-all duration-200 active:scale-[0.98]",
+<div className="mt-4 grid grid-cols-2 gap-3 pt-2">
+  {!isConfirmed && !isCanceled && !isArchived && (
+<button
+  type="button"
+  onClick={async () => {
+    await confirmBooking(selectedBooking.id);
+    setDetailsId(null);
+  }}
+  className="inline-flex h-12 items-center justify-center gap-2 rounded-[22px] bg-[#22c55e] text-sm font-black text-white transition-all duration-200 hover:bg-[#16a34a] hover:-translate-y-[1px] active:scale-[0.98]"
+>
+  <CheckCheck className="h-4 w-4" />
+  Підтвердити
+</button>
+  )}
 
-                          phone
-                            ? [
-                                // 👉 gradient через твої var
-                                "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
+  {!isCanceled && !isArchived && (
+    <button
+      type="button"
+      onClick={() => {
+        setDetailsId(null);
+        setCancelConfirmId(selectedBooking.id);
+      }}
+      className="inline-flex h-12 items-center justify-center gap-2 rounded-[22px] border border-[#fecaca] bg-[#fff5f5] text-sm font-black text-[#ef4444] transition-all duration-200 hover:border-[#fca5a5] hover:bg-[#ffecec] active:scale-[0.98]"
+    >
+      <XCircle className="h-4 w-4" />
+      Скасувати запис
+    </button>
+  )}
 
-                                // 👉 hover
-                                "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]",
-                              ].join(" ")
-                            : "cursor-not-allowed bg-[var(--color-cream)] text-[var(--color-caramel)] shadow-none hover:from-[var(--color-cream)] hover:to-[var(--color-cream)]",
-                        )}
-                      >
-                        <Phone className="h-4 w-4" />
-                        Дзвінок
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setDetailsId(null);
-                          setCopiedPhone(false);
-                          setShowDetailsScrollHint(true);
-                        }}
-                        className="inline-flex h-12 items-center justify-center gap-2 rounded-[22px] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
-                      >
-                        Закрити
-                      </button>
-                    </div>
+</div>
                   </div>
                 </div>
               </div>
@@ -2302,20 +2434,13 @@ onClick={(e) => e.stopPropagation()}
                                                 );
                                               }
                                             }}
-                                            className={cn(
-                                              "inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold text-white transition-all duration-200 active:scale-[0.98]",
-
-                                              // 👉 gradient через nude-green
-                                              "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
-
-                                              // 👉 hover
-                                              "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]",
-
-                                              // 👉 ширина
-                                              actionsCount > 1
-                                                ? "w-full"
-                                                : "min-w-[160px]",
-                                            )}
+className={cn(
+  "inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-black text-white transition-all duration-200",
+  "bg-[#22c55e]",
+  "hover:bg-[#16a34a] hover:-translate-y-[1px]",
+  "active:scale-[0.98]",
+  actionsCount > 1 ? "w-full" : "min-w-[160px]",
+)}
                                           >
                                             <CheckCheck className="h-4 w-4" />
                                             Підтвердити
@@ -2329,12 +2454,16 @@ onClick={(e) => e.stopPropagation()}
                                             setCancelConfirmId(b.id);
                                           }}
                                           disabled={isCanceled || isArchived}
-                                          className={cn(
-                                            "inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]",
-                                            actionsCount > 1
-                                              ? "w-full"
-                                              : "min-w-[160px]",
-                                          )}
+className={cn(
+  "inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-black transition-all duration-200",
+  "border border-[#fecaca] bg-[#fff5f5] text-[#ef4444]",
+
+  "hover:bg-[#ef4444] hover:text-white hover:border-[#ef4444]",
+  "hover:shadow-[0_18px_36px_rgba(239,68,68,0.20)] hover:-translate-y-[1px]",
+  "active:scale-[0.98]",
+  "disabled:pointer-events-none disabled:opacity-50",
+  actionsCount > 1 ? "w-full" : "min-w-[160px]",
+)}
                                         >
                                           <XCircle className="h-4 w-4" />
                                           Скасувати
@@ -2347,12 +2476,13 @@ onClick={(e) => e.stopPropagation()}
                                           onClick={() => {
                                             setConfirmId(b.id);
                                           }}
-                                          className={cn(
-                                            "inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]",
-                                            actionsCount > 1
-                                              ? "w-full"
-                                              : "min-w-[160px]",
-                                          )}
+className={cn(
+  "inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-black text-white transition-all duration-200",
+  "bg-[#ef4444]",
+  "hover:bg-[#dc2626] hover:shadow-[0_18px_36px_rgba(239,68,68,0.28)] hover:-translate-y-[1px]",
+  "active:scale-[0.98]",
+  actionsCount > 1 ? "w-full" : "min-w-[160px]",
+)}
                                         >
                                           <Trash2 className="h-4 w-4" />
                                           Видалити

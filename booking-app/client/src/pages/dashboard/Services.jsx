@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useStudio } from "../../context/studio/useStudio";
 import XLSX from "xlsx-js-style";
@@ -13,6 +13,7 @@ import {
   X,
   Download,
 FileSpreadsheet,
+ArrowRight,
 CircleAlert,
   Sparkles,
   ChevronDown,
@@ -229,9 +230,9 @@ function SectionCard({
       <div className="border-b border-[#f1ece5] px-4 py-4 sm:px-5 sm:py-5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <h2 className="line-clamp-3 text-base font-black leading-snug tracking-[-0.03em] text-[#202020] sm:text-lg">
-              {title}
-            </h2>
+<h2 className="line-clamp-3 break-words text-base font-black leading-6 tracking-[-0.03em] text-[#202020] sm:text-lg">
+  {title}
+</h2>
 
             {badge && (
               <div className="mt-1.5">
@@ -467,7 +468,7 @@ function Button({
 }) {
   const variants = {
     primary:
-      "bg-[#ff5a00] text-white shadow-[0_16px_34px_rgba(255,90,0,0.24)] hover:bg-[#ef4f00]",
+      "bg-[#ff5a00] text-white hover:bg-[#ef4f00]",
     secondary:
       "bg-white border border-[#eadbc9] text-[#202020] hover:bg-[#fff7f0] hover:border-[#ffd6bd]",
     danger:
@@ -636,15 +637,16 @@ function CategoryFilters({ value, onChange, categories }) {
   return (
     <div className="mb-6">
      <div className="no-scrollbar -mx-4 flex justify-start gap-2 overflow-x-auto px-4 pb-1">
-        {items.map((item) => {
-          const active = String(value) === String(item.id);
+       {items.map((item) => {
+  const active = String(value) === String(item.id);
 
-          return (
-<button
-  key={item.id}
-  type="button"
-  onClick={() => onChange(item.id)}
-  className={cn(
+  return (
+    <button
+      id={`category-filter-${item.id}`}
+      key={item.id}
+      type="button"
+      onClick={() => onChange(item.id)}
+      className={cn(
     "shrink-0 max-w-[320px] overflow-hidden text-ellipsis whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold border",
     active
       ? "border-transparent bg-[#ff5a00] text-white shadow-md"
@@ -682,7 +684,14 @@ export default function Services() {
   });
 const [exportOpen, setExportOpen] = useState(false);
 const [infoOpen, setInfoOpen] = useState(false);
-
+const [deleteConfirm, setDeleteConfirm] = useState({
+  open: false,
+  type: null, // "service" або "category"
+  catId: null,
+  service: null,
+  category: null,
+  loading: false,
+});
 const [exportFields, setExportFields] = useState({
   name: true,
   category: true,
@@ -694,7 +703,7 @@ const [exportFields, setExportFields] = useState({
   const uncategorizedServices =
     servicesQuery.data?.uncategorizedServices ?? EMPTY_ARRAY;
   const masters = mastersQuery.data ?? EMPTY_ARRAY;
-
+const categoryFiltersRef = useRef(null);
   const blocks = useMemo(() => {
     const unc = {
       id: UNCATEGORIZED_ID,
@@ -801,14 +810,38 @@ const [exportFields, setExportFields] = useState({
     try {
       const token = localStorage.getItem("token");
 
-      await api(`/studio/${studio.id}/categories`, {
-        method: "POST",
-        token,
-        body: { name },
-      });
+const createdCategory = await api(
+  `/studio/${studio.id}/categories`,
+  {
+    method: "POST",
+    token,
+    body: { name },
+  },
+);
 
-      setNewCategoryName("");
-      await refreshServices();
+setNewCategoryName("");
+
+setActiveCategoryFilter(
+  createdCategory?.category?.id ||
+  createdCategory?.id,
+);
+
+setTimeout(() => {
+  const element = document.getElementById(
+    `category-filter-${
+      createdCategory?.category?.id ||
+      createdCategory?.id
+    }`,
+  );
+
+  element?.scrollIntoView({
+    behavior: "smooth",
+    inline: "center",
+    block: "nearest",
+  });
+}, 200);
+
+await refreshServices();
     } catch (e) {
       console.error(e);
       alert(e.message || "Не вдалося додати категорію");
@@ -857,7 +890,7 @@ const [exportFields, setExportFields] = useState({
         method: "DELETE",
         token,
       });
-
+      setActiveCategoryFilter("all");
       await refreshServices();
     } catch (e) {
       console.error(e);
@@ -978,6 +1011,33 @@ const [exportFields, setExportFields] = useState({
       alert(e.message || "Не вдалося видалити послугу");
     }
   }
+
+  async function confirmDelete() {
+  if (deleteConfirm.loading) return;
+
+  setDeleteConfirm((prev) => ({ ...prev, loading: true }));
+
+  try {
+    if (deleteConfirm.type === "service" && deleteConfirm.service?.id) {
+      await deleteService(deleteConfirm.catId, deleteConfirm.service.id);
+    }
+
+    if (deleteConfirm.type === "category" && deleteConfirm.category?.id) {
+      await deleteCategory(deleteConfirm.category.id);
+    }
+
+    setDeleteConfirm({
+      open: false,
+      type: null,
+      catId: null,
+      service: null,
+      category: null,
+      loading: false,
+    });
+  } catch {
+    setDeleteConfirm((prev) => ({ ...prev, loading: false }));
+  }
+}
 
   const totalServices = blocks.reduce((acc, b) => acc + (b.services?.length || 0), 0);
   const showTips = totalServices === 0;
@@ -1103,14 +1163,14 @@ function handleExportServices() {
   </Button>
 </div>
 
-  <Button
-    variant="primary"
-    onClick={() =>  setExportOpen(true)}
-    className="h-10 shrink-0 px-3 sm:h-12 sm:px-5"
-  >
-    <Plus className="h-4 w-4" />
-    <span className="hidden sm:inline">Додати майстра</span>
-  </Button>
+<Button
+  variant="primary"
+  onClick={() => openAddService(UNCATEGORIZED_ID)}
+  className="h-10 shrink-0 px-3 sm:h-12 sm:px-5"
+>
+  <Plus className="h-4 w-4" />
+  <span className="hidden sm:inline">Додати послугу</span>
+</Button>
 </div>
 </div>
     </div>
@@ -1144,6 +1204,7 @@ function handleExportServices() {
 
         <CategoryFilters
           value={activeCategoryFilter}
+          
           onChange={setActiveCategoryFilter}
           categories={serviceCategories}
         />
@@ -1186,7 +1247,16 @@ function handleExportServices() {
 
                               <IconButton
                                 variant="danger"
-                                onClick={() => deleteCategory(cat.id)}
+                                onClick={() =>
+  setDeleteConfirm({
+    open: true,
+    type: "category",
+    catId: cat.id,
+    category: cat,
+    service: null,
+    loading: false,
+  })
+}
                                 title="Видалити"
                                 className="h-[42px] w-[42px] shrink-0 !border-x !border-[#edf0f4] !text-[#e5484d] !transition hover:!bg-[#fff7f7]"
                               >
@@ -1208,7 +1278,16 @@ function handleExportServices() {
 
                           <IconButton
                             variant="danger"
-                            onClick={() => deleteCategory(cat.id)}
+                            onClick={() =>
+  setDeleteConfirm({
+    open: true,
+    type: "category",
+    catId: cat.id,
+    category: cat,
+    service: null,
+    loading: false,
+  })
+}
                             title="Видалити"
                             className="h-[42px] w-[42px] shrink-0 !border-x !border-[#edf0f4] !text-[#e5484d] !transition hover:!bg-[#fff7f7]"
                           >
@@ -1246,56 +1325,75 @@ function handleExportServices() {
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        {cat.services.map((srv) => (
-                          <div
-                            key={srv.id}
-                            className="group/service rounded-[24px] border border-[#eadbc9] bg-white p-3.5 shadow-[0_8px_24px_rgba(17,17,17,0.04)] transition-all hover:-translate-y-0.5 hover:border-[#ffd6bd] hover:shadow-[0_18px_44px_rgba(255,90,0,0.10)] sm:p-4"
-                          >
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="min-w-0 flex-1">
-                                <h3 className="line-clamp-2 break-words text-sm font-black text-[#202020] sm:text-base">
-                                  {srv.name}
-                                </h3>
+{cat.services.map((srv) => (
+<div
+  key={srv.id}
+  onClick={() => openEditService(cat.id, srv.id)}
+  className="group/service cursor-pointer rounded-[24px] border border-[#eadbc9] bg-white p-3.5 shadow-[0_8px_24px_rgba(17,17,17,0.04)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#ffd6bd] hover:bg-[#fff7f0] hover:shadow-[0_18px_44px_rgba(255,90,0,0.10)] sm:p-4"
+>
+    <div className="flex items-start justify-between gap-3">
+      <div className="flex min-w-0 flex-1 items-start gap-2.5">
+        <div className="min-w-0 flex-1">
+          <h3 className="line-clamp-2 break-words text-sm font-black leading-5 text-[#202020] sm:text-base">
+            {srv.name}
+          </h3>
 
-                                <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium text-[#77716b] sm:text-sm">
-                                  <span className="inline-flex items-center gap-1">
-                                    <Clock className="h-3.5 w-3.5" />
-                                    {formatDuration(srv.duration)}
-                                  </span>
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium text-[#77716b] sm:text-sm">
+            <span className="inline-flex items-center gap-1">
+              <Clock className="h-3.5 w-3.5" />
+              {formatDuration(srv.duration)}
+            </span>
 
-                           <span className="inline-flex items-center gap-1">
-  <Banknote className="h-3.5 w-3.5" />
-  {srv.price} грн
-</span>
+            <span className="inline-flex items-center gap-1">
+              <Banknote className="h-3.5 w-3.5" />
+              {srv.price} грн
+            </span>
 
-                                  <span className="inline-flex items-center gap-1">
-                                    <Users className="h-3.5 w-3.5" />
-                                    {resolveServiceMastersText(srv)}
-                                  </span>
-                                </div>
-                              </div>
+            <span className="inline-flex items-center gap-1">
+              <Users className="h-3.5 w-3.5" />
+              {resolveServiceMastersText(srv)}
+            </span>
+          </div>
+        </div>
+      </div>
 
-                              <div className="flex shrink-0 items-center gap-2">
-                                <IconButton
-                                  onClick={() => openEditService(cat.id, srv.id)}
-                                  title="Редагувати"
-                                  className="h-11 w-11 !border-x !border-[#edf0f4] text-[#657084] hover:!bg-[#fff7f0] hover:text-[#ff6200]"
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </IconButton>
+      <div className="flex shrink-0 items-center gap-2">
+<IconButton
+  onClick={(e) => {
+    e.stopPropagation();
+    openEditService(cat.id, srv.id);
+  }}
+  title="Редагувати"
+          className="h-11 w-11 !border-x !border-[#edf0f4] text-[#657084] transition-all duration-200 hover:!bg-[#fff7f0] hover:text-[#ff6200]"
+>
+        
+          <Pencil className="h-4 w-4" />
+        </IconButton>
 
-                                <IconButton
-                                  variant="danger"
-                                  onClick={() => deleteService(cat.id, srv.id)}
-                                  title="Видалити"
-                                  className="h-11 w-11 !border-x !border-[#edf0f4] !text-[#e5484d] !transition hover:!bg-[#fff7f7]"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </IconButton>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
+<IconButton
+  variant="danger"
+  onClick={(e) => {
+    e.stopPropagation();
+
+    setDeleteConfirm({
+      open: true,
+      type: "service",
+      catId: cat.id,
+      service: srv,
+      category: cat,
+      loading: false,
+    });
+  }}
+  title="Видалити"
+          className="h-11 w-11 !border-x !border-[#edf0f4] !text-[#e5484d] !transition hover:!bg-[#fff7f7]"
+>
+        
+          <Trash2 className="h-4 w-4" />
+        </IconButton>
+      </div>
+    </div>
+  </div>
+))}
                       </div>
                     )}
                   </SectionCard>
@@ -1356,12 +1454,13 @@ function handleExportServices() {
             Назва категорії
           </label>
 
-          <input
-            value={categoryDraftName}
-            onChange={(e) => setCategoryDraftName(e.target.value)}
-            className="w-full rounded-xl border border-[#eadbc9] px-3 py-2.5 text-sm font-medium text-[#202020] outline-none transition-all placeholder:text-[#77716b] focus:border-[#ff5a00] focus:ring-4 focus:ring-[#ff5a00]/10"
-            placeholder="Введіть назву..."
-          />
+<textarea
+  value={categoryDraftName}
+  onChange={(e) => setCategoryDraftName(e.target.value)}
+  rows={3}
+  className="w-full resize-none rounded-2xl border border-[#eadbc9] px-4 py-3 text-sm font-medium text-[#202020] outline-none transition-all placeholder:text-[#77716b] focus:border-[#ff5a00] focus:ring-4 focus:ring-[#ff5a00]/10"
+  placeholder="Введіть назву..."
+/>
         </div>
       </Modal>
 
@@ -1671,6 +1770,111 @@ onClick={() => {
         <li>Експорт послуг у Excel з вибором потрібних колонок.</li>
       </ul>
     </div>
+  </div>
+</Modal>
+<Modal
+  open={deleteConfirm.open}
+  onClose={() =>
+    !deleteConfirm.loading &&
+    setDeleteConfirm({
+      open: false,
+      type: null,
+      catId: null,
+      service: null,
+      category: null,
+      loading: false,
+    })
+  }
+  title={
+    deleteConfirm.type === "category"
+      ? "Видалити категорію?"
+      : "Видалити послугу?"
+  }
+  subtitle="Цю дію не можна буде скасувати."
+  size="sm"
+  footer={
+    <div className="flex flex-row gap-2 sm:justify-end">
+      <Button
+        variant="secondary"
+        disabled={deleteConfirm.loading}
+        onClick={() =>
+          setDeleteConfirm({
+            open: false,
+            type: null,
+            catId: null,
+            service: null,
+            category: null,
+            loading: false,
+          })
+        }
+        className="flex-1 sm:flex-none"
+      >
+        Скасувати
+      </Button>
+
+      <Button
+        variant="danger"
+        disabled={deleteConfirm.loading}
+        onClick={confirmDelete}
+        className="flex-1 sm:flex-none"
+      >
+        <Trash2 className="h-4 w-4" />
+        {deleteConfirm.loading ? "Видаляємо..." : "Видалити"}
+      </Button>
+    </div>
+  }
+>
+  <div className="py-4 text-center">
+<div className="mb-5 flex items-center justify-center gap-4">
+<div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#fff1e8] shadow-[0_12px_32px_rgba(255,90,0,0.12)]">
+  <span className="text-[32px] font-black uppercase text-[#ff6200]">
+    {String(
+      deleteConfirm.service?.name ||
+      deleteConfirm.category?.name ||
+      ""
+    )
+      .trim()
+      .charAt(0)
+      .toUpperCase()}
+  </span>
+</div>
+
+  <div className="flex h-10 w-10 items-center justify-center rounded-full">
+    <ArrowRight className="h-5 w-5 text-[#ff6200]" />
+  </div>
+
+  <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#fff1f1] shadow-[0_12px_32px_rgba(229,72,77,0.12)]">
+    <Trash2 className="h-9 w-9 text-[#e5484d]" />
+  </div>
+</div>
+
+<h4 className="break-words text-lg font-black leading-6 text-[#202020]">
+  {deleteConfirm.type === "category" ? (
+    <>
+      Категорія
+
+      <span className="my-1.5 block break-words text-[28px] font-black leading-[1.3] text-[#ff6200] sm:text-[32px]">
+        {deleteConfirm.category?.name || "Без назви"}
+      </span>
+
+      буде видалена.
+    </>
+  ) : (
+    <>
+      Послуга
+
+      <span className="my-1.5 block break-words text-[28px] font-black leading-[1.3] text-[#ff6200] sm:text-[32px]">
+        {deleteConfirm.service?.name || "Без назви"}
+      </span>
+
+      буде видалена.
+    </>
+  )}
+</h4>
+
+    <p className="mx-auto mt-2 max-w-sm text-sm font-medium leading-6 text-[#77716b]">
+      Перевірте, чи не потрібен цей елемент клієнтам під час онлайн-запису.
+    </p>
   </div>
 </Modal>
     </div>

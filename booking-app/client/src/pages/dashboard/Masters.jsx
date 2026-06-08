@@ -676,6 +676,7 @@ const [exportFields, setExportFields] = useState({
     photoFile: null,
   });
 
+  
   const [editMaster, setEditMaster] = useState(null);
   const [editDraft, setEditDraft] = useState({
     id: "",
@@ -1504,12 +1505,23 @@ async function confirmCrop() {
   </p>
 </div>
           ) : filteredMasters.length === 0 ? (
-            <div className="rounded-[24px] border-2 border-dashed border-[#e5d7c7] bg-white p-8 text-center shadow-sm">
-              <p className="text-sm font-black text-[#202020]">Нічого не знайдено</p>
-              <p className="mt-1 text-xs font-medium text-[#77716b]">
-                Спробуйте інший запит у пошуку.
-              </p>
-            </div>
+<div className="rounded-[32px] border-2 border-dashed border-[#ffd6bd] bg-[#fff7f0] px-6 py-12 text-center">
+  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-[#ff6200] shadow-sm">
+    <Search className="h-7 w-7" />
+  </div>
+
+  <h2 className="mt-4 text-xl font-black text-[#202020]">
+    Нічого не знайдено
+  </h2>
+
+  <p className="mt-2 text-sm text-[#77716b]">
+    За запитом{" "}
+    <span className="font-black text-[#202020]">
+      "{query}"
+    </span>{" "}
+    не знайдено жодного майстра.
+  </p>
+</div>
           ) : (
             <>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -1520,7 +1532,11 @@ const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0"
 const todayException = m.scheduleExceptions?.find(
   (e) => String(e.date || "").slice(0, 10) === today,
 );
-
+const activeExceptionsCount =
+  (m.scheduleExceptions || []).filter((e) => {
+    const date = String(e.date || "").slice(0, 10);
+    return date >= today;
+  }).length;
   const isWorkingToday =
     !todayException || todayException.enabled;
 
@@ -1591,11 +1607,11 @@ const todayException = m.scheduleExceptions?.find(
 >
   <CalendarDays className="h-4 w-4" />
 
-  {m.exceptionsCount > 0 && (
-    <span className="absolute left-[52%] top-[18%] flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#ff5a00] px-1 text-[9px] font-black text-white">
-      {m.exceptionsCount}
-    </span>
-  )}
+{activeExceptionsCount > 0 && (
+  <span className="absolute left-[52%] top-[18%] flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#ff5a00] px-1 text-[9px] font-black text-white">
+    {activeExceptionsCount}
+  </span>
+)}
 </button>
 <button
   type="button"
@@ -2320,10 +2336,15 @@ filteredMasterBookings.map((booking) => (
   </div>
 </div>
 
-    <h4 className="text-lg font-black text-[#202020]">
-      Майстер {deleteConfirm.master?.name || "Без імені"} {" "}
-      буде видалений зі списку майстрів.
-    </h4>
+<h4 className="break-words text-lg font-black leading-6 text-[#202020]">
+  Майстер
+
+  <span className="my-1 block break-words text-[28px] font-black leading-[1.3] text-[#ff6200] sm:text-[32px]">
+    {deleteConfirm.master?.name || "Без імені"}
+  </span>
+
+  буде видалений зі списку майстрів.
+</h4>
 
   </div>
 </Modal>
