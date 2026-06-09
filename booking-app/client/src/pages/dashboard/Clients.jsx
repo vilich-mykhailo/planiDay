@@ -189,7 +189,7 @@ function Avatar({ name, photoUrl, className = "" }) {
 function Button({ variant = "secondary", className = "", children, ...props }) {
   const variants = {
     primary:
-      "bg-[#ff5a00] text-white shadow-[0_16px_34px_rgba(255,90,0,0.24)] hover:bg-[#ef4f00]",
+      "bg-[#ff5a00] text-white  hover:bg-[#ef4f00]",
     secondary:
       "border border-[#eadbc9] bg-white text-[#202020] shadow-sm hover:border-[#ffd6bd] hover:bg-[#fff7f0]",
     ghost: "text-[#202020] hover:bg-[#fff7f0]",
@@ -1390,52 +1390,55 @@ setNoteDraft("");
 
   return (
     <div className="min-h-screen bg-[#fbfaf8] pb-8">
-      <div className="mx-auto max-w-7xl space-y-6 ">
-<SectionCard className="bg-white/95 backdrop-blur-xl">
-  <div className="flex items-start justify-between gap-3">
+      <div className="mx-auto max-w-6xl space-y-6 ">
+
+<div className="relative mb-6 overflow-hidden rounded-[32px] border border-[#ebe7df] bg-white/95 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.06)] backdrop-blur-xl sm:p-7">
+  <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#ff7a18] via-[#ff6200] to-[#ff8c42]" />
+
+  <div className="relative flex items-start justify-between gap-3">
     <div className="min-w-0 flex-1">
-     <h1 className="text-5xl font-black leading-[0.95] tracking-tight text-[#202020] sm:text-6xl">
+      <h1 className="text-[40px] font-black leading-[0.95] tracking-tight text-[#202020] sm:text-6xl">
         Клі<span className="text-[#ff5a00]">єнти</span>
       </h1>
+
+      <p className="mt-3 max-w-[640px] text-[12px] font-semibold text-[#77716b] sm:text-[16px]">
+        Всі клієнти студії, історія записів, статистика та нотатки в одному місці.
+      </p>
     </div>
-<div className="flex shrink-0 items-center">
-  <button
-    type="button"
-    onClick={() => setInfoOpen(true)}
-    className="grid !px-0 h-10 w-10 place-items-center rounded-full text-[#ff6200] transition-all  hover:bg-[#fff7f0] active:scale-95 "
-    title="Інформація"
-  >
-    <CircleAlert className="h-5 w-5" />
-  </button>
 
-<div className="hidden sm:block">
-  <Button
-    variant="ghost"
-    className="h-12 !px-1.5 transition-all active:scale-95 mr-2"
-    onClick={() => setExportOpen(true)}
-  >
-    <ArrowDownToLine className="h-4 w-4 text-emerald-600" />
-    Експорт
-  </Button>
-</div>
+    <div className="flex shrink-0 items-center">
+      <button
+        type="button"
+        onClick={() => setInfoOpen(true)}
+        className="grid h-10 w-10 place-items-center rounded-full text-[#ff6200] transition-all hover:bg-[#fff7f0] active:scale-95"
+        title="Інформація"
+      >
+        <CircleAlert className="h-5 w-5" />
+      </button>
 
-  <Button
-    variant="primary"
-    onClick={() =>  setExportOpen(true)}
-    className="h-10 shrink-0 px-3 sm:h-12 sm:px-5"
-  >
-    <Plus className="h-4 w-4" />
-    <span className="hidden sm:inline">Додати майстра</span>
-  </Button>
-</div>
+      <div className="hidden sm:block">
+        <Button
+          variant="ghost"
+          className="mr-2 h-12 !px-1.5 transition-all active:scale-95"
+          onClick={() => setExportOpen(true)}
+        >
+          <ArrowDownToLine className="h-4 w-4 text-emerald-600" />
+          Експорт
+        </Button>
+      </div>
+
+      <Button
+        variant="primary"
+        onClick={() => setInfoOpen(true)}
+        className="h-10 shrink-0 px-3 sm:h-12 sm:px-5"
+      >
+        <Plus className="h-4 w-4" />
+        <span className="hidden sm:inline">Додати клієнта</span>
+      </Button>
+    </div>
   </div>
+</div>
 
-  <p className="mt-3 w-full text-[13px] font-semibold leading-5 text-[#77716b] sm:text-[14px] sm:leading-6">
-    Переглядай базу клієнтів, відстежуй історію візитів, статуси, фінанси та
-    взаємодію зі студією.
-  </p>
-
-</SectionCard>
 
 <SectionCard
   title="Список клієнтів"

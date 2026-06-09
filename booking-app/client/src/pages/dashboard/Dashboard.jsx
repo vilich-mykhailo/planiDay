@@ -15,21 +15,39 @@ import {
   Bell,
   ChartColumn,
   Menu,
-  ChevronDown,
+  X,
+  ArrowLeftToLine,
+  ArrowRightToLine,
 } from "lucide-react";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
+function cn(...classes) {
+  return classes.filter(Boolean).join(" ");
+}
+
 const linkClass = ({ isActive }) =>
   [
-    "group flex h-[52px] items-center gap-3 rounded-[16px] px-4 text-[14px] font-semibold transition-all duration-200",
+    "group relative flex h-[52px] items-center gap-3 overflow-hidden rounded-[16px] text-[14px] font-semibold transition-all duration-300 ease-in-out",
     isActive
       ? "bg-[#fff3ed] text-[#ff4f12]"
       : "text-[#5f6673] hover:bg-[#f8f8f8] hover:text-[#111827]",
   ].join(" ");
 
-function cn(...classes) {
-  return classes.filter(Boolean).join(" ");
+function SidebarText({ children, collapsed, className = "" }) {
+  return (
+    <span
+      className={cn(
+        "overflow-hidden whitespace-nowrap transition-all duration-300 ease-in-out",
+        collapsed
+          ? "max-w-0 translate-x-[-6px] opacity-0"
+          : "max-w-[170px] translate-x-0 opacity-100",
+        className,
+      )}
+    >
+      {children}
+    </span>
+  );
 }
 
 function SkeletonBlock({ className = "" }) {
@@ -112,11 +130,18 @@ export default function Dashboard() {
   const token = localStorage.getItem("token");
 
   const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [studioId, setStudioId] = useState(() =>
     localStorage.getItem("studioId"),
   );
 
   const { bookings = [] } = useBookings();
+
+  const navLinkClass = (props) =>
+    cn(
+      linkClass(props),
+      sidebarCollapsed ? "justify-center px-0" : "px-4",
+    );
 
   const newBookingsCount = useMemo(() => {
     const nowTs = Date.now();
@@ -252,114 +277,223 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-[#fbfaf8] text-[#111827]">
-      <aside className="fixed left-0 top-0 z-40 hidden h-screen w-[250px] border-r border-[#ececec] bg-white lg:flex lg:flex-col">
-        <div className="flex h-[88px] items-center justify-between px-8">
-          <button
-            type="button"
-            onClick={() => navigate("/dashboard")}
-            className="text-[25px] font-black leading-none tracking-[-0.06em] text-[#111827]"
-          >
-            Plani<span className="text-[#ff4f12]">Day</span>
-          </button>
+      <aside
+        className={cn(
+          "fixed left-0 top-0 z-40 hidden h-screen border-r border-[#ececec] bg-white transition-all duration-300 ease-in-out lg:flex lg:flex-col",
+          sidebarCollapsed ? "w-[88px]" : "w-[250px]",
+        )}
+      >
+<div
+  className={cn(
+    "relative transition-all duration-300 ease-in-out",
+sidebarCollapsed
+  ? "flex h-[130px] flex-col items-center justify-start px-2 pt-3"
+  : "flex h-[130px] items-center justify-between px-8"
+  )}
+>
+  {sidebarCollapsed && (
+    <img
+      src="/PlaniDay_logo.png"
+      alt="PlaniDay"
+      className="mb-3 h-[74px] w-[74px] object-contain transition-all duration-300"
+    />
+  )}
 
-          <button
-            type="button"
-            className="grid h-10 w-10 place-items-center rounded-[14px] bg-[#f8f8f8] text-[#5f6673] transition hover:bg-[#f1f1f1]"
-            aria-label="Меню"
-          >
-            <Menu className="h-5 w-5" />
-          </button>
-        </div>
+<div
+  className={cn(
+    "overflow-hidden transition-all duration-300 ease-in-out",
+    sidebarCollapsed
+      ? "max-w-0 translate-x-[-8px] opacity-0"
+      : "max-w-[180px] translate-x-4 opacity-100",
+  )}
+>
+  <button
+    type="button"
+    onClick={() => navigate("/dashboard")}
+    className="flex flex-col items-center"
+  >
+    <img
+      src="/PlaniDay_logo.png"
+      alt="PlaniDay"
+      className=" h-[56px] w-auto object-contain"
+    />
 
-        <nav className="flex-1 space-y-1.5 px-4 pt-4">
-          <NavLink to="/dashboard" end className={linkClass}>
+    <span className="whitespace-nowrap text-[25px] font-black leading-tight tracking-[-0.06em] text-[#111827]">
+      Plani<span className="text-[#ff4f12]">Day</span>
+    </span>
+  </button>
+</div>
+
+  <button
+    type="button"
+    onClick={() => setSidebarCollapsed((prev) => !prev)}
+    className="grid h-10 w-10 shrink-0 place-items-center rounded-[14px] bg-[#f8f8f8] text-[#5f6673] transition-all duration-300 hover:bg-[#f1f1f1] active:scale-[0.96]"
+    aria-label={sidebarCollapsed ? "Розгорнути меню" : "Згорнути меню"}
+    title={sidebarCollapsed ? "Розгорнути меню" : "Згорнути меню"}
+  >
+    <span className="relative grid h-5 w-5 place-items-center">
+      <ArrowRightToLine
+        className={cn(
+          "absolute h-5 w-5 transition-all duration-300 ease-in-out",
+          sidebarCollapsed
+            ? "rotate-0 scale-100 opacity-100"
+            : "-rotate-90 scale-75 opacity-0",
+        )}
+      />
+
+      <ArrowLeftToLine
+        className={cn(
+          "absolute h-5 w-5 transition-all duration-300 ease-in-out",
+          sidebarCollapsed
+            ? "rotate-90 scale-75 opacity-0"
+            : "rotate-0 scale-100 opacity-100",
+        )}
+      />
+    </span>
+  </button>
+</div>
+
+<nav
+  className={cn(
+    "flex-1 space-y-1.5 transition-all duration-300 ease-in-out",
+    sidebarCollapsed ? "px-3 pt-3" : "px-4 pt-4",
+  )}
+>
+          <NavLink to="/dashboard" end className={navLinkClass}>
             <ChartColumn className="h-5 w-5 shrink-0" />
-            <span>Головна</span>
+            <SidebarText collapsed={sidebarCollapsed}>Головна</SidebarText>
           </NavLink>
 
-          <NavLink to="/dashboard/bookings" className={linkClass}>
+          <NavLink to="/dashboard/bookings" className={navLinkClass}>
             <CalendarDays className="h-5 w-5 shrink-0" />
-            <span className="flex-1">Записи</span>
+            <SidebarText collapsed={sidebarCollapsed} className="flex-1">
+              Записи
+            </SidebarText>
 
             {newBookingsCount > 0 && (
-              <span className="grid h-5 min-w-5 place-items-center rounded-full bg-[#ff4f12] px-1.5 text-[10px] font-black text-white">
+              <span
+                className={cn(
+                  "grid h-5 min-w-5 place-items-center rounded-full bg-[#ff4f12] px-1.5 text-[10px] font-black text-white transition-all duration-300 ease-in-out",
+                  sidebarCollapsed
+                    ? "absolute right-2 top-2 h-4 min-w-4 px-1 text-[9px]"
+                    : "relative",
+                )}
+              >
                 {newBookingsCount > 9 ? "9+" : newBookingsCount}
               </span>
             )}
           </NavLink>
 
-          <NavLink to="/dashboard/clients" className={linkClass}>
+          <NavLink to="/dashboard/clients" className={navLinkClass}>
             <UserStar className="h-5 w-5 shrink-0" />
-            <span>Клієнти</span>
+            <SidebarText collapsed={sidebarCollapsed}>Клієнти</SidebarText>
           </NavLink>
 
-          <NavLink to="/dashboard/services" className={linkClass}>
+          <NavLink to="/dashboard/services" className={navLinkClass}>
             <BriefcaseBusiness className="h-5 w-5 shrink-0" />
-            <span>Послуги</span>
+            <SidebarText collapsed={sidebarCollapsed}>Послуги</SidebarText>
           </NavLink>
 
-          <NavLink to="/dashboard/masters" className={linkClass}>
+          <NavLink to="/dashboard/masters" className={navLinkClass}>
             <Users className="h-5 w-5 shrink-0" />
-            <span>Майстри</span>
+            <SidebarText collapsed={sidebarCollapsed}>Майстри</SidebarText>
           </NavLink>
 
-          <NavLink to="/dashboard/schedule" className={linkClass}>
+          <NavLink to="/dashboard/schedule" className={navLinkClass}>
             <Clock3 className="h-5 w-5 shrink-0" />
-            <span>Графік роботи</span>
+            <SidebarText collapsed={sidebarCollapsed}>
+              Графік роботи
+            </SidebarText>
           </NavLink>
 
-          <NavLink to="/dashboard/notifications" className={linkClass}>
+          <NavLink to="/dashboard/notifications" className={navLinkClass}>
             <Bell className="h-5 w-5 shrink-0" />
-            <span className="flex-1 truncate">Повідомлення</span>
+            <SidebarText collapsed={sidebarCollapsed} className="flex-1">
+              Повідомлення
+            </SidebarText>
 
             {unreadNotifications > 0 && (
-              <span className="grid h-5 min-w-5 place-items-center rounded-full bg-[#ff4f12] px-1.5 text-[10px] font-black text-white">
+              <span
+                className={cn(
+                  "grid h-5 min-w-5 place-items-center rounded-full bg-[#ff4f12] px-1.5 text-[10px] font-black text-white transition-all duration-300 ease-in-out",
+                  sidebarCollapsed
+                    ? "absolute right-2 top-2 h-4 min-w-4 px-1 text-[9px]"
+                    : "relative",
+                )}
+              >
                 {unreadNotifications > 9 ? "9+" : unreadNotifications}
               </span>
             )}
           </NavLink>
 
-          <NavLink to="/dashboard/studio" className={linkClass}>
+          <NavLink to="/dashboard/studio" className={navLinkClass}>
             <Building2 className="h-5 w-5 shrink-0" />
-            <span>Налаштування</span>
+            <SidebarText collapsed={sidebarCollapsed}>
+              Налаштування
+            </SidebarText>
           </NavLink>
-          
         </nav>
 
-        <div className="px-4 pb-6">
-          <div className="rounded-[22px] border border-[#f0ebe6] bg-[#fffaf6] p-4 shadow-[0_18px_45px_rgba(15,23,42,0.04)]">
-            <div className="mb-3 grid h-11 w-11 place-items-center rounded-[16px] bg-[#fff0e6] text-[#ff4f12]">
-              <Sparkles className="h-5 w-5" />
+        <div
+          className={cn(
+            "pb-6 transition-all duration-300 ease-in-out",
+            sidebarCollapsed ? "px-3" : "px-4",
+          )}
+        >
+          <div
+            className={cn(
+              "overflow-hidden transition-all duration-300 ease-in-out",
+              sidebarCollapsed
+                ? "max-h-0 translate-y-3 opacity-0"
+                : "max-h-[260px] translate-y-0 opacity-100",
+            )}
+          >
+            <div className="rounded-[22px] border border-[#f0ebe6] bg-[#fffaf6] p-4 shadow-[0_18px_45px_rgba(15,23,42,0.04)]">
+              <div className="mb-3 grid h-11 w-11 place-items-center rounded-[16px] bg-[#fff0e6] text-[#ff4f12]">
+                <Sparkles className="h-5 w-5" />
+              </div>
+
+              <p className="text-[14px] font-black text-[#18181b]">
+                Преміум план
+              </p>
+
+              <p className="mt-1.5 text-[12px] font-medium leading-5 text-[#6b7280]">
+                Розширте можливості вашої студії
+              </p>
+
+              <button
+                type="button"
+                className="mt-4 h-10 w-full rounded-[14px] border border-[#ff865c] bg-white text-[13px] font-bold text-[#ff4f12] transition hover:bg-[#fff3ed]"
+              >
+                Оновити план
+              </button>
             </div>
-
-            <p className="text-[14px] font-black text-[#18181b]">
-              Преміум план
-            </p>
-
-            <p className="mt-1.5 text-[12px] font-medium leading-5 text-[#6b7280]">
-              Розширте можливості вашої студії
-            </p>
-
-            <button
-              type="button"
-              className="mt-4 h-10 w-full rounded-[14px] border border-[#ff865c] bg-white text-[13px] font-bold text-[#ff4f12] transition hover:bg-[#fff3ed]"
-            >
-              Оновити план
-            </button>
           </div>
 
           <button
             type="button"
             onClick={handleLogout}
-            className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-[16px] text-[14px] font-bold text-[#5f6673] transition hover:bg-[#f8f8f8] active:scale-[0.98]"
+            className={cn(
+              "mt-4 flex h-11 w-full items-center justify-center gap-2 overflow-hidden rounded-[16px] text-[14px] font-bold text-[#5f6673] transition-all duration-300 ease-in-out hover:bg-[#f8f8f8] active:scale-[0.98]",
+              sidebarCollapsed ? "px-0" : "px-4",
+            )}
+            title="Вихід"
           >
-            <LogOut className="h-4 w-4" />
-            Вихід
+            <LogOut className="h-4 w-4 shrink-0" />
+
+            <SidebarText collapsed={sidebarCollapsed}>
+              Вихід
+            </SidebarText>
           </button>
         </div>
       </aside>
 
-     <main className="min-h-screen pt-[72px] sm:pt-[80px] lg:pl-[250px] lg:pt-0">
+      <main
+        className={cn(
+          "min-h-screen pt-[72px] transition-all duration-300 ease-in-out sm:pt-[80px] lg:pt-0",
+          sidebarCollapsed ? "lg:pl-[88px]" : "lg:pl-[250px]",
+        )}
+      >
         <section className="px-4 py-4 sm:px-4 lg:px-4">
           <Outlet />
         </section>

@@ -260,7 +260,7 @@ function Button({
 }) {
 const variants = {
   primary:
-    "bg-[#ff5a00] text-white shadow-[0_16px_34px_rgba(255,90,0,0.24)] hover:bg-[#ef4f00]",
+    "bg-[#ff5a00] text-white hover:bg-[#ef4f00]",
   secondary:
     "border border-[#eadbc9] bg-white text-[#202020] hover:border-[#ffd6bd] hover:bg-[#fff7f0]",
   danger:
@@ -327,7 +327,7 @@ function Pill({ active, count, showCount = false, children, onClick }) {
       className={cn(
         "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold",
       active
-  ? "inline-flex h-9 items-center justify-center gap-2 rounded-2xl border border-[#ff5a00] bg-[#ff5a00] px-2 text-sm font-bold text-white shadow-[0_12px_24px_rgba(255,90,0,0.20)] transition-all duration-200 hover:bg-[#ef4f00] active:scale-[0.98]"
+  ? "inline-flex h-9 items-center justify-center gap-2 rounded-2xl border border-[#ff5a00] bg-[#ff5a00] px-2 text-sm font-bold text-white  transition-all duration-200 hover:bg-[#ef4f00] active:scale-[0.98]"
           : "inline-flex h-9 items-center justify-center gap-2 rounded-2xl border border-[#eadbc9] bg-white px-2 text-sm font-bold text-[#202020] shadow-sm transition-all duration-200 hover:border-[#ffd6bd] hover:bg-[#fff7f0] active:scale-[0.98]",
       )}
     >
@@ -470,7 +470,7 @@ function Modal({
 >
       <div
         className={cn(
-          "relative w-full max-h-[90vh] overflow-hidden rounded-[32px] border bg-white shadow-[0_35px_120px_rgba(27,27,27,0.24)]",
+          "relative w-full max-h-[90vh] overflow-hidden rounded-[32px] border bg-white ",
           "animate-in fade-in-0 zoom-in-[0.98] slide-in-from-bottom-3 duration-200",
           "border-[var(--color-cream)]",
           sizeClasses[size],
@@ -1003,7 +1003,7 @@ if (b.status === "canceled") {
         className={cn(
           "inline-flex items-center gap-2 rounded-xl px-3 py-2 text-[13px] font-semibold sm:px-4 sm:py-2.5 sm:text-sm",
           tab === "list"
-            ? "bg-[#ff5a00] text-white shadow-[0_10px_24px_rgba(255,90,0,0.22)]"
+            ? "bg-[#ff5a00] text-white hover:bg-[#f04f00]"
             : "text-[#202020] hover:bg-[#fff7f0]",
         )}
       >
@@ -1017,7 +1017,7 @@ if (b.status === "canceled") {
         className={cn(
           "inline-flex items-center gap-2 rounded-xl px-3 py-2 text-[13px] font-semibold sm:px-4 sm:py-2.5 sm:text-sm",
           tab === "calendar"
-            ? "bg-[#ff5a00] text-white shadow-[0_10px_24px_rgba(255,90,0,0.22)]"
+            ? "bg-[#ff5a00] text-white hover:bg-[#f04f00]"
             : "text-[#202020] hover:bg-[#fff7f0]",
         )}
       >
@@ -1471,7 +1471,19 @@ return (
                   )
                 }
                 title="Попередній місяць"
-                className="h-10 w-10 shrink-0 hover:bg-[var(--color-cream)]"
+className="
+  group
+  h-10 w-10 shrink-0
+  !border !border-[#eadbc9]
+  !bg-white
+  !text-[#202020]
+  !shadow-sm
+  !transition-all !duration-300
+  hover:!border-[#ffd6bd]
+  hover:!bg-[#fff7f0]
+  hover:!scale-110
+  active:!scale-[0.98]
+"
               >
                 <ChevronLeft className="h-5 w-5" />
               </IconButton>
@@ -1491,7 +1503,19 @@ return (
                   )
                 }
                 title="Наступний місяць"
-                className="h-10 w-10 shrink-0 hover:bg-[var(--color-cream)]"
+className="
+  group
+  h-10 w-10 shrink-0
+  !border !border-[#eadbc9]
+  !bg-white
+  !text-[#202020]
+  !shadow-sm
+  !transition-all !duration-300
+  hover:!border-[#ffd6bd]
+  hover:!bg-[#fff7f0]
+  hover:!scale-110
+  active:!scale-[0.98]
+"
               >
                 <ChevronRight className="h-5 w-5" />
               </IconButton>
@@ -1537,7 +1561,7 @@ const allCanceled = count > 0 && canceledCount === count;
                       disabled={count === 0}
                       title={count > 0 ? `Записів: ${count}` : "Немає записів"}
                       className={cn(
-                        "relative min-h-[58px] sm:h-11 sm:min-h-0 gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-2 sm:px-4 py-2 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]",
+           "relative min-h-[58px] sm:h-11 sm:min-h-0 gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-2 sm:px-4 py-2 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-300 hover:border-[#ffd6bd] hover:bg-[#fff7f0] hover:shadow-[0_12px_28px_rgba(255,90,0,0.12)] hover:-translate-y-0.5 active:scale-[0.98]",
                         // база
                         "bg-white border-[var(--border-soft)] shadow-[0_4px_12px_rgba(0,0,0,0.04)]",
 

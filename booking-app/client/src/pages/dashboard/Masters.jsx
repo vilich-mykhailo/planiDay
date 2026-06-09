@@ -80,7 +80,7 @@ function SectionCard({
   return (
     <section
       className={cn(
-        "group relative overflow-hidden rounded-[32px] border border-[#ebe7df] bg-white shadow-[0_14px_44px_rgba(15,23,42,0.05)] transition-all duration-300 hover:shadow-[0_20px_60px_rgba(15,23,42,0.08)]",
+        "group relative overflow-hidden rounded-[32px] border border-[#ebe7df] bg-white transition-all duration-300 hover:shadow-[0_20px_60px_rgba(15,23,42,0.08)]",
         className,
       )}
     >
@@ -133,7 +133,7 @@ function Button({
 }) {
   const variants = {
     primary:
-      "bg-[#ff5a00] text-white shadow-[0_16px_34px_rgba(255,90,0,0.24)] hover:bg-[#ef4f00]",
+      "bg-[#ff5a00] text-white  hover:bg-[#ef4f00]",
     secondary:
       "bg-white border border-[#eadbc9] text-[#202020] hover:bg-[#fff7f0] hover:border-[#ffd6bd]",
     danger:
@@ -174,7 +174,7 @@ function IconButton({
 }) {
   const variants = {
     primary:
-      "bg-[#ff5a00] text-white shadow-[0_16px_34px_rgba(255,90,0,0.24)] hover:bg-[#ef4f00]",
+      "bg-[#ff5a00] text-white hover:bg-[#ef4f00]",
     secondary:
       "bg-white border border-[#eadbc9] text-[#202020] hover:bg-[#fff7f0] hover:border-[#ffd6bd]",
     danger:
@@ -1393,7 +1393,7 @@ async function confirmCrop() {
 
  return (
   <div className="min-h-screen bg-[#fbfaf8]">
-   <div className="mx-auto max-w-5xl space-y-6">
+   <div className="mx-auto max-w-6xl space-y-6">
   <div className="relative mb-6 overflow-hidden rounded-[32px] border border-[#ebe7df] bg-white/95 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.06)] backdrop-blur-xl sm:p-7">
     <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#ff7a18] via-[#ff6200] to-[#ff8c42]" />
 
@@ -2160,12 +2160,12 @@ const activeExceptionsCount =
       key={value}
       type="button"
       onClick={() => setBookingsFilter(value)}
-      className={cn(
-        "h-9 rounded-xl border px-2 text-[11px] font-black transition",
-        bookingsFilter === value
-          ? "border-[#ff6200] bg-[#ff6200] text-white"
-          : "border-[#eadbc9] bg-white text-[#77716b] hover:bg-[#fff7f0]",
-      )}
+className={cn(
+  "h-9 rounded-xl border px-2 text-[11px] font-black transition-all duration-300",
+  bookingsFilter === value
+    ? "border-[#ff6200] bg-[#ff6200] text-white shadow-[0_12px_28px_rgba(255,98,0,0.22)]"
+    : "border-[#eadbc9] bg-white text-[#77716b] hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] hover:!text-[#202020] hover:!shadow-[0_12px_28px_rgba(255,98,0,0.12)] active:scale-[0.98]",
+)}
     >
       {label}
     </button>

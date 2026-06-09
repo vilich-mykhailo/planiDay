@@ -1945,7 +1945,7 @@ async function saveStudioEditModal() {
 
   return (
     <div className="min-h-screen ">
-     <div className="mx-auto max-w-5xl space-y-6">
+     <div className="mx-auto max-w-6xl space-y-6">
         <input
           ref={coverInputRef}
           type="file"
@@ -2057,13 +2057,13 @@ async function saveStudioEditModal() {
               ) : (
 <section className="overflow-hidden rounded-[30px] border border-[#eadbc9] bg-white p-3 shadow-[0_18px_50px_rgba(17,17,17,0.06)]">
   <div className="relative h-[410px] overflow-hidden rounded-[30px] bg-[#202020] text-white shadow-[0_14px_34px_rgba(0,0,0,0.16)] max-[639px]:h-[200px] max-[639px]:rounded-[20px] sm:h-[215px] sm:rounded-[18px]">
-    <button
-      id="studio-field-coverUrl"
-      type="button"
-      onClick={() => coverInputRef.current?.click()}
-      disabled={saving}
-      className="group absolute inset-0 block h-full w-full overflow-hidden"
-    >
+<button
+  id="studio-field-coverUrl"
+  type="button"
+  onClick={() => coverInputRef.current?.click()}
+  disabled={saving}
+  className="group absolute inset-0 z-0 block h-full w-full overflow-hidden"
+>
 
 {coverSrc ? (
   <>
@@ -2103,7 +2103,7 @@ async function saveStudioEditModal() {
 
 <div
   className={cn(
-    "absolute inset-0 grid place-items-center transition",
+    "absolute inset-0 z-20 grid place-items-center transition pointer-events-none",
     coverSrc
       ? "bg-black/25 opacity-0 group-hover:opacity-100"
       : "bg-[#202020]/0 opacity-0 group-hover:bg-[#202020]/5 group-hover:opacity-100",
@@ -2116,7 +2116,7 @@ async function saveStudioEditModal() {
 </div>
     </button>
 
-    <div className="absolute left-2.5 top-2.5 z-10 inline-flex h-6 max-w-[58%] items-center gap-1 rounded-full border border-white/40 bg-white/92 px-2 shadow-[0_8px_18px_rgba(20,20,20,0.1)] backdrop-blur-md sm:left-4 sm:top-4 sm:h-7 sm:px-3">
+  <div className="absolute left-2.5 top-2.5 z-10 pointer-events-none inline-flex h-6 max-w-[58%] items-center gap-1 rounded-full border border-white/40 bg-white/92 px-2 shadow-[0_8px_18px_rgba(20,20,20,0.1)] backdrop-blur-md sm:left-4 sm:top-4 sm:h-7 sm:px-3">
       <span className="grid h-4 w-4 place-items-center rounded-full bg-[#fff3e9] text-[#ff6200] sm:h-5 sm:w-5">
         <Building2 className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
       </span>
@@ -2126,13 +2126,13 @@ async function saveStudioEditModal() {
       </span>
     </div>
 
-    <div className="absolute bottom-3 left-3 right-3 z-10 flex items-end gap-2 sm:bottom-4 sm:left-4 sm:right-4 sm:gap-3">
-      <button
-        id="studio-field-logoUrl"
-        type="button"
-        onClick={() => logoInputRef.current?.click()}
-        disabled={saving}
-       className="group relative grid h-[72px] w-[72px] shrink-0 place-items-center overflow-hidden rounded-[18px] border border-white/70 bg-white text-black shadow-[0_0_18px_rgba(255,255,255,0.28),0_12px_28px_rgba(0,0,0,0.22)] transition active:scale-[0.98] sm:h-[58px] sm:w-[58px] sm:rounded-[15px]"
+ <div className="absolute bottom-3 left-3 right-3 z-10 flex items-end gap-2 pointer-events-none sm:bottom-4 sm:left-4 sm:right-4 sm:gap-3">
+<button
+  id="studio-field-logoUrl"
+  type="button"
+  onClick={() => logoInputRef.current?.click()}
+  disabled={saving}
+  className="pointer-events-auto group relative grid h-[72px] w-[72px] shrink-0 place-items-center overflow-hidden rounded-[18px] border border-white/70 bg-white text-black shadow-[0_0_18px_rgba(255,255,255,0.28),0_12px_28px_rgba(0,0,0,0.22)] transition active:scale-[0.98] sm:h-[58px] sm:w-[58px] sm:rounded-[15px]"
       >
         {logoSrc ? (
           <img
@@ -2390,7 +2390,7 @@ onClick={() => openStudioEditModal(item.field)}
                             <label
                               id="studio-field-portfolio-add"
                               className={cn(
-                                "inline-flex cursor-pointer items-center justify-center gap-2 rounded-2xl bg-[#ff5a00] px-4 py-2.5 text-sm font-black text-white shadow-[0_14px_30px_rgba(255,90,0,0.22)] transition hover:bg-[#ef4f00] active:scale-[0.98]",
+                                "inline-flex cursor-pointer items-center justify-center gap-2 rounded-2xl bg-[#ff5a00] px-4 py-2.5 text-sm font-black text-white transition hover:bg-[#ef4f00] active:scale-[0.98]",
                                 highlightId === "studio-field-portfolio-add" &&
                                   highlightClass,
                               )}

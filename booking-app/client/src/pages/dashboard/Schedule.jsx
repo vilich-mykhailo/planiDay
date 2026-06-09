@@ -319,7 +319,7 @@ function Button({
 }) {
   const variants = {
     primary:
-      "bg-gradient-to-r from-[#ff7a18] to-[#ff6200] text-white hover:from-[#ff8a36] hover:to-[#ff6f1f] shadow-[0_14px_28px_rgba(255,98,0,0.22)]",
+      "bg-gradient-to-r from-[#ff7a18] to-[#ff6200] text-white hover:from-[#ff8a36] hover:to-[#ff6f1f] ",
     secondary:
       "border border-[#ebe7df] bg-white text-[#202020] hover:border-[#ffd8c2] hover:bg-[#fffaf6]",
     danger:
@@ -1366,7 +1366,7 @@ async function saveExceptionFromModal() {
     <div className="min-h-screen">
       <Toast toast={toast} />
 
-      <div className="mx-auto max-w-5xl space-y-6">
+      <div className="mx-auto max-w-6xl space-y-6">
         <div className="relative mb-6 overflow-hidden rounded-[32px] border border-[#ebe7df] bg-white/95 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.06)] backdrop-blur-xl sm:p-7">
           <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#ff7a18] via-[#ff6200] to-[#ff8c42]" />
 
@@ -1386,7 +1386,7 @@ async function saveExceptionFromModal() {
         <SectionCard
           title={
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-r from-[#ff7a18] to-[#ff6200] text-white shadow-[0_14px_28px_rgba(255,98,0,0.22)]">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-r from-[#ff7a18] to-[#ff6200] text-white">
                 <CalendarDays className="h-5 w-5" />
               </div>
 

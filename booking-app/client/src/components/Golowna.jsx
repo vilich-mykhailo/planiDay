@@ -192,8 +192,13 @@ function cn(...arr) {
 
 function SectionShell({ children, className = "" }) {
   return (
-    <div className={cn("ui-shell", className)}>
-      <div className="ui-shell-line" />
+    <div
+      className={cn(
+        "group relative overflow-hidden rounded-[32px] border border-[#ebe7df] bg-white shadow-[0_14px_44px_rgba(15,23,42,0.05)] transition-all duration-300 hover:shadow-[0_20px_60px_rgba(15,23,42,0.08)]",
+        className,
+      )}
+    >
+      <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#ff7a18] via-[#ff6200] to-[#ff8c42]" />
       {children}
     </div>
   );
@@ -232,7 +237,7 @@ function Avatar({ name, photoUrl, className = "" }) {
   return (
 <div
   className={cn(
-    "relative flex shrink-0 items-center justify-center overflow-hidden rounded-[16px] border border-white bg-gradient-to-br from-emerald-50 via-white to-amber-50 shadow-[0_10px_26px_rgba(15,23,42,0.10)]",
+    "relative flex shrink-0 items-center justify-center overflow-hidden rounded-[16px] border border-[#eadbc9] bg-white shadow-[0_10px_26px_rgba(15,23,42,0.08)]",
     className,
   )}
 >
@@ -244,11 +249,11 @@ function Avatar({ name, photoUrl, className = "" }) {
         />
       ) : (
         <>
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(16,185,129,0.24),transparent_35%),radial-gradient(circle_at_80%_90%,rgba(180,140,108,0.22),transparent_38%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,122,24,0.20),transparent_36%),radial-gradient(circle_at_80%_90%,rgba(255,231,208,0.50),transparent_42%)]" />
           <div className="absolute -right-3 -top-3 h-10 w-10 rounded-full bg-white/55 blur-sm" />
           <div className="absolute -bottom-4 -left-4 h-12 w-12 rounded-full bg-[var(--color-cream)]/80 blur-sm" />
 
-          <span className="relative z-10 text-[21px] font-black tracking-[-0.03em] text-[var(--color-sidebar-accent-soft)]">
+          <span className="relative z-10 text-[21px] font-black tracking-tight text-[#ff5a00]">
             {initials}
           </span>
         </>
@@ -272,10 +277,37 @@ function MonthlyBookingsChart({
   bookings = [],
   nowTs,
   onModeChange,
+  onOpenBooking,
   studioCreatedAt,
 }) {
   const [studioSchedule, setStudioSchedule] = useState(null);
   const [studioExceptions, setStudioExceptions] = useState([]);
+  const initialChartTab = useMemo(() => {
+    try {
+      const saved = JSON.parse(
+        localStorage.getItem("bookings-chart-active-tab") || "null",
+      );
+
+      if (saved?.type === "today") {
+        return { type: "today", date: null };
+      }
+
+      if (saved?.type === "month" && saved.date) {
+        const date = new Date(saved.date);
+
+        if (!Number.isNaN(date.getTime())) {
+          date.setDate(1);
+          date.setHours(0, 0, 0, 0);
+          return { type: "month", date };
+        }
+      }
+    } catch {
+      // Ignore broken saved state and fall back to today.
+    }
+
+    return { type: "today", date: null };
+  }, []);
+
   const today = useMemo(() => {
     const d = new Date(nowTs);
     d.setHours(0, 0, 0, 0);
@@ -283,7 +315,10 @@ function MonthlyBookingsChart({
   }, [nowTs]);
 
   const [visibleMonth, setVisibleMonth] = useState(() => {
-    const d = new Date(nowTs);
+    const d =
+      initialChartTab.type === "month" && initialChartTab.date
+        ? new Date(initialChartTab.date)
+        : new Date(nowTs);
     d.setDate(1);
     d.setHours(0, 0, 0, 0);
     return d;
@@ -323,7 +358,10 @@ function MonthlyBookingsChart({
 
  const [activeDayKey, setActiveDayKey] = useState(null);
 const [pinnedDayKey, setPinnedDayKey] = useState(null);
-const [chartMode, setChartMode] = useState("month");
+const [chartMode, setChartMode] = useState(initialChartTab.type);
+const [chartDayKey, setChartDayKey] = useState(null);
+const [chartHourKey, setChartHourKey] = useState(null);
+const [chartSelectionFilter, setChartSelectionFilter] = useState("all");
 
 useEffect(() => {
   onModeChange?.(chartMode);
@@ -588,14 +626,39 @@ const chartTabs = useMemo(() => {
 }, [studioCreatedAt, currentMonth, nowTs]);
 
 const [chartTabIndex, setChartTabIndex] = useState(() => {
-  const currentIndex = chartTabs.findIndex(
-    (tab) => tab.type === "today",
-  );
+  const currentIndex = chartTabs.findIndex((tab) => {
+    if (initialChartTab.type === "today") return tab.type === "today";
+
+    return (
+      tab.type === "month" &&
+      initialChartTab.date &&
+      isSameMonth(tab.date, initialChartTab.date)
+    );
+  });
 
   return currentIndex >= 0 ? currentIndex : 0;
 });
 
 const activeChartTab = chartTabs[chartTabIndex];
+
+useEffect(() => {
+  if (!activeChartTab) return;
+
+  try {
+    localStorage.setItem(
+      "bookings-chart-active-tab",
+      JSON.stringify({
+        type: activeChartTab.type,
+        date:
+          activeChartTab.type === "month" && activeChartTab.date
+            ? toISODateKey(activeChartTab.date)
+            : null,
+      }),
+    );
+  } catch {
+    // Saving the selected chart tab is optional.
+  }
+}, [activeChartTab]);
 
 const activePoint =
   hoveredPoint ||
@@ -610,6 +673,54 @@ const monthLabel = visibleMonth.toLocaleDateString("uk-UA", {
   month: "long",
   year: "numeric",
 });
+
+const chartDayBookings = useMemo(() => {
+  if (!chartDayKey) return [];
+
+  return (bookings || [])
+    .filter((b) => b?.id && b.date === chartDayKey && b.status !== "deleted")
+    .sort((a, c) => (parseTimeToHHMM(a.time) || "").localeCompare(parseTimeToHHMM(c.time) || ""));
+}, [bookings, chartDayKey]);
+
+const chartHourBookings = useMemo(() => {
+  if (!chartHourKey) return [];
+
+  return (bookings || [])
+    .filter((b) => {
+      if (!b?.id || b.status === "deleted") return false;
+      if (b.date !== chartHourKey.date) return false;
+
+      const dt = getBookingDateTime(b);
+      return dt ? dt.getHours() === chartHourKey.hour : false;
+    })
+    .sort((a, c) => (parseTimeToHHMM(a.time) || "").localeCompare(parseTimeToHHMM(c.time) || ""));
+}, [bookings, chartHourKey]);
+
+const chartSelectionBookings = chartHourKey ? chartHourBookings : chartDayBookings;
+const chartFilteredSelectionBookings = useMemo(() => {
+  if (chartSelectionFilter === "confirmed") {
+    return chartSelectionBookings.filter((b) => b.status === "confirmed");
+  }
+
+  if (chartSelectionFilter === "pending") {
+    return chartSelectionBookings.filter(
+      (b) => b.status !== "confirmed" && b.status !== "canceled",
+    );
+  }
+
+  if (chartSelectionFilter === "canceled") {
+    return chartSelectionBookings.filter((b) => b.status === "canceled");
+  }
+
+  return chartSelectionBookings;
+}, [chartSelectionBookings, chartSelectionFilter]);
+
+const chartSelectionTitle = {
+  all: "Усього записів",
+  confirmed: "Підтверджені записи",
+  pending: "Очікують підтвердження",
+  canceled: "Скасовані записи",
+};
 
 const isCurrentMonth = isSameMonth(visibleMonth, today);
   function isStudioWorkingDay(date) {
@@ -639,596 +750,593 @@ const isCurrentMonth = isSameMonth(visibleMonth, today);
   }
 
   
-  return (
+return (
     <SectionShell>
       <div className="px-4 pb-5 pt-5 sm:px-6 sm:pb-7 sm:pt-6">
-        <div className="mb-5 grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-end">
+        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-start">
           <div className="min-w-0">
-            <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-slate-700 shadow-[0_4px_14px_rgba(15,23,42,0.05)]">
-              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-900 text-white">
-                <ChartColumn className="h-3 w-3" />
-              </div>
-
-              <span>Професійна аналітика</span>
-
-              <div className="h-1 w-1 rounded-full bg-slate-400" />
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#eadbc9] bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-[#202020] shadow-sm">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#ff5a00] text-white">
+                <ChartColumn className="h-3.5 w-3.5" />
+              </span>
+              Професійна аналітика
             </div>
 
-            <h2 className="text-2xl font-black tracking-tight text-[var(--color-ink)] sm:text-3xl">
-              Графік записів
-            </h2>
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div className="min-w-0">
+                <h2 className="text-[28px] font-black leading-tight tracking-tight text-[var(--color-ink)] sm:text-[34px]">
+                  Графік записів
+                </h2>
+                <p className="mt-1 max-w-2xl text-sm font-medium text-[var(--color-caramel)]">
+                  Динаміка бронювань, статуси та пікові години в одному робочому огляді.
+                </p>
+              </div>
+
+              <div className="flex shrink-0 items-center justify-center gap-2">
+                <button
+                  type="button"
+                  disabled={chartTabIndex === 0}
+                  onClick={() => {
+                    const nextIndex = Math.max(0, chartTabIndex - 1);
+                    const nextTab = chartTabs[nextIndex];
+
+                    setChartTabIndex(nextIndex);
+                    setChartMode(nextTab.type);
+                    setPinnedDayKey(null);
+                    setActiveDayKey(null);
+
+                    if (nextTab.type === "month") {
+                      setVisibleMonth(nextTab.date);
+                    }
+                  }}
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[#eadbc9] bg-white text-[#202020] shadow-sm transition-all duration-200 hover:border-[#ffd6bd] hover:bg-[#fff7f0] active:scale-[0.98] disabled:opacity-40"
+                  aria-label="Попередній період"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+
+                <div className="inline-flex h-11 min-w-[190px] items-center justify-center gap-2 rounded-2xl border border-[#eadbc9] bg-white px-4 text-sm font-black text-[#ff5a00] shadow-sm">
+                  <CalendarDays className="h-4 w-4" />
+                  <span className="capitalize">{activeChartTab.label}</span>
+                </div>
+
+                <button
+                  type="button"
+                  disabled={chartTabIndex === chartTabs.length - 1}
+                  onClick={() => {
+                    const nextIndex = Math.min(chartTabs.length - 1, chartTabIndex + 1);
+                    const nextTab = chartTabs[nextIndex];
+
+                    setChartTabIndex(nextIndex);
+                    setChartMode(nextTab.type);
+                    setPinnedDayKey(null);
+                    setActiveDayKey(null);
+
+                    if (nextTab.type === "month") {
+                      setVisibleMonth(nextTab.date);
+                    }
+                  }}
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[#eadbc9] bg-white text-[#202020] shadow-sm transition-all duration-200 hover:border-[#ffd6bd] hover:bg-[#fff7f0] active:scale-[0.98] disabled:opacity-40"
+                  aria-label="Наступний період"
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 rounded-[26px] border border-[#eadbc9] bg-[#fff7f0] p-2 shadow-sm sm:min-w-[360px]">
+            <ChartTinyStat label={chartMode === "today" ? "Активні" : "Активні дні"} value={chartMode === "today" ? liveKpi.today : activeDays} />
+            <ChartTinyStat label="Пік" value={maxCount} />
+            <ChartTinyStat label="Усього" value={total} />
           </div>
         </div>
 
-<div className="mt-4 flex justify-center">
-  <div className="flex items-center justify-center gap-2">
-    <button
-      type="button"
-      disabled={chartTabIndex === 0}
-      onClick={() => {
-        const nextIndex = Math.max(0, chartTabIndex - 1);
-        const nextTab = chartTabs[nextIndex];
+        <div className="mt-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
+          <ChartKpi
+            label={chartMode === "today" ? "Активні сьогодні" : "Підтверджені записи"}
+            value={chartMode === "today" ? liveKpi.today : liveKpi.confirmed}
+            icon={chartMode === "today" ? CalendarDays : BadgeCheck}
+            tone="emerald"
+          />
+          <ChartKpi
+            label="Очікують підтвердження"
+            value={liveKpi.pending}
+            icon={ClockAlert}
+            tone="amber"
+          />
+          <ChartKpi
+            label="Скасовані"
+            value={liveKpi.canceled}
+            icon={XCircle}
+            tone="rose"
+          />
+          <ChartKpi
+            label={chartMode === "today" ? "Усього записів" : "Усього бронювань"}
+            value={total}
+            icon={LayoutGrid}
+            tone="slate"
+          />
+        </div>
 
-        setChartTabIndex(nextIndex);
-        setChartMode(nextTab.type);
-        setPinnedDayKey(null);
-        setActiveDayKey(null);
-
-        if (nextTab.type === "month") {
-          setVisibleMonth(nextTab.date);
-        }
-      }}
-      className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/80 bg-white text-[var(--color-ink)] shadow-sm transition hover:bg-[var(--color-cream)] active:scale-[0.98] disabled:opacity-40"
-    >
-      <ChevronLeft className="h-5 w-5" />
-    </button>
-
-    <button
-      type="button"
-      className="inline-flex h-11 min-w-[180px] items-center justify-center gap-2 rounded-2xl border border-white/80 bg-white px-4 text-sm font-black text-[var(--color-primary-buttom)] shadow-sm"
-    >
-      <CalendarDays className="h-4 w-4" />
-
-      <span className="capitalize">
-        {activeChartTab.label}
-      </span>
-    </button>
-
-    <button
-      type="button"
-      disabled={chartTabIndex === chartTabs.length - 1}
-      onClick={() => {
-        const nextIndex = Math.min(chartTabs.length - 1, chartTabIndex + 1);
-        const nextTab = chartTabs[nextIndex];
-
-        setChartTabIndex(nextIndex);
-        setChartMode(nextTab.type);
-        setPinnedDayKey(null);
-        setActiveDayKey(null);
-
-        if (nextTab.type === "month") {
-          setVisibleMonth(nextTab.date);
-        }
-      }}
-      className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/80 bg-white text-[var(--color-ink)] shadow-sm transition hover:bg-[var(--color-cream)] active:scale-[0.98] disabled:opacity-40"
-    >
-      <ChevronRight className="h-5 w-5" />
-    </button>
-  </div>
-</div>
-
-<div className="mb-6 mt-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
-  <ChartKpi
-    label={
-      chartMode === "today"
-        ? "Активні на сьогодні"
-        : (
-          <>
-            Підтверджені
-            <span className="block sm:inline"> записи</span>
-          </>
-        )
-    }
-    value={chartMode === "today" ? liveKpi.today : liveKpi.confirmed}
-    icon={chartMode === "today" ? CalendarDays : BadgeCheck}
-    tone="emerald"
-  />
-
-  <ChartKpi
-    label={
-      chartMode === "today"
-        ? (
-          <>
-            Очікують
-            <span className="block sm:inline"> підтвердження</span>
-          </>
-        )
-        : (
-          <>
-            Очікують
-            <span className="block sm:inline"> підтвердження</span>
-          </>
-        )
-    }
-    value={liveKpi.pending}
-    icon={ClockAlert}
-    tone="amber"
-  />
-
-  <ChartKpi
-    label={
-      chartMode === "today"
-        ? "Скасовані"
-        : "Скасовані"
-    }
-    value={liveKpi.canceled}
-    icon={XCircle}
-    tone="rose"
-  />
-
-  <ChartKpi
-    label={
-      chartMode === "today"
-        ? "Усього записів"
-        : "Усього бронювань"
-    }
-    value={total}
-    icon={LayoutGrid}
-    tone="slate"
-  />
-</div>
-        <div className="relative mt-4 overflow-hidden rounded-[32px] border border-white/80 bg-white shadow-[0_18px_48px_rgba(15,23,42,0.08)]">
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400/50 to-transparent" />
-
-          <div className="grid gap-0">
-            <div className="min-w-0 border-b border-slate-100 p-3 sm:p-4 xl:border-b-0 xl:border-r">
-<div className="mb-3 flex flex-wrap items-center justify-between gap-2 px-1">
-  <div className="flex flex-wrap items-center gap-3 text-[11px] font-black text-slate-500">
-    {chartMode === "month" ? (
-      <>
-        <span className="inline-flex items-center gap-2">
-          <span className="h-2.5 w-6 rounded-full bg-[var(--color-mist)]" />
-          Вихідний
-        </span>
-
-        <span className="inline-flex items-center gap-2">
-          <span className="h-2.5 w-6 rounded-full bg-emerald-600" />
-          Робочий день
-        </span>
-
-        <span className="inline-flex items-center gap-2">
-          <span className="h-[2px] w-6 bg-[repeating-linear-gradient(to_right,_#10b981_0,_#10b981_6px,_transparent_6px,_transparent_9px)]" />
-          Сьогодні
-        </span>
-      </>
-    ) : (
-      <>
-        <span className="inline-flex items-center gap-2">
-          <span className="h-2.5 w-6 rounded-full bg-[var(--color-mist)] " />
-          Вільна година
-        </span>
-
-        <span className="inline-flex items-center gap-2">
-          <span className="h-2.5 w-6 rounded-full bg-emerald-600" />
-          Година із записами
-        </span>
-
-        <span className="inline-flex items-center gap-2">
-          <span className="h-[2px] w-6 bg-[repeating-linear-gradient(to_right,_#10b981_0,_#10b981_6px,_transparent_6px,_transparent_9px)]" />
-          Поточна година
-        </span>
-      </>
-    )}
-  </div>
-
-  <p className="text-[11px] font-bold text-slate-400">
-    {chartMode === "today"
-      ? "Наведіть або натисніть на годину"
-      : "Наведіть або натисніть на дату"}
-  </p>
-</div>
-
-              <div
-  className="relative"
-  onClick={(e) => {
-    if (e.target === e.currentTarget) {
-      setPinnedDayKey(null);
-      setActiveDayKey(null);
-    }
-  }}
->
-                <div className="pointer-events-none absolute -left-4 top-0 z-20 h-[320px] w-11 rounded-l-[24px] border-r border-slate-200/80 bg-gradient-to-r from-white via-white to-white/90 shadow-[10px_0_18px_rgba(255,255,255,0.82)] sm:h-[360px]">
-                  <span
-                    className="absolute whitespace-nowrap text-[9px] font-black uppercase tracking-[0.14em] text-slate-500"
-                    style={{
-                      left: "30%",
-                      top: "50%",
-                      writingMode: "vertical-rl",
-                      transform: "translate(-50%, -50%) rotate(180deg)",
-                    }}
-                  >
-                    К-ть записів
+        <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="min-w-0 overflow-hidden rounded-[30px] border border-[#ebe7df] bg-white shadow-[0_14px_44px_rgba(15,23,42,0.05)]">
+            <div className="border-b border-[var(--color-cream)] px-4 py-3 sm:px-5">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex flex-wrap items-center gap-2 text-[11px] font-black uppercase tracking-[0.12em] text-[#77716b]">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-[#eadbc9] bg-white px-3 py-1.5 shadow-sm">
+                    <span className="h-2.5 w-2.5 rounded-full bg-[#ff5a00]" />
+                    Записи
                   </span>
+                  <span className="inline-flex items-center gap-2 rounded-full border border-[#d9eadf] bg-white px-3 py-1.5 text-[#16a34a] shadow-sm">
+                    <span className="h-2.5 w-2.5 rounded-full bg-[#22c55e]" />
+                    Підтверджені
+                  </span>
+                  <span className="inline-flex items-center gap-2 rounded-full border border-[#ffe1bd] bg-white px-3 py-1.5 text-[#ff5a00] shadow-sm">
+                    <span className="h-2.5 w-2.5 rounded-full bg-[#ffb020]" />
+                    Очікують
+                  </span>
+                  <span className="inline-flex items-center gap-2 rounded-full border border-[#fecaca] bg-white px-3 py-1.5 text-[#dc2626] shadow-sm">
+                    <span className="h-2.5 w-2.5 rounded-full bg-[#ef4444]" />
+                    Скасовані
+                  </span>
+                </div>
+
+                <p className="text-xs font-bold text-[var(--color-caramel)]">
+                  {chartMode === "today" ? "Натисніть на годину для фіксації" : "Натисніть на дату для фіксації"}
+                </p>
+              </div>
+            </div>
+
+            <div
+              className="relative px-2 pb-3 pt-4 sm:px-4"
+              onClick={(e) => {
+                if (e.target === e.currentTarget) {
+                  setPinnedDayKey(null);
+                  setActiveDayKey(null);
+                }
+              }}
+            >
+              <div className="overflow-x-auto pb-2">
+                <svg
+                  onMouseLeave={() => {
+                    if (!pinnedDayKey) {
+                      setActiveDayKey(null);
+                    }
+                  }}
+                  viewBox={`0 0 ${chart.width + 56} ${chart.height}`}
+                  className="h-[330px] min-w-[920px] select-none sm:h-[380px]"
+                  role="img"
+                  aria-label={chartMode === "today" ? "Графік записів за сьогодні" : `Графік записів за ${monthLabel}`}
+                >
+                  <defs>
+                    <linearGradient id="professionalBarGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#ff8c42" />
+                      <stop offset="52%" stopColor="#ff5a00" />
+                      <stop offset="100%" stopColor="#ef4f00" />
+                    </linearGradient>
+                    <linearGradient id="professionalActiveGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#202020" stopOpacity="0.16" />
+                      <stop offset="100%" stopColor="#202020" stopOpacity="0.02" />
+                    </linearGradient>
+                  </defs>
 
                   {chart.grid.map((line) => (
-                    <span
-                      key={`fixed-axis-${line.value}-${line.y}`}
-                      className="absolute right-2 -translate-y-1/2 rounded-lg bg-white px-1.5 py-0.5 text-[12px] font-black text-slate-600"
-                      style={{ top: `${(line.y / chart.height) * 100}%` }}
-                    >
-                      {line.value}
-                    </span>
+                    <g key={`grid-${line.value}-${line.y}`}>
+                      <line
+                        x1={chart.padding.left + 36}
+                        x2={chart.width + 36 - chart.padding.right}
+                        y1={line.y}
+                        y2={line.y}
+                        stroke="#eadbc9"
+                        strokeDasharray="5 7"
+                      />
+                      <text
+                        x={chart.padding.left + 28}
+                        y={line.y + 4}
+                        textAnchor="end"
+                        className="fill-[#b48c6c] text-[11px] font-black"
+                      >
+                        {line.value}
+                      </text>
+                    </g>
                   ))}
-                </div>
 
-                <div className="overflow-x-auto pb-2">
-                  <svg
-  onMouseLeave={() => {
-    if (!pinnedDayKey) {
-      setActiveDayKey(null);
-    }
-  }}
-                    viewBox={`0 0 ${chart.width} ${chart.height}`}
-                    className="h-[320px] min-w-[920px] select-none sm:h-[360px]"
-                    role="img"
-                    aria-label={
-  chartMode === "today"
-    ? `Графік записів за сьогодні`
-    : `Графік записів за ${monthLabel}`
-}
-                  >
-                    <defs>
-                      <linearGradient
-                        id="bookingBarsGradient"
-                        x1="0"
-                        y1="0"
-                        x2="0"
-                        y2="1"
+                  {chart.points.map((item) => {
+                    const baseY = chart.padding.top + chart.innerHeight;
+                    const barHeight = baseY - item.y;
+                    const isCurrent =
+                      chartMode === "today"
+                        ? item.hour === new Date(nowTs).getHours()
+                        : item.key === toISODateKey(today);
+                    const isActive = activePoint?.key === item.key;
+                    const isPinned = pinnedDayKey === item.key;
+                    const isNonWorkingDay = chartMode === "month" ? !isStudioWorkingDay(item.date) : false;
+                    const width = Math.max(14, chart.barWidth);
+                    const x = item.x - width / 2 + 36;
+                    const activeWidth = width + 12;
+                    const labelColor = isActive || isPinned ? "#ff5a00" : isCurrent ? "#ef4f00" : "#8a6b54";
+
+                    return (
+                      <g
+                        key={item.key}
+                        className="cursor-pointer outline-none"
+                        tabIndex={0}
+                        onMouseEnter={() => {
+                          if (!pinnedDayKey) setActiveDayKey(item.key);
+                        }}
+                        onFocus={() => {
+                          if (!pinnedDayKey) setActiveDayKey(item.key);
+                        }}
+                        onClick={() => {
+                          setPinnedDayKey((prev) => (prev === item.key ? null : item.key));
+                          setActiveDayKey(item.key);
+                        }}
                       >
-                        <stop offset="0%" stopColor="#34d399" />
-                        <stop offset="48%" stopColor="#10b981" />
-                        <stop offset="100%" stopColor="#047857" />
-                      </linearGradient>
-                      <linearGradient
-                        id="bookingTrendGradient"
-                        x1="0"
-                        y1="0"
-                        x2="1"
-                        y2="0"
-                      >
-                        <stop offset="0%" stopColor="#38bdf8" />
-                        <stop offset="100%" stopColor="#10b981" />
-                      </linearGradient>
-                      <linearGradient
-                        id="bookingAreaGradient"
-                        x1="0"
-                        y1="0"
-                        x2="0"
-                        y2="1"
-                      >
-                        <stop
-                          offset="0%"
-                          stopColor="#10b981"
-                          stopOpacity="0.22"
+                        <rect
+                          x={x - 9}
+                          y={chart.padding.top - 8}
+                          width={width + 18}
+                          height={chart.innerHeight + 70}
+                          rx="16"
+                          fill={isActive || isPinned ? "url(#professionalActiveGradient)" : "transparent"}
                         />
-                        <stop
-                          offset="100%"
-                          stopColor="#10b981"
-                          stopOpacity="0"
-                        />
-                      </linearGradient>
-                    </defs>
 
-                    {chart.grid.map((line) => (
-                      <g key={line.y}>
-                        <line
-                          x1={chart.padding.left}
-                          x2={chart.width - chart.padding.right}
-                          y1={line.y}
-                          y2={line.y}
-                          stroke="#e2e8f0"
-                          strokeDasharray="5 7"
-                        />
-                      </g>
-                    ))}
-
-                    {chart.areaPath && (
-                      <path
-                        d={chart.areaPath}
-                        fill="url(#bookingAreaGradient)"
-                      />
-                    )}
-
-                    {chart.points.map((item) => {
-                      const baseY = chart.padding.top + chart.innerHeight;
-                      const barHeight = baseY - item.y;
-                      const isToday =
-  chartMode === "today"
-    ? item.hour === new Date(nowTs).getHours()
-    : item.key === toISODateKey(today);
-                      const isActive = activePoint?.key === item.key;
-                      const isPinned = pinnedDayKey === item.key;
-                     const isNonWorkingDay =
-  chartMode === "month" ? !isStudioWorkingDay(item.date) : false;
-
-                      return (
-                        <g
-                          key={item.key}
-                         onMouseEnter={() => {
-  if (!pinnedDayKey) {
-    setActiveDayKey(item.key);
-  }
-}}
-                         onFocus={() => {
-  if (!pinnedDayKey) {
-    setActiveDayKey(item.key);
-  }
-}}
-onClick={() => {
-  setPinnedDayKey((prev) => (prev === item.key ? null : item.key));
-  setActiveDayKey(item.key);
-}}
-                          tabIndex={0}
-                          className="cursor-pointer outline-none"
-                        >
-                          <rect
-                            x={item.x - chart.barWidth}
-                            y={chart.padding.top - 10}
-                            width={chart.barWidth * 2}
-                            height={chart.innerHeight + 62}
-                            fill="transparent"
-                            pointerEvents="all"
+                        {isCurrent && (
+                          <line
+                            x1={x + width / 2}
+                            x2={x + width / 2}
+                            y1={chart.padding.top - 8}
+                            y2={baseY + 10}
+                            stroke="#ff5a00"
+                            strokeWidth="2"
+                            strokeDasharray="4 7"
+                            opacity="0.7"
                           />
-<rect
-  x={item.x - chart.barWidth / 2}
-  y={item.count > 0 ? item.y : baseY - 4}
-  width={chart.barWidth}
-  height={item.count > 0 ? Math.max(8, barHeight) : 8}
-  rx="8"
-fill={
-  item.count > 0
-    ? "url(#bookingBarsGradient)"
-    : chartMode === "today"
-      ? "#e2e8f0"
-      : isNonWorkingDay
-        ? "#e7e7e7"
-        : "#009966"
-}
-  opacity={item.count > 0 ? 0.88 : 0.75}
-/>
+                        )}
 
-<rect
-  x={item.x - (chart.barWidth + 2) / 2}
- y={item.count > 0 ? item.y - 2 : baseY - 6}
-  width={chart.barWidth + 2}
-  height={item.count > 0 ? Math.max(12, barHeight + 8) : 12}
-  rx="10"
-  fill="#f59e0b"
-  opacity={isPinned || isActive ? 1 : 0}
-  pointerEvents="none"
-  transform={
-    isActive && !isPinned
-      ? "scaleY(1.03) scaleX(1.08)"
-      : "scaleX(1.08)"
-  }
-  transformOrigin={`${item.x}px ${baseY}px`}
-  style={{
-    transition:
-      "opacity 220ms ease, transform 180ms ease",
-  }}
-/>
+                        <rect
+                          x={x}
+                          y={item.count > 0 ? item.y : baseY - 4}
+                          width={width}
+                          height={item.count > 0 ? Math.max(10, barHeight) : 8}
+                          rx="3"
+                          fill={
+                            item.count > 0
+                              ? "url(#professionalBarGradient)"
+                              : chartMode === "today"
+                                ? "#efe4d8"
+                                : isNonWorkingDay
+                                  ? "#eee8df"
+                                  : "#ffd6bd"
+                          }
+                          opacity={item.count > 0 ? 0.95 : 0.85}
+                        />
 
-                          {isToday && (
-                            <line
-                              x1={item.x}
-                              x2={item.x}
-                              y1={chart.padding.top - 8}
-                              y2={baseY + 8}
-                              stroke="#047857"
-                              strokeWidth="2"
-                              strokeDasharray="4 6"
-                              opacity="0.75"
-                            />
-                          )}
+                        {(isActive || isPinned) && (
+                          <rect
+                            x={x - 5.5}
+                            y={item.count > 0 ? item.y - 5 : baseY - 8}
+                            width={activeWidth}
+                            height={item.count > 0 ? Math.max(18, barHeight + 10) : 16}
+                            rx="9"
+                            fill="none"
+                            stroke="#ff5a00"
+                            strokeWidth="2"
+                          />
+                        )}
 
+                        {item.count > 0 && (isActive || isPinned) && (
                           <text
-                            x={item.x}
-                            y={baseY + 24}
+                            x={x + width / 2}
+                            y={Math.max(18, item.y - 10)}
                             textAnchor="middle"
-fill={
-  isPinned || isActive
-    ? "#d97706"
-    : isToday
-      ? "#047857"
-      : isNonWorkingDay
-        ? "#64748b"
-        : "#94a3b8"
-}
-className="text-[11px] font-black transition-all duration-200"
+                            className="fill-[#202020] text-[12px] font-black"
                           >
-                          {chartMode === "today" ? item.label : item.day}
+                            {item.count}
                           </text>
+                        )}
 
-<text
-  x={item.x}
-  y={baseY + 41}
-  textAnchor="middle"
-  className={cn(
-    "text-[10px] font-bold",
-    isNonWorkingDay ? "fill-slate-300" : "fill-slate-400",
-  )}
->
-  {chartMode === "month" ? item.weekday : ""}
-</text>
-                        </g>
-                      );
-                    })}
+                        <circle cx={x + width / 2 - 7} cy={baseY + 18} r="3" fill={item.confirmed > 0 ? "#22c55e" : "#e9dfd2"} />
+                        <circle cx={x + width / 2} cy={baseY + 18} r="3" fill={item.pending > 0 ? "#ffb020" : "#e9dfd2"} />
+                        <circle cx={x + width / 2 + 7} cy={baseY + 18} r="3" fill={item.canceled > 0 ? "#ef4444" : "#e9dfd2"} />
 
-                    {chart.linePath && (
-                      <path
-                        d={chart.linePath}
-                        fill="none"
-                        stroke="url(#bookingTrendGradient)"
-                        strokeWidth="4"
-                        strokeLinecap="round"
-                        opacity="0.95"
-                      />
-                    )}
-                  </svg>
-                </div>
+                        <text
+                          x={x + width / 2}
+                          y={baseY + 38}
+                          textAnchor="middle"
+                          fill={labelColor}
+                          className="text-[11px] font-black"
+                        >
+                          {chartMode === "today" ? item.label : item.day}
+                        </text>
+
+                        {chartMode === "month" && (
+                          <text
+                            x={x + width / 2}
+                            y={baseY + 54}
+                            textAnchor="middle"
+                            className={cn("text-[10px] font-bold", isNonWorkingDay ? "fill-[#c9b8a7]" : "fill-[#b48c6c]")}
+                          >
+                            {item.weekday}
+                          </text>
+                        )}
+                      </g>
+                    );
+                  })}
+                </svg>
               </div>
             </div>
           </div>
 
+          <aside className="rounded-[30px] border border-[#ebe7df] bg-white p-5 shadow-[0_14px_44px_rgba(15,23,42,0.05)]">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#eadbc9] bg-[#fff7f0] px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-[#ff5a00]">
+              {chartMode === "today" ? <Clock className="h-3.5 w-3.5" /> : <CalendarDays className="h-3.5 w-3.5" />}
+              {chartMode === "today" ? "Обрана година" : "Обрана дата"}
+            </div>
+
+            <p className="mt-4 text-[32px] font-black leading-none tracking-tight text-[#202020]">
+              {activePoint
+                ? chartMode === "today"
+                  ? activePoint.label
+                  : formatDateUA(activePoint.key)
+                : "—"}
+            </p>
+            <p className="mt-2 text-sm font-semibold text-[var(--color-caramel)]">
+              {activePoint
+                ? chartMode === "today"
+                  ? "Структура записів у вибрану годину"
+                  : "Структура записів у вибраний день"
+                : "Оберіть точку на графіку"}
+            </p>
+
+            <div className="mt-5 grid grid-cols-2 gap-2">
+              <ChartTinyStat
+                label="Підтверджені"
+                value={activePoint?.confirmed || 0}
+                onClick={
+                  activePoint
+                    ? () => {
+                        setChartSelectionFilter("confirmed");
+                        if (chartMode === "today") {
+                          setChartHourKey({
+                            date: toISODateKey(today),
+                            hour: activePoint.hour,
+                            label: activePoint.label,
+                          });
+                        } else {
+                          setChartDayKey(activePoint.key);
+                        }
+                      }
+                    : null
+                }
+              />
+              <ChartTinyStat
+                label="Очікують"
+                value={activePoint?.pending || 0}
+                onClick={
+                  activePoint
+                    ? () => {
+                        setChartSelectionFilter("pending");
+                        if (chartMode === "today") {
+                          setChartHourKey({
+                            date: toISODateKey(today),
+                            hour: activePoint.hour,
+                            label: activePoint.label,
+                          });
+                        } else {
+                          setChartDayKey(activePoint.key);
+                        }
+                      }
+                    : null
+                }
+              />
+              <ChartTinyStat
+                label="Скасовані"
+                value={activePoint?.canceled || 0}
+                onClick={
+                  activePoint
+                    ? () => {
+                        setChartSelectionFilter("canceled");
+                        if (chartMode === "today") {
+                          setChartHourKey({
+                            date: toISODateKey(today),
+                            hour: activePoint.hour,
+                            label: activePoint.label,
+                          });
+                        } else {
+                          setChartDayKey(activePoint.key);
+                        }
+                      }
+                    : null
+                }
+              />
+              <ChartTinyStat
+                label="Усього"
+                value={
+                  activePoint
+                    ? activePoint.confirmed + activePoint.pending + activePoint.canceled
+                    : 0
+                }
+                onClick={
+                  activePoint
+                    ? () => {
+                        setChartSelectionFilter("all");
+                        if (chartMode === "today") {
+                          setChartHourKey({
+                            date: toISODateKey(today),
+                            hour: activePoint.hour,
+                            label: activePoint.label,
+                          });
+                        } else {
+                          setChartDayKey(activePoint.key);
+                        }
+                      }
+                    : null
+                }
+              />
+            </div>
+
+            {chartMode === "month" && activePoint && (
+              <button
+                type="button"
+                onClick={() => {
+                  setChartSelectionFilter("all");
+                  setChartDayKey(activePoint.key);
+                }}
+                className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-[#ff5a00] px-4 text-sm font-black text-white shadow-sm transition-all duration-200 hover:-translate-y-[1px] hover:bg-[#ef4f00] active:scale-[0.98]"
+              >
+                <CalendarDays className="h-4 w-4" />
+                Показати всі записи за дату
+              </button>
+            )}
+
+            {chartMode === "today" && activePoint && (
+              <button
+                type="button"
+                onClick={() => {
+                  setChartSelectionFilter("all");
+                  setChartHourKey({
+                    date: toISODateKey(today),
+                    hour: activePoint.hour,
+                    label: activePoint.label,
+                  });
+                }}
+                className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-[#ff5a00] px-4 text-sm font-black text-white shadow-sm transition-all duration-200 hover:-translate-y-[1px] hover:bg-[#ef4f00] active:scale-[0.98]"
+              >
+                <Clock className="h-4 w-4" />
+                Показати всі записи за годину
+              </button>
+            )}
+
+            <div className="mt-5 rounded-[24px] border border-[#eadbc9] bg-[#fff7f0] p-4">
+              <p className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.16em] text-[#ff5a00]">
+                <Sparkles className="h-3.5 w-3.5" />
+                {chartMode === "month" ? (bestDays.length > 1 ? "Найактивніші дні" : "Найактивніший день") : "Пікова година"}
+              </p>
+
+              <h3 className="mt-2 text-lg font-black leading-tight tracking-tight text-[#202020]">
+                {chartMode === "month"
+                  ? bestDays.length > 0
+                    ? bestDays.map((day) => formatDateUA(day.key)).join(", ")
+                    : "Записів немає"
+                  : bestDays.length > 0
+                    ? bestDays.map((hour) => hour.label).join(", ")
+                    : "Записів немає"}
+              </h3>
+
+              <p className="mt-2 text-sm font-semibold text-[var(--color-caramel)]">
+                {bestDays.length > 0
+                  ? `${maxCount} ${maxCount === 1 ? "запис" : "записів"}`
+                  : "Поки немає даних для піку"}
+              </p>
+            </div>
+          </aside>
         </div>
-<div className="bg-white mt-4">
-  {chartMode === "month" ? (
-  <div className="overflow-hidden rounded-[28px] border border-sky-200/70 bg-gradient-to-br from-sky-50 via-white to-blue-100/60 shadow-[0_14px_40px_rgba(14,165,233,0.10)]">
-    <div className="p-5">
-<div className="flex flex-col items-center justify-center text-center">
-  <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-sky-700 shadow-sm">
-    <CalendarDays className="h-3.5 w-3.5" />
-    Вибрана дата
-  </div>
 
-  <p className="mt-3 text-[30px] sm:text-[34px] font-black leading-none tracking-[-0.04em] text-slate-950">
-    {activePoint ? formatDateUA(activePoint.key) : "—"}
-  </p>
-</div>
+        {(chartDayKey || chartHourKey) && (
+          <div
+            className="fixed inset-0 z-[230] flex items-end justify-center bg-[var(--color-bg)]/45 p-0 backdrop-blur-[7px] sm:items-center sm:p-4"
+            onMouseDown={(e) => {
+              if (e.target === e.currentTarget) {
+                setChartDayKey(null);
+                setChartHourKey(null);
+              }
+            }}
+          >
+            <div
+              className={cn(
+                "relative flex w-full flex-col overflow-hidden bg-white",
+                "h-[100dvh] rounded-none border-0 shadow-none",
+                "sm:h-auto sm:max-h-[85vh] sm:max-w-[520px] sm:rounded-[32px] sm:border sm:border-[var(--color-cream)] sm:shadow-[0_35px_100px_rgba(27,27,27,0.18)]",
+              )}
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="relative overflow-hidden bg-gradient-to-b from-[#fff7f0] via-white to-white px-5 pb-5 pt-[max(16px,env(safe-area-inset-top))] sm:pt-5">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(252,110,32,0.16),transparent_34%),radial-gradient(circle_at_bottom_left,rgba(255,231,208,0.30),transparent_30%)]" />
 
-<div className="mt-4 grid grid-cols-2 gap-3">
-  <ChartKpi
-    label={
-      <>
-        Підтверджені
-        <span className="block sm:inline"> записи</span>
-      </>
-    }
-    value={activePoint?.confirmed || 0}
-    icon={BadgeCheck}
-    tone="emerald"
-  />
+                <div className="relative flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setChartDayKey(null);
+                      setChartHourKey(null);
+                    }}
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[#eadbc9] bg-white text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:border-[#ffd6bd] hover:bg-[#fff7f0] active:scale-[0.98]"
+                    aria-label="Назад"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </button>
 
-  <ChartKpi
-    label={
-      <>
-        Очікують
-        <span className="block sm:inline"> підтвердження</span>
-      </>
-    }
-    value={activePoint?.pending || 0}
-    icon={ClockAlert}
-    tone="amber"
-  />
+                  <div className="inline-flex items-center gap-2 rounded-full border border-[#eadbc9] bg-white px-3 py-1.5 text-[13px] font-semibold shadow-sm">
+                    <LayoutGrid className="h-4 w-4 text-[#ff5a00]" />
+                    <span className="whitespace-nowrap text-[var(--color-ink)]">
+                      Всього записів: {chartFilteredSelectionBookings.length}
+                    </span>
+                  </div>
 
-  <ChartKpi
-    label="Скасовані"
-    value={activePoint?.canceled || 0}
-    icon={XCircle}
-    tone="rose"
-  />
+                  <div className="w-11" />
+                </div>
 
-  <ChartKpi
-    label="Усього записів"
-    value={activePoint?.count || 0}
-    icon={LayoutGrid}
-    tone="slate"
-  />
-</div>
-    </div>
-  </div>
-) : (
-<div className="overflow-hidden rounded-[28px] border border-sky-200/70 bg-gradient-to-br from-sky-50 via-white to-blue-100/60 shadow-[0_14px_40px_rgba(14,165,233,0.10)]">
-  <div className="p-5">
-<div className="flex flex-col items-center justify-center text-center">
-  <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-sky-700 shadow-sm">
-    <Clock className="h-3.5 w-3.5" />
-    Обрана година
-  </div>
+                <div className="relative mt-5 text-center">
+                  <h2 className="text-[24px] font-black leading-tight tracking-tight text-[var(--color-ink)]">
+                    {chartHourKey
+                      ? `Записи на ${chartHourKey.label}`
+                      : `Записи на ${formatDateUA(chartDayKey)}`}
+                  </h2>
+                  <p className="mt-1 text-sm font-semibold text-[var(--color-caramel)]">
+                    {chartHourKey
+                      ? `${chartSelectionTitle[chartSelectionFilter]} за ${formatDateUA(chartHourKey.date)}`
+                      : chartSelectionTitle[chartSelectionFilter]}
+                  </p>
+                </div>
+              </div>
 
-  <p className="mt-3 text-[34px] font-black leading-none tracking-[-0.04em] text-slate-950">
-    {activePoint?.label || "—"}
-  </p>
-</div>
+              <div className="relative flex min-h-0 flex-1 flex-col px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-4 sm:flex-none sm:px-5 sm:pb-5">
+                <div className="calendar-day-scroll min-h-0 flex-1 space-y-3 overflow-y-auto pr-1 pb-16 sm:max-h-[60vh] sm:flex-none sm:pb-2">
+                  {chartFilteredSelectionBookings.length > 0 ? (
+                    chartFilteredSelectionBookings.map((item) => (
+                      <AppointmentCard
+                        key={item.id}
+                        item={{
+                          ...item,
+                          time: parseTimeToHHMM(item.time) || item.time || "—",
+                          serviceName: item.serviceName || "—",
+                          clientName: item.clientName || "—",
+                          clientPhotoUrl: item.clientPhotoUrl || item.client?.photoUrl || "",
+                          masterPhotoUrl: item.masterPhotoUrl || item.master?.photoUrl || "",
+                        }}
+                        todayKey={toISODateKey(today)}
+                        nowTs={nowTs}
+                        onOpen={(id) => {
+                          setChartDayKey(null);
+                          setChartHourKey(null);
+                          onOpenBooking?.(id);
+                        }}
+                        hideDate
+                      />
+                    ))
+                  ) : (
+                    <div className="rounded-2xl border-2 border-dashed border-[#eadbc9] bg-[#fff7f0] p-6 text-center sm:p-8">
+                      <div className="mb-3 flex items-center justify-center">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white shadow-sm">
+                          <CalendarDays className="h-7 w-7 text-[#ff5a00]" />
+                        </div>
+                      </div>
 
-<div className="mt-4 grid grid-cols-2 gap-3">
-  <ChartKpi
-    label={
-      <>
-        Підтверджені
-        <span className="block sm:inline"> записи</span>
-      </>
-    }
-    value={activePoint?.confirmed || 0}
-    icon={BadgeCheck}
-    tone="emerald"
-  />
-
-  <ChartKpi
-    label={
-      <>
-        Очікують
-        <span className="block sm:inline"> підтвердження</span>
-      </>
-    }
-    value={activePoint?.pending || 0}
-    icon={ClockAlert}
-    tone="amber"
-  />
-
-  <ChartKpi
-    label="Скасовані"
-    value={activePoint?.canceled || 0}
-    icon={XCircle}
-    tone="rose"
-  />
-
-  <ChartKpi
-    label="Усього записів"
-    value={activePoint?.count || 0}
-    icon={LayoutGrid}
-    tone="slate"
-  />
-</div>
-  </div>
-</div>
-)}
-
-{chartMode === "month" && (
-  <div className="mt-3 overflow-hidden rounded-[28px] border border-emerald-200/70 bg-gradient-to-br from-emerald-50 via-white to-emerald-100/60 shadow-[0_14px_40px_rgba(16,185,129,0.10)]">
-    <div className="p-5">
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <p className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700/80">
-            <ChartColumn className="h-3.5 w-3.5" />
-            {bestDays.length > 1
-              ? "Найактивніші дні"
-              : "Найактивніший день"}
-          </p>
-
-          <h3 className="mt-2 text-[22px] font-black leading-tight tracking-[-0.03em] text-emerald-950">
-            {bestDays.length > 0
-              ? bestDays.map((day) => formatDateUA(day.key)).join(", ")
-              : "Записів немає"}
-          </h3>
-
-          <p className="mt-2 text-sm font-semibold text-emerald-700">
-            {bestDays.length > 0
-              ? `${maxCount} ${maxCount === 1 ? "запис" : "записів"} ${
-                  bestDays.length > 1 ? "у кожен із цих днів" : "за день"
-                }`
-              : "Оберіть інший місяць або дочекайтесь нових бронювань"}
-          </p>
-        </div>
-
-        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white text-emerald-600 shadow-[0_10px_30px_rgba(16,185,129,0.14)]">
-          <ChartColumn className="h-7 w-7" />
-        </div>
-      </div>
-    </div>
-  </div>
-)}
-</div>
+                      <p className="text-sm font-bold text-[var(--color-ink)]">
+                        {chartHourKey
+                          ? "На цю годину записів немає"
+                          : "На цю дату записів немає"}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </SectionShell>
   );
@@ -1236,45 +1344,55 @@ className="text-[11px] font-black transition-all duration-200"
 
 function ChartKpi({ label, value, icon: Icon, tone = "emerald" }) {
   const tones = {
-    emerald: "from-emerald-50 to-white text-emerald-700",
-    sky: "from-sky-50 to-white text-sky-700",
-    amber: "from-amber-50 to-white text-amber-700",
-    slate: "from-slate-50 to-white text-slate-700",
-    rose: "from-rose-50 to-white text-rose-700",
+    emerald: "text-[#16a34a]",
+    sky: "text-[#ff5a00]",
+    amber: "text-[#ff5a00]",
+    slate: "text-[#77716b]",
+    rose: "text-[#dc2626]",
   };
 
   return (
     <div
       className={cn(
-        "rounded-[24px] border border-white/80 bg-gradient-to-br p-4 shadow-sm flex justify-between items-center",
+        "flex items-center justify-between rounded-[24px] border border-[#eadbc9] bg-white p-4 shadow-sm transition-all duration-200 hover:border-[#ffd6bd] hover:bg-[#fff7f0] hover:shadow-[0_10px_30px_rgba(15,23,42,0.06)]",
         tones[tone],
       )}
     >
       <div>
-        <p className="truncate text-[10px] font-black uppercase tracking-[0.12em] opacity-70">
+        <p className="truncate text-[10px] font-black uppercase tracking-[0.12em] text-[var(--color-caramel)]">
           {label}
         </p>
-        <p className="mt-2 text-2xl font-black leading-none text-slate-950">
+        <p className="mt-2 text-2xl font-black leading-none text-[#202020]">
           {value}
         </p>
       </div>
 
-<div className="hidden items-center justify-center sm:flex">
+<div className="hidden h-10 w-10 items-center justify-center rounded-2xl sm:flex">
   {Icon && <Icon className="h-8 w-8" />}
 </div>
     </div>
   );
 }
 
-function ChartTinyStat({ label, value }) {
-  return (
-    <div className="flex min-h-[68px] flex-col items-center justify-center rounded-2xl bg-white px-2 py-3 text-center shadow-sm">
-      <p className="text-lg font-black leading-none text-slate-950">{value}</p>
+function ChartTinyStat({ label, value, onClick }) {
+  const Component = onClick ? "button" : "div";
 
-      <p className="mt-2 text-center text-[9px] font-black uppercase leading-tight tracking-[0.08em] text-slate-400 break-words">
+  return (
+    <Component
+      type={onClick ? "button" : undefined}
+      onClick={onClick || undefined}
+      className={cn(
+        "flex min-h-[68px] flex-col items-center justify-center rounded-2xl border border-[#eadbc9] bg-white px-2 py-3 text-center shadow-sm transition-all duration-200",
+        onClick &&
+          "hover:-translate-y-[1px] hover:border-[#ffd6bd] hover:bg-[#fff7f0] active:scale-[0.98]",
+      )}
+    >
+      <p className="text-lg font-black leading-none text-[#202020]">{value}</p>
+
+      <p className="mt-2 break-words text-center text-[9px] font-black uppercase leading-tight tracking-[0.08em] text-[var(--color-caramel)]">
         {label}
       </p>
-    </div>
+    </Component>
   );
 }
 
@@ -1338,7 +1456,7 @@ function Modal({ open, onClose, children, footer, size = "md" }) {
 
   return (
 <div
-  className="fixed inset-0 z-[950] flex items-center justify-center bg-[rgba(5,5,5,0.40)] p-4 backdrop-blur-sm sm:p-6"
+  className="fixed inset-0 z-[950] flex items-center justify-center bg-[var(--color-bg)]/45 p-4 backdrop-blur-[8px] sm:p-6"
   onMouseDown={(e) => {
     if (e.target === e.currentTarget) {
       onClose?.();
@@ -1347,19 +1465,22 @@ function Modal({ open, onClose, children, footer, size = "md" }) {
 >
       <div
         className={cn(
-          "relative w-full max-h-[90vh] overflow-hidden rounded-3xl bg-white shadow-2xl",
-          "animate-in fade-in-0 slide-in-from-bottom duration-200",
+          "relative w-full max-h-[90vh] overflow-hidden rounded-[32px] border border-[var(--color-cream)] bg-white",
+          "animate-in fade-in-0 zoom-in-[0.98] slide-in-from-bottom-3 duration-200",
           sizeClasses[size],
         )}
        onMouseDown={(e) => e.stopPropagation()}
 onClick={(e) => e.stopPropagation()}
       >
-        <div className="max-h-[calc(90vh-72px)] overflow-y-auto px-4 py-6 sm:px-5 sm:py-7">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(252,110,32,0.18),transparent_34%),radial-gradient(circle_at_bottom_left,rgba(255,231,208,0.32),transparent_28%)]" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-[var(--color-cream)]/90 via-[var(--color-cream)]/45 to-transparent" />
+
+        <div className="relative max-h-[calc(90vh-72px)] overflow-y-auto px-4 py-6 sm:px-5 sm:py-7">
           {children}
         </div>
 
         {footer && (
-          <div className="border-soft border-t bg-white px-4 py-4 sm:px-5">
+          <div className="relative border-t border-[var(--color-cream)] px-4 py-4 sm:px-5">
             {footer}
           </div>
         )}
@@ -1370,16 +1491,18 @@ onClick={(e) => e.stopPropagation()}
 
 function Button({ variant = "secondary", className = "", children, ...props }) {
   const variants = {
-    primary: "btn-theme-primary",
-    secondary: "btn-theme-secondary border",
-    danger: "btn-theme-danger border",
+    primary: "bg-[#ff5a00] text-white hover:bg-[#ef4f00]",
+    secondary:
+      "border border-[#eadbc9] bg-white text-[#202020] hover:border-[#ffd6bd] hover:bg-[#fff7f0]",
+    danger:
+      "border border-[#ffd8d8] bg-[#fff7f7] text-[#e5484d] hover:border-[#e5484d] hover:bg-[#fff1f1]",
   };
 
   return (
     <button
       type="button"
       className={cn(
-        "inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold transition-all duration-200 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50",
+        "inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-black transition-all duration-200 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50",
         variants[variant],
         className,
       )}
@@ -1407,7 +1530,7 @@ function SkeletonBlock({ className = "" }) {
   return (
     <div
       className={cn(
-        "animate-pulse rounded-2xl bg-[linear-gradient(90deg,var(--surface-card-alt),var(--surface-card-strong),var(--surface-card-alt))] bg-[length:200%_100%]",
+        "animate-pulse rounded-2xl bg-[var(--color-cream)]",
         className,
       )}
     />
@@ -1416,7 +1539,7 @@ function SkeletonBlock({ className = "" }) {
 
 function AppointmentCardSkeleton() {
   return (
-    <li className="bg-card-theme border-soft rounded-[24px] border p-4 shadow-[0_8px_25px_rgba(27,27,27,0.04)] sm:p-5">
+    <li className="rounded-[24px] border border-[#eadbc9] bg-white p-4 shadow-sm sm:p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -1456,7 +1579,7 @@ function AppointmentCard({
   const isArchived = dt ? dt.getTime() < nowTs : false;
 
   return (
-    <li className="ui-card ui-card-hover group p-4 sm:p-5">
+    <li className="group rounded-[24px] border border-[#eadbc9] bg-white p-4 shadow-sm transition-all duration-200 hover:border-[#ffd6bd] hover:bg-[#fff7f0] hover:shadow-[0_14px_34px_rgba(27,27,27,0.08)] sm:p-5">
       <button
         type="button"
         onClick={() => onOpen?.(item.id)}
@@ -1468,7 +1591,7 @@ function AppointmentCard({
               <div className="flex flex-wrap items-center gap-2">
                 <span
                   className={cn(
-                    "inline-flex items-center justify-center gap-2 px-2.5 py-1 text-xs font-semibold rounded-2xl border border-[var(--border-soft)] bg-white shadow-sm transition-all duration-200 ",
+                    "inline-flex items-center justify-center gap-2 rounded-2xl border border-[#eadbc9] bg-white px-2.5 py-1 text-xs font-semibold shadow-sm transition-all duration-200 group-hover:border-[#ffd6bd]",
                     statusMeta.text,
                   )}
                 >
@@ -1479,7 +1602,7 @@ function AppointmentCard({
 {!hideDate && (
   <span
     className={cn(
-      "inline-flex items-center justify-center gap-2 px-2.5 py-1 text-xs font-semibold rounded-2xl border border-[var(--border-soft)] bg-white shadow-sm transition-all duration-200 ",
+      "inline-flex items-center justify-center gap-2 rounded-2xl border border-[#eadbc9] bg-white px-2.5 py-1 text-xs font-semibold shadow-sm transition-all duration-200 group-hover:border-[#ffd6bd]",
       statusMeta.text,
     )}
   >
@@ -1489,7 +1612,7 @@ function AppointmentCard({
 )}
 <span
   className={cn(
-    "inline-flex items-center justify-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-bold shadow-sm",
+    "inline-flex items-center justify-center gap-1.5 rounded-full border border-[#eadbc9] bg-white px-3 py-1.5 text-xs font-bold shadow-sm transition-all duration-200 group-hover:border-[#ffd6bd]",
     statusMeta.text,
   )}
 >
@@ -1499,21 +1622,21 @@ function AppointmentCard({
               </div>
             </div>
 
-            <p className="ui-title-section mt-3 text-base sm:text-lg">
+            <p className="mt-3 text-base font-black tracking-tight text-[var(--color-ink)] sm:text-lg">
               {item.serviceName || "—"}
             </p>
 
 <div className="mt-1 space-y-1">
-  <p className="ui-text-muted truncate text-sm">
+  <p className="truncate text-sm text-[var(--color-caramel)]">
     Клієнт:{" "}
-    <span className="ui-title-section font-semibold">
+    <span className="font-bold text-[var(--color-ink)]">
       {item.clientName || "—"}
     </span>
   </p>
 
-  <p className="ui-text-muted truncate text-sm">
+  <p className="truncate text-sm text-[var(--color-caramel)]">
     Майстер:{" "}
-    <span className="ui-title-section font-semibold">
+    <span className="font-bold text-[var(--color-ink)]">
       {item.masterName ||
         item.staffName ||
         item.employeeName ||
@@ -1523,7 +1646,7 @@ function AppointmentCard({
 </div>
           </div>
 
-          <div className="text-label flex items-center gap-2 self-start text-xs font-semibold sm:self-center">
+          <div className="flex items-center gap-2 self-start text-xs font-bold text-[#ff5a00] transition-colors duration-200 group-hover:text-[#ef4f00] sm:self-center">
             Детальніше
             <ChevronRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
           </div>
@@ -1855,35 +1978,6 @@ const upcomingAppointments = useMemo(() => {
     };
   }, []);
 
-  const liveStatusUi = useMemo(() => {
-    const base =
-      "inline-flex items-center gap-2 rounded-full border border-[var(--border-soft)] bg-white px-3 py-1.5 text-[13px] font-semibold shadow-[var(--shadow-card)]";
-
-    if (!isOnline || socketState === "offline") {
-      return {
-        text: "Немає інтернету",
-        dotClass:
-          "h-2 w-2 rounded-full bg-[var(--color-canceled)] shadow-[0_0_0_3px_var(--color-canceled-light)] animate-[pulse-soft_1.8s_ease-in-out_infinite]",
-        wrapClass: `${base} text-[var(--color-canceled-dark)]`,
-      };
-    }
-
-    if (socketState === "pending" || isRefreshing) {
-      return {
-        text: "Оновлення...",
-        dotClass:
-          "h-2 w-2 rounded-full bg-[var(--color-pending)] shadow-[0_0_0_3px_var(--color-pending-light)] animate-[pulse-soft_1.8s_ease-in-out_infinite]",
-        wrapClass: `${base} text-[var(--color-pending-dark)]`,
-      };
-    }
-
-    return {
-      text: "Оновлюється автоматично",
-      dotClass:
-        "h-2 w-2 rounded-full bg-emerald-600 shadow-[0_0_0_3px_var(--color-confirmed-light)] animate-[pulse-soft_1s_ease-in-out_infinite]",
-      wrapClass: `${base} text-emerald-600`,
-    };
-  }, [isOnline, socketState, isRefreshing]);
 
   const todayBookings = useMemo(() => {
   const todayKey = toISODateKey(new Date(nowTs));
@@ -1937,6 +2031,34 @@ const todayEmptyText = {
   archive: "Ще немає завершених записів.",
 };
 
+const todayEmptyUi = {
+  all: {
+    Icon: CalendarDays,
+    iconClass: "text-[#ff5a00]",
+  },
+  new: {
+    Icon: Clock,
+    iconClass: "text-[var(--color-pending-dark)]",
+  },
+  confirmed: {
+    Icon: CheckCheck,
+    iconClass: "text-[var(--color-confirmed-dark)]",
+  },
+  canceled: {
+    Icon: XCircle,
+    iconClass: "text-[var(--color-canceled-dark)]",
+  },
+  archive: {
+    Icon: FolderClock,
+    iconClass: "text-[var(--color-archived-dark)]",
+  },
+};
+
+const TodayEmptyIcon =
+  todayEmptyUi[todayBookingsFilter]?.Icon || CalendarDays;
+const todayEmptyIconClass =
+  todayEmptyUi[todayBookingsFilter]?.iconClass || "text-[#ff5a00]";
+
   return (
     <div className="">
       <div className="mx-auto w-full max-w-[1200px] space-y-3">
@@ -1944,6 +2066,7 @@ const todayEmptyText = {
   bookings={bookings}
   nowTs={nowTs}
   onModeChange={setDashboardChartMode}
+  onOpenBooking={setDetailsId}
   studioCreatedAt={studio?.ownerCreatedAt || studio?.createdAt}
 />
 {dashboardChartMode === "today" && (
@@ -1955,11 +2078,11 @@ const todayEmptyText = {
         </div>
 
         <div className="min-w-0">
-          <h2 className="ui-title-section text-2xl sm:text-3xl">
+          <h2 className="text-2xl font-black tracking-tight text-[var(--color-ink)] sm:text-3xl">
             Сьогоднішні записи
           </h2>
 
-          <p className="mt-1 ui-text-muted text-sm">
+          <p className="mt-1 text-sm text-[var(--color-caramel)]">
             Усі записи на сьогодні: підтверджені, скасовані, завершені та ті, що очікують підтвердження.
           </p>
         </div>
@@ -1981,16 +2104,16 @@ const todayEmptyText = {
               type="button"
               onClick={() => setTodayBookingsFilter(item.key)}
               className={cn(
-                "inline-flex h-9 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] px-3 text-sm font-bold shadow-sm transition-all duration-200 active:scale-[0.98]",
+                "inline-flex h-9 items-center justify-center gap-2 rounded-2xl border px-3 text-sm font-black shadow-sm transition-all duration-200 active:scale-[0.98]",
                 active
-                  ? "bg-[var(--color-primary-buttom)] text-white"
-                  : "bg-white text-[var(--color-ink)] hover:bg-[var(--color-cream)]",
+                  ? "border-[#ff5a00] bg-[#ff5a00] text-white hover:bg-[#ef4f00]"
+                  : "border-[#eadbc9] bg-white text-[#202020] hover:border-[#ffd6bd] hover:bg-[#fff7f0]",
               )}
             >
               {item.label}
 
 {item.key !== "all" && item.count > 0 && (
-  <span className={active ? "text-white/80" : "text-emerald-600"}>
+  <span className={active ? "text-white/80" : "text-[#ff5a00]"}>
     +{item.count}
   </span>
 )}
@@ -2000,11 +2123,25 @@ const todayEmptyText = {
       </div>
 
       {todayBookingsFiltered.length === 0 ? (
-        <div className="mt-5 rounded-2xl border-2 border-dashed border-[var(--color-caramel)]/40 bg-[var(--color-cream)] p-6 text-center">
-          <p className="text-sm font-medium text-[var(--color-caramel)]">
-          {todayEmptyText[todayBookingsFilter] || "У цій вкладці сьогодні записів немає"}
+        <div className="mt-5 rounded-2xl border-2 border-dashed border-[#eadbc9] bg-[#fff7f0] p-6 text-center sm:p-8">
+          <div className="mb-3 flex items-center justify-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white shadow-sm">
+              <TodayEmptyIcon className={cn("h-7 w-7", todayEmptyIconClass)} />
+            </div>
+          </div>
+
+          <p className="text-sm font-bold text-[var(--color-ink)]">
+            {todayEmptyText[todayBookingsFilter] || "У цій вкладці сьогодні записів немає"}
           </p>
+
+          <p className="mt-1 text-xs text-[var(--color-caramel)]/80">
+
+            Коли клієнти почнуть записуватись, тут з’являться всі бронювання
+
+          </p>
+
         </div>
+
       ) : (
 <ul className="mt-5 space-y-3 list-none p-0">
   {todayBookingsFiltered.map((item) => (
@@ -2034,34 +2171,20 @@ const todayEmptyText = {
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between gap-3">
 
-                <div
-                  className={cn(
-                    "inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-[11px] font-semibold shadow-sm sm:text-xs",
-                    liveStatusUi.wrapClass,
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "h-2 w-2 rounded-full shadow-[0_0_0_3px_rgba(255,255,255,0.9)]",
-                      liveStatusUi.dotClass,
-                    )}
-                  />
-                  <span className="whitespace-nowrap">{liveStatusUi.text}</span>
-                </div>
               </div>
 
 
 <div className="flex items-center gap-3">
-  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-primary-buttom)] text-white shadow-sm">
+  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#ff5a00] text-white shadow-sm">
     <CalendarDays className="h-5 w-5" />
   </div>
 
   <div className="min-w-0 mt-2">
-    <h2 className="ui-title-section text-2xl sm:text-3xl">
+    <h2 className="text-2xl font-black tracking-tight text-[var(--color-ink)] sm:text-3xl">
       Найближчі записи
     </h2>
 
-    <p className="mt-1 ui-text-muted text-sm">
+    <p className="mt-1 text-sm text-[var(--color-caramel)]">
       Оберіть період і перегляньте активні майбутні записи.
     </p>
   </div>
@@ -2080,10 +2203,10 @@ const todayEmptyText = {
           setVisibleAppointmentsCount(5);
         }}
         className={cn(
-          "inline-flex h-9 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] px-3 text-sm font-bold shadow-sm transition-all duration-200 active:scale-[0.98]",
+          "inline-flex h-9 items-center justify-center gap-2 rounded-2xl border px-3 text-sm font-black shadow-sm transition-all duration-200 active:scale-[0.98]",
           active
-            ? "bg-[var(--color-primary-buttom)] text-white"
-            : "bg-white text-[var(--color-ink)] hover:bg-[var(--color-cream)]",
+            ? "border-[#ff5a00] bg-[#ff5a00] text-white hover:bg-[#ef4f00]"
+            : "border-[#eadbc9] bg-white text-[#202020] hover:border-[#ffd6bd] hover:bg-[#fff7f0]",
         )}
       >
         {item.label}
@@ -2100,14 +2223,14 @@ const todayEmptyText = {
                 ))}
               </ul>
             ) : upcomingAppointments.length === 0 ? (
-              <div className="mt-6 rounded-2xl border-2 border-dashed border-[var(--color-caramel)]/40 bg-[var(--color-cream)] p-6 text-center sm:p-8">
+              <div className="mt-6 rounded-2xl border-2 border-dashed border-[#eadbc9] bg-[#fff7f0] p-6 text-center sm:p-8">
                 <div className="mb-3 flex items-center justify-center">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/70">
-                    <CalendarDays className="h-7 w-7 text-[var(--color-caramel)]" />
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white shadow-sm">
+                    <CalendarDays className="h-7 w-7 text-[#ff5a00]" />
                   </div>
                 </div>
 
-                <p className="text-sm font-medium text-[var(--color-caramel)]">
+                <p className="text-sm font-bold text-[var(--color-ink)]">
                   Немає запланованих записів
                 </p>
 
@@ -2139,7 +2262,7 @@ const todayEmptyText = {
                       onClick={() =>
                         setVisibleAppointmentsCount((prev) => prev + 5)
                       }
-                      className="ui-button-secondary inline-flex items-center justify-center rounded-2xl px-5 py-2.5 text-sm font-semibold transition-all duration-200 active:scale-[0.98]"
+                      className="inline-flex items-center justify-center rounded-2xl border border-[#eadbc9] bg-white px-5 py-2.5 text-sm font-black text-[#202020] shadow-sm transition-all duration-200 hover:border-[#ffd6bd] hover:bg-[#fff7f0] active:scale-[0.98]"
                     >
                       Показати ще
                     </button>
@@ -2238,7 +2361,7 @@ const todayEmptyText = {
                 className={cn(
                   "relative flex w-full flex-col overflow-hidden bg-white",
                   "h-[100dvh] rounded-none border-0 shadow-none",
-                  "sm:h-auto sm:max-h-[80vh] sm:max-w-[420px] sm:rounded-[34px] sm:border sm:border-[var(--color-cream)] sm:shadow-[0_35px_100px_rgba(27,27,27,0.18)]",
+                  "sm:h-auto sm:max-h-[80vh] sm:max-w-[420px] sm:rounded-[32px] sm:border sm:border-[var(--color-cream)] sm:shadow-[0_35px_100px_rgba(27,27,27,0.18)]",
                 )}
               onMouseDown={(e) => e.stopPropagation()}
 onClick={(e) => e.stopPropagation()}
@@ -2250,7 +2373,7 @@ onClick={(e) => e.stopPropagation()}
                     statusMeta.top,
                   )}
                 >
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.22),transparent_30%)]" />
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(252,110,32,0.16),transparent_34%),radial-gradient(circle_at_bottom_left,rgba(255,231,208,0.30),transparent_30%)]" />
 
                   <div className="relative flex items-center justify-between">
                     <button
@@ -2260,7 +2383,7 @@ onClick={(e) => e.stopPropagation()}
                         setCopiedPhone(false);
                         setShowDetailsScrollHint?.(true);
                       }}
-                      className="sm:hidden inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-[var(--color-ink)] shadow-[0_4px_18px_rgba(27,27,27,0.08)]"
+                      className="sm:hidden inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[#eadbc9] bg-white text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:border-[#ffd6bd] hover:bg-[#fff7f0] active:scale-[0.98]"
                       aria-label="Назад"
                     >
                       <ChevronLeft className="h-5 w-5" />
@@ -2275,7 +2398,7 @@ onClick={(e) => e.stopPropagation()}
                         setCopiedPhone(false);
                         setShowDetailsScrollHint?.(true);
                       }}
-                      className="hidden sm:inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-[var(--color-ink)] shadow-[0_4px_18px_rgba(27,27,27,0.08)] transition hover:bg-[var(--color-cream)]"
+                      className="hidden sm:inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[#eadbc9] bg-white text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:border-[#ffd6bd] hover:bg-[#fff7f0] active:scale-[0.98]"
                       aria-label="Закрити"
                     >
                       <ChevronLeft className="h-5 w-5" />
@@ -2283,7 +2406,7 @@ onClick={(e) => e.stopPropagation()}
                   </div>
 
                   <div className="mt-2 flex justify-center">
-                    <div className="inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-[13px] font-semibold shadow-[0_4px_18px_rgba(27,27,27,0.06)] backdrop-blur">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-[#eadbc9] bg-white px-4 py-2 text-[13px] font-semibold shadow-sm backdrop-blur">
                       <StatusIcon
                         className={cn("h-4 w-4", statusMeta.iconColor)}
                       />
@@ -2303,12 +2426,12 @@ onClick={(e) => e.stopPropagation()}
                   </div>
 
                   <div className="relative mt-4 grid grid-cols-3 gap-2">
-                    <div className="inline-flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-[22px] bg-white px-3 py-2 text-sm font-semibold shadow-sm">
+                    <div className="inline-flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-[22px] border border-[#eadbc9] bg-white px-3 py-2 text-sm font-semibold shadow-sm">
                       <Clock3 className={cn("h-4 w-4", statusMeta.iconColor)} />
                       <span className="text-[var(--color-ink)]">{time}</span>
                     </div>
 
-                    <div className="inline-flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-[22px] bg-white px-3 py-2 text-sm font-semibold shadow-sm">
+                    <div className="inline-flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-[22px] border border-[#eadbc9] bg-white px-3 py-2 text-sm font-semibold shadow-sm">
                       <Banknote
                         className={cn("h-4 w-4", statusMeta.iconColor)}
                       />
@@ -2317,7 +2440,7 @@ onClick={(e) => e.stopPropagation()}
                       </span>
                     </div>
 
-                    <div className="inline-flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-[22px] bg-white px-3 py-2 text-sm font-semibold shadow-sm">
+                    <div className="inline-flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-[22px] border border-[#eadbc9] bg-white px-3 py-2 text-sm font-semibold shadow-sm">
                       <Timer className={cn("h-4 w-4", statusMeta.iconColor)} />
                       <span className="text-[var(--color-ink)]">
                         {duration != null ? `${duration} хв` : "—"}
@@ -2340,7 +2463,7 @@ onClick={(e) => e.stopPropagation()}
                     }}
                   >
                     <div className="space-y-3">
-                      <div className="rounded-[26px] border border-[#e6ebe3]  from-[#f6faf4] via-[#edf4ea] to-[#fbfdf9] p-4 shadow-[0_8px_24px_rgba(120,140,120,0.08)]">
+                      <div className="rounded-[26px] border border-[#eadbc9] bg-white p-4 shadow-sm transition-all duration-200 hover:border-[#ffd6bd] hover:bg-[#fff7f0]">
                         <div className="flex items-center gap-3">
 <Avatar
   name={clientName}
@@ -2359,7 +2482,7 @@ onClick={(e) => e.stopPropagation()}
                         </div>
                       </div>
 
-                      <div className="rounded-[26px] border border-[#e6ebe3]  from-[#f6faf4] via-[#edf4ea] to-[#fbfdf9] p-4 shadow-[0_8px_24px_rgba(120,140,120,0.08)]">
+                      <div className="rounded-[26px] border border-[#eadbc9] bg-white p-4 shadow-sm transition-all duration-200 hover:border-[#ffd6bd] hover:bg-[#fff7f0]">
                         <div className="flex items-center gap-3">
 <Avatar
   name={masterName}
@@ -2378,9 +2501,9 @@ onClick={(e) => e.stopPropagation()}
                         </div>
                       </div>
 
-                      <div className="rounded-[26px] border border-[#e6ebe3]  from-[#f6faf4] via-[#edf4ea] to-[#fbfdf9] p-4 ">
+                      <div className="rounded-[26px] border border-[#eadbc9] bg-white p-4 shadow-sm transition-all duration-200 hover:border-[#ffd6bd] hover:bg-[#fff7f0]">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-[var(--color-ink)] shadow-sm">
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-cream)] text-[var(--color-ink)] shadow-sm">
                             <Phone className="h-5 w-5" />
                           </div>
 
@@ -2397,7 +2520,7 @@ onClick={(e) => e.stopPropagation()}
                             <button
                               type="button"
                               onClick={() => handleCopyPhone(phone)}
-                              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-[var(--color-ink)] shadow-sm transition hover:bg-[var(--color-cream)]"
+                              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[#eadbc9] bg-white text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:border-[#ffd6bd] hover:bg-[#fff7f0] active:scale-[0.95]"
                               aria-label="Скопіювати телефон"
                               title="Скопіювати телефон"
                             >
@@ -2427,14 +2550,8 @@ onClick={(e) => e.stopPropagation()}
                           }
                         }}
                         className={cn(
-                          "mt-5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold text-white",
-                          "transition-all duration-200 active:scale-[0.98]",
-
-                          // 👉 nude-green
-                          "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
-
-                          // 👉 hover
-                          "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]",
+                          "mt-5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#22c55e] px-4 text-sm font-black text-white",
+                          "transition-all duration-200 hover:-translate-y-[1px] hover:bg-[#16a34a] active:scale-[0.98]",
                         )}
                       >
                         <CheckCheck className="h-4 w-4" />
@@ -2445,8 +2562,7 @@ onClick={(e) => e.stopPropagation()}
                         <button
                           type="button"
                           onClick={() => setCancelConfirmId(selectedBooking.id)}
-                          className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98],
-"
+                          className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[#fecaca] bg-[#fff5f5] px-4 text-sm font-black text-[#ef4444] shadow-sm transition-all duration-200 hover:-translate-y-[1px] hover:border-[#ef4444] hover:bg-[#ef4444] hover:text-white active:scale-[0.98]"
                         >
                           <XCircle className="h-4 w-4" />
                           Скасувати
@@ -2459,7 +2575,7 @@ onClick={(e) => e.stopPropagation()}
                             setCopiedPhone(false);
                             setShowDetailsScrollHint?.(true);
                           }}
-                          className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
+                          className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[#eadbc9] bg-white px-4 text-sm font-black text-[#202020] shadow-sm transition-all duration-200 hover:border-[#ffd6bd] hover:bg-[#fff7f0] active:scale-[0.98]"
                         >
                           Закрити
                         </button>
@@ -2470,7 +2586,7 @@ onClick={(e) => e.stopPropagation()}
                       <button
                         type="button"
                         onClick={() => setCancelConfirmId(selectedBooking.id)}
-                        className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
+                        className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[#fecaca] bg-[#fff5f5] px-4 text-sm font-black text-[#ef4444] shadow-sm transition-all duration-200 hover:-translate-y-[1px] hover:border-[#ef4444] hover:bg-[#ef4444] hover:text-white active:scale-[0.98]"
                       >
                         <XCircle className="h-4 w-4" />
                         Скасувати
@@ -2483,7 +2599,7 @@ onClick={(e) => e.stopPropagation()}
                           setCopiedPhone(false);
                           setShowDetailsScrollHint?.(true);
                         }}
-                        className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-white px-4 text-sm font-bold text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:bg-[var(--color-cream)] active:scale-[0.98]"
+                        className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[#eadbc9] bg-white px-4 text-sm font-black text-[#202020] shadow-sm transition-all duration-200 hover:border-[#ffd6bd] hover:bg-[#fff7f0] active:scale-[0.98]"
                       >
                         Закрити
                       </button>
@@ -2496,7 +2612,7 @@ onClick={(e) => e.stopPropagation()}
                         setCopiedPhone(false);
                         setShowDetailsScrollHint?.(true);
                       }}
-                      className="ui-button-secondary mt-8 inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold shadow-sm transition-all duration-200 active:scale-[0.98]"
+                      className="mt-8 inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-[#eadbc9] bg-white px-4 text-sm font-black text-[#202020] shadow-sm transition-all duration-200 hover:border-[#ffd6bd] hover:bg-[#fff7f0] active:scale-[0.98]"
                     >
                       Закрити
                     </button>
