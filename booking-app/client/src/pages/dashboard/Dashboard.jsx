@@ -384,25 +384,24 @@ sidebarCollapsed
             )}
           </NavLink>
 
+          <NavLink to="/dashboard/services" className={navLinkClass}>
+            <BriefcaseBusiness className="h-5 w-5 shrink-0" />
+            <SidebarText collapsed={sidebarCollapsed}>Послуги</SidebarText>
+          </NavLink>
           <NavLink to="/dashboard/clients" className={navLinkClass}>
             <UserStar className="h-5 w-5 shrink-0" />
             <SidebarText collapsed={sidebarCollapsed}>Клієнти</SidebarText>
           </NavLink>
 
-          <NavLink to="/dashboard/services" className={navLinkClass}>
-            <BriefcaseBusiness className="h-5 w-5 shrink-0" />
-            <SidebarText collapsed={sidebarCollapsed}>Послуги</SidebarText>
-          </NavLink>
 
           <NavLink to="/dashboard/masters" className={navLinkClass}>
             <Users className="h-5 w-5 shrink-0" />
             <SidebarText collapsed={sidebarCollapsed}>Майстри</SidebarText>
           </NavLink>
-
-          <NavLink to="/dashboard/schedule" className={navLinkClass}>
-            <Clock3 className="h-5 w-5 shrink-0" />
+          <NavLink to="/dashboard/studio" className={navLinkClass}>
+            <Building2 className="h-5 w-5 shrink-0" />
             <SidebarText collapsed={sidebarCollapsed}>
-              Графік роботи
+              Профіль
             </SidebarText>
           </NavLink>
 
@@ -426,10 +425,11 @@ sidebarCollapsed
             )}
           </NavLink>
 
-          <NavLink to="/dashboard/studio" className={navLinkClass}>
-            <Building2 className="h-5 w-5 shrink-0" />
+
+          <NavLink to="/dashboard/schedule" className={navLinkClass}>
+            <Clock3 className="h-5 w-5 shrink-0" />
             <SidebarText collapsed={sidebarCollapsed}>
-              Налаштування
+              Графік роботи
             </SidebarText>
           </NavLink>
         </nav>

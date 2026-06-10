@@ -15,6 +15,7 @@ ChevronRight,
   AlertTriangle,
   Trash2,
   Check,
+  X,
   XCircle,
   Eye,
 FolderClock,
@@ -35,6 +36,11 @@ UserRound,
   ChartColumn,
   LayoutGrid,
   BadgeCheck,
+  SquareArrowOutUpRight,
+  Scissors,
+  CopyCheck,
+  ClipboardPen,
+  PhoneCall,
 } from "lucide-react";
 import { socket } from "../lib/socket";
 
@@ -795,8 +801,8 @@ return (
                   <ChevronLeft className="h-5 w-5" />
                 </button>
 
-                <div className="inline-flex h-11 min-w-[190px] items-center justify-center gap-2 rounded-2xl border border-[#eadbc9] bg-white px-4 text-sm font-black text-[#ff5a00] shadow-sm">
-                  <CalendarDays className="h-4 w-4" />
+                <div className="inline-flex h-11 min-w-[190px] items-center justify-center gap-2 rounded-2xl border border-[#eadbc9] bg-white px-4 text-sm font-black  shadow-sm">
+                  <CalendarDays className="h-4 w-4 text-[#ff5a00]" />
                   <span className="capitalize">{activeChartTab.label}</span>
                 </div>
 
@@ -825,39 +831,108 @@ return (
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-2 rounded-[26px] border border-[#eadbc9] bg-[#fff7f0] p-2 shadow-sm sm:min-w-[360px]">
-            <ChartTinyStat label={chartMode === "today" ? "Активні" : "Активні дні"} value={chartMode === "today" ? liveKpi.today : activeDays} />
-            <ChartTinyStat label="Пік" value={maxCount} />
-            <ChartTinyStat label="Усього" value={total} />
-          </div>
+
         </div>
 
-        <div className="mt-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
-          <ChartKpi
-            label={chartMode === "today" ? "Активні сьогодні" : "Підтверджені записи"}
-            value={chartMode === "today" ? liveKpi.today : liveKpi.confirmed}
-            icon={chartMode === "today" ? CalendarDays : BadgeCheck}
-            tone="emerald"
-          />
-          <ChartKpi
-            label="Очікують підтвердження"
-            value={liveKpi.pending}
-            icon={ClockAlert}
-            tone="amber"
-          />
-          <ChartKpi
-            label="Скасовані"
-            value={liveKpi.canceled}
-            icon={XCircle}
-            tone="rose"
-          />
-          <ChartKpi
-            label={chartMode === "today" ? "Усього записів" : "Усього бронювань"}
-            value={total}
-            icon={LayoutGrid}
-            tone="slate"
-          />
-        </div>
+<div className="mt-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
+  <ChartKpi
+    label={
+      chartMode === "today" ? (
+        <>
+          <span className="sm:hidden">
+            Активні
+            <br />
+            сьогодні
+          </span>
+          <span className="hidden sm:inline">
+            Активні сьогодні
+          </span>
+        </>
+      ) : (
+        <>
+          <span className="sm:hidden">
+            Підтверджені
+            <br />
+            записи
+          </span>
+          <span className="hidden sm:inline">
+            Підтверджені записи
+          </span>
+        </>
+      )
+    }
+    value={chartMode === "today" ? liveKpi.today : liveKpi.confirmed}
+    icon={chartMode === "today" ? CalendarDays : BadgeCheck}
+    tone="emerald"
+  />
+
+  <ChartKpi
+    label={
+      <>
+        <span className="sm:hidden">
+          Очікують
+          <br />
+          підтвердження
+        </span>
+        <span className="hidden sm:inline">
+          Очікують підтвердження
+        </span>
+      </>
+    }
+    value={liveKpi.pending}
+    icon={ClockAlert}
+    tone="amber"
+  />
+
+  <ChartKpi
+    label={
+      <>
+        <span className="sm:hidden">
+          Скасовані
+          <br />
+          записи
+        </span>
+        <span className="hidden sm:inline">
+          Скасовані записи
+        </span>
+      </>
+    }
+    value={liveKpi.canceled}
+    icon={XCircle}
+    tone="rose"
+  />
+
+  <ChartKpi
+    label={
+      chartMode === "today" ? (
+        <>
+          <span className="sm:hidden">
+            Усього
+            <br />
+            записів
+          </span>
+          <span className="hidden sm:inline">
+            Усього записів
+          </span>
+        </>
+      ) : (
+        <>
+          <span className="sm:hidden">
+            Усього
+            <br />
+            бронювань
+          </span>
+          <span className="hidden sm:inline">
+            Усього бронювань
+          </span>
+        </>
+      )
+    }
+    value={total}
+    icon={LayoutGrid}
+    tone="slate"
+  />
+</div>
 
         <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
           <div className="min-w-0 overflow-hidden rounded-[30px] border border-[#ebe7df] bg-white shadow-[0_14px_44px_rgba(15,23,42,0.05)]">
@@ -1353,19 +1428,21 @@ function ChartKpi({ label, value, icon: Icon, tone = "emerald" }) {
 
   return (
     <div
-      className={cn(
-        "flex items-center justify-between rounded-[24px] border border-[#eadbc9] bg-white p-4 shadow-sm transition-all duration-200 hover:border-[#ffd6bd] hover:bg-[#fff7f0] hover:shadow-[0_10px_30px_rgba(15,23,42,0.06)]",
-        tones[tone],
-      )}
-    >
-      <div>
-        <p className="truncate text-[10px] font-black uppercase tracking-[0.12em] text-[var(--color-caramel)]">
-          {label}
-        </p>
-        <p className="mt-2 text-2xl font-black leading-none text-[#202020]">
-          {value}
-        </p>
-      </div>
+  className={cn(
+    "flex items-center justify-between rounded-[18px] border border-[#eadbc9] bg-white px-3 py-2.5 shadow-sm transition-all duration-200 hover:border-[#ffd6bd] hover:bg-[#fff7f0] hover:shadow-[0_10px_30px_rgba(15,23,42,0.06)]",
+    "sm:rounded-[24px] sm:px-4 sm:py-4",
+    tones[tone],
+  )}
+>
+<div className="flex flex-1 flex-col items-center text-center sm:items-start sm:text-left">
+  <p className="flex h-[30px] items-center justify-center text-center text-[9px] font-black uppercase leading-[1.1] tracking-[0.06em] text-[var(--color-caramel)] sm:h-auto sm:justify-start sm:text-left sm:text-[9px]">
+    {label}
+  </p>
+
+  <p className="mt-1 text-[21px] font-black leading-none text-[#202020] sm:text-[22px]">
+    {value}
+  </p>
+</div>
 
 <div className="hidden h-10 w-10 items-center justify-center rounded-2xl sm:flex">
   {Icon && <Icon className="h-8 w-8" />}
@@ -1378,21 +1455,27 @@ function ChartTinyStat({ label, value, onClick }) {
   const Component = onClick ? "button" : "div";
 
   return (
-    <Component
-      type={onClick ? "button" : undefined}
-      onClick={onClick || undefined}
-      className={cn(
-        "flex min-h-[68px] flex-col items-center justify-center rounded-2xl border border-[#eadbc9] bg-white px-2 py-3 text-center shadow-sm transition-all duration-200",
-        onClick &&
-          "hover:-translate-y-[1px] hover:border-[#ffd6bd] hover:bg-[#fff7f0] active:scale-[0.98]",
-      )}
-    >
-      <p className="text-lg font-black leading-none text-[#202020]">{value}</p>
+<Component
+  type={onClick ? "button" : undefined}
+  onClick={onClick || undefined}
+  className={cn(
+    "relative flex min-h-[68px] flex-col items-center justify-center rounded-2xl border border-[#eadbc9] bg-white px-2 py-3 text-center shadow-sm transition-all duration-200",
+    onClick &&
+      "hover:-translate-y-[1px] hover:border-[#ffd6bd] hover:bg-[#fff7f0] active:scale-[0.98]",
+  )}
+>
+  {onClick && (
+    <SquareArrowOutUpRight className="absolute right-2 top-2 h-3.5 w-3.5 text-[#ff6200]" />
+  )}
 
-      <p className="mt-2 break-words text-center text-[9px] font-black uppercase leading-tight tracking-[0.08em] text-[var(--color-caramel)]">
-        {label}
-      </p>
-    </Component>
+  <p className="text-lg font-black leading-none text-[#202020]">
+    {value}
+  </p>
+
+  <p className="mt-2 break-words text-center text-[9px] font-black uppercase leading-tight tracking-[0.08em] text-[var(--color-caramel)]">
+    {label}
+  </p>
+</Component>
   );
 }
 
@@ -1562,96 +1645,194 @@ function AppointmentCardSkeleton() {
 
 function AppointmentCard({
   item,
-  todayKey,
   nowTs,
   onOpen,
-  hideTodayBadge = false,
-  hideDate = false,
 }) {
   const key = item.date ? String(item.date) : "";
-  const dateLabel = key ? formatDateUA(key) : "—";
-  const isToday = key === todayKey;
   const statusMeta = getBookingStatusMeta(item, nowTs);
+  const StatusIcon = statusMeta.Icon;
+  const clientName = item.clientName || "—";
+  const service = item.serviceName || "—";
+  const masterName =
+    item.masterName || item.staffName || item.employeeName || "—";
+  const clientPhoto = toPublicUrl(item.clientPhotoUrl || item.clientPhoto || "");
+  const timeLabel = parseTimeToHHMM(item.time) || item.time || "—";
+  const date = key ? new Date(`${key}T00:00:00`) : null;
+  const dayLabel =
+    date && !Number.isNaN(date.getTime())
+      ? String(date.getDate()).padStart(2, "0")
+      : "—";
+  const monthLabel =
+    date && !Number.isNaN(date.getTime())
+      ? date.toLocaleDateString("uk-UA", { month: "short" }).replace(".", "")
+      : "";
 
   const isCanceled = item.status === "canceled";
   const isConfirmed = item.status === "confirmed";
   const dt = getBookingDateTime(item);
   const isArchived = dt ? dt.getTime() < nowTs : false;
+  const status = isArchived
+    ? "completed"
+    : isConfirmed
+      ? "confirmed"
+      : isCanceled
+        ? "canceled"
+        : "new";
 
   return (
-    <li className="group rounded-[24px] border border-[#eadbc9] bg-white p-4 shadow-sm transition-all duration-200 hover:border-[#ffd6bd] hover:bg-[#fff7f0] hover:shadow-[0_14px_34px_rgba(27,27,27,0.08)] sm:p-5">
-      <button
-        type="button"
+    <li className="list-none">
+      <div
+        role="button"
+        tabIndex={0}
         onClick={() => onOpen?.(item.id)}
-        className="block w-full text-left"
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onOpen?.(item.id);
+          }
+        }}
+        className={cn(
+          "group cursor-pointer overflow-hidden rounded-[24px] border border-[#eadfce] bg-white transition-all duration-200",
+          "hover:-translate-y-0.5 hover:border-[#ffd6bd] hover:bg-[#fff7f0] hover:shadow-[0_18px_44px_rgba(255,90,0,0.10)]",
+          "active:scale-[0.99]",
+          status === "completed" && "opacity-85",
+        )}
       >
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <span
-                  className={cn(
-                    "inline-flex items-center justify-center gap-2 rounded-2xl border border-[#eadbc9] bg-white px-2.5 py-1 text-xs font-semibold shadow-sm transition-all duration-200 group-hover:border-[#ffd6bd]",
-                    statusMeta.text,
-                  )}
-                >
-                  <Clock className="h-3.5 w-3.5" />
-                  {item.time}
-                </span>
-
-{!hideDate && (
-  <span
-    className={cn(
-      "inline-flex items-center justify-center gap-2 rounded-2xl border border-[#eadbc9] bg-white px-2.5 py-1 text-xs font-semibold shadow-sm transition-all duration-200 group-hover:border-[#ffd6bd]",
-      statusMeta.text,
-    )}
-  >
-    <CalendarDays className="h-3.5 w-3.5" />
-    {isToday && !hideTodayBadge ? "Сьогодні" : dateLabel}
-  </span>
-)}
-<span
-  className={cn(
-    "inline-flex items-center justify-center gap-1.5 rounded-full border border-[#eadbc9] bg-white px-3 py-1.5 text-xs font-bold shadow-sm transition-all duration-200 group-hover:border-[#ffd6bd]",
-    statusMeta.text,
-  )}
->
-  <statusMeta.Icon className="h-3.5 w-3.5" />
-  {statusMeta.label}
-</span>
+        <div className="grid min-h-[108px] grid-cols-[92px_minmax(0,1fr)_132px_96px] items-center gap-3 px-4 py-3 max-[639px]:min-h-0 max-[639px]:grid-cols-[1fr_82px] max-[639px]:gap-3 max-[639px]:px-3 max-[639px]:py-3">
+          <div className="contents max-[639px]:block max-[639px]:min-w-0">
+            <div className="mb-2 hidden justify-center max-[639px]:flex">
+              <div
+                className={cn(
+                  "inline-flex items-center justify-center gap-1.5 rounded-full border border-[#eadfce] bg-white px-3 py-1 text-center text-[10px] font-black shadow-sm",
+                  statusMeta.text,
+                )}
+              >
+                <StatusIcon className="h-3.5 w-3.5" />
+                {statusMeta.label}
               </div>
             </div>
 
-            <p className="mt-3 text-base font-black tracking-tight text-[var(--color-ink)] sm:text-lg">
-              {item.serviceName || "—"}
-            </p>
+            <div className="contents max-[639px]:flex max-[639px]:items-center max-[639px]:gap-3">
+              <div className="grid h-[70px] w-[70px] shrink-0 place-items-center overflow-hidden rounded-full border border-[#eadfce] bg-white p-1 shadow-[0_8px_24px_rgba(15,23,42,0.06)] md:ml-2 lg:ml-3 max-[639px]:h-[64px] max-[639px]:w-[64px]">
+                {clientPhoto ? (
+                  <img
+                    src={clientPhoto}
+                    alt={clientName}
+                    className="h-full w-full rounded-full object-cover transition duration-500 group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="grid h-full w-full place-items-center rounded-full bg-[#fff1e8] text-[#ff6200]">
+                    <UserRound className="h-9 w-9 max-[639px]:h-6 max-[639px]:w-6" />
+                  </div>
+                )}
+              </div>
 
-<div className="mt-1 space-y-1">
-  <p className="truncate text-sm text-[var(--color-caramel)]">
-    Клієнт:{" "}
-    <span className="font-bold text-[var(--color-ink)]">
-      {item.clientName || "—"}
-    </span>
-  </p>
+              <div className="min-w-0">
+                <h2 className="line-clamp-1 text-[16px] font-black leading-tight tracking-[-0.04em] text-[#202020] max-[639px]:text-[13px] lg:text-[18px]">
+                  {clientName}
+                </h2>
 
-  <p className="truncate text-sm text-[var(--color-caramel)]">
-    Майстер:{" "}
-    <span className="font-bold text-[var(--color-ink)]">
-      {item.masterName ||
-        item.staffName ||
-        item.employeeName ||
-        "—"}
-    </span>
-  </p>
-</div>
+
+                <div className="mt-2 flex items-center gap-1.5 text-[12px] font-semibold text-[#77716b] max-[767px]:mt-1 max-[767px]:text-[10px] lg:text-[13px]">
+                  <ClipboardPen className="h-4 w-4 shrink-0 text-[#77716b] max-[767px]:h-3 max-[767px]:w-3" />
+                  <span className="line-clamp-2">{service}</span>
+                </div>
+
+                <div className="mt-3 flex items-center gap-2 text-[12px] font-semibold text-[#77716b] max-[767px]:mt-1.5 max-[767px]:gap-1.5 max-[767px]:text-[10px] lg:text-[13px]">
+                  <div className="grid h-7 w-7 place-items-center rounded-full bg-[#fff1e8] text-[11px] font-black text-[#ff6200] max-[767px]:h-5 max-[767px]:w-5 max-[767px]:text-[8px]">
+                    {masterName?.[0] || "М"}
+                  </div>
+                  <span className="truncate">Майстер: {masterName}</span>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 self-start text-xs font-bold text-[#ff5a00] transition-colors duration-200 group-hover:text-[#ef4f00] sm:self-center">
-            Детальніше
-            <ChevronRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+          <div
+            className={cn(
+              "hidden h-full items-center justify-center border-l pl-3 max-[639px]:flex",
+              status === "confirmed"
+                ? "border-[#bbf7d0]"
+                : status === "new"
+                  ? "border-[#fed7aa]"
+                  : status === "canceled"
+                    ? "border-[#fecaca]"
+                    : "border-[#d1d5db]",
+            )}
+          >
+            <div className="flex h-[74px] w-[58px] flex-col items-center justify-center">
+              <p className="text-center text-[11px] font-bold capitalize text-[#aaa19a]">
+                {monthLabel}
+              </p>
+              <p
+                className={cn(
+                  "text-[28px] font-[300] leading-none tracking-[-0.05em]",
+                  status === "confirmed"
+                    ? "text-[#41a85f]"
+                    : status === "new"
+                      ? "text-[#ff6200]"
+                      : status === "canceled"
+                        ? "text-[#ef4444]"
+                        : "text-[#6b7280]",
+                )}
+              >
+                {dayLabel}
+              </p>
+              <p className="text-[12px] font-semibold tracking-[0.08em] text-[#5f5a55]">
+                {timeLabel}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col items-center justify-center gap-3 max-[639px]:hidden">
+            <div
+              className={cn(
+                "mr-10 inline-flex items-center justify-center gap-2 rounded-full border border-[#eadfce] bg-white px-3 py-2 text-center text-[11px] font-black shadow-sm",
+                statusMeta.text,
+              )}
+            >
+              <StatusIcon className="h-4 w-4" />
+              <span className="whitespace-nowrap">{statusMeta.label}</span>
+            </div>
+          </div>
+
+          <div
+            className={cn(
+              "flex items-center justify-center border-l pl-5 max-[639px]:hidden",
+              status === "confirmed"
+                ? "border-[#bbf7d0]"
+                : status === "new"
+                  ? "border-[#fed7aa]"
+                  : status === "canceled"
+                    ? "border-[#fecaca]"
+                    : "border-[#d1d5db]",
+            )}
+          >
+            <div className="flex h-[82px] w-[78px] flex-col items-center justify-center">
+              <span className="text-[13px] font-bold capitalize text-[#aaa19a]">
+                {monthLabel}
+              </span>
+              <span
+                className={cn(
+                  "mt-0.5 text-[36px] font-[300] leading-none tracking-[-0.05em]",
+                  status === "confirmed"
+                    ? "text-[#41a85f]"
+                    : status === "new"
+                      ? "text-[#ff6200]"
+                      : status === "canceled"
+                        ? "text-[#ef4444]"
+                        : "text-[#6b7280]",
+                )}
+              >
+                {dayLabel}
+              </span>
+              <span className="mt-1 text-[15px] font-black text-[#77716b]">
+                {timeLabel}
+              </span>
+            </div>
           </div>
         </div>
-      </button>
+      </div>
     </li>
   );
 }
@@ -2175,7 +2356,7 @@ const todayEmptyIconClass =
 
 
 <div className="flex items-center gap-3">
-  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#ff5a00] text-white shadow-sm">
+  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-primary-buttom)] text-white shadow-sm">
     <CalendarDays className="h-5 w-5" />
   </div>
 
@@ -2345,68 +2526,58 @@ const todayEmptyIconClass =
             selectedBooking.staffName ||
             selectedBooking.employeeName ||
             "Довільний майстер";
+          const dateLabel = formatDateLongUA(selectedBooking?.date);
+          const closeDetails = () => {
+            setDetailsId(null);
+            setCopiedPhone(false);
+            setShowDetailsScrollHint?.(true);
+          };
 
           return (
 <div
-  className="fixed inset-0 z-[220] flex items-end justify-center bg-[var(--color-bg)]/45 p-0 backdrop-blur-[7px] sm:items-center sm:p-4"
+  className="fixed inset-0 z-[220] flex items-end justify-center bg-[#1b1b1b]/35 p-0 backdrop-blur-[10px] sm:items-center sm:p-5"
   onMouseDown={(e) => {
     if (e.target === e.currentTarget) {
-      setDetailsId(null);
-      setCopiedPhone(false);
-      setShowDetailsScrollHint?.(true);
+      closeDetails();
     }
   }}
 >
               <div
                 className={cn(
-                  "relative flex w-full flex-col overflow-hidden bg-white",
+                  "relative flex w-full flex-col overflow-hidden bg-[#fbfaf8]",
                   "h-[100dvh] rounded-none border-0 shadow-none",
-                  "sm:h-auto sm:max-h-[80vh] sm:max-w-[420px] sm:rounded-[32px] sm:border sm:border-[var(--color-cream)] sm:shadow-[0_35px_100px_rgba(27,27,27,0.18)]",
+                  "sm:h-auto sm:max-h-[88vh] sm:max-w-[640px] sm:rounded-[34px] sm:border sm:border-[#eadfce] sm:shadow-[0_35px_110px_rgba(27,27,27,0.22)]",
                 )}
               onMouseDown={(e) => e.stopPropagation()}
 onClick={(e) => e.stopPropagation()}
               >
                 <div
                   className={cn(
-                    "relative px-5 pb-5 pt-[max(16px,env(safe-area-inset-top))] sm:pt-5",
+                    "relative overflow-hidden px-5 pb-5 pt-[max(16px,env(safe-area-inset-top))] sm:px-6 sm:pt-6",
                     "bg-gradient-to-b",
                     statusMeta.top,
                   )}
                 >
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(252,110,32,0.16),transparent_34%),radial-gradient(circle_at_bottom_left,rgba(255,231,208,0.30),transparent_30%)]" />
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.58),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.20),rgba(255,255,255,0))]" />
 
                   <div className="relative flex items-center justify-between">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setDetailsId(null);
-                        setCopiedPhone(false);
-                        setShowDetailsScrollHint?.(true);
-                      }}
-                      className="sm:hidden inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[#eadbc9] bg-white text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:border-[#ffd6bd] hover:bg-[#fff7f0] active:scale-[0.98]"
-                      aria-label="Назад"
-                    >
-                      <ChevronLeft className="h-5 w-5" />
-                    </button>
-
-                    <div className="w-11 sm:hidden" />
+                    <div className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/80 px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] text-[#77716b] shadow-sm backdrop-blur">
+                      <ClipboardPen className="h-4 w-4 text-[#ff6200]" />
+                      Деталі запису
+                    </div>
 
                     <button
                       type="button"
-                      onClick={() => {
-                        setDetailsId(null);
-                        setCopiedPhone(false);
-                        setShowDetailsScrollHint?.(true);
-                      }}
-                      className="hidden sm:inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[#eadbc9] bg-white text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:border-[#ffd6bd] hover:bg-[#fff7f0] active:scale-[0.98]"
+                      onClick={closeDetails}
+                      className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-[#202020] shadow-[0_8px_24px_rgba(27,27,27,0.10)] transition hover:bg-[#fff7f0] active:scale-[0.98]"
                       aria-label="Закрити"
                     >
-                      <ChevronLeft className="h-5 w-5" />
+                      <X className="h-5 w-5" />
                     </button>
                   </div>
 
-                  <div className="mt-2 flex justify-center">
-                    <div className="inline-flex items-center gap-2 rounded-full border border-[#eadbc9] bg-white px-4 py-2 text-[13px] font-semibold shadow-sm backdrop-blur">
+                  <div className="relative mt-6">
+                    <div className="inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-[13px] font-black shadow-[0_8px_24px_rgba(27,27,27,0.08)] backdrop-blur">
                       <StatusIcon
                         className={cn("h-4 w-4", statusMeta.iconColor)}
                       />
@@ -2414,44 +2585,56 @@ onClick={(e) => e.stopPropagation()}
                         {statusMeta.label}
                       </span>
                     </div>
-                  </div>
 
-                  <div className="relative mt-5 text-center">
-                    <h2 className="text-[24px] font-black leading-tight tracking-[-0.03em] text-[var(--color-ink)]">
+                    <h2 className="mt-4 break-words text-[30px] font-black leading-[1.05] tracking-tight text-[#202020] sm:text-[34px]">
                       {service}
                     </h2>
-                    <p className="mt-1 text-sm font-medium text-[var(--color-ink-soft)]">
-                      {formatDateLongUA(selectedBooking?.date)}
+                    <p className="mt-2 flex flex-wrap items-center gap-2 text-sm font-bold text-[#77716b]">
+                      <CalendarDays className="h-4 w-4 text-[#ff6200]" />
+                      <span>{dateLabel}</span>
+                      <span className="text-[#d6c7b8]">/</span>
+                      <span>{time}</span>
                     </p>
                   </div>
 
                   <div className="relative mt-4 grid grid-cols-3 gap-2">
-                    <div className="inline-flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-[22px] border border-[#eadbc9] bg-white px-3 py-2 text-sm font-semibold shadow-sm">
+                    <div className="min-h-[76px] rounded-[22px] border border-white/70 bg-white/88 p-3 shadow-sm backdrop-blur">
                       <Clock3 className={cn("h-4 w-4", statusMeta.iconColor)} />
-                      <span className="text-[var(--color-ink)]">{time}</span>
+                      <p className="mt-2 text-[11px] font-black uppercase tracking-[0.12em] text-[#aaa19a]">
+                        Час
+                      </p>
+                      <p className="text-sm font-black text-[#202020]">
+                        {time}
+                      </p>
                     </div>
 
-                    <div className="inline-flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-[22px] border border-[#eadbc9] bg-white px-3 py-2 text-sm font-semibold shadow-sm">
+                    <div className="min-h-[76px] rounded-[22px] border border-white/70 bg-white/88 p-3 shadow-sm backdrop-blur">
                       <Banknote
                         className={cn("h-4 w-4", statusMeta.iconColor)}
                       />
-                      <span className="text-[var(--color-ink)]">
+                      <p className="mt-2 text-[11px] font-black uppercase tracking-[0.12em] text-[#aaa19a]">
+                        Сума
+                      </p>
+                      <p className="text-sm font-black text-[#202020]">
                         {price != null ? `${price} грн` : "—"}
-                      </span>
+                      </p>
                     </div>
 
-                    <div className="inline-flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-[22px] border border-[#eadbc9] bg-white px-3 py-2 text-sm font-semibold shadow-sm">
+                    <div className="min-h-[76px] rounded-[22px] border border-white/70 bg-white/88 p-3 shadow-sm backdrop-blur">
                       <Timer className={cn("h-4 w-4", statusMeta.iconColor)} />
-                      <span className="text-[var(--color-ink)]">
+                      <p className="mt-2 text-[11px] font-black uppercase tracking-[0.12em] text-[#aaa19a]">
+                        Тривалість
+                      </p>
+                      <p className="text-sm font-black text-[#202020]">
                         {duration != null ? `${duration} хв` : "—"}
-                      </span>
+                      </p>
                     </div>
                   </div>
                 </div>
 
-                <div className="relative flex min-h-0 flex-1 flex-col px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-1 sm:px-5 sm:pb-5">
+                <div className="relative flex min-h-0 flex-1 flex-col px-4 pt-4 sm:px-6">
                   <div
-                    className="calendar-day-scroll min-h-0 flex-1 overflow-y-auto pb-16 sm:pb-6"
+                    className="calendar-day-scroll min-h-0 flex-1 overflow-y-auto pb-28 sm:pb-24"
                     onScroll={(e) => {
                       const el = e.currentTarget;
                       const isScrollable = el.scrollHeight > el.clientHeight;
@@ -2462,160 +2645,120 @@ onClick={(e) => e.stopPropagation()}
                       setShowScrollHint?.(isScrollable && !isAtBottom);
                     }}
                   >
-                    <div className="space-y-3">
-                      <div className="rounded-[26px] border border-[#eadbc9] bg-white p-4 shadow-sm transition-all duration-200 hover:border-[#ffd6bd] hover:bg-[#fff7f0]">
-                        <div className="flex items-center gap-3">
-<Avatar
-  name={clientName}
-  photoUrl={selectedBooking.clientPhotoUrl}
-  className="h-12 w-12"
-/>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="rounded-[28px] border border-[#eadfce] bg-white p-4 shadow-[0_10px_30px_rgba(15,23,42,0.05)] sm:col-span-2">
+                        <div className="flex items-center gap-4">
+                          <Avatar
+                            name={clientName}
+                            photoUrl={
+                              selectedBooking.clientPhotoUrl ||
+                              selectedBooking.clientPhoto
+                            }
+                            className="h-16 w-16 rounded-[24px] shadow-inner"
+                          />
 
                           <div className="min-w-0 flex-1">
-                            <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-caramel)]">
+                            <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#aaa19a]">
                               Клієнт
-                            </span>
-                            <p className="truncate text-[15px] font-extrabold text-[var(--color-ink)]">
+                            </p>
+                            <p className="mt-1 truncate text-[20px] font-black text-[#202020]">
                               {clientName}
                             </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="rounded-[26px] border border-[#eadbc9] bg-white p-4 shadow-sm transition-all duration-200 hover:border-[#ffd6bd] hover:bg-[#fff7f0]">
-                        <div className="flex items-center gap-3">
-<Avatar
-  name={masterName}
-  photoUrl={selectedBooking.masterPhotoUrl}
-  className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-[14px]"
-/>
-
-                          <div className="min-w-0 flex-1">
-                            <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-caramel)]">
-                              Майстер
-                            </span>
-                            <p className="truncate text-[15px] font-extrabold text-[var(--color-ink)]">
-                              {masterName}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="rounded-[26px] border border-[#eadbc9] bg-white p-4 shadow-sm transition-all duration-200 hover:border-[#ffd6bd] hover:bg-[#fff7f0]">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-cream)] text-[var(--color-ink)] shadow-sm">
-                            <Phone className="h-5 w-5" />
-                          </div>
-
-                          <div className="min-w-0 flex-1">
-                            <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-caramel)]">
-                              Телефон клієнта
-                            </span>
-                            <p className="truncate text-[15px] font-extrabold text-[var(--color-ink)]">
-                              {phone || "—"}
+                            <p className="mt-1 truncate text-sm font-bold text-[#77716b]">
+                              {phone || "Телефон не вказано"}
                             </p>
                           </div>
 
-                          {phone ? (
-                            <button
-                              type="button"
-                              onClick={() => handleCopyPhone(phone)}
-                              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[#eadbc9] bg-white text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:border-[#ffd6bd] hover:bg-[#fff7f0] active:scale-[0.95]"
-                              aria-label="Скопіювати телефон"
-                              title="Скопіювати телефон"
-                            >
-                              {copiedPhone ? (
-                                <CheckCheck className="h-4 w-4" />
-                              ) : (
-                                <Copy className="h-4 w-4" />
-                              )}
-                            </button>
-                          ) : (
-                            <div className="h-10 w-10 shrink-0 rounded-2xl bg-white" />
+                          {phone && (
+                            <div className="flex shrink-0 items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleCopyPhone(phone)}
+                                className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#eadfce] bg-white text-[#77716b] transition-all duration-200 hover:bg-[#fff7f0] hover:text-[#202020] active:scale-[0.95]"
+                                title="Скопіювати номер"
+                              >
+                                {copiedPhone ? (
+                                  <CopyCheck className="h-4 w-4 text-emerald-600" />
+                                ) : (
+                                  <Copy className="h-4 w-4" />
+                                )}
+                              </button>
+
+                              <a
+                                href={`tel:${phone}`}
+                                className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#ff6200] text-white shadow-[0_10px_22px_rgba(255,98,0,0.18)] transition-all duration-200 hover:bg-[#ef4f00] active:scale-[0.95]"
+                                title="Подзвонити"
+                              >
+                                <PhoneCall className="h-4 w-4" />
+                              </a>
+                            </div>
                           )}
                         </div>
+                      </div>
+
+                      <div className="rounded-[26px] border border-[#eadfce] bg-white p-4 shadow-[0_10px_30px_rgba(15,23,42,0.05)]">
+                        <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-[#fff1e8] text-[#ff6200]">
+                          <Scissors className="h-5 w-5" />
+                        </div>
+                        <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#aaa19a]">
+                          Послуга
+                        </p>
+                        <p className="mt-1 break-words text-base font-black text-[#202020]">
+                          {service}
+                        </p>
+                      </div>
+
+                      <div className="rounded-[26px] border border-[#eadfce] bg-white p-4 shadow-[0_10px_30px_rgba(15,23,42,0.05)]">
+                        <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-[#fff1e8] text-[#ff6200]">
+                          <UserRound className="h-5 w-5" />
+                        </div>
+                        <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#aaa19a]">
+                          Майстер
+                        </p>
+                        <p className="mt-1 break-words text-base font-black text-[#202020]">
+                          {masterName}
+                        </p>
                       </div>
                     </div>
                   </div>
 
-                  {!isConfirmed && !isCanceled && !isArchived && !isDeleted ? (
-                    <>
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          try {
-                            await confirmBooking(selectedBooking.id);
-                          } catch (e) {
-                            alert(e.message || "Не вдалося підтвердити запис");
-                          }
-                        }}
-                        className={cn(
-                          "mt-5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#22c55e] px-4 text-sm font-black text-white",
-                          "transition-all duration-200 hover:-translate-y-[1px] hover:bg-[#16a34a] active:scale-[0.98]",
+                  {!isArchived && !isCanceled && !isDeleted && (
+                    <div className="absolute inset-x-0 bottom-0 border-t border-[#eadfce] bg-white/92 px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 backdrop-blur sm:px-6 sm:pb-5">
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {!isConfirmed && (
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                await confirmBooking(selectedBooking.id);
+                                closeDetails();
+                              } catch (e) {
+                                alert(e.message || "Не вдалося підтвердити запис");
+                              }
+                            }}
+                            className="inline-flex h-12 items-center justify-center gap-2 rounded-[22px] bg-[#22c55e] text-sm font-black text-white shadow-[0_14px_28px_rgba(34,197,94,0.22)] transition-all duration-200 hover:-translate-y-[1px] hover:bg-[#16a34a] active:scale-[0.98]"
+                          >
+                            <CheckCheck className="h-4 w-4" />
+                            Підтвердити
+                          </button>
                         )}
-                      >
-                        <CheckCheck className="h-4 w-4" />
-                        Підтвердити запис
-                      </button>
-
-                      <div className="mt-3 grid grid-cols-2 gap-3">
-                        <button
-                          type="button"
-                          onClick={() => setCancelConfirmId(selectedBooking.id)}
-                          className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[#fecaca] bg-[#fff5f5] px-4 text-sm font-black text-[#ef4444] shadow-sm transition-all duration-200 hover:-translate-y-[1px] hover:border-[#ef4444] hover:bg-[#ef4444] hover:text-white active:scale-[0.98]"
-                        >
-                          <XCircle className="h-4 w-4" />
-                          Скасувати
-                        </button>
 
                         <button
                           type="button"
                           onClick={() => {
-                            setDetailsId(null);
-                            setCopiedPhone(false);
-                            setShowDetailsScrollHint?.(true);
+                            closeDetails();
+                            setCancelConfirmId(selectedBooking.id);
                           }}
-                          className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[#eadbc9] bg-white px-4 text-sm font-black text-[#202020] shadow-sm transition-all duration-200 hover:border-[#ffd6bd] hover:bg-[#fff7f0] active:scale-[0.98]"
+                          className={cn(
+                            "inline-flex h-12 items-center justify-center gap-2 rounded-[22px] border border-[#fecaca] bg-[#fff5f5] px-4 text-sm font-black text-[#ef4444] transition-all duration-200 hover:border-[#fca5a5] hover:bg-[#ffecec] active:scale-[0.98]",
+                            isConfirmed && "sm:col-span-2",
+                          )}
                         >
-                          Закрити
+                          <XCircle className="h-4 w-4" />
+                          Скасувати запис
                         </button>
                       </div>
-                    </>
-                  ) : !isCanceled && !isArchived && !isDeleted ? (
-                    <div className="mt-8 grid grid-cols-2 gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setCancelConfirmId(selectedBooking.id)}
-                        className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[#fecaca] bg-[#fff5f5] px-4 text-sm font-black text-[#ef4444] shadow-sm transition-all duration-200 hover:-translate-y-[1px] hover:border-[#ef4444] hover:bg-[#ef4444] hover:text-white active:scale-[0.98]"
-                      >
-                        <XCircle className="h-4 w-4" />
-                        Скасувати
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setDetailsId(null);
-                          setCopiedPhone(false);
-                          setShowDetailsScrollHint?.(true);
-                        }}
-                        className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[#eadbc9] bg-white px-4 text-sm font-black text-[#202020] shadow-sm transition-all duration-200 hover:border-[#ffd6bd] hover:bg-[#fff7f0] active:scale-[0.98]"
-                      >
-                        Закрити
-                      </button>
                     </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setDetailsId(null);
-                        setCopiedPhone(false);
-                        setShowDetailsScrollHint?.(true);
-                      }}
-                      className="mt-8 inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-[#eadbc9] bg-white px-4 text-sm font-black text-[#202020] shadow-sm transition-all duration-200 hover:border-[#ffd6bd] hover:bg-[#fff7f0] active:scale-[0.98]"
-                    >
-                      Закрити
-                    </button>
                   )}
                 </div>
               </div>

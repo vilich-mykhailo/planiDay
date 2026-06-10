@@ -133,7 +133,7 @@ function Button({
 }) {
   const variants = {
     primary:
-      "bg-[#ff5a00] text-white  hover:bg-[#ef4f00]",
+      "bg-[var(--color-primary-buttom)] text-white hover:bg-[#4a4a4a]",
     secondary:
       "bg-white border border-[#eadbc9] text-[#202020] hover:bg-[#fff7f0] hover:border-[#ffd6bd]",
     danger:
@@ -663,7 +663,7 @@ const [infoOpen, setInfoOpen] = useState(false);
 const [exportFields, setExportFields] = useState({
   name: true,
   role: true,
-  bio: true,
+  bio: false,
   status: true,
   exceptionsCount: true,
 });
@@ -1320,20 +1320,42 @@ async function confirmCrop() {
   }, [masters, query]);
   const [photoBroken, setPhotoBroken] = useState(false);
 
-  function handleExportMasters() {
+ async function handleExportMasters() {
   const sortedMasters = [...filteredMasters].sort((a, b) =>
     String(a.name || "").localeCompare(String(b.name || ""), "uk", {
       sensitivity: "base",
     }),
   );
+console.log("MASTER", sortedMasters[0]);
+console.log(
+  "EXCEPTIONS",
+  sortedMasters[0]?.scheduleExceptions
+);
+const token = localStorage.getItem("token");
 
-  const rows = sortedMasters.map((master) => {
+const rows = await Promise.all(
+  sortedMasters.map(async (master) => {
     const row = {};
 
     const now = new Date();
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
-    const todayException = master.scheduleExceptions?.find(
+    const res = await fetch(
+      `${import.meta.env.VITE_API_URL}/studio/masters/${master.id}/schedule/exceptions`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
+    const data = await res.json().catch(() => null);
+
+    const scheduleExceptions = Array.isArray(data?.exceptions)
+      ? data.exceptions
+      : [];
+
+    const todayException = scheduleExceptions.find(
       (e) => String(e.date || "").slice(0, 10) === today,
     );
 
@@ -1341,12 +1363,28 @@ async function confirmCrop() {
 
     if (exportFields.name) row["Імʼя"] = master.name || "-";
     if (exportFields.role) row["Спеціалізація"] = master.role || "-";
-    if (exportFields.bio) row["Опис"] = master.bio || "-";
     if (exportFields.status) row["Статус сьогодні"] = isWorkingToday ? "Працює" : "Вихідний";
-    if (exportFields.exceptionsCount) row["Особливі дати"] = master.exceptionsCount || 0;
+
+if (exportFields.exceptionsCount) {
+  const exceptions = scheduleExceptions
+    .filter((e) => e.date)
+    .sort((a, b) => String(a.date).localeCompare(String(b.date)))
+    .map((e) => {
+      const date = formatExceptionDate(String(e.date).slice(0, 10));
+
+      if (!e.enabled) {
+        return `${date} — Вихідний`;
+      }
+
+      return `${date} — ${e.start || "--:--"} - ${e.end || "--:--"}`;
+    });
+
+  row["Особливі дати"] = exceptions.length ? exceptions.join("\n") : "-";
+}
 
     return row;
-  });
+  }),
+);
 
   if (!rows.length) {
     alert("Немає майстрів для експорту");
@@ -1355,33 +1393,62 @@ async function confirmCrop() {
 
   const worksheet = XLSX.utils.json_to_sheet(rows);
 
-  worksheet["!cols"] = Object.keys(rows[0] || {}).map((key) => {
-    const maxLength = Math.max(
-      key.length,
-      ...rows.map((row) => String(row[key] ?? "").length),
-    );
+worksheet["!cols"] = Object.keys(rows[0] || {}).map((key) => {
+  worksheet["!rows"] = rows.map((row) => {
+  const exceptions = String(row["Особливі дати"] || "");
 
-    return { wch: Math.max(maxLength + 8, 18) };
-  });
+  const lines = exceptions.split("\n").length;
 
-  const range = XLSX.utils.decode_range(worksheet["!ref"]);
-
-  for (let row = range.s.r; row <= range.e.r; row++) {
-    for (let col = range.s.c; col <= range.e.c; col++) {
-      const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
-
-      if (!worksheet[cellAddress]) continue;
-
-      worksheet[cellAddress].s = {
-        font: { bold: row === 0 },
-        alignment: {
-          horizontal: "center",
-          vertical: "center",
-        },
-      };
-    }
+  return {
+    hpt: Math.max(28, lines * 22),
+  };
+});
+  if (key === "Опис") {
+    return { wch: 40 };
   }
 
+if (key === "Особливі дати") {
+  return { wch: 32 };
+}
+
+  const maxLength = Math.max(
+    key.length,
+    ...rows.map((row) => String(row[key] ?? "").length),
+  );
+
+  return { wch: Math.max(maxLength + 8, 18) };
+});
+
+const range = XLSX.utils.decode_range(worksheet["!ref"]);
+
+for (let row = range.s.r; row <= range.e.r; row++) {
+  for (let col = range.s.c; col <= range.e.c; col++) {
+    const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+
+    if (!worksheet[cellAddress]) continue;
+
+    worksheet[cellAddress].s = {
+      font: { bold: row === 0 },
+      alignment: {
+        horizontal: "center",
+        vertical: "center",
+        wrapText: true,
+      },
+    };
+  }
+}
+worksheet["!rows"] = [
+  { hpt: 28 }, // заголовок
+  ...rows.map((row) => {
+    const exceptions = String(row["Особливі дати"] || "");
+
+    const lines = exceptions.split("\n").length;
+
+    return {
+      hpt: Math.max(24, lines * 22),
+    };
+  }),
+];
   const workbook = XLSX.utils.book_new();
 
   XLSX.utils.book_append_sheet(workbook, worksheet, "Майстри");
@@ -1389,6 +1456,7 @@ async function confirmCrop() {
     workbook,
     `masters-${new Date().toISOString().slice(0, 10)}.xlsx`,
   );
+  
 }
 
  return (
@@ -1442,11 +1510,31 @@ async function confirmCrop() {
     </div>
   </div>
 
-  <SectionCard
-    title="Майстри"
-    subtitle="Керуйте майстрами, редагуйте профілі та додавайте особливі дати."
-    badge={`${filteredMasters.length} майстра(ів)`}
-  >
+<SectionCard
+  title={
+    <div className="flex items-center gap-3">
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-primary-buttom)] text-white">
+        <Users className="h-5 w-5" />
+      </div>
+
+      <div>
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-black tracking-[-0.03em] text-[#202020]">
+            Майстри
+          </h2>
+
+          <span className="inline-flex items-center rounded-full bg-[#fff7f0] px-2.5 py-1 text-xs font-black text-[#ff6200]">
+            {filteredMasters.length}
+          </span>
+        </div>
+
+        <p className="mt-1 text-sm font-medium text-[var(--color-caramel)]">
+          Керуйте майстрами, редагуйте профілі та додавайте особливі дати.
+        </p>
+      </div>
+    </div>
+  }
+>
 
 
 
@@ -1904,7 +1992,7 @@ const activeExceptionsCount =
                 className="w-full justify-center whitespace-nowrap sm:w-auto sm:shrink-0"
               >
                 <CalendarDays className="h-4 w-4" />
-                Додати ще дату
+                Додати дату
               </Button>
             </div>
           }
@@ -2465,7 +2553,6 @@ filteredMasterBookings.map((booking) => (
     {[
       ["name", "Імʼя"],
       ["role", "Спеціалізація"],
-      ["bio", "Опис"],
       ["status", "Статус сьогодні"],
       ["exceptionsCount", "Особливі дати"],
     ].map(([key, label]) => (

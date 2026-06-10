@@ -261,7 +261,7 @@ export default function TimeSelect({
                className={cn(
   "inline-flex h-11 min-w-[155px] items-center justify-center rounded-2xl px-6 text-sm font-black transition active:scale-[0.98]",
                   isChanged && !submitting
-                    ? "bg-[#ff6200] text-white shadow-[0_14px_28px_rgba(255,98,0,0.22)] hover:bg-[#f25c00]"
+                    ? "bg-[var(--color-primary-buttom)] text-white hover:bg-[#4a4a4a]"
                     : "cursor-not-allowed bg-[#f0e7da] text-[#9b9186]",
                 )}
               >

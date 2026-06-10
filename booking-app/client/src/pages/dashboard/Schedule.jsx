@@ -319,7 +319,7 @@ function Button({
 }) {
   const variants = {
     primary:
-      "bg-gradient-to-r from-[#ff7a18] to-[#ff6200] text-white hover:from-[#ff8a36] hover:to-[#ff6f1f] ",
+       "bg-[var(--color-primary-buttom)] text-white hover:bg-[#4a4a4a]",
     secondary:
       "border border-[#ebe7df] bg-white text-[#202020] hover:border-[#ffd8c2] hover:bg-[#fffaf6]",
     danger:
@@ -1386,7 +1386,7 @@ async function saveExceptionFromModal() {
         <SectionCard
           title={
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-r from-[#ff7a18] to-[#ff6200] text-white">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-primary-buttom)] text-white">
                 <CalendarDays className="h-5 w-5" />
               </div>
 

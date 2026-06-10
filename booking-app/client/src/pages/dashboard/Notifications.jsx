@@ -290,7 +290,7 @@ const canceledTime = splitDateTime(
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-2 gap-3">
             <DetailItem icon={UserRound} label="Клієнт" value={item.clientName} />
 
             <DetailItem icon={Scissors} label="Послуга" value={item.serviceName} />
@@ -819,11 +819,25 @@ useEffect(() => {
   </div>
 </div>
 
-      <SectionCard
-        title="Список повідомлень"
-        subtitle="Останні сповіщення та службові оновлення"
+     <SectionCard
+  title={
+    <div className="flex items-center gap-3">
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-primary-buttom)] text-white">
+        <Bell className="h-5 w-5" />
+      </div>
 
-      >
+      <div>
+        <h2 className="text-lg font-black tracking-[-0.03em] text-[#202020]">
+          Список повідомлень
+        </h2>
+
+        <p className="mt-1 text-sm font-medium text-[var(--color-caramel)]">
+          Останні сповіщення та службові оновлення
+        </p>
+      </div>
+    </div>
+  }
+>
         {showNotificationsSkeleton ? (
           <div className="space-y-3">
             {Array.from({ length: 6 }).map((_, i) => (

@@ -228,11 +228,11 @@ function SectionCard({
       <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#ff7a18] via-[#ff6200] to-[#ff8c42]" />
 
       <div className="border-b border-[#f1ece5] px-4 py-4 sm:px-5 sm:py-5">
-        <div className="flex items-start justify-between gap-3">
+     <div className="flex items-center justify-between gap-3">
           <div className="min-w-0 flex-1">
-<h2 className="line-clamp-3 break-words text-base font-black leading-6 tracking-[-0.03em] text-[#202020] sm:text-lg">
+<div className="min-w-0 text-[15px] font-black tracking-[-0.03em] text-[#202020] sm:text-[22px] lg:text-[22px]">
   {title}
-</h2>
+</div>
 
             {badge && (
               <div className="mt-1.5">
@@ -468,7 +468,7 @@ function Button({
 }) {
   const variants = {
     primary:
-      "bg-[#ff5a00] text-white hover:bg-[#ef4f00]",
+      "bg-[var(--color-primary-buttom)] text-white hover:bg-[#4a4a4a]",
     secondary:
       "bg-white border border-[#eadbc9] text-[#202020] hover:bg-[#fff7f0] hover:border-[#ffd6bd]",
     danger:
@@ -635,30 +635,32 @@ function CategoryFilters({ value, onChange, categories }) {
   ];
 
   return (
-    <div className="mb-6">
-     <div className="no-scrollbar -mx-4 flex justify-start gap-2 overflow-x-auto px-4 pb-1">
-       {items.map((item) => {
-  const active = String(value) === String(item.id);
+   <div className="mb-6">
+  <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+    <div className="flex min-w-max gap-2 md:mx-auto">
+      {items.map((item) => {
+        const active = String(value) === String(item.id);
 
-  return (
-    <button
-      id={`category-filter-${item.id}`}
-      key={item.id}
-      type="button"
-      onClick={() => onChange(item.id)}
-      className={cn(
-    "shrink-0 max-w-[320px] overflow-hidden text-ellipsis whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold border",
-    active
-      ? "border-transparent bg-[#ff5a00] text-white shadow-md"
-      : "border-[#eadbc9] bg-white text-[#77716b] hover:border-[#ff5a00] hover:bg-[#fff7f0]",
-  )}
->
-  {item.label}
-</button>
-          );
-        })}
-      </div>
+        return (
+          <button
+            id={`category-filter-${item.id}`}
+            key={item.id}
+            type="button"
+            onClick={() => onChange(item.id)}
+            className={cn(
+              "shrink-0 max-w-[320px] overflow-hidden text-ellipsis whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold border",
+              active
+                ? "border-transparent bg-[#ff5a00] text-white shadow-md"
+                : "border-[#eadbc9] bg-white text-[#77716b] hover:border-[#ff5a00] hover:bg-[#fff7f0]",
+            )}
+          >
+            {item.label}
+          </button>
+        );
+      })}
     </div>
+  </div>
+</div>
   );
 }
 
@@ -1219,10 +1221,17 @@ function handleExportServices() {
                 const servicesCount = cat.services?.length || 0;
 
                 return (
-                  <SectionCard
-                    key={cat.id}
-                    title={cat.name}
-                    badge={`К-ть послуг: ${servicesCount}`}
+<SectionCard
+  key={cat.id}
+title={
+  <div className="flex items-center gap-2">
+    <span>{cat.name}</span>
+
+    <span className="inline-flex items-center rounded-full border border-[#ffd6bd] bg-[#fff7f0] px-2 py-0 text-[11px] font-black text-[#ff6200]">
+      {servicesCount}
+    </span>
+  </div>
+}
                     actions={{
                       desktop: (
                         <>

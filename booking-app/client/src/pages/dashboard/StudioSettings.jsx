@@ -27,6 +27,7 @@ import {
   MapPinned,
   Images,
   Image as ImageIcon,
+  Image,
 } from "lucide-react";
 import { useStudio } from "../../context/studio/useStudio";
 import { api } from "../../api/http";
@@ -197,7 +198,7 @@ function Button({
 }) {
   const variants = {
     primary:
-      "bg-[#ff5a00] text-white shadow-[0_16px_34px_rgba(255,90,0,0.24)] hover:bg-[#ef4f00]",
+       "bg-[var(--color-primary-buttom)] text-white hover:bg-[#4a4a4a]",
     secondary:
       "border border-[#eadbc9] bg-white text-[#202020] hover:border-[#ffd6bd] hover:bg-[#fff7f0]",
     danger:
@@ -1993,26 +1994,64 @@ async function saveStudioEditModal() {
       : "md:justify-between",
   )}
 >
-              <div className="flex justify-center gap-1 overflow-x-auto px-0 sm:gap-2">
+         <div
+                role="tablist"
+                aria-label="Розділи профілю студії"
+                className="relative grid w-full grid-cols-3 overflow-hidden rounded-2xl border border-[#eadbc9] bg-white p-1 shadow-[0_10px_28px_rgba(15,23,42,0.06)] md:w-auto"
+              >
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "absolute bottom-1 left-1 top-1 w-[calc((100%_-_0.5rem)_/_3)] rounded-xl bg-[#ff5a00] transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                    tab === "location" && "translate-x-full",
+                    tab === "links" && "translate-x-[200%]",
+                  )}
+                />
                 {[
                   { id: "profile", label: "Профіль" },
                   { id: "location", label: "Локація" },
                   { id: "links", label: "Портфоліо" },
-                ].map((t) => (
+                ].map((t) => {
+                  const Icon =
+                    t.id === "profile"
+                      ? Building2
+                      : t.id === "location"
+                        ? MapPin
+                        : Image;
+                  const active = tab === t.id;
+
+                  return (
                   <button
                     key={t.id}
                     type="button"
+                    role="tab"
+                    aria-selected={active}
                     onClick={() => setTabUrl(t.id)}
                     className={cn(
-                      "shrink-0 whitespace-nowrap rounded-2xl px-3 py-2 text-[13px] font-black transition-all duration-200 sm:px-4 sm:py-2.5 sm:text-sm",
-                      tab === t.id
-                        ? "bg-[#ff5a00] text-white"
-                        : "bg-white text-[#77716b] hover:bg-[#fff7f0] hover:text-[#202020]",
+                      "relative z-10 inline-flex min-w-[96px] items-center justify-center gap-2 whitespace-nowrap rounded-xl px-2.5 py-2 text-[12px] font-black transition-all duration-300 sm:min-w-[126px] sm:px-4 sm:py-2.5 sm:text-sm",
+                      active
+                        ? "text-white"
+                        : "text-[#77716b] hover:text-[#ff5a00] active:scale-[0.98]",
                     )}
                   >
-                    {t.label}
+<span className="hidden sm:block">
+  <Icon
+    className={cn(
+      "h-4 w-4 shrink-0 transition-transform duration-300",
+      active ? "scale-110" : "scale-100",
+    )}
+  />
+</span>
+                    <span className="truncate">
+                      {t.id === "profile"
+                        ? "Профіль"
+                        : t.id === "location"
+                          ? "Локація"
+                          : "Портфоліо"}
+                    </span>
                   </button>
-                ))}
+                  );
+                })}
               </div>
 
               {profile.percent !== 100 && (
@@ -2390,7 +2429,7 @@ onClick={() => openStudioEditModal(item.field)}
                             <label
                               id="studio-field-portfolio-add"
                               className={cn(
-                                "inline-flex cursor-pointer items-center justify-center gap-2 rounded-2xl bg-[#ff5a00] px-4 py-2.5 text-sm font-black text-white transition hover:bg-[#ef4f00] active:scale-[0.98]",
+                                "inline-flex cursor-pointer items-center justify-center gap-2 rounded-2xl bg-[var(--color-primary-buttom)] px-4 py-2.5 text-sm font-black text-white transition hover:bg-[#4a4a4a] active:scale-[0.98]",
                                 highlightId === "studio-field-portfolio-add" &&
                                   highlightClass,
                               )}

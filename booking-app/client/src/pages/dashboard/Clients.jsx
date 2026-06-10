@@ -6,6 +6,7 @@ import { useStudio } from "../../context/studio/useStudio";
 import {
   AlertTriangle,
   CalendarDays,
+  Camera,
   CheckCircle2,
   Download,
   ChevronDown,
@@ -56,6 +57,28 @@ import {
 } from "lucide-react";
 
 const PUBLIC = import.meta.env.VITE_R2_PUBLIC_BASE_URL;
+
+async function uploadClientPhoto(studioId, file) {
+  const token = localStorage.getItem("token");
+  const fd = new FormData();
+  fd.append("file", file);
+
+  const res = await fetch(
+    `${import.meta.env.VITE_API_URL}/media/studio/${studioId}/client-photo`,
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: fd,
+    },
+  );
+
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    throw new Error(data?.message || `Upload failed (${res.status})`);
+  }
+
+  return data;
+}
 
 function toPublicUrl(v) {
   const s = String(v || "").trim();
@@ -189,9 +212,11 @@ function Avatar({ name, photoUrl, className = "" }) {
 function Button({ variant = "secondary", className = "", children, ...props }) {
   const variants = {
     primary:
-      "bg-[#ff5a00] text-white  hover:bg-[#ef4f00]",
+      "bg-[var(--color-primary-buttom)] text-white hover:bg-[#4a4a4a]",
     secondary:
       "border border-[#eadbc9] bg-white text-[#202020] shadow-sm hover:border-[#ffd6bd] hover:bg-[#fff7f0]",
+    danger:
+      "border border-[#ffd6bd] bg-[#fff1e8] text-[#ff5a00] shadow-sm hover:border-[#ff5a00] hover:bg-[#ffe5d4]",
     ghost: "text-[#202020] hover:bg-[#fff7f0]",
   };
 
@@ -622,6 +647,17 @@ const sortItems = [
   { value: "spent", label: "За витратами" },
 ];
 
+const emptyClientForm = {
+  photoUrl: "",
+  photoKey: null,
+  photoFile: null,
+  firstName: "",
+  lastName: "",
+  birthDate: "",
+  email: "",
+  phone: "",
+};
+
 const emptyFilterInfo = {
   all: {
     icon: Users,
@@ -722,6 +758,10 @@ const sortRef = useRef(null);
   const [itemsPerPage, setItemsPerPage] = useState(8);
   const [exportOpen, setExportOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
+  const [createClientOpen, setCreateClientOpen] = useState(false);
+  const [createClientForm, setCreateClientForm] = useState(emptyClientForm);
+  const [createClientError, setCreateClientError] = useState("");
+  const [creatingClient, setCreatingClient] = useState(false);
   const [exportFields, setExportFields] = useState({
     name: true,
     phone: true,
@@ -903,6 +943,142 @@ setNoteClient((current) => ({
 setNoteDraft("");
   }
 
+  function updateCreateClientField(field, value) {
+    setCreateClientForm((current) => ({
+      ...current,
+      [field]: value,
+    }));
+    setCreateClientError("");
+  }
+
+  function closeCreateClientModal() {
+    if (creatingClient) return;
+
+    if (createClientForm.photoUrl?.startsWith("blob:")) {
+      URL.revokeObjectURL(createClientForm.photoUrl);
+    }
+
+    setCreateClientOpen(false);
+    setCreateClientForm(emptyClientForm);
+    setCreateClientError("");
+  }
+
+  function handlePickClientPhoto(e) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    setCreateClientForm((current) => {
+      if (current.photoUrl?.startsWith("blob:")) {
+        URL.revokeObjectURL(current.photoUrl);
+      }
+
+      return {
+        ...current,
+        photoUrl: URL.createObjectURL(file),
+        photoKey: null,
+        photoFile: file,
+      };
+    });
+    setCreateClientError("");
+  }
+
+  function removeCreateClientPhoto() {
+    setCreateClientForm((current) => {
+      if (current.photoUrl?.startsWith("blob:")) {
+        URL.revokeObjectURL(current.photoUrl);
+      }
+
+      return {
+        ...current,
+        photoUrl: "",
+        photoKey: null,
+        photoFile: null,
+      };
+    });
+    setCreateClientError("");
+  }
+
+  async function handleCreateClient(e) {
+    e?.preventDefault?.();
+    if (!studioId) return;
+
+    const payload = {
+      photoUrl: createClientForm.photoUrl?.startsWith("blob:")
+        ? ""
+        : createClientForm.photoUrl.trim(),
+      photoKey: createClientForm.photoKey,
+      firstName: createClientForm.firstName.trim(),
+      lastName: createClientForm.lastName.trim(),
+      birthDate: createClientForm.birthDate,
+      email: createClientForm.email.trim(),
+      phone: createClientForm.phone.trim(),
+    };
+
+    if (!payload.firstName || !payload.lastName) {
+      setCreateClientError("Вкажіть імʼя та прізвище клієнта.");
+      return;
+    }
+
+    setCreatingClient(true);
+    setCreateClientError("");
+
+    try {
+      if (createClientForm.photoFile) {
+        const uploaded = await uploadClientPhoto(
+          studioId,
+          createClientForm.photoFile,
+        );
+        payload.photoKey = uploaded.key ?? null;
+        payload.photoUrl = uploaded.url || "";
+      }
+
+      const data = await api(`/owner/studio/${studioId}/clients`, {
+        method: "POST",
+        body: payload,
+      });
+
+      const createdClient = data?.client || data || {};
+      const normalizedClient = {
+        id: createdClient.id || `local-${Date.now()}`,
+        firstName: createdClient.firstName ?? payload.firstName,
+        lastName: createdClient.lastName ?? payload.lastName,
+        photoUrl: createdClient.photoUrl ?? payload.photoUrl,
+        photoKey: createdClient.photoKey ?? payload.photoKey,
+        birthDate: createdClient.birthDate ?? payload.birthDate,
+        email: createdClient.email ?? payload.email,
+        phone: createdClient.phone ?? payload.phone,
+        status: createdClient.status || "new",
+        bookings: createdClient.bookings ?? 0,
+        cancellations: createdClient.cancellations ?? 0,
+        spent: createdClient.spent ?? 0,
+        averageCheck: createdClient.averageCheck ?? 0,
+        favoriteService: createdClient.favoriteService || "",
+        notes: createdClient.notes || [],
+        history: createdClient.history || [],
+        registeredAt: createdClient.registeredAt || new Date().toISOString(),
+        ...createdClient,
+      };
+
+      setAllClients((current) => [normalizedClient, ...current]);
+      setSelectedClientId(normalizedClient.id);
+      setFilter("all");
+      setSort("newest");
+      setCurrentPage(1);
+      setCreateClientOpen(false);
+      if (createClientForm.photoUrl?.startsWith("blob:")) {
+        URL.revokeObjectURL(createClientForm.photoUrl);
+      }
+      setCreateClientForm(emptyClientForm);
+    } catch (e) {
+      setCreateClientError(
+        e?.message || "Не вдалося додати клієнта. Спробуйте ще раз.",
+      );
+    } finally {
+      setCreatingClient(false);
+    }
+  }
+
   async function handleDeleteNote(clientId, noteId) {
     if (!studioId) return;
 
@@ -1073,12 +1249,19 @@ setNoteDraft("");
           return (b.spent || 0) - (a.spent || 0);
         }
 
-        if (sort === "nameAsc") {
-          return `${a.lastName || ""} ${a.firstName || ""}`.localeCompare(
-            `${b.lastName || ""} ${b.firstName || ""}`,
-            "uk",
-          );
-        }
+if (sort === "nameAsc") {
+  const nameA = [a.firstName, a.lastName]
+    .filter(Boolean)
+    .join(" ");
+
+  const nameB = [b.firstName, b.lastName]
+    .filter(Boolean)
+    .join(" ");
+
+  return nameA.localeCompare(nameB, "uk", {
+    sensitivity: "base",
+  });
+}
 
         if (sort === "newest") {
           return dateScore(b.registeredAt) - dateScore(a.registeredAt);
@@ -1427,14 +1610,14 @@ setNoteDraft("");
         </Button>
       </div>
 
-      <Button
-        variant="primary"
-        onClick={() => setInfoOpen(true)}
-        className="h-10 shrink-0 px-3 sm:h-12 sm:px-5"
-      >
-        <Plus className="h-4 w-4" />
-        <span className="hidden sm:inline">Додати клієнта</span>
-      </Button>
+<Button
+  variant="primary"
+  onClick={() => setCreateClientOpen(true)}
+  className="h-10 shrink-0 px-3 sm:h-12 sm:px-5"
+>
+  <Plus className="h-4 w-4" />
+  <span className="hidden sm:inline">Додати клієнта</span>
+</Button>
     </div>
   </div>
 </div>
@@ -1720,6 +1903,164 @@ setNoteDraft("");
           
           />
         )}
+      </Modal>
+
+      <Modal
+        open={createClientOpen}
+        onClose={closeCreateClientModal}
+        title="Додати клієнта"
+        badge="Клієнт"
+        icon={Plus}
+        subtitle="Заповніть фото, ім'я, прізвище та контактні дані клієнта."
+        size="md"
+        footer={
+          <div className="flex flex-row gap-2 sm:justify-end">
+            <Button
+              variant="secondary"
+              onClick={closeCreateClientModal}
+              disabled={creatingClient}
+              className="flex-1 sm:flex-none"
+            >
+              Скасувати
+            </Button>
+
+            <Button
+              type="submit"
+              form="add-client-form"
+              variant="primary"
+              disabled={
+                creatingClient ||
+                !createClientForm.firstName.trim() ||
+                !createClientForm.lastName.trim()
+              }
+              className="flex-1 sm:flex-none"
+            >
+              <Check className="h-4 w-4" />
+              {creatingClient ? "Додаємо..." : "Додати"}
+            </Button>
+          </div>
+        }
+      >
+        <form
+          id="add-client-form"
+          onSubmit={handleCreateClient}
+          className="space-y-5"
+        >
+          <div className="flex items-center gap-4">
+            <Avatar
+              name={`${createClientForm.firstName} ${createClientForm.lastName}`}
+              photoUrl={createClientForm.photoUrl}
+              className="h-20 w-20 rounded-full border-4 border-white shadow-[0_12px_32px_rgba(15,23,42,0.12)]"
+            />
+
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="cursor-pointer">
+                <span className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[#eadbc9] bg-white px-4 py-2.5 text-sm font-black text-[#202020] transition hover:border-[#ffd6bd] hover:bg-[#fff7f0]">
+                  <Camera className="h-4 w-4" />
+                  Додати фото
+                </span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePickClientPhoto}
+                  className="hidden"
+                />
+              </label>
+
+              {createClientForm.photoUrl && (
+                <Button variant="danger" onClick={removeCreateClientPhoto}>
+                  <Trash2 className="h-4 w-4" />
+                  Прибрати
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <label className="block">
+              <span className="mb-2 block text-sm font-black text-[#202020]">
+                Ім'я
+              </span>
+              <input
+                name="firstName"
+                value={createClientForm.firstName}
+                onChange={(e) =>
+                  updateCreateClientField("firstName", e.target.value)
+                }
+                placeholder="Напр. Наталія"
+                className="w-full rounded-2xl border border-[#eadbc9] bg-white px-4 py-3 text-sm font-medium text-[#202020] outline-none transition-all placeholder:text-[#77716b] hover:bg-[#fff7f0] focus:border-[#ff5a00] focus:ring-4 focus:ring-[#ff5a00]/10"
+              />
+            </label>
+
+            <label className="block">
+              <span className="mb-2 block text-sm font-black text-[#202020]">
+                Прізвище
+              </span>
+              <input
+                name="lastName"
+                value={createClientForm.lastName}
+                onChange={(e) =>
+                  updateCreateClientField("lastName", e.target.value)
+                }
+                placeholder="Напр. Коваленко"
+                className="w-full rounded-2xl border border-[#eadbc9] bg-white px-4 py-3 text-sm font-medium text-[#202020] outline-none transition-all placeholder:text-[#77716b] hover:bg-[#fff7f0] focus:border-[#ff5a00] focus:ring-4 focus:ring-[#ff5a00]/10"
+              />
+            </label>
+
+            <label className="block">
+              <span className="mb-2 block text-sm font-black text-[#202020]">
+                Дата народження
+              </span>
+              <input
+                name="birthDate"
+                type="date"
+                value={createClientForm.birthDate}
+                onChange={(e) =>
+                  updateCreateClientField("birthDate", e.target.value)
+                }
+                className="w-full rounded-2xl border border-[#eadbc9] bg-white px-4 py-3 text-sm font-medium text-[#202020] outline-none transition-all hover:bg-[#fff7f0] focus:border-[#ff5a00] focus:ring-4 focus:ring-[#ff5a00]/10"
+              />
+            </label>
+
+            <label className="block">
+              <span className="mb-2 block text-sm font-black text-[#202020]">
+                Телефон
+              </span>
+              <input
+                name="phone"
+                type="tel"
+                value={createClientForm.phone}
+                onChange={(e) =>
+                  updateCreateClientField("phone", e.target.value)
+                }
+                placeholder="+380..."
+                className="w-full rounded-2xl border border-[#eadbc9] bg-white px-4 py-3 text-sm font-medium text-[#202020] outline-none transition-all placeholder:text-[#77716b] hover:bg-[#fff7f0] focus:border-[#ff5a00] focus:ring-4 focus:ring-[#ff5a00]/10"
+              />
+            </label>
+
+            <label className="block sm:col-span-2">
+              <span className="mb-2 block text-sm font-black text-[#202020]">
+                Email
+              </span>
+              <input
+                name="email"
+                type="email"
+                value={createClientForm.email}
+                onChange={(e) =>
+                  updateCreateClientField("email", e.target.value)
+                }
+                placeholder="client@email.com"
+                className="w-full rounded-2xl border border-[#eadbc9] bg-white px-4 py-3 text-sm font-medium text-[#202020] outline-none transition-all placeholder:text-[#77716b] hover:bg-[#fff7f0] focus:border-[#ff5a00] focus:ring-4 focus:ring-[#ff5a00]/10"
+              />
+            </label>
+          </div>
+
+          {createClientError && (
+            <div className="rounded-2xl border border-[#ffd8d8] bg-[#fff7f7] px-4 py-3 text-sm font-bold text-[#e5484d]">
+              {createClientError}
+            </div>
+          )}
+        </form>
       </Modal>
 
       <Modal

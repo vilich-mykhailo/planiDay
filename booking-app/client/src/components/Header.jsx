@@ -30,7 +30,6 @@ import {
   Search,
   X,
   Settings2,
-  LayoutGrid,
   Home,
   ChevronRight,
 } from "lucide-react";
@@ -225,6 +224,18 @@ const [unreadNotifications, setUnreadNotifications] = useState(0);
   const clientInitials =
     `${(clientProfile.firstName || "").trim().slice(0, 1)}${(clientProfile.lastName || "").trim().slice(0, 1)}`
       .toUpperCase() || "U";
+  const identityTitle =
+    role === "owner"
+      ? studioName || "PlaniDay Studio"
+      : role === "client"
+        ? clientFullName || "Мій профіль"
+        : "PlaniDay";
+  const identitySubtitle =
+    role === "owner"
+      ? "Кабінет керування"
+      : role === "client"
+        ? "Кабінет клієнта"
+        : "Гостьовий режим";
       useEffect(() => {
   const id = window.setInterval(() => {
     setNowTs(Date.now());
@@ -247,6 +258,17 @@ const newBookingsCount = useMemo(() => {
     return dt.getTime() >= nowTs;
   }).length;
 }, [bookings, nowTs]);
+const getMobileBadge = (to) => {
+  if (to === "/dashboard/bookings" && newBookingsCount > 0) {
+    return newBookingsCount > 9 ? "9+" : String(newBookingsCount);
+  }
+
+  if (to === "/dashboard/notifications" && unreadNotifications > 0) {
+    return unreadNotifications > 9 ? "9+" : String(unreadNotifications);
+  }
+
+  return null;
+};
   const handleLogout = useCallback(() => {
     const currentRole = localStorage.getItem("role") || role;
 
@@ -492,7 +514,7 @@ links: [
         links: [
           {
             to: "/dashboard",
-            label: "Аналітика",
+            label: "Головна",
             icon: <LayoutDashboard className="h-4 w-4" />,
           },
           {
@@ -500,36 +522,39 @@ links: [
             label: "Записи",
             icon: <CalendarDays className="h-4 w-4" />,
           },
+                    {
+            to: "/dashboard/services",
+            label: "Послуги",
+            icon: <BriefcaseBusiness className="h-4 w-4" />,
+          },
+                    {
+            to: "/dashboard/clients",
+            label: "Клієнти",
+            icon: <UserStar className="h-4 w-4" />,
+          },
+                    {
+            to: "/dashboard/masters",
+            label: "Майстри",
+            icon: <Users className="h-4 w-4" />,
+          },
+
+          {
+            to: "/dashboard/studio",
+            label: "Профіль",
+            icon: <Building2 className="h-4 w-4" />,
+          },
           {
             to: "/dashboard/notifications",
             label: "Повідомлення",
             icon: <Bell className="h-4 w-4" />,
           },
-          {
-            to: "/dashboard/studio",
-            label: "Профіль студії",
-            icon: <Building2 className="h-4 w-4" />,
-          },
-          {
-            to: "/dashboard/masters",
-            label: "Майстри",
-            icon: <Users className="h-4 w-4" />,
-          },
-          {
-            to: "/dashboard/services",
-            label: "Послуги",
-            icon: <BriefcaseBusiness className="h-4 w-4" />,
-          },
+
           {
             to: "/dashboard/schedule",
             label: "Графік роботи",
             icon: <Clock3 className="h-4 w-4" />,
           },
-          {
-            to: "/dashboard/clients",
-            label: "База клієнтів",
-            icon: <UserStar className="h-4 w-4" />,
-          },
+
           {
   to: "#logout",
   label: "Вихід",
@@ -591,7 +616,7 @@ if (isStudioPublicPage || hideHeader) {
   )}
 >
   <div className="mx-auto max-w-[1260px] px-4 max-[639px]:px-5 sm:px-6 lg:px-10">
-    <div className="flex h-[58px] items-center justify-between rounded-[20px] border border-[#eadfce] bg-white/82 px-3 shadow-[0_14px_34px_rgba(15,23,42,0.06)] backdrop-blur-2xl sm:h-[64px] sm:px-4 lg:h-[66px]">
+    <div className="flex h-[58px] items-center justify-between rounded-[20px] border border-[#eadfce] bg-white/90 px-3 shadow-[0_14px_34px_rgba(15,23,42,0.06)] backdrop-blur-2xl sm:h-[64px] sm:px-4 lg:h-[66px]">
       <Link
         to="/"
         className="flex min-w-0 items-center gap-2 rounded-2xl px-1.5 py-1 transition active:scale-[0.98]"
@@ -626,7 +651,7 @@ if (isStudioPublicPage || hideHeader) {
         {open ? (
           <X className="h-6 w-6" />
         ) : (
-         <LayoutGrid className=" h-6 w-6" />
+         <Menu className="h-6 w-6" />
         )}
       </button>
     </div>
@@ -651,15 +676,53 @@ if (isStudioPublicPage || hideHeader) {
 
 <aside
   className={cx(
-    "absolute right-3 top-[calc(env(safe-area-inset-top)+76px)] w-[235px] overflow-hidden rounded-[20px] border border-white/70 bg-white/95 p-2 shadow-[0_16px_40px_rgba(15,23,42,0.14)] backdrop-blur-3xl transition-all duration-250",
+    "absolute inset-x-3 top-[calc(env(safe-area-inset-top)+6px)] max-h-[calc(100dvh-20px)] overflow-hidden rounded-[28px] border border-white/70 bg-white/95 shadow-[0_24px_70px_rgba(15,23,42,0.22)] backdrop-blur-3xl transition-all duration-300 sm:left-auto sm:right-6 sm:w-[360px] sm:max-h-[calc(100dvh-80px)]",
     open
       ? "translate-y-0 scale-100 opacity-100"
-      : "-translate-y-2 scale-95 opacity-0 pointer-events-none",
+      : "-translate-y-3 scale-[0.98] opacity-0 pointer-events-none",
   )}
 >
-  <nav className="space-y-[2px]">
-{mobileItems.links.map((i) =>
-  i.to === "#logout" ? (
+  <div className="relative overflow-hidden border-b border-[#f0e7da] bg-[#fbfaf8] px-4 py-4">
+    <div className="absolute right-[-46px] top-[-70px] h-[150px] w-[150px] rounded-full bg-[#ff6200]/10 blur-3xl" />
+
+    <div className="relative flex items-center gap-3">
+      <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-2xl bg-[#111111] text-sm font-black text-white shadow-[0_12px_28px_rgba(15,23,42,0.16)]">
+        {role === "owner" && studioLogo ? (
+          <img src={studioLogo} alt="" className="h-full w-full object-cover" />
+        ) : role === "client" && clientPhoto ? (
+          <img src={clientPhoto} alt="" className="h-full w-full object-cover" />
+        ) : role === "client" ? (
+          clientInitials
+        ) : (
+          "P"
+        )}
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[15px] font-black leading-tight text-[#202020]">
+          {identityTitle}
+        </p>
+        <p className="mt-0.5 truncate text-[12px] font-bold uppercase tracking-[0.12em] text-[#ff6200]">
+          {identitySubtitle}
+        </p>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => setOpen(false)}
+        className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-white text-[#77716b] shadow-[0_8px_22px_rgba(15,23,42,0.08)] transition hover:bg-[#fff3e9] hover:text-[#ff6200] active:scale-[0.96]"
+        aria-label="Закрити меню"
+      >
+        <X className="h-5 w-5" />
+      </button>
+    </div>
+  </div>
+
+ <nav className="max-h-[calc(100dvh-100px)] space-y-1 overflow-y-auto p-2.5 pb-[max(12px,env(safe-area-inset-bottom))]">
+{mobileItems.links.map((i) => {
+  const badge = getMobileBadge(i.to);
+
+  return i.to === "#logout" ? (
     <button
       key="logout"
       type="button"
@@ -667,81 +730,75 @@ if (isStudioPublicPage || hideHeader) {
         setOpen(false);
         handleLogout();
       }}
-      className="flex h-[50px] w-full items-center gap-3 rounded-[16px] px-3 text-[#ef4444] active:bg-[#fef2f2]"
+      className="flex h-[54px] w-full items-center gap-3 rounded-[18px] px-3 text-[#ef4444] transition-all duration-200 hover:bg-[#fff1f1] active:scale-[0.99]"
     >
-      <span className="grid h-8 w-8 shrink-0 place-items-center text-[#ef4444]">
+      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[#fff1f1] text-[#ef4444]">
         {i.icon}
       </span>
 
-      <span className="flex-1 truncate text-left text-[15px] font-bold">
+      <span className="flex-1 truncate text-left text-[15px] font-black">
         {i.label}
       </span>
 
       <ChevronRight className="h-4 w-4 shrink-0 text-[#ef4444]" />
     </button>
   ) : (
-    <NavLink
-      key={i.to}
-      to={i.to}
-      end={i.to === "/"}
-      onClick={() => {
-        setOpen(false);
-      }}
-      className={({ isActive }) =>
-        cx(
-          "flex h-[50px] items-center gap-3 rounded-[16px] px-3 transition-all duration-200",
-          isActive
-            ? "bg-[#fff4ec] text-[#ff6200]"
-            : "text-[#151515] active:bg-[#f5f3f0]",
-        )
-      }
-    >
+<NavLink
+  key={i.to}
+  to={i.to}
+  end={i.to === "/" || i.to === "/dashboard"}
+  onClick={() => {
+    setOpen(false);
+  }}
+  className={({ isActive }) =>
+    cx(
+      "group flex h-[54px] items-center gap-3 rounded-[18px] px-3 transition-all duration-200 active:scale-[0.99]",
+      isActive
+        ? "bg-[#fff4ec] text-[#ff6200] shadow-[inset_0_0_0_1px_rgba(255,98,0,0.10)]"
+        : "text-[#151515] hover:bg-[#fbfaf8]",
+    )
+  }
+>
       {({ isActive }) => (
         <>
           <span
             className={cx(
-              "grid h-8 w-8 shrink-0 place-items-center",
-              isActive ? "text-[#ff6200]" : "text-[#93919d]",
+              "grid h-10 w-10 shrink-0 place-items-center rounded-2xl transition-all duration-200",
+              isActive
+                ? "bg-white text-[#ff6200] shadow-[0_8px_22px_rgba(255,98,0,0.12)]"
+                : "bg-[#f7f5f1] text-[#93919d] group-hover:text-[#ff6200]",
             )}
           >
             {i.icon}
           </span>
 
-          <span className="flex-1 truncate text-[15px] font-bold">
+          <span className="flex-1 truncate text-[15px] font-black">
             {i.label}
           </span>
 
-          {!isActive && (
-            <ChevronRight className="h-4 w-4 shrink-0 text-[#b0afb7]" />
+          {badge ? (
+            <span className="grid h-6 min-w-6 place-items-center rounded-full bg-[#ff6200] px-1.5 text-[10px] font-black text-white">
+              {badge}
+            </span>
+          ) : (
+            <ChevronRight
+              className={cx(
+                "h-4 w-4 shrink-0 transition-colors",
+                isActive ? "text-[#ff6200]" : "text-[#b0afb7]",
+              )}
+            />
           )}
         </>
       )}
     </NavLink>
-  ),
-)}
+  );
+})}
   </nav>
 </aside>
         </div>
       )}
 
-      {/* {showClientBottomBar && (
-        <div className="fixed inset-x-0 bottom-0 z-[80] sm:hidden">
-          <div className="mx-auto max-w-6xl px-2 pb-[calc(env(safe-area-inset-bottom)+6px)]">
-            <div className="overflow-hidden rounded-[26px] border border-white/40 bg-white/80 backdrop-blur-2xl shadow-[0_-20px_50px_rgba(0,0,0,0.18)]">
-              <div className="grid grid-cols-4 gap-1 px-1.5 py-1">
-                {mobileItems.links.map((item) => (
-                  <MobileBottomLink
-                    key={item.to}
-                    to={item.to}
-                    label={item.label}
-                    icon={item.icon}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )} */}
+     
     </>
   );
 }
