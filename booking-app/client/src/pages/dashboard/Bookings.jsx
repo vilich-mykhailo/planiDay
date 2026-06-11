@@ -137,17 +137,13 @@ function getBookingDateTime(b) {
 }
 
 function getStatusUi(status, isArchived = false, canceledBy = null) {
-  const base = "border border-[#eadbc9] bg-white shadow-sm";
-
   if (isArchived) {
     return {
-      text: "Завершено",
-      icon: CalendarCheck,
-      badge: `${base} text-[#64748b]`,
-      button:
-        "bg-[var(--color-archived)] text-white hover:bg-[var(--color-archived-dark)]",
-      side: "border-[var(--color-archived-light)]",
-      time: "text-[var(--color-archived)]",
+      text: "Сеанс завершено",
+      icon: CheckCheck,
+      badge: "badge-theme-archived",
+      side: "border-[var(--color-caramel)]",
+      time: "text-[var(--color-archived-dark)]",
     };
   }
 
@@ -155,37 +151,28 @@ function getStatusUi(status, isArchived = false, canceledBy = null) {
     return {
       text: "Підтверджено",
       icon: CheckCheck,
-      badge: `${base} text-[#16a34a]`,
-      button:
-        "bg-[var(--color-confirmed)] text-white hover:bg-[var(--color-confirmed-dark)]",
-      side: "border-[var(--color-confirmed-light)]",
-      time: "text-[var(--color-confirmed)]",
+      badge: "badge-theme-success",
+      side: "border-[var(--color-buttom-ok)]",
+      time: "text-[var(--color-confirmed-dark)]",
     };
   }
 
   if (status === "canceled") {
-    const canceledText =
-      canceledBy === "client" ? "Скасовано клієнтом" : "Скасовано вами";
-
     return {
-      text: canceledText,
+      text: canceledBy === "client" ? "Скасовано клієнтом" : "Скасовано вами",
       icon: XCircle,
-      badge: `${base} text-[#dc2626]`,
-      button:
-        "bg-[var(--color-canceled)] text-white hover:bg-[var(--color-canceled-dark)]",
-      side: "border-[var(--color-canceled-light)]",
-      time: "text-[var(--color-canceled)]",
+      badge: "badge-theme-danger",
+      side: "border-[var(--color-danger)]",
+      time: "text-[var(--color-canceled-dark)]",
     };
   }
 
   return {
-    text: "Очікує підтвердження",
+    text: "Очікує ваше підтвердження",
     icon: Clock,
-    badge: `${base} text-[#ff5a00]`,
-    button:
-      "bg-[var(--color-pending)] text-white hover:bg-[var(--color-pending-dark)]",
-    side: "border-[var(--color-pending-light)]",
-    time: "text-[var(--color-pending)]",
+    badge: "badge-theme-warning",
+    side: "border-[var(--color-dot-wait)]",
+    time: "text-[#ffb020]",
   };
 }
 
@@ -572,6 +559,274 @@ function getOwnerBookingStatus(booking) {
   if (raw === "completed" || raw === "COMPLETED") return "completed";
 
   return "new";
+}
+
+function AppointmentCard({ item, nowTs, onOpen }) {
+  const key = item.date ? String(item.date) : "";
+  const status = getOwnerBookingStatus(item);
+
+  const clientName = item.clientName || item.client?.name || "Клієнт";
+  const service = item.serviceName || item.service?.name || "Послуга";
+  const masterName =
+    item.masterName || item.master?.name || item.staffName || item.employeeName || "Майстер";
+
+  const clientPhoto = toPublicUrl(
+    item.clientPhotoUrl ||
+      item.clientPhoto ||
+      item.client?.photoUrl ||
+      item.client?.photo ||
+      item.client?.avatar ||
+      "",
+  );
+
+  const masterPhoto = toPublicUrl(
+    item.masterPhotoUrl ||
+      item.masterPhoto ||
+      item.master?.photoUrl ||
+      item.master?.photo ||
+      item.master?.avatar ||
+      "",
+  );
+
+  const isCanceled = status === "canceled";
+  const isConfirmed = status === "confirmed";
+  const dt = getBookingDateTime(item);
+  const isArchived = dt ? dt.getTime() < nowTs : false;
+
+  const statusKey = isArchived
+    ? "completed"
+    : isConfirmed
+      ? "confirmed"
+      : isCanceled
+        ? "canceled"
+        : "new";
+
+const statusBadge =
+  {
+    canceled: {
+      label:
+        item.canceledBy === "client"
+          ? "Скасовано клієнтом"
+          : "Скасовано вами",
+      className:
+        "border-[var(--color-canceled-light)] text-[var(--color-canceled-dark)]",
+      icon: XCircle,
+    },
+
+    confirmed: {
+      label: "Підтверджено",
+      className:
+        "border-[var(--color-confirmed-light)]  text-[var(--color-confirmed-dark)]",
+      icon: CheckCheck,
+    },
+
+    completed: {
+      label: "Завершено",
+      className:
+        "border-[var(--color-archived-light)] text-[var(--color-archived-dark)]",
+      icon: CheckCheck,
+    },
+
+    new: {
+      label: "Очікує підтвердження",
+      className:
+        "border-[var(--color-pending-light)]  text-[#ffb020]",
+      icon: Clock,
+    },
+  }[statusKey] || {
+    label: "Очікує підтвердження",
+    className:
+      "border-[var(--color-pending-light)]  text-[#ffb020]",
+    icon: Clock,
+  };
+
+  const StatusIcon = statusBadge.icon;
+
+  const date = key ? new Date(`${key}T00:00:00`) : null;
+
+  const dayLabel =
+    date && !Number.isNaN(date.getTime())
+      ? String(date.getDate()).padStart(2, "0")
+      : "—";
+
+  const monthLabel =
+    date && !Number.isNaN(date.getTime())
+      ? date.toLocaleDateString("uk-UA", { month: "short" }).replace(".", "")
+      : "";
+
+  const timeLabel = parseTimeToHHMM(item.time) || item.time || "—";
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => onOpen?.(item.id)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onOpen?.(item.id);
+        }
+      }}
+      className={cn(
+        "group cursor-pointer mt-1 overflow-hidden rounded-[24px] border border-[#eadfce] bg-white transition-all duration-200",
+        "hover:-translate-y-0.5 hover:border-[#ffd6bd] hover:bg-[#fff7f0]",
+        "active:scale-[0.99]",
+        statusKey === "completed" && "opacity-85",
+      )}
+    >
+      <div className="grid min-h-[108px] grid-cols-[92px_minmax(0,1fr)_132px_96px] items-center gap-3 px-4 py-3 max-[639px]:min-h-0 max-[639px]:grid-cols-[1fr_82px] max-[639px]:gap-3 max-[639px]:px-3 max-[639px]:py-3">
+        <div className="contents max-[639px]:block max-[639px]:min-w-0">
+          <div className="mb-2 hidden justify-center max-[639px]:flex">
+            <div
+              className={cn(
+                "inline-flex items-center justify-center gap-1.5 rounded-full border px-3 py-1 text-center text-[10px] font-black shadow-sm",
+                statusBadge.className,
+              )}
+            >
+              <StatusIcon className="h-3.5 w-3.5" />
+              {statusBadge.label}
+            </div>
+          </div>
+
+          <div className="contents max-[639px]:flex max-[639px]:items-center max-[639px]:gap-3">
+            <div className="grid h-[70px] w-[70px] shrink-0 place-items-center overflow-hidden rounded-full border border-[#eadfce] bg-white p-1 shadow-[0_8px_24px_rgba(15,23,42,0.06)] md:ml-2 lg:ml-3 max-[639px]:h-[64px] max-[639px]:w-[64px]">
+              {clientPhoto ? (
+                <img
+                  src={clientPhoto}
+                  alt={clientName}
+                  className="h-full w-full rounded-full object-cover transition duration-500 group-hover:scale-105"
+                />
+              ) : (
+                <div className="grid h-full w-full place-items-center rounded-full bg-[#fff1e8] text-[#ff6200]">
+                  <UserRound className="h-9 w-9 max-[639px]:h-6 max-[639px]:w-6" />
+                </div>
+              )}
+            </div>
+
+            <div className="min-w-0">
+              <h2 className="line-clamp-1 text-[16px] font-black leading-tight tracking-[-0.04em] text-[#202020] max-[639px]:text-[13px] lg:text-[18px]">
+                {clientName}
+              </h2>
+
+              <div className="mt-2 flex items-center gap-1.5 text-[12px] font-semibold text-[#77716b] max-[767px]:mt-1 max-[767px]:text-[10px] lg:text-[13px]">
+                <ClipboardPen className="h-4 w-4 shrink-0 text-[#77716b] max-[767px]:h-3 max-[767px]:w-3" />
+                <span className="line-clamp-2">{service}</span>
+              </div>
+
+              <div className="mt-3 flex items-center gap-2 text-[12px] font-semibold text-[#77716b] max-[767px]:mt-1.5 max-[767px]:gap-1.5 max-[767px]:text-[10px] lg:text-[13px]">
+                <div className="h-7 w-7 shrink-0 overflow-hidden rounded-full border border-[#eadfce] bg-white max-[767px]:h-5 max-[767px]:w-5">
+                  {masterPhoto ? (
+                    <img
+                      src={masterPhoto}
+                      alt={masterName}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-[#fff1e8] text-[11px] font-black text-[#ff6200] max-[767px]:text-[8px]">
+                      {masterName?.[0] || "М"}
+                    </div>
+                  )}
+                </div>
+
+                <span className="truncate">Майстер: {masterName}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div
+          className={cn(
+            "hidden h-full items-center justify-center border-l pl-3 max-[639px]:flex",
+            statusKey === "confirmed"
+              ? "border-[#bbf7d0]"
+              : statusKey === "new"
+                ? "border-[#fed7aa]"
+                : statusKey === "canceled"
+                  ? "border-[#fecaca]"
+                  : "border-[#d1d5db]",
+          )}
+        >
+          <div className="flex h-[74px] w-[58px] flex-col items-center justify-center">
+            <p className="text-center text-[11px] font-bold capitalize text-[#aaa19a]">
+              {monthLabel}
+            </p>
+
+            <p
+              className={cn(
+                "text-[28px] font-[300] leading-none tracking-[-0.05em]",
+                statusKey === "confirmed"
+                  ? "text-[#41a85f]"
+                  : statusKey === "new"
+                    ? "text-[#ff6200]"
+                    : statusKey === "canceled"
+                      ? "text-[#ef4444]"
+                      : "text-[#6b7280]",
+              )}
+            >
+              {dayLabel}
+            </p>
+
+            <p className="text-[12px] font-semibold tracking-[0.08em] text-[#5f5a55]">
+              {timeLabel}
+            </p>
+          </div>
+        </div>
+
+        <div className="hidden min-w-0 flex-col items-center justify-center max-[639px]:hidden sm:flex sm:-ml-2">
+          <div
+            className={cn(
+              "mb-2 inline-flex w-fit items-center justify-center gap-1.5 rounded-full border px-3 py-1.5 text-[10px] font-black shadow-sm",
+              statusBadge.className,
+            )}
+          >
+            <StatusIcon className="h-3.5 w-3.5" />
+
+            <span className="text-center leading-[1.05]">
+              {statusBadge.label}
+            </span>
+          </div>
+        </div>
+
+        <div
+          className={cn(
+            "flex items-center mr-2 justify-center border-l pl-5 max-[639px]:hidden",
+            statusKey === "confirmed"
+              ? "border-[#bbf7d0]"
+              : statusKey === "new"
+                ? "border-[#fed7aa]"
+                : statusKey === "canceled"
+                  ? "border-[#fecaca]"
+                  : "border-[#d1d5db]",
+          )}
+        >
+          <div className="flex h-[82px] w-[78px] flex-col items-center justify-center">
+            <span className="text-[13px] font-bold capitalize text-[#aaa19a]">
+              {monthLabel}
+            </span>
+
+            <span
+              className={cn(
+                "mt-0.5 text-[36px] font-[300] leading-none tracking-[-0.05em]",
+                statusKey === "confirmed"
+                  ? "text-[#41a85f]"
+                  : statusKey === "new"
+                    ? "text-[#ff6200]"
+                    : statusKey === "canceled"
+                      ? "text-[#ef4444]"
+                      : "text-[#6b7280]",
+              )}
+            >
+              {dayLabel}
+            </span>
+
+            <span className="mt-1 text-[15px] font-black text-[#77716b]">
+              {timeLabel}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function Bookings() {
@@ -1183,259 +1438,14 @@ export default function Bookings() {
 
                     {!isCollapsed && (
                       <div className="space-y-3 p-3 sm:p-4">
-                        {items.map((b) => {
-                          const status = getOwnerBookingStatus(b);
-
-                          const clientName =
-                            b.clientName || b.client?.name || "Клієнт";
-
-                          const service =
-                            b.serviceName || b.service?.name || "Послуга";
-
-                          const masterName =
-                            b.masterName || b.master?.name || "Майстер";
-
-                          const clientPhoto = toPublicUrl(
-                            b.clientPhoto ||
-                              b.client?.photoUrl ||
-                              b.client?.avatar ||
-                              "",
-                          );
-
-                          const isCanceled = b.status === "canceled";
-                          const isConfirmed = b.status === "confirmed";
-
-                          const dt = getBookingDateTime(b);
-                          const isArchived = dt ? dt.getTime() < nowTs : false;
-                          const statusKey = isCanceled
-                            ? "canceled"
-                            : isConfirmed
-                              ? "confirmed"
-                              : "new";
-
-                          const statusUi = getStatusUi(
-                            statusKey,
-                            isArchived,
-                            b.canceledBy,
-                          );
-
-                          const dtObj = getBookingDateTime(b);
-                          const monthLabel = dtObj
-                            ? dtObj.toLocaleDateString("uk-UA", {
-                                month: "long",
-                              })
-                            : "";
-                          const dayLabel = dtObj
-                            ? dtObj.toLocaleDateString("uk-UA", {
-                                day: "numeric",
-                              })
-                            : "";
-                          const timeLabel = b.time || "";
-                          const statusBadge = {
-                            canceled: {
-                              label:
-                                b.canceledBy === "client"
-                                  ? "Скасовано клієнтом"
-                                  : "Скасовано",
-                              className:
-                                "border-[#fecaca] bg-[#fff5f5] text-[#ef4444]",
-                              icon: XCircle,
-                            },
-                            confirmed: {
-                              label: "Підтверджено",
-                              className:
-                                "border-[#bbf7d0] bg-[#f0fdf4] text-[#22c55e]",
-                              icon: Check,
-                            },
-                            completed: {
-                              label: "Завершено",
-                              className:
-                                "border-[#d1d5db] bg-[#f9fafb] text-[#6b7280]",
-                              icon: CheckCheck,
-                            },
-                            new: {
-                              label: "Очікує підтвердження",
-                              className:
-                                "border-[#fed7aa] bg-[#fff7ed] text-[#ff6200]",
-                              icon: Clock3,
-                            },
-                          }[status] || {
-                            label: "Очікує підтвердження",
-                            className:
-                              "border-[#fed7aa] bg-[#fff7ed] text-[#ff6200]",
-                            icon: Clock3,
-                          };
-
-                          const StatusIcon = statusBadge.icon;
-
-                          return (
-                            <div
-                              key={b.id}
-                              role="button"
-                              tabIndex={0}
-                              onClick={() => setDetailsId(b.id)}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter" || e.key === " ") {
-                                  e.preventDefault();
-                                  setDetailsId(b.id);
-                                }
-                              }}
-                              className={cn(
-                                "group cursor-pointer overflow-hidden rounded-[24px] border border-[#eadfce] bg-white transition-all duration-200",
-                                "hover:-translate-y-0.5 hover:border-[#ffd6bd] hover:bg-[#fff7f0] hover:shadow-[0_18px_44px_rgba(255,90,0,0.10)]",
-                                "active:scale-[0.99]",
-                                status === "completed" && "opacity-85",
-                              )}
-                            >
-                              <div className="grid min-h-[108px] grid-cols-[92px_minmax(0,1fr)_132px_96px] items-center gap-3 px-4 py-3 max-[639px]:min-h-0 max-[639px]:grid-cols-[1fr_82px] max-[639px]:gap-3 max-[639px]:px-3 max-[639px]:py-3">
-                                <div className="contents max-[639px]:block max-[639px]:min-w-0">
-                                  <div className="mb-2 hidden justify-center max-[639px]:flex">
-                                    <div
-                                      className={cn(
-                                        "inline-flex items-center justify-center gap-1.5 rounded-full border px-3 py-1 text-center text-[10px] font-black",
-                                        statusBadge.className,
-                                      )}
-                                    >
-                                      <StatusIcon className="h-3.5 w-3.5" />
-                                      {statusBadge.label}
-                                    </div>
-                                  </div>
-
-                                  <div className="contents max-[639px]:flex max-[639px]:items-center max-[639px]:gap-3">
-                                    <div className="grid h-[70px] w-[70px] shrink-0 place-items-center overflow-hidden rounded-full border border-[#eadfce] bg-white p-1 shadow-[0_8px_24px_rgba(15,23,42,0.06)] md:ml-2 lg:ml-3 max-[639px]:h-[64px] max-[639px]:w-[64px]">
-                                      {clientPhoto ? (
-                                        <img
-                                          src={clientPhoto}
-                                          alt={clientName}
-                                          className="h-full w-full rounded-full object-cover transition duration-500 group-hover:scale-105"
-                                        />
-                                      ) : (
-                                        <div className="grid h-full w-full place-items-center rounded-full bg-[#fff1e8] text-[#ff6200]">
-                                          <UserRound className="h-9 w-9 max-[639px]:h-6 max-[639px]:w-6" />
-                                        </div>
-                                      )}
-                                    </div>
-
-                                    <div className="min-w-0">
-                                      <h2 className="line-clamp-1 text-[16px] font-black leading-tight tracking-[-0.04em] text-[#202020] max-[639px]:text-[13px] lg:text-[18px]">
-                                        {clientName}
-                                      </h2>
-
-
-
-                                      <div className="mt-2 flex items-center gap-1.5 text-[12px] font-semibold text-[#77716b] max-[767px]:mt-1 max-[767px]:text-[10px] lg:text-[13px]">
-                                        <ClipboardPen className="h-4 w-4 shrink-0 text-[#77716b] max-[767px]:h-3 max-[767px]:w-3" />
-                                        <span className="line-clamp-2">
-                                          {service}
-                                        </span>
-                                      </div>
-
-                                      <div className="mt-3 flex items-center gap-2 text-[12px] font-semibold text-[#77716b] max-[767px]:mt-1.5 max-[767px]:gap-1.5 max-[767px]:text-[10px] lg:text-[13px]">
-                                        <div className="grid h-7 w-7 place-items-center rounded-full bg-[#fff1e8] text-[11px] font-black text-[#ff6200] max-[767px]:h-5 max-[767px]:w-5 max-[767px]:text-[8px]">
-                                          {masterName?.[0] || "М"}
-                                        </div>
-
-                                        <span className="truncate">
-                                          Майстер: {masterName}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                <div
-                                  className={cn(
-                                    "hidden h-full items-center justify-center border-l pl-3 max-[639px]:flex",
-                                    status === "confirmed"
-                                      ? "border-[#bbf7d0]"
-                                      : status === "new"
-                                        ? "border-[#fed7aa]"
-                                        : status === "canceled"
-                                          ? "border-[#fecaca]"
-                                          : "border-[#d1d5db]",
-                                  )}
-                                >
-                                  <div className="flex h-[74px] w-[58px] flex-col items-center justify-center">
-                                    <p className="text-center text-[11px] font-bold capitalize text-[#aaa19a]">
-                                      {monthLabel}
-                                    </p>
-
-                                    <p
-                                      className={cn(
-                                        "text-[28px] font-[300] leading-none tracking-[-0.05em]",
-                                        status === "confirmed"
-                                          ? "text-[#41a85f]"
-                                          : status === "new"
-                                            ? "text-[#ff6200]"
-                                            : status === "canceled"
-                                              ? "text-[#ef4444]"
-                                              : "text-[#6b7280]",
-                                      )}
-                                    >
-                                      {dayLabel}
-                                    </p>
-
-                                    <p className="text-[12px] font-semibold tracking-[0.08em] text-[#5f5a55]">
-                                      {timeLabel}
-                                    </p>
-                                  </div>
-                                </div>
-
-                                <div className="flex flex-col items-center justify-center gap-3 max-[639px]:hidden">
-                                  <div
-                                    className={cn(
-                                      "mr-10 inline-flex items-center justify-center gap-2 rounded-full border px-3 py-2 text-center text-[11px] font-black",
-                                      statusBadge.className,
-                                    )}
-                                  >
-                                    <StatusIcon className="h-4 w-4" />
-                                    <span className="whitespace-nowrap">
-                                      {statusBadge.label}
-                                    </span>
-                                  </div>
-                                </div>
-
-                                <div
-                                  className={cn(
-                                    "flex items-center justify-center border-l pl-5 max-[639px]:hidden",
-                                    status === "confirmed"
-                                      ? "border-[#bbf7d0]"
-                                      : status === "new"
-                                        ? "border-[#fed7aa]"
-                                        : status === "canceled"
-                                          ? "border-[#fecaca]"
-                                          : "border-[#d1d5db]",
-                                  )}
-                                >
-                                  <div className="flex h-[82px] w-[78px] flex-col items-center justify-center">
-                                    <span className="text-[13px] font-bold capitalize text-[#aaa19a]">
-                                      {monthLabel}
-                                    </span>
-
-                                    <span
-                                      className={cn(
-                                        "mt-0.5 text-[36px] font-[300] leading-none tracking-[-0.05em]",
-                                        status === "confirmed"
-                                          ? "text-[#41a85f]"
-                                          : status === "new"
-                                            ? "text-[#ff6200]"
-                                            : status === "canceled"
-                                              ? "text-[#ef4444]"
-                                              : "text-[#6b7280]",
-                                      )}
-                                    >
-                                      {dayLabel}
-                                    </span>
-
-                                    <span className="mt-1 text-[15px] font-black text-[#77716b]">
-                                      {timeLabel}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
+{items.map((b) => (
+  <AppointmentCard
+    key={b.id}
+    item={b}
+    nowTs={nowTs}
+    onOpen={(id) => setDetailsId(id)}
+  />
+))}
                       </div>
                     )}
                   </section>
@@ -1926,7 +1936,23 @@ export default function Bookings() {
               setCopiedPhone(false);
               setShowDetailsScrollHint(true);
             };
+const clientPhoto = toPublicUrl(
+  selectedBooking.clientPhotoUrl ||
+    selectedBooking.clientPhoto ||
+    selectedBooking.client?.photoUrl ||
+    selectedBooking.client?.photo ||
+    selectedBooking.client?.avatar ||
+    "",
+);
 
+const masterPhoto = toPublicUrl(
+  selectedBooking.masterPhotoUrl ||
+    selectedBooking.masterPhoto ||
+    selectedBooking.master?.photoUrl ||
+    selectedBooking.master?.photo ||
+    selectedBooking.master?.avatar ||
+    "",
+);
             return (
               <div
                 className="fixed inset-0 z-[220] flex items-end justify-center bg-[#1b1b1b]/35 p-0 backdrop-blur-[10px] sm:items-center sm:p-5"
@@ -1952,6 +1978,7 @@ export default function Bookings() {
                       statusMeta.top,
                     )}
                   >
+                    
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.58),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.20),rgba(255,255,255,0))]" />
 
                     <div className="relative flex items-center justify-between">
@@ -1987,39 +2014,49 @@ export default function Bookings() {
   <p className="mt-2 flex flex-wrap items-center justify-center gap-2 text-sm font-bold text-[#77716b]">
     <CalendarDays className="h-4 w-4 text-[#ff6200]" />
     <span>{dateLabel}</span>
-    <span className="text-[#d6c7b8]">/</span>
-    <span>{time}</span>
   </p>
 </div>
 
-<div className="relative mt-5 grid grid-cols-2 gap-2">
-  <div className="flex min-h-[76px] flex-col items-center justify-center rounded-[22px] border border-white/70 bg-white/88 p-3 text-center shadow-sm backdrop-blur">
-    <Banknote
-      className={cn("h-4 w-4", statusMeta.iconColor)}
-    />
+<div className="relative mt-4 grid grid-cols-3 gap-2">
+  <div className="flex min-h-[90px] flex-col items-center justify-center rounded-[22px] border border-white/70 bg-white/88 p-3 text-center shadow-sm backdrop-blur">
+    <Clock3 className={cn("h-4 w-4", statusMeta.iconColor)} />
+
+    <p className="mt-2 text-[11px] font-black uppercase tracking-[0.12em] text-[#aaa19a]">
+      Час запису
+    </p>
+
+    <p className="mt-1 text-sm font-black text-[#202020]">
+      {time}
+    </p>
+  </div>
+
+  <div className="flex min-h-[90px] flex-col items-center justify-center rounded-[22px] border border-white/70 bg-white/88 p-3 text-center shadow-sm backdrop-blur">
+    <Banknote className={cn("h-4 w-4", statusMeta.iconColor)} />
+
     <p className="mt-2 text-[11px] font-black uppercase tracking-[0.12em] text-[#aaa19a]">
       Сума
     </p>
-    <p className="text-sm font-black text-[#202020]">
+
+    <p className="mt-1 text-sm font-black text-[#202020]">
       {price != null ? `${price} грн` : "—"}
     </p>
   </div>
 
-  <div className="flex min-h-[76px] flex-col items-center justify-center rounded-[22px] border border-white/70 bg-white/88 p-3 text-center shadow-sm backdrop-blur">
-    <Timer
-      className={cn("h-4 w-4", statusMeta.iconColor)}
-    />
+  <div className="flex min-h-[90px] flex-col items-center justify-center rounded-[22px] border border-white/70 bg-white/88 p-3 text-center shadow-sm backdrop-blur">
+    <Timer className={cn("h-4 w-4", statusMeta.iconColor)} />
+
     <p className="mt-2 text-[11px] font-black uppercase tracking-[0.12em] text-[#aaa19a]">
       Тривалість
     </p>
-    <p className="text-sm font-black text-[#202020]">
+
+    <p className="mt-1 text-sm font-black text-[#202020]">
       {duration != null ? `${duration} хв` : "—"}
     </p>
   </div>
 </div>
                   </div>
 
-                  <div className="relative flex min-h-0 flex-1 flex-col px-4 pt-4 sm:px-6">
+                  <div className="relative bg-white flex min-h-0 flex-1 flex-col px-4 pt-4 sm:px-6">
                     <div
                       className="calendar-day-scroll min-h-0 flex-1 overflow-y-auto pb-28 sm:pb-24"
                       onScroll={(e) => {
@@ -2036,16 +2073,16 @@ export default function Bookings() {
                       <div className="grid gap-3 sm:grid-cols-2">
                         <div className="rounded-[28px] border border-[#eadfce] bg-white p-4  sm:col-span-2">
                           <div className="flex items-center gap-4">
-<div className="h-[58px] w-[58px] shrink-0 overflow-hidden rounded-full border border-[#eadfce] bg-white p-1">
-  {selectedBooking.clientPhoto ? (
+<div className="h-[72px] w-[72px] shrink-0 overflow-hidden rounded-full border border-[#eadfce] bg-white p-1">
+  {clientPhoto ? (
     <img
-      src={toPublicUrl(selectedBooking.clientPhoto)}
+      src={clientPhoto}
       alt={clientName}
       className="h-full w-full rounded-full object-cover"
     />
   ) : (
     <div className="flex h-full w-full items-center justify-center rounded-full bg-[#fff1e8] text-[#ff6200]">
-      <CircleUser className="h-6 w-6" />
+      <UserRound className="h-5 w-5" />
     </div>
   )}
 </div>
@@ -2054,7 +2091,7 @@ export default function Bookings() {
                               <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#aaa19a]">
                                 Клієнт
                               </p>
-                              <p className="mt-1 truncate text-[20px] font-black text-[#202020]">
+                              <p className="truncate text-[20px] font-black text-[#202020]">
                                 {clientName}
                               </p>
                               <p className="mt-1 truncate text-sm font-bold text-[#77716b]">
@@ -2071,7 +2108,7 @@ export default function Bookings() {
                                   title="Скопіювати номер"
                                 >
                                   {copiedPhone ? (
-                                    <CopyCheck className="h-4 w-4 text-emerald-600" />
+                                    <CheckCheck className="h-4 w-4 text-emerald-600" />
                                   ) : (
                                     <Copy className="h-4 w-4" />
                                   )}
@@ -2090,19 +2127,27 @@ export default function Bookings() {
                         </div>
 
 <div className="rounded-[24px] border border-[#eadfce] bg-white p-3 sm:col-span-2">
-  <div className="flex items-center gap-3">
-    <div className="h-[52px] w-[52px] shrink-0 overflow-hidden rounded-full border border-[#eadfce] bg-white p-1">
-      <div className="flex h-full w-full items-center justify-center rounded-full bg-[#fff1e8] text-[#ff6200]">
-        <UserRound className="h-5 w-5" />
-      </div>
+  <div className="flex ml-2 items-center gap-3">
+<div className="h-[62px] w-[62px] shrink-0 overflow-hidden rounded-full border border-[#eadfce] bg-white p-1">
+  {masterPhoto ? (
+    <img
+      src={masterPhoto}
+      alt={masterName}
+      className="h-full w-full rounded-full object-cover"
+    />
+  ) : (
+    <div className="flex h-full w-full items-center justify-center rounded-full bg-[#fff1e8] text-[#ff6200]">
+      <UserRound className="h-5 w-5" />
     </div>
+  )}
+</div>
 
-    <div className="min-w-0 flex-1">
-      <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#aaa19a]">
+    <div className="min-w-0 ml-2 flex-1">
+      <p className="text-[9px] font-black uppercase tracking-[0.12em] text-[#aaa19a]">
         Майстер
       </p>
 
-      <p className="mt-0.5 truncate text-[17px] font-black text-[#202020]">
+      <p className="mt-0.5 truncate text-[15px] font-black text-[#202020]">
         {masterName}
       </p>
 
@@ -2116,7 +2161,7 @@ export default function Bookings() {
                     </div>
 
                     {!isArchived && !isCanceled && (
-                      <div className="absolute inset-x-0 bottom-0 border-t border-[#eadfce] bg-white/92 px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 backdrop-blur sm:px-6 sm:pb-5">
+                      <div className="absolute inset-x-0 bottom-0 border-[#eadfce] bg-white/92 px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 backdrop-blur sm:px-6 sm:pb-5">
                         <div className="grid gap-3 sm:grid-cols-2">
                           {!isConfirmed && !isCanceled && (
                             <button
@@ -2125,7 +2170,7 @@ export default function Bookings() {
                                 await confirmBooking(selectedBooking.id);
                                 closeDetails();
                               }}
-                              className="inline-flex h-12 items-center justify-center gap-2 rounded-[22px] bg-[#22c55e] text-sm font-black text-white shadow-[0_14px_28px_rgba(34,197,94,0.22)] transition-all duration-200 hover:-translate-y-[1px] hover:bg-[#16a34a] active:scale-[0.98]"
+                              className="inline-flex h-12 items-center justify-center gap-2 rounded-[22px] bg-[var(--color-primary-buttom)] text-sm font-black text-white transition-all duration-200 hover:bg-[#4a4a4a] active:scale-[0.98]"
                             >
                               <CheckCheck className="h-4 w-4" />
                               Підтвердити

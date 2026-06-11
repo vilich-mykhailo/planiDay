@@ -2251,8 +2251,8 @@ const activeExceptionsCount =
 className={cn(
   "h-9 rounded-xl border px-2 text-[11px] font-black transition-all duration-300",
   bookingsFilter === value
-    ? "border-[#ff6200] bg-[#ff6200] text-white shadow-[0_12px_28px_rgba(255,98,0,0.22)]"
-    : "border-[#eadbc9] bg-white text-[#77716b] hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] hover:!text-[#202020] hover:!shadow-[0_12px_28px_rgba(255,98,0,0.12)] active:scale-[0.98]",
+    ? "border-[#ff6200] bg-[#ff6200] text-white "
+    : "border-[#eadbc9] bg-white text-[#77716b] hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] hover:!text-[#202020] active:scale-[0.98]",
 )}
     >
       {label}
@@ -2282,7 +2282,7 @@ filteredMasterBookings.map((booking) => (
     hover:-translate-y-0.5
     hover:border-[#ffd6bd]
     hover:bg-[#fff7f0]
-    hover:shadow-[0_18px_44px_rgba(255,90,0,0.10)]
+    
   "
 >
     <div className="flex items-start justify-between gap-3">

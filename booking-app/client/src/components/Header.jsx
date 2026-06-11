@@ -116,7 +116,7 @@ function ButtonLink({
 }) {
   const styles =
     variant === "primary"
-      ? "bg-[var(--color-ink)] text-white shadow-[var(--shadow-button)] hover:bg-[var(--color-ink-soft)]"
+      ? "bg-[var(--color-ink)] text-white  hover:bg-[var(--color-ink-soft)]"
       : "border border-[var(--color-cream)] bg-white text-[var(--color-ink)] hover:bg-[var(--color-cream)]";
 
   const disabledStyles = "pointer-events-none cursor-not-allowed opacity-50";
@@ -446,7 +446,7 @@ useEffect(() => {
   <ButtonLink
     to="/dashboard/studio"
     icon={<Settings2 className="h-4 w-4" />}
-   className="bg-[var(--color-sidebar-accent)] text-[var(--color-white)] shadow-[0_12px_26px_rgba(24,24,27,0.22)] hover:bg-[var(--color-sidebar-accent-hover)]"
+   className="bg-[var(--color-sidebar-accent)] text-[var(--color-white)] hover:bg-[var(--color-sidebar-accent-hover)]"
   >
     Керувати студією
   </ButtonLink>

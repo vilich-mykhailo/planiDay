@@ -293,9 +293,9 @@ sidebarCollapsed
 >
   {sidebarCollapsed && (
     <img
-      src="/PlaniDay_logo.png"
+      src="/IMG_830741.png"
       alt="PlaniDay"
-      className="mb-3 h-[74px] w-[74px] object-contain transition-all duration-300"
+      className="mb-3 h-[44px] w-[74px] object-contain transition-all duration-300"
     />
   )}
 
@@ -312,11 +312,12 @@ sidebarCollapsed
     onClick={() => navigate("/dashboard")}
     className="flex flex-col items-center"
   >
-    <img
-      src="/PlaniDay_logo.png"
-      alt="PlaniDay"
-      className=" h-[56px] w-auto object-contain"
-    />
+<img
+  src="/IMG_830741.png"
+  alt="PlaniDay"
+  className="h-[40px] w-auto shrink-0 object-contain select-none"
+  draggable={false}
+/>
 
     <span className="whitespace-nowrap text-[25px] font-black leading-tight tracking-[-0.06em] text-[#111827]">
       Plani<span className="text-[#ff4f12]">Day</span>
