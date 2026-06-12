@@ -309,10 +309,19 @@ router.post("/studio/:studioId", requireAuth, requireClient, async (req, res) =>
       return res.status(400).json({ message: "Некоректний час" });
     }
 
-    const client = await prisma.clientAccount.findUnique({
-      where: { id: clientId },
-      select: { id: true, name: true, phone: true },
-    });
+const client = await prisma.clientAccount.findUnique({
+  where: { id: clientId },
+  select: {
+    id: true,
+    name: true,
+    firstName: true,
+    lastName: true,
+    phone: true,
+    email: true,
+    birthDate: true,
+    photoUrl: true,
+  },
+});
 
     if (!client) {
       return res.status(404).json({ message: "Клієнта не знайдено" });
@@ -520,24 +529,53 @@ router.post("/studio/:studioId", requireAuth, requireClient, async (req, res) =>
 
       finalMasterId = foundFreeMaster.id;
     }
+let studioClient = await prisma.studioClient.findFirst({
+  where: {
+    studioId,
+    OR: [
+      { accountId: client.id },
+      client.phone ? { phone: client.phone } : undefined,
+      client.email ? { email: client.email } : undefined,
+    ].filter(Boolean),
+  },
+});
 
-    const created = await prisma.booking.create({
-      data: {
-        studioId,
-        clientId,
-        serviceId,
-        masterId: finalMasterId,
-        startAt,
-        endAt,
-        status: "PENDING",
-      },
-      select: {
-        id: true,
-        status: true,
-        clientId: true,
-        studioId: true,
-      },
-    });
+if (!studioClient) {
+  const fallbackName = String(client.name || "").trim();
+  const fallbackParts = fallbackName.split(" ").filter(Boolean);
+
+  studioClient = await prisma.studioClient.create({
+    data: {
+      studioId,
+      accountId: client.id,
+      firstName: client.firstName || fallbackParts[0] || "Клієнт",
+      lastName: client.lastName || fallbackParts.slice(1).join(" ") || "",
+      phone: client.phone || null,
+      email: client.email || null,
+      birthDate: client.birthDate || null,
+      photoUrl: client.photoUrl || null,
+      source: "BOOKING",
+    },
+  });
+}
+const created = await prisma.booking.create({
+  data: {
+    studioId,
+    clientId,
+    studioClientId: studioClient.id,
+    serviceId,
+    masterId: finalMasterId,
+    startAt,
+    endAt,
+    status: "PENDING",
+  },
+  select: {
+    id: true,
+    status: true,
+    clientId: true,
+    studioId: true,
+  },
+});
 
     emitBookingUpdated(created);
 

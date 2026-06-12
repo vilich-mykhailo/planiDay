@@ -25,24 +25,25 @@ model ClientAccount {
   passwordHash String
 
   // базові дані
-  name  String?
-  phone String?
+  name          String?
+  phone         String?
   notifications Notification[]
   // profile (те, що у твоєму Profile.jsx)
-  firstName String?
-  lastName  String?
-  birthDate DateTime?
-  gender    String? // "male" | "female" | "other" | "unknown"
-  photoUrl  String?
+  firstName     String?
+  lastName      String?
+  birthDate     DateTime?
+  gender        String? // "male" | "female" | "other" | "unknown"
+  photoUrl      String?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
   favouriteStudios FavouriteStudio[]
-  bookings Booking[]
-  isVip   Boolean   @default(false)
-  vipSince DateTime?
-  notes ClientNote[]
-  salonStatuses ClientSalonStatus[]
+  bookings         Booking[]
+  studioClients    StudioClient[]
+  isVip            Boolean             @default(false)
+  vipSince         DateTime?
+  notes            ClientNote[]
+  salonStatuses    ClientSalonStatus[]
 }
 
 model FavouriteStudio {
@@ -70,12 +71,12 @@ enum Weekday {
 }
 
 model Studio {
-  id        String  @id @default(cuid())
-  email     String  @default("")
-  published Boolean @default(false)
-  premium   Boolean @default(false)
-  name      String  @default("")
-  notifications Notification[]
+  id                String            @id @default(cuid())
+  email             String            @default("")
+  published         Boolean           @default(false)
+  premium           Boolean           @default(false)
+  name              String            @default("")
+  notifications     Notification[]
   category          String            @default("")
   phone             String            @default("")
   description       String            @default("")
@@ -90,17 +91,18 @@ model Studio {
   logoUrl           String            @default("")
   portfolioUrls     Json              @default("[]")
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  favouritedBy FavouriteStudio[]
-  bookings Booking[]
-  clientNotes ClientNote[]
+  createdAt           DateTime                  @default(now())
+  updatedAt           DateTime                  @updatedAt
+  favouritedBy        FavouriteStudio[]
+  bookings            Booking[]
+  studioClients       StudioClient[]
+  clientNotes         ClientNote[]
   clientSalonStatuses ClientSalonStatus[]
-  slotDuration       Int                       @default(15)
-  scheduleExceptions StudioScheduleException[]
-  scheduleDays       StudioScheduleDay[]
-  ownerId            String                    @unique
-  owner              OwnerAccount              @relation(fields: [ownerId], references: [id])
+  slotDuration        Int                       @default(15)
+  scheduleExceptions  StudioScheduleException[]
+  scheduleDays        StudioScheduleDay[]
+  ownerId             String                    @unique
+  owner               OwnerAccount              @relation(fields: [ownerId], references: [id])
 }
 
 model StudioScheduleDay {
@@ -134,16 +136,47 @@ model StudioScheduleException {
   @@index([studioId, date])
 }
 
+model StudioClient {
+  id String @id @default(cuid())
+
+  studioId  String
+  accountId String?
+
+  firstName String
+  lastName  String
+  phone     String?
+  email     String?
+
+  birthDate DateTime?
+  photoUrl  String?
+  photoKey  String?
+
+  source StudioClientSource @default(MANUAL)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  studio  Studio         @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  account ClientAccount? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+
+  bookings Booking[]
+
+  @@index([studioId])
+  @@index([accountId])
+}
+
 model Booking {
-  id       String @id @default(cuid())
-  studioId String
-  clientId String
+  id             String  @id @default(cuid())
+  studioId       String
+  clientId       String
+  studioClientId String?
+
   canceledBy String?
 
   ownerHiddenAt DateTime?
   notifications Notification[]
-  serviceId String?
-  masterId  String?
+  serviceId     String?
+  masterId      String?
 
   startAt DateTime
   endAt   DateTime
@@ -152,13 +185,16 @@ model Booking {
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 
-  studio  Studio        @relation(fields: [studioId], references: [id], onDelete: Cascade)
-  client  ClientAccount @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  service Service?      @relation(fields: [serviceId], references: [id], onDelete: SetNull)
-  master  Master?       @relation(fields: [masterId], references: [id], onDelete: SetNull)
+  studio       Studio        @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  client       ClientAccount @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  studioClient StudioClient? @relation(fields: [studioClientId], references: [id], onDelete: SetNull)
+
+  service Service? @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  master  Master?  @relation(fields: [masterId], references: [id], onDelete: SetNull)
 
   @@index([studioId, startAt])
   @@index([clientId, startAt])
+  @@index([studioClientId, startAt])
   @@index([serviceId, startAt])
   @@index([masterId, startAt])
 }
@@ -167,6 +203,11 @@ enum BookingStatus {
   PENDING
   CONFIRMED
   CANCELED
+}
+
+enum StudioClientSource {
+  BOOKING
+  MANUAL
 }
 
 model Notification {
@@ -192,7 +233,6 @@ model Notification {
   @@index([clientId, createdAt])
   @@index([bookingId])
 }
-
 
 model ServiceCategory {
   id       String @id @default(uuid())
@@ -303,13 +343,13 @@ model ClientNote {
 }
 
 model ClientSalonStatus {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   studioId      String
   clientId      String
-  isFavorite    Boolean  @default(false)
+  isFavorite    Boolean   @default(false)
   favoriteSince DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   studio Studio        @relation(fields: [studioId], references: [id], onDelete: Cascade)
   client ClientAccount @relation(fields: [clientId], references: [id], onDelete: Cascade)

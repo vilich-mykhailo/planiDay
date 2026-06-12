@@ -338,6 +338,48 @@ if (
         });
       }
 
+      const manualClients = await prisma.studioClient.findMany({
+  where: { studioId },
+  orderBy: { createdAt: "desc" },
+});
+
+for (const client of manualClients) {
+  if (map.has(client.id)) continue;
+
+  map.set(client.id, {
+    id: client.id,
+
+    firstName: client.firstName || "",
+    lastName: client.lastName || "",
+
+    name:
+      [client.firstName, client.lastName]
+        .filter(Boolean)
+        .join(" ")
+        .trim() || "Клієнт",
+
+    phone: client.phone || null,
+    email: client.email || null,
+    birthDate: client.birthDate || null,
+
+    photoUrl: client.photoUrl || "",
+
+    registeredAt: client.createdAt,
+
+    isVip: false,
+    vipSince: null,
+
+    bookings: 0,
+    cancellations: 0,
+    noShows: 0,
+    spent: 0,
+
+    servicesCount: {},
+    mastersCount: {},
+    allBookings: [],
+  });
+}
+
       const clientIds = Array.from(map.keys());
 
       const notes = clientIds.length
@@ -528,6 +570,342 @@ const lastCompletedBooking =
       console.error(e);
       res.status(500).json({
         message: e?.message || "Load clients failed",
+      });
+    }
+  },
+);
+
+ownerRouter.post(
+  "/studio/:studioId/clients",
+  requireAuth,
+  requireOwner,
+  async (req, res) => {
+    try {
+      const ownerId = req.auth.sub;
+      const { studioId } = req.params;
+
+      const {
+        firstName,
+        lastName,
+        phone,
+        email,
+        birthDate,
+        photoUrl,
+        photoKey,
+      } = req.body;
+
+      const studio = await prisma.studio.findFirst({
+        where: {
+          id: studioId,
+          ownerId,
+        },
+        select: { id: true },
+      });
+
+      if (!studio) {
+        return res.status(404).json({
+          message: "Studio not found",
+        });
+      }
+
+      const client = await prisma.studioClient.create({
+        data: {
+          studioId,
+          firstName,
+          lastName,
+          phone: phone || null,
+          email: email || null,
+          birthDate: birthDate ? new Date(birthDate) : null,
+          photoUrl: photoUrl || null,
+          photoKey: photoKey || null,
+          source: "MANUAL",
+        },
+      });
+
+      res.status(201).json({
+        client,
+      });
+    } catch (e) {
+      console.error(e);
+
+      res.status(500).json({
+        message: e?.message || "Create client failed",
+      });
+    }
+  },
+);
+
+ownerRouter.get(
+  "/studio/:studioId/services",
+  requireAuth,
+  requireOwner,
+  async (req, res) => {
+    try {
+      const ownerId = req.auth.sub;
+      const { studioId } = req.params;
+
+      const studio = await prisma.studio.findFirst({
+        where: { id: studioId, ownerId },
+        select: { id: true },
+      });
+
+      if (!studio) {
+        return res.status(404).json({ message: "Studio not found" });
+      }
+
+      const services = await prisma.service.findMany({
+        where: { studioId },
+        orderBy: { sort: "asc" },
+        select: {
+          id: true,
+          name: true,
+          duration: true,
+          price: true,
+          allMasters: true,
+        },
+      });
+
+      res.json({ services });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({
+        message: e?.message || "Load services failed",
+      });
+    }
+  },
+);
+
+ownerRouter.get(
+  "/studio/:studioId/masters",
+  requireAuth,
+  requireOwner,
+  async (req, res) => {
+    try {
+      const ownerId = req.auth.sub;
+      const { studioId } = req.params;
+
+      const studio = await prisma.studio.findFirst({
+        where: { id: studioId, ownerId },
+        select: { id: true },
+      });
+
+      if (!studio) {
+        return res.status(404).json({ message: "Studio not found" });
+      }
+
+      const masters = await prisma.master.findMany({
+        where: { studioId },
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          name: true,
+          role: true,
+          photoUrl: true,
+        },
+      });
+
+      res.json({ masters });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({
+        message: e?.message || "Load masters failed",
+      });
+    }
+  },
+);
+
+ownerRouter.post(
+  "/studio/:studioId/manual-booking",
+  requireAuth,
+  requireOwner,
+  async (req, res) => {
+    try {
+      const ownerId = req.auth.sub;
+      const { studioId } = req.params;
+
+      const { studioClientId, serviceId, masterId, date, time } = req.body;
+
+      if (!studioClientId || !serviceId || !masterId || !date || !time) {
+        return res.status(400).json({
+          message: "Заповніть клієнта, послугу, майстра, дату і час.",
+        });
+      }
+
+      const studio = await prisma.studio.findFirst({
+        where: {
+          id: studioId,
+          ownerId,
+        },
+        select: { id: true },
+      });
+
+      if (!studio) {
+        return res.status(404).json({ message: "Studio not found" });
+      }
+
+      const studioClient = await prisma.studioClient.findFirst({
+        where: {
+          id: studioClientId,
+          studioId,
+        },
+      });
+
+      if (!studioClient) {
+        return res.status(404).json({
+          message: "Клієнта не знайдено.",
+        });
+      }
+
+      const service = await prisma.service.findFirst({
+        where: {
+          id: serviceId,
+          studioId,
+        },
+        select: {
+          id: true,
+          duration: true,
+        },
+      });
+
+      if (!service) {
+        return res.status(404).json({
+          message: "Послугу не знайдено.",
+        });
+      }
+
+      const master = await prisma.master.findFirst({
+        where: {
+          id: masterId,
+          studioId,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      if (!master) {
+        return res.status(404).json({
+          message: "Майстра не знайдено.",
+        });
+      }
+
+      const startAt = new Date(`${date}T${time}:00`);
+
+      if (Number.isNaN(startAt.getTime())) {
+        return res.status(400).json({
+          message: "Некоректна дата або час.",
+        });
+      }
+
+      const durationMin = Number(service.duration || 60);
+      const endAt = new Date(startAt.getTime() + durationMin * 60_000);
+
+      const busy = await prisma.booking.findFirst({
+        where: {
+          studioId,
+          masterId,
+          status: {
+            not: "CANCELED",
+          },
+          startAt: {
+            lt: endAt,
+          },
+          endAt: {
+            gt: startAt,
+          },
+        },
+        select: { id: true },
+      });
+
+      if (busy) {
+        return res.status(409).json({
+          message: "У цього майстра вже є запис на цей час.",
+        });
+      }
+
+      let clientAccountId = studioClient.accountId;
+
+      if (!clientAccountId) {
+        const fallbackEmail =
+          studioClient.email ||
+          `manual-${studioClient.id}@manual.planiday.local`;
+
+        const existingAccount = await prisma.clientAccount.findUnique({
+          where: {
+            email: fallbackEmail,
+          },
+          select: {
+            id: true,
+          },
+        });
+
+        if (existingAccount) {
+          clientAccountId = existingAccount.id;
+        } else {
+          const createdAccount = await prisma.clientAccount.create({
+            data: {
+              email: fallbackEmail,
+              passwordHash: "manual-client",
+              firstName: studioClient.firstName,
+              lastName: studioClient.lastName,
+              name: `${studioClient.firstName} ${studioClient.lastName}`.trim(),
+              phone: studioClient.phone,
+              birthDate: studioClient.birthDate,
+              photoUrl: studioClient.photoUrl,
+            },
+            select: {
+              id: true,
+            },
+          });
+
+          clientAccountId = createdAccount.id;
+        }
+
+        await prisma.studioClient.update({
+          where: {
+            id: studioClient.id,
+          },
+          data: {
+            accountId: clientAccountId,
+          },
+        });
+      }
+
+      const booking = await prisma.booking.create({
+        data: {
+          studioId,
+          clientId: clientAccountId,
+          studioClientId: studioClient.id,
+          serviceId,
+          masterId,
+          startAt,
+          endAt,
+          status: "CONFIRMED",
+        },
+        select: {
+          id: true,
+          studioId: true,
+          clientId: true,
+          studioClientId: true,
+          status: true,
+          startAt: true,
+          endAt: true,
+        },
+      });
+
+      io.to(`studio:${studioId}`).emit("booking:updated", {
+        id: booking.id,
+        bookingId: booking.id,
+        studioId,
+        clientId: booking.clientId,
+        status: "confirmed",
+      });
+
+      res.status(201).json({ booking });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({
+        message: e?.message || "Create manual booking failed",
       });
     }
   },
