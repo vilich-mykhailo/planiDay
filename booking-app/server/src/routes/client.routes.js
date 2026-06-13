@@ -473,18 +473,19 @@ clientRouter.get("/bookings", requireAuth, requireClient, async (req, res) => {
             logoUrl: true,
           },
         },
-service: {
-  select: {
-    id: true,
-    name: true,
-    price: true,
-    duration: true,
-  },
-},
+        service: {
+          select: {
+            id: true,
+            name: true,
+            price: true,
+            duration: true,
+          },
+        },
         master: {
           select: {
             id: true,
             name: true,
+            photoUrl: true,
           },
         },
       },
@@ -521,19 +522,31 @@ service: {
         date,
         time,
         createdAt: b.createdAt,
+
         studioId: b.studio?.id || null,
         studioSlug: b.studio?.id || null,
         studioName: b.studio?.name || "Студія",
         studioPhone: b.studio?.phone || "",
         studioLogo: b.studio?.logoUrl || "",
+
         address,
         studioAddress: address,
+
         serviceId: b.service?.id || null,
         serviceName: b.service?.name || "Послуга",
         price: b.service?.price ?? null,
-        masterId: b.master?.id || null,
         duration: b.service?.duration ?? null,
+
+        masterId: b.master?.id || null,
         masterName: b.master?.name || "",
+        masterPhotoUrl: b.master?.photoUrl || "",
+        master: b.master
+          ? {
+              id: b.master.id,
+              name: b.master.name,
+              photoUrl: b.master.photoUrl || "",
+            }
+          : null,
       };
     });
 

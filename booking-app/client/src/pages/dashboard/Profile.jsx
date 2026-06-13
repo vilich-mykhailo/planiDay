@@ -197,7 +197,7 @@ function PrimaryButton({ children, className, ...props }) {
         "inline-flex h-12 items-center justify-center gap-2 rounded-[18px] px-5 text-sm font-black transition active:scale-[0.98]",
         props.disabled
           ? "cursor-not-allowed bg-[#f1ebe4] text-[#aaa19a]"
-          : "bg-[#ff6200] text-white shadow-[0_14px_30px_rgba(255,98,0,0.25)] hover:bg-[#f25c00]",
+          : "bg-[#ff6200] text-white hover:bg-[#f25c00]",
         className,
       )}
     >
@@ -324,7 +324,7 @@ function EditModal({
   return (
     <div className="fixed inset-0 z-[9999] flex items-end justify-center bg-[#202020]/45 px-3 pb-3 backdrop-blur-[6px] sm:items-center sm:p-6">
       <div className="w-full max-w-lg overflow-hidden rounded-[30px] border border-[#f0e2d3] bg-[#f7f5f1] shadow-[0_30px_90px_rgba(15,23,42,0.24)]">
-        <div className="relative overflow-hidden bg-[#f3eee7] px-5 py-5 sm:px-6 sm:py-6">
+        <div className="relative overflow-hidden bg-white px-5 py-5 sm:px-6 sm:py-6">
           <div className="absolute right-[-55px] top-[-70px] h-[180px] w-[180px] rounded-full bg-[#ff6200]/10 blur-3xl" />
 
           <div className="relative z-10 flex items-start justify-between gap-4">
@@ -344,7 +344,7 @@ function EditModal({
             <button
               type="button"
               onClick={onClose}
-              className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white text-[#77716b] shadow-[0_10px_24px_rgba(15,23,42,0.06)] transition hover:bg-[#fff3e9] hover:text-[#ff6200] active:scale-[0.96]"
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white text-[#77716b] transition hover:bg-[#fff3e9] hover:text-[#ff6200] active:scale-[0.96]"
               aria-label="Закрити"
             >
               <X className="h-5 w-5" />
@@ -924,11 +924,11 @@ async function confirmCrop() {
   if (loading) return <ProfileSkeleton />;
 
  return (
-    <main className="min-h-screen bg-[#fdfcfb] pb-[calc(env(safe-area-inset-bottom)+88px)] sm:pb-10">
+    <main className="min-h-screen m:pb-10">
       <div className="mx-auto max-w-6xl px-4 pt-5 sm:px-6 sm:pt-8 lg:px-8">
 
 
-<section className="relative mb-5 mt-15 overflow-hidden max-[639px]:rounded-[26px] bg-[#f3eee7] px-5 py-7 sm:rounded-[34px] sm:px-8 sm:py-9 lg:px-10">
+<section className="relative border border-[#eadfce]  mb-5 mt-15 overflow-hidden max-[639px]:rounded-[26px] bg-white px-5 py-7 sm:rounded-[34px] sm:px-8 sm:py-9 lg:px-10">
  <div className={cn(heroImageBoxClass, "mask-hero-image hidden sm:block")}>
     <img
       src={profileHero}
@@ -1011,7 +1011,7 @@ async function confirmCrop() {
 </section>
       {/* HERO */}
 {/* PROFILE CARD */}
-<section className="relative mb-5 hidden overflow-hidden rounded-[26px] border border-[#eadfce] bg-[#f3eee7] px-4 py-4 shadow-[0_14px_36px_rgba(15,23,42,0.06)] sm:block sm:rounded-[34px] sm:px-8 sm:py-9 lg:px-10">
+<section className="relative mb-5 hidden overflow-hidden rounded-[26px] border border-[#eadfce] bg-white px-4 py-4 shadow-[0_14px_36px_rgba(15,23,42,0.06)] sm:block sm:rounded-[34px] sm:px-8 sm:py-9 lg:px-10">
   <div className="grid gap-4 sm:grid-cols-[1fr_240px] sm:items-center">
     <div className="flex items-center gap-4">
       <div className="relative shrink-0">
@@ -1062,7 +1062,7 @@ async function confirmCrop() {
       </div>
     </div>
 
-<div className="hidden lg:block rounded-[18px] bg-white/90 px-3 py-2.5 shadow-[0_10px_24px_rgba(255,98,0,0.06)] backdrop-blur-sm">
+<div className="hidden lg:block rounded-[18px] bg-white/90 rounded-[20px] border border-[#ffe2cf] px-4 py-3 shadow-[0_10px_24px_rgba(255,98,0,0.06)] backdrop-blur-sm">
   <div className="flex items-center gap-2.5">
     <div className="grid h-9 w-9 shrink-0 place-items-center rounded-[12px] bg-[#fff1e8] text-[#ff6200]">
       <Shield className="h-4 w-4" />
@@ -1090,18 +1090,32 @@ async function confirmCrop() {
 </section>
 
       {/* CONTENT */}
-   <section className="mt-5 grid items-center gap-5 lg:grid-cols-[300px_1fr]">
+  <section className="mt-5 mb-8 grid items-center gap-5 lg:grid-cols-[380px_minmax(0,1fr)]">
         {/* SIDE MENU */}
-<aside className="relative overflow-hidden rounded-[28px] border border-[#eadfce] bg-[#f3eee7] p-4 shadow-[0_14px_36px_rgba(15,23,42,0.06)] sm:rounded-[32px] sm:p-5">
-  <div className="absolute right-[-50px] top-[-60px] h-[220px] w-[220px] rounded-full bg-[#ff6200]/10 blur-3xl" />
+<aside
+  onClick={() => {
+    if (window.innerWidth < 640 && !isProOpen) {
+      setIsProOpen(true);
+    }
+  }}
+  className={cn(
+    "relative overflow-hidden rounded-[28px] border border-[#eadfce] bg-white p-4 shadow-[0_14px_36px_rgba(15,23,42,0.06)] sm:rounded-[32px] sm:p-5",
+    !isProOpen && "max-[639px]:cursor-pointer",
+  )}
+>
+  <div className="absolute right-[-50px] top-[-60px] h-[220px] w-[220px] rounded-full " />
 
   {/* MOBILE TOGGLE */}
   <button
     type="button"
-    onClick={() => setIsProOpen((prev) => !prev)}
+    onClick={(event) => {
+  event.stopPropagation();
+  setIsProOpen((prev) => !prev);
+}}
     className="
       mb-3 hidden w-full items-center justify-between
       rounded-[18px] bg-white px-4 py-3
+      border border-[#ffe2cf]
       shadow-[0_10px_24px_rgba(15,23,42,0.05)]
       max-[639px]:flex
     "
@@ -1137,14 +1151,17 @@ async function confirmCrop() {
       !isProOpen && "max-[639px]:hidden",
     )}
   >
-    <span className="inline-flex h-7 items-center gap-1 rounded-full bg-white px-2.5 text-[10px] font-black uppercase tracking-[0.05em] text-[#ff6200] shadow-[0_8px_20px_rgba(255,98,0,0.08)] sm:h-8 sm:px-3 sm:text-xs">
-      <BadgeCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-      Pro
-    </span>
 
-    <h2 className="mt-2 text-[36px] font-black leading-[0.92] tracking-[-0.06em] text-[#202020]">
-      Статус <span className="text-[#ff6200]">Pro</span>
-    </h2>
+<div className="mt-2 flex flex-wrap items-center gap-2">
+  <h2 className="text-[36px] font-black leading-[0.92] tracking-[-0.06em] text-[#202020]">
+    Статус <span className="text-[#ff6200]">Pro</span>
+  </h2>
+
+  <span className="inline-flex h-7 items-center gap-1 rounded-full border border-[#ffe2cf] bg-white px-2.5 text-[10px] font-black uppercase tracking-[0.05em] text-[#ff6200] sm:h-8 sm:px-3 sm:text-xs">
+    <BadgeCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+    Pro
+  </span>
+</div>
 
     <p className="mt-1 max-w-[260px] text-[13px] font-medium leading-6 text-[#77716b]">
       Преміальний статус клієнта.
@@ -1159,7 +1176,7 @@ async function confirmCrop() {
       </div>
     </div>
 
-    <div className="mt-2 rounded-[24px] bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
+    <div className="mt-2 rounded-[24px] border border-[#ffe2cf] bg-[#fff7f2] p-4 shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
       <div className="flex items-center justify-between">
         <div>
           <div className="text-[11px] font-black uppercase tracking-[0.12em] text-[#9b948d]">
@@ -1167,15 +1184,13 @@ async function confirmCrop() {
           </div>
 
           <div className="mt-1 text-[32px] font-black tracking-[-0.05em] text-[#202020]">
-            19 zł
+            19 zł {"  "}
+            <span className="text-[12px] font-bold text-[#9b948d]"> / місяць</span>
           </div>
 
-          <div className="text-[12px] font-bold text-[#9b948d]">
-            / місяць
-          </div>
         </div>
 
-        <div className="grid h-14 w-14 place-items-center rounded-[20px] bg-[#fff1e8]">
+        <div className="grid h-14 w-14 place-items-center bg-white rounded-[20px] bg-[#fff1e8]">
           <Crown className="h-6 w-6 fill-[#ff6200] text-[#ff6200]" />
         </div>
       </div>
@@ -1191,7 +1206,7 @@ async function confirmCrop() {
             key={item}
             className="flex items-center gap-3 text-[13px] font-bold text-[#5f5a55]"
           >
-            <span className="grid h-6 w-6 place-items-center rounded-full bg-[#fff1e8]">
+            <span className="grid h-6 w-6 bg-white place-items-center rounded-full">
               <Check className="h-3.5 w-3.5 text-[#ff6200]" />
             </span>
 
@@ -1208,8 +1223,7 @@ async function confirmCrop() {
         rounded-[20px]
         bg-[#ff6200]
         text-[14px] font-black text-white
-        shadow-[0_14px_30px_rgba(255,98,0,0.28)]
-        transition-all duration-300
+              transition-all duration-300
         hover:bg-[#f25c00]
         active:scale-[0.98]
       "

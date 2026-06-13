@@ -29,6 +29,7 @@ export default function TimeSelect({
   className = "",
   label,
   dayLabel,
+  placeholder = "--:--",
 }) {
   const safeValue = String(value || "08:00");
   const [submitting, setSubmitting] = useState(false);
@@ -44,12 +45,13 @@ export default function TimeSelect({
   const isChanged = draftValue !== initialValue;
   const selectedLabel = useMemo(() => `${hour}:${minute}`, [hour, minute]);
 
-  function handleOpen() {
-    const nextValue = String(value || "08:00");
-    setDraftValue(nextValue);
-    setInitialValue(nextValue);
-    setOpen(true);
-  }
+function handleOpen() {
+  const nextValue = String(value || "08:00");
+
+  setDraftValue(nextValue);
+  setInitialValue(String(value || ""));
+  setOpen(true);
+}
 
   useEffect(() => {
     if (!open) return;
@@ -122,7 +124,9 @@ export default function TimeSelect({
           className,
         )}
       >
-        {value}
+       <span className={value ? "text-[#202020]" : "text-[#aaa19a]"}>
+  {value || placeholder}
+</span>
       </button>
 
       {open && (

@@ -183,7 +183,7 @@ function Avatar({ name, photoUrl, className = "" }) {
   return (
     <div
       className={cn(
-        "relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-[22px] border border-white bg-[#fff1e8] shadow-[0_10px_26px_rgba(255,90,0,0.10)]",
+        "relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-[22px] border border-white bg-[#fff1e8] ",
         className,
       )}
     >
@@ -1950,7 +1950,7 @@ if (sort === "nameAsc") {
             <Avatar
               name={`${createClientForm.firstName} ${createClientForm.lastName}`}
               photoUrl={createClientForm.photoUrl}
-              className="h-20 w-20 rounded-full border-4 border-white shadow-[0_12px_32px_rgba(15,23,42,0.12)]"
+              className="h-20 w-20 rounded-full border-4 border-white "
             />
 
             <div className="flex flex-wrap items-center gap-2">
@@ -2115,7 +2115,8 @@ if (sort === "nameAsc") {
             maxLength={100}
             onChange={(e) => setNoteDraft(e.target.value.slice(0, 100))}
             rows={5}
-            placeholder="Напр. Любить коротку стрижку, алергія на фарбу, просить каву..."
+         placeholder={`Наприклад:
+Побажання клієнта, важливі деталі перед візитом або примітки для майстра...`}
             className="w-full resize-none rounded-2xl border border-[#eadbc9] bg-white px-4 py-3 text-sm font-medium text-[#202020] outline-none transition-all placeholder:text-[#77716b] hover:bg-[#fff7f0] focus:border-[#ff5a00] focus:ring-4 focus:ring-[#ff5a00]/10"
           />
 {noteClient?.notes?.length > 0 && (
@@ -2370,15 +2371,13 @@ const clientStatus =
     ? "vip"
     : client.status || "new";
 
-const ClientStatusIcon = statusMeta[clientStatus]?.icon || User;
-const clientStatusLabel = statusMeta[clientStatus]?.label || "Новий";
   return (
 <article
   className={cn(
-    "relative flex h-full flex-col overflow-hidden rounded-[18px] border bg-white transition hover:-translate-y-0.5",
+    "group/clientCard relative flex h-full flex-col overflow-hidden rounded-[18px] border bg-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#fff7f0]",
     client.isVip
-      ? "border-[#f6d365] shadow-[0_0_0_1px_rgba(246,211,101,0.4),0_12px_32px_rgba(246,211,101,0.18)] hover:shadow-[0_0_0_1px_rgba(246,211,101,0.5),0_20px_44px_rgba(246,211,101,0.25)]"
-      : "border-[#e5eaf0] shadow-[0_10px_30px_rgba(15,23,42,0.045)] hover:shadow-[0_18px_44px_rgba(15,23,42,0.08)]",
+      ? "border-[#f6d365] shadow-[0_0_0_1px_rgba(246,211,101,0.4),0_12px_32px_rgba(246,211,101,0.18)] hover:border-[#f6d365]"
+      : "border-[#eadbc9] shadow-[0_10px_30px_rgba(17,17,17,0.04)] hover:border-[#ffd6bd] ",
   )}
 >
 
@@ -2394,11 +2393,11 @@ const clientStatusLabel = statusMeta[clientStatus]?.label || "Новий";
         >
           <div className="flex gap-3">
             <div className="relative shrink-0">
-              <Avatar
-                name={fullName}
-                photoUrl={client.photoUrl}
-                className="h-20 w-20 rounded-[20px] border-[#eef1f5]"
-              />
+<Avatar
+  name={fullName}
+  photoUrl={client.photoUrl}
+  className="h-20 w-20 rounded-[20px] border-[#eef1f5] transition-all duration-200 group-hover/clientCard:border-[#ffd6bd]"
+/>
 
               <div className="absolute -bottom-1 left-1/2 -translate-x-1/2">
                 <ClientStatusBadges client={client} />
@@ -2417,31 +2416,11 @@ const clientStatusLabel = statusMeta[clientStatus]?.label || "Новий";
             </div>
           </div>
 
-          <div className="mt-2.5 mb-2.5 grid grid-cols-2 gap-2">
-            <div className="rounded-[14px] bg-[#fbfcfd] px-2.5 py-2">
-<p className="text-[9px] font-black uppercase tracking-[0.12em] text-[#9b948c]">
-  Активні записи
-</p>
-<p className="mt-1 text-[13px] font-black text-[#202020]">
-  {(client.history || []).filter(
-    (b) => b.status === "PENDING" || b.status === "CONFIRMED"
-  ).length}
-</p>
-            </div>
 
-            <div className="rounded-[14px] bg-[#fbfcfd] px-2.5 py-2">
-              <p className="text-[9px] font-black uppercase tracking-[0.12em] text-[#9b948c]">
-                Витрачено
-              </p>
-              <p className="mt-1 truncate text-[13px] font-black text-[#202020]">
-                {formatMoney(client.spent || 0)}
-              </p>
-            </div>
-          </div>
         </button>
       </div>
 
-    <div className="mt-auto grid grid-cols-4 border-t border-[#edf0f4] bg-[#fbfcfd]">
+    <div className="mt-4 grid grid-cols-4 border-t border-[#edf0f4] bg-[#fbfcfd]">
         <button
           type="button"
           onClick={(e) => {
@@ -2481,10 +2460,10 @@ const clientStatusLabel = statusMeta[clientStatus]?.label || "Новий";
     onOpenStatusInfo?.();
   }}
   className="grid h-11 place-items-center border-x border-[#edf0f4] text-[#657084] transition hover:bg-[#fff7f0] hover:text-[#ff6200]"
-  title={`Статус: ${clientStatusLabel}`}
-  aria-label={`Статус: ${clientStatusLabel}`}
+  title="Інформація про статус"
+  aria-label="Інформація про статус"
 >
-  <ClientStatusIcon className="h-4 w-4" />
+  <CircleAlert className="h-4 w-4" />
 </button>
 
 <button

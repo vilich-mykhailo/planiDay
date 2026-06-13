@@ -251,6 +251,33 @@ input:-webkit-autofill:focus {
   background: #bfb8b0;
 }
 
+.react-datepicker {
+  border-radius: 20px !important;
+  border: 1px solid #eadbc9 !important;
+  overflow: hidden;
+  font-family: inherit !important;
+}
+
+.react-datepicker__header {
+  background: #fff7f0 !important;
+  border-bottom: 1px solid #eadbc9 !important;
+}
+
+.react-datepicker__day--selected {
+  background: #ff6200 !important;
+  border-radius: 999px !important;
+}
+
+.react-datepicker__day:hover {
+  border-radius: 999px !important;
+}
+
+.react-datepicker__current-month {
+  color: #202020 !important;
+  font-weight: 800 !important;
+}
+
+
 :root {
   --color-primary: #8f7647;
   --color-primary-buttom: #2e2e2e;

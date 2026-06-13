@@ -1,3 +1,4 @@
+//Masters.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import XLSX from "xlsx-js-style";
@@ -1629,10 +1630,10 @@ const activeExceptionsCount =
     !todayException || todayException.enabled;
 
   return (
-    <article key={m.id}
-                  
-                    className="overflow-hidden rounded-[18px] border border-[#e5eaf0] bg-white shadow-[0_10px_30px_rgba(15,23,42,0.045)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_44px_rgba(15,23,42,0.08)]"
-                  >
+<article
+  key={m.id}
+  className="group/masterCard overflow-hidden rounded-[18px] border border-[#eadbc9] bg-white shadow-[0_10px_30px_rgba(17,17,17,0.04)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#ffd6bd] hover:bg-[#fff7f0] "
+>
                     <div className="px-3">
 <button
   type="button"
@@ -1641,12 +1642,12 @@ const activeExceptionsCount =
 >
   <div className="flex gap-3">
     <div className="relative shrink-0">
-      <Avatar
-        name={m.name}
-        photoUrl={m.photoUrl}
-        size="md"
-        className="h-20 w-20 rounded-[20px] border-[#eef1f5]"
-      />
+<Avatar
+  name={m.name}
+  photoUrl={m.photoUrl}
+  size="md"
+  className="h-20 w-20 rounded-[20px] border-[#eef1f5] transition-all duration-200 group-hover/masterCard:border-[#ffd6bd] group-hover/masterCard:shadow-[0_12px_30px_rgba(255,98,0,0.14)]"
+/>
 
       <div
         className={cn(
@@ -2010,9 +2011,19 @@ const activeExceptionsCount =
               ))}
             </div>
           ) : masterExceptions.length === 0 ? (
-            <div className="rounded-[24px] border-2 border-dashed border-[#ffd6bd] bg-[#fff7f0] p-8 text-center text-sm font-black text-[#202020]">
-              Немає особливих дат для цього майстра.
-            </div>
+<div className="rounded-[28px] border-2 border-dashed border-[#ffd6bd] bg-[#fffaf6] px-5 py-8 text-center">
+  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-[#ffd6bd] bg-white text-[#ff6200] shadow-sm">
+    <CalendarDays className="h-7 w-7" />
+  </div>
+
+  <h4 className="mt-4 text-base font-black text-[#202020]">
+    Немає особливих дат
+  </h4>
+
+  <p className="mx-auto mt-1.5 max-w-[280px] text-sm font-semibold leading-5 text-[#77716b]">
+    Для цього майстра ще не додано індивідуальний графік або вихідні дні.
+  </p>
+</div>
           ) : (
             <div className="space-y-3">
               {masterExceptions.map((item, index) => {
@@ -2419,9 +2430,9 @@ filteredMasterBookings.map((booking) => (
     <ArrowRight className="h-5 w-5 text-[#ff6200]" />
   </div>
 
-  <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#fff1f1] shadow-[0_12px_32px_rgba(229,72,77,0.12)]">
-    <Trash2 className="h-9 w-9 text-[#e5484d]" />
-  </div>
+<div className="flex h-20 w-20 items-center justify-center rounded-full border border-[#fecaca] bg-[#fff1f1] shadow-[0_12px_32px_rgba(229,72,77,0.12)]">
+  <Trash2 className="h-9 w-9 text-[#e5484d]" />
+</div>
 </div>
 
 <h4 className="break-words text-lg font-black leading-6 text-[#202020]">

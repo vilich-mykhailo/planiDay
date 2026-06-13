@@ -1,3 +1,4 @@
+//Favourites.jsx
 import { Link } from "react-router-dom";
 import calendarHero from "../assets/calendarHero2.png";
 import {
@@ -6,7 +7,6 @@ import {
   Heart,
   MapPin,
   Search,
-  SlidersHorizontal,
   Star,
   Clock3,
   Scissors,
@@ -18,14 +18,62 @@ import {
   GraduationCap,
   CheckCircle2,
   XCircle,
+  ChevronDown,
+  Check,
+  X,
 } from "lucide-react";
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFavourites } from "../context/favourites.context";
 
 const R2_PUBLIC = import.meta.env.VITE_R2_PUBLIC_BASE_URL;
 
 function cn(...classes) {
   return classes.filter(Boolean).join(" ");
+}
+
+function SectionCard({
+  title,
+  subtitle,
+  badge,
+  children,
+  className = "",
+}) {
+  return (
+    <section
+      className={cn(
+        "group relative overflow-hidden rounded-[32px] border border-[#ebe7df] bg-white transition-all duration-300 hover:shadow-[0_20px_60px_rgba(15,23,42,0.08)]",
+        className,
+      )}
+    >
+      <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#ff7a18] via-[#ff6200] to-[#ff8c42]" />
+
+      {(title || subtitle || badge) && (
+        <div className="flex flex-col gap-3 border-b border-[#f1ece5] px-4 py-5 sm:px-5">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-black tracking-[-0.03em] text-[#202020]">
+                {title}
+              </h2>
+
+              {badge && (
+                <span className="inline-flex items-center rounded-full bg-[#fff7f0] px-2.5 py-1 text-xs font-black text-[#ff6200]">
+                  {badge}
+                </span>
+              )}
+            </div>
+
+            {subtitle && (
+              <p className="mt-1 text-sm font-medium leading-5 text-[#7b766f]">
+                {subtitle}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className="p-4 sm:p-5">{children}</div>
+    </section>
+  );
 }
 
 function toPublicUrl(v) {
@@ -107,6 +155,179 @@ function FeaturePill({ active, icon: Icon, children, onClick, className = "" }) 
 
       {children}
     </button>
+  );
+}
+
+function CategoryFilterSelect({
+  label,
+  value,
+  options = [],
+  open,
+  setOpen,
+  onChange,
+  selectRef,
+}) {
+  const [dropDirection, setDropDirection] = useState("bottom");
+const [dropdownStyle, setDropdownStyle] = useState({});
+const updateDropdownPosition = useCallback(() => {
+  const rect = selectRef.current?.getBoundingClientRect();
+
+  if (!rect) return;
+
+  const dropdownHeight = Math.min(280, options.length * 54 + 16);
+  const spaceBelow = window.innerHeight - rect.bottom;
+  const spaceAbove = rect.top;
+
+  const direction =
+    spaceBelow < dropdownHeight && spaceAbove > spaceBelow
+      ? "top"
+      : "bottom";
+
+  setDropDirection(direction);
+
+  setDropdownStyle({
+    left: rect.left,
+    width: rect.width,
+    ...(direction === "top"
+      ? {
+          top: "auto",
+          bottom: window.innerHeight - rect.top + 8,
+        }
+      : {
+          top: rect.bottom + 8,
+          bottom: "auto",
+        }),
+  });
+}, [options.length, selectRef]);
+  const selected = options.find((item) => item.key === value) || options[0];
+  const SelectedIcon = selected?.icon || Grid2X2;
+
+function handleToggle() {
+  const nextOpen = !open;
+
+  if (nextOpen) {
+    updateDropdownPosition();
+  }
+
+  setOpen(nextOpen);
+}
+
+useEffect(() => {
+  if (!open) return;
+
+  function handlePositionUpdate() {
+    updateDropdownPosition();
+  }
+
+  window.addEventListener("scroll", handlePositionUpdate, true);
+  window.addEventListener("resize", handlePositionUpdate);
+
+  return () => {
+    window.removeEventListener("scroll", handlePositionUpdate, true);
+    window.removeEventListener("resize", handlePositionUpdate);
+  };
+}, [open, updateDropdownPosition]);
+
+  return (
+    <div ref={selectRef} className="relative min-w-0 w-full">
+      <button
+        type="button"
+        onClick={handleToggle}
+className={cn(
+  "inline-flex h-12 w-full items-center justify-between gap-3 rounded-[20px] border bg-white px-3 text-left transition-all duration-200 max-[639px]:h-10 max-[639px]:rounded-[14px] max-[639px]:px-2.5",
+  open
+    ? "border-[#d8c7b6] bg-[#fbfaf8] ring-4 ring-[#eadfce]/35"
+    : "border-[#eadfce] hover:border-[#d8c7b6] hover:bg-[#fbfaf8]",
+)}
+      >
+        <span className="flex min-w-0 items-center gap-2">
+<span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-[#eadfce] bg-[#f7f5f1] text-[#ff6200] max-[639px]:h-7 max-[639px]:w-7 max-[639px]:rounded-[10px]">
+  <SelectedIcon className="h-4 w-4 max-[639px]:h-3.5 max-[639px]:w-3.5" />
+</span>
+
+          <span className="min-w-0">
+            <span className="block text-[10px] font-black uppercase tracking-[0.12em] text-[#aaa19a] max-[639px]:hidden">
+              {label}
+            </span>
+
+            <span className="block truncate text-sm font-black text-[#202020] max-[639px]:text-[11px]">
+              {selected?.label || "Категорія"}
+            </span>
+          </span>
+        </span>
+
+        <ChevronDown
+          className={cn(
+            "h-4 w-4 shrink-0 text-[#77716b] transition-transform duration-200 max-[639px]:h-3.5 max-[639px]:w-3.5",
+            open && "rotate-180 text-[#ff6200]",
+          )}
+        />
+      </button>
+
+{open && (
+  <div
+    className={cn(
+      "fixed z-[9999] max-h-[280px] overflow-y-auto rounded-[18px] border border-[#eadfce] bg-white py-2 shadow-[0_18px_42px_rgba(15,23,42,0.14)]",
+      dropDirection === "top" ? "translate-y-[-8px]" : "translate-y-[8px]",
+    )}
+    style={dropdownStyle}
+  >
+          {options.map((item) => {
+            const active = item.key === value;
+            const Icon = item.icon || Grid2X2;
+
+            return (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => {
+                  onChange(item.key);
+                  setOpen(false);
+                }}
+                className={cn(
+                  "flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left transition-all duration-200",
+active
+  ? "bg-[#fbfaf8] text-[#202020]"
+  : "text-[#202020] hover:bg-[#fbfaf8]",
+                )}
+              >
+                <span className="flex min-w-0 items-center gap-2">
+                  <span
+                    className={cn(
+                      "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border transition-all duration-200",
+active
+  ? "border-[#ff6200] bg-[#ff6200] text-white"
+  : "border-[#eadfce] bg-[#f7f5f1] text-[#77716b]",
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                  </span>
+
+                  <span className="truncate text-sm font-black">
+                    {item.label}
+                  </span>
+                </span>
+
+                <span className="flex shrink-0 items-center gap-2">
+                  {typeof item.count === "number" && (
+                    <span
+                      className={cn(
+                        "rounded-full px-2 py-0.5 text-[11px] font-black",
+                        active
+                          ? "bg-white text-[#ff6200]"
+                          : "bg-[#fff1e8] text-[#ff6200]",
+                      )}
+                    >
+                      {item.count}
+                    </span>
+                  )}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -196,7 +417,7 @@ const openStatus = getStudioOpenStatus(studio);
   return (
     <Link
       to={`/${studio.slug}`}
-      className="group grid grid-cols-[112px_1fr_auto] gap-3 rounded-[24px] bg-white p-3 shadow-[0_14px_36px_rgba(15,23,42,0.06)] transition active:scale-[0.99] sm:grid-cols-[150px_1fr_auto] sm:p-4 lg:hover:-translate-y-1"
+      className="group grid border border-[#f0e7da] grid-cols-[112px_1fr_auto] gap-3 rounded-[24px] bg-white p-3 shadow-[0_14px_36px_rgba(15,23,42,0.06)] transition active:scale-[0.99] sm:grid-cols-[150px_1fr_auto] sm:p-4 lg:hover:-translate-y-1"
     >
       <div className="my-auto h-[112px] overflow-hidden rounded-[20px] bg-[#f4f0ea] sm:h-[132px]">
         {coverUrl ? (
@@ -242,10 +463,10 @@ openStatus.isOpen
 </div>
 
 <div className="mt-3 flex flex-wrap gap-2">
-<div className="inline-flex h-[30px] items-center gap-1.5 rounded-[11px] border border-[#f0e7da] bg-[#fff3e9] px-2.5 text-[10px] font-bold text-[#ff6200] shadow-[0_4px_12px_rgba(15,23,42,0.025)]">
- {React.createElement(CategoryIcon, {
-  className: "h-3.5 w-3.5 text-[#ff6200]",
-})}
+<div className="inline-flex h-[30px] items-center gap-1.5 rounded-[11px] border border-[#f0e7da] bg-white px-2.5 text-[10px] font-bold text-[#77716b] shadow-[0_4px_12px_rgba(15,23,42,0.025)]">
+  {React.createElement(CategoryIcon, {
+    className: "h-3.5 w-3.5 text-[#ff6200]",
+  })}
   {getCategoryLabel(category)}
 </div>
 
@@ -293,11 +514,56 @@ export default function Favourites() {
   const { favourites = [], toggleFavourite, loading } = useFavourites();
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
+const [categoryFilterOpen, setCategoryFilterOpen] = useState(false);
+const categoryFilterRef = useRef(null);
+const categories = useMemo(() => {
+  const map = new Map();
 
-  const categories = useMemo(() => {
-    const unique = [...new Set(favourites.map((s) => s.category).filter(Boolean))];
-    return unique.slice(0, 8);
-  }, [favourites]);
+  favourites.forEach((studio) => {
+    const category = safeText(studio.category);
+    if (!category) return;
+
+    map.set(category, (map.get(category) || 0) + 1);
+  });
+
+  return Array.from(map.entries()).map(([category, count]) => ({
+    key: category,
+    label: getCategoryLabel(category),
+    icon: getCategoryIcon(category),
+    count,
+  }));
+}, [favourites]);
+
+const categoryOptions = useMemo(() => {
+  return [
+    {
+      key: "all",
+      label: "Усі студії",
+      icon: Grid2X2,
+      count: favourites.length,
+    },
+    ...categories,
+  ];
+}, [categories, favourites.length]);
+
+  useEffect(() => {
+  if (!categoryFilterOpen) return;
+
+  function handleClickOutside(e) {
+    if (
+      categoryFilterRef.current &&
+      !categoryFilterRef.current.contains(e.target)
+    ) {
+      setCategoryFilterOpen(false);
+    }
+  }
+
+  document.addEventListener("mousedown", handleClickOutside);
+
+  return () => {
+    document.removeEventListener("mousedown", handleClickOutside);
+  };
+}, [categoryFilterOpen]);
 
   const filtered = useMemo(() => {
     const q = query.toLowerCase().trim();
@@ -316,7 +582,10 @@ export default function Favourites() {
       return matchesQuery && matchesCategory;
     });
   }, [favourites, query, activeCategory]);
-
+const totalFavourites = favourites.length;
+const hasSearch = query.trim().length > 0;
+const hasCategoryFilter = activeCategory !== "all";
+const hasActiveFilters = hasSearch || hasCategoryFilter;
   if (loading) {
     return (
       <div className="min-h-screen bg-[#f7f5f1] px-4 pt-8">
@@ -331,11 +600,11 @@ export default function Favourites() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f7f5f1] pb-[calc(env(safe-area-inset-bottom)+88px)] sm:pb-10">
+    <main className="min-h-screen pb-[calc(env(safe-area-inset-bottom)+88px)] sm:pb-10">
       <div className="mx-auto max-w-6xl px-4 pt-5 sm:px-6 sm:pt-8 lg:px-8">
 
 
-<section className="relative mb-5 mt-15 overflow-hidden max-[639px]:rounded-[26px] bg-[#f3eee7] px-5 py-7 sm:rounded-[34px] sm:px-8 sm:py-9 lg:px-10">
+<section className="relative mb-5 mt-15 border border-[#eadfce] overflow-hidden max-[639px]:rounded-[26px] bg-white px-5 py-7 sm:rounded-[34px] sm:px-8 sm:py-9 lg:px-10">
   <div className={cn(heroImageBoxClass, "mask-hero-image")}>
   <img
     src={calendarHero}
@@ -386,81 +655,192 @@ export default function Favourites() {
 
   </section>
 
-<section className="mb-5 rounded-[24px] bg-white p-2 shadow-[0_14px_34px_rgba(15,23,42,0.06)]">
-  <div className="flex items-center gap-2">
-    <Search className="ml-2 h-4 w-4 shrink-0 text-stone-400" />
+<SectionCard
+  title={
+    <div className="flex items-center gap-3">
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#ff6200] text-white">
+        <Heart className="h-5 w-5 fill-white" />
+      </div>
 
-    <input
-      value={query}
-      onChange={(e) => setQuery(e.target.value)}
-      placeholder="Пошук улюблених студій"
-      className="h-10 min-w-0 flex-1 bg-transparent text-[13px] font-semibold text-[#202020] outline-none placeholder:text-stone-400 sm:h-11 sm:text-sm"
-    />
+      <div>
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-black tracking-[-0.03em] text-[#202020]">
+            Улюблені студії
+          </h2>
 
-    <button className="flex h-10 shrink-0 items-center gap-2 rounded-[18px] bg-[#f7f5f1] px-3 text-[12px] font-black text-[#202020] transition hover:bg-[#fff1e8] hover:text-[#ff6200] sm:h-11 sm:px-4 sm:text-sm">
-      <SlidersHorizontal className="h-3.5 w-3.5" />
-      <span className="hidden xs:inline">Фільтри</span>
-    </button>
-  </div>
-</section>
+          <span className="inline-flex items-center rounded-full bg-[#fff7f0] px-2.5 py-1 text-xs font-black text-[#ff6200]">
+            {filtered.length}
+          </span>
+        </div>
 
-<div className="relative mb-6">
-  <div className="-mx-4 overflow-x-auto overflow-y-hidden px-4 pb-3 [-ms-overflow-style:none] [scrollbar-width:none] sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 [&::-webkit-scrollbar]:hidden">
-    <div className="flex w-max min-w-full touch-pan-x snap-x snap-mandatory flex-nowrap gap-2.5 scroll-smooth sm:gap-4">
-      <FeaturePill
-        active={activeCategory === "all"}
-        icon={Grid2X2}
-        onClick={() => setActiveCategory("all")}
-      >
-        Усі студії
-      </FeaturePill>
+        <p className="mt-1 text-sm font-medium text-[#7b766f]">
+          Переглядайте збережені студії та швидко знаходьте потрібну.
+        </p>
+      </div>
+    </div>
+  }
+>
+  <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div className="relative w-full sm:max-w-[360px]">
+      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8a847d]" />
 
-      {categories.map((cat) => (
-        <FeaturePill
-          key={cat}
-          active={activeCategory === cat}
-          icon={getCategoryIcon(cat)}
-          onClick={() => setActiveCategory(cat)}
+      <input
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Пошук улюблених студій..."
+        className="
+          h-10 w-full
+          rounded-xl
+          border border-[#ebe7df]
+          bg-white
+          pl-9 pr-9
+          text-[13px]
+          font-semibold
+          text-[#202020]
+          outline-none
+          transition-all
+          placeholder:text-[#9b948c]
+
+          sm:h-12
+          sm:rounded-2xl
+          sm:pl-11
+          sm:pr-10
+          sm:text-[14px]
+
+          hover:border-[#ffd8c2]
+          hover:bg-white
+          focus:border-[#ff6200]
+          focus:ring-4
+          focus:ring-[#ff6200]/10
+        "
+      />
+
+      {query.trim() && (
+        <button
+          type="button"
+          onClick={() => setQuery("")}
+          className="absolute right-2 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-full text-[#8a847d] transition hover:bg-[#fff1e8] hover:text-[#ff6200] active:scale-95"
+          aria-label="Очистити пошук"
         >
-          {getCategoryLabel(cat)}
-        </FeaturePill>
-      ))}
+          <X className="h-4 w-4" />
+        </button>
+      )}
+    </div>
+
+    <div className="w-full sm:w-[250px]">
+      <CategoryFilterSelect
+        label="Категорія"
+        value={activeCategory}
+        options={categoryOptions}
+        open={categoryFilterOpen}
+        setOpen={setCategoryFilterOpen}
+        selectRef={categoryFilterRef}
+        onChange={setActiveCategory}
+      />
     </div>
   </div>
-</div>
 
-<div className="mb-4 flex items-center justify-between">
-  <p className="text-sm font-black text-[#202020]">
-    {filtered.length} улюблених студій
-  </p>
+  {hasCategoryFilter && (
+    <div className="mb-4 flex flex-wrap items-center gap-2">
+      <span className="inline-flex items-center gap-2 rounded-full border border-[#ffd6bd] bg-[#fffaf6] px-3 py-1.5 text-xs font-black text-[#ff6200]">
+        <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[#fff1e8] text-[#ff6200]">
+          {React.createElement(getCategoryIcon(activeCategory), {
+            className: "h-3.5 w-3.5",
+          })}
+        </span>
 
-</div>
+        {getCategoryLabel(activeCategory)}
 
-        {filtered.length > 0 ? (
-          <div className="grid gap-4 lg:grid-cols-2">
-            {filtered.map((studio) => (
-              <FavouriteCard
-                key={studio.slug}
-                studio={studio}
-                toggleFavourite={toggleFavourite}
-              />
-            ))}
-          </div>
+        <button
+          type="button"
+          onClick={() => setActiveCategory("all")}
+          className="-mr-1 grid h-5 w-5 place-items-center rounded-full text-[#ff6200] transition hover:bg-[#fff1e8] active:scale-95"
+          aria-label="Очистити фільтр категорії"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </span>
+    </div>
+  )}
+
+  {totalFavourites === 0 ? (
+    <div className="rounded-[32px] border-2 border-dashed border-[#ffd6bd] bg-[#fff7f0] px-6 py-12 text-center">
+      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-[#ff6200]">
+        <Heart className="h-7 w-7" />
+      </div>
+
+      <h2 className="mt-4 text-xl font-black text-[#202020]">
+        Поки що немає улюблених студій
+      </h2>
+
+      <p className="mt-2 text-sm text-[#77716b]">
+        Додавайте студії в обране, щоб швидко знаходити їх тут.
+      </p>
+    </div>
+  ) : filtered.length === 0 ? (
+    <div className="rounded-[32px] border-2 border-dashed border-[#ffd6bd] bg-[#fff7f0] px-6 py-12 text-center">
+      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-[#ff6200]">
+        <Search className="h-7 w-7" />
+      </div>
+
+      <h2 className="mt-4 text-xl font-black text-[#202020]">
+        Нічого не знайдено
+      </h2>
+
+      <p className="mt-2 text-sm text-[#77716b]">
+        {hasSearch ? (
+          <>
+            За запитом{" "}
+            <span className="font-black text-[#202020]">
+              "{query}"
+            </span>{" "}
+            не знайдено жодної студії.
+          </>
+        ) : hasCategoryFilter ? (
+          <>
+            У категорії{" "}
+            <span className="font-black text-[#202020]">
+              "{getCategoryLabel(activeCategory)}"
+            </span>{" "}
+            немає улюблених студій.
+          </>
         ) : (
-<div className="rounded-[24px] border-2 border-dashed border-[#ffd6bd] bg-[#fff7f0] p-8 text-center">
-  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-[#ff5a00] shadow-sm">
-    <Sparkles className="h-6 w-6" />
-  </div>
-
-  <p className="text-sm font-black text-[#202020]">
-    Немає улюблених студій
-  </p>
-
-  <p className="mt-1 text-xs font-medium text-[#77716b]">
-    Додавайте студії в обране, щоб швидко знаходити їх у майбутньому.
-  </p>
-</div>
+          "Спробуйте змінити пошук або фільтр категорії."
         )}
+      </p>
+
+      {hasActiveFilters && (
+        <button
+          type="button"
+          onClick={() => {
+            setQuery("");
+            setActiveCategory("all");
+          }}
+          className="mt-5 inline-flex h-10 items-center justify-center rounded-2xl bg-[#ff6200] px-4 text-sm font-black text-white transition hover:bg-[#f25c00] active:scale-[0.98]"
+        >
+          Очистити фільтри
+        </button>
+      )}
+    </div>
+  ) : (
+    <>
+      <div className="grid gap-4 lg:grid-cols-2">
+        {filtered.map((studio) => (
+          <FavouriteCard
+            key={studio.slug}
+            studio={studio}
+            toggleFavourite={toggleFavourite}
+          />
+        ))}
+      </div>
+
+      <p className="mt-6 mb-2 text-sm font-medium text-[#6b7280]">
+        Показано {filtered.length} з {totalFavourites} улюблених студій
+      </p>
+    </>
+  )}
+</SectionCard>
+
       </div>
     </main>
   );

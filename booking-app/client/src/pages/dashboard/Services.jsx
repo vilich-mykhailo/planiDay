@@ -19,7 +19,7 @@ CircleAlert,
   ChevronDown,
   Banknote,
   BriefcaseBusiness,
-  Scissors,
+  FilePenLine,
   ArrowDownToLine,
 } from "lucide-react";
 
@@ -543,40 +543,52 @@ function DurationSlider({ value, onChange }) {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3">
-        <div className="relative min-w-0">
-          <div className="absolute inset-0 rounded-2xl bg-[#ff5a00] opacity-20 blur-xl" />
-          <div className="relative flex h-full items-center justify-center gap-2 rounded-2xl border border-[#eadbc9] bg-[#fff7f0] px-4 py-3 sm:gap-3 sm:px-6 sm:py-3">
-            <Clock className="h-4.5 w-4.5 flex-shrink-0 text-[#202020] sm:h-5 sm:w-5" />
-            <span className="truncate text-center text-lg font-bold text-[#202020] sm:text-2xl">
-              {formatDuration(value)}
-            </span>
-          </div>
-        </div>
+<div className="grid grid-cols-2 gap-3">
+  <div className="min-w-0">
+    <div className="flex h-full items-center justify-center gap-2 rounded-2xl border border-[#eadbc9] bg-[#fff1e8] px-4 py-3 shadow-sm transition-all duration-200 sm:gap-3 sm:px-6 sm:py-3">
 
-        <div className="flex items-center justify-center gap-2 rounded-2xl border border-[#eadbc9] bg-white px-2.5 py-2 sm:gap-3 sm:px-3">
-          <button
-            type="button"
-            onClick={() => onChange(Math.max(minVal, value - 5))}
-            disabled={value <= minVal}
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-[#fff7f0] text-[#77716b] transition-all hover:bg-[#ffe5d4] disabled:opacity-40 sm:h-10 sm:w-10"
-          >
-            <span className="text-lg font-bold">−</span>
-          </button>
+      <div className="min-w-0 text-center">
+        <span className="block truncate text-lg font-black text-[#202020] sm:text-2xl">
+          {formatDuration(value)}
+        </span>
+      </div>
+    </div>
+  </div>
 
-          <span className="text-xs text-[#77716b] sm:text-sm">
-            ±5 хв
-          </span>
+<div className="flex items-center justify-between gap-2 rounded-2xl border border-[#eadbc9] bg-white px-3 py-2 shadow-sm sm:gap-3 sm:px-12">
+  <button
+    type="button"
+    onClick={() => onChange(Math.max(minVal, value - 5))}
+    disabled={value <= minVal}
+    className="group flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#eadbc9] bg-[#fff1e8] text-[#ff6200] transition-all duration-200 hover:border-[#ff6200] hover:bg-[#ff6200] hover:text-white active:scale-[0.96] disabled:pointer-events-none disabled:opacity-40 sm:h-10 sm:w-10"
+  >
+   <span className="relative h-4 w-4">
+  <span className="absolute left-0 top-1/2 h-[2.5px] w-full -translate-y-1/2 rounded-full bg-current" />
+</span>
+  </button>
 
-          <button
-            type="button"
-            onClick={() => onChange(Math.min(maxVal, value + 5))}
-            disabled={value >= maxVal}
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-[#fff7f0] text-[#77716b] transition-all hover:bg-[#ffe5d4] disabled:opacity-40 sm:h-10 sm:w-10"
-          >
-            <span className="text-lg font-bold">+</span>
-          </button>
-        </div>
+  <div className="min-w-0 text-center">
+    <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#aaa19a]">
+      Крок
+    </p>
+
+    <p className="mt-0.5 whitespace-nowrap text-sm font-black text-[#202020]">
+      ±5 хв
+    </p>
+  </div>
+
+  <button
+    type="button"
+    onClick={() => onChange(Math.min(maxVal, value + 5))}
+    disabled={value >= maxVal}
+    className="group flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#eadbc9] bg-[#fff1e8] text-[#ff6200] transition-all duration-200 hover:border-[#ff6200] hover:bg-[#ff6200] hover:text-white active:scale-[0.96] disabled:pointer-events-none disabled:opacity-40 sm:h-10 sm:w-10"
+  >
+   <span className="relative h-4 w-4">
+  <span className="absolute left-0 top-1/2 h-[2.5px] w-full -translate-y-1/2 rounded-full bg-current" />
+  <span className="absolute left-1/2 top-0 h-full w-[2.5px] -translate-x-1/2 rounded-full bg-current" />
+</span>
+  </button>
+</div>
       </div>
 
       <div className="px-1 py-2 sm:px-2 sm:py-4">
@@ -602,24 +614,23 @@ function DurationSlider({ value, onChange }) {
         </div>
       </div>
 
-      <div className="flex flex-wrap justify-center gap-2">
-        {presets.map((preset) => (
-          <button
-            key={preset.value}
-            type="button"
-            onClick={() => onChange(preset.value)}
-            className={cn(
-              preset.value === 180 ? "hidden sm:inline-flex" : "inline-flex",
-              "items-center justify-center rounded-xl px-3 py-2 text-xs font-medium sm:px-4 sm:text-sm",
-              value === preset.value
-                ? "bg-[#ff5a00] text-white shadow-md"
-                : "bg-[#fff7f0] text-[#77716b] hover:bg-[#ffe5d4]",
-            )}
-          >
-            {preset.label}
-          </button>
-        ))}
-      </div>
+<div className="hidden flex-wrap justify-center gap-2 sm:flex">
+  {presets.map((preset) => (
+    <button
+      key={preset.value}
+      type="button"
+      onClick={() => onChange(preset.value)}
+      className={cn(
+        "inline-flex items-center justify-center rounded-xl px-3 py-2 text-xs font-medium sm:px-4 sm:text-sm",
+        value === preset.value
+          ? "bg-[#ff5a00] text-white shadow-md"
+          : "bg-[#fff7f0] text-[#77716b] hover:bg-[#ffe5d4]",
+      )}
+    >
+      {preset.label}
+    </button>
+  ))}
+</div>
     </div>
   );
 }
@@ -1224,10 +1235,16 @@ function handleExportServices() {
 <SectionCard
   key={cat.id}
 title={
-  <div className="flex items-center gap-2">
-    <span>{cat.name}</span>
+  <div className="flex min-w-0 items-center gap-2">
+    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#eadbc9] bg-[#fff1e8] text-[#ff6200] transition-all duration-200 group-hover:bg-[#ff6200] group-hover:text-white">
+      <BriefcaseBusiness className="h-4.5 w-4.5" />
+    </span>
 
-    <span className="inline-flex items-center rounded-full border border-[#ffd6bd] bg-[#fff7f0] px-2 py-0 text-[11px] font-black text-[#ff6200]">
+    <span className="min-w-0 truncate">
+      {cat.name}
+    </span>
+
+    <span className="inline-flex shrink-0 items-center rounded-full border border-[#ffd6bd] bg-[#fff7f0] px-2 py-0 text-[11px] font-black text-[#ff6200]">
       {servicesCount}
     </span>
   </div>
@@ -1321,7 +1338,7 @@ title={
                       <div className="rounded-[24px] border-2 border-dashed border-[#ffd6bd] bg-[#fff7f0] p-6 text-center sm:p-8">
                         <div className="mb-3 flex items-center justify-center">
                           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-[#ff5a00] shadow-sm">
-                            <Scissors className="h-6 w-6" />
+                            <FilePenLine className="h-6 w-6" />
                           </div>
                         </div>
 
@@ -1338,16 +1355,22 @@ title={
 <div
   key={srv.id}
   onClick={() => openEditService(cat.id, srv.id)}
-  className="group/service cursor-pointer rounded-[24px] border border-[#eadbc9] bg-white p-3.5 shadow-[0_8px_24px_rgba(17,17,17,0.04)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#ffd6bd] hover:bg-[#fff7f0] hover:shadow-[0_18px_44px_rgba(255,90,0,0.10)] sm:p-4"
+ className="group/service cursor-pointer rounded-[24px] border border-[#eadbc9] bg-white p-3.5 shadow-[0_8px_24px_rgba(17,17,17,0.04)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#ffd6bd] hover:bg-[#fff7f0] sm:p-4"
 >
     <div className="flex items-start justify-between gap-3">
       <div className="flex min-w-0 flex-1 items-start gap-2.5">
-        <div className="min-w-0 flex-1">
-          <h3 className="line-clamp-2 break-words text-sm font-black leading-5 text-[#202020] sm:text-base">
-            {srv.name}
-          </h3>
+<div className="min-w-0 flex-1">
+  <h3 className="flex min-w-0 items-center gap-2 text-sm font-black leading-5 text-[#202020] sm:text-base">
+    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-[#eadbc9] bg-[#fff1e8] text-[#ff6200] transition-all duration-200 group-hover/service:bg-[#ff6200] group-hover/service:text-white">
+      <FilePenLine className="h-3.5 w-3.5" />
+    </span>
 
-          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium text-[#77716b] sm:text-sm">
+    <span className="line-clamp-2 min-w-0 break-words">
+      {srv.name}
+    </span>
+  </h3>
+
+  <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium text-[#77716b] sm:text-sm">
             <span className="inline-flex items-center gap-1">
               <Clock className="h-3.5 w-3.5" />
               {formatDuration(srv.duration)}
@@ -1506,9 +1529,10 @@ title={
         <div className="space-y-6">
           <div className="grid grid-cols-[1fr_130px] gap-3 sm:grid-cols-2">
             <div className="min-w-0">
-              <label className="mb-2 block text-sm font-medium text-[#202020]">
-                Категорія
-              </label>
+<label className="mb-2 flex items-center gap-2 text-sm font-black text-[#202020]">
+  <BriefcaseBusiness className="h-4 w-4 text-[#ff6200]" />
+  Категорія
+</label>
 
               <CustomSelect
                 value={serviceDraft.categoryId || UNCATEGORIZED_ID}
@@ -1526,9 +1550,10 @@ title={
             </div>
 
             <div className="min-w-0">
-              <label className="mb-2 block text-sm font-medium text-[#202020]">
-                Ціна (грн) *
-              </label>
+<label className="mb-2 flex items-center gap-2 text-sm font-black text-[#202020]">
+  <Banknote className="h-4 w-4 text-[#ff6200]" />
+  Ціна (грн)
+</label>
 
               <input
                 type="number"
@@ -1544,9 +1569,10 @@ title={
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-[#202020]">
-              Назва послуги *
-            </label>
+<label className="mb-2 flex items-center gap-2 text-sm font-black text-[#202020]">
+  <FilePenLine className="h-4 w-4 text-[#ff6200]" />
+  Назва послуги
+</label>
 
             <input
               value={serviceDraft.name}
@@ -1559,9 +1585,10 @@ title={
           </div>
 
           <div>
-            <label className="mb-4 block text-sm font-medium text-[#202020]">
-              Тривалість
-            </label>
+<label className="mb-4 flex items-center gap-2 text-sm font-black text-[#202020]">
+  <Clock className="h-4 w-4 text-[#ff6200]" />
+  Тривалість
+</label>
 
             <DurationSlider
               value={serviceDraft.duration}
@@ -1569,7 +1596,7 @@ title={
             />
           </div>
 
-          <div className="rounded-2xl border border-[#eadbc9] bg-[#fff7f0] p-3.5 sm:p-4">
+          <div className="rounded-2xl border border-[#eadbc9] bg-[#fffaf6] p-3.5 sm:p-4">
             <div className="mb-3 flex items-center gap-2">
               <Users className="h-5 w-5 text-[#77716b]" />
               <span className="font-medium text-[#202020]">Виконавці</span>
@@ -1589,7 +1616,7 @@ title={
                   "rounded-xl px-3 py-2 text-sm font-medium transition-all sm:px-4",
                   serviceDraft.allMasters
                     ? "border-2 border-[#ff5a00] bg-[#ff5a00] text-white"
-                    : "border border-[#eadbc9] bg-white text-[#77716b] hover:bg-[#ffe5d4]",
+                 : "border border-[#eadbc9] bg-white text-[#202020] hover:!border-[#ffd6bd] hover:!bg-[#fff7f0]",
                 )}
               >
                 Всі майстри
@@ -1625,7 +1652,7 @@ onClick={() => {
                   "rounded-xl px-4 py-2 text-sm font-medium transition-all",
                   !serviceDraft.allMasters
                     ? "border-2 border-[#ff5a00] bg-[#ff5a00] text-white"
-                    : "border border-[#eadbc9] bg-white text-[#77716b] hover:bg-[#ffe5d4]",
+               : "border border-[#eadbc9] bg-white text-[#202020] hover:!border-[#ffd6bd] hover:!bg-[#fff1e8]",
                 )}
               >
                 Обрати майстрів
@@ -1666,25 +1693,36 @@ onClick={() => {
                         <label
                           key={id}
                           className={cn(
-                            "flex cursor-pointer items-center gap-3 rounded-2xl border p-3 transition-all",
+                           "group/master flex cursor-pointer items-center gap-3 rounded-2xl border p-3 transition-all duration-200",
                             checked
-                              ? "border-[#ff5a00] bg-[#fff7f0]"
-                              : "border-[#eadbc9] bg-white hover:bg-[#fff7f0]",
+                              ? "border-[#ff5a00] bg-[#fff1e8]"
+                              : "border-[#eadbc9] bg-white hover:bg-[#fff1e8]",
                           )}
                         >
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={(e) => {
-                              const current = serviceDraft.masters || [];
-                              const next = e.target.checked
-                                ? [...current, id]
-                                : current.filter((x) => x !== id);
+<input
+  type="checkbox"
+  checked={checked}
+  onChange={(e) => {
+    const current = serviceDraft.masters || [];
+    const next = e.target.checked
+      ? [...current, id]
+      : current.filter((x) => x !== id);
 
-                              setServiceDraft((p) => ({ ...p, masters: next }));
-                            }}
-                            className="h-4 w-4 rounded border-[#eadbc9] text-[#ff5a00] focus:ring-[#ff5a00]"
-                          />
+    setServiceDraft((p) => ({ ...p, masters: next }));
+  }}
+  className="sr-only"
+/>
+
+<span
+  className={cn(
+    "grid h-5 w-5 shrink-0 place-items-center rounded-full border transition-all duration-200",
+    checked
+      ? "border-[#ff6200] bg-[#ff6200] text-white shadow-[0_8px_18px_rgba(255,98,0,0.18)]"
+      : "border-[#eadbc9] bg-white text-transparent group-hover/master:border-[#ffd6bd] group-hover/master:bg-[#fff1e8]",
+  )}
+>
+  <Check className="h-3.5 w-3.5 stroke-[3]" />
+</span>
 
                           <MasterChip master={m} checked={checked} />
                         </label>

@@ -85,7 +85,7 @@ const navLinkBase =
   "inline-flex items-center gap-2 rounded-2xl px-3.5 py-2.5 text-sm font-semibold transition-all duration-200";
 
 const navLinkActive =
-  "bg-[#ff6200] text-white shadow-[0_10px_24px_rgba(255,98,0,0.18)]";
+  "bg-[#ff6200] text-white ";
 
 const navLinkIdle =
   "text-[#77716b] hover:bg-[#fff3e9] hover:text-[#ff6200] active:scale-[0.99]";
@@ -616,7 +616,7 @@ if (isStudioPublicPage || hideHeader) {
   )}
 >
   <div className="mx-auto max-w-[1260px] px-4 max-[639px]:px-5 sm:px-6 lg:px-10">
-    <div className="flex h-[58px] items-center justify-between rounded-[20px] border border-[#eadfce] bg-white/90 px-3 shadow-[0_14px_34px_rgba(15,23,42,0.06)] backdrop-blur-2xl sm:h-[64px] sm:px-4 lg:h-[66px]">
+    <div className="flex h-[58px] items-center justify-between rounded-[20px] border border-[#eadfce] bg-white/90 px-3  backdrop-blur-2xl sm:h-[64px] sm:px-4 lg:h-[66px]">
       <Link
         to="/"
         className="flex min-w-0 items-center gap-2 rounded-2xl px-1.5 py-1 transition active:scale-[0.98]"
@@ -710,7 +710,7 @@ if (isStudioPublicPage || hideHeader) {
       <button
         type="button"
         onClick={() => setOpen(false)}
-        className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-white text-[#77716b] shadow-[0_8px_22px_rgba(15,23,42,0.08)] transition hover:bg-[#fff3e9] hover:text-[#ff6200] active:scale-[0.96]"
+        className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-white text-[#77716b] w-[0_8px_22px_rgba(15,23,42,0.0shado8)] transition hover:bg-[#fff3e9] hover:text-[#ff6200] active:scale-[0.96]"
         aria-label="Закрити меню"
       >
         <X className="h-5 w-5" />

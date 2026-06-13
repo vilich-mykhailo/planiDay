@@ -1,5 +1,10 @@
 // Bookings.jsx
-import { useEffect, useMemo, useRef, useState } from "react";
+import { forwardRef, useEffect, useMemo, useRef, useState } from "react";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import { useStudio } from "../../context/studio/useStudio";
+import TimeSelect from "../../components/TimeSelect";
+import { uk } from "date-fns/locale/uk";
 import {
   Sparkles,
   List,
@@ -35,6 +40,9 @@ import {
   CalendarCheck,
   ClipboardPen,
   PhoneCall,
+  Briefcase,
+  UserStar,
+  FilePenLine,
 } from "lucide-react";
 import { useBookings } from "../../context/bookings/useBookings";
 import { socket } from "../../lib/socket";
@@ -116,6 +124,28 @@ function addDays(d, n) {
   return x;
 }
 
+function startOfDay(d) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+function endOfDay(d) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+}
+
+function startOfWeekMonday(d) {
+  const x = startOfDay(d);
+  const day = x.getDay();
+  const mondayIndex = (day + 6) % 7;
+  x.setDate(x.getDate() - mondayIndex);
+  return x;
+}
+
+function isDateInRange(dateStr, from, to) {
+  const d = new Date(`${dateStr}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return false;
+  return d >= from && d <= to;
+}
+
 function parseTimeToHHMM(timeStr) {
   const t = String(timeStr || "").trim();
   if (!t) return null;
@@ -193,47 +223,45 @@ function SectionCard({
         className,
       )}
     >
+      <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#ff7a18] via-[#ff6200] to-[#ff8c42]" />
+
       {hasHeader && (
-        <>
-          <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#ff7a18] via-[#ff6200] to-[#ff8c42]" />
+        <div className="flex flex-col gap-3 border-b border-[#f1ece5] px-4 py-5 sm:px-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              {(title || badge) && (
+                <div className="flex items-center gap-2">
+                  {title && (
+                    <h2 className="text-lg font-black tracking-[-0.03em] text-[#202020]">
+                      {title}
+                    </h2>
+                  )}
 
-          <div className="border-b border-[var(--color-cream)] px-5 py-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="min-w-0">
-                {(title || badge) && (
-                  <div className="flex flex-wrap items-center gap-2">
-                    {title && (
-                      <h2 className="text-[26px] font-bold tracking-tight text-[var(--color-ink)]">
-                        {title}
-                      </h2>
-                    )}
-
-                    {badge && (
-                      <span className="inline-flex items-center rounded-full bg-[var(--color-cream)] px-2.5 py-0.5 text-xs font-semibold text-[var(--color-ink)]">
-                        {badge}
-                      </span>
-                    )}
-                  </div>
-                )}
-
-                {subtitle && (
-                  <p className="mt-2 text-sm text-[var(--color-caramel)]">
-                    {subtitle}
-                  </p>
-                )}
-              </div>
-
-              {actions && (
-                <div className="flex w-full items-center justify-center sm:w-auto sm:justify-end">
-                  {actions}
+                  {badge && (
+                    <span className="inline-flex items-center rounded-full bg-[#fff7f0] px-2.5 py-1 text-xs font-black text-[#ff6200]">
+                      {badge}
+                    </span>
+                  )}
                 </div>
               )}
+
+              {subtitle && (
+                <p className="mt-1 text-sm font-medium leading-5 text-[#7b766f]">
+                  {subtitle}
+                </p>
+              )}
             </div>
+
+            {actions && (
+              <div className="flex w-full items-center justify-center sm:w-auto sm:justify-end">
+                {actions}
+              </div>
+            )}
           </div>
-        </>
+        </div>
       )}
 
-      <div className="p-5">{children}</div>
+      <div className="p-4 sm:p-5">{children}</div>
     </section>
   );
 }
@@ -333,6 +361,149 @@ function Pill({ active, count, showCount = false, children, onClick }) {
   );
 }
 
+function BookingFilterSelect({
+  label,
+  value,
+  options = [],
+  open,
+  setOpen,
+  onChange,
+  selectRef,
+}) {
+  const [dropDirection, setDropDirection] = useState("bottom");
+
+  const selected = options.find((item) => item.key === value) || options[0];
+  const SelectedIcon = selected?.icon || List;
+
+  function handleToggle() {
+    const nextOpen = !open;
+
+    if (nextOpen) {
+      const rect = selectRef.current?.getBoundingClientRect();
+
+      if (rect) {
+        const dropdownHeight = Math.min(280, options.length * 54 + 16);
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const spaceAbove = rect.top;
+
+        setDropDirection(
+          spaceBelow < dropdownHeight && spaceAbove > spaceBelow
+            ? "top"
+            : "bottom",
+        );
+      }
+    }
+
+    setOpen(nextOpen);
+  }
+
+  const dropdownPositionClass =
+    dropDirection === "top" ? "bottom-full mb-2" : "top-full mt-2";
+
+  return (
+    <div ref={selectRef} className="relative min-w-0 w-full">
+      <button
+        type="button"
+        onClick={handleToggle}
+        className={cn(
+          "inline-flex h-12 w-full items-center justify-between gap-3 rounded-2xl border bg-white px-4 text-left shadow-sm transition-all duration-200",
+          open
+            ? "border-[#ff6200] bg-[#fff7f0] ring-4 ring-[#ff6200]/10"
+            : "border-[#eadbc9] hover:border-[#ffd6bd] hover:bg-[#fff1e8]",
+        )}
+      >
+        <span className="flex min-w-0 items-center gap-2">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-[#eadbc9] bg-[#fff1e8] text-[#ff6200]">
+            <SelectedIcon className="h-4 w-4" />
+          </span>
+
+          <span className="min-w-0">
+            <span className="block text-[10px] font-black uppercase tracking-[0.12em] text-[#aaa19a]">
+              {label}
+            </span>
+
+            <span className="block truncate text-sm font-black text-[#202020]">
+              {selected?.label || "Оберіть"}
+            </span>
+          </span>
+        </span>
+
+        <ChevronDown
+          className={cn(
+            "h-4 w-4 shrink-0 text-[#77716b] transition-transform duration-200",
+            open && "rotate-180 text-[#ff6200]",
+          )}
+        />
+      </button>
+
+      {open && (
+        <div
+          className={cn(
+            "absolute left-0 right-0 z-[999] max-h-[280px] w-full overflow-y-auto rounded-[18px] border border-[#eadbc9] bg-white py-2 shadow-[0_18px_42px_rgba(15,23,42,0.14)]",
+            dropdownPositionClass,
+          )}
+        >
+          {options.map((item) => {
+            const active = item.key === value;
+            const Icon = item.icon || List;
+
+            return (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => {
+                  onChange(item.key);
+                  setOpen(false);
+                }}
+                className={cn(
+                  "flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left transition-all duration-200",
+                  active
+                    ? "bg-[#fff1e8] text-[#ff6200]"
+                    : "text-[#202020] hover:bg-[#fff7f0]",
+                )}
+              >
+                <span className="flex min-w-0 items-center gap-2">
+                  <span
+                    className={cn(
+                      "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border transition-all duration-200",
+                      active
+                        ? "border-[#ff6200] bg-[#ff6200] text-white"
+                        : "border-[#eadbc9] bg-[#fffaf6] text-[#ff6200]",
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                  </span>
+
+                  <span className="truncate text-sm font-black">
+                    {item.label}
+                  </span>
+                </span>
+
+                <span className="flex shrink-0 items-center gap-2">
+                  {typeof item.count === "number" && (
+                    <span
+                      className={cn(
+                        "rounded-full px-2 py-0.5 text-[11px] font-black",
+                        active
+                          ? "bg-white text-[#ff6200]"
+                          : "bg-[#fff1e8] text-[#ff6200]",
+                      )}
+                    >
+                      {item.count}
+                    </span>
+                  )}
+
+                  {active && <Check className="h-4 w-4" />}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const emptyBookingInfo = {
   all: {
     icon: CalendarDays,
@@ -340,7 +511,6 @@ const emptyBookingInfo = {
     description: (
       <span className="flex flex-col gap-1">
         <span>Тут зʼявляться всі активні записи клієнтів.</span>
-        <span>Нові бронювання автоматично додаватимуться у список.</span>
       </span>
     ),
   },
@@ -351,7 +521,6 @@ const emptyBookingInfo = {
     description: (
       <span className="flex flex-col gap-1">
         <span>Тут зʼявляться записи, які очікують підтвердження.</span>
-        <span>Після підтвердження вони перейдуть у відповідну вкладку.</span>
       </span>
     ),
   },
@@ -362,7 +531,6 @@ const emptyBookingInfo = {
     description: (
       <span className="flex flex-col gap-1">
         <span>Тут зʼявляться записи, які ви вже підтвердили.</span>
-        <span>Вони залишатимуться активними до дати візиту.</span>
       </span>
     ),
   },
@@ -375,18 +543,16 @@ const emptyBookingInfo = {
         <span>
           Тут зʼявляться записи, які були скасовані вами або клієнтом.
         </span>
-        <span>За потреби їх можна буде переглянути або видалити.</span>
       </span>
     ),
   },
 
   archive: {
     icon: FolderClock,
-    title: "Поки що немає записів в архіві",
+    title: "Поки що немає завершених записів",
     description: (
       <span className="flex flex-col gap-1">
         <span>Тут зʼявляться записи, дата й час яких уже минули.</span>
-        <span>Архів допомагає переглядати завершену історію візитів.</span>
       </span>
     ),
   },
@@ -396,103 +562,92 @@ function Modal({
   open,
   onClose,
   title,
+  badge = "Редагування",
+  icon: Icon = CalendarDays,
   subtitle,
   children,
   footer,
   size = "md",
 }) {
+  const sizeClasses = {
+    sm: "max-w-md",
+    md: "max-w-lg",
+    lg: "max-w-2xl",
+    xl: "max-w-4xl",
+  };
+
   useEffect(() => {
-    if (!open) return;
+    if (open) {
+      document.body.style.overflow = "hidden";
 
-    const scrollY = window.scrollY;
+      const handleEscape = (e) => {
+        if (e.key === "Escape") onClose?.();
+      };
 
-    document.body.style.position = "fixed";
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.left = "0";
-    document.body.style.right = "0";
-    document.body.style.width = "100%";
+      document.addEventListener("keydown", handleEscape);
 
-    const handleEscape = (e) => {
-      if (e.key === "Escape") onClose?.();
-    };
-
-    document.addEventListener("keydown", handleEscape);
+      return () => {
+        document.body.style.overflow = "";
+        document.removeEventListener("keydown", handleEscape);
+      };
+    }
 
     return () => {
-      document.removeEventListener("keydown", handleEscape);
-
-      const y = Math.abs(parseInt(document.body.style.top || "0", 10));
-
-      document.body.style.position = "";
-      document.body.style.top = "";
-      document.body.style.left = "";
-      document.body.style.right = "";
-      document.body.style.width = "";
-
-      window.scrollTo(0, y);
+      document.body.style.overflow = "";
     };
   }, [open, onClose]);
 
   if (!open) return null;
 
-  const sizeClasses = {
-    sm: "sm:max-w-md",
-    md: "sm:max-w-lg lg:max-w-xl",
-    lg: "sm:max-w-xl lg:max-w-2xl",
-  };
-
-  const hasHeader = Boolean(title || subtitle);
-
   return (
-    <div
-      className="fixed inset-0 z-[950] flex items-center justify-center bg-[var(--color-bg)]/45 p-4 backdrop-blur-[8px] sm:p-6"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) {
-          onClose?.();
-        }
-      }}
-    >
+    <div className="fixed inset-0 z-[9999] flex items-stretch justify-center bg-[#202020]/45 p-0 backdrop-blur-[6px] sm:items-center sm:p-6">
       <div
         className={cn(
-          "relative w-full max-h-[90vh] overflow-hidden rounded-[32px] border bg-white ",
-          "animate-in fade-in-0 zoom-in-[0.98] slide-in-from-bottom-3 duration-200",
-          "border-[var(--color-cream)]",
+          "flex h-dvh w-full flex-col overflow-hidden rounded-none border-0 bg-[#f7f5f1] shadow-[0_30px_90px_rgba(15,23,42,0.24)]",
+          "animate-in fade-in-0 zoom-in-95 duration-200",
+          "sm:h-[85vh] sm:max-h-[85vh] sm:rounded-[30px] sm:border sm:border-[#f0e2d3]",
           sizeClasses[size],
         )}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(252,110,32,0.18),transparent_34%),radial-gradient(circle_at_bottom_left,rgba(255,231,208,0.32),transparent_28%)]" />
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-[var(--color-cream)]/90 via-[var(--color-cream)]/45 to-transparent" />
+        <div className="relative shrink-0 overflow-hidden bg-[#f3eee7] px-5 py-5 sm:px-6 sm:py-6">
+          <div className="absolute right-[-55px] top-[-70px] h-[180px] w-[180px] rounded-full bg-[#ff6200]/10 blur-3xl" />
 
-        {hasHeader && (
-          <div className="relative border-b border-[var(--color-cream)] px-4 py-3 sm:px-5 sm:py-4">
-            {title && (
-              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--color-forest)]">
+          <div className="relative z-10 flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-white px-3 text-[11px] font-black uppercase tracking-[0.08em] text-[#ff6200] shadow-[0_8px_20px_rgba(255,98,0,0.08)]">
+                <Icon className="h-3.5 w-3.5" />
+                {badge}
+              </span>
+
+              <h3 className="mt-3 text-[26px] font-black leading-[0.95] tracking-[-0.05em] text-[#202020] sm:text-[32px]">
                 {title}
-              </p>
-            )}
+              </h3>
 
-            {subtitle && (
-              <p className="mt-1 text-sm text-[var(--color-caramel)]">
-                {subtitle}
-              </p>
-            )}
+              {subtitle && (
+                <p className="mt-2 text-sm font-medium leading-6 text-[#77716b]">
+                  {subtitle}
+                </p>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white text-[#77716b] shadow-[0_10px_24px_rgba(15,23,42,0.06)] transition hover:bg-[#fff3e9] hover:text-[#ff6200] active:scale-[0.96]"
+              aria-label="Закрити"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
-        )}
+        </div>
 
-        <div
-          className={cn(
-            "relative overflow-y-auto px-4 sm:px-5",
-            hasHeader
-              ? "max-h-[calc(90vh-76px)] py-4 sm:py-5"
-              : "max-h-[calc(90vh-52px)] py-5 sm:py-6",
-          )}
-        >
+        <div className="min-h-0 flex-1 overflow-y-auto bg-white px-5 py-5 pb-[110px] sm:px-6 sm:pb-5">
           {children}
         </div>
 
         {footer && (
-          <div className="relative border-t border-[var(--color-cream)] px-4 py-3 sm:px-5 sm:py-4">
+          <div className="sticky bottom-0 shrink-0 border-t border-[#f0e7da] bg-[#fbfaf8] px-5 py-4 sm:px-6">
             {footer}
           </div>
         )}
@@ -568,7 +723,11 @@ function AppointmentCard({ item, nowTs, onOpen }) {
   const clientName = item.clientName || item.client?.name || "Клієнт";
   const service = item.serviceName || item.service?.name || "Послуга";
   const masterName =
-    item.masterName || item.master?.name || item.staffName || item.employeeName || "Майстер";
+    item.masterName ||
+    item.master?.name ||
+    item.staffName ||
+    item.employeeName ||
+    "Майстер";
 
   const clientPhoto = toPublicUrl(
     item.clientPhotoUrl ||
@@ -601,13 +760,10 @@ function AppointmentCard({ item, nowTs, onOpen }) {
         ? "canceled"
         : "new";
 
-const statusBadge =
-  {
+  const statusBadge = {
     canceled: {
       label:
-        item.canceledBy === "client"
-          ? "Скасовано клієнтом"
-          : "Скасовано вами",
+        item.canceledBy === "client" ? "Скасовано клієнтом" : "Скасовано вами",
       className:
         "border-[var(--color-canceled-light)] text-[var(--color-canceled-dark)]",
       icon: XCircle,
@@ -629,14 +785,12 @@ const statusBadge =
 
     new: {
       label: "Очікує підтвердження",
-      className:
-        "border-[var(--color-pending-light)]  text-[#ffb020]",
+      className: "border-[var(--color-pending-light)]  text-[#ffb020]",
       icon: Clock,
     },
   }[statusKey] || {
     label: "Очікує підтвердження",
-    className:
-      "border-[var(--color-pending-light)]  text-[#ffb020]",
+    className: "border-[var(--color-pending-light)]  text-[#ffb020]",
     icon: Clock,
   };
 
@@ -651,7 +805,7 @@ const statusBadge =
 
   const monthLabel =
     date && !Number.isNaN(date.getTime())
-      ? date.toLocaleDateString("uk-UA", { month: "short" }).replace(".", "")
+      ? date.toLocaleDateString("uk-UA", { month: "long" })
       : "";
 
   const timeLabel = parseTimeToHHMM(item.time) || item.time || "—";
@@ -757,7 +911,7 @@ const statusBadge =
                 statusKey === "confirmed"
                   ? "text-[#41a85f]"
                   : statusKey === "new"
-                    ? "text-[#ff6200]"
+                    ? "text-[#ffb020]"
                     : statusKey === "canceled"
                       ? "text-[#ef4444]"
                       : "text-[#6b7280]",
@@ -772,7 +926,7 @@ const statusBadge =
           </div>
         </div>
 
-        <div className="hidden min-w-0 flex-col items-center justify-center max-[639px]:hidden sm:flex sm:-ml-2">
+        <div className="hidden min-w-0 flex-col items-center justify-center max-[639px]:hidden sm:flex sm:-ml-2 pr-4 lg:pr-6">
           <div
             className={cn(
               "mb-2 inline-flex w-fit items-center justify-center gap-1.5 rounded-full border px-3 py-1.5 text-[10px] font-black shadow-sm",
@@ -781,7 +935,7 @@ const statusBadge =
           >
             <StatusIcon className="h-3.5 w-3.5" />
 
-            <span className="text-center leading-[1.05]">
+            <span className="whitespace-nowrap text-center leading-[1.05]">
               {statusBadge.label}
             </span>
           </div>
@@ -810,7 +964,7 @@ const statusBadge =
                 statusKey === "confirmed"
                   ? "text-[#41a85f]"
                   : statusKey === "new"
-                    ? "text-[#ff6200]"
+                    ? "text-[#ffb020]"
                     : statusKey === "canceled"
                       ? "text-[#ef4444]"
                       : "text-[#6b7280]",
@@ -829,13 +983,229 @@ const statusBadge =
   );
 }
 
+function ManualSelect({
+  label,
+  value,
+  onChange,
+  options = [],
+  placeholder = "Оберіть",
+  type = "client",
+}) {
+  const [open, setOpen] = useState(false);
+  const selectRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+
+    function handleClickOutside(e) {
+      if (selectRef.current && !selectRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [open]);
+
+  const selected = options.find((item) => String(item.id) === String(value));
+
+  function getTitle(item) {
+    if (type === "service") return item.name || "Послуга";
+    return `${item.firstName || item.name || ""} ${item.lastName || ""}`.trim();
+  }
+
+  function getSubtitle(item) {
+    if (type === "client") return item.phone || item.email || "Без контактів";
+    if (type === "master") return item.role || "Майстер";
+    return "Послуга студії";
+  }
+
+  return (
+    <div ref={selectRef} className="relative">
+      <label className="mb-2 block text-sm font-black text-[#202020]">
+        {label}
+      </label>
+
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex h-14 w-full items-center justify-between gap-3 rounded-2xl border border-[#eadbc9] bg-white px-3 text-left shadow-sm transition hover:border-[#ffd6bd] hover:bg-[#fff7f0] focus:border-[#ff6200] focus:ring-4 focus:ring-[#ff6200]/10"
+      >
+        {selected ? (
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            {type !== "service" && (
+              <div className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full border border-[#eadbc9] bg-[#fff1e8] text-[#ff6200]">
+                {selected.photoUrl ? (
+                  <img
+                    src={toPublicUrl(selected.photoUrl)}
+                    alt=""
+                    className="h-full w-full object-cover"
+                  />
+                ) : type === "client" ? (
+                  <UserRound className="h-5 w-5" />
+                ) : (
+                  <Scissors className="h-5 w-5" />
+                )}
+              </div>
+            )}
+
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-black text-[#202020]">
+                {getTitle(selected)}
+              </p>
+
+              <p className="truncate text-xs font-semibold text-[#77716b]">
+                {getSubtitle(selected)}
+              </p>
+            </div>
+
+            {type === "service" && (
+              <div className="shrink-0 text-right leading-tight">
+                <p className="text-xs font-black text-[#202020]">
+                  {selected.duration || 0} хв
+                </p>
+
+                <p className="mt-0.5 text-xs font-black text-[#ff6200]">
+                  {selected.price || 0} грн
+                </p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <span className="text-sm font-bold text-[#9b948c]">
+            {placeholder}
+          </span>
+        )}
+
+        <ChevronDown
+          className={cn(
+            "h-4 w-4 shrink-0 text-[#77716b] transition",
+            open && "rotate-180 text-[#ff6200]",
+          )}
+        />
+      </button>
+
+      {open && (
+        <div className="absolute left-0 right-0 z-[10000] mt-2 max-h-[260px] overflow-y-auto rounded-[22px] border border-[#eadbc9] bg-white p-2 shadow-[0_18px_46px_rgba(15,23,42,0.16)]">
+          {options.length === 0 ? (
+            <div className="px-3 py-4 text-center text-sm font-bold text-[#77716b]">
+              Немає даних
+            </div>
+          ) : (
+            options.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => {
+                  onChange(item.id);
+                  setOpen(false);
+                }}
+                className={cn(
+                  "flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition hover:bg-[#fff7f0]",
+                  String(value) === String(item.id) && "bg-[#fff1e8]",
+                )}
+              >
+                {type !== "service" && (
+                  <div className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-full border border-[#eadbc9] bg-[#fff1e8] text-[#ff6200]">
+                    {item.photoUrl ? (
+                      <img
+                        src={toPublicUrl(item.photoUrl)}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                    ) : type === "client" ? (
+                      <UserRound className="h-5 w-5" />
+                    ) : (
+                      <Scissors className="h-5 w-5" />
+                    )}
+                  </div>
+                )}
+
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-black text-[#202020]">
+                    {getTitle(item)}
+                  </p>
+
+                  <p className="truncate text-xs font-semibold text-[#77716b]">
+                    {getSubtitle(item)}
+                  </p>
+                </div>
+
+                {type === "service" && (
+                  <div className="shrink-0 text-right leading-tight">
+                    <p className="text-xs font-black text-[#202020]">
+                      {item.duration || 0} хв
+                    </p>
+
+                    <p className="mt-0.5 text-xs font-black text-[#ff6200]">
+                      {item.price || 0} грн
+                    </p>
+                  </div>
+                )}
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function dateStringToDate(value) {
+  if (!value) return null;
+
+  const [year, month, day] = String(value).split("-").map(Number);
+
+  if (!year || !month || !day) return null;
+
+  return new Date(year, month - 1, day);
+}
+
+function dateToDateString(date) {
+  if (!date) return "";
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+const DatePickerButton = forwardRef(function DatePickerButton(
+  { value, onClick, placeholder = "дд.мм.рррр" },
+  ref,
+) {
+  return (
+    <button
+      type="button"
+      ref={ref}
+      onClick={onClick}
+      className="flex h-14 min-w-0 w-full items-center rounded-2xl border border-[#eadbc9] bg-white px-4 text-left text-sm font-semibold text-[#aaa19a] outline-none transition hover:border-[#ffd6bd] hover:bg-[#fff7f0] focus:border-[#ff6200] focus:ring-4 focus:ring-[#ff6200]/10"
+    >
+      <span
+        className={cn(
+          "block min-w-0 truncate",
+          value ? "text-[#202020]" : "text-sm font-semibold text-[#aaa19a]",
+        )}
+      >
+        {value || placeholder}
+      </span>
+    </button>
+  );
+});
+
 export default function Bookings() {
   const { bookings, confirmBooking, cancelBooking, deleteBooking, loading } =
     useBookings();
-
+  const { studio } = useStudio();
+  const studioId = studio?.id ?? null;
   const [confirmId, setConfirmId] = useState(null);
   const [cancelConfirmId, setCancelConfirmId] = useState(null);
   const [detailsId, setDetailsId] = useState(null);
+  const [manualBookingOpen, setManualBookingOpen] = useState(false);
   const [tab, setTab] = useState(() => {
     return localStorage.getItem("bookings-tab") || "list";
   });
@@ -845,6 +1215,13 @@ export default function Bookings() {
   const [showScrollHint, setShowScrollHint] = useState(true);
   const [calendarDayKey, setCalendarDayKey] = useState(null);
   const [filter, setFilter] = useState("all");
+  const [dateFilter, setDateFilter] = useState("all");
+  const [bookingFilterOpen, setBookingFilterOpen] = useState(false);
+  const [bookingDateFilterOpen, setBookingDateFilterOpen] = useState(false);
+  const [customDateFrom, setCustomDateFrom] = useState(null);
+  const [customDateTo, setCustomDateTo] = useState(null);
+  const [manualBookingError, setManualBookingError] = useState("");
+  const [manualBookingSaving, setManualBookingSaving] = useState(false);
   const [socketState, setSocketState] = useState(
     socket.connected ? "ok" : "offline",
   );
@@ -855,9 +1232,61 @@ export default function Bookings() {
   const [expandedCalendarCards, setExpandedCalendarCards] = useState({});
   const [showLoadingSkeleton, setShowLoadingSkeleton] = useState(false);
   const [visibleBookingCount, setVisibleBookingCount] = useState(10);
+  const [manualClientId, setManualClientId] = useState("");
+  const [manualServiceId, setManualServiceId] = useState("");
+  const [manualMasterId, setManualMasterId] = useState("");
+  const [manualDate, setManualDate] = useState("");
+  const [manualTime, setManualTime] = useState("");
+  const [services, setServices] = useState([]);
+  const [masters, setMasters] = useState([]);
+  const [clients, setClients] = useState([]);
   useEffect(() => {
     localStorage.setItem("bookings-tab", tab);
   }, [tab]);
+
+  useEffect(() => {
+    if (!manualBookingOpen) return;
+    if (!studioId) return;
+
+    const loadManualBookingData = async () => {
+      try {
+        const token = localStorage.getItem("token");
+
+        const headers = {
+          Authorization: `Bearer ${token}`,
+        };
+
+        const [clientsRes, servicesRes, mastersRes] = await Promise.all([
+          fetch(
+            `${import.meta.env.VITE_API_URL}/owner/studio/${studioId}/clients`,
+            { headers },
+          ),
+
+          fetch(
+            `${import.meta.env.VITE_API_URL}/owner/studio/${studioId}/services`,
+            { headers },
+          ),
+
+          fetch(
+            `${import.meta.env.VITE_API_URL}/owner/studio/${studioId}/masters`,
+            { headers },
+          ),
+        ]);
+
+        const clientsData = await clientsRes.json();
+        const servicesData = await servicesRes.json();
+        const mastersData = await mastersRes.json();
+
+        setClients(clientsData.clients || []);
+        setServices(servicesData.services || servicesData || []);
+        setMasters(mastersData.masters || mastersData || []);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+
+    loadManualBookingData();
+  }, [manualBookingOpen, studioId]);
 
   useEffect(() => {
     const timer = window.setTimeout(
@@ -870,6 +1299,35 @@ export default function Bookings() {
     return () => window.clearTimeout(timer);
   }, [loading]);
   const calendarScrollRef = useRef(null);
+  const datePickerFromRef = useRef(null);
+  const manualDatePickerRef = useRef(null);
+  const datePickerToRef = useRef(null);
+  const bookingFilterRef = useRef(null);
+  const bookingDateFilterRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (
+        bookingFilterRef.current &&
+        !bookingFilterRef.current.contains(e.target)
+      ) {
+        setBookingFilterOpen(false);
+      }
+
+      if (
+        bookingDateFilterRef.current &&
+        !bookingDateFilterRef.current.contains(e.target)
+      ) {
+        setBookingDateFilterOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
   useEffect(() => {
     if (detailsId == null && calendarDayKey == null) return;
 
@@ -1026,24 +1484,76 @@ export default function Bookings() {
   }, [bookings, nowTs]);
 
   const listData = useMemo(() => {
-    if (filter === "archive") return split.archive;
+    let result = [];
 
-    const base = split.active;
+    if (filter === "archive") {
+      result = split.archive;
+    } else {
+      const base = split.active;
 
-    if (filter === "new") {
-      return base.filter((b) => !b.status || b.status === "new");
+      if (filter === "new") {
+        result = base.filter((b) => !b.status || b.status === "new");
+      } else if (filter === "confirmed") {
+        result = base.filter((b) => b.status === "confirmed");
+      } else if (filter === "canceled") {
+        result = base.filter((b) => b.status === "canceled");
+      } else {
+        result = base;
+      }
     }
 
-    if (filter === "confirmed") {
-      return base.filter((b) => b.status === "confirmed");
+    const today = startOfDay(new Date());
+
+    if (dateFilter === "today") {
+      const from = startOfDay(today);
+      const to = endOfDay(today);
+
+      return result.filter((b) => isDateInRange(b.date, from, to));
     }
 
-    if (filter === "canceled") {
-      return base.filter((b) => b.status === "canceled");
+    if (dateFilter === "week") {
+      const from = startOfWeekMonday(today);
+      const to = endOfDay(addDays(from, 6));
+
+      return result.filter((b) => isDateInRange(b.date, from, to));
     }
 
-    return base;
-  }, [filter, split]);
+    if (dateFilter === "nextWeek") {
+      const from = addDays(startOfWeekMonday(today), 7);
+      const to = endOfDay(addDays(from, 6));
+
+      return result.filter((b) => isDateInRange(b.date, from, to));
+    }
+
+    if (dateFilter === "month") {
+      const from = new Date(today.getFullYear(), today.getMonth(), 1);
+      const to = endOfDay(
+        new Date(today.getFullYear(), today.getMonth() + 1, 0),
+      );
+
+      return result.filter((b) => isDateInRange(b.date, from, to));
+    }
+
+    if (dateFilter === "custom") {
+      const from = customDateFrom ? startOfDay(customDateFrom) : null;
+
+      const to = customDateTo ? endOfDay(customDateTo) : null;
+
+      return result.filter((b) => {
+        if (!b.date) return false;
+
+        const d = new Date(`${b.date}T00:00:00`);
+        if (Number.isNaN(d.getTime())) return false;
+
+        if (from && d < from) return false;
+        if (to && d > to) return false;
+
+        return true;
+      });
+    }
+
+    return result;
+  }, [filter, split, dateFilter, customDateFrom, customDateTo]);
 
   const [collapsedGroupsByFilter, setCollapsedGroupsByFilter] = useState({});
 
@@ -1181,6 +1691,78 @@ export default function Bookings() {
     };
   }, [split]);
 
+  const bookingStatusOptions = useMemo(
+    () => [
+      {
+        key: "all",
+        label: "Усі записи",
+        icon: ListTodo,
+        count: filterCounts.all,
+      },
+      {
+        key: "new",
+        label: "Очікують підтвердження",
+        icon: Clock,
+        count: filterCounts.new,
+      },
+      {
+        key: "confirmed",
+        label: "Підтверджені",
+        icon: CheckCheck,
+        count: filterCounts.confirmed,
+      },
+      {
+        key: "canceled",
+        label: "Скасовані",
+        icon: XCircle,
+        count: filterCounts.canceled,
+      },
+      {
+        key: "archive",
+        label: "Завершені",
+        icon: FolderClock,
+        count: filterCounts.archive,
+      },
+    ],
+    [filterCounts],
+  );
+
+  const bookingDateOptions = [
+    { key: "all", label: "Увесь період", icon: CalendarDays },
+    { key: "today", label: "Сьогодні", icon: CalendarCheck },
+    { key: "week", label: "Цей тиждень", icon: CalendarDays },
+    { key: "nextWeek", label: "Наступний тиждень", icon: ChevronRight },
+    { key: "month", label: "Цей місяць", icon: CalendarDays },
+    { key: "custom", label: "Період", icon: CalendarDays },
+  ];
+
+  const selectedStatusFilter =
+    bookingStatusOptions.find((item) => item.key === filter) ||
+    bookingStatusOptions[0];
+
+  const selectedDateFilter =
+    bookingDateOptions.find((item) => item.key === dateFilter) ||
+    bookingDateOptions[0];
+
+  const selectedDateFilterLabel =
+    dateFilter === "custom"
+      ? `${customDateFrom ? `від ${formatDateUA(customDateFrom)}` : "від не вибрано"} ${
+          customDateTo ? `до ${formatDateUA(customDateTo)}` : "до не вибрано"
+        }`
+      : selectedDateFilter?.label || "Увесь період";
+  const SelectedStatusHintIcon = selectedStatusFilter?.icon || ListTodo;
+  const SelectedDateHintIcon = selectedDateFilter?.icon || CalendarDays;
+  function resetStatusFilter() {
+    setFilter("all");
+    setVisibleBookingCount(10);
+  }
+
+  function resetDateFilter() {
+    setDateFilter("all");
+    setCustomDateFrom(null);
+    setCustomDateTo(null);
+    setVisibleBookingCount(10);
+  }
   const liveStatusUi = useMemo(() => {
     const base =
       "inline-flex items-center gap-2 rounded-full border border-[var(--border-soft)] bg-white px-3 py-1.5 text-[13px] font-semibold shadow-[var(--shadow-card)]";
@@ -1227,6 +1809,51 @@ export default function Bookings() {
   const emptyInfo = emptyBookingInfo[filter] || emptyBookingInfo.all;
   const EmptyIcon = emptyInfo.icon;
 
+  async function handleCreateManualBooking() {
+    try {
+      setManualBookingSaving(true);
+      setManualBookingError("");
+
+      const token = localStorage.getItem("token");
+      const studioId = localStorage.getItem("studioId");
+
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/owner/studio/${studioId}/manual-booking`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            studioClientId: manualClientId,
+            serviceId: manualServiceId,
+            masterId: manualMasterId,
+            date: manualDate,
+            time: manualTime,
+          }),
+        },
+      );
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        throw new Error(data?.message || "Не вдалося створити запис.");
+      }
+
+      setManualBookingOpen(false);
+      setManualClientId("");
+      setManualServiceId("");
+      setManualMasterId("");
+      setManualDate("");
+      setManualTime("");
+    } catch (e) {
+      setManualBookingError(e?.message || "Не вдалося створити запис.");
+    } finally {
+      setManualBookingSaving(false);
+    }
+  }
+
   return (
     <div className="h-full">
       <div className="mx-auto max-w-6xl space-y-6">
@@ -1250,12 +1877,12 @@ export default function Bookings() {
             <div
               role="tablist"
               aria-label="Перемикання вигляду записів"
-              className="relative grid w-[248px] min-w-[248px] shrink-0 grid-cols-2 self-center overflow-hidden rounded-2xl border border-[#eadbc9] bg-white p-1 shadow-[0_10px_28px_rgba(15,23,42,0.06)] sm:self-start"
+              className="relative grid w-[248px] min-w-[248px] shrink-0 grid-cols-2 self-center overflow-hidden rounded-2xl border border-[#eadbc9] bg-white p-1  sm:self-start"
             >
               <span
                 aria-hidden="true"
                 className={cn(
-                  "absolute bottom-1 left-1 top-1 w-[calc(50%_-_0.25rem)] rounded-xl bg-[#ff5a00] shadow-[0_12px_26px_rgba(255,90,0,0.28)] transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                  "absolute bottom-1 left-1 top-1 w-[calc(50%_-_0.25rem)] rounded-xl bg-[#ff5a00] transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
                   tab === "calendar" ? "translate-x-full" : "translate-x-0",
                 )}
               />
@@ -1307,59 +1934,186 @@ export default function Bookings() {
 
         {tab === "list" && (
           <SectionCard
+            className="!overflow-visible"
             title={
-              <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-primary-buttom)] text-white">
+              <div className="flex min-w-0 items-start gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-primary-buttom)] text-white sm:h-12 sm:w-12">
                   <ListTodo className="h-5 w-5" />
                 </div>
 
-                <div className="min-w-0">
-                  <h2 className="text-lg font-black tracking-[-0.03em]text-[#202020]">
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-[17px] font-black tracking-[-0.03em] text-[#202020] sm:text-lg">
                     Усі записи
                   </h2>
 
-                  <p className="mt-1 text-sm font-medium text-[var(--color-caramel)]">
+                  <p className="mt-1 max-w-[620px] text-[13px] font-medium leading-5 text-[var(--color-caramel)] sm:text-sm sm:leading-6">
                     Переглядайте записи за статусами, датою та типом бронювання.
                   </p>
                 </div>
               </div>
             }
             actions={
-              <div
-                className={cn(
-                  "!hidden md:inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-[11px] font-semibold shadow-sm",
-                  liveStatusUi.wrapClass,
-                )}
-              >
-                <span
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
+                <Button
+                  variant="primary"
+                  size="md"
+                  onClick={() => setManualBookingOpen(true)}
+                  className="h-11 w-full rounded-2xl px-4 sm:w-auto"
+                >
+                  <UserPlus className="h-4 w-4" />
+                  Додати запис вручну
+                </Button>
+
+                <div
                   className={cn(
-                    "h-2 w-2 rounded-full shadow-[0_0_0_3px_rgba(255,255,255,0.9)]",
-                    liveStatusUi.dotClass,
+                    "!hidden md:inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-[11px] font-semibold shadow-sm",
+                    liveStatusUi.wrapClass,
                   )}
-                />
-                <span className="whitespace-nowrap">{liveStatusUi.text}</span>
+                >
+                  <span
+                    className={cn(
+                      "h-2 w-2 rounded-full shadow-[0_0_0_3px_rgba(255,255,255,0.9)]",
+                      liveStatusUi.dotClass,
+                    )}
+                  />
+                  <span className="whitespace-nowrap">{liveStatusUi.text}</span>
+                </div>
               </div>
             }
           >
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              {[
-                { key: "all", label: "Усі" },
-                { key: "new", label: "Нові" },
-                { key: "archive", label: "Архів" },
-                { key: "confirmed", label: "Підтверджені" },
-                { key: "canceled", label: "Скасовані" },
-              ].map((x) => (
-                <Pill
-                  key={x.key}
-                  active={filter === x.key}
-                  count={filterCounts[x.key] ?? 0}
-                  showCount={x.key === "new"}
-                  onClick={() => setFilter(x.key)}
-                >
-                  {x.label}
-                </Pill>
-              ))}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <BookingFilterSelect
+                label="Статус"
+                value={filter}
+                options={bookingStatusOptions}
+                open={bookingFilterOpen}
+                setOpen={(value) => {
+                  setBookingFilterOpen(value);
+                  setBookingDateFilterOpen(false);
+                }}
+                selectRef={bookingFilterRef}
+                onChange={(nextValue) => {
+                  setFilter(nextValue);
+                  setVisibleBookingCount(10);
+                }}
+              />
+
+              <BookingFilterSelect
+                label="Дата"
+                value={dateFilter}
+                options={bookingDateOptions}
+                open={bookingDateFilterOpen}
+                setOpen={(value) => {
+                  setBookingDateFilterOpen(value);
+                  setBookingFilterOpen(false);
+                }}
+                selectRef={bookingDateFilterRef}
+                onChange={(nextValue) => {
+                  setDateFilter(nextValue);
+                  setVisibleBookingCount(10);
+                }}
+              />
             </div>
+            {(filter !== "all" || dateFilter !== "all") && (
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                {filter !== "all" && (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-[#ffd6bd] bg-[#fffaf6] px-3 py-1.5 text-xs font-black text-[#ff6200] shadow-sm">
+                    <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[#fff1e8] text-[#ff6200]">
+                      <SelectedStatusHintIcon className="h-3.5 w-3.5" />
+                    </span>
+
+                    {selectedStatusFilter?.label}
+
+                    <button
+                      type="button"
+                      onClick={resetStatusFilter}
+                      className="-mr-1 grid h-5 w-5 place-items-center rounded-full text-[#ff6200] transition hover:bg-[#fff1e8] active:scale-95"
+                      aria-label="Очистити фільтр статусу"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </span>
+                )}
+
+                {dateFilter !== "all" && (
+                  <span className="inline-flex items-center gap-2 rounded-full border border-[#ffd6bd] bg-[#fffaf6] px-3 py-1.5 text-xs font-black text-[#ff6200] shadow-sm">
+                    <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[#fff1e8] text-[#ff6200]">
+                      <SelectedDateHintIcon className="h-3.5 w-3.5" />
+                    </span>
+
+                    {selectedDateFilterLabel}
+
+                    <button
+                      type="button"
+                      onClick={resetDateFilter}
+                      className="-mr-1 grid h-5 w-5 place-items-center rounded-full text-[#ff6200] transition hover:bg-[#fff1e8] active:scale-95"
+                      aria-label="Очистити фільтр дати"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </span>
+                )}
+              </div>
+            )}
+
+            {dateFilter === "custom" && (
+              <div className="mt-4 border-t border-[#eadbc9] pt-4">
+                <div className="flex justify-center">
+                  <div className="w-full max-w-[320px] rounded-[24px] border border-[#eadbc9] bg-[#fffaf6] p-3 shadow-[0_10px_28px_rgba(15,23,42,0.05)]">
+                    <div className="flex gap-2 max-[639px]:items-end">
+                      {[
+                        {
+                          label: "Дата від",
+                          value: customDateFrom,
+                          onChange: setCustomDateFrom,
+                          ref: datePickerFromRef,
+                        },
+                        {
+                          label: "Дата до",
+                          value: customDateTo,
+                          onChange: setCustomDateTo,
+                          ref: datePickerToRef,
+                        },
+                      ].map((item) => (
+                        <label key={item.label} className="group block">
+                          <span className="mb-0.5 block text-[9px] font-bold uppercase tracking-[0.1em] text-[#aaa19a]">
+                            {item.label}
+                          </span>
+
+                          <div className="relative">
+                            <CalendarDays className="pointer-events-none absolute left-2.5 top-1/2 z-10 h-3.5 w-3.5 -translate-y-1/2 text-[#ff6200]" />
+
+                            <DatePicker
+                              ref={item.ref}
+                              selected={item.value}
+                              onChange={(date) => {
+                                item.onChange(date);
+                                setVisibleBookingCount(10);
+
+                                setTimeout(() => {
+                                  item.ref.current?.setOpen(false);
+                                }, 0);
+                              }}
+                              locale={uk}
+                              dateFormat="dd.MM.yyyy"
+                              calendarStartDay={1}
+                              shouldCloseOnSelect={true}
+                              placeholderText="Оберіть дату"
+                              readOnly
+                              inputMode="none"
+                              onKeyDown={(e) => e.preventDefault()}
+                              popperPlacement="top-start"
+                              popperClassName="z-[9999] datepicker-popper-mobile"
+                              className="h-9 w-full rounded-xl border border-[#eadbc9] bg-white pl-8 pr-2 text-[12px] font-bold text-[#202020] shadow-sm outline-none transition-all duration-200 hover:border-[#ffd6bd] focus:border-[#ff6200] focus:ring-4 focus:ring-[#ff6200]/10"
+                            />
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </SectionCard>
         )}
 
@@ -1373,23 +2127,24 @@ export default function Bookings() {
               </div>
             </SectionCard>
           ) : loading ? null : keys.length === 0 ? (
-            <SectionCard
-              title={emptyInfo.title}
-              subtitle="У цій вкладці записів немає"
-            >
-              <div className="rounded-2xl border-2 border-dashed border-[var(--color-caramel)]/40 bg-[var(--color-cream)] p-6 text-center sm:p-8">
+            <SectionCard>
+              <div className="rounded-2xl border-2 border-dashed border-[#eadbc9] bg-[#fff7f0] p-6 text-center sm:p-8">
                 <div className="mb-3 flex items-center justify-center">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/70">
-                    <EmptyIcon className="h-6 w-6 text-[var(--color-caramel)]" />
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white shadow-sm">
+                    <EmptyIcon className="h-7 w-7 text-[#ff5a00]" />
                   </div>
                 </div>
 
-                <p className="text-sm font-medium text-[var(--color-caramel)]">
-                  {emptyInfo.title}
+                <p className="text-sm font-bold text-[var(--color-ink)]">
+                  {filter === "all"
+                    ? "Сьогодні ще немає жодного запису."
+                    : emptyInfo.title}
                 </p>
 
                 <p className="mt-1 text-xs text-[var(--color-caramel)]/80">
-                  {emptyInfo.description}
+                  {filter === "all"
+                    ? "Коли клієнти почнуть записуватись, тут з’являться всі бронювання"
+                    : emptyInfo.description}
                 </p>
               </div>
             </SectionCard>
@@ -1438,14 +2193,14 @@ export default function Bookings() {
 
                     {!isCollapsed && (
                       <div className="space-y-3 p-3 sm:p-4">
-{items.map((b) => (
-  <AppointmentCard
-    key={b.id}
-    item={b}
-    nowTs={nowTs}
-    onOpen={(id) => setDetailsId(id)}
-  />
-))}
+                        {items.map((b) => (
+                          <AppointmentCard
+                            key={b.id}
+                            item={b}
+                            nowTs={nowTs}
+                            onOpen={(id) => setDetailsId(id)}
+                          />
+                        ))}
                       </div>
                     )}
                   </section>
@@ -1905,9 +2660,9 @@ export default function Bookings() {
                       label: "Очікує підтвердження",
                       top: "from-[var(--color-pending-light)] to-white",
                       Icon: Clock,
-                      iconColor: "text-[var(--color-pending-dark)]",
-                      pillText: "text-[var(--color-pending-dark)]",
-                      accent: "text-[var(--color-pending)]",
+                      iconColor: "text-[#ffb020]",
+                      pillText: "text-[#ffb020]",
+                      accent: "text-[#ffb020]",
                     };
 
             const StatusIcon = statusMeta.Icon;
@@ -1936,23 +2691,23 @@ export default function Bookings() {
               setCopiedPhone(false);
               setShowDetailsScrollHint(true);
             };
-const clientPhoto = toPublicUrl(
-  selectedBooking.clientPhotoUrl ||
-    selectedBooking.clientPhoto ||
-    selectedBooking.client?.photoUrl ||
-    selectedBooking.client?.photo ||
-    selectedBooking.client?.avatar ||
-    "",
-);
+            const clientPhoto = toPublicUrl(
+              selectedBooking.clientPhotoUrl ||
+                selectedBooking.clientPhoto ||
+                selectedBooking.client?.photoUrl ||
+                selectedBooking.client?.photo ||
+                selectedBooking.client?.avatar ||
+                "",
+            );
 
-const masterPhoto = toPublicUrl(
-  selectedBooking.masterPhotoUrl ||
-    selectedBooking.masterPhoto ||
-    selectedBooking.master?.photoUrl ||
-    selectedBooking.master?.photo ||
-    selectedBooking.master?.avatar ||
-    "",
-);
+            const masterPhoto = toPublicUrl(
+              selectedBooking.masterPhotoUrl ||
+                selectedBooking.masterPhoto ||
+                selectedBooking.master?.photoUrl ||
+                selectedBooking.master?.photo ||
+                selectedBooking.master?.avatar ||
+                "",
+            );
             return (
               <div
                 className="fixed inset-0 z-[220] flex items-end justify-center bg-[#1b1b1b]/35 p-0 backdrop-blur-[10px] sm:items-center sm:p-5"
@@ -1978,7 +2733,6 @@ const masterPhoto = toPublicUrl(
                       statusMeta.top,
                     )}
                   >
-                    
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.58),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.20),rgba(255,255,255,0))]" />
 
                     <div className="relative flex items-center justify-between">
@@ -1997,63 +2751,69 @@ const masterPhoto = toPublicUrl(
                       </button>
                     </div>
 
-<div className="relative mt-8 flex flex-col items-center text-center">
-  <div className="inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-[13px] font-black shadow-[0_8px_24px_rgba(27,27,27,0.08)] backdrop-blur">
-    <StatusIcon
-      className={cn("h-4 w-4", statusMeta.iconColor)}
-    />
-    <span className={statusMeta.pillText}>
-      {statusMeta.label}
-    </span>
-  </div>
+                    <div className="relative mt-8 flex flex-col items-center text-center">
+                      <div className="inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-[13px] font-black shadow-[0_8px_24px_rgba(27,27,27,0.08)] backdrop-blur">
+                        <StatusIcon
+                          className={cn("h-4 w-4", statusMeta.iconColor)}
+                        />
+                        <span className={statusMeta.pillText}>
+                          {statusMeta.label}
+                        </span>
+                      </div>
 
-  <h2 className="mt-8 break-words text-center text-[30px] font-black leading-[1.05] tracking-tight text-[#202020] sm:text-[34px]">
-    {service}
-  </h2>
+                      <h2 className="mt-8 break-words text-center text-[30px] font-black leading-[1.05] tracking-tight text-[#202020] sm:text-[34px]">
+                        {service}
+                      </h2>
 
-  <p className="mt-2 flex flex-wrap items-center justify-center gap-2 text-sm font-bold text-[#77716b]">
-    <CalendarDays className="h-4 w-4 text-[#ff6200]" />
-    <span>{dateLabel}</span>
-  </p>
-</div>
+                      <p className="mt-2 flex flex-wrap items-center justify-center gap-2 text-sm font-bold text-[#77716b]">
+                        <CalendarDays className="h-4 w-4 text-[#ff6200]" />
+                        <span>{dateLabel}</span>
+                      </p>
+                    </div>
 
-<div className="relative mt-4 grid grid-cols-3 gap-2">
-  <div className="flex min-h-[90px] flex-col items-center justify-center rounded-[22px] border border-white/70 bg-white/88 p-3 text-center shadow-sm backdrop-blur">
-    <Clock3 className={cn("h-4 w-4", statusMeta.iconColor)} />
+                    <div className="relative mt-4 grid grid-cols-3 gap-2">
+                      <div className="flex min-h-[90px] flex-col items-center justify-center rounded-[22px] border border-white/70 bg-white/88 p-3 text-center shadow-sm backdrop-blur">
+                        <Clock3
+                          className={cn("h-4 w-4", statusMeta.iconColor)}
+                        />
 
-    <p className="mt-2 text-[11px] font-black uppercase tracking-[0.12em] text-[#aaa19a]">
-      Час запису
-    </p>
+                        <p className="mt-2 text-[11px] font-black uppercase tracking-[0.12em] text-[#aaa19a]">
+                          Час запису
+                        </p>
 
-    <p className="mt-1 text-sm font-black text-[#202020]">
-      {time}
-    </p>
-  </div>
+                        <p className="mt-1 text-sm font-black text-[#202020]">
+                          {time}
+                        </p>
+                      </div>
 
-  <div className="flex min-h-[90px] flex-col items-center justify-center rounded-[22px] border border-white/70 bg-white/88 p-3 text-center shadow-sm backdrop-blur">
-    <Banknote className={cn("h-4 w-4", statusMeta.iconColor)} />
+                      <div className="flex min-h-[90px] flex-col items-center justify-center rounded-[22px] border border-white/70 bg-white/88 p-3 text-center shadow-sm backdrop-blur">
+                        <Banknote
+                          className={cn("h-4 w-4", statusMeta.iconColor)}
+                        />
 
-    <p className="mt-2 text-[11px] font-black uppercase tracking-[0.12em] text-[#aaa19a]">
-      Сума
-    </p>
+                        <p className="mt-2 text-[11px] font-black uppercase tracking-[0.12em] text-[#aaa19a]">
+                          Сума
+                        </p>
 
-    <p className="mt-1 text-sm font-black text-[#202020]">
-      {price != null ? `${price} грн` : "—"}
-    </p>
-  </div>
+                        <p className="mt-1 text-sm font-black text-[#202020]">
+                          {price != null ? `${price} грн` : "—"}
+                        </p>
+                      </div>
 
-  <div className="flex min-h-[90px] flex-col items-center justify-center rounded-[22px] border border-white/70 bg-white/88 p-3 text-center shadow-sm backdrop-blur">
-    <Timer className={cn("h-4 w-4", statusMeta.iconColor)} />
+                      <div className="flex min-h-[90px] flex-col items-center justify-center rounded-[22px] border border-white/70 bg-white/88 p-3 text-center shadow-sm backdrop-blur">
+                        <Timer
+                          className={cn("h-4 w-4", statusMeta.iconColor)}
+                        />
 
-    <p className="mt-2 text-[11px] font-black uppercase tracking-[0.12em] text-[#aaa19a]">
-      Тривалість
-    </p>
+                        <p className="mt-2 text-[11px] font-black uppercase tracking-[0.12em] text-[#aaa19a]">
+                          Тривалість
+                        </p>
 
-    <p className="mt-1 text-sm font-black text-[#202020]">
-      {duration != null ? `${duration} хв` : "—"}
-    </p>
-  </div>
-</div>
+                        <p className="mt-1 text-sm font-black text-[#202020]">
+                          {duration != null ? `${duration} хв` : "—"}
+                        </p>
+                      </div>
+                    </div>
                   </div>
 
                   <div className="relative bg-white flex min-h-0 flex-1 flex-col px-4 pt-4 sm:px-6">
@@ -2073,19 +2833,19 @@ const masterPhoto = toPublicUrl(
                       <div className="grid gap-3 sm:grid-cols-2">
                         <div className="rounded-[28px] border border-[#eadfce] bg-white p-4  sm:col-span-2">
                           <div className="flex items-center gap-4">
-<div className="h-[72px] w-[72px] shrink-0 overflow-hidden rounded-full border border-[#eadfce] bg-white p-1">
-  {clientPhoto ? (
-    <img
-      src={clientPhoto}
-      alt={clientName}
-      className="h-full w-full rounded-full object-cover"
-    />
-  ) : (
-    <div className="flex h-full w-full items-center justify-center rounded-full bg-[#fff1e8] text-[#ff6200]">
-      <UserRound className="h-5 w-5" />
-    </div>
-  )}
-</div>
+                            <div className="h-[72px] w-[72px] shrink-0 overflow-hidden rounded-full border border-[#eadfce] bg-white p-1">
+                              {clientPhoto ? (
+                                <img
+                                  src={clientPhoto}
+                                  alt={clientName}
+                                  className="h-full w-full rounded-full object-cover"
+                                />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center rounded-full bg-[#fff1e8] text-[#ff6200]">
+                                  <UserRound className="h-5 w-5" />
+                                </div>
+                              )}
+                            </div>
 
                             <div className="min-w-0 flex-1">
                               <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#aaa19a]">
@@ -2126,37 +2886,37 @@ const masterPhoto = toPublicUrl(
                           </div>
                         </div>
 
-<div className="rounded-[24px] border border-[#eadfce] bg-white p-3 sm:col-span-2">
-  <div className="flex ml-2 items-center gap-3">
-<div className="h-[62px] w-[62px] shrink-0 overflow-hidden rounded-full border border-[#eadfce] bg-white p-1">
-  {masterPhoto ? (
-    <img
-      src={masterPhoto}
-      alt={masterName}
-      className="h-full w-full rounded-full object-cover"
-    />
-  ) : (
-    <div className="flex h-full w-full items-center justify-center rounded-full bg-[#fff1e8] text-[#ff6200]">
-      <UserRound className="h-5 w-5" />
-    </div>
-  )}
-</div>
+                        <div className="rounded-[24px] border border-[#eadfce] bg-white p-3 sm:col-span-2">
+                          <div className="flex ml-2 items-center gap-3">
+                            <div className="h-[62px] w-[62px] shrink-0 overflow-hidden rounded-full border border-[#eadfce] bg-white p-1">
+                              {masterPhoto ? (
+                                <img
+                                  src={masterPhoto}
+                                  alt={masterName}
+                                  className="h-full w-full rounded-full object-cover"
+                                />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center rounded-full bg-[#fff1e8] text-[#ff6200]">
+                                  <UserRound className="h-5 w-5" />
+                                </div>
+                              )}
+                            </div>
 
-    <div className="min-w-0 ml-2 flex-1">
-      <p className="text-[9px] font-black uppercase tracking-[0.12em] text-[#aaa19a]">
-        Майстер
-      </p>
+                            <div className="min-w-0 ml-2 flex-1">
+                              <p className="text-[9px] font-black uppercase tracking-[0.12em] text-[#aaa19a]">
+                                Майстер
+                              </p>
 
-      <p className="mt-0.5 truncate text-[15px] font-black text-[#202020]">
-        {masterName}
-      </p>
+                              <p className="mt-0.5 truncate text-[15px] font-black text-[#202020]">
+                                {masterName}
+                              </p>
 
-      <p className="truncate text-[12px] font-semibold text-[#77716b]">
-        Виконавець послуги
-      </p>
-    </div>
-  </div>
-</div>
+                              <p className="truncate text-[12px] font-semibold text-[#77716b]">
+                                Виконавець послуги
+                              </p>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
@@ -2587,6 +3347,157 @@ const masterPhoto = toPublicUrl(
             );
           })()}
       </div>
+      <Modal
+        open={manualBookingOpen}
+        onClose={() => setManualBookingOpen(false)}
+        title="Новий запис"
+        badge="Запис"
+        icon={UserPlus}
+        subtitle="Створіть запис вручну для існуючого клієнта."
+        size="lg"
+        footer={
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              variant="secondary"
+              onClick={() => setManualBookingOpen(false)}
+              className="h-12 w-full rounded-2xl px-2 text-sm"
+            >
+              Скасувати
+            </Button>
+
+            <Button
+              variant="primary"
+              disabled={
+                manualBookingSaving ||
+                !manualClientId ||
+                !manualServiceId ||
+                !manualMasterId ||
+                !manualDate ||
+                !manualTime
+              }
+              onClick={handleCreateManualBooking}
+              className="h-12 w-full rounded-2xl px-2 text-sm"
+            >
+              <Check className="h-4 w-4" />
+              <span className="truncate">
+                {manualBookingSaving ? "Створюємо..." : "Створити запис"}
+              </span>
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <div className="space-y-4 rounded-2xl border border-[#eadbc9] bg-white p-4">
+            <div>
+              <label className="mb-2 flex items-center gap-2 text-sm font-black text-[#202020]">
+                <UserRound className="h-4 w-4 text-[#ff6200]" />
+                Клієнт
+              </label>
+
+              <ManualSelect
+                label=""
+                value={manualClientId}
+                onChange={setManualClientId}
+                options={clients}
+                placeholder="Оберіть клієнта"
+                type="client"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 gap-3">
+              <div>
+                <label className="mb-2 flex items-center gap-2 text-sm font-black text-[#202020]">
+                  <FilePenLine className="h-4 w-4 text-[#ff6200]" />
+                  Послуга
+                </label>
+
+                <ManualSelect
+                  label=""
+                  value={manualServiceId}
+                  onChange={setManualServiceId}
+                  options={services}
+                  placeholder="Оберіть послугу"
+                  type="service"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 flex items-center gap-2 text-sm font-black text-[#202020]">
+                  <UserStar className="h-4 w-4 text-[#ff6200]" />
+                  Майстер
+                </label>
+
+                <ManualSelect
+                  label=""
+                  value={manualMasterId}
+                  onChange={setManualMasterId}
+                  options={masters}
+                  placeholder="Оберіть майстра"
+                  type="master"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <label className="block min-w-0">
+                  <span className="mb-2 flex items-center gap-2 text-sm font-black text-[#202020]">
+                    <CalendarDays className="h-4 w-4 text-[#ff6200]" />
+                    Дата
+                  </span>
+
+                  <div className="relative min-w-0">
+                    <DatePicker
+                      ref={manualDatePickerRef}
+                      selected={dateStringToDate(manualDate)}
+                      onChange={(date) => {
+                        setManualDate(dateToDateString(date));
+
+                        setTimeout(() => {
+                          manualDatePickerRef.current?.setOpen(false);
+                        }, 0);
+                      }}
+                      locale={uk}
+                      dateFormat="dd.MM.yyyy"
+                      calendarStartDay={1}
+                      shouldCloseOnSelect={true}
+                      popperPlacement="top-start"
+                      popperClassName="z-[9999] datepicker-popper-mobile"
+                      wrapperClassName="w-full"
+                      customInput={<DatePickerButton />}
+                    />
+                  </div>
+                </label>
+
+                <label className="block min-w-0">
+                  <span className="mb-2 flex items-center gap-2 text-sm font-black text-[#202020]">
+                    <Clock3 className="h-4 w-4 text-[#ff6200]" />
+                    Час
+                  </span>
+
+                  <div className="flex h-14 min-w-0 items-center overflow-hidden rounded-2xl border border-[#eadbc9] bg-white px-2 transition-all hover:border-[#ffd6bd] hover:bg-[#fff7f0] focus-within:ring-4 focus-within:ring-[#ff6200]/10">
+                    <TimeSelect
+                      value={manualTime}
+                      placeholder="--:--"
+                      label="Час запису"
+                      dayLabel={
+                        manualDate ? formatDateUA(manualDate) : "Новий запис"
+                      }
+                      onChange={(value) => setManualTime(value)}
+                      onCommit={(value) => setManualTime(value)}
+                      className="h-10 rounded-[14px]"
+                    />
+                  </div>
+                </label>
+              </div>
+
+              {manualBookingError && (
+                <div className="rounded-2xl border border-[#ffd8d8] bg-[#fff7f7] px-4 py-3 text-sm font-bold text-[#e5484d]">
+                  {manualBookingError}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

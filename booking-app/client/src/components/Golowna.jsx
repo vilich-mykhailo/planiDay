@@ -291,6 +291,7 @@ function MonthlyBookingsChart({
   onModeChange,
   onOpenBooking,
   studioCreatedAt,
+  viewSwitcher = null,
 }) {
   const [isMobileChart, setIsMobileChart] = useState(
     () => window.innerWidth < 640,
@@ -389,6 +390,90 @@ function MonthlyBookingsChart({
   const [chartDayKey, setChartDayKey] = useState(null);
   const [chartHourKey, setChartHourKey] = useState(null);
   const [chartSelectionFilter, setChartSelectionFilter] = useState("all");
+  const [chartRangeOpen, setChartRangeOpen] = useState(false);
+const [visibleBookingsCount, setVisibleBookingsCount] = useState(5);
+
+useEffect(() => {
+  const isOpen =
+    chartDayKey || chartHourKey || chartRangeOpen;
+
+  if (!isOpen) return;
+
+  const scrollY = window.scrollY;
+
+  document.body.style.position = "fixed";
+  document.body.style.top = `-${scrollY}px`;
+  document.body.style.left = "0";
+  document.body.style.right = "0";
+  document.body.style.width = "100%";
+
+  return () => {
+    const y = Math.abs(
+      parseInt(document.body.style.top || "0", 10),
+    );
+
+    document.body.style.position = "";
+    document.body.style.top = "";
+    document.body.style.left = "";
+    document.body.style.right = "";
+    document.body.style.width = "";
+
+    window.scrollTo(0, y);
+  };
+}, [chartDayKey, chartHourKey, chartRangeOpen]);
+
+  const chartRangeBookings = useMemo(() => {
+  return (bookings || [])
+    .filter((b) => {
+      if (!b?.id || b.status === "deleted") return false;
+
+      if (chartMode === "today") {
+        return b.date === toISODateKey(today);
+      }
+
+      const d = new Date(b.date);
+      if (Number.isNaN(d.getTime())) return false;
+
+      return (
+        d.getFullYear() === visibleMonth.getFullYear() &&
+        d.getMonth() === visibleMonth.getMonth()
+      );
+    })
+    .sort((a, c) => {
+      const dateCompare = String(a.date || "").localeCompare(
+        String(c.date || ""),
+      );
+
+      if (dateCompare !== 0) return dateCompare;
+
+      return (parseTimeToHHMM(a.time) || "").localeCompare(
+        parseTimeToHHMM(c.time) || "",
+      );
+    });
+}, [bookings, chartMode, today, visibleMonth]);
+
+const chartFilteredRangeBookings = useMemo(() => {
+  if (chartSelectionFilter === "confirmed") {
+    return chartRangeBookings.filter(
+      (b) => b.status === "confirmed",
+    );
+  }
+
+  if (chartSelectionFilter === "pending") {
+    return chartRangeBookings.filter(
+      (b) => b.status !== "confirmed" &&
+             b.status !== "canceled",
+    );
+  }
+
+  if (chartSelectionFilter === "canceled") {
+    return chartRangeBookings.filter(
+      (b) => b.status === "canceled",
+    );
+  }
+
+  return chartRangeBookings;
+}, [chartRangeBookings, chartSelectionFilter]);
 
   useEffect(() => {
     onModeChange?.(chartMode);
@@ -708,6 +793,25 @@ function MonthlyBookingsChart({
   ? chart.points.findIndex((item) => item.key === activePoint.key)
   : -1;
 
+  const activePointTotal =
+  activePoint
+    ? activePoint.confirmed +
+      activePoint.pending +
+      activePoint.canceled
+    : 0;
+
+const activePointConfirmedPercent = activePointTotal
+  ? Math.round((activePoint.confirmed / activePointTotal) * 100)
+  : 0;
+
+const activePointPendingPercent = activePointTotal
+  ? Math.round((activePoint.pending / activePointTotal) * 100)
+  : 0;
+
+const activePointCanceledPercent = activePointTotal
+  ? 100 - activePointConfirmedPercent - activePointPendingPercent
+  : 0;
+
 const goPrevPoint = () => {
   if (activePointIndex <= 0) return;
 
@@ -787,6 +891,12 @@ const goNextPoint = () => {
     pending: "Очікують підтвердження",
     canceled: "Скасовані записи",
   };
+
+  const modalBookings = chartRangeOpen
+  ? chartFilteredRangeBookings
+  : chartFilteredSelectionBookings;
+
+const displayedBookings = modalBookings.slice(0, visibleBookingsCount);
 
   const isCurrentMonth = isSameMonth(visibleMonth, today);
   function isStudioWorkingDay(date) {
@@ -893,95 +1003,119 @@ const goNextPoint = () => {
               </div>
             </div>
           </div>
+
+          {viewSwitcher && (
+            <div className="flex justify-end xl:pt-0">{viewSwitcher}</div>
+          )}
         </div>
 
-        <div className="mt-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
-          <ChartKpi
-            label={
-              chartMode === "today" ? (
-                <>
-                  <span className="sm:hidden">
-                    Активні
-                    <br />
-                    сьогодні
-                  </span>
-                  <span className="hidden sm:inline">Активні сьогодні</span>
-                </>
-              ) : (
-                <>
-                  <span className="sm:hidden">
-                    Підтверджені
-                    <br />
-                    записи
-                  </span>
-                  <span className="hidden sm:inline">Підтверджені записи</span>
-                </>
-              )
-            }
-            value={chartMode === "today" ? liveKpi.today : liveKpi.confirmed}
-            icon={chartMode === "today" ? CalendarDays : BadgeCheck}
-            tone="emerald"
-          />
+<div className="mt-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
+  <ChartKpi
+    label={
+      chartMode === "today" ? (
+        <>
+          <span className="sm:hidden">
+            Активні
+            <br />
+            сьогодні
+          </span>
+          <span className="hidden sm:inline">Активні сьогодні</span>
+        </>
+      ) : (
+        <>
+          <span className="sm:hidden">
+            Підтверджені
+            <br />
+            записи
+          </span>
+          <span className="hidden sm:inline">Підтверджені записи</span>
+        </>
+      )
+    }
+    value={chartMode === "today" ? liveKpi.today : liveKpi.confirmed}
+    icon={chartMode === "today" ? CalendarDays : BadgeCheck}
+    tone="emerald"
+onClick={() => {
+  setChartSelectionFilter("confirmed");
+  setVisibleBookingsCount(5);
+  setChartRangeOpen(true);
+}}
+  />
 
-          <ChartKpi
-            label={
-              <>
-                <span className="sm:hidden">
-                  Очікують
-                  <br />
-                  підтвердження
-                </span>
-                <span className="hidden sm:inline">Очікують підтвердження</span>
-              </>
-            }
-            value={liveKpi.pending}
-            icon={ClockAlert}
-            tone="amber"
-          />
+  <ChartKpi
+    label={
+      <>
+        <span className="sm:hidden">
+          Очікують
+          <br />
+          підтвердження
+        </span>
+        <span className="hidden sm:inline">Очікують підтвердження</span>
+      </>
+    }
+    value={liveKpi.pending}
+    icon={ClockAlert}
+    tone="amber"
+onClick={() => {
+  setChartSelectionFilter("pending");
+  setVisibleBookingsCount(5);
+  setChartRangeOpen(true);
+}}
+  />
 
-          <ChartKpi
-            label={
-              <>
-                <span className="sm:hidden">
-                  Скасовані
-                  <br />
-                  записи
-                </span>
-                <span className="hidden sm:inline">Скасовані записи</span>
-              </>
-            }
-            value={liveKpi.canceled}
-            icon={XCircle}
-            tone="rose"
-          />
+  <ChartKpi
+    label={
+      <>
+        <span className="sm:hidden">
+          Скасовані
+          <br />
+          записи
+        </span>
+        <span className="hidden sm:inline">Скасовані записи</span>
+      </>
+    }
+    value={liveKpi.canceled}
+    icon={XCircle}
+    tone="rose"
+onClick={() => {
+  setChartSelectionFilter("canceled");
+  setVisibleBookingsCount(5);
+  setChartRangeOpen(true);
+}}
+  />
 
-          <ChartKpi
-            label={
-              chartMode === "today" ? (
-                <>
-                  <span className="sm:hidden">
-                    Усього
-                    <br />
-                    записів
-                  </span>
-                  <span className="hidden sm:inline">Усього записів</span>
-                </>
-              ) : (
-                <>
-                  <span className="sm:hidden">
-                    Усього
-                    <br />
-                    бронювань
-                  </span>
-                  <span className="hidden sm:inline">Усього бронювань</span>
-                </>
-              )
-            }
-            value={total}
-            icon={LayoutGrid}
-            tone="slate"
-          />
-        </div>
+  <ChartKpi
+    label={
+      chartMode === "today" ? (
+        <>
+          <span className="sm:hidden">
+            Усього
+            <br />
+            записів
+          </span>
+          <span className="hidden sm:inline">Усього записів</span>
+        </>
+      ) : (
+        <>
+          <span className="sm:hidden">
+            Усього
+            <br />
+            бронювань
+          </span>
+          <span className="hidden sm:inline">Усього бронювань</span>
+        </>
+      )
+    }
+    value={total}
+    icon={LayoutGrid}
+    tone="slate"
+onClick={() => {
+  setChartSelectionFilter("all");
+  setVisibleBookingsCount(5);
+  setChartRangeOpen(true);
+}}
+  />
+</div>
 
         <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
           <div className="min-w-0 overflow-hidden rounded-[30px] border border-[#ebe7df] bg-white shadow-[0_14px_44px_rgba(15,23,42,0.05)]">
@@ -1277,15 +1411,59 @@ const goNextPoint = () => {
                   : "Структура записів у вибраний день"
                 : "Оберіть точку на графіку"}
             </p>
+<div className="mt-5 grid gap-4">
+  <div className="flex justify-center">
+    <div
+      className="relative flex h-[132px] w-[132px] items-center justify-center rounded-full"
+      style={{
+        background: activePointTotal
+          ? `conic-gradient(
+              #16a34a 0 ${activePointConfirmedPercent}%,
+              #ff7a18 ${activePointConfirmedPercent}% ${activePointConfirmedPercent + activePointPendingPercent}%,
+              #ef233c ${activePointConfirmedPercent + activePointPendingPercent}% 100%
+            )`
+          : "#eef0f3",
+      }}
+    >
+      
+      <div className="flex h-[86px] w-[86px] flex-col items-center justify-center rounded-full bg-white shadow-inner">
+        <span className="text-[30px] font-black leading-none text-[#202020]">
+          {activePointTotal}
+        </span>
+        <span className="mt-1 text-[11px] font-bold text-[#77716b]">
+          усього
+        </span>
+      </div>
+    </div>
+  </div>
+<div className="flex flex-wrap items-center justify-center gap-3 text-[11px] font-bold text-[#77716b]">
+  <div className="flex items-center gap-1.5">
+    <span className="h-2.5 w-2.5 rounded-full bg-[#16a34a]" />
+    Підтверджені
+  </div>
 
-            <div className="mt-5 grid grid-cols-2 gap-2">
-              <ChartTinyStat
-                label="Підтверджені"
-                value={activePoint?.confirmed || 0}
+  <div className="flex items-center gap-1.5">
+    <span className="h-2.5 w-2.5 rounded-full bg-[#ef233c]" />
+    Скасовані
+  </div>
+
+  <div className="flex items-center gap-1.5">
+    <span className="h-2.5 w-2.5 rounded-full bg-[#ff7a18]" />
+    Очікують підтвердження
+  </div>
+
+
+</div>
+  <div className="grid grid-cols-2 gap-2">
+  <ChartTinyStat
+    label="Підтверджені"
+    value={activePoint?.confirmed || 0}
+    className="border-[#bbf7d0] bg-[#f0fdf4] text-[#16a34a]"
                 onClick={
                   activePoint
                     ? () => {
                         setChartSelectionFilter("confirmed");
+                        setVisibleBookingsCount(5);
                         if (chartMode === "today") {
                           setChartHourKey({
                             date: toISODateKey(today),
@@ -1299,9 +1477,10 @@ const goNextPoint = () => {
                     : null
                 }
               />
-              <ChartTinyStat
-                label="Очікують"
-                value={activePoint?.pending || 0}
+  <ChartTinyStat
+    label="Очікують"
+    value={activePoint?.pending || 0}
+    className="border-[#fed7aa] bg-[#fff7ed] text-[#ff7a18]"
                 onClick={
                   activePoint
                     ? () => {
@@ -1319,9 +1498,10 @@ const goNextPoint = () => {
                     : null
                 }
               />
-              <ChartTinyStat
-                label="Скасовані"
-                value={activePoint?.canceled || 0}
+  <ChartTinyStat
+    label="Скасовані"
+    value={activePoint?.canceled || 0}
+    className="border-[#fecaca] bg-[#fef2f2] text-[#ef233c]"
                 onClick={
                   activePoint
                     ? () => {
@@ -1339,15 +1519,16 @@ const goNextPoint = () => {
                     : null
                 }
               />
-              <ChartTinyStat
-                label="Усього"
-                value={
-                  activePoint
-                    ? activePoint.confirmed +
-                      activePoint.pending +
-                      activePoint.canceled
-                    : 0
-                }
+  <ChartTinyStat
+    label="Усього"
+    value={
+      activePoint
+        ? activePoint.confirmed +
+          activePoint.pending +
+          activePoint.canceled
+        : 0
+    }
+    className="border-[#e5e7eb] bg-[#f8fafc] text-[#202020]"
                 onClick={
                   activePoint
                     ? () => {
@@ -1365,6 +1546,7 @@ const goNextPoint = () => {
                     : null
                 }
               />
+            </div>
             </div>
 
             {chartMode === "month" && activePoint && (
@@ -1401,13 +1583,15 @@ const goNextPoint = () => {
           </aside>
         </div>
 
-        {(chartDayKey || chartHourKey) && (
+
+       {(chartDayKey || chartHourKey || chartRangeOpen) && (
           <div
             className="fixed inset-0 z-[230] flex items-end justify-center bg-[var(--color-bg)]/45 p-0 backdrop-blur-[7px] sm:items-center sm:p-4"
             onMouseDown={(e) => {
               if (e.target === e.currentTarget) {
                 setChartDayKey(null);
                 setChartHourKey(null);
+                setChartRangeOpen(false);
               }
             }}
           >
@@ -1429,6 +1613,7 @@ const goNextPoint = () => {
                     onClick={() => {
                       setChartDayKey(null);
                       setChartHourKey(null);
+                      setChartRangeOpen(false);
                     }}
                     className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[#eadbc9] bg-white text-[var(--color-ink)] shadow-sm transition-all duration-200 hover:border-[#ffd6bd] hover:bg-[#fff7f0] active:scale-[0.98]"
                     aria-label="Назад"
@@ -1439,7 +1624,9 @@ const goNextPoint = () => {
                   <div className="inline-flex items-center gap-2 rounded-full border border-[#eadbc9] bg-white px-3 py-1.5 text-[13px] font-semibold shadow-sm">
                     <LayoutGrid className="h-4 w-4 text-[#ff5a00]" />
                     <span className="whitespace-nowrap text-[var(--color-ink)]">
-                      Всього записів: {chartFilteredSelectionBookings.length}
+                     Всього записів: {chartRangeOpen
+  ? chartFilteredRangeBookings.length
+  : chartFilteredSelectionBookings.length}
                     </span>
                   </div>
 
@@ -1462,45 +1649,58 @@ const goNextPoint = () => {
 
               <div className="relative flex min-h-0 flex-1 flex-col px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-4 sm:flex-none sm:px-5 sm:pb-5">
                 <div className="calendar-day-scroll min-h-0 flex-1 space-y-3 overflow-y-auto pr-1 pb-16 sm:max-h-[60vh] sm:flex-none sm:pb-2">
-                  {chartFilteredSelectionBookings.length > 0 ? (
-                    chartFilteredSelectionBookings.map((item) => (
-                      <AppointmentCard
-                        key={item.id}
-                        item={{
-                          ...item,
-                          time: parseTimeToHHMM(item.time) || item.time || "—",
-                          serviceName: item.serviceName || "—",
-                          clientName: item.clientName || "—",
-                          clientPhotoUrl:
-                            item.clientPhotoUrl || item.client?.photoUrl || "",
-                          masterPhotoUrl:
-                            item.masterPhotoUrl || item.master?.photoUrl || "",
-                        }}
-                        todayKey={toISODateKey(today)}
-                        nowTs={nowTs}
-                        onOpen={(id) => {
-                          setChartDayKey(null);
-                          setChartHourKey(null);
-                          onOpenBooking?.(id);
-                        }}
-                        hideDate
-                      />
-                    ))
-                  ) : (
-                    <div className="rounded-2xl border-2 border-dashed border-[#eadbc9] bg-[#fff7f0] p-6 text-center sm:p-8">
-                      <div className="mb-3 flex items-center justify-center">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white shadow-sm">
-                          <CalendarDays className="h-7 w-7 text-[#ff5a00]" />
-                        </div>
-                      </div>
+                  {modalBookings.length > 0 ? (
+  <>
+    {displayedBookings.map((item) => (
+      <AppointmentCard
+        key={item.id}
+        item={{
+          ...item,
+          time: parseTimeToHHMM(item.time) || item.time || "—",
+          serviceName: item.serviceName || "—",
+          clientName: item.clientName || "—",
+          clientPhotoUrl:
+            item.clientPhotoUrl || item.client?.photoUrl || "",
+          masterPhotoUrl:
+            item.masterPhotoUrl || item.master?.photoUrl || "",
+        }}
+        todayKey={toISODateKey(today)}
+        nowTs={nowTs}
+        onOpen={(id) => {
+          setChartDayKey(null);
+          setChartHourKey(null);
+          setChartRangeOpen(false);
+          onOpenBooking?.(id);
+        }}
+        hideDate
+      />
+    ))}
 
-                      <p className="text-sm font-bold text-[var(--color-ink)]">
-                        {chartHourKey
-                          ? "На цю годину записів немає"
-                          : "На цю дату записів немає"}
-                      </p>
-                    </div>
-                  )}
+    {modalBookings.length > visibleBookingsCount && (
+      <button
+        type="button"
+        onClick={() => setVisibleBookingsCount((prev) => prev + 5)}
+        className="mt-2 w-full rounded-2xl border border-[#eadbc9] bg-white py-3 text-sm font-black text-[#ff5a00] transition-all hover:bg-[#fff7f0] active:scale-[0.98]"
+      >
+        Показати ще 5 записів
+      </button>
+    )}
+  </>
+) : (
+  <div className="rounded-2xl border-2 border-dashed border-[#eadbc9] bg-[#fff7f0] p-6 text-center sm:p-8">
+    <div className="mb-3 flex items-center justify-center">
+      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white shadow-sm">
+        <CalendarDays className="h-7 w-7 text-[#ff5a00]" />
+      </div>
+    </div>
+
+    <p className="text-sm font-bold text-[var(--color-ink)]">
+      {chartHourKey
+        ? "На цю годину записів немає"
+        : "На цю дату записів немає"}
+    </p>
+  </div>
+)}
                 </div>
               </div>
             </div>
@@ -1511,20 +1711,29 @@ const goNextPoint = () => {
   );
 }
 
-function ChartKpi({ label, value, icon: Icon, tone = "emerald" }) {
-  const tones = {
-    emerald: "text-[#16a34a]",
-    sky: "text-[#ff5a00]",
-    amber: "text-[#ff5a00]",
-    slate: "text-[#77716b]",
-    rose: "text-[#dc2626]",
-  };
+function ChartKpi({
+  label,
+  value,
+  icon: Icon,
+  tone = "emerald",
+  onClick,
+}) {
+const tones = {
+  emerald: "border-[#bbf7d0] bg-[#f0fdf4] text-[#16a34a]",
+  amber: "border-[#fed7aa] bg-[#fff7ed] text-[#ff7a18]",
+  rose: "border-[#fecaca] bg-[#fef2f2] text-[#ef233c]",
+  slate: "border-[#e5e7eb] bg-[#f8fafc] text-[#202020]",
+};
 
-  return (
-    <div
+const Component = onClick ? "button" : "div";
+
+return (
+  <Component
+    type={onClick ? "button" : undefined}
+    onClick={onClick || undefined}
       className={cn(
-        "flex items-center justify-between rounded-[18px] border border-[#eadbc9] bg-white px-3 py-2.5 shadow-sm transition-all duration-200 hover:border-[#ffd6bd] hover:bg-[#fff7f0] hover:shadow-[0_10px_30px_rgba(15,23,42,0.06)]",
-        "sm:rounded-[24px] sm:px-4 sm:py-4",
+    "flex w-full items-center justify-between rounded-[18px] border bg-white px-3 py-2.5 shadow-sm transition-all duration-200 hover:-translate-y-[1px] hover:bg-[#fff7f0] hover:shadow-[0_10px_30px_rgba(15,23,42,0.06)] active:scale-[0.98]",
+onClick && "cursor-pointer",
         tones[tone],
       )}
     >
@@ -1541,22 +1750,28 @@ function ChartKpi({ label, value, icon: Icon, tone = "emerald" }) {
       <div className="hidden h-10 w-10 items-center justify-center rounded-2xl sm:flex">
         {Icon && <Icon className="h-8 w-8" />}
       </div>
-    </div>
+    </Component>
   );
 }
 
-function ChartTinyStat({ label, value, onClick }) {
+function ChartTinyStat({
+  label,
+  value,
+  onClick,
+  className = "",
+}) {
   const Component = onClick ? "button" : "div";
 
   return (
     <Component
       type={onClick ? "button" : undefined}
       onClick={onClick || undefined}
-      className={cn(
-        "relative flex min-h-[68px] flex-col items-center justify-center rounded-2xl border border-[#eadbc9] bg-white px-2 py-3 text-center shadow-sm transition-all duration-200",
-        onClick &&
-          "hover:-translate-y-[1px] hover:border-[#ffd6bd] hover:bg-[#fff7f0] active:scale-[0.98]",
-      )}
+className={cn(
+  "relative flex min-h-[68px] flex-col items-center justify-center rounded-2xl border px-2 py-3 text-center shadow-sm transition-all duration-200",
+  onClick &&
+    "hover:-translate-y-[1px] active:scale-[0.98]",
+  className,
+)}
     >
       {onClick && (
         <SquareArrowOutUpRight className="absolute right-2 top-2 h-3.5 w-3.5 text-[#ff6200]" />
@@ -1759,10 +1974,10 @@ function AppointmentCard({ item, nowTs, onOpen }) {
     date && !Number.isNaN(date.getTime())
       ? String(date.getDate()).padStart(2, "0")
       : "—";
-  const monthLabel =
-    date && !Number.isNaN(date.getTime())
-      ? date.toLocaleDateString("uk-UA", { month: "short" }).replace(".", "")
-      : "";
+const monthLabel =
+  date && !Number.isNaN(date.getTime())
+    ? date.toLocaleDateString("uk-UA", { month: "long" })
+    : "";
 
   const isCanceled = item.status === "canceled";
   const isConfirmed = item.status === "confirmed";
@@ -1827,12 +2042,12 @@ function AppointmentCard({ item, nowTs, onOpen }) {
               </div>
 
 <div className="min-w-0">
-  <div
-    className={cn(
-      "mb-2 inline-flex w-fit items-center justify-center gap-1.5 rounded-full border border-[#eadfce] bg-white px-3 py-1 text-[10px] font-black shadow-sm",
-      statusMeta.text,
-    )}
-  >
+<div
+  className={cn(
+    "mb-2 inline-flex w-fit items-center justify-center gap-1.5 rounded-full border border-[#eadfce] bg-white px-3 py-1 text-[10px] font-black shadow-sm max-[639px]:hidden",
+    statusMeta.text,
+  )}
+>
     <StatusIcon className="h-3.5 w-3.5" />
 
     <span className="text-center leading-[1.05]">
@@ -1957,6 +2172,1192 @@ function updateCalendarScrollState(el, setHasScroll, setShowScrollHint) {
   setShowScrollHint(isScrollable && !isAtBottom);
 }
 
+const SCHEDULE_START_HOUR = 8;
+const SCHEDULE_END_HOUR = 20;
+const SCHEDULE_HOUR_HEIGHT = 78;
+const SCHEDULE_MIN_CARD_HEIGHT = 38;
+const SCHEDULE_DEFAULT_DURATION = 60;
+
+const SCHEDULE_STATUS_FILTERS = [
+  { key: "all", label: "Усі" },
+  { key: "pending", label: "Очікують" },
+  { key: "confirmed", label: "Підтверджені" },
+  { key: "canceled", label: "Скасовані" },
+  { key: "archived", label: "Завершені" },
+];
+
+function numberOrNull(value) {
+  if (value == null || value === "") return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+function scheduleMinutesFromTime(value) {
+  const time = parseTimeToHHMM(value);
+  if (!time) return null;
+
+  const [hh, mm] = time.split(":").map(Number);
+  return hh * 60 + mm;
+}
+
+function scheduleDateKey(value) {
+  const raw = String(value || "").trim();
+  const direct = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+
+  if (direct) return `${direct[1]}-${direct[2]}-${direct[3]}`;
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  return toISODateKey(date);
+}
+
+function scheduleDateTimeMinutes(value) {
+  if (!value) return null;
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+
+  return date.getHours() * 60 + date.getMinutes();
+}
+
+function scheduleTimeLabel(minutes) {
+  const safe = Math.max(0, Math.min(24 * 60 - 1, Math.round(minutes || 0)));
+  return `${pad2(Math.floor(safe / 60))}:${pad2(safe % 60)}`;
+}
+
+function scheduleServices(booking) {
+  if (Array.isArray(booking?.services)) return booking.services;
+  if (Array.isArray(booking?.bookingServices)) return booking.bookingServices;
+  if (Array.isArray(booking?.items)) return booking.items;
+  return [];
+}
+
+function scheduleServiceName(booking) {
+  const direct =
+    booking?.serviceName ||
+    booking?.serviceTitle ||
+    booking?.service?.name ||
+    booking?.service?.title;
+
+  if (direct) return String(direct);
+
+  const names = scheduleServices(booking)
+    .map((item) => item?.name || item?.title || item?.serviceName)
+    .filter(Boolean);
+
+  return names.length ? names.join(", ") : "Послуга";
+}
+
+function schedulePrice(booking) {
+  const direct =
+    numberOrNull(booking?.price) ??
+    numberOrNull(booking?.servicePrice) ??
+    numberOrNull(booking?.totalPrice) ??
+    numberOrNull(booking?.amount);
+
+  if (direct != null) return direct;
+
+  const sum = scheduleServices(booking).reduce((total, item) => {
+    return (
+      total +
+      (numberOrNull(item?.price) ??
+        numberOrNull(item?.servicePrice) ??
+        numberOrNull(item?.amount) ??
+        0)
+    );
+  }, 0);
+
+  return sum > 0 ? sum : null;
+}
+
+function scheduleDuration(booking) {
+  const direct =
+    numberOrNull(booking?.duration) ??
+    numberOrNull(booking?.durationMinutes) ??
+    numberOrNull(booking?.serviceDuration) ??
+    numberOrNull(booking?.service?.duration) ??
+    numberOrNull(booking?.service?.durationMinutes);
+
+  if (direct != null) return Math.max(10, direct);
+
+  const sum = scheduleServices(booking).reduce((total, item) => {
+    return (
+      total +
+      (numberOrNull(item?.duration) ??
+        numberOrNull(item?.durationMinutes) ??
+        numberOrNull(item?.serviceDuration) ??
+        0)
+    );
+  }, 0);
+
+  return sum > 0 ? Math.max(10, sum) : SCHEDULE_DEFAULT_DURATION;
+}
+
+function scheduleStaffName(booking) {
+  return (
+    booking?.masterName ||
+    booking?.staffName ||
+    booking?.employeeName ||
+    booking?.workerName ||
+    booking?.master?.name ||
+    booking?.staff?.name ||
+    booking?.employee?.name ||
+    booking?.worker?.name ||
+    "Вільний майстер"
+  );
+}
+
+function scheduleStaffRole(booking) {
+  return (
+    booking?.masterRole ||
+    booking?.staffRole ||
+    booking?.employeeRole ||
+    booking?.master?.role ||
+    booking?.staff?.role ||
+    booking?.employee?.role ||
+    "Співробітник"
+  );
+}
+
+function scheduleResourceName(booking) {
+  return (
+    booking?.resourceName ||
+    booking?.roomName ||
+    booking?.cabinetName ||
+    booking?.chairName ||
+    booking?.resource?.name ||
+    booking?.room?.name ||
+    "Основний зал"
+  );
+}
+
+function schedulePhotoUrl(booking) {
+  return toPublicUrl(
+    booking?.masterPhotoUrl ||
+      booking?.staffPhotoUrl ||
+      booking?.employeePhotoUrl ||
+      booking?.masterPhoto ||
+      booking?.staffPhoto ||
+      booking?.employeePhoto ||
+      booking?.master?.photoUrl ||
+      booking?.staff?.photoUrl ||
+      booking?.employee?.photoUrl ||
+      booking?.master?.photo ||
+      booking?.staff?.photo ||
+      booking?.employee?.photo ||
+      "",
+  );
+}
+
+function normalizeScheduleBooking(booking) {
+  if (!booking) return null;
+
+  const dateKey =
+    scheduleDateKey(booking.date) ||
+    scheduleDateKey(booking.startDate) ||
+    scheduleDateKey(booking.startAt) ||
+    scheduleDateKey(booking.datetime);
+
+  if (!dateKey) return null;
+
+  const startMin =
+    scheduleMinutesFromTime(booking.time) ??
+    scheduleMinutesFromTime(booking.startTime) ??
+    scheduleMinutesFromTime(booking.start) ??
+    scheduleDateTimeMinutes(booking.startAt) ??
+    scheduleDateTimeMinutes(booking.datetime) ??
+    SCHEDULE_START_HOUR * 60;
+
+  const duration = scheduleDuration(booking);
+  const staffName = scheduleStaffName(booking);
+  const resourceName = scheduleResourceName(booking);
+  const staffKey = String(
+    booking.masterId ||
+      booking.staffId ||
+      booking.employeeId ||
+      booking.workerId ||
+      booking.master?.id ||
+      booking.staff?.id ||
+      booking.employee?.id ||
+      staffName,
+  );
+  const resourceKey = String(
+    booking.resourceId ||
+      booking.roomId ||
+      booking.cabinetId ||
+      booking.resource?.id ||
+      booking.room?.id ||
+      resourceName,
+  );
+
+  return {
+    id: booking.id ?? booking._id ?? booking.bookingId,
+    raw: booking,
+    dateKey,
+    startMin,
+    endMin: Math.min(24 * 60, startMin + duration),
+    duration,
+    status: String(booking.status || "pending").toLowerCase(),
+    clientName:
+      booking.clientName ||
+      booking.customerName ||
+      booking.client?.name ||
+      booking.customer?.name ||
+      "Клієнт",
+    clientPhone:
+      booking.clientPhone ||
+      booking.customerPhone ||
+      booking.phone ||
+      booking.client?.phone ||
+      booking.customer?.phone ||
+      "",
+    serviceName: scheduleServiceName(booking),
+    price: schedulePrice(booking),
+    staffKey: `staff:${staffKey}`,
+    staffName,
+    staffRole: scheduleStaffRole(booking),
+    staffPhotoUrl: schedulePhotoUrl(booking),
+    resourceKey: `resource:${resourceKey}`,
+    resourceName,
+  };
+}
+
+function scheduleVisualStatus(booking, nowTs) {
+  const status = String(booking?.status || "").toLowerCase();
+
+  if (status === "deleted") return "deleted";
+  if (status === "canceled" || status === "cancelled") return "canceled";
+
+  const date = new Date(`${booking.dateKey}T00:00:00`);
+  date.setMinutes(booking.endMin || booking.startMin || 0);
+
+  if (!Number.isNaN(date.getTime()) && date.getTime() < nowTs) {
+    return "archived";
+  }
+
+  if (status === "confirmed" || status === "approved" || status === "done") {
+    return "confirmed";
+  }
+
+  return "pending";
+}
+
+function schedulePalette(booking, nowTs) {
+  const status = scheduleVisualStatus(booking, nowTs);
+
+  if (status === "confirmed") {
+    return {
+      bg: "bg-[#edf8f0]",
+      border: "border-[#ccebd6]",
+      accent: "bg-[var(--color-buttom-ok)]",
+      text: "text-[var(--color-confirmed-dark)]",
+      shadow: "shadow-[0_14px_34px_rgba(47,126,83,0.11)]",
+    };
+  }
+
+  if (status === "pending") {
+    return {
+      bg: "bg-[#fff7dc]",
+      border: "border-[#ffe5a7]",
+      accent: "bg-[#ffb020]",
+      text: "text-[#8a5f00]",
+      shadow: "shadow-[0_14px_34px_rgba(255,176,32,0.12)]",
+    };
+  }
+
+  if (status === "canceled") {
+    return {
+      bg: "bg-[#fff5f5]",
+      border: "border-[#fecaca]",
+      accent: "bg-[var(--color-danger)]",
+      text: "text-[var(--color-canceled-dark)]",
+      shadow: "shadow-none",
+    };
+  }
+
+  if (status === "archived") {
+    return {
+      bg: "bg-[var(--color-archived-light)]",
+      border: "border-[#eadbc9]",
+      accent: "bg-[var(--color-caramel)]",
+      text: "text-[var(--color-archived-dark)]",
+      shadow: "shadow-none",
+    };
+  }
+
+  return {
+    bg: "bg-[#f4f1ec]",
+    border: "border-[#e2d8cc]",
+    accent: "bg-[var(--color-caramel)]",
+    text: "text-[var(--color-archived-dark)]",
+    shadow: "shadow-none",
+  };
+}
+
+function scheduleOptionsFromStudio(studio, type) {
+  const keys =
+    type === "staff"
+      ? ["staff", "employees", "masters", "workers", "members"]
+      : ["resources", "rooms", "cabinets", "chairs"];
+
+  return keys
+    .flatMap((key) => (Array.isArray(studio?.[key]) ? studio[key] : []))
+    .map((item) => {
+      const name = item?.name || item?.title || item?.fullName || item?.label;
+      if (!name) return null;
+
+      const id = item?.id || item?._id || name;
+
+      return {
+        key: `${type === "staff" ? "staff" : "resource"}:${id}`,
+        name,
+        role:
+          item?.role ||
+          item?.position ||
+          (type === "staff" ? "Співробітник" : "Ресурс"),
+        photoUrl: toPublicUrl(item?.photoUrl || item?.photo || item?.avatar || ""),
+      };
+    })
+    .filter(Boolean);
+}
+
+function scheduleEntityOptions(bookings, studio, type) {
+  const map = new Map();
+
+  for (const option of scheduleOptionsFromStudio(studio, type)) {
+    map.set(option.key, option);
+  }
+
+  for (const booking of bookings) {
+    if (type === "resource") {
+      map.set(booking.resourceKey, {
+        key: booking.resourceKey,
+        name: booking.resourceName,
+        role: "Ресурс",
+        photoUrl: "",
+      });
+      continue;
+    }
+
+    map.set(booking.staffKey, {
+      key: booking.staffKey,
+      name: booking.staffName,
+      role: booking.staffRole,
+      photoUrl: booking.staffPhotoUrl,
+    });
+  }
+
+  if (map.size === 0) {
+    const fallback =
+      type === "resource"
+        ? { key: "resource:main", name: "Основний зал", role: "Ресурс", photoUrl: "" }
+        : {
+            key: "staff:free",
+            name: "Вільний майстер",
+            role: "Співробітник",
+            photoUrl: "",
+          };
+
+    map.set(fallback.key, fallback);
+  }
+
+  return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, "uk"));
+}
+
+function layoutScheduleEvents(events) {
+  const laneEnds = [];
+
+  return [...events]
+    .sort((a, b) => {
+      if (a.startMin !== b.startMin) return a.startMin - b.startMin;
+      return a.endMin - b.endMin;
+    })
+    .map((event) => {
+      const lane = laneEnds.findIndex((end) => end <= event.startMin);
+      const nextLane = lane === -1 ? laneEnds.length : lane;
+      laneEnds[nextLane] = event.endMin;
+
+      return {
+        ...event,
+        lane: nextLane,
+        laneCount: Math.max(1, laneEnds.length),
+      };
+    })
+    .map((event, _index, list) => ({
+      ...event,
+      laneCount: Math.max(1, ...list.map((item) => item.laneCount)),
+    }));
+}
+
+function ScheduleViewSwitcher({ value, onChange }) {
+  const items = [
+    { key: "overview", label: "Огляд", Icon: ChartColumn },
+    { key: "schedule", label: "Розклад", Icon: LayoutGrid },
+  ];
+
+  return (
+    <div className="flex justify-end">
+      <div className="inline-flex rounded-[22px] border border-[#eadbc9] bg-[#fff7f0] p-1 shadow-sm">
+        {items.map(({ key, label, Icon }) => {
+          const active = value === key;
+
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => onChange(key)}
+              className={cn(
+                "inline-flex h-10 items-center justify-center gap-2 rounded-[18px] px-4 text-sm font-black transition-all active:scale-[0.98]",
+                active
+                  ? "bg-[#ff6200] text-white shadow-[0_8px_20px_rgba(255,98,0,0.18)]"
+                  : "text-[#202020] hover:bg-white",
+              )}
+            >
+              <Icon className="h-4 w-4" />
+              {label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function ScheduleMiniCalendar({ viewDate, countsByDate, onSelectDate }) {
+  const monthStart = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
+  const gridStart = startOfWeekMonday(monthStart);
+  const days = Array.from({ length: 42 }, (_, index) => addDays(gridStart, index));
+  const todayKey = toISODateKey(new Date());
+
+  return (
+    <div className="rounded-[28px] border border-[#eadbc9] bg-white p-4 shadow-sm">
+      <div className="flex items-center justify-between">
+        <button
+          type="button"
+          onClick={() => onSelectDate(addMonthsSafe(viewDate, -1))}
+          className="flex h-9 w-9 items-center justify-center rounded-2xl border border-[#eadbc9] bg-white text-[#202020] transition hover:bg-[#fff7f0]"
+          aria-label="Попередній місяць"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+
+        <p className="text-sm font-black text-[var(--color-ink)]">
+          {viewDate.toLocaleDateString("uk-UA", {
+            month: "long",
+            year: "numeric",
+          })}
+        </p>
+
+        <button
+          type="button"
+          onClick={() => onSelectDate(addMonthsSafe(viewDate, 1))}
+          className="flex h-9 w-9 items-center justify-center rounded-2xl border border-[#eadbc9] bg-white text-[#202020] transition hover:bg-[#fff7f0]"
+          aria-label="Наступний місяць"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      </div>
+
+      <div className="mt-4 grid grid-cols-7 gap-1 text-center text-[10px] font-black uppercase text-[var(--color-caramel)]/70">
+        {["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"].map((day) => (
+          <span key={day}>{day}</span>
+        ))}
+      </div>
+
+      <div className="mt-2 grid grid-cols-7 gap-1">
+        {days.map((date) => {
+          const key = toISODateKey(date);
+          const active = key === toISODateKey(viewDate);
+          const currentMonth = isSameMonth(date, viewDate);
+          const hasBookings = countsByDate[key] > 0;
+
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => onSelectDate(date)}
+              className={cn(
+                "relative flex h-8 items-center justify-center rounded-xl text-[11px] font-black transition",
+                active
+                  ? "bg-[#ff6200] text-white shadow-[0_8px_20px_rgba(255,98,0,0.22)]"
+                  : "text-[var(--color-caramel)] hover:bg-[#fff7f0] hover:text-[#202020]",
+                !currentMonth && "text-[#c7b8a9]",
+                key === todayKey && !active && "ring-1 ring-[#ff6200]/25",
+              )}
+            >
+              {date.getDate()}
+              {hasBookings && (
+                <span
+                  className={cn(
+                    "absolute bottom-1 h-1 w-1 rounded-full",
+                    active ? "bg-white" : "bg-[#ff6200]",
+                  )}
+                />
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function SchedulePlannerView({
+  bookings = [],
+  nowTs,
+  studio,
+  loading,
+  onOpenBooking,
+  viewSwitcher = null,
+}) {
+  const [viewDate, setViewDate] = useState(() => {
+    const date = new Date();
+    date.setHours(0, 0, 0, 0);
+    return date;
+  });
+  const [rangeMode, setRangeMode] = useState("day");
+  const [groupMode, setGroupMode] = useState("staff");
+  const [selectedGroup, setSelectedGroup] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [query, setQuery] = useState("");
+  const scrollRef = useRef(null);
+const handleViewDateChange = (nextDate) => {
+  setViewDate(nextDate);
+  setStatusFilter("all");
+};
+
+const handleRangeModeChange = (nextMode) => {
+  setRangeMode(nextMode);
+  setStatusFilter("all");
+};
+
+const handleGroupModeChange = (nextMode) => {
+  setGroupMode(nextMode);
+  setSelectedGroup("all");
+  setStatusFilter("all");
+};
+
+const handleSelectedGroupChange = (nextGroup) => {
+  setSelectedGroup(nextGroup);
+  setStatusFilter("all");
+};
+  const normalizedBookings = useMemo(() => {
+    return (bookings || []).map(normalizeScheduleBooking).filter(Boolean);
+  }, [bookings]);
+
+  const countsByDate = useMemo(() => {
+    const result = {};
+
+    for (const booking of normalizedBookings) {
+      if (scheduleVisualStatus(booking, nowTs) === "deleted") continue;
+      result[booking.dateKey] = (result[booking.dateKey] || 0) + 1;
+    }
+
+    return result;
+  }, [normalizedBookings, nowTs]);
+
+  const staffOptions = useMemo(
+    () => scheduleEntityOptions(normalizedBookings, studio, "staff"),
+    [normalizedBookings, studio],
+  );
+  const resourceOptions = useMemo(
+    () => scheduleEntityOptions(normalizedBookings, studio, "resource"),
+    [normalizedBookings, studio],
+  );
+
+  const groupOptions = groupMode === "staff" ? staffOptions : resourceOptions;
+  const groupKey = groupMode === "staff" ? "staffKey" : "resourceKey";
+  const weekStart = useMemo(() => startOfWeekMonday(viewDate), [viewDate]);
+
+  const visibleDates = useMemo(() => {
+    if (rangeMode === "week") {
+      return Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
+    }
+
+    return [viewDate];
+  }, [rangeMode, viewDate, weekStart]);
+
+  const visibleDateKeys = useMemo(
+    () => new Set(visibleDates.map((date) => toISODateKey(date))),
+    [visibleDates],
+  );
+
+  const rangeBookings = useMemo(() => {
+    return normalizedBookings
+      .filter((booking) => visibleDateKeys.has(booking.dateKey))
+      .filter((booking) => scheduleVisualStatus(booking, nowTs) !== "deleted")
+      .sort((a, b) => {
+        const dateCompare = a.dateKey.localeCompare(b.dateKey);
+        if (dateCompare !== 0) return dateCompare;
+        return a.startMin - b.startMin;
+      });
+  }, [normalizedBookings, nowTs, visibleDateKeys]);
+
+  const queryText = query.trim().toLowerCase();
+  const baseFilteredBookings = useMemo(() => {
+    return rangeBookings.filter((booking) => {
+      if (selectedGroup !== "all" && booking[groupKey] !== selectedGroup) {
+        return false;
+      }
+
+      if (!queryText) return true;
+
+      return [
+        booking.clientName,
+        booking.clientPhone,
+        booking.serviceName,
+        booking.staffName,
+        booking.resourceName,
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(queryText);
+    });
+  }, [rangeBookings, selectedGroup, groupKey, queryText]);
+
+  const statusCounts = useMemo(() => {
+    const result = {
+      all: baseFilteredBookings.length,
+      pending: 0,
+      confirmed: 0,
+      canceled: 0,
+      archived: 0,
+    };
+
+    for (const booking of baseFilteredBookings) {
+      const status = scheduleVisualStatus(booking, nowTs);
+      if (result[status] != null) result[status] += 1;
+    }
+
+    return result;
+  }, [baseFilteredBookings, nowTs]);
+
+  const filteredBookings = useMemo(() => {
+    if (statusFilter === "all") return baseFilteredBookings;
+
+    return baseFilteredBookings.filter(
+      (booking) => scheduleVisualStatus(booking, nowTs) === statusFilter,
+    );
+  }, [baseFilteredBookings, nowTs, statusFilter]);
+
+  const timeBounds = useMemo(() => {
+    let start = SCHEDULE_START_HOUR * 60;
+    let end = SCHEDULE_END_HOUR * 60;
+
+    for (const booking of rangeBookings) {
+      start = Math.min(start, booking.startMin - 30);
+      end = Math.max(end, booking.endMin + 30);
+    }
+
+    start = Math.max(0, Math.floor(start / 60) * 60);
+    end = Math.min(24 * 60, Math.ceil(end / 60) * 60);
+
+    if (end - start < 6 * 60) {
+      end = Math.min(24 * 60, start + 6 * 60);
+    }
+
+    return { start, end };
+  }, [rangeBookings]);
+
+  const hours = useMemo(() => {
+    const startHour = Math.floor(timeBounds.start / 60);
+    const endHour = Math.ceil(timeBounds.end / 60);
+
+    return Array.from(
+      { length: endHour - startHour + 1 },
+      (_, index) => startHour + index,
+    );
+  }, [timeBounds]);
+
+  const columns = useMemo(() => {
+    if (rangeMode === "week") {
+      return visibleDates.map((date) => ({
+        key: toISODateKey(date),
+        type: "date",
+        date,
+        name: date.toLocaleDateString("uk-UA", {
+          day: "numeric",
+          month: "short",
+          weekday: "short",
+        }),
+      }));
+    }
+
+    const options =
+      selectedGroup === "all"
+        ? groupOptions
+        : groupOptions.filter((option) => option.key === selectedGroup);
+
+    return options.map((option) => ({
+      ...option,
+      type: groupMode,
+    }));
+  }, [rangeMode, visibleDates, selectedGroup, groupOptions, groupMode]);
+
+  const bookingsByColumn = useMemo(() => {
+    const result = Object.fromEntries(columns.map((column) => [column.key, []]));
+
+    for (const booking of filteredBookings) {
+      const key = rangeMode === "week" ? booking.dateKey : booking[groupKey];
+      if (!result[key]) result[key] = [];
+      result[key].push(booking);
+    }
+
+    for (const key of Object.keys(result)) {
+      result[key] = layoutScheduleEvents(result[key]);
+    }
+
+    return result;
+  }, [columns, filteredBookings, groupKey, rangeMode]);
+
+
+  useEffect(() => {
+    const element = scrollRef.current;
+    if (!element) return;
+
+    const current = new Date();
+    const currentMinutes = current.getHours() * 60 + current.getMinutes();
+    const offset = Math.max(
+      0,
+      ((currentMinutes - timeBounds.start) / 60) * SCHEDULE_HOUR_HEIGHT - 140,
+    );
+
+    element.scrollTop = offset;
+  }, [rangeMode, viewDate, timeBounds.start]);
+
+  const gridHeight =
+    ((timeBounds.end - timeBounds.start) / 60) * SCHEDULE_HOUR_HEIGHT;
+  const templateColumns =
+    rangeMode === "day"
+      ? `72px repeat(${columns.length}, minmax(178px, 1fr))`
+      : `72px repeat(${columns.length}, minmax(154px, 1fr))`;
+  const anyBookings = Object.values(bookingsByColumn).some((items) => items.length > 0);
+  const now = new Date(nowTs);
+  const nowMinute = now.getHours() * 60 + now.getMinutes();
+  const todayKey = toISODateKey(now);
+  const showNowLine =
+    nowMinute >= timeBounds.start &&
+    nowMinute <= timeBounds.start + gridHeight / SCHEDULE_HOUR_HEIGHT * 60;
+  const moveDays = rangeMode === "week" ? 7 : 1;
+
+  return (
+    <SectionShell className="overflow-hidden">
+      <div className="flex flex-col gap-3 border-b border-[#ebe7df] bg-white px-4 py-4 xl:flex-row xl:items-center xl:justify-between">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+         onClick={() => handleViewDateChange(addDays(viewDate, -moveDays))}
+            className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#eadbc9] bg-white text-[#202020] shadow-sm transition hover:border-[#ffd6bd] hover:bg-[#fff7f0] active:scale-[0.98]"
+            aria-label="Попередній період"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+
+          <button
+            type="button"
+           onClick={() => handleViewDateChange(new Date())}
+            className="h-10 rounded-2xl border border-[#eadbc9] bg-[#fff7f0] px-4 text-[12px] font-black uppercase tracking-[0.08em] text-[#ff6200] shadow-sm transition hover:border-[#ffd6bd] active:scale-[0.98]"
+          >
+            Сьогодні
+          </button>
+
+          <button
+            type="button"
+         onClick={() => handleViewDateChange(addDays(viewDate, moveDays))}
+            className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#eadbc9] bg-white text-[#202020] shadow-sm transition hover:border-[#ffd6bd] hover:bg-[#fff7f0] active:scale-[0.98]"
+            aria-label="Наступний період"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+
+          <div className="ml-1 min-w-[190px]">
+            <p className="text-[15px] font-black leading-tight text-[var(--color-ink)]">
+              {rangeMode === "week"
+                ? `${formatDateLongUA(toISODateKey(visibleDates[0]))} - ${formatDateLongUA(
+                    toISODateKey(visibleDates[6]),
+                  )}`
+                : formatDateLongUA(toISODateKey(viewDate))}
+            </p>
+            <p className="mt-0.5 text-[11px] font-bold text-[var(--color-caramel)]">
+              {rangeMode === "day" ? "Денний розклад" : "Тижневий розклад"}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex justify-end">
+          {viewSwitcher}
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-center gap-2 border-b border-[#ebe7df] bg-[#fffaf6] px-4 py-3">
+        {SCHEDULE_STATUS_FILTERS.map((item) => {
+          const active = statusFilter === item.key;
+          const count = statusCounts[item.key] || 0;
+
+          return (
+            <button
+              key={item.key}
+              type="button"
+              onClick={() => setStatusFilter(item.key)}
+              className={cn(
+                "flex h-8 items-center gap-2 rounded-2xl border px-3 text-[12px] font-black transition",
+                active
+                  ? "border-[#ff6200] bg-[#ff6200] text-white shadow-sm"
+                  : "border-[#eadbc9] bg-white text-[#202020] hover:border-[#ffd6bd] hover:bg-[#fff7f0]",
+              )}
+            >
+              {item.label}
+              <span className={active ? "text-white/75" : "text-[#ff6200]"}>
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="grid min-h-[720px] grid-cols-1 lg:grid-cols-[236px_minmax(0,1fr)]">
+        <aside className="border-b border-[#ebe7df] bg-white p-4 lg:border-b-0 lg:border-r">
+          <div className="mb-3 space-y-2">
+            <div className="grid h-10 grid-cols-2 overflow-hidden rounded-2xl border border-[#eadbc9] bg-[#fff7f0] p-0.5 shadow-sm">
+              {[
+                { key: "day", label: "День" },
+                { key: "week", label: "Тиждень" },
+              ].map((item) => (
+                <button
+                  key={item.key}
+                  type="button"
+              onClick={() => handleRangeModeChange(item.key)}
+                  className={cn(
+                    "rounded-[18px] px-3 text-[12px] font-black transition",
+                    rangeMode === item.key
+                      ? "bg-[#ff6200] text-white shadow-sm"
+                      : "text-[#202020] hover:bg-white",
+                  )}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="grid h-10 grid-cols-2 overflow-hidden rounded-2xl border border-[#eadbc9] bg-[#fff7f0] p-0.5 shadow-sm">
+              {[
+                { key: "staff", label: "Співробітники", Icon: Users },
+                { key: "resource", label: "Ресурси", Icon: LayoutGrid },
+              ].map(({ key, label, Icon }) => (
+                <button
+                  key={key}
+                  type="button"
+onClick={() => handleGroupModeChange(key)}
+                  className={cn(
+                    "flex items-center justify-center gap-1.5 rounded-[18px] px-2 text-[11px] font-black transition",
+                    groupMode === key
+                      ? "bg-[#ff6200] text-white shadow-sm"
+                      : "text-[#202020] hover:bg-white",
+                  )}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  <span className="truncate">{label}</span>
+                </button>
+              ))}
+            </div>
+
+            <label className="relative block h-10 w-full">
+              <Eye className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-caramel)]" />
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Пошук клієнта або послуги"
+                className="h-full w-full rounded-2xl border border-[#eadbc9] bg-white pl-9 pr-3 text-[12px] font-bold text-[#202020] shadow-sm outline-none placeholder:text-[var(--color-caramel)]/70 focus:border-[#ffb489] focus:bg-[#fffaf6]"
+              />
+            </label>
+
+            <label className="relative block h-10 w-full">
+              <select
+                value={selectedGroup}
+               onChange={(event) => handleSelectedGroupChange(event.target.value)}
+                className="h-full w-full appearance-none rounded-2xl border border-[#eadbc9] bg-white pl-3 pr-9 text-[12px] font-black text-[#202020] shadow-sm outline-none transition focus:border-[#ffb489]"
+              >
+                <option value="all">
+                  {groupMode === "staff" ? "Усі співробітники" : "Усі ресурси"}
+                </option>
+                {groupOptions.map((option) => (
+                  <option key={option.key} value={option.key}>
+                    {option.name}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-caramel)]" />
+            </label>
+          </div>
+
+<ScheduleMiniCalendar
+  viewDate={viewDate}
+  countsByDate={countsByDate}
+  onSelectDate={handleViewDateChange}
+/>
+
+          <div className="mt-3 rounded-[24px] border border-[#eadbc9] bg-[#fffaf6] p-3">
+            <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[var(--color-caramel)]">
+              Кольори записів
+            </p>
+
+            <div className="mt-3 space-y-2">
+              {[
+                {
+                  color: "bg-[var(--color-buttom-ok)]",
+                  label: "Підтверджені записи",
+                },
+                {
+                  color: "bg-[#ffb020]",
+                  label: "Очікують підтвердження",
+                },
+                {
+                  color: "bg-[var(--color-danger)]",
+                  label: "Скасовані записи",
+                },
+                {
+                  color: "bg-[var(--color-caramel)]",
+                  label: "Завершені записи",
+                },
+              ].map((item) => (
+                <div key={item.label} className="flex items-start gap-2">
+                  <span
+                    className={cn(
+                      "mt-1 h-2.5 w-2.5 shrink-0 rounded-full",
+                      item.color,
+                    )}
+                  />
+                  <span className="text-[11px] font-semibold leading-4 text-[var(--color-caramel)]">
+                    {item.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <div className="rounded-2xl border border-[#eadbc9] bg-[#fff7f0] p-3">
+              <p className="text-[10px] font-black uppercase tracking-[0.08em] text-[var(--color-caramel)]">
+                Записи
+              </p>
+              <p className="mt-1 text-lg font-black text-[var(--color-ink)]">
+                {rangeBookings.length}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-[#eadbc9] bg-white p-3">
+              <p className="text-[10px] font-black uppercase tracking-[0.08em] text-[var(--color-caramel)]">
+                Нові
+              </p>
+              <p className="mt-1 text-lg font-black text-[#ff6200]">
+                {statusCounts.pending || 0}
+              </p>
+            </div>
+          </div>
+        </aside>
+
+        <div ref={scrollRef} className="calendar-day-scroll min-h-0 overflow-auto bg-[#fbfaf8]">
+          <div className="min-w-[860px]">
+            <div
+              className="sticky top-0 z-30 grid border-b border-[#ebe7df] bg-white"
+              style={{ gridTemplateColumns: templateColumns }}
+            >
+              <div className="border-r border-[#ebe7df] bg-[#fffaf6]" />
+
+              {columns.map((column) => (
+                <div
+                  key={column.key}
+                  className="flex h-[68px] min-w-0 items-center gap-3 border-r border-[#ebe7df] px-3"
+                >
+                  {column.type === "date" ? (
+                    <div className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-2xl bg-[#fff1e8] text-[#ff6200]">
+                      <span className="text-[10px] font-black uppercase leading-none">
+                        {column.date.toLocaleDateString("uk-UA", { weekday: "short" }).slice(0, 2)}
+                      </span>
+                      <span className="text-sm font-black leading-none">
+                        {column.date.getDate()}
+                      </span>
+                    </div>
+                  ) : (
+                    <Avatar
+                      name={column.name}
+                      photoUrl={column.photoUrl}
+                      className="h-10 w-10 rounded-[16px]"
+                    />
+                  )}
+
+                  <div className="min-w-0">
+                    <p className="truncate text-[13px] font-black text-[var(--color-ink)]">
+                      {column.name}
+                    </p>
+                    <p className="mt-0.5 truncate text-[11px] font-semibold text-[var(--color-caramel)]">
+                      {column.type === "date"
+                        ? formatDateLongUA(toISODateKey(column.date))
+                        : column.role ||
+                          (groupMode === "staff" ? "Співробітник" : "Ресурс")}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="relative grid" style={{ gridTemplateColumns: templateColumns }}>
+              <div
+                className="relative border-r border-[#ebe7df] bg-[#fffaf6]"
+                style={{ height: gridHeight }}
+              >
+                {hours.map((hour) => (
+                  <div
+                    key={hour}
+                    className="absolute right-3 -translate-y-2 text-[11px] font-bold text-[var(--color-caramel)]"
+                    style={{
+                      top:
+                        ((hour * 60 - timeBounds.start) / 60) *
+                        SCHEDULE_HOUR_HEIGHT,
+                    }}
+                  >
+                    {pad2(hour)}:00
+                  </div>
+                ))}
+              </div>
+
+              {columns.map((column) => {
+                const columnBookings = bookingsByColumn[column.key] || [];
+                const isTodayColumn =
+                  (column.type === "date" && toISODateKey(column.date) === todayKey) ||
+                  (rangeMode === "day" && visibleDateKeys.has(todayKey));
+
+                return (
+                  <div
+                    key={column.key}
+                    className="relative border-r border-[#ebe7df] bg-white"
+                    style={{ height: gridHeight }}
+                  >
+                    {hours.map((hour) => (
+                      <div
+                        key={hour}
+                        className="absolute inset-x-0 border-t border-[#f0e8df]"
+                        style={{
+                          top:
+                            ((hour * 60 - timeBounds.start) / 60) *
+                            SCHEDULE_HOUR_HEIGHT,
+                        }}
+                      />
+                    ))}
+
+                    {showNowLine && isTodayColumn && (
+                      <div
+                        className="absolute inset-x-0 z-20 border-t border-[#ff6200]"
+                        style={{
+                          top:
+                            ((nowMinute - timeBounds.start) / 60) *
+                            SCHEDULE_HOUR_HEIGHT,
+                        }}
+                      >
+                        <span className="absolute -left-1 -top-[5px] h-2.5 w-2.5 rounded-full bg-[#ff6200]" />
+                      </div>
+                    )}
+
+                    {columnBookings.map((booking) => {
+                      const palette = schedulePalette(booking, nowTs);
+                      const top =
+                        ((Math.max(booking.startMin, timeBounds.start) -
+                          timeBounds.start) /
+                          60) *
+                        SCHEDULE_HOUR_HEIGHT;
+                      const clippedEnd = Math.min(
+                        booking.endMin,
+                        timeBounds.start + (gridHeight / SCHEDULE_HOUR_HEIGHT) * 60,
+                      );
+                      const height = Math.max(
+                        SCHEDULE_MIN_CARD_HEIGHT,
+                        ((clippedEnd -
+                          Math.max(booking.startMin, timeBounds.start)) /
+                          60) *
+                          SCHEDULE_HOUR_HEIGHT -
+                          6,
+                      );
+                      const width = `calc(${100 / booking.laneCount}% - 6px)`;
+                      const left = `calc(${(100 / booking.laneCount) * booking.lane}% + 3px)`;
+                      const visualStatus = scheduleVisualStatus(booking, nowTs);
+                      const startLabel =
+                        parseTimeToHHMM(booking.raw.time) ||
+                        scheduleTimeLabel(booking.startMin);
+                      const endLabel = scheduleTimeLabel(booking.endMin);
+
+                      return (
+                        <button
+                          key={`${booking.id}-${booking.dateKey}-${booking.startMin}`}
+                          type="button"
+                          onClick={() => booking.id != null && onOpenBooking(booking.id)}
+                          className={cn(
+                            "absolute z-10 overflow-hidden rounded-[18px] border text-left transition duration-200 hover:z-20 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[#ff6200]/25",
+                            palette.bg,
+                            palette.border,
+                            palette.shadow,
+                            visualStatus === "canceled" && "opacity-70",
+                          )}
+                          style={{
+                            top: top + 3,
+                            height,
+                            left,
+                            width,
+                          }}
+                        >
+                          <span
+                            className={cn(
+                              "absolute inset-y-0 left-0 w-1.5",
+                              palette.accent,
+                            )}
+                          />
+
+                          <div className="flex h-full min-h-0 flex-col justify-center px-3 py-2 pl-4">
+                            <p
+                              className={cn(
+                                "truncate text-[13px] font-black leading-tight",
+                                palette.text,
+                              )}
+                            >
+                              {booking.clientName}
+                            </p>
+                            <p className="mt-1 truncate text-[11px] font-black text-[var(--color-caramel)]">
+                              {startLabel} - {endLabel}
+                            </p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+
+              {!anyBookings && (
+                <div className="absolute inset-x-10 top-16 z-10 rounded-[28px] border-2 border-dashed border-[#eadbc9] bg-white/90 p-6 text-center shadow-sm backdrop-blur">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff1e8] text-[#ff6200]">
+                    {loading ? (
+                      <Sparkles className="h-5 w-5 animate-pulse" />
+                    ) : (
+                      <CalendarDays className="h-5 w-5" />
+                    )}
+                  </div>
+                  <p className="mt-3 text-sm font-black text-[var(--color-ink)]">
+                    {loading
+                      ? "Завантажуємо записи"
+                      : "На цей період записів немає"}
+                  </p>
+                  <p className="mt-1 text-xs font-medium text-[var(--color-caramel)]">
+                    Нові бронювання з'являться у сітці за часом і виконавцем.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </SectionShell>
+  );
+}
+
 export default function Golowna() {
   const { bookings, confirmBooking, cancelBooking, loading } = useBookings();
   const [nowTs, setNowTs] = useState(() => Date.now());
@@ -1973,6 +3374,7 @@ export default function Golowna() {
   const isInitialLoading = loading;
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [dashboardChartMode, setDashboardChartMode] = useState("month");
+  const [homeView, setHomeView] = useState("overview");
   const [todayBookingsFilter, setTodayBookingsFilter] = useState("all");
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
@@ -2355,236 +3757,29 @@ export default function Golowna() {
   return (
     <div className="">
       <div className="mx-auto w-full max-w-[1200px] space-y-3">
-        <MonthlyBookingsChart
-          bookings={bookings}
-          nowTs={nowTs}
-          onModeChange={setDashboardChartMode}
-          onOpenBooking={setDetailsId}
-          studioCreatedAt={studio?.ownerCreatedAt || studio?.createdAt}
-        />
-        {dashboardChartMode === "today" && (
-          <SectionShell>
-            <div className="px-5 pb-6 pt-5 sm:px-6 sm:pb-7 sm:pt-6">
-              <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-primary-buttom)] text-white shadow-sm">
-                  <ClockCheck className="h-5 w-5" />
-                </div>
-
-                <div className="min-w-0">
-                  <h2 className="text-2xl font-black tracking-tight text-[var(--color-ink)] sm:text-3xl">
-                    Сьогоднішні записи
-                  </h2>
-
-                  <p className="mt-1 text-sm text-[var(--color-caramel)]">
-                    Усі записи на сьогодні: підтверджені, скасовані, завершені
-                    та ті, що очікують підтвердження.
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-                {[
-                  { key: "all", label: "Усі" },
-                  {
-                    key: "new",
-                    label: "Очікують",
-                    count: todayFilterCounts.new,
-                  },
-                  {
-                    key: "confirmed",
-                    label: "Підтверджені",
-                    count: todayFilterCounts.confirmed,
-                  },
-                  {
-                    key: "canceled",
-                    label: "Скасовані",
-                    count: todayFilterCounts.canceled,
-                  },
-                  {
-                    key: "archive",
-                    label: "Завершені",
-                    count: todayFilterCounts.archive,
-                  },
-                ].map((item) => {
-                  const active = todayBookingsFilter === item.key;
-
-                  return (
-                    <button
-                      key={item.key}
-                      type="button"
-                      onClick={() => setTodayBookingsFilter(item.key)}
-                      className={cn(
-                        "inline-flex h-9 items-center justify-center gap-2 rounded-2xl border px-3 text-sm font-black shadow-sm transition-all duration-200 active:scale-[0.98]",
-                        active
-                          ? "border-[#ff5a00] bg-[#ff5a00] text-white hover:bg-[#ef4f00]"
-                          : "border-[#eadbc9] bg-white text-[#202020] hover:border-[#ffd6bd] hover:bg-[#fff7f0]",
-                      )}
-                    >
-                      {item.label}
-
-                      {item.key !== "all" && item.count > 0 && (
-                        <span
-                          className={
-                            active ? "text-white/80" : "text-[#ff5a00]"
-                          }
-                        >
-                          +{item.count}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {todayBookingsFiltered.length === 0 ? (
-                <div className="mt-5 rounded-2xl border-2 border-dashed border-[#eadbc9] bg-[#fff7f0] p-6 text-center sm:p-8">
-                  <div className="mb-3 flex items-center justify-center">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white shadow-sm">
-                      <TodayEmptyIcon
-                        className={cn("h-7 w-7", todayEmptyIconClass)}
-                      />
-                    </div>
-                  </div>
-
-                  <p className="text-sm font-bold text-[var(--color-ink)]">
-                    {todayEmptyText[todayBookingsFilter] ||
-                      "У цій вкладці сьогодні записів немає"}
-                  </p>
-
-                  <p className="mt-1 text-xs text-[var(--color-caramel)]/80">
-                    Коли клієнти почнуть записуватись, тут з’являться всі
-                    бронювання
-                  </p>
-                </div>
-              ) : (
-                <ul className="mt-5 space-y-3 list-none p-0">
-                  {todayBookingsFiltered.map((item) => (
-                    <AppointmentCard
-                      key={item.id}
-                      item={{
-                        ...item,
-                        time: parseTimeToHHMM(item.time) || item.time || "—",
-                        serviceName: item.serviceName || "—",
-                        clientName: item.clientName || "—",
-                        clientPhotoUrl:
-                          item.clientPhotoUrl || item.client?.photoUrl || "",
-                        masterPhotoUrl:
-                          item.masterPhotoUrl || item.master?.photoUrl || "",
-                      }}
-                      todayKey={todayKey}
-                      nowTs={nowTs}
-                      onOpen={setDetailsId}
-                      hideDate
-                    />
-                  ))}
-                </ul>
-              )}
-            </div>
-          </SectionShell>
+        {homeView === "overview" ? (
+          <MonthlyBookingsChart
+            bookings={bookings}
+            nowTs={nowTs}
+            onModeChange={setDashboardChartMode}
+            onOpenBooking={setDetailsId}
+            studioCreatedAt={studio?.ownerCreatedAt || studio?.createdAt}
+            viewSwitcher={
+              <ScheduleViewSwitcher value={homeView} onChange={setHomeView} />
+            }
+          />
+        ) : (
+          <SchedulePlannerView
+            bookings={bookings}
+            nowTs={nowTs}
+            studio={studio}
+            loading={loading}
+            onOpenBooking={setDetailsId}
+            viewSwitcher={
+              <ScheduleViewSwitcher value={homeView} onChange={setHomeView} />
+            }
+          />
         )}
-        <SectionShell>
-          <div className="px-5 pb-6 pt-5 sm:px-6 sm:pb-7 sm:pt-6">
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between gap-3"></div>
-
-              <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-primary-buttom)] text-white shadow-sm">
-                  <CalendarDays className="h-5 w-5" />
-                </div>
-
-                <div className="min-w-0 mt-2">
-                  <h2 className="text-2xl font-black tracking-tight text-[var(--color-ink)] sm:text-3xl">
-                    Найближчі записи
-                  </h2>
-
-                  <p className="mt-1 text-sm text-[var(--color-caramel)]">
-                    Оберіть період і перегляньте активні майбутні записи.
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-                {appointmentRangeItems.map((item) => {
-                  const active = appointmentsRange === item.value;
-
-                  return (
-                    <button
-                      key={item.value}
-                      type="button"
-                      onClick={() => {
-                        setAppointmentsRange(item.value);
-                        setVisibleAppointmentsCount(5);
-                      }}
-                      className={cn(
-                        "inline-flex h-9 items-center justify-center gap-2 rounded-2xl border px-3 text-sm font-black shadow-sm transition-all duration-200 active:scale-[0.98]",
-                        active
-                          ? "border-[#ff5a00] bg-[#ff5a00] text-white hover:bg-[#ef4f00]"
-                          : "border-[#eadbc9] bg-white text-[#202020] hover:border-[#ffd6bd] hover:bg-[#fff7f0]",
-                      )}
-                    >
-                      {item.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {isInitialLoading ? (
-              <ul className="mt-6 space-y-3">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <AppointmentCardSkeleton key={i} />
-                ))}
-              </ul>
-            ) : upcomingAppointments.length === 0 ? (
-              <div className="mt-6 rounded-2xl border-2 border-dashed border-[#eadbc9] bg-[#fff7f0] p-6 text-center sm:p-8">
-                <div className="mb-3 flex items-center justify-center">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white shadow-sm">
-                    <CalendarDays className="h-7 w-7 text-[#ff5a00]" />
-                  </div>
-                </div>
-
-                <p className="text-sm font-bold text-[var(--color-ink)]">
-                  Немає запланованих записів
-                </p>
-
-                <p className="mt-1 text-xs text-[var(--color-caramel)]/80">
-                  Коли клієнти почнуть записуватись, тут з’являться всі
-                  бронювання
-                </p>
-              </div>
-            ) : (
-              <>
-                <ul className="mt-6 space-y-3">
-                  {upcomingAppointments
-                    .slice(0, visibleAppointmentsCount)
-                    .map((item) => (
-                      <AppointmentCard
-                        key={item.id}
-                        item={item}
-                        todayKey={todayKey}
-                        nowTs={nowTs}
-                        onOpen={setDetailsId}
-                      />
-                    ))}
-                </ul>
-
-                {visibleAppointmentsCount < upcomingAppointments.length && (
-                  <div className="mt-4 flex justify-center">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setVisibleAppointmentsCount((prev) => prev + 5)
-                      }
-                      className="inline-flex items-center justify-center rounded-2xl border border-[#eadbc9] bg-white px-5 py-2.5 text-sm font-black text-[#202020] shadow-sm transition-all duration-200 hover:border-[#ffd6bd] hover:bg-[#fff7f0] active:scale-[0.98]"
-                    >
-                      Показати ще
-                    </button>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        </SectionShell>
       </div>
 
       {selectedBooking &&
