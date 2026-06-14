@@ -10,6 +10,11 @@ import {
   Pencil,
   Trash2,
   X,
+  FilePenLine,
+UserStar,
+  Timer,
+    Copy,
+  PhoneCall,
   FileSpreadsheet,
 CircleAlert,
   Check,
@@ -17,15 +22,21 @@ CircleAlert,
   CalendarDays,
   ChevronDown,
   ChevronUp,
+    UserRound,
+  ClipboardPen,
+  CheckCheck,
+  XCircle,
   Search,
   Users,
   MoreVertical,
   ArrowRight,
   CalendarCheck,
   Clock3,
+  Clock,
   Banknote,
   ChevronRight,
   ArrowDownToLine,
+
 } from "lucide-react";
 import DatePicker from "../../components/ui/DatePicker";
 import TimeSelect from "../../components/TimeSelect";
@@ -68,6 +79,209 @@ function initialsFromName(name) {
 
 function cn(...classes) {
   return classes.filter(Boolean).join(" ");
+}
+
+const PUBLIC = import.meta.env.VITE_R2_PUBLIC_BASE_URL;
+
+function toPublicUrl(v) {
+  const s = String(v || "").trim();
+  if (!s) return "";
+  if (/^https?:\/\//i.test(s)) return s;
+  return PUBLIC ? `${PUBLIC}/${s}` : s;
+}
+
+function pad2(n) {
+  return String(n).padStart(2, "0");
+}
+
+function parseTimeToHHMM(timeStr) {
+  const t = String(timeStr || "").trim();
+  if (!t) return null;
+
+  const cleaned = t.replace(".", ":");
+  const m = cleaned.match(/^(\d{1,2}):(\d{2})$/);
+
+  if (!m) return null;
+
+  const hh = Math.min(23, Math.max(0, Number(m[1])));
+  const mm = Math.min(59, Math.max(0, Number(m[2])));
+
+  return `${pad2(hh)}:${pad2(mm)}`;
+}
+
+function getBookingDateTime(booking) {
+  const dateStr = booking?.date;
+  const timeStr = parseTimeToHHMM(booking?.time);
+
+  if (!dateStr || !timeStr) return null;
+
+  const dt = new Date(`${dateStr}T${timeStr}:00`);
+
+  if (Number.isNaN(dt.getTime())) return null;
+
+  return dt;
+}
+
+function isMasterBookingCompleted(booking, nowTs) {
+  const status = String(booking?.status || "").toLowerCase();
+
+  if (status === "completed" || status === "deleted") return true;
+
+  const dt = getBookingDateTime(booking);
+
+  return dt ? dt.getTime() < nowTs : false;
+}
+
+function getCanceledBookingLabel(booking) {
+  const canceledBy = String(
+    booking?.canceledBy || booking?.cancelledBy || "",
+  ).toLowerCase();
+
+  if (canceledBy === "client") {
+    return "Скасовано клієнтом";
+  }
+
+  return "Скасовано вами";
+}
+
+function getMasterBookingStatusMeta(booking, nowTs) {
+  const status = String(booking?.status || "").toLowerCase();
+  const canceledBy = booking?.canceledBy || null;
+  const dt = getBookingDateTime(booking);
+  const isArchived = dt ? dt.getTime() < nowTs : false;
+
+  if (status === "deleted") {
+    return {
+      status: "completed",
+      label: "Видалено",
+      Icon: Trash2,
+      text: "text-[#6b7280]",
+    };
+  }
+
+  if (isArchived) {
+    return {
+      status: "completed",
+      label: "Сеанс завершено",
+      Icon: CheckCheck,
+      text: "text-[#6b7280]",
+    };
+  }
+
+  if (status === "confirmed") {
+    return {
+      status: "confirmed",
+      label: "Підтверджено",
+      Icon: CheckCheck,
+      text: "text-[#41a85f]",
+    };
+  }
+
+if (status === "canceled") {
+  return {
+    status: "canceled",
+    label: getCanceledBookingLabel(booking),
+    Icon: XCircle,
+    text: "text-[#ef4444]",
+  };
+}
+
+  return {
+    status: "new",
+    label: (
+      <>
+        Очікує ваше
+        <br />
+        підтвердження
+      </>
+    ),
+    Icon: Clock3,
+    text: "text-[#ffb020]",
+  };
+}
+
+  function formatDateFullUA(dateStr) {
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return "—";
+
+  const months = [
+    "січня",
+    "лютого",
+    "березня",
+    "квітня",
+    "травня",
+    "червня",
+    "липня",
+    "серпня",
+    "вересня",
+    "жовтня",
+    "листопада",
+    "грудня",
+  ];
+
+  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}р.`;
+}
+
+function getBookingClientName(booking) {
+  return (
+    booking?.clientName ||
+    booking?.client?.name ||
+    [booking?.client?.firstName, booking?.client?.lastName]
+      .filter(Boolean)
+      .join(" ") ||
+    [booking?.clientAccount?.firstName, booking?.clientAccount?.lastName]
+      .filter(Boolean)
+      .join(" ") ||
+    "Клієнт"
+  );
+}
+
+function getBookingClientPhone(booking) {
+  return (
+    booking?.clientPhone ||
+    booking?.phone ||
+    booking?.client?.phone ||
+    booking?.clientAccount?.phone ||
+    ""
+  );
+}
+
+function getBookingServiceName(booking) {
+  return (
+    booking?.serviceName ||
+    booking?.service?.name ||
+    booking?.service?.title ||
+    "Послуга"
+  );
+}
+
+function getBookingMasterName(booking, fallbackMaster) {
+  return (
+    booking?.masterName ||
+    booking?.master?.name ||
+    fallbackMaster?.name ||
+    "Майстер"
+  );
+}
+
+function getBookingClientPhoto(booking) {
+  return toPublicUrl(
+    booking?.clientPhotoUrl ||
+      booking?.clientPhoto ||
+      booking?.client?.photoUrl ||
+      booking?.clientAccount?.photoUrl ||
+      "",
+  );
+}
+
+function getBookingMasterPhoto(booking, fallbackMaster) {
+  return toPublicUrl(
+    booking?.masterPhotoUrl ||
+      booking?.masterPhoto ||
+      booking?.master?.photoUrl ||
+      fallbackMaster?.photoUrl ||
+      "",
+  );
 }
 
 function SectionCard({
@@ -352,6 +566,180 @@ function SkeletonBlock({ className = "" }) {
   );
 }
 
+function MasterBookingCard({ booking, master, nowTs, onClick }) {
+  const key = booking.date ? String(booking.date) : "";
+
+  const statusMeta = getMasterBookingStatusMeta(booking, nowTs);
+  const StatusIcon = statusMeta.Icon;
+  const status = statusMeta.status;
+
+const clientName = getBookingClientName(booking);
+const service = getBookingServiceName(booking);
+const masterName = getBookingMasterName(booking, master);
+const clientPhoto = getBookingClientPhoto(booking);
+
+  const timeLabel = parseTimeToHHMM(booking.time) || booking.time || "—";
+
+  const date = key ? new Date(`${key}T00:00:00`) : null;
+
+  const dayLabel =
+    date && !Number.isNaN(date.getTime())
+      ? String(date.getDate()).padStart(2, "0")
+      : "—";
+
+  const monthLabel =
+    date && !Number.isNaN(date.getTime())
+      ? date.toLocaleDateString("uk-UA", { month: "long" })
+      : "";
+
+  const statusBorder =
+    status === "confirmed"
+      ? "border-[#bbf7d0]"
+      : status === "new"
+        ? "border-[#fed7aa]"
+        : status === "canceled"
+          ? "border-[#fecaca]"
+          : "border-[#d1d5db]";
+
+  const dateText =
+    status === "confirmed"
+      ? "text-[#41a85f]"
+      : status === "new"
+        ? "text-[#ff6200]"
+        : status === "canceled"
+          ? "text-[#ef4444]"
+          : "text-[#6b7280]";
+
+  return (
+    <li className="list-none">
+<button
+  type="button"
+  onClick={onClick}
+  className={cn(
+    "group mt-1 w-full overflow-hidden rounded-[24px] border border-[#eadfce] bg-white text-left transition-all duration-200",
+    "hover:-translate-y-0.5 hover:border-[#ffd6bd] hover:bg-[#fff7f0]",
+    "active:scale-[0.99]",
+    "focus:outline-none focus:ring-4 focus:ring-[#ff6200]/10",
+    status === "completed" && "opacity-85",
+  )}
+>
+        <div className="grid min-h-[108px] grid-cols-[92px_minmax(0,1fr)_96px] items-center gap-3 px-4 py-3 max-[639px]:min-h-0 max-[639px]:grid-cols-[1fr_82px] max-[639px]:gap-3 max-[639px]:px-3 max-[639px]:py-3">
+          <div className="contents max-[639px]:block max-[639px]:min-w-0">
+            <div className="mb-2 hidden justify-center max-[639px]:flex">
+              <div
+                className={cn(
+                  "inline-flex items-center justify-center gap-1.5 rounded-full border border-[#eadfce] bg-white px-3 py-1 text-center text-[10px] font-black shadow-sm",
+                  statusMeta.text,
+                )}
+              >
+                <StatusIcon className="h-3.5 w-3.5" />
+
+                <span className="text-center leading-[1.05]">
+                  {statusMeta.label}
+                </span>
+              </div>
+            </div>
+
+            <div className="contents max-[639px]:flex max-[639px]:items-center max-[639px]:gap-3">
+              <div className="grid h-[70px] w-[70px] shrink-0 place-items-center overflow-hidden rounded-full border border-[#eadfce] bg-white p-1 shadow-[0_8px_24px_rgba(15,23,42,0.06)] md:ml-2 lg:ml-3 max-[639px]:h-[64px] max-[639px]:w-[64px]">
+                {clientPhoto ? (
+                  <img
+                    src={clientPhoto}
+                    alt={clientName}
+                    className="h-full w-full rounded-full object-cover transition duration-500 group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="grid h-full w-full place-items-center rounded-full bg-[#fff1e8] text-[#ff6200]">
+                    <UserRound className="h-9 w-9 max-[639px]:h-6 max-[639px]:w-6" />
+                  </div>
+                )}
+              </div>
+
+              <div className="min-w-0">
+                <div
+                  className={cn(
+                    "mb-2 inline-flex w-fit items-center justify-center gap-1.5 rounded-full border border-[#eadfce] bg-white px-3 py-1 text-[10px] font-black shadow-sm max-[639px]:hidden",
+                    statusMeta.text,
+                  )}
+                >
+                  <StatusIcon className="h-3.5 w-3.5" />
+
+                  <span className="text-center leading-[1.05]">
+                    {statusMeta.label}
+                  </span>
+                </div>
+
+                <h2 className="line-clamp-1 text-[16px] font-black leading-tight tracking-[-0.04em] text-[#202020] max-[639px]:text-[13px] lg:text-[18px]">
+                  {clientName}
+                </h2>
+
+                <div className="mt-2 flex items-center gap-1.5 text-[10px] font-semibold text-[#77716b] max-[767px]:mt-1 max-[767px]:text-[8px] lg:text-[10px]">
+                  <ClipboardPen className="h-4 w-4 shrink-0 text-[#77716b] max-[767px]:h-3 max-[767px]:w-3" />
+
+                  <span className="line-clamp-2">{service}</span>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          <div
+            className={cn(
+              "hidden h-full items-center justify-center border-l pl-3 max-[639px]:flex",
+              statusBorder,
+            )}
+          >
+            <div className="flex h-[74px] w-[58px] flex-col items-center justify-center">
+              <p className="text-center text-[11px] font-bold capitalize text-[#aaa19a]">
+                {monthLabel}
+              </p>
+
+              <p
+                className={cn(
+                  "text-[28px] font-[300] leading-none tracking-[-0.05em]",
+                  dateText,
+                )}
+              >
+                {dayLabel}
+              </p>
+
+              <p className="text-[12px] font-semibold tracking-[0.08em] text-[#5f5a55]">
+                {timeLabel}
+              </p>
+            </div>
+          </div>
+
+          <div
+            className={cn(
+              "mr-2 flex items-center justify-center border-l pl-5 max-[639px]:hidden",
+              statusBorder,
+            )}
+          >
+            <div className="flex h-[82px] w-[78px] flex-col items-center justify-center">
+              <span className="text-[13px] font-bold capitalize text-[#aaa19a]">
+                {monthLabel}
+              </span>
+
+              <span
+                className={cn(
+                  "mt-0.5 text-[36px] font-[300] leading-none tracking-[-0.05em]",
+                  dateText,
+                )}
+              >
+                {dayLabel}
+              </span>
+
+              <span className="mt-1 text-[15px] font-black text-[#77716b]">
+                {timeLabel}
+              </span>
+            </div>
+          </div>
+        </div>
+    </button>
+    </li>
+  );
+}
+
 function isPastExceptionDate(dateStr) {
   if (!dateStr) return false;
 
@@ -451,20 +839,21 @@ export default function Masters() {
   const [bookingsMaster, setBookingsMaster] = useState(null);
   const [bookingsFilter, setBookingsFilter] = useState("all");
 const [bookingsModalOpen, setBookingsModalOpen] = useState(false);
+const [visibleMasterBookingsCount, setVisibleMasterBookingsCount] = useState(10);
+const [detailsBookingId, setDetailsBookingId] = useState(null);
+const [copiedPhone, setCopiedPhone] = useState(false);
 const bookingsQuery = useQuery({
   queryKey: ["bookings", studioId],
   queryFn: () => fetchStudioBookings(studioId),
   enabled: Boolean(studioId),
 });
 const todayDate = new Date();
-
+const nowTs = Date.now();
 const masterBookings = (bookingsQuery.data || []).filter(
   (b) => String(b.masterId) === String(bookingsMaster?.id),
 );
 
 const filteredMasterBookings = masterBookings.filter((booking) => {
-  if (bookingsFilter === "all") return true;
-
   const bookingDate = new Date(`${booking.date}T00:00:00`);
   const today = new Date(
     todayDate.getFullYear(),
@@ -473,13 +862,88 @@ const filteredMasterBookings = masterBookings.filter((booking) => {
   );
 
   const diffDays = Math.floor((bookingDate - today) / 86400000);
+  const isCompleted = isMasterBookingCompleted(booking, nowTs);
 
-  if (bookingsFilter === "today") return diffDays === 0;
-  if (bookingsFilter === "week") return diffDays >= 0 && diffDays <= 7;
-  if (bookingsFilter === "month") return diffDays >= 0 && diffDays <= 30;
+  if (bookingsFilter === "completed") {
+    return isCompleted;
+  }
+
+  if (bookingsFilter === "today") {
+    return diffDays === 0;
+  }
+
+  if (isCompleted) {
+    return false;
+  }
+
+  if (bookingsFilter === "all") {
+    return true;
+  }
+
+  if (bookingsFilter === "week") {
+    return diffDays >= 0 && diffDays <= 7;
+  }
+
+  if (bookingsFilter === "month") {
+    return diffDays >= 0 && diffDays <= 30;
+  }
 
   return true;
 });
+
+const sortedMasterBookings = [...filteredMasterBookings].sort((a, b) => {
+  const dateCompare = String(a.date || "").localeCompare(String(b.date || ""));
+
+  if (dateCompare !== 0) return dateCompare;
+
+  return (parseTimeToHHMM(a.time) || "").localeCompare(
+    parseTimeToHHMM(b.time) || "",
+  );
+});
+
+const visibleMasterBookings = sortedMasterBookings.slice(
+  0,
+  visibleMasterBookingsCount,
+);
+
+const hasMoreMasterBookings =
+  visibleMasterBookingsCount < sortedMasterBookings.length;
+const selectedMasterBooking = useMemo(() => {
+  if (detailsBookingId == null) return null;
+
+  const booking = (bookingsQuery.data || []).find(
+    (item) => String(item.id) === String(detailsBookingId),
+  );
+
+  if (!booking) return null;
+
+  return booking;
+}, [detailsBookingId, bookingsQuery.data]);
+
+async function handleCopyPhone(value) {
+  if (!value) return;
+
+  try {
+    await navigator.clipboard.writeText(value);
+    setCopiedPhone(true);
+    window.setTimeout(() => setCopiedPhone(false), 1600);
+  } catch {
+    const ta = document.createElement("textarea");
+    ta.value = value;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    document.body.removeChild(ta);
+
+    setCopiedPhone(true);
+    window.setTimeout(() => setCopiedPhone(false), 1600);
+  }
+}
+
+function closeBookingDetails() {
+  setDetailsBookingId(null);
+  setCopiedPhone(false);
+}
 const [deleteConfirm, setDeleteConfirm] = useState({
   open: false,
   master: null,
@@ -893,6 +1357,69 @@ async function handlePickPhoto(e) {
       year: "numeric",
     }).format(date);
   }
+
+
+function getBookingClientName(booking) {
+  return (
+    booking?.clientName ||
+    booking?.client?.name ||
+    [booking?.client?.firstName, booking?.client?.lastName]
+      .filter(Boolean)
+      .join(" ") ||
+    [booking?.clientAccount?.firstName, booking?.clientAccount?.lastName]
+      .filter(Boolean)
+      .join(" ") ||
+    "Клієнт"
+  );
+}
+
+function getBookingClientPhone(booking) {
+  return (
+    booking?.clientPhone ||
+    booking?.phone ||
+    booking?.client?.phone ||
+    booking?.clientAccount?.phone ||
+    ""
+  );
+}
+
+function getBookingServiceName(booking) {
+  return (
+    booking?.serviceName ||
+    booking?.service?.name ||
+    booking?.service?.title ||
+    "Послуга"
+  );
+}
+
+function getBookingMasterName(booking, fallbackMaster) {
+  return (
+    booking?.masterName ||
+    booking?.master?.name ||
+    fallbackMaster?.name ||
+    "Майстер"
+  );
+}
+
+function getBookingClientPhoto(booking) {
+  return toPublicUrl(
+    booking?.clientPhotoUrl ||
+      booking?.clientPhoto ||
+      booking?.client?.photoUrl ||
+      booking?.clientAccount?.photoUrl ||
+      "",
+  );
+}
+
+function getBookingMasterPhoto(booking, fallbackMaster) {
+  return toPublicUrl(
+    booking?.masterPhotoUrl ||
+      booking?.masterPhoto ||
+      booking?.master?.photoUrl ||
+      fallbackMaster?.photoUrl ||
+      "",
+  );
+}
 
   async function openMasterExceptions(master) {
     if (!studio?.id || !master?.id) return;
@@ -1637,7 +2164,12 @@ const activeExceptionsCount =
                     <div className="px-3">
 <button
   type="button"
-  onClick={() => openEdit(m)}
+  onClick={() => {
+    setBookingsMaster(m);
+    setBookingsFilter("today");
+    setVisibleMasterBookingsCount(10);
+    setBookingsModalOpen(true);
+  }}
   className="mt-3 block w-full text-left"
 >
   <div className="flex gap-3">
@@ -1645,7 +2177,7 @@ const activeExceptionsCount =
 <Avatar
   name={m.name}
   photoUrl={m.photoUrl}
-  size="md"
+  size="lg"
   className="h-20 w-20 rounded-[20px] border-[#eef1f5] transition-all duration-200 group-hover/masterCard:border-[#ffd6bd] group-hover/masterCard:shadow-[0_12px_30px_rgba(255,98,0,0.14)]"
 />
 
@@ -1704,10 +2236,12 @@ const activeExceptionsCount =
 </button>
 <button
   type="button"
-  onClick={() => {
-    setBookingsMaster(m);
-    setBookingsModalOpen(true);
-  }}
+onClick={() => {
+  setBookingsMaster(m);
+  setBookingsFilter("today");
+  setVisibleMasterBookingsCount(10);
+  setBookingsModalOpen(true);
+}}
   className="grid h-11 place-items-center border-l border-[#edf0f4] text-[#657084] transition hover:bg-[#fff7f0] hover:text-[#ff6200]"
   title="Записи майстра"
   aria-label="Записи майстра"
@@ -2220,10 +2754,12 @@ const activeExceptionsCount =
       </div>
 <Modal
   open={bookingsModalOpen}
-  onClose={() => {
-    setBookingsModalOpen(false);
-    setBookingsMaster(null);
-  }}
+onClose={() => {
+  setBookingsModalOpen(false);
+  setBookingsMaster(null);
+  setBookingsFilter("today");
+  setVisibleMasterBookingsCount(10);
+}}
   title={`Записи — ${bookingsMaster?.name || ""}`}
   badge="Записи"
   icon={CalendarCheck}
@@ -2248,17 +2784,21 @@ const activeExceptionsCount =
     </div>
   ) : (
     <div className="space-y-3">
-      <div className="mb-4 grid grid-cols-4 gap-2">
+<div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-5">
   {[
     ["today", "Сьогодні"],
     ["week", "Тиждень"],
     ["month", "Місяць"],
     ["all", "Усі"],
+    ["completed", "Завершені"],
   ].map(([value, label]) => (
     <button
       key={value}
       type="button"
-      onClick={() => setBookingsFilter(value)}
+    onClick={() => {
+  setBookingsFilter(value);
+  setVisibleMasterBookingsCount(10);
+}}
 className={cn(
   "h-9 rounded-xl border px-2 text-[11px] font-black transition-all duration-300",
   bookingsFilter === value
@@ -2270,113 +2810,42 @@ className={cn(
     </button>
   ))}
 </div>
-  {filteredMasterBookings.length === 0 ? (
+ {sortedMasterBookings.length === 0 ? (
       <div className="rounded-[24px] border border-[#eadbc9] bg-white p-5 text-center text-sm font-bold text-[#77716b]">
         За вибраний період записів немає.
       </div>
     ) : (
-filteredMasterBookings.map((booking) => (
-<div
-  key={booking.id}
-  className="
-    group
-    rounded-[20px]
-    border
-    border-[#eee4d8]
-    bg-white
-    px-3
-    py-3
-    shadow-[0_8px_22px_rgba(17,17,17,0.04)]
-    transition-all
-    duration-200
-    cursor-pointer
-    hover:-translate-y-0.5
-    hover:border-[#ffd6bd]
-    hover:bg-[#fff7f0]
-    
-  "
->
-    <div className="flex items-start justify-between gap-3">
-      <div className="flex min-w-0 items-start gap-2.5">
-        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-2xl bg-[#fff1e8] text-[#ff6200]">
-          <Users className="h-4 w-4" />
-        </div>
+<div className="space-y-3">
+  <ul className="space-y-3">
+    {visibleMasterBookings.map((booking) => (
+      <MasterBookingCard
+        key={booking.id}
+        booking={booking}
+        master={bookingsMaster}
+        nowTs={nowTs}
+        onClick={() => setDetailsBookingId(booking.id)}
+      />
+    ))}
+  </ul>
 
-        <div className="min-w-0">
-          <p className="line-clamp-1 text-[13px] font-black text-[#202020]">
-            {booking.clientName || "Клієнт"}
-          </p>
+  <div className="flex flex-col items-center gap-2 pt-1">
+    <p className="text-xs font-bold text-[#77716b]">
+      Показано {visibleMasterBookings.length} з {sortedMasterBookings.length}
+    </p>
 
-          <p className="mt-0.5 line-clamp-1 text-[11px] font-bold text-[#77716b]">
-            {booking.clientPhone || "Телефон не вказано"}
-          </p>
-          <p className="mt-0.5 line-clamp-1 text-[11px] font-bold text-[#77716b]">
-            {booking.serviceName || "Послуга"}
-          </p>
-
-
-        </div>
-      </div>
-
-<div className="flex shrink-0 flex-col items-end gap-5">
-  <span
-    className={cn(
-      "rounded-full px-2 py-0.5 text-[10px] font-black",
-      booking.status === "confirmed"
-        ? "bg-emerald-50 text-emerald-700"
-        : booking.status === "canceled"
-          ? "bg-red-50 text-red-700"
-          : "bg-[#fff1e8] text-[#ff6200]",
+    {hasMoreMasterBookings && (
+      <button
+        type="button"
+        onClick={() =>
+          setVisibleMasterBookingsCount((prev) => prev + 10)
+        }
+        className="inline-flex h-11 w-full items-center justify-center rounded-2xl border border-[#eadbc9] bg-white px-4 text-sm font-black text-[#202020] transition-all duration-200 hover:border-[#ffd6bd] hover:bg-[#fff7f0] active:scale-[0.98]"
+      >
+        Показати ще
+      </button>
     )}
-  >
-    {booking.status === "confirmed"
-      ? "Підтверджено"
-      : booking.status === "canceled"
-        ? "Скасовано"
-        : "Новий"}
-  </span>
-
-<ChevronRight
-  className="
-    h-4
-    w-4
-    text-[#ff6200]
-    transition-all
-    duration-200
-    group-hover:translate-x-1.5
-    group-hover:scale-125
-  "
-/>
+  </div>
 </div>
-    </div>
-
-<div className="mt-3 flex flex-wrap items-center gap-2">
-  <div className="flex items-center gap-1.5 rounded-xl bg-[#fbfaf8] px-2 py-1.5">
-    <CalendarDays className="h-3.5 w-3.5 shrink-0 text-[#ff6200]" />
-    <span className="text-[11px] font-bold text-[#202020]">
-      {booking.date}
-    </span>
-  </div>
-
-  <div className="flex items-center gap-1.5 rounded-xl bg-[#fbfaf8] px-2 py-1.5">
-    <Clock3 className="h-3.5 w-3.5 shrink-0 text-[#ff6200]" />
-    <span className="text-[11px] font-bold text-[#202020]">
-      {booking.time}
-    </span>
-  </div>
-
-  {booking.price != null && (
-    <div className="flex items-center gap-1.5 rounded-xl bg-[#fbfaf8] px-2 py-1.5">
-      <Banknote className="h-3.5 w-3.5 shrink-0 text-[#ff6200]" />
-      <span className="text-[11px] font-bold text-[#202020]">
-        {booking.price} грн
-      </span>
-    </div>
-  )}
-</div>
-
-  </div>
-))
     )}
   </div>
 )}
@@ -2615,6 +3084,306 @@ filteredMasterBookings.map((booking) => (
     </div>
   </div>
 </Modal>
+{selectedMasterBooking &&
+  detailsBookingId != null &&
+  (() => {
+    const booking = selectedMasterBooking;
+
+    const isCanceled = booking.status === "canceled";
+    const isConfirmed = booking.status === "confirmed";
+    const dt = getBookingDateTime(booking);
+    const isArchived = dt ? dt.getTime() < nowTs : false;
+
+    const statusMeta = isArchived
+      ? {
+          label: "Завершено",
+          top: "from-[var(--color-archived-light)] to-white",
+          Icon: CalendarCheck,
+          iconColor: "text-[var(--color-archived-dark)]",
+          pillText: "text-[var(--color-archived-dark)]",
+          accent: "text-[var(--color-archived)]",
+        }
+      : isConfirmed
+        ? {
+            label: "Підтверджено",
+            top: "from-[var(--color-confirmed-light)] to-white",
+            Icon: CheckCheck,
+            iconColor: "text-[var(--color-confirmed-dark)]",
+            pillText: "text-[var(--color-confirmed-dark)]",
+            accent: "text-[var(--color-confirmed)]",
+          }
+: isCanceled
+  ? {
+      label: getCanceledBookingLabel(booking),
+      top: "from-[var(--color-canceled-light)] to-white",
+      Icon: XCircle,
+      iconColor: "text-[var(--color-canceled-dark)]",
+      pillText: "text-[var(--color-canceled-dark)]",
+      accent: "text-[var(--color-canceled)]",
+    }
+          : {
+              label: "Очікує підтвердження",
+              top: "from-[var(--color-pending-light)] to-white",
+              Icon: Clock,
+              iconColor: "text-[#ffb020]",
+              pillText: "text-[#ffb020]",
+              accent: "text-[#ffb020]",
+            };
+
+    const StatusIcon = statusMeta.Icon;
+
+    const clientName = getBookingClientName(booking);
+    const phone = getBookingClientPhone(booking);
+    const service = getBookingServiceName(booking);
+    const masterName = getBookingMasterName(booking, bookingsMaster);
+
+    const time = parseTimeToHHMM(booking.time) || booking.time || "—";
+
+    const price =
+      booking.price ??
+      booking.servicePrice ??
+      booking.totalPrice ??
+      booking.service?.price ??
+      null;
+
+    const duration =
+      booking.duration ??
+      booking.serviceDuration ??
+      booking.durationMinutes ??
+      booking.service?.duration ??
+      null;
+
+    const dateLabel = formatDateFullUA(booking?.date);
+
+    const clientPhoto = getBookingClientPhoto(booking);
+    const masterPhoto = getBookingMasterPhoto(booking, bookingsMaster);
+
+    const closeDetails = () => {
+      closeBookingDetails();
+    };
+
+    return (
+      <div
+        className="fixed inset-0 z-[10050] flex items-end justify-center bg-[#1b1b1b]/35 p-0 backdrop-blur-[10px] sm:items-center sm:p-5"
+        onMouseDown={(e) => {
+          if (e.target === e.currentTarget) {
+            closeDetails();
+          }
+        }}
+      >
+        <div
+          className={cn(
+            "relative flex w-full flex-col overflow-hidden bg-[#fbfaf8]",
+            "h-[100dvh] rounded-none border-0 shadow-none",
+            "sm:h-auto sm:max-h-[88vh] sm:max-w-[640px] sm:rounded-[34px] sm:border sm:border-[#eadfce] sm:shadow-[0_35px_110px_rgba(27,27,27,0.22)]",
+          )}
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div
+            className={cn(
+              "relative overflow-hidden px-5 pb-5 pt-[max(16px,env(safe-area-inset-top))] sm:px-6 sm:pt-6",
+              "bg-gradient-to-b",
+              statusMeta.top,
+            )}
+          >
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.58),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.20),rgba(255,255,255,0))]" />
+
+            <div className="relative flex items-center justify-between">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/80 px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] text-[#77716b] shadow-sm backdrop-blur">
+                <ClipboardPen className="h-4 w-4 text-[#ff6200]" />
+                Деталі запису
+              </div>
+
+              <button
+                type="button"
+                onClick={closeDetails}
+                className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-[#202020] shadow-[0_8px_24px_rgba(27,27,27,0.10)] transition hover:bg-[#fff7f0] active:scale-[0.98]"
+                aria-label="Закрити"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="relative mt-8 flex flex-col items-center text-center">
+              <div className="inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-[13px] font-black shadow-[0_8px_24px_rgba(27,27,27,0.08)] backdrop-blur">
+                <StatusIcon className={cn("h-4 w-4", statusMeta.iconColor)} />
+
+                <span className={statusMeta.pillText}>
+                  {statusMeta.label}
+                </span>
+              </div>
+
+              <h2 className="mt-8 break-words text-center text-[30px] font-black leading-[1.05] tracking-tight text-[#202020] sm:text-[34px]">
+                {service}
+              </h2>
+
+              <p className="mt-2 flex flex-wrap items-center justify-center gap-2 text-sm font-bold text-[#77716b]">
+                <CalendarDays className="h-4 w-4 text-[#ff6200]" />
+                <span>{dateLabel}</span>
+              </p>
+            </div>
+
+            <div className="relative mt-4 grid grid-cols-3 gap-2">
+              <div className="flex min-h-[90px] flex-col items-center justify-center rounded-[22px] border border-white/70 bg-white/88 p-3 text-center shadow-sm backdrop-blur">
+                <Clock3 className={cn("h-4 w-4", statusMeta.iconColor)} />
+
+                <p className="mt-2 text-[11px] font-black uppercase tracking-[0.12em] text-[#aaa19a]">
+                  Час запису
+                </p>
+
+                <p className="mt-1 text-sm font-black text-[#202020]">
+                  {time}
+                </p>
+              </div>
+
+              <div className="flex min-h-[90px] flex-col items-center justify-center rounded-[22px] border border-white/70 bg-white/88 p-3 text-center shadow-sm backdrop-blur">
+                <Banknote className={cn("h-4 w-4", statusMeta.iconColor)} />
+
+                <p className="mt-2 text-[11px] font-black uppercase tracking-[0.12em] text-[#aaa19a]">
+                  Сума
+                </p>
+
+                <p className="mt-1 text-sm font-black text-[#202020]">
+                  {price != null ? `${price} грн` : "—"}
+                </p>
+              </div>
+
+              <div className="flex min-h-[90px] flex-col items-center justify-center rounded-[22px] border border-white/70 bg-white/88 p-3 text-center shadow-sm backdrop-blur">
+                <Timer className={cn("h-4 w-4", statusMeta.iconColor)} />
+
+                <p className="mt-2 text-[11px] font-black uppercase tracking-[0.12em] text-[#aaa19a]">
+                  Тривалість
+                </p>
+
+                <p className="mt-1 text-sm font-black text-[#202020]">
+                  {duration != null ? `${duration} хв` : "—"}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="relative flex min-h-0 flex-1 flex-col bg-white px-4 pt-4 sm:px-6">
+            <div className="calendar-day-scroll min-h-0 flex-1 overflow-y-auto pb-28 sm:pb-24">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-[28px] border border-[#eadfce] bg-white p-4 sm:col-span-2">
+                  <div className="flex items-center gap-4">
+                    <div className="h-[72px] w-[72px] shrink-0 overflow-hidden rounded-full border border-[#eadfce] bg-white p-1">
+                      {clientPhoto ? (
+                        <img
+                          src={clientPhoto}
+                          alt={clientName}
+                          className="h-full w-full rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center rounded-full bg-[#fff1e8] text-[#ff6200]">
+                          <UserRound className="h-5 w-5" />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#aaa19a]">
+                        Клієнт
+                      </p>
+
+                      <p className="truncate text-[20px] font-black text-[#202020]">
+                        {clientName}
+                      </p>
+
+                      <p className="mt-1 truncate text-sm font-bold text-[#77716b]">
+                        {phone || "Телефон не вказано"}
+                      </p>
+                    </div>
+
+                    {phone && (
+                      <div className="flex shrink-0 items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleCopyPhone(phone)}
+                          className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#eadfce] bg-white text-[#77716b] transition-all duration-200 hover:bg-[#fff7f0] hover:text-[#202020] active:scale-[0.95]"
+                          title="Скопіювати номер"
+                        >
+                          {copiedPhone ? (
+                            <CheckCheck className="h-4 w-4 text-emerald-600" />
+                          ) : (
+                            <Copy className="h-4 w-4" />
+                          )}
+                        </button>
+
+                        <a
+                          href={`tel:${phone}`}
+                          className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#ff6200] text-white transition-all duration-200 hover:bg-[#ef4f00] active:scale-[0.95]"
+                          title="Подзвонити"
+                        >
+                          <PhoneCall className="h-4 w-4" />
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="rounded-[24px] border border-[#eadfce] bg-white p-3 sm:col-span-2">
+                  <div className="ml-2 flex items-center gap-3">
+                    <div className="h-[62px] w-[62px] shrink-0 overflow-hidden rounded-full border border-[#eadfce] bg-white p-1">
+                      {masterPhoto ? (
+                        <img
+                          src={masterPhoto}
+                          alt={masterName}
+                          className="h-full w-full rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center rounded-full bg-[#fff1e8] text-[#ff6200]">
+                          <UserRound className="h-5 w-5" />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="ml-2 min-w-0 flex-1">
+                      <p className="text-[9px] font-black uppercase tracking-[0.12em] text-[#aaa19a]">
+                        Майстер
+                      </p>
+
+                      <p className="mt-0.5 truncate text-[15px] font-black text-[#202020]">
+                        {masterName}
+                      </p>
+
+                      <p className="truncate text-[12px] font-semibold text-[#77716b]">
+                        Виконавець послуги
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {(booking.comment || booking.note) && (
+                  <div className="rounded-[24px] border border-[#eadfce] bg-white p-4 sm:col-span-2">
+                    <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#aaa19a]">
+                      Коментар
+                    </p>
+
+                    <p className="mt-2 text-sm font-semibold leading-6 text-[#202020]">
+                      {booking.comment || booking.note}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="absolute inset-x-0 bottom-0 border-[#eadfce] bg-white/92 px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 backdrop-blur sm:px-6 sm:pb-5">
+              <button
+                type="button"
+                onClick={closeDetails}
+                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[22px] bg-[var(--color-primary-buttom)] text-sm font-black text-white transition-all duration-200 hover:bg-[#4a4a4a] active:scale-[0.98]"
+              >
+                <X className="h-4 w-4" />
+                Закрити
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  })()}
     </div>
   );
 }

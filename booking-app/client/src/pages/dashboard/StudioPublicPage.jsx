@@ -20,9 +20,6 @@ import {
   Heart,
   Share2,
   Phone,
-  Wifi,
-  Car,
-  Users,
   Crown,
 } from "lucide-react";
 import StudioBookingWidget from "../../components/StudioBookingWidget";
@@ -59,14 +56,12 @@ function parsePortfolio(value) {
 
 function heroIconButtonClass(active = false) {
   return cn(
-    "group flex h-12 w-12 items-center justify-center rounded-2xl",
-    "transition-all duration-200 ease-out",
-    "hover:-translate-y-0.5 hover:scale-[1.03]",
-    "active:translate-y-[1px] active:scale-[0.97]",
-    "hover:bg-white/10",
-    active ? "text-rose-500" : "text-white",
+    "group grid h-12 w-12 place-items-center rounded-2xl border border-white/20 bg-white/10 text-white shadow-[0_10px_28px_rgba(15,23,42,0.18)] backdrop-blur-md",
+    "transition-all duration-200 hover:-translate-y-0.5 hover:border-white/60 hover:bg-white/20 active:translate-y-[1px] active:scale-[0.97]",
+    active && "bg-white text-[#ff5a00] hover:bg-white",
   );
 }
+
 
 function ExpandableText({ text, maxLines = 3 }) {
   const [expanded, setExpanded] = useState(false);
@@ -85,7 +80,7 @@ function ExpandableText({ text, maxLines = 3 }) {
       <p
         ref={ref}
         className={cn(
-          "text-sm leading-7 text-stone-600 transition-all duration-300",
+          "text-sm font-medium leading-7 text-[#77716b] transition-all duration-300",
           !expanded && `line-clamp-${maxLines}`,
         )}
       >
@@ -96,7 +91,7 @@ function ExpandableText({ text, maxLines = 3 }) {
         <button
           type="button"
           onClick={() => setExpanded((p) => !p)}
-          className="mt-2 text-xs font-semibold text-emerald-700 transition hover:text-emerald-800"
+          className="mt-2 text-xs font-black text-[#ff6200] transition hover:text-[#ef4f00]"
         >
           {expanded ? "Згорнути" : "Показати більше"}
         </button>
@@ -105,27 +100,47 @@ function ExpandableText({ text, maxLines = 3 }) {
   );
 }
 
+
 function SectionShell({ children, className = "" }) {
   return (
-    <div
+    <section
       className={cn(
-        "overflow-hidden rounded-[22px] border border-stone-200/60 bg-white shadow-[0_4px_24px_-4px_rgba(120,90,60,0.08)] sm:rounded-[30px]",
+        "group relative overflow-hidden rounded-[32px] border border-[#ebe7df] bg-white shadow-[0_14px_44px_rgba(15,23,42,0.05)] transition-all duration-300 hover:shadow-[0_20px_60px_rgba(15,23,42,0.08)]",
         className,
       )}
     >
-      <div className="h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-70" />
+      <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#ff7a18] via-[#ff6200] to-[#ff8c42]" />
       {children}
-    </div>
+    </section>
   );
 }
 
+
 function BookingModal({ open, title, onClose, children }) {
+  useEffect(() => {
+    if (!open) return undefined;
+
+    document.body.style.overflow = "hidden";
+
+    const handleEscape = (e) => {
+      if (e.key === "Escape") onClose?.();
+    };
+
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.body.style.overflow = "";
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [open, onClose]);
+
   if (!open) return null;
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center"
+      className="fixed inset-0 z-[9999] flex items-stretch justify-center bg-[#202020]/45 p-0 backdrop-blur-[6px] sm:items-center sm:p-6"
       data-testid="booking-modal"
+      role="presentation"
     >
       <motion.button
         initial={{ opacity: 0 }}
@@ -134,50 +149,60 @@ function BookingModal({ open, title, onClose, children }) {
         type="button"
         aria-label="Закрити"
         onClick={onClose}
-        className="absolute inset-0 bg-stone-900/40 backdrop-blur-sm"
+        className="absolute inset-0"
       />
 
-      <div className="relative z-10 m-auto w-full max-w-2xl px-3 sm:px-6">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.96, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.96, y: 20 }}
-          transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-          className="flex max-h-[78vh] sm:max-h-[85vh] lg:max-h-[88vh] flex-col overflow-hidden rounded-3xl bg-white shadow-[0_40px_120px_-30px_rgba(0,0,0,0.2)]"
-          role="dialog"
-          aria-modal="true"
-        >
-          <div className="h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-70" />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96, y: 18 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.96, y: 18 }}
+        transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+        className={cn(
+          "relative z-10 flex h-dvh w-full max-w-2xl flex-col overflow-hidden rounded-none border-0 bg-[#f7f5f1] shadow-[0_30px_90px_rgba(15,23,42,0.24)]",
+          "sm:h-auto sm:max-h-[calc(100dvh-48px)] sm:rounded-[30px] sm:border sm:border-[#f0e2d3]",
+        )}
+        role="dialog"
+        aria-modal="true"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="relative shrink-0 overflow-hidden bg-[#f3eee7] px-5 py-5 sm:px-6 sm:py-6">
+          <div className="absolute right-[-55px] top-[-70px] h-[180px] w-[180px] rounded-full bg-[#ff6200]/10 blur-3xl" />
 
-          <div className="flex-shrink-0 border-b border-stone-100 px-5 py-5 sm:px-6">
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-amber-600">
-                  Онлайн бронювання
-                </p>
-                <h3 className="mt-1 truncate text-lg font-bold text-stone-800 sm:text-xl">
-                  {title}
-                </h3>
-              </div>
+          <div className="relative z-10 flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-white px-3 text-[11px] font-black uppercase tracking-[0.08em] text-[#ff6200] shadow-[0_8px_20px_rgba(255,98,0,0.08)]">
+                <Sparkles className="h-3.5 w-3.5" />
+                Онлайн запис
+              </span>
 
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex h-10 w-10 items-center justify-center rounded-xl border border-stone-200 bg-stone-50 text-stone-500 transition-colors duration-200 hover:bg-stone-100 hover:text-stone-800"
-              >
-                <X className="h-4 w-4" />
-              </button>
+              <h3 className="mt-3 text-[26px] font-black leading-[0.95] tracking-[-0.05em] text-[#202020] sm:text-[32px]">
+                {title}
+              </h3>
+
+              <p className="mt-2 text-sm font-medium leading-6 text-[#77716b]">
+                Оберіть послугу, майстра, дату та зручний час для бронювання.
+              </p>
             </div>
-          </div>
 
-          <div className="flex-1 overflow-y-auto px-5 pb-0 pt-6 sm:px-6">
-            {children}
+            <button
+              type="button"
+              onClick={onClose}
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white text-[#77716b] shadow-[0_10px_24px_rgba(15,23,42,0.06)] transition hover:bg-[#fff3e9] hover:text-[#ff6200] active:scale-[0.96]"
+              aria-label="Закрити"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
-        </motion.div>
-      </div>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto bg-white px-5 py-5 pb-[110px] sm:px-6 sm:pb-5">
+          {children}
+        </div>
+      </motion.div>
     </div>
   );
 }
+
 
 function ImageLightbox({ open, images = [], startIndex = 0, onClose }) {
   const [idx, setIdx] = useState(startIndex);
@@ -246,7 +271,7 @@ function ImageLightbox({ open, images = [], startIndex = 0, onClose }) {
         <button
           type="button"
           onClick={onClose}
-          className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-stone-800 shadow-lg transition-transform duration-200 hover:scale-105 active:scale-95"
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-[#202020] shadow-lg transition-transform duration-200 hover:scale-105 active:scale-95"
         >
           <X className="h-5 w-5" />
         </button>
@@ -257,7 +282,7 @@ function ImageLightbox({ open, images = [], startIndex = 0, onClose }) {
           <button
             type="button"
             onClick={goPrev}
-            className="absolute left-4 top-1/2 z-[130] hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-stone-800 shadow-xl transition-transform duration-200 hover:scale-105 active:scale-95 sm:flex"
+            className="absolute left-4 top-1/2 z-[130] hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#202020] shadow-xl transition-transform duration-200 hover:scale-105 active:scale-95 sm:flex"
           >
             <ChevronLeft className="h-6 w-6" />
           </button>
@@ -265,7 +290,7 @@ function ImageLightbox({ open, images = [], startIndex = 0, onClose }) {
           <button
             type="button"
             onClick={goNext}
-            className="absolute right-4 top-1/2 z-[130] hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-stone-800 shadow-xl transition-transform duration-200 hover:scale-105 active:scale-95 sm:flex"
+            className="absolute right-4 top-1/2 z-[130] hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#202020] shadow-xl transition-transform duration-200 hover:scale-105 active:scale-95 sm:flex"
           >
             <ChevronRight className="h-6 w-6" />
           </button>
@@ -297,81 +322,84 @@ function ImageLightbox({ open, images = [], startIndex = 0, onClose }) {
 
 function ServiceRow({ service, onBook }) {
   return (
-    <div className="group flex items-center gap-4 rounded-2xl border border-stone-200 bg-white p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-amber-200 hover:shadow-[0_12px_30px_rgba(0,0,0,0.06)] sm:p-5">
-      <div className="min-w-0 flex-1">
-        <p className="text-[15px] font-semibold text-stone-800 transition-colors duration-200 group-hover:text-emerald-700 sm:text-base">
-          {service.name}
-        </p>
-
-        {!!service.description && (
-          <p className="mt-1 line-clamp-2 text-xs text-stone-500 sm:text-sm">
-            {service.description}
-          </p>
-        )}
-
-        <div className="mt-2.5 flex flex-wrap items-center gap-3 text-xs text-stone-500">
-          {service.duration && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-stone-100 px-2.5 py-1">
-              <Clock className="h-3.5 w-3.5 text-amber-600" />
-              {service.duration} хв
-            </span>
-          )}
-
-          {service.price != null && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-stone-100 px-2.5 py-1 font-semibold text-stone-800">
-              <Banknote className="h-3.5 w-3.5 text-amber-600" />
-              {service.price} грн
-            </span>
-          )}
+    <div className="group overflow-hidden rounded-[24px] border border-[#eadfce] bg-white text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-[#ffd6bd] hover:bg-[#fff7f0] active:scale-[0.99]">
+      <div className="flex items-center gap-4 px-4 py-4 sm:px-5 sm:py-5">
+        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-[#eadbc9] bg-[#fff1e8] text-[#ff6200] shadow-sm">
+          <PenLine className="h-5 w-5" />
         </div>
+
+        <div className="min-w-0 flex-1">
+          <h3 className="line-clamp-1 text-[15px] font-black leading-tight tracking-[-0.03em] text-[#202020] sm:text-base">
+            {service.name}
+          </h3>
+
+          {!!service.description && (
+            <p className="mt-1 line-clamp-2 text-xs font-medium leading-5 text-[#77716b] sm:text-sm">
+              {service.description}
+            </p>
+          )}
+
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-black text-[#77716b]">
+            {service.duration && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#eadbc9] bg-white px-2.5 py-1 shadow-sm">
+                <Clock className="h-3.5 w-3.5 text-[#ff6200]" />
+                {service.duration} хв
+              </span>
+            )}
+
+            {service.price != null && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#eadbc9] bg-white px-2.5 py-1 text-[#202020] shadow-sm">
+                <Banknote className="h-3.5 w-3.5 text-[#ff6200]" />
+                {service.price} грн
+              </span>
+            )}
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => onBook(service)}
+          className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-2xl bg-[#ff5a00] px-4 text-xs font-black text-white shadow-sm transition-all duration-200 hover:bg-[#ef4f00] active:scale-[0.98] sm:px-5 sm:text-sm"
+        >
+          Забронювати
+          <Sparkles className="h-4 w-4" />
+        </button>
       </div>
-
-      <button
-        type="button"
-        onClick={() => onBook(service)}
-        className={cn(
-          "inline-flex h-9 sm:h-10 items-center justify-center gap-2",
-          "rounded-xl px-3 sm:px-4 text-xs sm:text-sm font-bold text-white",
-          "active:scale-95",
-          "whitespace-nowrap",
-
-          // 👉 nude-green
-          "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
-
-          // 👉 hover
-          "hover:scale-[1.03] hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]",
-        )}
-      >
-        Забронювати
-      </button>
     </div>
   );
 }
+
 
 function CategoryAccordion({ category, onBook }) {
   const [open, setOpen] = useState(false);
   const services = category.services || [];
 
   return (
-    <div className="overflow-hidden rounded-[28px] border border-stone-200 bg-white shadow-[0_8px_24px_rgba(0,0,0,0.04)]">
+    <div className="overflow-hidden rounded-[28px] border border-[#eadfce] bg-white shadow-[0_10px_30px_rgba(15,23,42,0.04)] transition-all duration-300 hover:border-[#ffd6bd] hover:shadow-[0_16px_40px_rgba(15,23,42,0.07)]">
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center justify-between gap-3 p-5 text-left transition-colors duration-200 hover:bg-stone-50 sm:p-6"
+        className="flex w-full items-center justify-between gap-3 px-5 py-5 text-left transition-colors duration-200 hover:bg-[#fff7f0] sm:px-6"
       >
-        <div className="min-w-0">
-          <p className="text-base font-semibold text-stone-800 sm:text-lg">
-            {category.name}
-          </p>
-          <p className="mt-0.5 text-xs text-stone-500">
-            {services.length} {services.length === 1 ? "послуга" : "послуг"}
-          </p>
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-[#eadbc9] bg-[#fff1e8] text-[#ff6200] shadow-sm">
+            <PenLine className="h-5 w-5" />
+          </div>
+
+          <div className="min-w-0">
+            <p className="truncate text-base font-black tracking-[-0.03em] text-[#202020] sm:text-lg">
+              {category.name}
+            </p>
+            <p className="mt-0.5 text-xs font-semibold text-[#77716b]">
+              {services.length} {services.length === 1 ? "послуга" : "послуг"}
+            </p>
+          </div>
         </div>
 
         <div
           className={cn(
-            "flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-stone-200 bg-stone-100 text-stone-500 transition-transform duration-300",
-            open ? "rotate-180" : "",
+            "grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-[#eadbc9] bg-white text-[#77716b] shadow-sm transition-all duration-300",
+            open ? "rotate-180 border-[#ff6200] bg-[#fff1e8] text-[#ff6200]" : "",
           )}
         >
           <ChevronDown className="h-4 w-4" />
@@ -384,14 +412,14 @@ function CategoryAccordion({ category, onBook }) {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
             className="overflow-hidden"
           >
-            <div className="border-t border-stone-100 bg-[#FFFEFD] px-4 py-4 sm:px-6">
+            <div className="border-t border-[#f1ece5] bg-[#fbfaf8] px-4 py-4 sm:px-6">
               {services.length === 0 ? (
-                <p className="py-4 text-sm text-stone-500">
+                <div className="rounded-[24px] border-2 border-dashed border-[#ffd6bd] bg-[#fffaf6] px-5 py-8 text-center text-sm font-semibold text-[#77716b]">
                   Послуги не додані.
-                </p>
+                </div>
               ) : (
                 <div className="space-y-3">
                   {services.map((s) => (
@@ -407,45 +435,58 @@ function CategoryAccordion({ category, onBook }) {
   );
 }
 
+
 function StaffCard({ member }) {
   const photo = toPublicUrl(
     member?.photoUrl || member?.avatar || member?.image,
   );
   const name = safe(member?.name || member?.fullName || member?.title);
   const role = safe(member?.role || member?.position || member?.speciality);
+  const initials = name
+    ? name
+        .split(" ")
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part[0]?.toUpperCase())
+        .join("")
+    : "M";
 
   return (
-    <div className="flex min-w-[96px] max-w-[120px] flex-col items-center text-center sm:min-w-[120px]">
-      <div className="h-20 w-20 overflow-hidden rounded-full border-4 border-white bg-stone-100 shadow-[0_10px_24px_rgba(0,0,0,0.06)] sm:h-24 sm:w-24">
+    <div className="group flex min-w-0 flex-col items-center text-center">
+      <div className="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-[24px] border-2 border-white bg-gradient-to-br from-[#fff1e8] via-white to-[#f2eee8] text-[#ff6200] shadow-[0_10px_26px_rgba(17,17,17,0.10)] transition duration-300 group-hover:scale-[1.03] sm:h-24 sm:w-24">
         {photo ? (
           <img
             src={photo}
-            alt={name || "member"}
+            alt={name || "Майстер"}
             className="h-full w-full object-cover"
+            onError={(e) => {
+              e.currentTarget.style.display = "none";
+            }}
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-stone-400">
-            {name ? name.slice(0, 1).toUpperCase() : "?"}
-          </div>
+          <span className="text-3xl font-black tracking-[-0.08em]">
+            {initials}
+          </span>
         )}
       </div>
 
-      <p className="mt-3 line-clamp-2 text-sm font-semibold text-stone-800">
+      <p className="mt-3 line-clamp-2 text-sm font-black tracking-[-0.03em] text-[#202020]">
         {name || "Майстер"}
       </p>
-      <p className="mt-0.5 line-clamp-2 text-xs text-stone-500">
+      <p className="mt-0.5 line-clamp-2 text-xs font-semibold text-[#77716b]">
         {role || "Спеціаліст"}
       </p>
     </div>
   );
 }
 
+
 function ReviewCard({ review }) {
   return (
-    <div className="rounded-[26px] border border-stone-200 bg-white p-5 shadow-[0_8px_25px_rgba(0,0,0,0.04)]">
+    <div className="rounded-[26px] border border-[#eadfce] bg-white p-5 shadow-[0_8px_25px_rgba(15,23,42,0.04)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#ffd6bd] hover:bg-[#fff7f0]">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-sm font-semibold text-stone-800">
+          <p className="text-sm font-black text-[#202020]">
             {review.author}
           </p>
           <div className="mt-1 flex items-center gap-1">
@@ -455,23 +496,26 @@ function ReviewCard({ review }) {
                 className={cn(
                   "h-3.5 w-3.5",
                   i < review.rating
-                    ? "fill-amber-400 text-amber-400"
-                    : "text-stone-200",
+                    ? "fill-[#ffb020] text-[#ffb020]"
+                    : "text-[#eadfce]",
                 )}
               />
             ))}
           </div>
         </div>
 
-        <span className="text-xs text-stone-500">{review.date}</span>
+        <span className="rounded-full bg-[#fff1e8] px-2.5 py-1 text-xs font-black text-[#ff6200]">
+          {review.date}
+        </span>
       </div>
 
-      <p className="mt-3 text-sm leading-relaxed text-stone-600">
+      <p className="mt-3 text-sm font-medium leading-relaxed text-[#77716b]">
         {review.text}
       </p>
     </div>
   );
 }
+
 
 const WEEK_DAYS = [
   { key: "mon", label: "Понеділок", jsDay: 1 },
@@ -563,18 +607,20 @@ function buildWeeklyScheduleRows(schedule) {
 function SkeletonBlock({ className = "" }) {
   return (
     <div
-      className={cn("animate-pulse rounded-2xl bg-stone-200/80", className)}
+      className={cn("animate-pulse rounded-xl bg-[#f2eee8]", className)}
+      aria-hidden="true"
     />
   );
 }
 
+
 function StudioPublicPageSkeleton() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-stone-50 via-amber-50/30 to-orange-50/20 text-stone-800">
+    <div className="min-h-screen bg-[#f7f5f1] text-[#202020]">
       <div className="mx-auto w-full max-w-[1220px] px-0 sm:px-2 md:px-3 lg:px-6">
-        <div className="mx-auto w-full max-w-[1120px] pb-0 text-stone-800 sm:pb-20 lg:pb-5">
+        <div className="mx-auto w-full max-w-[1120px] pb-0 text-[#202020] sm:pb-20 lg:pb-5">
           <section className="relative">
-            <div className="relative h-[320px] overflow-hidden rounded-b-[24px] bg-stone-200 sm:mx-[-8px] sm:h-[420px] md:mx-[-12px] md:h-[480px] lg:mx-0 lg:h-[520px]">
+            <div className="relative h-[320px] overflow-hidden rounded-b-[24px] bg-[#f2eee8] sm:mx-[-8px] sm:h-[420px] md:mx-[-12px] md:h-[480px] lg:mx-0 lg:h-[520px]">
               <SkeletonBlock className="h-full w-full rounded-none" />
 
               <div className="absolute inset-x-0 top-0 flex items-center justify-between px-4 pb-4 pt-4 sm:px-6">
@@ -618,7 +664,7 @@ function StudioPublicPageSkeleton() {
                   </div>
                 </div>
 
-                <div className="border-t border-stone-100 bg-white/95 backdrop-blur-xl">
+                <div className="border-t border-[#f1ece5] bg-white/95 backdrop-blur-xl">
                   <div className="mx-auto max-w-[900px] px-4">
                     <div className="flex justify-center gap-6 py-4">
                       <SkeletonBlock className="h-5 w-20 rounded-xl" />
@@ -643,7 +689,7 @@ function StudioPublicPageSkeleton() {
                         {Array.from({ length: 4 }).map((_, idx) => (
                           <div
                             key={idx}
-                            className="rounded-[28px] border border-stone-200 bg-white p-5 shadow-[0_8px_24px_rgba(0,0,0,0.04)]"
+                            className="rounded-[28px] border border-[#eadfce] bg-white p-5 shadow-[0_8px_24px_rgba(0,0,0,0.04)]"
                           >
                             <div className="flex items-center justify-between gap-3">
                               <div className="min-w-0 flex-1">
@@ -1080,8 +1126,8 @@ export default function StudioPublicPage() {
   if (!studio) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center px-4">
-        <div className="w-full max-w-2xl rounded-[28px] border border-stone-200 bg-white p-12 text-center shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
-          <h1 className="text-xl font-bold text-stone-800">
+        <div className="w-full max-w-2xl rounded-[28px] border border-[#eadfce] bg-white p-12 text-center shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
+          <h1 className="text-xl font-bold text-[#202020]">
             {error ? "Не вдалося завантажити студію" : "Студію не знайдено"}
           </h1>
           {error ? <p className="mt-2 text-sm text-red-600">{error}</p> : null}
@@ -1118,13 +1164,13 @@ export default function StudioPublicPage() {
 
   return (
     <div
-      className="min-h-screen bg-gradient-to-br from-stone-50 via-amber-50/30 to-orange-50/20 text-stone-800"
+      className="min-h-screen bg-[#f7f5f1] text-[#202020]"
       data-testid="studio-public-page"
     >
       <div className="mx-auto w-full max-w-[1220px] px-0 sm:px-2 md:px-3 lg:px-6">
-        <div className="mx-auto w-full max-w-[1120px] pb-0 text-stone-800 sm:pb-20 lg:pb-5">
+        <div className="mx-auto w-full max-w-[1120px] pb-0 text-[#202020] sm:pb-20 lg:pb-5">
           <section className="relative">
-            <div className="relative h-[320px] sm:h-[420px] md:h-[480px] lg:h-[520px] overflow-hidden rounded-b-[24px] bg-stone-100 sm:mx-[-8px] md:mx-[-12px] lg:mx-0">
+            <div className="relative h-[320px] sm:h-[420px] md:h-[480px] lg:h-[520px] overflow-hidden rounded-b-[24px] bg-[#f8f5f1] sm:mx-[-8px] md:mx-[-12px] lg:mx-0">
               {heroImages.length > 0 ? (
                 <>
                   <button
@@ -1171,10 +1217,10 @@ export default function StudioPublicPage() {
                             )}
 
                             {showHeroLoader && (
-                              <div className="absolute inset-0 z-10 flex items-center justify-center bg-stone-100/80">
+                              <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#f8f5f1]/80">
                                 <div className="flex flex-col items-center gap-3 rounded-2xl bg-white px-4 py-3 shadow-sm">
-                                <div className="h-8 w-8 animate-spin rounded-full border-2 border-stone-300 border-t-[var(--color-forest)]" />
-                                  <span className="text-xs font-semibold text-stone-600">
+                                <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#eadbc9] border-t-[var(--color-forest)]" />
+                                  <span className="text-xs font-semibold text-[#77716b]">
                                     Завантаження фото...
                                   </span>
                                 </div>
@@ -1232,7 +1278,7 @@ export default function StudioPublicPage() {
                   )}
                 </>
               ) : (
-                <div className="absolute inset-0 bg-stone-200" />
+                <div className="absolute inset-0 bg-[#f2eee8]" />
               )}
 
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/45 via-black/10 to-black/20" />
@@ -1283,7 +1329,7 @@ export default function StudioPublicPage() {
                 <div className="px-4 pb-4 pt-4 sm:px-5 md:px-5 sm:pb-6 lg:px-6">
                   <div className="flex items-start justify-between gap-6">
                     <div className="flex items-center gap-4">
-                      <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-[0_8px_24px_rgba(0,0,0,0.06)] sm:h-20 sm:w-20">
+                      <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-[#eadfce] bg-white shadow-[0_8px_24px_rgba(0,0,0,0.06)] sm:h-20 sm:w-20">
                         {logoUrl ? (
                           <img
                             src={logoUrl}
@@ -1291,7 +1337,7 @@ export default function StudioPublicPage() {
                             className="h-full w-full object-cover"
                           />
                         ) : (
-                          <div className="flex h-full w-full items-center justify-center text-xs font-bold tracking-widest text-amber-600">
+                          <div className="flex h-full w-full items-center justify-center text-xs font-bold tracking-widest text-[#ff6200]">
                             LOGO
                           </div>
                         )}
@@ -1307,25 +1353,25 @@ export default function StudioPublicPage() {
                           )}
                         </div>
 
-                        <h1 className="mt-2 text-[26px] font-bold leading-[1.05] tracking-tight text-stone-800 sm:text-4xl lg:text-5xl">
+                        <h1 className="mt-2 text-[26px] font-bold leading-[1.05] tracking-tight text-[#202020] sm:text-4xl lg:text-5xl">
                           {name}
                         </h1>
 
                         {fullAddress && (
-                          <div className="mt-2 flex items-center gap-2 text-sm text-stone-500">
-                            <MapPin className="h-4 w-4 shrink-0 text-amber-600" />
+                          <div className="mt-2 flex items-center gap-2 text-sm text-[#77716b]">
+                            <MapPin className="h-4 w-4 shrink-0 text-[#ff6200]" />
                             <p className="line-clamp-1">{fullAddress}</p>
                             {fullAddress && (
                               <button
                                 type="button"
                                 onClick={handleCopyAddress}
-                                className="inline-flex h-7 items-center justify-center gap-1 rounded-lg border border-stone-200 bg-white/90 px-2 text-[11px] font-semibold text-stone-600 shadow-sm backdrop-blur transition hover:bg-white"
+                                className="inline-flex h-7 items-center justify-center gap-1 rounded-lg border border-[#eadfce] bg-white/90 px-2 text-[11px] font-semibold text-[#77716b] shadow-sm backdrop-blur transition hover:bg-white"
                                 title={
                                   copied ? "Скопійовано" : "Копіювати адресу"
                                 }
                               >
                                 {copied ? (
-                                  <CheckCheck className="h-3 w-3 text-emerald-700" />
+                                  <CheckCheck className="h-3 w-3 text-[#ff6200]" />
                                 ) : (
                                   <Copy className="h-3 w-3" />
                                 )}
@@ -1335,8 +1381,8 @@ export default function StudioPublicPage() {
                         )}
 
                         <div className="mt-2 flex items-center gap-3 text-sm">
-                          <div className="flex items-center gap-1.5 font-semibold text-stone-800">
-                            <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                          <div className="flex items-center gap-1.5 font-semibold text-[#202020]">
+                            <Star className="h-4 w-4 fill-[#ffb020] text-[#ffb020]" />
                             {reviewsSummary.rating.toFixed(1)}
                             <span className="hidden sm:inline font-normal text-sky-700">
                               ({reviewsSummary.count} відгуків)
@@ -1375,14 +1421,14 @@ export default function StudioPublicPage() {
     setOpenBooking(true);
   }}
   className={cn(
-    "rounded-2xl px-7 py-4 text-sm font-bold text-white",
+    "rounded-2xl bg-[#ff5a00] px-7 py-4 text-sm font-black text-white shadow-sm",
     "transition-all duration-200 active:scale-[0.98]",
 
     // 👉 nude-green
-    "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
+    "bg-[#ff5a00]",
 
     // 👉 hover
-    "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]"
+    "hover:bg-[#ef4f00]"
   )}
 >
   <span className="flex items-center gap-2 whitespace-nowrap">
@@ -1396,13 +1442,13 @@ export default function StudioPublicPage() {
                 {!!description && (
                   <div className="px-2  sm:px-5 lg:px-6">
                     <div className="rounded-[26px] pb-4 px-2 sm:p-6">
-                      <p className="text-sm leading-5.5 text-stone-600">
+                      <p className="text-sm leading-5.5 text-[#77716b]">
                         {description}
                       </p>
                     </div>
                   </div>
                 )}
-                <div className="sticky top-0 z-30 border-t border-stone-100 bg-white/95 backdrop-blur-xl">
+                <div className="sticky top-0 z-30 border-t border-[#f1ece5] bg-white/95 backdrop-blur-xl">
                   <div className="mx-auto max-w-[900px] px-4">
                     <div className="scrollbar-none flex justify-center overflow-x-auto">
                       {[
@@ -1421,8 +1467,8 @@ export default function StudioPublicPage() {
                             className={cn(
                               "relative shrink-0 px-4 py-4 text-sm font-semibold transition-colors sm:px-5",
                               isActive
-                                ? "text-stone-800"
-                                : "text-stone-400 hover:text-stone-700",
+                                ? "text-[#202020]"
+                                : "text-[#aaa19a] hover:text-[#4b4742]",
                             )}
                           >
                             {tab.label}
@@ -1430,7 +1476,7 @@ export default function StudioPublicPage() {
                             {isActive && (
                               <motion.span
                                 layoutId="activeStudioTab"
-                                className="absolute bottom-0 left-4 right-4 h-[2.5px] rounded-full bg-emerald-700"
+                                className="absolute bottom-0 left-4 right-4 h-[2.5px] rounded-full bg-[#ff6200]"
                                 transition={{
                                   type: "spring",
                                   stiffness: 380,
@@ -1459,7 +1505,7 @@ export default function StudioPublicPage() {
                       <div className="rounded-[30px] px-0 py-4 pb-18 sm:p-6">
                         <div className="mb-5 flex items-end justify-between gap-4">
                           <div>
-                            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-amber-600">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#ff6200]">
                               Меню послуг
                             </p>
                             <h2 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">
@@ -1469,19 +1515,19 @@ export default function StudioPublicPage() {
                         </div>
 
                         <div className="relative mb-6">
-                          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+                          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#aaa19a]" />
                           <input
                             type="text"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             placeholder="Пошук послуг"
-                            className="h-12 w-full rounded-2xl border border-stone-200 bg-stone-50 pl-11 pr-4 text-sm text-stone-800 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10"
+                            className="h-12 w-full rounded-2xl border border-[#eadfce] bg-[#f8f5f1] pl-11 pr-4 text-sm text-[#202020] outline-none transition focus:border-[#ff5a00] focus:ring-4 focus:ring-[#ff5a00]/10"
                           />
                         </div>
 
                         {filteredCategories.length === 0 &&
                         filteredUncategorizedServices.length === 0 ? (
-                          <div className="rounded-2xl bg-stone-100 p-8 text-center text-sm text-stone-500">
+                          <div className="rounded-2xl bg-[#f8f5f1] p-8 text-center text-sm text-[#77716b]">
                             Послуги не знайдено.
                           </div>
                         ) : (
@@ -1524,13 +1570,13 @@ export default function StudioPublicPage() {
                       <div className="rounded-[30px] px-0 py-4 pb-18 sm:p-6">
                         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                           <div>
-                            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-amber-600">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#ff6200]">
                               Довіра клієнтів
                             </p>
-                            <h2 className="mt-2 text-2xl font-bold tracking-tight text-stone-800 sm:text-3xl">
+                            <h2 className="mt-2 text-2xl font-bold tracking-tight text-[#202020] sm:text-3xl">
                               Відгуки та оцінки
                             </h2>
-                            <p className="mt-2 max-w-2xl text-sm leading-6 text-stone-500">
+                            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#77716b]">
                               Реальні враження клієнтів, загальний рейтинг і
                               фото робіт.
                             </p>
@@ -1539,16 +1585,16 @@ export default function StudioPublicPage() {
 
                         <div className="grid gap-5 xl:grid-cols-[340px,1fr]">
                           <div className="space-y-5">
-                            <div className="overflow-hidden rounded-[24px] sm:rounded-[30px] border border-stone-200 bg-white shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
-                              <div className="h-[2px] bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 opacity-70" />
+                            <div className="overflow-hidden rounded-[24px] sm:rounded-[30px] border border-[#eadfce] bg-white shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
+                              <div className="h-[2px] bg-gradient-to-r from-[#ff7a18] via-[#ff6200] to-[#ff8c42] opacity-70" />
 
                               <div className="p-4 sm:p-6">
                                 <div className="text-center">
-                                  <div className="mx-auto flex h-11 w-11 sm:h-14 sm:w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 shadow-sm">
-                                    <Star className="h-5 w-5 sm:h-6 sm:w-6 fill-amber-400 text-amber-400" />
+                                  <div className="mx-auto flex h-11 w-11 sm:h-14 sm:w-14 items-center justify-center rounded-2xl bg-[#fff1e8] text-[#ff6200] shadow-sm">
+                                    <Star className="h-5 w-5 sm:h-6 sm:w-6 fill-[#ffb020] text-[#ffb020]" />
                                   </div>
 
-                                  <p className="mt-3 sm:mt-4 text-[38px] sm:text-[54px] font-extrabold leading-none tracking-tight text-stone-900">
+                                  <p className="mt-3 sm:mt-4 text-[38px] sm:text-[54px] font-extrabold leading-none tracking-tight text-[#202020]">
                                     {reviewsSummary.rating.toFixed(1)}
                                   </p>
 
@@ -1559,14 +1605,14 @@ export default function StudioPublicPage() {
                                         className={cn(
                                           "h-4 w-4 sm:h-5 sm:w-5",
                                           i < Math.round(reviewsSummary.rating)
-                                            ? "fill-amber-400 text-amber-400"
+                                            ? "fill-[#ffb020] text-[#ffb020]"
                                             : "text-stone-200",
                                         )}
                                       />
                                     ))}
                                   </div>
 
-                                  <p className="mt-2 sm:mt-3 text-xs sm:text-sm text-stone-500">
+                                  <p className="mt-2 sm:mt-3 text-xs sm:text-sm text-[#77716b]">
                                     На основі {reviewsSummary.count} відгуків
                                   </p>
                                 </div>
@@ -1586,19 +1632,19 @@ export default function StudioPublicPage() {
                                         key={num}
                                         className="flex items-center gap-2 sm:gap-3"
                                       >
-                                        <div className="flex w-7 sm:w-8 items-center gap-1 text-[11px] sm:text-xs font-semibold text-stone-600">
+                                        <div className="flex w-7 sm:w-8 items-center gap-1 text-[11px] sm:text-xs font-semibold text-[#77716b]">
                                           <span>{num}</span>
-                                          <Star className="h-3 w-3 sm:h-3.5 sm:w-3.5 fill-amber-400 text-amber-400" />
+                                          <Star className="h-3 w-3 sm:h-3.5 sm:w-3.5 fill-[#ffb020] text-[#ffb020]" />
                                         </div>
 
-                                        <div className="h-2 sm:h-2.5 flex-1 overflow-hidden rounded-full bg-stone-100">
+                                        <div className="h-2 sm:h-2.5 flex-1 overflow-hidden rounded-full bg-[#f8f5f1]">
                                           <div
-                                            className="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-400"
+                                            className="h-full rounded-full bg-gradient-to-r from-[#ff7a18] to-[#ff6200]"
                                             style={{ width: `${width}%` }}
                                           />
                                         </div>
 
-                                        <span className="w-8 sm:w-10 text-right text-[11px] sm:text-xs font-medium text-stone-500">
+                                        <span className="w-8 sm:w-10 text-right text-[11px] sm:text-xs font-medium text-[#77716b]">
                                           {val}
                                         </span>
                                       </div>
@@ -1609,14 +1655,14 @@ export default function StudioPublicPage() {
                             </div>
 
                             {displayedPortfolio.length > 0 && (
-                              <div className="overflow-hidden rounded-[30px] border border-stone-200 bg-white shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
+                              <div className="overflow-hidden rounded-[30px] border border-[#eadfce] bg-white shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
                                 <div className="p-5 sm:p-6">
                                   <div className="mb-4 flex items-center justify-between gap-3">
                                     <div>
-                                      <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-600">
+                                      <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#ff6200]">
                                         Галерея клієнтів
                                       </p>
-                                      <h3 className="mt-1 text-lg font-bold text-stone-800">
+                                      <h3 className="mt-1 text-lg font-bold text-[#202020]">
                                         Фото робіт
                                       </h3>
                                     </div>
@@ -1683,25 +1729,25 @@ export default function StudioPublicPage() {
                                       key={review.id}
                                       className="mb-4 break-inside-avoid"
                                     >
-                                      <div className="group flex flex-col rounded-[28px] border border-stone-200 bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.05)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_40px_rgba(15,23,42,0.08)]">
+                                      <div className="group flex flex-col rounded-[28px] border border-[#eadfce] bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.05)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_40px_rgba(15,23,42,0.08)]">
                                         <div>
                                           <div className="flex items-start justify-between gap-3">
                                             <div className="flex min-w-0 items-center gap-3">
-                                              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-50 to-stone-100 text-sm font-bold text-stone-700">
+                                              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-50 to-stone-100 text-sm font-bold text-[#4b4742]">
                                                 {initials || "K"}
                                               </div>
 
                                               <div className="min-w-0">
-                                                <p className="truncate text-sm font-bold text-stone-800">
+                                                <p className="truncate text-sm font-bold text-[#202020]">
                                                   {author}
                                                 </p>
-                                                <p className="mt-0.5 text-xs text-stone-400">
+                                                <p className="mt-0.5 text-xs text-[#aaa19a]">
                                                   Клієнт студії
                                                 </p>
                                               </div>
                                             </div>
 
-                                            <span className="shrink-0 rounded-full bg-stone-100 px-2.5 py-1 text-[11px] font-semibold text-stone-500">
+                                            <span className="shrink-0 rounded-full bg-[#f8f5f1] px-2.5 py-1 text-[11px] font-semibold text-[#77716b]">
                                               {review.date}
                                             </span>
                                           </div>
@@ -1714,14 +1760,14 @@ export default function StudioPublicPage() {
                                                   className={cn(
                                                     "h-4 w-4",
                                                     i < review.rating
-                                                      ? "fill-amber-400 text-amber-400"
+                                                      ? "fill-[#ffb020] text-[#ffb020]"
                                                       : "text-stone-200",
                                                   )}
                                                 />
                                               ),
                                             )}
 
-                                            <span className="ml-2 text-xs font-semibold text-stone-500">
+                                            <span className="ml-2 text-xs font-semibold text-[#77716b]">
                                               {review.rating.toFixed(1)}
                                             </span>
                                           </div>
@@ -1733,13 +1779,13 @@ export default function StudioPublicPage() {
                                           </div>
                                         </div>
 
-                                        <div className="mt-5 flex items-center justify-between gap-3 border-t border-stone-100 pt-4">
-                                          <div className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700">
+                                        <div className="mt-5 flex items-center justify-between gap-3 border-t border-[#f1ece5] pt-4">
+                                          <div className="inline-flex items-center gap-1.5 text-xs font-medium text-[#ff6200]">
                                             <CheckCheck className="h-3.5 w-3.5" />
                                             Перевірений відгук
                                           </div>
 
-                                          <div className="text-[11px] font-medium text-stone-400">
+                                          <div className="text-[11px] font-medium text-[#aaa19a]">
                                             #
                                             {String(index + 1).padStart(2, "0")}
                                           </div>
@@ -1750,16 +1796,16 @@ export default function StudioPublicPage() {
                                 })}
                               </div>
                             ) : (
-                              <div className="rounded-[28px] border border-dashed border-stone-300 bg-gradient-to-br from-stone-50 to-amber-50/40 p-8 text-center shadow-[0_8px_24px_rgba(15,23,42,0.04)] sm:p-10">
+                              <div className="rounded-[28px] border border-dashed border-[#eadbc9] bg-gradient-to-br from-stone-50 to-amber-50/40 p-8 text-center shadow-[0_8px_24px_rgba(15,23,42,0.04)] sm:p-10">
                                 <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-sm">
                                   <Star className="h-6 w-6 text-amber-500" />
                                 </div>
 
-                                <h3 className="mt-4 text-lg font-bold text-stone-800">
+                                <h3 className="mt-4 text-lg font-bold text-[#202020]">
                                   Ще немає відгуків
                                 </h3>
 
-                                <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-stone-500">
+                                <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[#77716b]">
                                   У цієї студії поки що немає публічних
                                   відгуків. Після перших записів тут з’являться
                                   оцінки та враження клієнтів.
@@ -1787,10 +1833,10 @@ export default function StudioPublicPage() {
                     >
                       <div className="rounded-[30px] px-0 py-4 pb-18 sm:p-6">
                         <div className="mb-2">
-                          <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.25em] text-amber-600">
+                          <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.25em] text-[#ff6200]">
                             Наші роботи
                           </p>
-                          <h2 className="text-2xl font-bold tracking-tight text-stone-800 md:text-4xl">
+                          <h2 className="text-2xl font-bold tracking-tight text-[#202020] md:text-4xl">
                             Портфоліо
                           </h2>
                         </div>
@@ -1809,7 +1855,7 @@ export default function StudioPublicPage() {
                                   delay: idx * 0.05,
                                   duration: 0.4,
                                 }}
-                                className="group relative mb-3 block w-full cursor-zoom-in overflow-hidden rounded-2xl bg-stone-100 sm:mb-4"
+                                className="group relative mb-3 block w-full cursor-zoom-in overflow-hidden rounded-2xl bg-[#f8f5f1] sm:mb-4"
                               >
                                 <img
                                   src={url}
@@ -1832,16 +1878,16 @@ export default function StudioPublicPage() {
                             ))}
                           </div>
                         ) : (
-                          <div className="rounded-[28px] border border-dashed border-stone-300 bg-gradient-to-br from-stone-50 to-amber-50/40 p-8 text-center shadow-[0_8px_24px_rgba(15,23,42,0.04)] sm:p-10">
+                          <div className="rounded-[28px] border border-dashed border-[#eadbc9] bg-gradient-to-br from-stone-50 to-amber-50/40 p-8 text-center shadow-[0_8px_24px_rgba(15,23,42,0.04)] sm:p-10">
                             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-sm">
-                              <PenLine className="h-6 w-6 text-amber-600" />
+                              <PenLine className="h-6 w-6 text-[#ff6200]" />
                             </div>
 
-                            <h3 className="mt-4 text-lg font-bold text-stone-800">
+                            <h3 className="mt-4 text-lg font-bold text-[#202020]">
                               Портфоліо поки що порожнє
                             </h3>
 
-                            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-stone-500">
+                            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[#77716b]">
                               Студія ще не додала фото своїх робіт. Згодом тут
                               з’являться приклади виконаних послуг та результати
                               для клієнтів.
@@ -1864,13 +1910,13 @@ export default function StudioPublicPage() {
                     >
                       <div className="rounded-[30px] px-0 py-4 pb-18 sm:p-6">
                         <div className="mb-8">
-                          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-amber-600">
+                          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#ff6200]">
                             Контакти та інформація
                           </p>
-                          <h2 className="mt-2 text-2xl font-bold tracking-tight text-stone-800 sm:text-3xl">
+                          <h2 className="mt-2 text-2xl font-bold tracking-tight text-[#202020] sm:text-3xl">
                             Деталі студії
                           </h2>
-                          <p className="mt-2 max-w-2xl text-sm leading-6 text-stone-500">
+                          <p className="mt-2 max-w-2xl text-sm leading-6 text-[#77716b]">
                             Інформація про студію, графік роботи, контакти та
                             майстри.
                           </p>
@@ -1879,7 +1925,7 @@ export default function StudioPublicPage() {
                         <div className="grid gap-5 lg:grid-cols-2">
                           {/* ЛІВА КОЛОНКА */}
                           <div className="space-y-5">
-                            <div className="overflow-hidden rounded-[30px] border border-stone-200 bg-white shadow-[0_10px_35px_rgba(0,0,0,0.04)]">
+                            <div className="overflow-hidden rounded-[30px] border border-[#eadfce] bg-white shadow-[0_10px_35px_rgba(0,0,0,0.04)]">
                               <div className="relative overflow-hidden px-5 py-6 sm:px-6 sm:py-7">
                                 {coverUrl ? (
                                   <div className="absolute inset-0">
@@ -1899,19 +1945,19 @@ export default function StudioPublicPage() {
                                 <div className="absolute -bottom-10 left-0 h-28 w-28 rounded-full bg-emerald-200/20 blur-3xl" />
 
                                 <div className="relative z-10 max-w-xl">
-                                  <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-amber-200 bg-white/80 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-amber-700 backdrop-blur">
+                                  <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#ffd6bd] bg-white/80 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-[#ff6200] backdrop-blur">
                                     <MapPin className="h-3.5 w-3.5" />
                                     Локація студії
                                   </div>
 
                                   <div className="flex flex-wrap items-center gap-2">
-                                    <h3 className="text-xl font-bold text-stone-800 sm:text-2xl">
+                                    <h3 className="text-xl font-bold text-[#202020] sm:text-2xl">
                                       {name}
                                     </h3>
                                   </div>
 
                                   <div className="mt-3 flex flex-wrap items-center gap-2">
-                                    <p className="max-w-xl text-sm leading-6 text-stone-700">
+                                    <p className="max-w-xl text-sm leading-6 text-[#4b4742]">
                                       {fullAddress || "Адресу ще не додано"}
                                     </p>
 
@@ -1919,7 +1965,7 @@ export default function StudioPublicPage() {
                                       <button
                                         type="button"
                                         onClick={handleCopyAddress}
-                                        className="inline-flex h-7 items-center justify-center gap-1 rounded-lg border border-stone-200 bg-white/90 px-2 text-[11px] font-semibold text-stone-600 shadow-sm backdrop-blur transition hover:bg-white"
+                                        className="inline-flex h-7 items-center justify-center gap-1 rounded-lg border border-[#eadfce] bg-white/90 px-2 text-[11px] font-semibold text-[#77716b] shadow-sm backdrop-blur transition hover:bg-white"
                                         title={
                                           copied
                                             ? "Скопійовано"
@@ -1927,7 +1973,7 @@ export default function StudioPublicPage() {
                                         }
                                       >
                                         {copied ? (
-                                          <CheckCheck className="h-3 w-3 text-emerald-700" />
+                                          <CheckCheck className="h-3 w-3 text-[#ff6200]" />
                                         ) : (
                                           <Copy className="h-3 w-3" />
                                         )}
@@ -1938,17 +1984,17 @@ export default function StudioPublicPage() {
                               </div>
                             </div>
 
-                            <div className="rounded-[30px] border border-stone-200 bg-white p-5 shadow-[0_10px_35px_rgba(0,0,0,0.04)] sm:p-6 lg:hidden">
+                            <div className="rounded-[30px] border border-[#eadfce] bg-white p-5 shadow-[0_10px_35px_rgba(0,0,0,0.04)] sm:p-6 lg:hidden">
                               <div className="flex items-center gap-3">
-                                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+                                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#fff1e8] text-[#ff6200]">
                                   <Clock className="h-5 w-5" />
                                 </div>
 
                                 <div>
-                                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-600">
+                                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#ff6200]">
                                     Графік роботи
                                   </p>
-                                  <h3 className="mt-1 text-lg font-bold text-stone-800">
+                                  <h3 className="mt-1 text-lg font-bold text-[#202020]">
                                     Актуальний графік
                                   </h3>
                                 </div>
@@ -1965,8 +2011,8 @@ export default function StudioPublicPage() {
                                       className={cn(
                                         "flex items-center justify-between rounded-2xl border px-4 py-3 transition-all duration-200",
                                         isToday
-                                          ? "border-emerald-200 bg-emerald-50/60"
-                                          : "border-stone-200 bg-stone-50",
+                                          ? "border-[#ffd6bd] bg-[#fff1e8]/60"
+                                          : "border-[#eadfce] bg-[#f8f5f1]",
                                       )}
                                     >
                                       <div className="flex items-center gap-3">
@@ -1974,7 +2020,7 @@ export default function StudioPublicPage() {
                                           className={cn(
                                             "h-2.5 w-2.5 rounded-full",
                                             isToday
-                                              ? "bg-emerald-500"
+                                              ? "bg-[#fff1e8]0"
                                               : "bg-stone-300",
                                           )}
                                         />
@@ -1982,8 +2028,8 @@ export default function StudioPublicPage() {
                                           className={cn(
                                             "text-sm",
                                             isToday
-                                              ? "font-bold text-stone-800"
-                                              : "font-medium text-stone-600",
+                                              ? "font-bold text-[#202020]"
+                                              : "font-medium text-[#77716b]",
                                           )}
                                         >
                                           {item.day}
@@ -1996,8 +2042,8 @@ export default function StudioPublicPage() {
                                           item.hours === "Вихідний"
                                             ? "text-red-700"
                                             : isToday
-                                              ? "text-emerald-700"
-                                              : "text-stone-800",
+                                              ? "text-[#ff6200]"
+                                              : "text-[#202020]",
                                         )}
                                       >
                                         {item.hours}
@@ -2009,32 +2055,32 @@ export default function StudioPublicPage() {
                             </div>
 
                             {/* МОБІЛКА / ПЛАНШЕТ */}
-                            <div className="grid w-full gap-3 border-t border-stone-100 bg-white px-0 py-0 sm:grid-cols-2 sm:px-6 lg:hidden">
-                              <div className="relative w-full overflow-hidden rounded-[24px] border border-amber-200/60 bg-gradient-to-br from-white via-amber-50/40 to-stone-50 px-4 py-4 shadow-[0_10px_30px_rgba(120,90,60,0.08)]">
+                            <div className="grid w-full gap-3 border-t border-[#f1ece5] bg-white px-0 py-0 sm:grid-cols-2 sm:px-6 lg:hidden">
+                              <div className="relative w-full overflow-hidden rounded-[24px] border border-[#ffd6bd] bg-gradient-to-br from-white via-amber-50/40 to-stone-50 px-4 py-4 shadow-[0_10px_30px_rgba(120,90,60,0.08)]">
                                 <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-amber-200/25 blur-2xl" />
                                 <div className="absolute -bottom-6 left-0 h-16 w-16 rounded-full bg-orange-200/20 blur-2xl" />
 
                                 <div className="relative z-10 sm:hidden">
                                   <div className="flex items-center gap-3">
-                                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 shadow-sm">
-                                      <Star className="h-5 w-5 fill-amber-500 text-amber-500" />
+                                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#fff1e8] shadow-sm">
+                                      <Star className="h-5 w-5 fill-[#ffb020] text-[#ffb020]" />
                                     </div>
 
                                     <div className="min-w-0 flex-1">
-                                      <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-700">
+                                      <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#ff6200]">
                                         Рейтинг
                                       </p>
 
                                       <div className="mt-1 flex items-baseline gap-2">
-                                        <span className="text-[30px] font-extrabold leading-none text-stone-900">
+                                        <span className="text-[30px] font-extrabold leading-none text-[#202020]">
                                           {reviewsSummary.rating.toFixed(1)}
                                         </span>
-                                        <span className="text-sm font-medium text-stone-500">
+                                        <span className="text-sm font-medium text-[#77716b]">
                                           ({reviewsSummary.count})
                                         </span>
                                       </div>
 
-                                      <p className="mt-1 text-xs text-stone-500">
+                                      <p className="mt-1 text-xs text-[#77716b]">
                                         Висока оцінка клієнтів
                                       </p>
                                     </div>
@@ -2042,30 +2088,30 @@ export default function StudioPublicPage() {
                                 </div>
 
                                 <div className="relative z-10 hidden text-center sm:block">
-                                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 shadow-sm">
-                                    <Star className="h-5 w-5 fill-amber-500 text-amber-500" />
+                                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff1e8] shadow-sm">
+                                    <Star className="h-5 w-5 fill-[#ffb020] text-[#ffb020]" />
                                   </div>
 
-                                  <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.22em] text-amber-700">
+                                  <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.22em] text-[#ff6200]">
                                     Рейтинг
                                   </p>
 
                                   <div className="mt-2 flex items-baseline justify-center gap-2">
-                                    <span className="text-[34px] font-extrabold leading-none text-stone-900">
+                                    <span className="text-[34px] font-extrabold leading-none text-[#202020]">
                                       {reviewsSummary.rating.toFixed(1)}
                                     </span>
-                                    <span className="text-base font-medium text-stone-500">
+                                    <span className="text-base font-medium text-[#77716b]">
                                       ({reviewsSummary.count})
                                     </span>
                                   </div>
 
-                                  <p className="mt-2 text-sm text-stone-500">
+                                  <p className="mt-2 text-sm text-[#77716b]">
                                     Висока оцінка клієнтів
                                   </p>
                                 </div>
                               </div>
 
-                              <div className="relative w-full overflow-hidden rounded-[24px] border border-emerald-200/60 bg-gradient-to-br from-white via-emerald-50/30 to-stone-50 px-4 py-4 shadow-[0_10px_30px_rgba(120,90,60,0.08)]">
+                              <div className="relative w-full overflow-hidden rounded-[24px] border border-[#ffd6bd]/60 bg-gradient-to-br from-white via-emerald-50/30 to-stone-50 px-4 py-4 shadow-[0_10px_30px_rgba(120,90,60,0.08)]">
                                 <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-emerald-200/25 blur-2xl" />
                                 <div className="absolute -bottom-6 left-0 h-16 w-16 rounded-full bg-emerald-100/30 blur-2xl" />
 
@@ -2073,22 +2119,22 @@ export default function StudioPublicPage() {
                                   <div className="flex flex-col gap-3">
                                     <div className="flex items-start gap-3">
                                       <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 shadow-sm">
-                                        <Phone className="h-5 w-5 text-emerald-600" />
+                                        <Phone className="h-5 w-5 text-[#ff6200]" />
                                       </div>
 
                                       <div className="min-w-0 flex-1">
-                                        <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-emerald-700">
+                                        <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#ff6200]">
                                           Телефон
                                         </p>
 
                                         {studioPhone ? (
                                           <>
-                                            <div className="mt-1 break-all text-[20px] font-extrabold leading-tight text-stone-900">
+                                            <div className="mt-1 break-all text-[20px] font-extrabold leading-tight text-[#202020]">
                                               {studioPhone}
                                             </div>
                                           </>
                                         ) : (
-                                          <p className="mt-1 text-sm text-stone-400">
+                                          <p className="mt-1 text-sm text-[#aaa19a]">
                                             Не вказано
                                           </p>
                                         )}
@@ -2098,7 +2144,7 @@ export default function StudioPublicPage() {
                                     {studioPhone && (
                                       <a
                                         href={`tel:${studioPhone}`}
-                                        className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-emerald-200 bg-white px-4 text-sm font-bold text-emerald-700 transition-all duration-150 active:scale-95 active:bg-emerald-50 active:shadow-inner"
+                                        className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-[#ffd6bd] bg-white px-4 text-sm font-bold text-[#ff6200] transition-all duration-150 active:scale-95 active:bg-[#fff1e8] active:shadow-inner"
                                       >
                                         Зателефонувати
                                       </a>
@@ -2108,28 +2154,28 @@ export default function StudioPublicPage() {
 
                                 <div className="relative z-10 hidden text-center sm:block">
                                   <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 shadow-sm">
-                                    <Phone className="h-5 w-5 text-emerald-600" />
+                                    <Phone className="h-5 w-5 text-[#ff6200]" />
                                   </div>
 
-                                  <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.22em] text-emerald-700">
+                                  <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.22em] text-[#ff6200]">
                                     Телефон
                                   </p>
 
                                   {studioPhone ? (
                                     <>
-                                      <div className="mt-2 break-all text-base font-extrabold text-stone-900">
+                                      <div className="mt-2 break-all text-base font-extrabold text-[#202020]">
                                         {studioPhone}
                                       </div>
 
                                       <a
                                         href={`tel:${studioPhone}`}
-                                        className="mt-3 inline-flex h-9 items-center justify-center rounded-xl border border-emerald-200 bg-white px-4 text-xs font-bold text-emerald-700 transition-all duration-150 active:translate-y-[1px] active:scale-95 active:bg-emerald-50 active:shadow-inner"
+                                        className="mt-3 inline-flex h-9 items-center justify-center rounded-xl border border-[#ffd6bd] bg-white px-4 text-xs font-bold text-[#ff6200] transition-all duration-150 active:translate-y-[1px] active:scale-95 active:bg-[#fff1e8] active:shadow-inner"
                                       >
                                         Зателефонувати
                                       </a>
                                     </>
                                   ) : (
-                                    <p className="mt-2 text-sm text-stone-400">
+                                    <p className="mt-2 text-sm text-[#aaa19a]">
                                       Не вказано
                                     </p>
                                   )}
@@ -2150,10 +2196,10 @@ export default function StudioPublicPage() {
                                       <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-indigo-700">
                                         Формат
                                       </p>
-                                      <div className="mt-1 text-base font-extrabold leading-tight text-stone-900">
+                                      <div className="mt-1 text-base font-extrabold leading-tight text-[#202020]">
                                         Онлайн запис
                                       </div>
-                                      <p className="mt-1 text-xs text-stone-500">
+                                      <p className="mt-1 text-xs text-[#77716b]">
                                         Швидко та без дзвінків
                                       </p>
                                     </div>
@@ -2169,34 +2215,34 @@ export default function StudioPublicPage() {
                                     Формат
                                   </p>
 
-                                  <div className="mt-2 text-base font-extrabold text-stone-900">
+                                  <div className="mt-2 text-base font-extrabold text-[#202020]">
                                     Онлайн запис
                                   </div>
 
-                                  <p className="mt-1 text-xs text-stone-500">
+                                  <p className="mt-1 text-xs text-[#77716b]">
                                     Швидко та без дзвінків
                                   </p>
                                 </div>
                               </div>
 
-                              <div className="relative w-full overflow-hidden rounded-[24px] border border-amber-200/60 bg-gradient-to-br from-white via-amber-50/40 to-stone-50 px-4 py-4 shadow-[0_10px_30px_rgba(120,90,60,0.08)]">
+                              <div className="relative w-full overflow-hidden rounded-[24px] border border-[#ffd6bd] bg-gradient-to-br from-white via-amber-50/40 to-stone-50 px-4 py-4 shadow-[0_10px_30px_rgba(120,90,60,0.08)]">
                                 <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-amber-200/25 blur-2xl" />
                                 <div className="absolute -bottom-6 left-0 h-16 w-16 rounded-full bg-orange-200/20 blur-2xl" />
 
                                 <div className="relative z-10 sm:hidden">
                                   <div className="flex items-center gap-3">
-                                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 shadow-sm">
-                                      <Banknote className="h-5 w-5 text-amber-700" />
+                                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#fff1e8] shadow-sm">
+                                      <Banknote className="h-5 w-5 text-[#ff6200]" />
                                     </div>
 
                                     <div className="min-w-0 flex-1">
-                                      <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-700">
+                                      <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#ff6200]">
                                         Оплата
                                       </p>
-                                      <div className="mt-1 text-base font-extrabold leading-tight text-stone-900">
+                                      <div className="mt-1 text-base font-extrabold leading-tight text-[#202020]">
                                         Без передоплати
                                       </div>
-                                      <p className="mt-1 text-xs text-stone-500">
+                                      <p className="mt-1 text-xs text-[#77716b]">
                                         Оплата після візиту
                                       </p>
                                     </div>
@@ -2204,19 +2250,19 @@ export default function StudioPublicPage() {
                                 </div>
 
                                 <div className="relative z-10 hidden text-center sm:block">
-                                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 shadow-sm">
-                                    <Banknote className="h-5 w-5 text-amber-700" />
+                                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff1e8] shadow-sm">
+                                    <Banknote className="h-5 w-5 text-[#ff6200]" />
                                   </div>
 
-                                  <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.22em] text-amber-700">
+                                  <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.22em] text-[#ff6200]">
                                     Оплата
                                   </p>
 
-                                  <div className="mt-2 text-base font-extrabold text-stone-900">
+                                  <div className="mt-2 text-base font-extrabold text-[#202020]">
                                     Без передоплати
                                   </div>
 
-                                  <p className="mt-1 text-xs text-stone-500">
+                                  <p className="mt-1 text-xs text-[#77716b]">
                                     Оплата після візиту
                                   </p>
                                 </div>
@@ -2224,17 +2270,17 @@ export default function StudioPublicPage() {
                             </div>
 
                             {/* ДЕСКТОП — окремий великий графік */}
-                            <div className="hidden rounded-[30px] border border-stone-200 bg-white p-5 shadow-[0_10px_35px_rgba(0,0,0,0.04)] sm:p-6 lg:block">
+                            <div className="hidden rounded-[30px] border border-[#eadfce] bg-white p-5 shadow-[0_10px_35px_rgba(0,0,0,0.04)] sm:p-6 lg:block">
                               <div className="flex items-center gap-3">
-                                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+                                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#fff1e8] text-[#ff6200]">
                                   <Clock className="h-5 w-5" />
                                 </div>
 
                                 <div>
-                                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-600">
+                                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#ff6200]">
                                     Графік роботи
                                   </p>
-                                  <h3 className="mt-1 text-lg font-bold text-stone-800">
+                                  <h3 className="mt-1 text-lg font-bold text-[#202020]">
                                     Актуальний графік
                                   </h3>
                                 </div>
@@ -2251,8 +2297,8 @@ export default function StudioPublicPage() {
                                       className={cn(
                                         "flex items-center justify-between rounded-2xl border px-4 py-3 transition-all duration-200",
                                         isToday
-                                          ? "border-emerald-200 bg-emerald-50/60"
-                                          : "border-stone-200 bg-stone-50",
+                                          ? "border-[#ffd6bd] bg-[#fff1e8]/60"
+                                          : "border-[#eadfce] bg-[#f8f5f1]",
                                       )}
                                     >
                                       <div className="flex items-center gap-3">
@@ -2260,7 +2306,7 @@ export default function StudioPublicPage() {
                                           className={cn(
                                             "h-2.5 w-2.5 rounded-full",
                                             isToday
-                                              ? "bg-emerald-500"
+                                              ? "bg-[#fff1e8]0"
                                               : "bg-stone-300",
                                           )}
                                         />
@@ -2268,8 +2314,8 @@ export default function StudioPublicPage() {
                                           className={cn(
                                             "text-sm",
                                             isToday
-                                              ? "font-bold text-stone-800"
-                                              : "font-medium text-stone-600",
+                                              ? "font-bold text-[#202020]"
+                                              : "font-medium text-[#77716b]",
                                           )}
                                         >
                                           {item.day}
@@ -2282,8 +2328,8 @@ export default function StudioPublicPage() {
                                           item.hours === "Вихідний"
                                             ? "text-red-700"
                                             : isToday
-                                              ? "text-emerald-700"
-                                              : "text-stone-800",
+                                              ? "text-[#ff6200]"
+                                              : "text-[#202020]",
                                         )}
                                       >
                                         {item.hours}
@@ -2299,62 +2345,62 @@ export default function StudioPublicPage() {
                           <div className="space-y-2 pb-0 sm:pb-0 lg:pb-0">
                             {/* ДЕСКТОП — 4 карточки 2x2 */}
                             <div className="hidden lg:grid lg:grid-cols-2 lg:gap-3">
-                              <div className="relative overflow-hidden rounded-[24px] border border-amber-200/60 bg-gradient-to-br from-white via-amber-50/40 to-stone-50 px-4 py-4 text-center shadow-[0_10px_30px_rgba(120,90,60,0.08)]">
+                              <div className="relative overflow-hidden rounded-[24px] border border-[#ffd6bd] bg-gradient-to-br from-white via-amber-50/40 to-stone-50 px-4 py-4 text-center shadow-[0_10px_30px_rgba(120,90,60,0.08)]">
                                 <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-amber-200/25 blur-2xl" />
                                 <div className="absolute -bottom-6 left-0 h-16 w-16 rounded-full bg-orange-200/20 blur-2xl" />
 
                                 <div className="relative z-10">
-                                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 shadow-sm">
-                                    <Star className="h-5 w-5 fill-amber-500 text-amber-500" />
+                                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff1e8] shadow-sm">
+                                    <Star className="h-5 w-5 fill-[#ffb020] text-[#ffb020]" />
                                   </div>
 
-                                  <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.22em] text-amber-700">
+                                  <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.22em] text-[#ff6200]">
                                     Рейтинг
                                   </p>
 
                                   <div className="mt-2 flex items-baseline justify-center gap-2">
-                                    <span className="text-[34px] font-extrabold leading-none text-stone-900">
+                                    <span className="text-[34px] font-extrabold leading-none text-[#202020]">
                                       {reviewsSummary.rating.toFixed(1)}
                                     </span>
-                                    <span className="text-base font-medium text-stone-500">
+                                    <span className="text-base font-medium text-[#77716b]">
                                       ({reviewsSummary.count})
                                     </span>
                                   </div>
 
-                                  <p className="mt-2 text-sm text-stone-500">
+                                  <p className="mt-2 text-sm text-[#77716b]">
                                     Висока оцінка клієнтів
                                   </p>
                                 </div>
                               </div>
 
-                              <div className="relative overflow-hidden rounded-[24px] border border-emerald-200/60 bg-gradient-to-br from-white via-emerald-50/30 to-stone-50 px-4 py-4 text-center shadow-[0_10px_30px_rgba(120,90,60,0.08)]">
+                              <div className="relative overflow-hidden rounded-[24px] border border-[#ffd6bd]/60 bg-gradient-to-br from-white via-emerald-50/30 to-stone-50 px-4 py-4 text-center shadow-[0_10px_30px_rgba(120,90,60,0.08)]">
                                 <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-emerald-200/25 blur-2xl" />
                                 <div className="absolute -bottom-6 left-0 h-16 w-16 rounded-full bg-emerald-100/30 blur-2xl" />
 
                                 <div className="relative z-10">
                                   <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 shadow-sm">
-                                    <Phone className="h-5 w-5 text-emerald-600" />
+                                    <Phone className="h-5 w-5 text-[#ff6200]" />
                                   </div>
 
-                                  <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.22em] text-emerald-700">
+                                  <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.22em] text-[#ff6200]">
                                     Телефон
                                   </p>
 
                                   {studioPhone ? (
                                     <>
-                                      <div className="mt-2 break-all text-base font-extrabold text-stone-900">
+                                      <div className="mt-2 break-all text-base font-extrabold text-[#202020]">
                                         {studioPhone}
                                       </div>
 
                                       <a
                                         href={`tel:${studioPhone}`}
-                                        className="mt-3 inline-flex h-9 items-center justify-center rounded-xl border border-emerald-200 bg-white px-4 text-xs font-bold text-emerald-700 transition-all duration-150 active:translate-y-[1px] active:scale-95 active:bg-emerald-50 active:shadow-inner"
+                                        className="mt-3 inline-flex h-9 items-center justify-center rounded-xl border border-[#ffd6bd] bg-white px-4 text-xs font-bold text-[#ff6200] transition-all duration-150 active:translate-y-[1px] active:scale-95 active:bg-[#fff1e8] active:shadow-inner"
                                       >
                                         Зателефонувати
                                       </a>
                                     </>
                                   ) : (
-                                    <p className="mt-2 text-sm text-stone-400">
+                                    <p className="mt-2 text-sm text-[#aaa19a]">
                                       Не вказано
                                     </p>
                                   )}
@@ -2374,48 +2420,48 @@ export default function StudioPublicPage() {
                                     Формат
                                   </p>
 
-                                  <div className="mt-2 text-base font-extrabold text-stone-900">
+                                  <div className="mt-2 text-base font-extrabold text-[#202020]">
                                     Онлайн запис
                                   </div>
 
-                                  <p className="mt-1 text-xs text-stone-500">
+                                  <p className="mt-1 text-xs text-[#77716b]">
                                     Швидко та без дзвінків
                                   </p>
                                 </div>
                               </div>
 
-                              <div className="relative overflow-hidden rounded-[24px] border border-amber-200/60 bg-gradient-to-br from-white via-amber-50/40 to-stone-50 px-4 py-4 text-center shadow-[0_10px_30px_rgba(120,90,60,0.08)]">
+                              <div className="relative overflow-hidden rounded-[24px] border border-[#ffd6bd] bg-gradient-to-br from-white via-amber-50/40 to-stone-50 px-4 py-4 text-center shadow-[0_10px_30px_rgba(120,90,60,0.08)]">
                                 <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-amber-200/25 blur-2xl" />
                                 <div className="absolute -bottom-6 left-0 h-16 w-16 rounded-full bg-orange-200/20 blur-2xl" />
 
                                 <div className="relative z-10">
-                                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 shadow-sm">
-                                    <Banknote className="h-5 w-5 text-amber-700" />
+                                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff1e8] shadow-sm">
+                                    <Banknote className="h-5 w-5 text-[#ff6200]" />
                                   </div>
 
-                                  <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.22em] text-amber-700">
+                                  <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.22em] text-[#ff6200]">
                                     Оплата
                                   </p>
 
-                                  <div className="mt-2 text-base font-extrabold text-stone-900">
+                                  <div className="mt-2 text-base font-extrabold text-[#202020]">
                                     Без передоплати
                                   </div>
 
-                                  <p className="mt-1 text-xs text-stone-500">
+                                  <p className="mt-1 text-xs text-[#77716b]">
                                     Оплата після візиту
                                   </p>
                                 </div>
                               </div>
                             </div>
 
-                            <div className="rounded-[30px] border border-stone-200 bg-gradient-to-br from-[#fffaf6] via-white to-[#f8f5f1] p-5 shadow-[0_10px_35px_rgba(0,0,0,0.04)] sm:p-6">
-                              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-600">
+                            <div className="rounded-[30px] border border-[#eadfce] bg-gradient-to-br from-[#fffaf6] via-white to-[#f8f5f1] p-5 shadow-[0_10px_35px_rgba(0,0,0,0.04)] sm:p-6">
+                              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#ff6200]">
                                 Швидкий контакт
                               </p>
-                              <h3 className="mt-2 text-lg font-bold text-stone-800">
+                              <h3 className="mt-2 text-lg font-bold text-[#202020]">
                                 Потрібна консультація?
                               </h3>
-                              <p className="mt-2 text-sm leading-6 text-stone-500">
+                              <p className="mt-2 text-sm leading-6 text-[#77716b]">
                                 Зв’яжіться зі студією напряму або забронюйте
                                 послугу онлайн за кілька кліків.
                               </p>
@@ -2424,9 +2470,9 @@ export default function StudioPublicPage() {
                                 {studioPhone && (
                                   <a
                                     href={`tel:${studioPhone}`}
-                                    className="group flex h-12 w-full items-center justify-center gap-2.5 rounded-2xl border border-stone-200/80 bg-gradient-to-b from-white to-stone-50 text-sm font-semibold text-stone-800 shadow-[0_8px_24px_rgba(15,23,42,0.05)] transition-all duration-200 active:scale-[0.98] sm:hover:-translate-y-0.5 sm:hover:border-amber-200 sm:hover:shadow-[0_12px_30px_rgba(15,23,42,0.08)]"
+                                    className="group flex h-12 w-full items-center justify-center gap-2.5 rounded-2xl border border-[#eadbc9] bg-gradient-to-b from-white to-stone-50 text-sm font-semibold text-[#202020] shadow-[0_8px_24px_rgba(15,23,42,0.05)] transition-all duration-200 active:scale-[0.98] sm:hover:-translate-y-0.5 sm:hover:border-[#ffd6bd] sm:hover:shadow-[0_12px_30px_rgba(15,23,42,0.08)]"
                                   >
-                                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 text-amber-600 transition-colors duration-200 sm:group-hover:bg-amber-100">
+                                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#fff1e8] text-[#ff6200] transition-colors duration-200 sm:group-hover:bg-[#fff1e8]">
                                       <Phone className="h-4 w-4" />
                                     </span>
                                     <span>Зателефонувати</span>
@@ -2436,18 +2482,18 @@ export default function StudioPublicPage() {
                             </div>
 
                             {teamMembers.length > 0 && (
-                              <div className="rounded-[30px] border border-stone-200 bg-white p-5 shadow-[0_10px_35px_rgba(0,0,0,0.04)] sm:p-6">
+                              <div className="rounded-[30px] border border-[#eadfce] bg-white p-5 shadow-[0_10px_35px_rgba(0,0,0,0.04)] sm:p-6">
                                 <div className="mb-5 flex items-center justify-between gap-3">
                                   <div>
-                                    <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-600">
+                                    <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#ff6200]">
                                       Команда
                                     </p>
-                                    <h3 className="mt-1 text-lg font-bold text-stone-800">
+                                    <h3 className="mt-1 text-lg font-bold text-[#202020]">
                                       Працівники студії
                                     </h3>
                                   </div>
 
-                                  <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-semibold text-stone-600">
+                                  <span className="rounded-full bg-[#f8f5f1] px-3 py-1 text-xs font-semibold text-[#77716b]">
                                     {teamMembers.length}
                                   </span>
                                 </div>
@@ -2456,7 +2502,7 @@ export default function StudioPublicPage() {
                                   {teamMembers.map((member, idx) => (
                                     <div
                                       key={member.id || idx}
-                                      className="rounded-2xl border border-stone-200 bg-stone-50 p-4"
+                                      className="rounded-2xl border border-[#eadfce] bg-[#f8f5f1] p-4"
                                     >
                                       <div className="flex flex-col items-center text-center">
                                         <div className="mb-3">
@@ -2496,14 +2542,9 @@ export default function StudioPublicPage() {
                   }}
                   className={cn(
                     "flex h-12 w-full items-center justify-center gap-2.5",
-                    "rounded-[22px] px-5 text-sm font-semibold text-white",
+                    "rounded-[22px] bg-[#ff5a00] px-5 text-sm font-black text-white shadow-sm",
                     "transition-all duration-200 active:scale-[0.985]",
-
-                    // 👉 nude-green
-                    "bg-gradient-to-r from-[rgba(var(--color-nude-green-500),var(--color-nude-green-opacity))] to-[rgba(var(--color-nude-green-600),var(--color-nude-green-opacity))]",
-
-                    // 👉 hover
-                    "hover:from-[rgba(var(--color-nude-green-500-hover),1)] hover:to-[rgba(var(--color-nude-green-600-hover),1)]",
+                    "hover:bg-[#ef4f00]",
                   )}
                 >
                   <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/10">

@@ -17,7 +17,6 @@ import {
   Check,
   X,
   XCircle,
-  Eye,
   FolderClock,
   UserRound,
   Copy,
@@ -35,12 +34,16 @@ import {
   CirclePlay,
   ChartColumn,
   LayoutGrid,
+  MoreHorizontal,
   BadgeCheck,
+  SlidersHorizontal,
   SquareArrowOutUpRight,
   Scissors,
   CopyCheck,
   ClipboardPen,
   PhoneCall,
+  Minus,
+  Plus,
 } from "lucide-react";
 import { socket } from "../lib/socket";
 
@@ -2172,11 +2175,12 @@ function updateCalendarScrollState(el, setHasScroll, setShowScrollHint) {
   setShowScrollHint(isScrollable && !isAtBottom);
 }
 
-const SCHEDULE_START_HOUR = 8;
+const SCHEDULE_START_HOUR = 6;
 const SCHEDULE_END_HOUR = 20;
-const SCHEDULE_HOUR_HEIGHT = 78;
-const SCHEDULE_MIN_CARD_HEIGHT = 38;
+const SCHEDULE_HOUR_HEIGHT = 88;
+const SCHEDULE_MIN_CARD_HEIGHT = 58;
 const SCHEDULE_DEFAULT_DURATION = 60;
+const SCHEDULE_GRID_TOP_PADDING = 24;
 
 const SCHEDULE_STATUS_FILTERS = [
   { key: "all", label: "Усі" },
@@ -2495,19 +2499,202 @@ function schedulePalette(booking, nowTs) {
   };
 }
 
+function scheduleStatusIcon(booking, nowTs) {
+  const status = scheduleVisualStatus(booking, nowTs);
+
+  if (status === "confirmed") return CircleCheckBig;
+  if (status === "pending") return ClockAlert;
+  if (status === "canceled") return XCircle;
+  if (status === "archived") return CheckCheck;
+  if (status === "deleted") return Trash2;
+
+  return CircleAlert;
+}
+
+function scheduleStatusLabel(booking, nowTs) {
+  const status = scheduleVisualStatus(booking, nowTs);
+
+  if (status === "confirmed") return "Підтверджено";
+  if (status === "pending") return "Очікує підтвердження";
+  if (status === "canceled") return "Скасовано";
+  if (status === "archived") return "Завершено";
+
+  return "Запис";
+}
+
+const SCHEDULE_CARD_TONES = {
+  confirmed: {
+    bg: "linear-gradient(135deg, #eaf8f1 0%, #f7fcfa 100%)",
+    border: "#b6dfce",
+    accent: "#2f9b67",
+    soft: "#dff3ea",
+  },
+  pending: {
+    bg: "linear-gradient(135deg, #fff4e0 0%, #fffaf2 100%)",
+    border: "#f2c99b",
+    accent: "#df8a2d",
+    soft: "#ffe9cc",
+  },
+  canceled: {
+    bg: "linear-gradient(135deg, #fff0f3 0%, #fff7f8 100%)",
+    border: "#f5b8c3",
+    accent: "#e75f72",
+    soft: "#ffe1e7",
+  },
+  archived: {
+    bg: "linear-gradient(135deg, #f1f2f4 0%, #fafafa 100%)",
+    border: "#d8dce2",
+    accent: "#7b8490",
+    soft: "#eceff3",
+  },
+  default: {
+    bg: "linear-gradient(135deg, #f1f2f4 0%, #fafafa 100%)",
+    border: "#d8dce2",
+    accent: "#7b8490",
+    soft: "#eceff3",
+  },
+};
+
+function scheduleCardTone(booking, nowTs) {
+  const status = scheduleVisualStatus(booking, nowTs);
+
+  return SCHEDULE_CARD_TONES[status] || SCHEDULE_CARD_TONES.default;
+}
+
 function scheduleOptionsFromStudio(studio, type) {
   const keys =
     type === "staff"
-      ? ["staff", "employees", "masters", "workers", "members"]
+      ? [
+          "staff",
+          "employees",
+          "masters",
+          "workers",
+          "members",
+          "specialists",
+          "team",
+          "teamMembers",
+          "providers",
+          "performers",
+          "professionals",
+          "users",
+          "barbers",
+          "stylists",
+          "artists",
+          "beauticians",
+          "technicians",
+          "operators",
+        ]
       : ["resources", "rooms", "cabinets", "chairs"];
+  const keyPattern =
+    type === "staff"
+      ? /(staff|employee|master|worker|member|specialist|team|provider|performer|professional|user|barber|stylist|artist|beautician|technician|operator)/i
+      : /(resource|room|cabinet|chair)/i;
+  const nestedCollectionPattern = /^(items|list|data|nodes|records|results|rows)$/i;
+  const collected = [];
+  const seenContainers = new Set();
 
-  return keys
-    .flatMap((key) => (Array.isArray(studio?.[key]) ? studio[key] : []))
+  function collectFrom(value, depth = 0, parentKey = "") {
+    if (!value || depth > 4) return;
+
+    if (Array.isArray(value)) {
+      if (keyPattern.test(parentKey)) {
+        collected.push(...value);
+      }
+
+      for (const item of value) {
+        if (item && typeof item === "object") {
+          collectFrom(item, depth + 1, parentKey);
+        }
+      }
+
+      return;
+    }
+
+    if (typeof value !== "object" || seenContainers.has(value)) return;
+
+    seenContainers.add(value);
+
+    for (const [key, child] of Object.entries(value)) {
+      if (Array.isArray(child)) {
+        if (
+          keys.includes(key) ||
+          keyPattern.test(key) ||
+          (keyPattern.test(parentKey) && nestedCollectionPattern.test(key))
+        ) {
+          collected.push(...child);
+        }
+        continue;
+      }
+
+      if (child && typeof child === "object") {
+        if (
+          (keys.includes(key) ||
+            keyPattern.test(key) ||
+            (keyPattern.test(parentKey) && nestedCollectionPattern.test(key))) &&
+          !Array.isArray(child)
+        ) {
+          if (child.name || child.title || child.fullName || child.label) {
+            collected.push(child);
+          } else {
+            collected.push(...Object.values(child));
+          }
+        }
+
+        collectFrom(child, depth + 1, key);
+      }
+    }
+  }
+
+  collectFrom(studio);
+
+  return collected
     .map((item) => {
-      const name = item?.name || item?.title || item?.fullName || item?.label;
+      const rawRole = String(
+        item?.role ||
+          item?.type ||
+          item?.accountType ||
+          item?.userType ||
+          item?.position ||
+          item?.profession ||
+          item?.specialty ||
+          item?.jobTitle ||
+          "",
+      ).toLowerCase();
+
+      if (
+        type === "staff" &&
+        rawRole &&
+        /(client|customer|owner|admin|manager)/i.test(rawRole) &&
+        !/(staff|employee|master|worker|specialist|provider|performer|barber|stylist|artist|beautician|technician|operator)/i.test(rawRole)
+      ) {
+        return null;
+      }
+
+      const name =
+        item?.name ||
+        item?.title ||
+        item?.fullName ||
+        item?.displayName ||
+        item?.label ||
+        [item?.firstName, item?.lastName].filter(Boolean).join(" ") ||
+        item?.username ||
+        item?.nickname;
       if (!name) return null;
 
-      const id = item?.id || item?._id || name;
+      const id =
+        item?.id ||
+        item?._id ||
+        item?.masterId ||
+        item?.staffId ||
+        item?.employeeId ||
+        item?.workerId ||
+        item?.memberId ||
+        item?.userId ||
+        item?.uid ||
+        item?.uuid ||
+        item?.key ||
+        item?.value ||
+        name;
 
       return {
         key: `${type === "staff" ? "staff" : "resource"}:${id}`,
@@ -2515,8 +2702,19 @@ function scheduleOptionsFromStudio(studio, type) {
         role:
           item?.role ||
           item?.position ||
+          item?.profession ||
+          item?.specialty ||
+          item?.jobTitle ||
           (type === "staff" ? "Співробітник" : "Ресурс"),
-        photoUrl: toPublicUrl(item?.photoUrl || item?.photo || item?.avatar || ""),
+        photoUrl: toPublicUrl(
+          item?.photoUrl ||
+            item?.avatarUrl ||
+            item?.imageUrl ||
+            item?.photo ||
+            item?.avatar ||
+            item?.image ||
+            "",
+        ),
       };
     })
     .filter(Boolean);
@@ -2524,9 +2722,16 @@ function scheduleOptionsFromStudio(studio, type) {
 
 function scheduleEntityOptions(bookings, studio, type) {
   const map = new Map();
+  const keyByName = new Map();
+  const normalizeName = (name) =>
+    String(name || "")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, " ");
 
   for (const option of scheduleOptionsFromStudio(studio, type)) {
     map.set(option.key, option);
+    keyByName.set(normalizeName(option.name), option.key);
   }
 
   for (const booking of bookings) {
@@ -2540,29 +2745,45 @@ function scheduleEntityOptions(bookings, studio, type) {
       continue;
     }
 
-    map.set(booking.staffKey, {
+    if (booking.staffKey === "staff:free" || booking.staffName === "Вільний майстер") {
+      continue;
+    }
+
+    const normalizedStaffName = normalizeName(booking.staffName);
+    const existingKey = keyByName.get(normalizedStaffName);
+    const existingOption = existingKey ? map.get(existingKey) : null;
+    const nextOption = {
+      ...(existingOption || {}),
       key: booking.staffKey,
       name: booking.staffName,
-      role: booking.staffRole,
-      photoUrl: booking.staffPhotoUrl,
+      role: booking.staffRole || existingOption?.role || "Співробітник",
+      photoUrl: booking.staffPhotoUrl || existingOption?.photoUrl || "",
+    };
+
+    if (existingKey && existingKey !== booking.staffKey) {
+      map.delete(existingKey);
+    }
+
+    map.set(booking.staffKey, nextOption);
+    keyByName.set(normalizedStaffName, booking.staffKey);
+  }
+
+  if (map.size === 0 && type === "resource") {
+    map.set("resource:main", {
+      key: "resource:main",
+      name: "Основний зал",
+      role: "Ресурс",
+      photoUrl: "",
     });
   }
 
-  if (map.size === 0) {
-    const fallback =
-      type === "resource"
-        ? { key: "resource:main", name: "Основний зал", role: "Ресурс", photoUrl: "" }
-        : {
-            key: "staff:free",
-            name: "Вільний майстер",
-            role: "Співробітник",
-            photoUrl: "",
-          };
-
-    map.set(fallback.key, fallback);
-  }
-
-  return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, "uk"));
+  return Array.from(map.values())
+    .filter(
+      (option) =>
+        type !== "staff" ||
+        (option.key !== "staff:free" && option.name !== "Вільний майстер"),
+    )
+    .sort((a, b) => a.name.localeCompare(b.name, "uk"));
 }
 
 function layoutScheduleEvents(events) {
@@ -2597,34 +2818,37 @@ function ScheduleViewSwitcher({ value, onChange }) {
   ];
 
   return (
-    <div className="flex justify-end">
-      <div className="inline-flex rounded-[22px] border border-[#eadbc9] bg-[#fff7f0] p-1 shadow-sm">
-        {items.map(({ key, label, Icon }) => {
-          const active = value === key;
+    <div className="flex justify-end gap-3">
+      {items.map(({ key, label, Icon }) => {
+        const active = value === key;
 
-          return (
-            <button
-              key={key}
-              type="button"
-              onClick={() => onChange(key)}
-              className={cn(
-                "inline-flex h-10 items-center justify-center gap-2 rounded-[18px] px-4 text-sm font-black transition-all active:scale-[0.98]",
-                active
-                  ? "bg-[#ff6200] text-white shadow-[0_8px_20px_rgba(255,98,0,0.18)]"
-                  : "text-[#202020] hover:bg-white",
-              )}
-            >
-              <Icon className="h-4 w-4" />
-              {label}
-            </button>
-          );
-        })}
-      </div>
+        return (
+          <button
+            key={key}
+            type="button"
+            onClick={() => onChange(key)}
+            className={cn(
+              "inline-flex h-12 items-center justify-center gap-2 rounded-[16px] border px-5 text-[13px] font-black shadow-[0_8px_24px_rgba(39,28,20,0.06)] transition-all active:scale-[0.98]",
+              active
+                ? "border-[#f15f4a] bg-[#f15f4a] text-white"
+                : "border-[#eadfce] bg-[#fff8f1] text-[#3b312b] hover:bg-white",
+            )}
+          >
+            <Icon className="h-4 w-4" />
+            {label}
+          </button>
+        );
+      })}
     </div>
   );
 }
 
-function ScheduleMiniCalendar({ viewDate, countsByDate, onSelectDate }) {
+function ScheduleMiniCalendar({
+  viewDate,
+  countsByDate,
+  onSelectDate,
+  onNavigateMonth = onSelectDate,
+}) {
   const monthStart = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
   const gridStart = startOfWeekMonday(monthStart);
   const days = Array.from({ length: 42 }, (_, index) => addDays(gridStart, index));
@@ -2635,7 +2859,7 @@ function ScheduleMiniCalendar({ viewDate, countsByDate, onSelectDate }) {
       <div className="flex items-center justify-between">
         <button
           type="button"
-          onClick={() => onSelectDate(addMonthsSafe(viewDate, -1))}
+          onClick={() => onNavigateMonth(addMonthsSafe(viewDate, -1))}
           className="flex h-9 w-9 items-center justify-center rounded-2xl border border-[#eadbc9] bg-white text-[#202020] transition hover:bg-[#fff7f0]"
           aria-label="Попередній місяць"
         >
@@ -2651,7 +2875,7 @@ function ScheduleMiniCalendar({ viewDate, countsByDate, onSelectDate }) {
 
         <button
           type="button"
-          onClick={() => onSelectDate(addMonthsSafe(viewDate, 1))}
+          onClick={() => onNavigateMonth(addMonthsSafe(viewDate, 1))}
           className="flex h-9 w-9 items-center justify-center rounded-2xl border border-[#eadbc9] bg-white text-[#202020] transition hover:bg-[#fff7f0]"
           aria-label="Наступний місяць"
         >
@@ -2703,6 +2927,70 @@ function ScheduleMiniCalendar({ viewDate, countsByDate, onSelectDate }) {
   );
 }
 
+function pluralUa(value, one, few, many) {
+  const n = Math.abs(Number(value) || 0);
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+
+  if (mod10 === 1 && mod100 !== 11) return one;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
+
+  return many;
+}
+
+function scheduleStatusSummaryMeta(counts) {
+  const total = counts.confirmed + counts.canceled + counts.pending + counts.archived;
+
+  if (total === 0) {
+    return {
+      title: "День вільний",
+      detail: "Записів немає",
+      Icon: CalendarDays,
+      shell: "border-[#eadbc9] bg-[#fbfaf8] text-[#7a6d61]",
+      icon: "bg-white text-[#ff6200]",
+    };
+  }
+
+  const parts = [
+    counts.confirmed > 0 &&
+      `${counts.confirmed} ${pluralUa(counts.confirmed, "підтверджений", "підтверджені", "підтверджених")}`,
+    counts.canceled > 0 &&
+      `${counts.canceled} ${pluralUa(counts.canceled, "скасований", "скасовані", "скасованих")}`,
+    counts.pending > 0 &&
+      `${counts.pending} ${pluralUa(counts.pending, "очікує", "очікують", "очікують")}`,
+    counts.archived > 0 &&
+      `${counts.archived} ${pluralUa(counts.archived, "завершений", "завершені", "завершених")}`,
+  ].filter(Boolean);
+
+  if (counts.canceled > 0) {
+    return {
+      title: `${total} ${pluralUa(total, "запис", "записи", "записів")} у розкладі`,
+      detail: parts.join(" • "),
+      Icon: CircleAlert,
+      shell: "border-[#fecaca] bg-[#fff5f5] text-[var(--color-canceled-dark)]",
+      icon: "bg-white text-[var(--color-danger)]",
+    };
+  }
+
+  if (counts.pending > 0) {
+    return {
+      title: `${total} ${pluralUa(total, "запис", "записи", "записів")} у розкладі`,
+      detail: parts.join(" • "),
+      Icon: ClockAlert,
+      shell: "border-[#ffe5a7] bg-[#fff7dc] text-[#8a5f00]",
+      icon: "bg-white text-[#ffb020]",
+    };
+  }
+
+  return {
+    title: `${total} ${pluralUa(total, "запис", "записи", "записів")} у розкладі`,
+    detail: parts.join(" • "),
+    Icon: CircleCheckBig,
+    shell: "border-[#ccebd6] bg-[#edf8f0] text-[var(--color-confirmed-dark)]",
+    icon: "bg-white text-[var(--color-buttom-ok)]",
+  };
+}
+
 function SchedulePlannerView({
   bookings = [],
   nowTs,
@@ -2717,30 +3005,42 @@ function SchedulePlannerView({
     return date;
   });
   const [rangeMode, setRangeMode] = useState("day");
-  const [groupMode, setGroupMode] = useState("staff");
   const [selectedGroup, setSelectedGroup] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [query, setQuery] = useState("");
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [hourHeight, setHourHeight] = useState(SCHEDULE_HOUR_HEIGHT);
+  const [staffColumnWidth, setStaffColumnWidth] = useState(220);
   const scrollRef = useRef(null);
+  const topScrollRef = useRef(null);
+  const headerScrollRef = useRef(null);
 const handleViewDateChange = (nextDate) => {
   setViewDate(nextDate);
-  setStatusFilter("all");
-};
-
-const handleRangeModeChange = (nextMode) => {
-  setRangeMode(nextMode);
-  setStatusFilter("all");
-};
-
-const handleGroupModeChange = (nextMode) => {
-  setGroupMode(nextMode);
-  setSelectedGroup("all");
-  setStatusFilter("all");
 };
 
 const handleSelectedGroupChange = (nextGroup) => {
   setSelectedGroup(nextGroup);
-  setStatusFilter("all");
+};
+
+const handleRangeModeChange = (nextMode) => {
+  setRangeMode(nextMode);
+};
+
+const adjustHourHeight = (delta) => {
+  setHourHeight((value) => Math.max(50, Math.min(300, value + delta)));
+};
+
+const adjustStaffColumnWidth = (delta) => {
+  setStaffColumnWidth((value) => Math.max(232, Math.min(360, value + delta)));
+};
+
+const syncHorizontalScroll = (source, ...targetRefs) => {
+  for (const targetRef of targetRefs) {
+    const target = targetRef.current;
+
+    if (!target || target.scrollLeft === source.scrollLeft) continue;
+
+    target.scrollLeft = source.scrollLeft;
+  }
 };
   const normalizedBookings = useMemo(() => {
     return (bookings || []).map(normalizeScheduleBooking).filter(Boolean);
@@ -2761,18 +3061,31 @@ const handleSelectedGroupChange = (nextGroup) => {
     () => scheduleEntityOptions(normalizedBookings, studio, "staff"),
     [normalizedBookings, studio],
   );
-  const resourceOptions = useMemo(
-    () => scheduleEntityOptions(normalizedBookings, studio, "resource"),
-    [normalizedBookings, studio],
-  );
 
-  const groupOptions = groupMode === "staff" ? staffOptions : resourceOptions;
-  const groupKey = groupMode === "staff" ? "staffKey" : "resourceKey";
+  const groupOptions = staffOptions;
+  const groupKey = "staffKey";
+  const groupOptionKeys = useMemo(
+    () => new Set(groupOptions.map((option) => option.key)),
+    [groupOptions],
+  );
   const weekStart = useMemo(() => startOfWeekMonday(viewDate), [viewDate]);
 
   const visibleDates = useMemo(() => {
     if (rangeMode === "week") {
       return Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
+    }
+
+    if (rangeMode === "month") {
+      const daysInMonth = new Date(
+        viewDate.getFullYear(),
+        viewDate.getMonth() + 1,
+        0,
+      ).getDate();
+
+      return Array.from(
+        { length: daysInMonth },
+        (_, index) => new Date(viewDate.getFullYear(), viewDate.getMonth(), index + 1),
+      );
     }
 
     return [viewDate];
@@ -2794,27 +3107,19 @@ const handleSelectedGroupChange = (nextGroup) => {
       });
   }, [normalizedBookings, nowTs, visibleDateKeys]);
 
-  const queryText = query.trim().toLowerCase();
   const baseFilteredBookings = useMemo(() => {
     return rangeBookings.filter((booking) => {
+      if (rangeMode === "day" && !groupOptionKeys.has(booking[groupKey])) {
+        return false;
+      }
+
       if (selectedGroup !== "all" && booking[groupKey] !== selectedGroup) {
         return false;
       }
 
-      if (!queryText) return true;
-
-      return [
-        booking.clientName,
-        booking.clientPhone,
-        booking.serviceName,
-        booking.staffName,
-        booking.resourceName,
-      ]
-        .join(" ")
-        .toLowerCase()
-        .includes(queryText);
+      return true;
     });
-  }, [rangeBookings, selectedGroup, groupKey, queryText]);
+  }, [rangeBookings, rangeMode, groupOptionKeys, selectedGroup, groupKey]);
 
   const statusCounts = useMemo(() => {
     const result = {
@@ -2833,6 +3138,31 @@ const handleSelectedGroupChange = (nextGroup) => {
     return result;
   }, [baseFilteredBookings, nowTs]);
 
+  const scheduleSummaryByColumn = useMemo(() => {
+    const result = {};
+
+    for (const booking of baseFilteredBookings) {
+      const key = rangeMode === "day" ? booking[groupKey] : booking.dateKey;
+
+      if (!result[key]) {
+        result[key] = {
+          confirmed: 0,
+          canceled: 0,
+          pending: 0,
+          archived: 0,
+        };
+      }
+
+      const status = scheduleVisualStatus(booking, nowTs);
+
+      if (result[key][status] != null) {
+        result[key][status] += 1;
+      }
+    }
+
+    return result;
+  }, [baseFilteredBookings, groupKey, nowTs, rangeMode]);
+
   const filteredBookings = useMemo(() => {
     if (statusFilter === "all") return baseFilteredBookings;
 
@@ -2850,7 +3180,7 @@ const handleSelectedGroupChange = (nextGroup) => {
       end = Math.max(end, booking.endMin + 30);
     }
 
-    start = Math.max(0, Math.floor(start / 60) * 60);
+    start = Math.max(SCHEDULE_START_HOUR * 60, Math.floor(start / 60) * 60);
     end = Math.min(24 * 60, Math.ceil(end / 60) * 60);
 
     if (end - start < 6 * 60) {
@@ -2871,7 +3201,7 @@ const handleSelectedGroupChange = (nextGroup) => {
   }, [timeBounds]);
 
   const columns = useMemo(() => {
-    if (rangeMode === "week") {
+    if (rangeMode !== "day") {
       return visibleDates.map((date) => ({
         key: toISODateKey(date),
         type: "date",
@@ -2891,16 +3221,16 @@ const handleSelectedGroupChange = (nextGroup) => {
 
     return options.map((option) => ({
       ...option,
-      type: groupMode,
+      type: "staff",
     }));
-  }, [rangeMode, visibleDates, selectedGroup, groupOptions, groupMode]);
+  }, [rangeMode, visibleDates, selectedGroup, groupOptions]);
 
   const bookingsByColumn = useMemo(() => {
     const result = Object.fromEntries(columns.map((column) => [column.key, []]));
 
     for (const booking of filteredBookings) {
-      const key = rangeMode === "week" ? booking.dateKey : booking[groupKey];
-      if (!result[key]) result[key] = [];
+      const key = rangeMode === "day" ? booking[groupKey] : booking.dateKey;
+      if (!result[key]) continue;
       result[key].push(booking);
     }
 
@@ -2916,309 +3246,557 @@ const handleSelectedGroupChange = (nextGroup) => {
     const element = scrollRef.current;
     if (!element) return;
 
-    const current = new Date();
-    const currentMinutes = current.getHours() * 60 + current.getMinutes();
-    const offset = Math.max(
-      0,
-      ((currentMinutes - timeBounds.start) / 60) * SCHEDULE_HOUR_HEIGHT - 140,
-    );
+    element.scrollTop = 0;
+  }, [viewDate]);
 
-    element.scrollTop = offset;
-  }, [rangeMode, viewDate, timeBounds.start]);
+  const gridBodyHeight =
+    ((timeBounds.end - timeBounds.start) / 60) * hourHeight;
+  const gridHeight = SCHEDULE_GRID_TOP_PADDING + gridBodyHeight;
+  const timeColumnWidth = 112;
+  const scheduleMinWidth = timeColumnWidth + columns.length * staffColumnWidth;
+  const scheduleWidth = Math.max(560, scheduleMinWidth);
+  const templateColumns = `${timeColumnWidth}px repeat(${columns.length}, ${staffColumnWidth}px)`;
+  const quarterMarks = useMemo(() => {
+    const marks = [];
 
-  const gridHeight =
-    ((timeBounds.end - timeBounds.start) / 60) * SCHEDULE_HOUR_HEIGHT;
-  const templateColumns =
-    rangeMode === "day"
-      ? `72px repeat(${columns.length}, minmax(178px, 1fr))`
-      : `72px repeat(${columns.length}, minmax(154px, 1fr))`;
+    for (let minute = timeBounds.start; minute <= timeBounds.end; minute += 15) {
+      marks.push({
+        minute,
+        isHour: minute % 60 === 0,
+      });
+    }
+
+    return marks;
+  }, [timeBounds.start, timeBounds.end]);
+  const topForMinute = (minute) =>
+    SCHEDULE_GRID_TOP_PADDING +
+    ((minute - timeBounds.start) / 60) * hourHeight;
   const anyBookings = Object.values(bookingsByColumn).some((items) => items.length > 0);
   const now = new Date(nowTs);
   const nowMinute = now.getHours() * 60 + now.getMinutes();
   const todayKey = toISODateKey(now);
   const showNowLine =
     nowMinute >= timeBounds.start &&
-    nowMinute <= timeBounds.start + gridHeight / SCHEDULE_HOUR_HEIGHT * 60;
+    nowMinute <= timeBounds.end;
   const moveDays = rangeMode === "week" ? 7 : 1;
+  const rangeModeItems = [
+    { key: "day", label: "День" },
+    { key: "week", label: "Тиждень" },
+    { key: "month", label: "Місяць" },
+  ];
+  const weekdayLabel = viewDate.toLocaleDateString("uk-UA", {
+    weekday: "long",
+  });
+  const freeColumnsCount = columns.filter((column) => {
+    const counts = scheduleSummaryByColumn[column.key] || {
+      confirmed: 0,
+      canceled: 0,
+      pending: 0,
+      archived: 0,
+    };
+
+    return counts.confirmed + counts.canceled + counts.pending + counts.archived === 0;
+  }).length;
+  const plannerStats = [
+    {
+      label: rangeMode === "day" ? "Сьогодні" : "Усього",
+      value: statusCounts.all,
+      helper: "записів",
+      Icon: null,
+      valueClass: "text-[#202020]",
+      shell: "border-[#efd8c8] bg-[#fff9f3]",
+    },
+    {
+      label: "Підтверджені",
+      value: statusCounts.confirmed,
+      Icon: CircleCheckBig,
+      valueClass: "text-[#4c9b47]",
+      iconClass: "bg-[#eef8ea] text-[#4c9b47]",
+    },
+    {
+      label: "Очікують підтвердження",
+      value: statusCounts.pending,
+      Icon: ClockAlert,
+      valueClass: "text-[#e07d00]",
+      iconClass: "bg-[#fff4df] text-[#e07d00]",
+    },
+    {
+      label: "Завершені",
+      value: statusCounts.archived,
+      Icon: CircleCheck,
+      valueClass: "text-[#1f6c9c]",
+      iconClass: "bg-[#eaf4ff] text-[#1f6c9c]",
+    },
+    {
+      label: "Скасовані",
+      value: statusCounts.canceled,
+      Icon: XCircle,
+      valueClass: "text-[#e11d48]",
+      iconClass: "bg-[#fff0f3] text-[#e11d48]",
+    },
+    {
+      label: "Вихідний",
+      value: freeColumnsCount,
+      Icon: CirclePause,
+      valueClass: "text-[#b18b6a]",
+      iconClass: "bg-[#fff3e4] text-[#d09a60]",
+    },
+  ];
+  const navigateRange = (direction) => {
+    if (rangeMode === "month") {
+      handleViewDateChange(addMonthsSafe(viewDate, direction));
+      return;
+    }
+
+    handleViewDateChange(addDays(viewDate, direction * moveDays));
+  };
 
   return (
-    <SectionShell className="overflow-hidden">
-      <div className="flex flex-col gap-3 border-b border-[#ebe7df] bg-white px-4 py-4 xl:flex-row xl:items-center xl:justify-between">
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-         onClick={() => handleViewDateChange(addDays(viewDate, -moveDays))}
-            className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#eadbc9] bg-white text-[#202020] shadow-sm transition hover:border-[#ffd6bd] hover:bg-[#fff7f0] active:scale-[0.98]"
-            aria-label="Попередній період"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
+    <div className="overflow-hidden rounded-[28px] border border-[#eadfce] bg-[#fffaf7] shadow-[0_18px_60px_rgba(39,28,20,0.08)]">
+      <div className="border-b border-[#eadfce] bg-[#fffaf7] px-5 py-5">
+        <div className="grid gap-4 xl:grid-cols-[1fr_auto_1fr] xl:items-center">
+          <div className="hidden xl:block" />
 
-          <button
-            type="button"
-           onClick={() => handleViewDateChange(new Date())}
-            className="h-10 rounded-2xl border border-[#eadbc9] bg-[#fff7f0] px-4 text-[12px] font-black uppercase tracking-[0.08em] text-[#ff6200] shadow-sm transition hover:border-[#ffd6bd] active:scale-[0.98]"
-          >
-            Сьогодні
-          </button>
+          <div className="flex min-w-0 flex-wrap items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => navigateRange(-1)}
+              className="flex h-12 w-12 items-center justify-center rounded-[16px] border border-[#eadfce] bg-white text-[#202020] shadow-[0_8px_24px_rgba(39,28,20,0.06)] transition hover:bg-[#fff7f0] active:scale-[0.98]"
+              aria-label="Попередній період"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
 
-          <button
-            type="button"
-         onClick={() => handleViewDateChange(addDays(viewDate, moveDays))}
-            className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#eadbc9] bg-white text-[#202020] shadow-sm transition hover:border-[#ffd6bd] hover:bg-[#fff7f0] active:scale-[0.98]"
-            aria-label="Наступний період"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
+            <button
+              type="button"
+              onClick={() => setCalendarOpen(true)}
+              className="grid h-12 min-w-[220px] grid-cols-[36px_1fr] items-center rounded-[16px] border border-[#eadfce] bg-white px-3 text-left shadow-[0_8px_24px_rgba(39,28,20,0.06)] transition hover:bg-[#fffaf6] active:scale-[0.99]"
+              aria-label="Відкрити календар"
+            >
+              <CalendarDays className="h-5 w-5 text-[#d38d5f]" />
+              <span className="min-w-0">
+                <span className="block truncate text-[16px] font-black leading-tight text-[#202020]">
+                  {formatDateLongUA(toISODateKey(viewDate))}
+                </span>
+                <span className="block truncate text-[11px] font-bold capitalize leading-tight text-[#8d8177]">
+                  {weekdayLabel}
+                </span>
+              </span>
+            </button>
 
-          <div className="ml-1 min-w-[190px]">
-            <p className="text-[15px] font-black leading-tight text-[var(--color-ink)]">
-              {rangeMode === "week"
-                ? `${formatDateLongUA(toISODateKey(visibleDates[0]))} - ${formatDateLongUA(
-                    toISODateKey(visibleDates[6]),
-                  )}`
-                : formatDateLongUA(toISODateKey(viewDate))}
-            </p>
-            <p className="mt-0.5 text-[11px] font-bold text-[var(--color-caramel)]">
-              {rangeMode === "day" ? "Денний розклад" : "Тижневий розклад"}
-            </p>
+            <button
+              type="button"
+              onClick={() => navigateRange(1)}
+              className="flex h-12 w-12 items-center justify-center rounded-[16px] border border-[#eadfce] bg-white text-[#202020] shadow-[0_8px_24px_rgba(39,28,20,0.06)] transition hover:bg-[#fff7f0] active:scale-[0.98]"
+              aria-label="Наступний період"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+
+            <div className="inline-flex h-12 rounded-[17px] border border-[#ded6cd] bg-white p-1 shadow-[0_8px_24px_rgba(39,28,20,0.06)]">
+              {rangeModeItems.map((item) => {
+                const active = rangeMode === item.key;
+
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => handleRangeModeChange(item.key)}
+                    className={cn(
+                      "h-10 rounded-[13px] px-4 text-[13px] font-black transition active:scale-[0.98]",
+                      active
+                        ? "bg-[#202020] text-white shadow-[0_8px_16px_rgba(32,32,32,0.18)]"
+                        : "text-[#4f4944] hover:bg-[#fff7f0]",
+                    )}
+                  >
+                    {item.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-start gap-3 xl:justify-end">
+            {viewSwitcher}
           </div>
         </div>
 
-        <div className="flex justify-end">
-          {viewSwitcher}
-        </div>
-      </div>
+        <div className="mt-6 grid gap-3 md:grid-cols-2 lg:grid-cols-[repeat(6,minmax(120px,1fr))_190px]">
+          {plannerStats.map((item) => {
+            const Icon = item.Icon;
 
-      <div className="flex flex-wrap items-center justify-center gap-2 border-b border-[#ebe7df] bg-[#fffaf6] px-4 py-3">
-        {SCHEDULE_STATUS_FILTERS.map((item) => {
-          const active = statusFilter === item.key;
-          const count = statusCounts[item.key] || 0;
+            return (
+              <div
+                key={item.label}
+                className={cn(
+                  "relative min-h-[86px] rounded-[18px] border bg-white px-4 py-3 shadow-[0_10px_28px_rgba(39,28,20,0.05)]",
+                  item.shell || "border-[#eadfce]",
+                )}
+              >
+                <div className="min-w-0">
+                  <p className="min-h-[32px] pr-1 text-[12px] font-bold leading-tight text-[#202020]">
+                    {item.label}
+                  </p>
+                  <div className={cn(
+                    "absolute bottom-4 left-4 flex items-end gap-2",
+                    Icon ? "right-14" : "right-4",
+                  )}>
+                    <p className={cn("text-[28px] font-black leading-none", item.valueClass)}>
+                      {item.value}
+                    </p>
+                    {item.helper && (
+                      <p className="pb-0.5 text-[12px] font-bold text-[#8d8177]">
+                        {item.helper}
+                      </p>
+                    )}
+                  </div>
+                </div>
 
-          return (
-            <button
-              key={item.key}
-              type="button"
-              onClick={() => setStatusFilter(item.key)}
-              className={cn(
-                "flex h-8 items-center gap-2 rounded-2xl border px-3 text-[12px] font-black transition",
-                active
-                  ? "border-[#ff6200] bg-[#ff6200] text-white shadow-sm"
-                  : "border-[#eadbc9] bg-white text-[#202020] hover:border-[#ffd6bd] hover:bg-[#fff7f0]",
-              )}
-            >
-              {item.label}
-              <span className={active ? "text-white/75" : "text-[#ff6200]"}>
-                {count}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+                {Icon && (
+                  <span
+                    className={cn(
+                      "absolute bottom-4 right-4 flex h-9 w-9 items-center justify-center rounded-full border border-white shadow-sm",
+                      item.iconClass,
+                    )}
+                  >
+                    <Icon className="h-4.5 w-4.5" />
+                  </span>
+                )}
+              </div>
+            );
+          })}
 
-      <div className="grid min-h-[720px] grid-cols-1 lg:grid-cols-[236px_minmax(0,1fr)]">
-        <aside className="border-b border-[#ebe7df] bg-white p-4 lg:border-b-0 lg:border-r">
-          <div className="mb-3 space-y-2">
-            <div className="grid h-10 grid-cols-2 overflow-hidden rounded-2xl border border-[#eadbc9] bg-[#fff7f0] p-0.5 shadow-sm">
-              {[
-                { key: "day", label: "День" },
-                { key: "week", label: "Тиждень" },
-              ].map((item) => (
-                <button
-                  key={item.key}
-                  type="button"
-              onClick={() => handleRangeModeChange(item.key)}
-                  className={cn(
-                    "rounded-[18px] px-3 text-[12px] font-black transition",
-                    rangeMode === item.key
-                      ? "bg-[#ff6200] text-white shadow-sm"
-                      : "text-[#202020] hover:bg-white",
-                  )}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-
-            <div className="grid h-10 grid-cols-2 overflow-hidden rounded-2xl border border-[#eadbc9] bg-[#fff7f0] p-0.5 shadow-sm">
-              {[
-                { key: "staff", label: "Співробітники", Icon: Users },
-                { key: "resource", label: "Ресурси", Icon: LayoutGrid },
-              ].map(({ key, label, Icon }) => (
-                <button
-                  key={key}
-                  type="button"
-onClick={() => handleGroupModeChange(key)}
-                  className={cn(
-                    "flex items-center justify-center gap-1.5 rounded-[18px] px-2 text-[11px] font-black transition",
-                    groupMode === key
-                      ? "bg-[#ff6200] text-white shadow-sm"
-                      : "text-[#202020] hover:bg-white",
-                  )}
-                >
-                  <Icon className="h-3.5 w-3.5" />
-                  <span className="truncate">{label}</span>
-                </button>
-              ))}
-            </div>
-
-            <label className="relative block h-10 w-full">
-              <Eye className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-caramel)]" />
-              <input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Пошук клієнта або послуги"
-                className="h-full w-full rounded-2xl border border-[#eadbc9] bg-white pl-9 pr-3 text-[12px] font-bold text-[#202020] shadow-sm outline-none placeholder:text-[var(--color-caramel)]/70 focus:border-[#ffb489] focus:bg-[#fffaf6]"
-              />
+          <div className="grid gap-2 self-center">
+            <label className="relative block h-[46px]">
+              <SlidersHorizontal className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8d6b52]" />
+              <select
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value)}
+                className="h-full w-full appearance-none rounded-[16px] border border-[#eadfce] bg-white pl-10 pr-9 text-[13px] font-black text-[#3b312b] shadow-[0_8px_24px_rgba(39,28,20,0.06)] outline-none transition focus:border-[#ffb489]"
+              >
+                {SCHEDULE_STATUS_FILTERS.map((item) => (
+                  <option key={item.key} value={item.key}>
+                    {item.label} ({statusCounts[item.key] || 0})
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8d6b52]" />
             </label>
 
-            <label className="relative block h-10 w-full">
+            <label className="relative block h-[46px]">
+              <Users className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8d6b52]" />
               <select
                 value={selectedGroup}
-               onChange={(event) => handleSelectedGroupChange(event.target.value)}
-                className="h-full w-full appearance-none rounded-2xl border border-[#eadbc9] bg-white pl-3 pr-9 text-[12px] font-black text-[#202020] shadow-sm outline-none transition focus:border-[#ffb489]"
+                onChange={(event) => handleSelectedGroupChange(event.target.value)}
+                className="h-full w-full appearance-none rounded-[16px] border border-[#eadfce] bg-white pl-10 pr-9 text-[13px] font-black text-[#3b312b] shadow-[0_8px_24px_rgba(39,28,20,0.06)] outline-none transition focus:border-[#ffb489]"
               >
-                <option value="all">
-                  {groupMode === "staff" ? "Усі співробітники" : "Усі ресурси"}
-                </option>
+                <option value="all">Усі майстри</option>
                 {groupOptions.map((option) => (
                   <option key={option.key} value={option.key}>
                     {option.name}
                   </option>
                 ))}
               </select>
-              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-caramel)]" />
+              <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8d6b52]" />
             </label>
           </div>
+        </div>
+      </div>
 
-<ScheduleMiniCalendar
-  viewDate={viewDate}
-  countsByDate={countsByDate}
-  onSelectDate={handleViewDateChange}
-/>
-
-          <div className="mt-3 rounded-[24px] border border-[#eadbc9] bg-[#fffaf6] p-3">
-            <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[var(--color-caramel)]">
-              Кольори записів
-            </p>
-
-            <div className="mt-3 space-y-2">
-              {[
-                {
-                  color: "bg-[var(--color-buttom-ok)]",
-                  label: "Підтверджені записи",
-                },
-                {
-                  color: "bg-[#ffb020]",
-                  label: "Очікують підтвердження",
-                },
-                {
-                  color: "bg-[var(--color-danger)]",
-                  label: "Скасовані записи",
-                },
-                {
-                  color: "bg-[var(--color-caramel)]",
-                  label: "Завершені записи",
-                },
-              ].map((item) => (
-                <div key={item.label} className="flex items-start gap-2">
-                  <span
-                    className={cn(
-                      "mt-1 h-2.5 w-2.5 shrink-0 rounded-full",
-                      item.color,
-                    )}
-                  />
-                  <span className="text-[11px] font-semibold leading-4 text-[var(--color-caramel)]">
-                    {item.label}
-                  </span>
-                </div>
-              ))}
-            </div>
+      {calendarOpen && (
+        <div
+          className="fixed inset-0 z-[230] flex items-start justify-center bg-[#1b1b1b]/30 p-4 pt-24 backdrop-blur-[6px]"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setCalendarOpen(false);
+            }
+          }}
+        >
+          <div
+            className="w-full max-w-[360px]"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <ScheduleMiniCalendar
+              viewDate={viewDate}
+              countsByDate={countsByDate}
+              onNavigateMonth={setViewDate}
+              onSelectDate={(date) => {
+                handleViewDateChange(date);
+                setCalendarOpen(false);
+              }}
+            />
           </div>
+        </div>
+      )}
 
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <div className="rounded-2xl border border-[#eadbc9] bg-[#fff7f0] p-3">
-              <p className="text-[10px] font-black uppercase tracking-[0.08em] text-[var(--color-caramel)]">
-                Записи
-              </p>
-              <p className="mt-1 text-lg font-black text-[var(--color-ink)]">
-                {rangeBookings.length}
-              </p>
-            </div>
-            <div className="rounded-2xl border border-[#eadbc9] bg-white p-3">
-              <p className="text-[10px] font-black uppercase tracking-[0.08em] text-[var(--color-caramel)]">
-                Нові
-              </p>
-              <p className="mt-1 text-lg font-black text-[#ff6200]">
-                {statusCounts.pending || 0}
-              </p>
-            </div>
-          </div>
-        </aside>
+    <div className="bg-white">
 
-        <div ref={scrollRef} className="calendar-day-scroll min-h-0 overflow-auto bg-[#fbfaf8]">
-          <div className="min-w-[860px]">
+        <div
+          ref={topScrollRef}
+          className="calendar-day-scroll h-3 overflow-x-auto overflow-y-hidden border-b border-[#eadfce] bg-[#fffaf7]"
+          onScroll={(event) =>
+            syncHorizontalScroll(event.currentTarget, headerScrollRef, scrollRef)
+          }
+        >
+          <div style={{ width: scheduleWidth, height: 1 }} />
+        </div>
+
+        <div
+          ref={headerScrollRef}
+          className="calendar-day-scroll overflow-hidden border-b border-[#eadfce] bg-white"
+        >
+          <div
+            className="min-w-full"
+            style={{ minWidth: scheduleWidth }}
+          >
             <div
-              className="sticky top-0 z-30 grid border-b border-[#ebe7df] bg-white"
+              className="grid bg-white"
               style={{ gridTemplateColumns: templateColumns }}
             >
-              <div className="border-r border-[#ebe7df] bg-[#fffaf6]" />
+              <div className="sticky left-0 z-40 flex min-h-[108px] flex-col justify-between border-r border-[#eadfce] bg-white px-3 py-3 shadow-[8px_0_18px_rgba(39,28,20,0.04)]">
+<div className="grid gap-1.5">
+   <div className="flex h-8 overflow-hidden rounded-lg border border-[#eadfce] bg-[#fffaf7]">
 
-              {columns.map((column) => (
-                <div
-                  key={column.key}
-                  className="flex h-[68px] min-w-0 items-center gap-3 border-r border-[#ebe7df] px-3"
-                >
-                  {column.type === "date" ? (
-                    <div className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-2xl bg-[#fff1e8] text-[#ff6200]">
-                      <span className="text-[10px] font-black uppercase leading-none">
-                        {column.date.toLocaleDateString("uk-UA", { weekday: "short" }).slice(0, 2)}
-                      </span>
-                      <span className="text-sm font-black leading-none">
-                        {column.date.getDate()}
-                      </span>
+    <button
+      type="button"
+      onClick={() => adjustStaffColumnWidth(-12)}
+      className="flex w-5 items-center justify-center text-[#8d8177] transition hover:bg-white hover:text-[#202020]"
+      aria-label="Зменшити ширину колонок"
+      title="Зменшити ширину колонок"
+    >
+      <Minus className="h-2.5 w-2.5" />
+    </button>
+
+    <span className="flex min-w-0 flex-1 flex-col items-center justify-center leading-none">
+      <span className="text-[7px] font-black uppercase tracking-[0.04em] text-[#8d8177]">
+        ВИСОТА
+      </span>
+      <span className="mt-0.5 text-[9px] font-black text-[#202020]">
+        {staffColumnWidth}
+      </span>
+    </span>
+
+    <button
+      type="button"
+      onClick={() => adjustStaffColumnWidth(12)}
+      className="flex w-5 items-center justify-center text-[#8d8177] transition hover:bg-white hover:text-[#202020]"
+      aria-label="Збільшити ширину колонок"
+      title="Збільшити ширину колонок"
+    >
+      <Plus className="h-2.5 w-2.5" />
+    </button>
+  </div>
+  <div className="flex h-8 overflow-hidden rounded-lg border border-[#eadfce] bg-[#fffaf7]">
+    <button
+      type="button"
+      onClick={() => adjustHourHeight(-8)}
+      className="flex w-5 items-center justify-center text-[#8d8177] transition hover:bg-white hover:text-[#202020]"
+      aria-label="Зменшити висоту рядків"
+      title="Зменшити висоту рядків"
+    >
+      <Minus className="h-2.5 w-2.5" />
+    </button>
+
+    <span className="flex min-w-0 flex-1 flex-col items-center justify-center leading-none">
+      <span className="text-[7px] font-black uppercase tracking-[0.04em] text-[#8d8177]">
+        ШИРИНА
+      </span>
+      <span className="mt-0.5 text-[9px] font-black text-[#202020]">
+        {hourHeight}
+      </span>
+    </span>
+
+    <button
+      type="button"
+      onClick={() => adjustHourHeight(8)}
+      className="flex w-5 items-center justify-center text-[#8d8177] transition hover:bg-white hover:text-[#202020]"
+      aria-label="Збільшити висоту рядків"
+      title="Збільшити висоту рядків"
+    >
+      <Plus className="h-2.5 w-2.5" />
+
+    </button>
+  </div>
+
+</div>
+              </div>
+
+              {columns.map((column) => {
+                const summaryCounts = scheduleSummaryByColumn[column.key] || {
+                  confirmed: 0,
+                  canceled: 0,
+                  pending: 0,
+                  archived: 0,
+                };
+                const totalCount =
+                  summaryCounts.confirmed +
+                  summaryCounts.canceled +
+                  summaryCounts.pending +
+                  summaryCounts.archived;
+                const isColumnWorking = totalCount > 0;
+
+                return (
+                  <div
+                    key={column.key}
+                    className="relative min-h-[108px] min-w-0 border-r border-[#eadfce] bg-white px-2 py-3"
+                  >
+                    <button
+                      type="button"
+                      className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full bg-[#fbf5ef] text-[#202020] transition hover:bg-[#fff1e8]"
+                      aria-label="Дії"
+                    >
+                      <MoreHorizontal className="h-4 w-4" />
+                    </button>
+
+                    <div className="flex min-w-0 items-center gap-3 pr-7">
+                      {column.type === "date" ? (
+                        <div className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-full bg-[#fff1e8] text-[#ff6200]">
+                          <span className="text-[10px] font-black uppercase leading-none">
+                            {column.date.toLocaleDateString("uk-UA", { weekday: "short" }).slice(0, 2)}
+                          </span>
+                          <span className="text-sm font-black leading-none">
+                            {column.date.getDate()}
+                          </span>
+                        </div>
+                      ) : (
+                        <Avatar
+                          name={column.name}
+                          photoUrl={column.photoUrl}
+                          className="h-12 w-12 rounded-full"
+                        />
+                      )}
+
+                      <div className="min-w-0">
+                        <p className="truncate text-[14px] font-black leading-tight text-[#202020]">
+                          {column.name}
+                        </p>
+                        <p className="mt-0.5 truncate text-[12px] font-bold text-[#8d8177]">
+                          {column.type === "date"
+                            ? formatDateLongUA(toISODateKey(column.date))
+                            : column.role || "Співробітник"}
+                        </p>
+                        <div className="mt-2 flex items-center gap-3 text-[11px] font-black text-[#5f554f]">
+                          <span className="inline-flex items-center gap-1">
+                            <CalendarDays className="h-3.5 w-3.5 text-[#8d8177]" />
+                            {totalCount}
+                          </span>
+                          <span className="inline-flex items-center gap-1">
+                            <CircleCheckBig className="h-3.5 w-3.5 text-[#4c9b47]" />
+                            {summaryCounts.confirmed}
+                          </span>
+                          <span className="inline-flex items-center gap-1">
+                            <ClockAlert className="h-3.5 w-3.5 text-[#e07d00]" />
+                            {summaryCounts.pending}
+                          </span>
+                          <span className="inline-flex items-center gap-1">
+                            <XCircle className="h-3.5 w-3.5 text-[#e11d48]" />
+                            {summaryCounts.canceled}
+                          </span>
+                        </div>
+
+                        <div
+                          className={cn(
+                            "mt-1.5 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-black",
+                            isColumnWorking
+                              ? "bg-[#eef8ea] text-[#2f8f55]"
+                              : "bg-[#fff0f3] text-[#e11d48]",
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "h-1.5 w-1.5 rounded-full",
+                              isColumnWorking ? "bg-[#2f8f55]" : "bg-[#e11d48]",
+                            )}
+                          />
+                          {isColumnWorking ? "Працює" : "Вихідний"}
+                        </div>
+                      </div>
                     </div>
-                  ) : (
-                    <Avatar
-                      name={column.name}
-                      photoUrl={column.photoUrl}
-                      className="h-10 w-10 rounded-[16px]"
-                    />
-                  )}
-
-                  <div className="min-w-0">
-                    <p className="truncate text-[13px] font-black text-[var(--color-ink)]">
-                      {column.name}
-                    </p>
-                    <p className="mt-0.5 truncate text-[11px] font-semibold text-[var(--color-caramel)]">
-                      {column.type === "date"
-                        ? formatDateLongUA(toISODateKey(column.date))
-                        : column.role ||
-                          (groupMode === "staff" ? "Співробітник" : "Ресурс")}
-                    </p>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
+          </div>
+        </div>
 
+<div
+  ref={scrollRef}
+  className="calendar-day-scroll relative overflow-auto bg-white pb-3"
+  style={{
+    height: "clamp(340px, calc(100dvh - 360px), 540px)",
+  }}
+  onScroll={(event) =>
+    syncHorizontalScroll(event.currentTarget, topScrollRef, headerScrollRef)
+  }
+>
+          {!anyBookings && (
+  <div className="pointer-events-none sticky left-0 top-0 z-50 h-0 w-full">
+   <div className="flex h-[clamp(360px,calc(100dvh-360px),560px)] items-center justify-center px-3">
+      <div className="pointer-events-auto w-[min(360px,calc(100%-24px))] rounded-[22px] border-2 border-dashed border-[#eadbc9] bg-white/90 p-4 text-center shadow-sm backdrop-blur">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff1e8] text-[#ff6200]">
+          {loading ? (
+            <Sparkles className="h-5 w-5 animate-pulse" />
+          ) : (
+            <CalendarDays className="h-5 w-5" />
+          )}
+        </div>
+
+        <p className="mt-3 text-sm font-black text-[var(--color-ink)]">
+          {loading
+            ? "Завантажуємо записи"
+            : "На цей період записів немає"}
+        </p>
+
+        <p className="mt-1 text-xs font-medium text-[var(--color-caramel)]">
+          Нові бронювання з'являться у сітці за часом і виконавцем.
+        </p>
+      </div>
+    </div>
+  </div>
+)}
+          <div
+            className="min-w-full"
+            style={{ minWidth: scheduleWidth }}
+          >
             <div className="relative grid" style={{ gridTemplateColumns: templateColumns }}>
               <div
-                className="relative border-r border-[#ebe7df] bg-[#fffaf6]"
+                className="sticky left-0 z-40 border-r border-[#eadfce] bg-white shadow-[8px_0_18px_rgba(39,28,20,0.04)]"
                 style={{ height: gridHeight }}
               >
                 {hours.map((hour) => (
                   <div
                     key={hour}
-                    className="absolute right-3 -translate-y-2 text-[11px] font-bold text-[var(--color-caramel)]"
+                    className="absolute right-4 -translate-y-2 text-[12px] font-black text-[#3b312b]"
                     style={{
-                      top:
-                        ((hour * 60 - timeBounds.start) / 60) *
-                        SCHEDULE_HOUR_HEIGHT,
+                      top: topForMinute(hour * 60),
                     }}
                   >
                     {pad2(hour)}:00
                   </div>
                 ))}
+
+                {quarterMarks
+                  .filter((mark) => !mark.isHour)
+                  .map((mark) => (
+                    <div
+                      key={`label-${mark.minute}`}
+                      className="absolute right-4 -translate-y-1/2 text-[11px] font-bold text-[#b0a49b]"
+                      style={{ top: topForMinute(mark.minute) }}
+                    >
+                      :{pad2(mark.minute % 60)}
+                    </div>
+                  ))}
+
+                {showNowLine && visibleDateKeys.has(todayKey) && (
+                  <div
+                    className="absolute inset-x-0 z-30 border-t border-[#f35f49]"
+                    style={{ top: topForMinute(nowMinute) }}
+                  >
+                    <span className="absolute left-1 top-[-10px] rounded-md bg-[#f35f49] px-1.5 py-0.5 text-[10px] font-black text-white shadow-sm">
+                      {scheduleTimeLabel(nowMinute)}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {columns.map((column) => {
@@ -3230,56 +3808,60 @@ onClick={() => handleGroupModeChange(key)}
                 return (
                   <div
                     key={column.key}
-                    className="relative border-r border-[#ebe7df] bg-white"
+                    className="relative border-r border-[#eadfce] bg-white"
                     style={{ height: gridHeight }}
                   >
-                    {hours.map((hour) => (
+                    {quarterMarks.map((mark) => (
                       <div
-                        key={hour}
-                        className="absolute inset-x-0 border-t border-[#f0e8df]"
+                        key={mark.minute}
+                        className={cn(
+                          "absolute inset-x-0 border-t",
+                          mark.isHour
+                            ? "border-[#eee7df]"
+                            : "border-dashed border-[#eadfce]/80",
+                        )}
                         style={{
-                          top:
-                            ((hour * 60 - timeBounds.start) / 60) *
-                            SCHEDULE_HOUR_HEIGHT,
+                          top: topForMinute(mark.minute),
                         }}
                       />
                     ))}
 
                     {showNowLine && isTodayColumn && (
                       <div
-                        className="absolute inset-x-0 z-20 border-t border-[#ff6200]"
+                        className="absolute inset-x-0 z-20 border-t border-[#f35f49]"
                         style={{
-                          top:
-                            ((nowMinute - timeBounds.start) / 60) *
-                            SCHEDULE_HOUR_HEIGHT,
+                          top: topForMinute(nowMinute),
                         }}
                       >
-                        <span className="absolute -left-1 -top-[5px] h-2.5 w-2.5 rounded-full bg-[#ff6200]" />
+                        <span className="absolute -left-1 -top-[5px] h-2.5 w-2.5 rounded-full bg-[#f35f49]" />
                       </div>
                     )}
 
                     {columnBookings.map((booking) => {
-                      const palette = schedulePalette(booking, nowTs);
-                      const top =
-                        ((Math.max(booking.startMin, timeBounds.start) -
-                          timeBounds.start) /
-                          60) *
-                        SCHEDULE_HOUR_HEIGHT;
+                      const tone = scheduleCardTone(booking, nowTs);
+                      const top = topForMinute(
+                        Math.max(booking.startMin, timeBounds.start),
+                      );
                       const clippedEnd = Math.min(
                         booking.endMin,
-                        timeBounds.start + (gridHeight / SCHEDULE_HOUR_HEIGHT) * 60,
+                        timeBounds.end,
                       );
                       const height = Math.max(
                         SCHEDULE_MIN_CARD_HEIGHT,
                         ((clippedEnd -
                           Math.max(booking.startMin, timeBounds.start)) /
                           60) *
-                          SCHEDULE_HOUR_HEIGHT -
-                          6,
+                          hourHeight -
+                          10,
                       );
                       const width = `calc(${100 / booking.laneCount}% - 6px)`;
                       const left = `calc(${(100 / booking.laneCount) * booking.lane}% + 3px)`;
                       const visualStatus = scheduleVisualStatus(booking, nowTs);
+                      const StatusIcon = scheduleStatusIcon(booking, nowTs);
+                      const statusLabel = scheduleStatusLabel(booking, nowTs);
+                      const showClientLine = height >= 64;
+                      const showServiceLine = height >= 84;
+                      const showStatusLine = height >= 104;
                       const startLabel =
                         parseTimeToHHMM(booking.raw.time) ||
                         scheduleTimeLabel(booking.startMin);
@@ -3291,10 +3873,7 @@ onClick={() => handleGroupModeChange(key)}
                           type="button"
                           onClick={() => booking.id != null && onOpenBooking(booking.id)}
                           className={cn(
-                            "absolute z-10 overflow-hidden rounded-[18px] border text-left transition duration-200 hover:z-20 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[#ff6200]/25",
-                            palette.bg,
-                            palette.border,
-                            palette.shadow,
+                            "group absolute z-10 overflow-visible rounded-[14px] border text-left transition duration-200 hover:z-30 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[#f35f49]/25",
                             visualStatus === "canceled" && "opacity-70",
                           )}
                           style={{
@@ -3302,27 +3881,81 @@ onClick={() => handleGroupModeChange(key)}
                             height,
                             left,
                             width,
+                            background: tone.bg,
+                            borderColor: tone.border,
+                            boxShadow: "0 14px 34px rgba(39, 28, 20, 0.06)",
                           }}
                         >
-                          <span
-                            className={cn(
-                              "absolute inset-y-0 left-0 w-1.5",
-                              palette.accent,
+                          <div
+                            className="pointer-events-none absolute bottom-full left-1/2 z-[80] mb-2 hidden w-[240px] -translate-x-1/2 rounded-[16px] border bg-white px-3 py-3 text-left shadow-[0_18px_44px_rgba(39,28,20,0.16)] group-hover:block group-focus-visible:block"
+                            style={{ borderColor: tone.border }}
+                          >
+                            <span
+                              className="mb-2 inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[10px] font-black"
+                              style={{
+                                backgroundColor: tone.soft,
+                                color: tone.accent,
+                              }}
+                            >
+                              <StatusIcon className="h-3.5 w-3.5" />
+                              {statusLabel}
+                            </span>
+                            <span className="block text-[13px] font-black text-[#202020]">
+                              {booking.clientName}
+                            </span>
+                            <span className="mt-1 block text-[12px] font-bold text-[#6d625c]">
+                              {booking.serviceName}
+                            </span>
+                            <span className="mt-2 flex items-center gap-2 text-[11px] font-black text-[#8d8177]">
+                              <Clock className="h-3.5 w-3.5" />
+                              {startLabel} - {endLabel}
+                            </span>
+                            {booking.clientPhone && (
+                              <span className="mt-1 flex items-center gap-2 text-[11px] font-bold text-[#8d8177]">
+                                <Phone className="h-3.5 w-3.5" />
+                                {booking.clientPhone}
+                              </span>
                             )}
+                          </div>
+
+                          <div
+                            className="absolute inset-y-0 left-0 w-1"
+                            style={{ backgroundColor: tone.accent }}
                           />
 
-                          <div className="flex h-full min-h-0 flex-col justify-center px-3 py-2 pl-4">
-                            <p
-                              className={cn(
-                                "truncate text-[13px] font-black leading-tight",
-                                palette.text,
-                              )}
+                          <div className="flex h-full min-h-0 flex-col px-3 py-2 pl-4">
+                            <div
+                              className="flex min-w-0 items-center gap-1.5 text-[11px] font-black leading-tight"
+                              style={{ color: tone.accent }}
                             >
-                              {booking.clientName}
-                            </p>
-                            <p className="mt-1 truncate text-[11px] font-black text-[var(--color-caramel)]">
-                              {startLabel} - {endLabel}
-                            </p>
+                              <Scissors className="h-3.5 w-3.5 shrink-0" />
+                              <span className="truncate">
+                                {startLabel} - {endLabel}
+                              </span>
+                              <StatusIcon className="h-3.5 w-3.5 shrink-0" />
+                            </div>
+
+                            {showClientLine && (
+                              <p className="mt-1.5 truncate text-[13px] font-black leading-tight text-[#202020]">
+                                {booking.clientName}
+                              </p>
+                            )}
+
+                            {showServiceLine && (
+                              <p className="mt-1 truncate text-[11px] font-bold leading-tight text-[#6d625c]">
+                                {booking.serviceName}
+                              </p>
+                            )}
+
+                            {showStatusLine && (
+                              <div className="mt-auto flex min-w-0 items-center gap-1.5 pt-1 text-[10px] font-black text-[#5f554f]">
+                                <StatusIcon
+                                  className="h-3.5 w-3.5 shrink-0"
+                                  style={{ color: tone.accent }}
+                                />
+                                <span className="truncate">{statusLabel}</span>
+                              </div>
+                            )}
                           </div>
                         </button>
                       );
@@ -3331,30 +3964,11 @@ onClick={() => handleGroupModeChange(key)}
                 );
               })}
 
-              {!anyBookings && (
-                <div className="absolute inset-x-10 top-16 z-10 rounded-[28px] border-2 border-dashed border-[#eadbc9] bg-white/90 p-6 text-center shadow-sm backdrop-blur">
-                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff1e8] text-[#ff6200]">
-                    {loading ? (
-                      <Sparkles className="h-5 w-5 animate-pulse" />
-                    ) : (
-                      <CalendarDays className="h-5 w-5" />
-                    )}
-                  </div>
-                  <p className="mt-3 text-sm font-black text-[var(--color-ink)]">
-                    {loading
-                      ? "Завантажуємо записи"
-                      : "На цей період записів немає"}
-                  </p>
-                  <p className="mt-1 text-xs font-medium text-[var(--color-caramel)]">
-                    Нові бронювання з'являться у сітці за часом і виконавцем.
-                  </p>
-                </div>
-              )}
             </div>
           </div>
         </div>
       </div>
-    </SectionShell>
+    </div>
   );
 }
 
@@ -3756,7 +4370,7 @@ export default function Golowna() {
 
   return (
     <div className="">
-      <div className="mx-auto w-full max-w-[1200px] space-y-3">
+      <div className="mx-auto w-full max-w-[1440px] space-y-3">
         {homeView === "overview" ? (
           <MonthlyBookingsChart
             bookings={bookings}
