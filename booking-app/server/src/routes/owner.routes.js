@@ -338,16 +338,44 @@ if (
         });
       }
 
-      const manualClients = await prisma.studioClient.findMany({
+const manualClients = await prisma.studioClient.findMany({
   where: { studioId },
   orderBy: { createdAt: "desc" },
 });
 
 for (const client of manualClients) {
+  const accountId = client.accountId || null;
+
+  // Якщо цей StudioClient вже привʼязаний до ClientAccount,
+  // а ClientAccount вже є в map через бронювання — не створюємо дубль.
+  if (accountId && map.has(accountId)) {
+    const existing = map.get(accountId);
+
+    map.set(accountId, {
+      ...existing,
+
+      // Підтягуємо дані з manual-профілю, якщо в ClientAccount вони пусті.
+      firstName: existing.firstName || client.firstName || "",
+      lastName: existing.lastName || client.lastName || "",
+      phone: existing.phone || client.phone || null,
+      email: existing.email || client.email || null,
+      birthDate: existing.birthDate || client.birthDate || null,
+      photoUrl: existing.photoUrl || client.photoUrl || "",
+      registeredAt: existing.registeredAt || client.createdAt,
+
+      studioClientId: client.id,
+    });
+
+    continue;
+  }
+
+  // Якщо manual-клієнт вже був доданий по своєму id — пропускаємо.
   if (map.has(client.id)) continue;
 
   map.set(client.id, {
     id: client.id,
+    studioClientId: client.id,
+    accountId,
 
     firstName: client.firstName || "",
     lastName: client.lastName || "",
@@ -608,23 +636,46 @@ ownerRouter.post(
         });
       }
 
-      const client = await prisma.studioClient.create({
-        data: {
-          studioId,
-          firstName,
-          lastName,
-          phone: phone || null,
-          email: email || null,
-          birthDate: birthDate ? new Date(birthDate) : null,
-          photoUrl: photoUrl || null,
-          photoKey: photoKey || null,
-          source: "MANUAL",
-        },
-      });
+const normalizedPhone = String(phone || "").trim();
+const normalizedEmail = String(email || "").trim().toLowerCase();
 
-      res.status(201).json({
-        client,
-      });
+const duplicateConditions = [
+  normalizedPhone ? { phone: normalizedPhone } : null,
+  normalizedEmail ? { email: normalizedEmail } : null,
+].filter(Boolean);
+
+if (duplicateConditions.length > 0) {
+  const existingClient = await prisma.studioClient.findFirst({
+    where: {
+      studioId,
+      OR: duplicateConditions,
+    },
+  });
+
+  if (existingClient) {
+    return res.status(409).json({
+      message: "Клієнт з таким телефоном або email вже існує.",
+    });
+  }
+}
+
+const client = await prisma.studioClient.create({
+  data: {
+    studioId,
+    firstName: String(firstName || "").trim(),
+    lastName: String(lastName || "").trim(),
+    phone: normalizedPhone || null,
+    email: normalizedEmail || null,
+    birthDate: birthDate ? new Date(birthDate) : null,
+    photoUrl: photoUrl || null,
+    photoKey: photoKey || null,
+    source: "MANUAL",
+  },
+});
+
+res.status(201).json({
+  client,
+});
     } catch (e) {
       console.error(e);
 
@@ -701,6 +752,26 @@ ownerRouter.get(
           name: true,
           role: true,
           photoUrl: true,
+          scheduleDays: {
+  select: {
+    day: true,
+    enabled: true,
+    startMin: true,
+    endMin: true,
+  },
+},
+scheduleExceptions: {
+  orderBy: { date: "asc" },
+  select: {
+    id: true,
+    date: true,
+    enabled: true,
+    startMin: true,
+    endMin: true,
+    createdAt: true,
+    updatedAt: true,
+  },
+},
         },
       });
 

@@ -20,8 +20,6 @@ CircleAlert,
   Check,
   Camera,
   CalendarDays,
-  ChevronDown,
-  ChevronUp,
     UserRound,
   ClipboardPen,
   CheckCheck,
@@ -33,14 +31,16 @@ CircleAlert,
   CalendarCheck,
   Clock3,
   Clock,
+  Coffee,
   Banknote,
   ChevronRight,
   ArrowDownToLine,
+  Save,
+  Building2,
 
 } from "lucide-react";
-import DatePicker from "../../components/ui/DatePicker";
-import TimeSelect from "../../components/TimeSelect";
 import { useStudio } from "../../context/studio/useStudio";
+import TimeSelect from "../../components/TimeSelect";
 
 async function uploadMasterPhoto(studioId, file) {
   const token = localStorage.getItem("token");
@@ -336,7 +336,36 @@ function isExceptionValid(item) {
   if (!item.date) return false;
   if (!item.enabled) return true;
   if (!item.start || !item.end) return false;
-  return item.start < item.end;
+
+  if (item.start >= item.end) return false;
+
+  const breakStart = getExceptionBreakStart(item);
+  const breakEnd = getExceptionBreakEnd(item);
+
+  if (!breakStart && !breakEnd) return true;
+  if (!breakStart || !breakEnd) return false;
+
+  return item.start < breakStart && breakStart < breakEnd && breakEnd < item.end;
+}
+
+function getExceptionBreakStart(item) {
+  return (
+    item?.breakStart ||
+    item?.pauseStart ||
+    item?.lunchStart ||
+    item?.break?.start ||
+    ""
+  );
+}
+
+function getExceptionBreakEnd(item) {
+  return (
+    item?.breakEnd ||
+    item?.pauseEnd ||
+    item?.lunchEnd ||
+    item?.break?.end ||
+    ""
+  );
 }
 
 function Button({
@@ -350,12 +379,12 @@ function Button({
     primary:
       "bg-[var(--color-primary-buttom)] text-white hover:bg-[#4a4a4a]",
     secondary:
-      "bg-white border border-[#eadbc9] text-[#202020] hover:bg-[#fff7f0] hover:border-[#ffd6bd]",
+      "bg-white border border-[#eadbc9] text-[#202020] hover:!bg-[#fff7f0] hover:!border-[#ffd6bd]",
     danger:
       "border border-[#ffd6bd] bg-[#fff1e8] text-[#ff5a00] hover:border-[#ff5a00] hover:bg-[#ffe5d4]",
     accent:
       "border border-[#ffd6bd] bg-[#fff1e8] text-[#ff5a00] shadow-sm hover:bg-[#ff5a00] hover:text-white",
-    ghost: "text-[#202020] hover:bg-[#fff7f0]",
+    ghost: "text-[#202020] hover:!bg-[#fff7f0]",
   };
 
   const sizes = {
@@ -391,12 +420,12 @@ function IconButton({
     primary:
       "bg-[#ff5a00] text-white hover:bg-[#ef4f00]",
     secondary:
-      "bg-white border border-[#eadbc9] text-[#202020] hover:bg-[#fff7f0] hover:border-[#ffd6bd]",
+      "bg-white border border-[#eadbc9] text-[#202020] hover:!bg-[#fff7f0] hover:!border-[#ffd6bd]",
     danger:
       "border border-[#ffd6bd] bg-[#fff1e8] text-[#ff5a00] hover:border-[#ff5a00] hover:bg-[#ffe5d4]",
     accent:
       "border border-[#ffd6bd] bg-[#fff1e8] text-[#ff5a00] shadow-sm hover:bg-[#ff5a00] hover:text-white",
-    ghost: "text-[#202020] hover:bg-[#fff7f0]",
+    ghost: "text-[#202020] hover:!bg-[#fff7f0]",
   };
 
   return (
@@ -452,6 +481,7 @@ function Modal({
     sm: "max-w-md",
     md: "max-w-lg",
     lg: "max-w-2xl",
+    xl: "max-w-5xl",
   };
 
   return (
@@ -472,12 +502,8 @@ function Modal({
 
           <div className="relative z-10 flex items-start justify-between gap-4">
             <div className="min-w-0">
-              <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-white px-3 text-[11px] font-black uppercase tracking-[0.08em] text-[#ff6200] shadow-[0_8px_20px_rgba(255,98,0,0.08)]">
-                <Icon className="h-3.5 w-3.5" />
-                {badge}
-              </span>
 
-              <h3 className="mt-3 text-[26px] font-black leading-[0.95] tracking-[-0.05em] text-[#202020] sm:text-[32px]">
+              <h3 className="text-[26px] font-black leading-[0.95] tracking-[-0.05em] text-[#202020] sm:text-[32px]">
                 {title}
               </h3>
 
@@ -499,7 +525,7 @@ function Modal({
           </div>
         </div>
 
-<div className="min-h-0 flex-1 overflow-y-auto bg-white px-5 py-5 pb-[110px] sm:px-6 sm:pb-5">
+<div className="min-h-0 flex-1 overflow-y-auto bg-[#fbfaf8] px-5 py-5 pb-[110px] sm:px-6 sm:pb-5">
   {children}
 </div>
 
@@ -617,7 +643,7 @@ const clientPhoto = getBookingClientPhoto(booking);
   onClick={onClick}
   className={cn(
     "group mt-1 w-full overflow-hidden rounded-[24px] border border-[#eadfce] bg-white text-left transition-all duration-200",
-    "hover:-translate-y-0.5 hover:border-[#ffd6bd] hover:bg-[#fff7f0]",
+    "hover:-translate-y-0.5 hover:!border-[#ffd6bd] hover:!bg-[#fff7f0]",
     "active:scale-[0.99]",
     "focus:outline-none focus:ring-4 focus:ring-[#ff6200]/10",
     status === "completed" && "opacity-85",
@@ -740,48 +766,6 @@ const clientPhoto = getBookingClientPhoto(booking);
   );
 }
 
-function isPastExceptionDate(dateStr) {
-  if (!dateStr) return false;
-
-  const today = new Date();
-  const todayLocal = new Date(
-    today.getFullYear(),
-    today.getMonth(),
-    today.getDate(),
-  );
-
-  const [y, m, d] = String(dateStr).split("-").map(Number);
-  const target = new Date(y, (m || 1) - 1, d || 1);
-
-  return target < todayLocal;
-}
-
-async function deleteExpiredMasterExceptions(masterId, list) {
-  const token = localStorage.getItem("token");
-
-  const expired = (list || []).filter(
-    (item) => item?.id && isPastExceptionDate(item.date),
-  );
-
-  if (!expired.length) return list || [];
-
-  await Promise.allSettled(
-    expired.map((item) =>
-      fetch(
-        `${import.meta.env.VITE_API_URL}/studio/masters/${masterId}/schedule/exceptions/${item.id}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      ),
-    ),
-  );
-
-  return (list || []).filter((item) => !isPastExceptionDate(item.date));
-}
-
 function MasterSkeletonRow() {
   return (
     <div className="rounded-[24px] border border-[#eadbc9] bg-white p-4">
@@ -835,7 +819,21 @@ export default function Masters() {
   const [exceptionsModalOpen, setExceptionsModalOpen] = useState(false);
   const [masterExceptions, setMasterExceptions] = useState([]);
   const [exceptionsLoading, setExceptionsLoading] = useState(false);
-  const [expandedExceptions, setExpandedExceptions] = useState({});
+  const [scheduleMonthDate, setScheduleMonthDate] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
+  const [scheduleMultiSelect, setScheduleMultiSelect] = useState(false);
+  const [selectedScheduleDates, setSelectedScheduleDates] = useState([]);
+  const [scheduleEditorOpen, setScheduleEditorOpen] = useState(false);
+  const [bulkScheduleDraft, setBulkScheduleDraft] = useState({
+    enabled: true,
+    start: "09:00",
+    end: "18:00",
+    breakStart: "12:00",
+    breakEnd: "13:00",
+  });
+  const [bulkSaving, setBulkSaving] = useState(false);
   const [bookingsMaster, setBookingsMaster] = useState(null);
   const [bookingsFilter, setBookingsFilter] = useState("all");
 const [bookingsModalOpen, setBookingsModalOpen] = useState(false);
@@ -1331,19 +1329,17 @@ async function handlePickPhoto(e) {
     return {
       id: "",
       date: dateToInputValue(),
-      enabled: true,
-      start: "08:00",
+      enabled: false,
+      start: "09:00",
       end: "18:00",
+      breakStart: "12:00",
+      breakEnd: "13:00",
       isNew: true,
     };
   }
 
   function sortExceptions(list) {
     return [...list].sort((a, b) => (a.date || "").localeCompare(b.date || ""));
-  }
-
-  function getExceptionKey(item, index) {
-    return item.id || `${item.date || "new"}-${index}`;
   }
 
   function formatExceptionDate(dateStr) {
@@ -1356,6 +1352,592 @@ async function handlePickPhoto(e) {
       month: "2-digit",
       year: "numeric",
     }).format(date);
+  }
+
+  function getExceptionDateValue(item) {
+    return String(item?.date || "").slice(0, 10);
+  }
+
+  function addDays(date, amount) {
+    const next = new Date(date);
+    next.setDate(next.getDate() + amount);
+    return next;
+  }
+
+  function addMonths(date, amount) {
+    return new Date(date.getFullYear(), date.getMonth() + amount, 1);
+  }
+
+  function getMonthTitle(date) {
+    return new Intl.DateTimeFormat("uk-UA", {
+      month: "long",
+      year: "numeric",
+    }).format(date);
+  }
+
+  function getWeekdayShort(date) {
+    return new Intl.DateTimeFormat("uk-UA", {
+      weekday: "short",
+    }).format(date);
+  }
+
+  function getScheduleDayTitle(date) {
+    return new Intl.DateTimeFormat("uk-UA", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+    }).format(date);
+  }
+
+  function getBulkDraftFromItem(item) {
+    const enabled = item?.enabled !== false;
+    const breakStart = getExceptionBreakStart(item);
+    const breakEnd = getExceptionBreakEnd(item);
+
+    return {
+      enabled,
+      start: item?.start || "09:00",
+      end: item?.end || "18:00",
+      breakStart: breakStart && breakEnd ? breakStart : "",
+      breakEnd: breakStart && breakEnd ? breakEnd : "",
+    };
+  }
+
+  function getMasterBookingsForDate(master, dateKey) {
+    return (bookingsQuery.data || []).filter((booking) => {
+      const status = String(booking?.status || "").toLowerCase();
+
+      return (
+        String(booking?.masterId) === String(master?.id) &&
+        String(booking?.date || "").slice(0, 10) === dateKey &&
+        status !== "canceled" &&
+        status !== "deleted"
+      );
+    });
+  }
+
+  function getScheduleItemForDate(dateKey) {
+    const index = masterExceptions.findIndex(
+      (item) => getExceptionDateValue(item) === dateKey,
+    );
+
+    if (index >= 0) {
+      return {
+        index,
+        item: {
+          ...masterExceptions[index],
+          breakStart: getExceptionBreakStart(masterExceptions[index]),
+          breakEnd: getExceptionBreakEnd(masterExceptions[index]),
+        },
+      };
+    }
+
+    return {
+      index: -1,
+      item: {
+        ...createEmptyException(),
+        date: dateKey,
+        isGenerated: true,
+      },
+    };
+  }
+
+  function buildMasterScheduleMonth(monthDate) {
+    const firstDay = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
+    const daysInMonth = new Date(
+      firstDay.getFullYear(),
+      firstDay.getMonth() + 1,
+      0,
+    ).getDate();
+    const monthStartOffset = (firstDay.getDay() + 6) % 7;
+    const weeksCount = Math.ceil((monthStartOffset + daysInMonth) / 7);
+    const gridStart = addDays(firstDay, -monthStartOffset);
+
+    return Array.from({ length: weeksCount * 7 }).map((_, index) => {
+      const date = addDays(gridStart, index);
+      const dateKey = dateToInputValue(date);
+      const schedule = getScheduleItemForDate(dateKey);
+      const dayBookings = getMasterBookingsForDate(exceptionsMaster, dateKey);
+
+      return {
+        date,
+        dateKey,
+        dayNumber: date.getDate(),
+        weekday: getWeekdayShort(date),
+        weekdayIndex: (date.getDay() + 6) % 7,
+        isCurrentMonth: date.getMonth() === firstDay.getMonth(),
+        isToday: dateKey === dateToInputValue(new Date()),
+        bookingsCount: dayBookings.length,
+        ...schedule,
+      };
+    });
+  }
+
+  function updateExceptionByDate(dateKey, field, value) {
+    const applyScheduleChange = (item) => {
+      const updated = { ...item, [field]: value };
+
+      if (field === "enabled" && value) {
+        return {
+          ...updated,
+          start: updated.start || "09:00",
+          end: updated.end || "18:00",
+          breakStart: getExceptionBreakStart(updated) || "12:00",
+          breakEnd: getExceptionBreakEnd(updated) || "13:00",
+        };
+      }
+
+      return updated;
+    };
+
+    setMasterExceptions((prev) => {
+      const existingIndex = prev.findIndex(
+        (item) => getExceptionDateValue(item) === dateKey,
+      );
+
+      if (existingIndex >= 0) {
+        return prev.map((item, index) =>
+          index === existingIndex ? applyScheduleChange(item) : item,
+        );
+      }
+
+      const newItem = applyScheduleChange({
+        ...createEmptyException(),
+        date: dateKey,
+      });
+
+      return sortExceptions([...prev, newItem]);
+    });
+  }
+
+  function closeScheduleSelection() {
+    setScheduleMultiSelect(false);
+    setSelectedScheduleDates([]);
+    setScheduleEditorOpen(false);
+  }
+
+  function shiftScheduleMonth(amount) {
+    setScheduleMonthDate((prev) => addMonths(prev, amount));
+    closeScheduleSelection();
+  }
+
+  function resetScheduleMonthToToday() {
+    const now = new Date();
+    setScheduleMonthDate(new Date(now.getFullYear(), now.getMonth(), 1));
+    closeScheduleSelection();
+  }
+
+  function toggleScheduleDate(dateKey) {
+    if (!scheduleMultiSelect) {
+      const current = getScheduleItemForDate(dateKey);
+
+      setBulkScheduleDraft(getBulkDraftFromItem(current.item));
+      setSelectedScheduleDates([dateKey]);
+      setScheduleEditorOpen(true);
+      return;
+    }
+
+    setScheduleEditorOpen(false);
+    setSelectedScheduleDates((prev) =>
+      prev.includes(dateKey)
+        ? prev.filter((key) => key !== dateKey)
+        : [...prev, dateKey],
+    );
+  }
+
+  function toggleScheduleWeekday(monthDays, weekdayIndex) {
+    const keys = monthDays
+      .filter((day) => day.isCurrentMonth && day.weekdayIndex === weekdayIndex)
+      .map((day) => day.dateKey);
+
+    setScheduleMultiSelect(true);
+    setScheduleEditorOpen(false);
+    setSelectedScheduleDates((prev) => {
+      const allSelected = keys.every((key) => prev.includes(key));
+
+      if (allSelected) {
+        return prev.filter((key) => !keys.includes(key));
+      }
+
+      return [...new Set([...prev, ...keys])];
+    });
+  }
+
+  function quickSelectWorkdays(monthDays) {
+    const keys = monthDays
+      .filter((day) => day.isCurrentMonth && day.weekdayIndex < 5)
+      .map((day) => day.dateKey);
+
+    setScheduleMultiSelect(true);
+    setScheduleEditorOpen(false);
+    setSelectedScheduleDates(keys);
+  }
+
+  function openScheduleEditorForSelectedDates() {
+    if (!selectedScheduleDates.length) return;
+
+    const current = getScheduleItemForDate(selectedScheduleDates[0]);
+
+    setBulkScheduleDraft(getBulkDraftFromItem(current.item));
+    setScheduleEditorOpen(true);
+  }
+
+  function getScheduleTimeLines(item) {
+    if (!item.enabled) return ["Вихідний"];
+
+    const start = parseTimeToHHMM(item.start) || item.start || "--:--";
+    const end = parseTimeToHHMM(item.end) || item.end || "--:--";
+    const breakStart = getExceptionBreakStart(item);
+    const breakEnd = getExceptionBreakEnd(item);
+
+    if (breakStart && breakEnd) {
+      return [
+        `${start} – ${parseTimeToHHMM(breakStart) || breakStart}`,
+        `${parseTimeToHHMM(breakEnd) || breakEnd} – ${end}`,
+      ];
+    }
+
+    return [`${start} – ${end}`];
+  }
+
+  function buildBulkScheduleItem(dateKey, enabled) {
+    const current = getScheduleItemForDate(dateKey);
+
+    return {
+      ...current.item,
+      date: dateKey,
+      enabled,
+      start: enabled ? bulkScheduleDraft.start : current.item.start,
+      end: enabled ? bulkScheduleDraft.end : current.item.end,
+      breakStart: enabled ? bulkScheduleDraft.breakStart : "",
+      breakEnd: enabled ? bulkScheduleDraft.breakEnd : "",
+    };
+  }
+
+  function updateBulkScheduleField(field, value) {
+    setBulkScheduleDraft((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  }
+
+  function updateBulkScheduleBreak(enabled) {
+    setBulkScheduleDraft((prev) => ({
+      ...prev,
+      breakStart: enabled ? prev.breakStart || "12:00" : "",
+      breakEnd: enabled ? prev.breakEnd || "13:00" : "",
+    }));
+  }
+
+  function pickScheduleEntry(source, day) {
+    if (!source) return null;
+
+    const weekdayKeys = [
+      "monday",
+      "tuesday",
+      "wednesday",
+      "thursday",
+      "friday",
+      "saturday",
+      "sunday",
+    ];
+    const shortWeekdayKeys = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+    const ukWeekdayKeys = [
+      "Понеділок",
+      "Вівторок",
+      "Середа",
+      "Четвер",
+      "П'ятниця",
+      "Субота",
+      "Неділя",
+    ];
+    const weekdayKey = weekdayKeys[day.weekdayIndex];
+
+    if (Array.isArray(source)) {
+      return (
+        source.find((item) => {
+          const rawDay = String(
+            item?.date ??
+              item?.day ??
+              item?.weekday ??
+              item?.dayOfWeek ??
+              item?.name ??
+              "",
+          ).toLowerCase();
+
+          return (
+            String(item?.date || "").slice(0, 10) === day.dateKey ||
+            Number(item?.dayOfWeek) === day.weekdayIndex + 1 ||
+            Number(item?.dayOfWeek) === (day.weekdayIndex + 1) % 7 ||
+            Number(item?.weekday) === day.weekdayIndex ||
+            Number(item?.weekday) === day.weekdayIndex + 1 ||
+            rawDay === weekdayKey ||
+            rawDay === shortWeekdayKeys[day.weekdayIndex] ||
+            rawDay === ukWeekdayKeys[day.weekdayIndex].toLowerCase()
+          );
+        }) || null
+      );
+    }
+
+    if (typeof source === "object") {
+      return (
+        source[day.dateKey] ||
+        source[weekdayKey] ||
+        source[shortWeekdayKeys[day.weekdayIndex]] ||
+        source[ukWeekdayKeys[day.weekdayIndex]] ||
+        source[String(day.weekdayIndex)] ||
+        source[String(day.weekdayIndex + 1)] ||
+        null
+      );
+    }
+
+    return null;
+  }
+
+  function getStudioScheduleSources(sourceStudio) {
+    const roots = [
+      sourceStudio?.schedule,
+      sourceStudio?.workSchedule,
+      sourceStudio?.workingHours,
+      sourceStudio?.workingSchedule,
+      sourceStudio?.workHours,
+      sourceStudio?.hours,
+      sourceStudio?.openingHours,
+      sourceStudio?.businessHours,
+      sourceStudio?.studioSchedule,
+      sourceStudio?.scheduleSettings,
+      sourceStudio?.settings?.schedule,
+      sourceStudio?.settings?.workSchedule,
+      sourceStudio?.settings?.workingHours,
+      sourceStudio?.settings?.workingSchedule,
+      sourceStudio?.settings?.workHours,
+      sourceStudio?.settings?.hours,
+      sourceStudio?.settings?.openingHours,
+      sourceStudio?.settings?.businessHours,
+    ];
+
+    return roots.flatMap((source) =>
+      source
+        ? [
+            source,
+            source?.days,
+            source?.weekdays,
+            source?.weekDays,
+            source?.workingDays,
+            source?.items,
+            source?.entries,
+            source?.schedule,
+          ].filter(Boolean)
+        : [],
+    );
+  }
+
+  function hasStudioSchedulePayload(sourceStudio) {
+    return getStudioScheduleSources(sourceStudio).length > 0;
+  }
+
+  function normalizeStudioPayload(data) {
+    const direct = data?.studio || data?.data?.studio || data?.data || data;
+    const list =
+      (Array.isArray(data) ? data : null) ||
+      (Array.isArray(data?.data) ? data.data : null) ||
+      data?.studios ||
+      data?.data?.studios ||
+      data?.items ||
+      data?.data?.items ||
+      null;
+
+    if (hasStudioSchedulePayload(direct)) return direct;
+
+    if (Array.isArray(list)) {
+      return (
+        list.find((item) => String(item?.id) === String(studio?.id)) ||
+        list.find(hasStudioSchedulePayload) ||
+        direct
+      );
+    }
+
+    return direct;
+  }
+
+  async function fetchStudioScheduleFromDb() {
+    const studioFromContext = normalizeStudioPayload(studio);
+
+    if (hasStudioSchedulePayload(studioFromContext)) {
+      return studioFromContext;
+    }
+
+    if (!studio?.id) {
+      throw new Error("\u041d\u0435 \u0432\u0434\u0430\u043b\u043e\u0441\u044f \u0432\u0438\u0437\u043d\u0430\u0447\u0438\u0442\u0438 \u0441\u0442\u0443\u0434\u0456\u044e");
+    }
+
+    const token = localStorage.getItem("token");
+    const headers = {
+      Authorization: `Bearer ${token}`,
+    };
+    const urls = [
+      `${import.meta.env.VITE_API_URL}/studio/${studio.id}/schedule`,
+      `${import.meta.env.VITE_API_URL}/studio/${studio.id}`,
+      `${import.meta.env.VITE_API_URL}/studios/${studio.id}`,
+      `${import.meta.env.VITE_API_URL}/studio/me`,
+      `${import.meta.env.VITE_API_URL}/studio/profile`,
+      `${import.meta.env.VITE_API_URL}/studio`,
+      `${import.meta.env.VITE_API_URL}/studios`,
+    ];
+    let lastMessage = "";
+
+    for (const url of urls) {
+      try {
+        const res = await fetch(url, { headers });
+        const data = await res.json().catch(() => null);
+
+        if (!res.ok) {
+          lastMessage = data?.message || lastMessage;
+          continue;
+        }
+
+        const studioFromDb = normalizeStudioPayload(data);
+
+        if (hasStudioSchedulePayload(studioFromDb)) {
+          return studioFromDb;
+        }
+      } catch (error) {
+        lastMessage = error?.message || lastMessage;
+      }
+    }
+
+    throw new Error(
+      lastMessage ||
+        "\u0423 \u0441\u0442\u0443\u0434\u0456\u0457 \u043d\u0435 \u0437\u043d\u0430\u0439\u0434\u0435\u043d\u043e \u0437\u0431\u0435\u0440\u0435\u0436\u0435\u043d\u0438\u0439 \u0433\u0440\u0430\u0444\u0456\u043a",
+    );
+  }
+
+  function getStudioScheduleForDay(day, sourceStudio = studio) {
+    const raw = getStudioScheduleSources(sourceStudio)
+      .map((source) => pickScheduleEntry(source, day))
+      .find(Boolean);
+
+    if (!raw) return null;
+
+    const isClosed =
+      raw.closed === true ||
+      raw.enabled === false ||
+      raw.isWorking === false ||
+      raw.working === false ||
+      raw.isOpen === false ||
+      raw.open === false;
+
+    if (isClosed) {
+      return {
+        enabled: false,
+        start: "09:00",
+        end: "18:00",
+        breakStart: "",
+        breakEnd: "",
+      };
+    }
+
+    const start = parseTimeToHHMM(
+      raw?.start ||
+        raw?.startTime ||
+        raw?.from ||
+        raw?.fromTime ||
+        (typeof raw?.open === "string" ? raw.open : "") ||
+        raw?.openTime ||
+        raw?.opensAt ||
+        raw?.workStart,
+    );
+    const end = parseTimeToHHMM(
+      raw?.end ||
+        raw?.endTime ||
+        raw?.to ||
+        raw?.toTime ||
+        raw?.close ||
+        raw?.closeTime ||
+        raw?.closesAt ||
+        raw?.workEnd,
+    );
+
+    if (!start || !end) return null;
+
+    const breakStart = parseTimeToHHMM(
+      getExceptionBreakStart(raw) ||
+        raw?.breakFrom ||
+        raw?.pauseFrom ||
+        raw?.lunchFrom ||
+        raw?.break?.from ||
+        raw?.pause?.start ||
+        raw?.lunch?.start ||
+        raw?.breaks?.[0]?.start,
+    );
+    const breakEnd = parseTimeToHHMM(
+      getExceptionBreakEnd(raw) ||
+        raw?.breakTo ||
+        raw?.pauseTo ||
+        raw?.lunchTo ||
+        raw?.break?.to ||
+        raw?.pause?.end ||
+        raw?.lunch?.end ||
+        raw?.breaks?.[0]?.end,
+    );
+
+    return {
+      enabled: true,
+      start,
+      end,
+      breakStart: breakStart || "",
+      breakEnd: breakEnd || "",
+    };
+  }
+
+  async function applyStudioScheduleToMonth(monthDays) {
+    if (bulkSaving) return;
+
+    setBulkSaving(true);
+
+    try {
+      const studioFromDb = await fetchStudioScheduleFromDb();
+      const items = monthDays
+        .filter((day) => day.isCurrentMonth)
+        .map((day) => {
+          const current = getScheduleItemForDate(day.dateKey);
+          const studioSchedule = getStudioScheduleForDay(day, studioFromDb);
+
+          if (!studioSchedule) {
+            throw new Error(
+              `Не знайдено графік студії для ${getScheduleDayTitle(day.date)}`,
+            );
+          }
+
+          return {
+            index: current.index,
+            item: {
+              ...current.item,
+              date: day.dateKey,
+              ...studioSchedule,
+            },
+          };
+        });
+
+      const invalidItem = items.find(({ item }) => !isExceptionValid(item));
+
+      if (invalidItem) {
+        throw new Error(
+          "\u041f\u0435\u0440\u0435\u0432\u0456\u0440\u0442\u0435 \u0433\u0440\u0430\u0444\u0456\u043a \u0441\u0442\u0443\u0434\u0456\u0457: \u0433\u043e\u0434\u0438\u043d\u0438 \u0430\u0431\u043e \u043f\u0435\u0440\u0435\u0440\u0432\u0430 \u0437\u0430\u043f\u043e\u0432\u043d\u0435\u043d\u0456 \u043d\u0435\u043a\u043e\u0440\u0435\u043a\u0442\u043d\u043e",
+        );
+      }
+
+      for (const { item, index } of items) {
+        await persistScheduleException(item, index);
+      }
+
+      await syncScheduleAfterSave();
+      closeScheduleSelection();
+    } catch (error) {
+      alert(error?.message || "Не вдалося застосувати графік студії");
+    } finally {
+      setBulkSaving(false);
+    }
   }
 
 
@@ -1427,7 +2009,13 @@ function getBookingMasterPhoto(booking, fallbackMaster) {
     setExceptionsMaster(master);
     setExceptionsModalOpen(true);
     setExceptionsLoading(true);
-    setExpandedExceptions({});
+    setScheduleMultiSelect(false);
+    setSelectedScheduleDates([]);
+    setScheduleEditorOpen(false);
+    setScheduleMonthDate(() => {
+      const now = new Date();
+      return new Date(now.getFullYear(), now.getMonth(), 1);
+    });
 
     try {
       const token = localStorage.getItem("token");
@@ -1451,16 +2039,14 @@ function getBookingMasterPhoto(booking, fallbackMaster) {
         ? data.exceptions.map((item) => ({
             ...item,
             date: String(item?.date || "").slice(0, 10),
+            enabled: item?.enabled !== false,
+            breakStart: getExceptionBreakStart(item),
+            breakEnd: getExceptionBreakEnd(item),
             isNew: false,
           }))
         : [];
 
-      const cleanedExceptions = await deleteExpiredMasterExceptions(
-        master.id,
-        rawExceptions,
-      );
-
-      setMasterExceptions(sortExceptions(cleanedExceptions));
+      setMasterExceptions(sortExceptions(rawExceptions));
     } catch (error) {
       alert(error?.message || "Помилка завантаження");
     } finally {
@@ -1468,39 +2054,17 @@ function getBookingMasterPhoto(booking, fallbackMaster) {
     }
   }
 
-  function addExceptionRow() {
-    const newItem = createEmptyException();
-
-    setMasterExceptions((prev) => {
-      const next = sortExceptions([...prev, newItem]);
-      const newIndex = next.findIndex((item) => item === newItem);
-      const key = getExceptionKey(newItem, newIndex);
-
-      setTimeout(() => {
-        setExpandedExceptions((prevExpanded) => ({
-          ...prevExpanded,
-          [key]: true,
-        }));
-      }, 0);
-
-      return next;
-    });
-  }
-
-  function updateException(index, field, value) {
-    setMasterExceptions((prev) =>
-      prev.map((item, i) => (i === index ? { ...item, [field]: value } : item)),
-    );
-  }
-
-  async function saveException(item, index) {
-    if (!exceptionsMaster?.id) return;
+  async function persistScheduleException(item, index) {
+    if (!exceptionsMaster?.id) return null;
 
     const token = localStorage.getItem("token");
 
     if (!item.date) {
-      alert("Оберіть дату");
-      return;
+      throw new Error("Оберіть дату");
+    }
+
+    if (!isExceptionValid(item)) {
+      throw new Error("Перевірте години роботи та перерви");
     }
 
     const body = {
@@ -1508,6 +2072,8 @@ function getBookingMasterPhoto(booking, fallbackMaster) {
       enabled: item.enabled,
       start: item.enabled ? item.start : null,
       end: item.enabled ? item.end : null,
+      breakStart: item.enabled ? getExceptionBreakStart(item) || null : null,
+      breakEnd: item.enabled ? getExceptionBreakEnd(item) || null : null,
     };
 
     const url = item.id
@@ -1528,98 +2094,87 @@ function getBookingMasterPhoto(booking, fallbackMaster) {
     const data = await res.json().catch(() => null);
 
     if (!res.ok) {
-      alert(data?.message || "Не вдалося зберегти");
-      return;
+      throw new Error(data?.message || "Не вдалося зберегти");
     }
+
+    const savedException = {
+      ...(data?.exception || item),
+      date: String(data?.exception?.date || item.date || "").slice(0, 10),
+      breakStart:
+        getExceptionBreakStart(data?.exception) || getExceptionBreakStart(item),
+      breakEnd: getExceptionBreakEnd(data?.exception) || getExceptionBreakEnd(item),
+      isNew: false,
+      isGenerated: false,
+    };
 
     setMasterExceptions((prev) => {
       const next = sortExceptions(
-        prev.map((row, i) =>
-          i === index
-            ? {
-                ...data.exception,
-                isNew: false,
-              }
-            : row,
-        ),
+        index >= 0
+          ? prev.map((row, i) => (i === index ? savedException : row))
+          : [
+              ...prev.filter(
+                (row) => getExceptionDateValue(row) !== savedException.date,
+              ),
+              savedException,
+            ],
       );
-
-      const savedIndex = next.findIndex(
-        (row) =>
-          row.id === data.exception?.id ||
-          (!row.id && row.date === data.exception?.date),
-      );
-
-      const nextKey =
-        savedIndex >= 0
-          ? getExceptionKey(next[savedIndex], savedIndex)
-          : getExceptionKey(data.exception, index);
-
-      setTimeout(() => {
-        setExpandedExceptions((prevExpanded) => {
-          const updated = { ...prevExpanded };
-          Object.keys(updated).forEach((k) => {
-            if (k.includes(item.date || "")) delete updated[k];
-          });
-          updated[nextKey] = false;
-          return updated;
-        });
-      }, 0);
 
       return next;
     });
 
-await queryClient.invalidateQueries({
-  queryKey: ["masters", studioId],
-  exact: true,
-});
-
-await mastersQuery.refetch();
+    return savedException;
   }
 
-
-  async function removeException(item, index) {
-    if (!exceptionsMaster?.id) return;
-
-if (!item.id) {
-  setMasterExceptions((prev) => prev.filter((_, i) => i !== index));
-
-  await queryClient.invalidateQueries({
-    queryKey: ["masters", studioId],
-    exact: true,
-  });
-
-  await mastersQuery.refetch();
-
-  return;
-}
-
-    const token = localStorage.getItem("token");
-
-    const res = await fetch(
-      `${import.meta.env.VITE_API_URL}/studio/masters/${exceptionsMaster.id}/schedule/exceptions/${item.id}`,
-      {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      },
-    );
-
-    const data = await res.json().catch(() => null);
-
-    if (!res.ok) {
-      alert(data?.message || "Не вдалося видалити");
-      return;
-    }
-
-    setMasterExceptions((prev) => prev.filter((_, i) => i !== index));
+  async function syncScheduleAfterSave() {
     await queryClient.invalidateQueries({
-  queryKey: ["masters", studioId],
-  exact: true,
-});
+      queryKey: ["masters", studioId],
+      exact: true,
+    });
 
-await mastersQuery.refetch();
+    await mastersQuery.refetch();
+  }
+
+  async function saveException(item, index) {
+    try {
+      await persistScheduleException(item, index);
+      await syncScheduleAfterSave();
+    } catch (error) {
+      alert(error?.message || "Не вдалося зберегти");
+    }
+  }
+
+  async function applyBulkSchedule(enabled = bulkScheduleDraft.enabled) {
+    if (!selectedScheduleDates.length || bulkSaving) return;
+
+    setBulkSaving(true);
+
+    try {
+      const items = selectedScheduleDates.map((dateKey) => {
+        const current = getScheduleItemForDate(dateKey);
+        return {
+          item: buildBulkScheduleItem(dateKey, enabled),
+          index: current.index,
+        };
+      });
+
+      const invalidItem = items.find(({ item }) => !isExceptionValid(item));
+
+      if (invalidItem) {
+        alert("Перевірте години роботи та перерви");
+        return;
+      }
+
+      for (const { item, index } of items) {
+        await persistScheduleException(item, index);
+      }
+
+      await syncScheduleAfterSave();
+      closeScheduleSelection();
+    } catch (error) {
+      alert(error?.message || "Не вдалося застосувати графік");
+    } finally {
+      setBulkSaving(false);
+    }
   }
 
   function openEdit(master) {
@@ -1747,7 +2302,7 @@ async function confirmCrop() {
     "w-full rounded-2xl border border-[#eadbc9] bg-white px-4 py-3 " +
     "text-sm font-semibold text-[#202020] outline-none transition-all " +
     "placeholder:text-[#9b948c] " +
-    "hover:bg-[#fff7f0] hover:border-[#ffd6bd] " +
+    "hover:!bg-[#fff7f0] hover:!border-[#ffd6bd] " +
     "focus:border-[#ff5a00] focus:ring-4 focus:ring-[#ff5a00]/10";
 
   async function saveEdit() {
@@ -2009,7 +2564,7 @@ worksheet["!rows"] = [
   <button
     type="button"
     onClick={() => setInfoOpen(true)}
-    className="grid !px-0 h-10 w-10 place-items-center rounded-full text-[#ff6200] transition-all  hover:bg-[#fff7f0] active:scale-95 "
+    className="grid !px-0 h-10 w-10 place-items-center rounded-full text-[#ff6200] transition-all  hover:!bg-[#fff7f0] active:scale-95 "
     title="Інформація"
   >
     <CircleAlert className="h-5 w-5" />
@@ -2159,7 +2714,7 @@ const activeExceptionsCount =
   return (
 <article
   key={m.id}
-  className="group/masterCard overflow-hidden rounded-[18px] border border-[#eadbc9] bg-white shadow-[0_10px_30px_rgba(17,17,17,0.04)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#ffd6bd] hover:bg-[#fff7f0] "
+  className="group/masterCard overflow-hidden rounded-[18px] border border-[#eadbc9] bg-white shadow-[0_10px_30px_rgba(17,17,17,0.04)] transition-all duration-200 hover:-translate-y-0.5 hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] "
 >
                     <div className="px-3">
 <button
@@ -2222,9 +2777,9 @@ const activeExceptionsCount =
 <button
   type="button"
   onClick={() => openMasterExceptions(m)}
-  className="relative grid h-11 place-items-center text-[#657084] transition hover:bg-[#fff7f0] hover:text-[#ff6200]"
-  title="Особливі дні"
-  aria-label="Особливі дні"
+  className="relative grid h-11 place-items-center text-[#657084] transition hover:!bg-[#fff7f0] hover:text-[#ff6200]"
+  title="Особливі дати"
+  aria-label="Особливі дати"
 >
   <CalendarDays className="h-4 w-4" />
 
@@ -2242,7 +2797,7 @@ onClick={() => {
   setVisibleMasterBookingsCount(10);
   setBookingsModalOpen(true);
 }}
-  className="grid h-11 place-items-center border-l border-[#edf0f4] text-[#657084] transition hover:bg-[#fff7f0] hover:text-[#ff6200]"
+  className="grid h-11 place-items-center border-l border-[#edf0f4] text-[#657084] transition hover:!bg-[#fff7f0] hover:text-[#ff6200]"
   title="Записи майстра"
   aria-label="Записи майстра"
 >
@@ -2252,7 +2807,7 @@ onClick={() => {
                       <button
                         type="button"
                         onClick={() => openEdit(m)}
-                        className="grid h-11 place-items-center border-x border-[#edf0f4] text-[#657084] transition hover:bg-[#fff7f0] hover:text-[#ff6200]"
+                        className="grid h-11 place-items-center border-x border-[#edf0f4] text-[#657084] transition hover:!bg-[#fff7f0] hover:text-[#ff6200]"
                         title="Редагувати"
                         aria-label="Редагувати"
                       >
@@ -2327,7 +2882,7 @@ onClick={() => {
 
               <div className="flex flex-wrap items-center gap-2">
                 <label className="cursor-pointer">
-                  <span className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[#eadbc9] bg-white px-4 py-2.5 text-sm font-black text-[#202020] transition hover:border-[#ffd6bd] hover:bg-[#fff7f0]">
+                  <span className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[#eadbc9] bg-white px-4 py-2.5 text-sm font-black text-[#202020] transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0]">
                     <Camera className="h-4 w-4" />
                     Додати фото
                   </span>
@@ -2427,7 +2982,7 @@ onClick={() => {
 
               <div className="flex flex-wrap items-center gap-2">
                 <label className="cursor-pointer">
-                  <span className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[#eadbc9] bg-white px-4 py-2.5 text-sm font-black text-[#202020] transition hover:border-[#ffd6bd] hover:bg-[#fff7f0]">
+                  <span className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[#eadbc9] bg-white px-4 py-2.5 text-sm font-black text-[#202020] transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0]">
                     <Pencil className="h-4 w-4" />
                     Змінити фото
                   </span>
@@ -2514,241 +3069,637 @@ onClick={() => {
             setExceptionsModalOpen(false);
             setExceptionsMaster(null);
             setMasterExceptions([]);
-            setExpandedExceptions({});
+            closeScheduleSelection();
           }}
           title={`Особливі дати — ${exceptionsMaster?.name || ""}`}
-          subtitle="Керуйте індивідуальним графіком майстра на конкретні дати."
-          size="md"
-          footer={
-            <div className="flex justify-end">
-              <Button
-                variant="primary"
-                onClick={addExceptionRow}
-                className="w-full justify-center whitespace-nowrap sm:w-auto sm:shrink-0"
-              >
-                <CalendarDays className="h-4 w-4" />
-                Додати дату
-              </Button>
-            </div>
-          }
+          subtitle="Налаштовуйте графік майстра на місяць."
+          badge="Графік"
+          icon={CalendarDays}
+          size="xl"
         >
           {exceptionsLoading ? (
             <div className="space-y-3">
-              {Array.from({ length: 2 }).map((_, i) => (
+              {Array.from({ length: 6 }).map((_, i) => (
                 <div
                   key={i}
                   className="rounded-[24px] border border-[#eadbc9] bg-white p-4"
                 >
                   <SkeletonBlock className="h-5 w-44" />
-                  <SkeletonBlock className="mt-2 h-4 w-36" />
+                  <SkeletonBlock className="mt-3 h-12 w-full" />
                 </div>
               ))}
             </div>
-          ) : masterExceptions.length === 0 ? (
-<div className="rounded-[28px] border-2 border-dashed border-[#ffd6bd] bg-[#fffaf6] px-5 py-8 text-center">
-  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-[#ffd6bd] bg-white text-[#ff6200] shadow-sm">
-    <CalendarDays className="h-7 w-7" />
+          ) : (
+            (() => {
+              const weekdayLabels = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"];
+              const monthDays = buildMasterScheduleMonth(scheduleMonthDate);
+              const currentMonthDays = monthDays.filter((day) => day.isCurrentMonth);
+              const workingDays = currentMonthDays.filter(
+                (day) => day.item.enabled,
+              ).length;
+              const daysOff = currentMonthDays.length - workingDays;
+              const totalBookings = currentMonthDays.reduce(
+                (sum, day) => sum + day.bookingsCount,
+                0,
+              );
+              const selectedCount = selectedScheduleDates.length;
+              const selectedDays = selectedScheduleDates
+                .map((dateKey) => monthDays.find((day) => day.dateKey === dateKey))
+                .filter(Boolean);
+              const selectedLabel =
+                selectedCount === 1 && selectedDays[0]
+                  ? getScheduleDayTitle(selectedDays[0].date)
+                  : `${selectedCount} днів`;
+              const bulkHasBreak = Boolean(
+                bulkScheduleDraft.breakStart && bulkScheduleDraft.breakEnd,
+              );
+
+              return (
+                <div className="relative text-[#202020] ">
+<div className="mt-6 grid w-full gap-4 lg:grid-cols-[minmax(0,455px)_minmax(320px,450px)] lg:items-start lg:justify-center lg:gap-x-2">
+  {/* Ліва колонка: статистика + дата */}
+  <div className="min-w-0">
+    <div className="grid grid-cols-3 gap-2">
+      <div className="flex h-12 items-center justify-center rounded-2xl bg-white px-3 text-center text-sm font-black text-[#77716b]">
+        {workingDays} робочих
+      </div>
+
+      <div className="flex h-12 items-center justify-center rounded-2xl bg-[#fff1e8] px-3 text-center text-sm font-black text-[#ff5a00]">
+        {daysOff} вихідних
+      </div>
+
+      <div className="flex h-12 items-center justify-center rounded-2xl bg-white px-3 text-center text-sm font-black text-[#77716b]">
+        {totalBookings} записів
+      </div>
+    </div>
+
+    <div className="mt-4 grid grid-cols-[64px_minmax(0,1fr)_64px] items-center gap-2">
+      <button
+        type="button"
+        onClick={() => shiftScheduleMonth(-1)}
+        className="grid h-[60px] place-items-center rounded-2xl border border-[#eadbc9] bg-white text-[#202020] transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] hover:text-[#ff6200]"
+        aria-label="Попередній місяць"
+      >
+        <ChevronRight className="h-5 w-5 rotate-180" />
+      </button>
+
+      <button
+        type="button"
+        onClick={resetScheduleMonthToToday}
+        className="flex h-[60px] min-w-0 items-center justify-center gap-3 rounded-2xl border border-[#eadbc9] bg-white px-4 text-center transition "
+      >
+        <CalendarDays className="h-5 w-5 shrink-0 text-[#ff6200]" />
+
+        <span className="truncate text-[18px] font-black capitalize tracking-[-0.03em] text-[#202020]">
+          {getMonthTitle(scheduleMonthDate)}
+        </span>
+      </button>
+
+      <button
+        type="button"
+        onClick={() => shiftScheduleMonth(1)}
+        className="grid h-[60px] place-items-center rounded-2xl border border-[#eadbc9] bg-white text-[#202020] transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] hover:text-[#ff6200]"
+        aria-label="Наступний місяць"
+      >
+        <ChevronRight className="h-5 w-5" />
+      </button>
+    </div>
   </div>
 
-  <h4 className="mt-4 text-base font-black text-[#202020]">
-    Немає особливих дат
-  </h4>
+{/* Права колонка: кнопки */}
+<div
+  className={cn(
+    "grid gap-3 lg:pt-0",
+    scheduleMultiSelect
+      ? "grid-cols-2 md:grid-cols-[1.35fr_0.85fr_0.85fr] lg:grid-cols-2"
+      : "grid-cols-1 md:grid-cols-2 lg:grid-cols-1",
+  )}
+>
+  <button
+    type="button"
+    onClick={() => applyStudioScheduleToMonth(monthDays)}
+    disabled={bulkSaving}
+    className={cn(
+      "inline-flex min-h-[60px] w-full items-center justify-center gap-3 rounded-2xl border border-[#eadbc9] bg-white px-5 text-center text-[16px] font-black leading-tight text-[#202020] transition hover:border-[#ffd6bd] hover:bg-[#fff7f0] hover:text-[#ff6200] disabled:opacity-60",
+      scheduleMultiSelect && "col-span-2 md:col-span-1 lg:col-span-2",
+    )}
+  >
+    
+    <Building2 className="h-5 w-5 shrink-0" />
 
-  <p className="mx-auto mt-1.5 max-w-[280px] text-sm font-semibold leading-5 text-[#77716b]">
-    Для цього майстра ще не додано індивідуальний графік або вихідні дні.
-  </p>
+    <span>
+      Автоматично заповнити
+      <br />
+      за графіком студії
+    </span>
+  </button>
+
+  <button
+    type="button"
+    onClick={() => {
+      if (!scheduleMultiSelect) {
+        setScheduleMultiSelect(true);
+        setSelectedScheduleDates([]);
+        setScheduleEditorOpen(false);
+      }
+    }}
+    className={cn(
+      "inline-flex h-[56px] w-full items-center justify-center gap-2 rounded-2xl border px-3 text-[14px] font-black transition sm:h-[60px] sm:px-4 sm:text-[15px]",
+      scheduleMultiSelect
+        ? "border-[#ff6200] bg-[#fff1e8] text-[#ff6200]"
+        : "border-[#eadbc9] bg-white text-[#202020] hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] hover:text-[#ff6200]",
+    )}
+  >
+    <ClipboardPen className="h-4 w-4 shrink-0" />
+    <span className="truncate">Множинний вибір</span>
+  </button>
+
+  {scheduleMultiSelect && (
+    <button
+      type="button"
+      onClick={closeScheduleSelection}
+      className="inline-flex h-[56px] w-full items-center justify-center gap-2 rounded-2xl border border-[#eadbc9] bg-white px-3 text-[14px] font-black text-[#202020] transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] hover:text-[#ff6200] sm:h-[60px] sm:px-4 sm:text-[15px]"
+    >
+      <X className="h-4 w-4 shrink-0" />
+      <span className="truncate">Скасувати</span>
+    </button>
+  )}
 </div>
-          ) : (
-            <div className="space-y-3">
-              {masterExceptions.map((item, index) => {
-                const isValid = isExceptionValid(item);
-                const exceptionKey = getExceptionKey(item, index);
-                const isExpanded =
-                  item.isNew || expandedExceptions[exceptionKey] === true;
+</div>
 
-                return (
+                  <div className="mt-5 hidden grid-cols-7 gap-3 lg:grid">
+                    {weekdayLabels.map((label, index) => {
+                      const weekdayKeys = currentMonthDays
+                        .filter((day) => day.weekdayIndex === index)
+                        .map((day) => day.dateKey);
+                      const allSelected =
+                        weekdayKeys.length > 0 &&
+                        weekdayKeys.every((key) =>
+                          selectedScheduleDates.includes(key),
+                        );
+
+                      return (
+                        <button
+                          key={label}
+                          type="button"
+                          onClick={() =>
+                            scheduleMultiSelect &&
+                            toggleScheduleWeekday(monthDays, index)
+                          }
+                          className={cn(
+                            "flex h-9 items-center justify-center gap-2 rounded-xl text-xs font-bold text-[#77716b]",
+                            scheduleMultiSelect && "hover:!bg-[#fff7f0]",
+                          )}
+                        >
+                          {scheduleMultiSelect && (
+                            <span
+                              className={cn(
+                                "grid h-7 w-7 place-items-center rounded-lg border transition",
+                                allSelected
+                                  ? "border-[#41a85f] bg-[#41a85f] text-white"
+                                  : "border-[#eadbc9] bg-white text-transparent",
+                              )}
+                            >
+                              <Check className="h-4 w-4" />
+                            </span>
+                          )}
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+
                   <div
-                    key={exceptionKey}
-                    className="overflow-hidden rounded-[24px] border border-[#eadbc9] bg-white shadow-[0_12px_32px_rgba(17,17,17,0.05)]"
+                    className={cn(
+                      "mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:hidden",
+                      scheduleMultiSelect && selectedCount > 0 && !scheduleEditorOpen
+                        ? "pb-28"
+                        : "pb-4 sm:pb-5",
+                    )}
                   >
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (item.isNew) return;
+                    {currentMonthDays.map((day) => {
+                      const item = day.item;
+                      const isSelected = selectedScheduleDates.includes(day.dateKey);
+                      const lines = getScheduleTimeLines(item);
+                      const isDayOff = !item.enabled;
 
-                        setExpandedExceptions((prev) => ({
-                          ...prev,
-                          [exceptionKey]: !prev[exceptionKey],
-                        }));
-                      }}
-                      className={cn(
-                        "flex w-full items-start justify-between gap-3 p-4 text-left transition-colors",
-                        !item.isNew && "hover:bg-[#fff7f0]",
-                      )}
-                    >
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-[15px] font-black text-[#202020]">
-                            {item.date
-                              ? formatExceptionDate(item.date)
-                              : "Нова особлива дата"}
-                          </p>
+                      return (
+                        <button
+                          key={day.dateKey}
+                          type="button"
+                          onClick={() => toggleScheduleDate(day.dateKey)}
+                          className={cn(
+                            "flex min-h-[74px] w-full items-center justify-between gap-3 rounded-[14px] border px-4 py-3 text-left transition-all duration-200",
+                            isDayOff
+                              ? "border-[#ffd6bd] bg-[#fff1e8] text-[#ff5a00]"
+                              : "border-[#eadbc9] bg-white text-[#202020]",
+                            isSelected &&
+                              (scheduleMultiSelect
+                                ? "border-[#41a85f] shadow-[0_0_0_2px_rgba(65,168,95,0.18)]"
+                                : "border-[#ff6200] shadow-[0_0_0_2px_rgba(255,98,0,0.16)]"),
+                          )}
+                        >
+                          <div className="flex min-w-0 items-center gap-3">
+                            {scheduleMultiSelect && (
+                              <span
+                                className={cn(
+                                  "grid h-9 w-9 shrink-0 place-items-center rounded-xl border transition",
+                                  isSelected
+                                    ? "border-[#41a85f] bg-[#41a85f] text-white"
+                                    : "border-[#eadbc9] bg-white text-transparent",
+                                )}
+                              >
+                                <Check className="h-5 w-5" />
+                              </span>
+                            )}
 
-                          <div className="rounded-full border border-[#ffd6bd] bg-[#fff1e8] px-3 py-1 text-xs font-black text-[#ff5a00]">
-                            {item.enabled ? "Особливий графік" : "Вихідний"}
+                            <div className="min-w-0">
+                              <p
+                                className={cn(
+                                  "flex items-center gap-1.5 text-xs font-black capitalize",
+                                  isDayOff ? "text-[#ff5a00]" : "text-[#77716b]",
+                                )}
+                              >
+                                <CalendarDays className="h-3.5 w-3.5" />
+                                {day.weekday}
+                              </p>
+                              <p className="mt-1 text-sm font-black">
+                                {day.dayNumber}{" "}
+                                {new Intl.DateTimeFormat("uk-UA", {
+                                  month: "long",
+                                }).format(day.date)}
+                              </p>
+                            </div>
                           </div>
+
+                          <div
+                            className={cn(
+                              "shrink-0 text-right text-xs font-black leading-5",
+                              isDayOff ? "text-[#ff5a00]" : "text-[#202020]",
+                            )}
+                          >
+                            {lines.map((line, lineIndex) => {
+                              const LineIcon = isDayOff
+                                ? XCircle
+                                : lineIndex === 1
+                                  ? Coffee
+                                  : Clock;
+
+                              return (
+                                <p
+                                  key={line}
+                                  className="flex items-center justify-end gap-1.5"
+                                >
+                                  <LineIcon className="h-3.5 w-3.5" />
+                                  {line}
+                                </p>
+                              );
+                            })}
+                          </div>
+                        </button>
+                      );
+                    })}
+
+                  </div>
+
+                  <div className="mt-3 hidden grid-cols-7 gap-1 lg:grid">
+                    {monthDays.map((day) => {
+                      const item = day.item;
+                      const isSelected = selectedScheduleDates.includes(day.dateKey);
+                      const lines = getScheduleTimeLines(item);
+                      const isDayOff = !item.enabled;
+
+                      return (
+                        <button
+                          key={day.dateKey}
+                          type="button"
+                          disabled={!day.isCurrentMonth}
+                          onClick={() =>
+                            day.isCurrentMonth && toggleScheduleDate(day.dateKey)
+                          }
+                          className={cn(
+                            "relative flex min-h-[118px] flex-col items-center justify-start rounded-[12px] border p-3 text-center transition-all duration-200",
+                            day.isCurrentMonth
+                              ? "hover:-translate-y-0.5 hover:border-[#ffb784]"
+                              : "cursor-default border-[#eadbc9] bg-transparent opacity-45",
+                            day.isCurrentMonth &&
+                              (isDayOff
+                                ? "border-[#ffd6bd] bg-[#fff1e8] text-[#ff5a00]"
+                                : "border-[#eadbc9] bg-white text-[#202020]"),
+                            isSelected &&
+                              (scheduleMultiSelect
+                                ? "border-[#41a85f] bg-[#f4fbf6] shadow-[0_0_0_2px_rgba(65,168,95,0.18)]"
+                                : "border-[#ff6200] bg-[#fff7f0] shadow-[0_0_0_2px_rgba(255,98,0,0.18)]"),
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "grid h-6 min-w-6 place-items-center rounded-full px-1 text-sm font-black",
+                              day.isToday && "bg-[#ff6200] text-white",
+                              !day.isToday &&
+                                (isDayOff ? "text-[#ff5a00]" : "text-[#202020]"),
+                              !day.isCurrentMonth && "text-[#aaa19a]",
+                            )}
+                          >
+                            {day.dayNumber}
+                          </span>
+
+                          <span className="mt-2 h-px w-14 bg-[#eadbc9]" />
+
+                          <div className="mt-auto space-y-1 pb-2 text-[12px] font-black leading-tight">
+                            {lines.map((line, lineIndex) => {
+                              const LineIcon = isDayOff
+                                ? XCircle
+                                : lineIndex === 1
+                                  ? Coffee
+                                  : Clock;
+
+                              return (
+                                <p
+                                  key={line}
+                                  className="flex items-center justify-center gap-1.5"
+                                >
+                                  <LineIcon className="h-3.5 w-3.5" />
+                                  {line}
+                                </p>
+                              );
+                            })}
+                          </div>
+
+                          {day.bookingsCount > 0 && (
+                            <span className="absolute right-2 top-2 rounded-full bg-[#ff6200] px-1.5 py-0.5 text-[10px] font-black text-white">
+                              {day.bookingsCount}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {scheduleMultiSelect &&
+                    selectedCount > 0 &&
+                    !scheduleEditorOpen && (
+                      <div className="fixed inset-x-0 bottom-0 z-[10060] border-t border-[#eadbc9] bg-[#fbfaf8]/95 px-3 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_34px_rgba(15,23,42,0.12)] backdrop-blur sm:sticky sm:inset-x-auto sm:bottom-0 sm:mt-5 sm:rounded-[18px] sm:border sm:bg-white/95 sm:p-3">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="flex items-center gap-3">
+                            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#41a85f] text-white">
+                              <Check className="h-5 w-5" />
+                            </span>
+                            <div className="min-w-0">
+                              <p className="text-sm font-black text-[#202020]">
+                                {"\u0412\u0438\u0431\u0440\u0430\u043d\u043e"} {selectedCount}{" "}
+                                {"\u0434\u043d\u0456\u0432"}
+                              </p>
+                              <p className="truncate text-xs font-bold text-[#77716b]">
+                                {selectedLabel}
+                              </p>
+                            </div>
+                          </div>
+
+                          <Button
+                            variant="primary"
+                            onClick={openScheduleEditorForSelectedDates}
+                            className="h-12 w-full sm:w-auto sm:px-5"
+                          >
+                            <Clock className="h-4 w-4" />
+                            {"\u0412\u0441\u0442\u0430\u043d\u043e\u0432\u0438\u0442\u0438 \u0433\u0440\u0430\u0444\u0456\u043a"}
+                            <span className="hidden min-[390px]:inline">
+                              {"\u043d\u0430 \u0432\u0438\u0431\u0440\u0430\u043d\u0456 \u0434\u0430\u0442\u0438"}
+                            </span>
+                          </Button>
                         </div>
                       </div>
+                    )}
 
-                      <div className="flex shrink-0 items-center gap-2">
-                        {!item.isNew && (
-                          <span className="hidden text-xs font-semibold text-[#77716b] sm:inline">
-                            {isExpanded ? "Згорнути" : "Розгорнути"}
-                          </span>
-                        )}
-
-                        {!item.isNew &&
-                          (isExpanded ? (
-                            <ChevronUp className="h-5 w-5 shrink-0 text-[#ff5a00]" />
-                          ) : (
-                            <ChevronDown className="h-5 w-5 shrink-0 text-[#ff5a00]" />
-                          ))}
-                      </div>
-                    </button>
-
+                  {scheduleEditorOpen && selectedCount > 0 && (
                     <div
                       className={cn(
-                        "grid transition-all duration-300 ease-out",
-                        isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+                        "z-[10080] !bg-[#fbfaf8] text-[#202020]",
+                        "max-[639px]:fixed max-[639px]:inset-0 max-[639px]:flex max-[639px]:flex-col max-[639px]:p-4",
+                        "sm:sticky sm:bottom-0 sm:z-20 sm:mt-5 sm:rounded-[22px] sm:border sm:border-[#eadbc9] sm:bg-white/95 sm:p-3 sm:shadow-[0_16px_45px_rgba(15,23,42,0.12)] sm:backdrop-blur",
                       )}
                     >
-                      <div className="overflow-hidden">
-                        <div className="border-t border-[#eadbc9] bg-[#fffaf6] px-4 pb-4 pt-4">
-                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:items-end">
-                            <div className="min-w-0">
-                              <DatePicker
-                                label="Дата"
-                                value={item.date}
-                                onChange={(value) =>
-                                  updateException(index, "date", value)
-                                }
-                              />
-                            </div>
+                      <div className="mb-5 flex items-start justify-between gap-4 sm:hidden">
+                        <div>
+                          <h3 className="text-xl font-black text-[#202020]">
+                            Змінити графік роботи
+                          </h3>
+                          <p className="mt-8 text-xs font-bold text-[#77716b]">
+                            {selectedCount === 1 ? "На дату" : "Вибрано"}
+                          </p>
+                          <p className="mt-1 text-base font-black capitalize text-[#202020]">
+                            {selectedLabel}
+                          </p>
+                        </div>
 
-                            <div className="col-span-1 sm:col-span-1">
-                              <label className="mb-1.5 block text-xs font-black uppercase tracking-wide text-[#77716b]">
-                                Статус
-                              </label>
+                        <button
+                          type="button"
+                          onClick={closeScheduleSelection}
+                          className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-[#f2eee8] text-[#77716b] transition hover:bg-[#fff1e8] hover:text-[#ff6200]"
+                          aria-label="Закрити"
+                        >
+                          <X className="h-5 w-5" />
+                        </button>
+                      </div>
 
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  updateException(index, "enabled", !item.enabled)
-                                }
-                                className="flex h-[50px] w-full items-center gap-3 rounded-2xl border border-[#eadbc9] bg-white px-4 transition-all duration-200 hover:border-[#ffd6bd] hover:bg-[#fff7f0]"
+                      <div className="hidden items-center justify-between gap-3 border-b border-[#eadbc9] pb-3 sm:flex">
+                        <div>
+                          <p className="text-sm font-black text-[#202020]">
+                            {selectedCount === 1 ? "Налаштування дня" : `Вибрано ${selectedCount} днів`}
+                          </p>
+                          <p className="mt-0.5 text-xs font-bold capitalize text-[#77716b]">
+                            {selectedLabel}
+                          </p>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={closeScheduleSelection}
+                          className="grid h-10 w-10 place-items-center rounded-xl border border-[#eadbc9] bg-white text-[#77716b] transition hover:!bg-[#fff7f0] hover:text-[#ff6200]"
+                          aria-label="Скасувати вибір"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+
+                      <div className="flex flex-1 flex-col gap-3 sm:flex-none sm:pt-3 lg:grid lg:grid-cols-[minmax(0,1fr)_260px] lg:items-end">
+                        <div className="flex flex-col gap-3">
+                          <div
+className={cn(
+  "grid gap-2 sm:items-end",
+  bulkScheduleDraft.enabled &&
+    "sm:grid-cols-[1.35fr_0.82fr_0.82fr]",
+)}
+                          >
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setBulkScheduleDraft((prev) => ({
+                                  ...prev,
+                                  enabled: !prev.enabled,
+                                }))
+                              }
+                              className="flex h-[52px] w-full items-center justify-between gap-3 rounded-xl border border-[#eadbc9] bg-white px-4 text-sm font-black text-[#202020] transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0]"
+                            >
+<span className="flex items-center gap-2">
+  {bulkScheduleDraft.enabled ? (
+    <CalendarCheck className="h-4 w-4 shrink-0 text-[#41a85f]" />
+  ) : (
+    <XCircle className="h-4 w-4 shrink-0 text-[#8d8177]" />
+  )}
+
+  <span>{bulkScheduleDraft.enabled ? "Робочий" : "Вихідний"}</span>
+</span>
+
+                              <span
+                                className={cn(
+                                  "relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-all duration-300",
+                                  bulkScheduleDraft.enabled
+                                    ? "bg-[#41a85f]"
+                                    : "bg-[#c9c2b9]",
+                                )}
                               >
                                 <span
                                   className={cn(
-                                    "relative inline-flex h-7 w-12 items-center rounded-full transition-all duration-300",
-                                    item.enabled
-                                      ? "bg-[#ff5a00]"
-                                      : "bg-[var(--color-mist)]",
+                                    "inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-300",
+                                    bulkScheduleDraft.enabled
+                                      ? "translate-x-6"
+                                      : "translate-x-1",
                                   )}
-                                >
-                                  <span
-                                    className={cn(
-                                      "inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-300",
-                                      item.enabled ? "translate-x-6" : "translate-x-1",
-                                    )}
-                                  />
-                                </span>
+                                />
+                              </span>
+                            </button>
 
-                                <span className="whitespace-nowrap text-sm font-black text-[#202020]">
-                                  {item.enabled ? "Робочий день" : "Вихідний"}
-                                </span>
-                              </button>
-                            </div>
-
-                            {item.enabled ? (
-                              <div className="grid grid-cols-2 gap-2 sm:col-span-2">
-                                <div className="min-w-0">
-                                  <label className="mb-1.5 block text-xs font-black uppercase tracking-wide text-[#77716b]">
-                                    Початок
+                            {bulkScheduleDraft.enabled &&
+                              [
+                                ["start", "Початок", Clock],
+                                ["end", "Кінець", Timer],
+                              ].map(([field, label, Icon]) => (
+                                <div key={field} className="min-w-0">
+                                  <label className="mb-1.5 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#77716b]">
+                                    <Icon className="h-3.5 w-3.5 text-[#ff6200]" />
+                                    {label}
                                   </label>
 
-                                  <div className="flex h-[50px] items-center overflow-hidden rounded-[16px] border border-[#eadbc9] bg-white">
+                                  <div className="flex h-[52px] items-center overflow-hidden rounded-xl border border-[#eadbc9] bg-white px-2 transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0]">
                                     <TimeSelect
-                                      value={item.start}
-                                      label="Початок"
-                                      dayLabel={item.date || "Особлива дата"}
+                                      value={bulkScheduleDraft[field]}
+                                      label={label}
+                                      dayLabel={selectedLabel}
+                                      placeholder="--:--"
                                       onChange={(value) =>
-                                        updateException(index, "start", value)
+                                        updateBulkScheduleField(field, value)
                                       }
                                       onCommit={(value) =>
-                                        updateException(index, "start", value)
+                                        updateBulkScheduleField(field, value)
                                       }
+                                      className="h-full justify-center text-base"
                                     />
                                   </div>
                                 </div>
-
-                                <div className="min-w-0">
-                                  <label className="mb-1.5 block text-xs font-black uppercase tracking-wide text-[#77716b]">
-                                    Завершення
-                                  </label>
-                                  <div className="flex h-[50px] items-center overflow-hidden rounded-[16px] border border-[#eadbc9] bg-white">
-                                    <TimeSelect
-                                      value={item.end}
-                                      label="Завершення"
-                                      dayLabel={item.date || "Особлива дата"}
-                                      onChange={(value) =>
-                                        updateException(index, "end", value)
-                                      }
-                                      onCommit={(value) =>
-                                        updateException(index, "end", value)
-                                      }
-                                    />
-                                  </div>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="flex items-center sm:col-span-2">
-                                <div className="w-full rounded-2xl border border-[#ffd6bd] bg-[#fff1e8] px-4 py-3 text-sm font-black text-[#ff5a00]">
-                                  У цей день майстер не працює
-                                </div>
-                              </div>
-                            )}
-
-                            <div className="grid grid-cols-2 gap-2 sm:col-span-2 sm:flex">
-                              <Button
-                                variant={isValid ? "primary" : "secondary"}
-                                onClick={() => saveException(item, index)}
-                                disabled={!isValid}
-                                className={cn(
-                                  "h-[50px] w-full justify-center",
-                                  !isValid &&
-                                    "cursor-not-allowed border-[#eadbc9] bg-[#f5f1ea] text-[#77716b]",
-                                )}
-                              >
-                                <Check className="h-4 w-4" />
-                                Зберегти
-                              </Button>
-                              <Button
-                                variant="danger"
-                                onClick={() => removeException(item, index)}
-                                className="h-[50px] w-full justify-center text-center"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                                Видалити
-                              </Button>
-                            </div>
+                              ))}
                           </div>
+
+                          {bulkScheduleDraft.enabled && (
+                            <div
+className={cn(
+  "grid gap-2 sm:items-end",
+  bulkHasBreak &&
+    "sm:grid-cols-[1.35fr_0.82fr_0.82fr]",
+)}
+                            >
+<button
+  type="button"
+  onClick={() => updateBulkScheduleBreak(!bulkHasBreak)}
+  className="flex h-[52px] w-full items-center justify-between gap-3 rounded-xl border border-[#eadbc9] bg-white px-4 text-sm font-black text-[#202020] transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0]"
+>
+<span className="flex items-center gap-2">
+  {bulkHasBreak ? (
+    <Coffee className="h-4 w-4 text-[#41a85f]" />
+  ) : (
+    <Coffee className="h-4 w-4 text-[#8d8177]" />
+  )}
+
+  {bulkHasBreak ? "Перерва" : "Без перерви"}
+</span>
+
+  <span
+    className={cn(
+      "relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-all duration-300",
+      bulkHasBreak ? "bg-[#41a85f]" : "bg-[#c9c2b9]",
+    )}
+  >
+    <span
+      className={cn(
+        "inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-300",
+        bulkHasBreak ? "translate-x-6" : "translate-x-1",
+      )}
+    />
+  </span>
+</button>
+
+                              {bulkHasBreak &&
+                                [
+                                  ["breakStart", "Перерва з", Coffee],
+                                  ["breakEnd", "Перерва до", Coffee],
+                                ].map(([field, label, Icon]) => (
+                                  <div key={field} className="min-w-0">
+                                    <label className="mb-1.5 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#77716b]">
+                                      <Icon className="h-3.5 w-3.5 text-[#ff6200]" />
+                                      {label}
+                                    </label>
+
+                                    <div className="flex h-[52px] items-center overflow-hidden rounded-xl border border-[#eadbc9] bg-white px-2 transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0]">
+                                      <TimeSelect
+                                        value={bulkScheduleDraft[field]}
+                                        label={label}
+                                        dayLabel={selectedLabel}
+                                        placeholder="--:--"
+                                        onChange={(value) =>
+                                          updateBulkScheduleField(field, value)
+                                        }
+                                        onCommit={(value) =>
+                                          updateBulkScheduleField(field, value)
+                                        }
+                                        className="h-full justify-center text-base"
+                                      />
+                                    </div>
+                                  </div>
+                                ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="mt-auto grid grid-cols-2 gap-3 border-t border-[#eadbc9] pt-4 sm:mt-0 sm:border-t-0 sm:pt-0 lg:self-end">
+                          <Button
+                            variant="primary"
+                            onClick={() =>
+                              applyBulkSchedule(bulkScheduleDraft.enabled)
+                            }
+                            disabled={bulkSaving}
+                            className="h-[54px] w-full"
+                          >
+                            <Save className="h-4 w-4" />
+                            {bulkSaving ? "Зберігаємо" : "Зберегти"}
+                          </Button>
+
+                          <Button
+                            variant="secondary"
+                            onClick={closeScheduleSelection}
+                            disabled={bulkSaving}
+                            className="h-[54px] w-full"
+                          >
+                            <X className="h-4 w-4" />
+                            Скасувати
+                          </Button>
                         </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  )}
+
+                </div>
+              );
+            })()
           )}
         </Modal>
       </div>
@@ -2839,7 +3790,7 @@ className={cn(
         onClick={() =>
           setVisibleMasterBookingsCount((prev) => prev + 10)
         }
-        className="inline-flex h-11 w-full items-center justify-center rounded-2xl border border-[#eadbc9] bg-white px-4 text-sm font-black text-[#202020] transition-all duration-200 hover:border-[#ffd6bd] hover:bg-[#fff7f0] active:scale-[0.98]"
+        className="inline-flex h-11 w-full items-center justify-center rounded-2xl border border-[#eadbc9] bg-white px-4 text-sm font-black text-[#202020] transition-all duration-200 hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] active:scale-[0.98]"
       >
         Показати ще
       </button>
@@ -3198,7 +4149,7 @@ className={cn(
               <button
                 type="button"
                 onClick={closeDetails}
-                className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-[#202020] shadow-[0_8px_24px_rgba(27,27,27,0.10)] transition hover:bg-[#fff7f0] active:scale-[0.98]"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-[#202020] shadow-[0_8px_24px_rgba(27,27,27,0.10)] transition hover:!bg-[#fff7f0] active:scale-[0.98]"
                 aria-label="Закрити"
               >
                 <X className="h-5 w-5" />
@@ -3301,7 +4252,7 @@ className={cn(
                         <button
                           type="button"
                           onClick={() => handleCopyPhone(phone)}
-                          className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#eadfce] bg-white text-[#77716b] transition-all duration-200 hover:bg-[#fff7f0] hover:text-[#202020] active:scale-[0.95]"
+                          className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#eadfce] bg-white text-[#77716b] transition-all duration-200 hover:!bg-[#fff7f0] hover:text-[#202020] active:scale-[0.95]"
                           title="Скопіювати номер"
                         >
                           {copiedPhone ? (

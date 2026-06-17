@@ -307,6 +307,9 @@ model MasterScheduleDay {
   startMin Int @default(600)
   endMin   Int @default(1080)
 
+  breakStartMin Int?
+  breakEndMin   Int?
+
   @@unique([masterId, day])
   @@index([masterId])
 }
@@ -318,6 +321,10 @@ model MasterScheduleException {
   enabled   Boolean  @default(true)
   startMin  Int?
   endMin    Int?
+
+  breakStartMin Int?
+  breakEndMin   Int?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

@@ -94,6 +94,49 @@ function normalizeDateOnly(value) {
   return s;
 }
 
+function getBreakMinutes({ enabled, startMin, endMin, breakStart, breakEnd }) {
+  if (!enabled) {
+    return {
+      breakStartMin: null,
+      breakEndMin: null,
+    };
+  }
+
+  const hasBreakStart = typeof breakStart === "string" && breakStart.trim();
+  const hasBreakEnd = typeof breakEnd === "string" && breakEnd.trim();
+
+  if (!hasBreakStart && !hasBreakEnd) {
+    return {
+      breakStartMin: null,
+      breakEndMin: null,
+    };
+  }
+
+  if (!hasBreakStart || !hasBreakEnd) {
+    throw new Error("Заповніть початок і кінець перерви");
+  }
+
+  const breakStartMin = timeToMin(breakStart);
+  const breakEndMin = timeToMin(breakEnd);
+
+  if (!Number.isFinite(breakStartMin) || !Number.isFinite(breakEndMin)) {
+    throw new Error("Некоректний формат часу перерви");
+  }
+
+  if (
+    breakStartMin <= startMin ||
+    breakEndMin >= endMin ||
+    breakEndMin <= breakStartMin
+  ) {
+    throw new Error("Перерва має бути всередині робочого часу");
+  }
+
+  return {
+    breakStartMin,
+    breakEndMin,
+  };
+}
+
 async function ensureMasterBelongsToOwner(masterId, ownerId) {
   const master = await prisma.master.findFirst({
     where: {
@@ -145,13 +188,13 @@ async function ensureDefaultMasterDays(masterId) {
 
 function formatSchedule(days) {
   const base = {
-    mon: { enabled: true, start: "08:00", end: "18:00" },
-    tue: { enabled: true, start: "08:00", end: "18:00" },
-    wed: { enabled: true, start: "08:00", end: "18:00" },
-    thu: { enabled: true, start: "08:00", end: "18:00" },
-    fri: { enabled: true, start: "08:00", end: "18:00" },
-    sat: { enabled: false, start: "08:00", end: "18:00" },
-    sun: { enabled: false, start: "08:00", end: "18:00" },
+    mon: { enabled: true, start: "08:00", end: "18:00", breakStart: "", breakEnd: "" },
+    tue: { enabled: true, start: "08:00", end: "18:00", breakStart: "", breakEnd: "" },
+    wed: { enabled: true, start: "08:00", end: "18:00", breakStart: "", breakEnd: "" },
+    thu: { enabled: true, start: "08:00", end: "18:00", breakStart: "", breakEnd: "" },
+    fri: { enabled: true, start: "08:00", end: "18:00", breakStart: "", breakEnd: "" },
+    sat: { enabled: false, start: "08:00", end: "18:00", breakStart: "", breakEnd: "" },
+    sun: { enabled: false, start: "08:00", end: "18:00", breakStart: "", breakEnd: "" },
   };
 
   for (const row of days) {
@@ -162,12 +205,13 @@ function formatSchedule(days) {
       enabled: Boolean(row.enabled),
       start: minToTime(row.startMin),
       end: minToTime(row.endMin),
+      breakStart: row.breakStartMin == null ? "" : minToTime(row.breakStartMin),
+      breakEnd: row.breakEndMin == null ? "" : minToTime(row.breakEndMin),
     };
   }
 
   return base;
 }
-
 function formatException(row) {
   return {
     id: row.id,
@@ -175,6 +219,8 @@ function formatException(row) {
     enabled: row.enabled,
     start: row.startMin == null ? null : minToTime(row.startMin),
     end: row.endMin == null ? null : minToTime(row.endMin),
+    breakStart: row.breakStartMin == null ? "" : minToTime(row.breakStartMin),
+    breakEnd: row.breakEndMin == null ? "" : minToTime(row.breakEndMin),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -245,7 +291,13 @@ masterScheduleRouter.patch(
           const enabled = Boolean(cfg.enabled);
           const startMin = timeToMin(cfg.start);
           const endMin = timeToMin(cfg.end);
-
+const { breakStartMin, breakEndMin } = getBreakMinutes({
+  enabled,
+  startMin,
+  endMin,
+  breakStart: cfg.breakStart,
+  breakEnd: cfg.breakEnd,
+});
           if (
             !Number.isFinite(startMin) ||
             !Number.isFinite(endMin) ||
@@ -256,26 +308,30 @@ masterScheduleRouter.patch(
             throw new Error(`Некоректний час для ${key}`);
           }
 
-          return prisma.masterScheduleDay.upsert({
-            where: {
-              masterId_day: {
-                masterId,
-                day: dayEnum,
-              },
-            },
-            update: {
-              enabled,
-              startMin,
-              endMin,
-            },
-            create: {
-              masterId,
-              day: dayEnum,
-              enabled,
-              startMin,
-              endMin,
-            },
-          });
+return prisma.masterScheduleDay.upsert({
+  where: {
+    masterId_day: {
+      masterId,
+      day: dayEnum,
+    },
+  },
+  update: {
+    enabled,
+    startMin,
+    endMin,
+    breakStartMin,
+    breakEndMin,
+  },
+  create: {
+    masterId,
+    day: dayEnum,
+    enabled,
+    startMin,
+    endMin,
+    breakStartMin,
+    breakEndMin,
+  },
+});
         }),
       );
 
@@ -339,7 +395,7 @@ masterScheduleRouter.post(
   async (req, res) => {
     try {
       const { masterId } = req.params;
-      const { date, enabled, start, end } = req.body || {};
+      const { date, enabled, start, end, breakStart, breakEnd } = req.body || {};
 
       const master = await ensureMasterBelongsToOwner(masterId, req.auth.sub);
       if (!master) {
@@ -351,10 +407,14 @@ masterScheduleRouter.post(
         return res.status(400).json({ message: "Некоректна дата" });
       }
 
+      const isEnabled = enabled !== false;
+
       let startMin = null;
       let endMin = null;
+      let breakStartMin = null;
+      let breakEndMin = null;
 
-      if (enabled !== false) {
+      if (isEnabled) {
         startMin = timeToMin(start);
         endMin = timeToMin(end);
 
@@ -369,15 +429,28 @@ masterScheduleRouter.post(
             message: "Час завершення має бути пізніше за час початку",
           });
         }
+
+        const breakMinutes = getBreakMinutes({
+          enabled: isEnabled,
+          startMin,
+          endMin,
+          breakStart,
+          breakEnd,
+        });
+
+        breakStartMin = breakMinutes.breakStartMin;
+        breakEndMin = breakMinutes.breakEndMin;
       }
 
       const exception = await prisma.masterScheduleException.create({
         data: {
           masterId,
           date: new Date(`${isoDate}T12:00:00`),
-          enabled: enabled !== false,
+          enabled: isEnabled,
           startMin,
           endMin,
+          breakStartMin,
+          breakEndMin,
         },
       });
 
@@ -411,7 +484,7 @@ masterScheduleRouter.patch(
   async (req, res) => {
     try {
       const { masterId, exceptionId } = req.params;
-      const { date, enabled, start, end } = req.body || {};
+      const { date, enabled, start, end, breakStart, breakEnd } = req.body || {};
 
       const master = await ensureMasterBelongsToOwner(masterId, req.auth.sub);
       if (!master) {
@@ -434,10 +507,14 @@ masterScheduleRouter.patch(
         return res.status(400).json({ message: "Некоректна дата" });
       }
 
+      const isEnabled = enabled !== false;
+
       let startMin = null;
       let endMin = null;
+      let breakStartMin = null;
+      let breakEndMin = null;
 
-      if (enabled !== false) {
+      if (isEnabled) {
         startMin = timeToMin(start);
         endMin = timeToMin(end);
 
@@ -452,15 +529,28 @@ masterScheduleRouter.patch(
             message: "Час завершення має бути пізніше за час початку",
           });
         }
+
+        const breakMinutes = getBreakMinutes({
+          enabled: isEnabled,
+          startMin,
+          endMin,
+          breakStart,
+          breakEnd,
+        });
+
+        breakStartMin = breakMinutes.breakStartMin;
+        breakEndMin = breakMinutes.breakEndMin;
       }
 
       const updated = await prisma.masterScheduleException.update({
         where: { id: exceptionId },
         data: {
           date: new Date(`${isoDate}T00:00:00.000Z`),
-          enabled: enabled !== false,
+          enabled: isEnabled,
           startMin,
           endMin,
+          breakStartMin,
+          breakEndMin,
         },
       });
 

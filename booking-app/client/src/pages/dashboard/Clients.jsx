@@ -739,6 +739,126 @@ function addMonthsSafe(date, amount) {
 function isSameMonth(a, b) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
 }
+function normalizePhone(value) {
+  return String(value || "").replace(/\D/g, "");
+}
+
+function normalizeEmail(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function getClientFullName(client) {
+  return (
+    [client?.firstName, client?.lastName].filter(Boolean).join(" ").trim() ||
+    client?.name ||
+    "Клієнт"
+  );
+}
+
+function findDuplicateClientByContacts(payload, clients = []) {
+  const phoneKey = normalizePhone(payload.phone);
+  const emailKey = normalizeEmail(payload.email);
+
+  if (!phoneKey && !emailKey) return null;
+
+  return clients.find((client) => {
+    const clientPhoneKey = normalizePhone(client.phone);
+    const clientEmailKey = normalizeEmail(client.email);
+
+    const samePhone =
+      phoneKey &&
+      clientPhoneKey &&
+      phoneKey === clientPhoneKey;
+
+    const sameEmail =
+      emailKey &&
+      clientEmailKey &&
+      emailKey === clientEmailKey;
+
+    return samePhone || sameEmail;
+  });
+}
+
+function CreateClientErrorBox({ error, onOpenDuplicate }) {
+  if (!error) return null;
+
+  const isObject = typeof error === "object";
+
+  const type = isObject ? error.type : "default";
+  const title = isObject
+    ? error.title
+    : "Не вдалося додати клієнта";
+
+  const message = isObject
+    ? error.message
+    : String(error || "");
+
+  const value = isObject ? error.value : "";
+  const duplicateName = isObject ? error.duplicateName : "";
+
+  const Icon =
+    type === "phone"
+      ? Phone
+      : type === "email"
+        ? Mail
+        : CircleAlert;
+
+  return (
+    <div className="relative overflow-hidden rounded-[24px] border border-[#ffd6bd] bg-[#fff7f0] p-4 shadow-[0_14px_36px_rgba(255,98,0,0.08)]">
+      <div className="absolute right-[-38px] top-[-45px] h-28 w-28 rounded-full bg-[#ff6200]/10 blur-2xl" />
+      <div className="absolute bottom-[-48px] left-[-38px] h-28 w-28 rounded-full bg-[#ffd6bd]/55 blur-2xl" />
+
+      <div className="relative flex items-start gap-3">
+        <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-[#ffd6bd] bg-white text-[#ff6200] shadow-sm">
+          <Icon className="h-5 w-5" />
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <p className="text-[13px] font-black uppercase tracking-[0.08em] text-[#ff6200]">
+            Дублікат клієнта
+          </p>
+
+          <h4 className="mt-1 text-[16px] font-black leading-tight text-[#202020]">
+            {title}
+          </h4>
+
+          {duplicateName && (
+            <div className="mt-3 inline-flex max-w-full items-center gap-2 rounded-full border border-[#eadbc9] bg-white px-3 py-1.5 shadow-sm">
+              <User className="h-3.5 w-3.5 shrink-0 text-[#ff6200]" />
+              <span className="truncate text-xs font-black text-[#202020]">
+                {duplicateName}
+              </span>
+            </div>
+          )}
+
+          {value && (
+            <div className="mt-2 inline-flex max-w-full items-center gap-2 rounded-full border border-[#eadbc9] bg-white px-3 py-1.5 shadow-sm">
+              <Icon className="h-3.5 w-3.5 shrink-0 text-[#77716b]" />
+              <span className="truncate text-xs font-bold text-[#77716b]">
+                {value}
+              </span>
+            </div>
+          )}
+
+          <p className="mt-3 text-sm font-semibold leading-5 text-[#77716b]">
+            {message}
+          </p>
+
+          {onOpenDuplicate && (
+            <button
+              type="button"
+              onClick={onOpenDuplicate}
+              className="mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-2xl bg-[#ff5a00] px-4 text-sm font-black text-white transition-all duration-200 hover:bg-[#ef4f00] active:scale-[0.98]"
+            >
+              <User className="h-4 w-4" />
+              Відкрити існуючого клієнта
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Clients() {
   const { studio } = useStudio();
@@ -754,6 +874,7 @@ export default function Clients() {
   const [statusInfoClient, setStatusInfoClient] = useState(null);
   const filterRef = useRef(null);
 const sortRef = useRef(null);
+const createClientErrorRef = useRef(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(8);
   const [exportOpen, setExportOpen] = useState(false);
@@ -762,6 +883,7 @@ const sortRef = useRef(null);
   const [createClientForm, setCreateClientForm] = useState(emptyClientForm);
   const [createClientError, setCreateClientError] = useState("");
   const [creatingClient, setCreatingClient] = useState(false);
+  
   const [exportFields, setExportFields] = useState({
     name: true,
     phone: true,
@@ -999,6 +1121,25 @@ setNoteDraft("");
     setCreateClientError("");
   }
 
+  useEffect(() => {
+  if (!createClientOpen || !createClientError) return;
+
+  const isMobile = window.innerWidth < 640;
+
+  if (!isMobile) return;
+
+  const timer = window.setTimeout(() => {
+    createClientErrorRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+  }, 120);
+
+  return () => {
+    window.clearTimeout(timer);
+  };
+}, [createClientError, createClientOpen]);
+
   async function handleCreateClient(e) {
     e?.preventDefault?.();
     if (!studioId) return;
@@ -1015,13 +1156,38 @@ setNoteDraft("");
       phone: createClientForm.phone.trim(),
     };
 
-    if (!payload.firstName || !payload.lastName) {
-      setCreateClientError("Вкажіть імʼя та прізвище клієнта.");
-      return;
-    }
+if (!payload.firstName || !payload.lastName) {
+  setCreateClientError("Вкажіть імʼя та прізвище клієнта.");
+  return;
+}
 
-    setCreatingClient(true);
-    setCreateClientError("");
+const duplicateClient = findDuplicateClientByContacts(payload, allClients);
+
+if (duplicateClient) {
+  const duplicateName = getClientFullName(duplicateClient);
+
+  const duplicateByPhone =
+    normalizePhone(payload.phone) &&
+    normalizePhone(payload.phone) === normalizePhone(duplicateClient.phone);
+
+setCreateClientError({
+  type: duplicateByPhone ? "phone" : "email",
+  duplicateId: duplicateClient.id,
+  duplicateName,
+  value: duplicateByPhone ? payload.phone : payload.email,
+  title: duplicateByPhone
+    ? "Клієнт з таким номером телефону вже є в базі"
+    : "Клієнт з таким email вже є в базі",
+  message: duplicateByPhone
+    ? "Щоб не створювати дубль, відкрийте вже існуючого клієнта або змініть номер телефону."
+    : "Щоб не створювати дубль, відкрийте вже існуючого клієнта або змініть email.",
+});
+
+return;
+}
+
+setCreatingClient(true);
+setCreateClientError("");
 
     try {
       if (createClientForm.photoFile) {
@@ -2055,11 +2221,23 @@ if (sort === "nameAsc") {
             </label>
           </div>
 
-          {createClientError && (
-            <div className="rounded-2xl border border-[#ffd8d8] bg-[#fff7f7] px-4 py-3 text-sm font-bold text-[#e5484d]">
-              {createClientError}
-            </div>
-          )}
+{createClientError && (
+  <div ref={createClientErrorRef}>
+    <CreateClientErrorBox
+      error={createClientError}
+      onOpenDuplicate={
+        typeof createClientError === "object" && createClientError?.duplicateId
+          ? () => {
+              setSelectedClientId(createClientError.duplicateId);
+              setCreateClientOpen(false);
+              setCreateClientForm(emptyClientForm);
+              setCreateClientError("");
+            }
+          : null
+      }
+    />
+  </div>
+)}
         </form>
       </Modal>
 
@@ -2638,7 +2816,46 @@ function ClientDetails({
 }) {
   const [visibleHistoryCount, setVisibleHistoryCount] = useState(3);
   const [copiedPhone, setCopiedPhone] = useState(false);
+async function handleCopyClientPhone(value) {
+  const phone = String(value || "").trim();
+  if (!phone) return;
 
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(phone);
+    } else {
+      throw new Error("Clipboard API is not available");
+    }
+
+    setCopiedPhone(true);
+
+    window.setTimeout(() => {
+      setCopiedPhone(false);
+    }, 1600);
+  } catch {
+    const textarea = document.createElement("textarea");
+    textarea.value = phone;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "fixed";
+    textarea.style.left = "-9999px";
+    textarea.style.top = "0";
+
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+
+    try {
+      document.execCommand("copy");
+      setCopiedPhone(true);
+
+      window.setTimeout(() => {
+        setCopiedPhone(false);
+      }, 1600);
+    } finally {
+      document.body.removeChild(textarea);
+    }
+  }
+}
   if (!client) return null;
 
   const bookings = getClientBookings(client);
@@ -2679,38 +2896,34 @@ function ClientDetails({
                 <ClientStatusBadges client={client} />
               </div>
 
-              <div className="mt-1 flex items-center gap-2">
-                <p className="text-sm font-medium text-[#77716b]">
-                  {client.phone || "Номер відсутній"}
-                </p>
+<div className="mt-2 inline-flex max-w-full items-center gap-1.5">
+  <Phone className="h-3.5 w-3.5 shrink-0 text-[#ff6200]" />
 
-                {client.phone && (
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      try {
-                        await navigator.clipboard.writeText(client.phone);
+  <p className="min-w-0 truncate text-sm font-bold text-[#77716b]">
+    {client.phone || "Номер відсутній"}
+  </p>
 
-                        setCopiedPhone(true);
-
-                        setTimeout(() => {
-                          setCopiedPhone(false);
-                        }, 1500);
-                      } catch {
-                        // fallback
-                      }
-                    }}
-                    className="flex h-6 w-6 items-center justify-center rounded-full text-[#77716b] transition hover:bg-[#fff1e8] hover:text-[#ff6200]"
-                    title="Скопіювати номер"
-                  >
-                    {copiedPhone ? (
-                      <CheckCheck className="h-3.5 w-3.5 text-emerald-600" />
-                    ) : (
-                      <Copy className="h-3.5 w-3.5" />
-                    )}
-                  </button>
-                )}
-              </div>
+  {client.phone && (
+    <button
+      type="button"
+      onClick={() => handleCopyClientPhone(client.phone)}
+      className={cn(
+        "ml-0.5 inline-flex h-7 w-7 shrink-0 touch-manipulation items-center justify-center rounded-lg transition-all duration-200 active:scale-[0.94]",
+        copiedPhone
+          ? "bg-emerald-50 text-emerald-600"
+          : "text-[#77716b] hover:bg-[#fff1e8] hover:text-[#ff6200]",
+      )}
+      title="Скопіювати номер"
+      aria-label="Скопіювати номер телефону"
+    >
+      {copiedPhone ? (
+        <CheckCheck className="h-3.5 w-3.5" />
+      ) : (
+        <Copy className="h-3.5 w-3.5" />
+      )}
+    </button>
+  )}
+</div>
 
               <p className="truncate text-sm text-[#77716b]">{client.email}</p>
             </div>
