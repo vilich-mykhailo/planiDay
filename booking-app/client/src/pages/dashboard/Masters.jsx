@@ -540,44 +540,72 @@ function Modal({
   );
 }
 
-function Avatar({ name, photoUrl, size = "md", className = "" }) {
-  const initials = initialsFromName(name);
-
-  const sizes = {
-    sm: "h-12 w-12 rounded-2xl text-xs",
-    md: "h-20 w-20 rounded-[22px] text-sm",
-  };
+function MasterFallbackAvatar({ name, className = "", textClassName = "" }) {
+  const initials = initialsFromName(name || "Майстер");
 
   return (
     <div
       className={cn(
-        "flex shrink-0 items-center justify-center overflow-hidden border-2 border-white bg-gradient-to-br from-[#fff1e8] via-white to-[#f2eee8] shadow-[0_10px_26px_rgba(17,17,17,0.10)]",
-        sizes[size],
+        "relative flex shrink-0 items-center justify-center overflow-hidden border border-[#e6ddd3] bg-[#f6f3ee]",
+        "shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_10px_26px_rgba(15,23,42,0.05)]",
+        className,
+      )}
+    >
+      <div className="absolute inset-0 bg-[linear-gradient(135deg,#fbfaf8_0%,#f2ede7_45%,#e7ddd3_100%)]" />
+
+      <div className="absolute left-[-22%] top-[-24%] h-[76%] w-[76%] rounded-full bg-white/75 blur-xl" />
+      <div className="absolute bottom-[-30%] right-[-26%] h-[80%] w-[80%] rounded-full bg-[#d5cabf]/45 blur-2xl" />
+
+      <div className="absolute inset-x-0 top-0 h-px bg-white/90" />
+
+      <span
+        className={cn(
+          "relative z-10 font-black tracking-[-0.06em] text-[#756d66]",
+          textClassName || "text-[24px]",
+        )}
+      >
+        {initials}
+      </span>
+    </div>
+  );
+}
+function Avatar({ name, photoUrl, size = "md", className = "" }) {
+  const sizes = {
+    sm: {
+      box: "h-12 w-12 rounded-2xl",
+      text: "text-xl",
+    },
+    md: {
+      box: "h-20 w-20 rounded-[22px]",
+      text: "text-4xl",
+    },
+  };
+
+  const currentSize = sizes[size] || sizes.md;
+
+  return (
+    <div
+      className={cn(
+        "flex shrink-0 items-center justify-center overflow-hidden border-2 border-white bg-[#f6f3ee] shadow-[0_10px_26px_rgba(17,17,17,0.10)]",
+        currentSize.box,
         className,
       )}
     >
       {photoUrl ? (
         <img
-          src={photoUrl}
-          alt={name}
+          src={toPublicUrl(photoUrl)}
+          alt={name || "Майстер"}
           className="h-full w-full object-cover"
           onError={(e) => {
             e.currentTarget.style.display = "none";
           }}
         />
-      ) : initials ? (
-       <span
-  className={cn(
-    "font-black tracking-[-0.08em] text-[#ff5a00]",
-    size === "sm" && "text-xl",
-    size === "md" && "text-4xl",
-    size === "lg" && "text-6xl",
-  )}
->
-  {initials}
-</span>
       ) : (
-        <Camera className="h-6 w-6 text-[#ff5a00]" />
+        <MasterFallbackAvatar
+          name={name || "Майстер"}
+          className="h-full w-full rounded-[inherit]"
+          textClassName={currentSize.text}
+        />
       )}
     </div>
   );
@@ -1582,23 +1610,28 @@ async function handlePickPhoto(e) {
     setScheduleEditorOpen(true);
   }
 
-  function getScheduleTimeLines(item) {
-    if (!item.enabled) return ["Вихідний"];
+function getScheduleTimeLines(item) {
+  if (!item.enabled) return ["Вихідний"];
 
-    const start = parseTimeToHHMM(item.start) || item.start || "--:--";
-    const end = parseTimeToHHMM(item.end) || item.end || "--:--";
-    const breakStart = getExceptionBreakStart(item);
-    const breakEnd = getExceptionBreakEnd(item);
+  const start = parseTimeToHHMM(item.start) || item.start || "--:--";
+  const end = parseTimeToHHMM(item.end) || item.end || "--:--";
 
-    if (breakStart && breakEnd) {
-      return [
-        `${start} – ${parseTimeToHHMM(breakStart) || breakStart}`,
-        `${parseTimeToHHMM(breakEnd) || breakEnd} – ${end}`,
-      ];
-    }
+  const breakStartRaw = getExceptionBreakStart(item);
+  const breakEndRaw = getExceptionBreakEnd(item);
 
-    return [`${start} – ${end}`];
+  const breakStart = parseTimeToHHMM(breakStartRaw) || breakStartRaw || "";
+  const breakEnd = parseTimeToHHMM(breakEndRaw) || breakEndRaw || "";
+
+  const lines = [`${start} – ${end}`];
+
+  if (breakStart && breakEnd) {
+    lines.push(`${breakStart} – ${breakEnd}`);
+  } else {
+    lines.push("Без перерви");
   }
+
+  return lines;
+}
 
   function buildBulkScheduleItem(dateKey, enabled) {
     const current = getScheduleItemForDate(dateKey);
@@ -3113,10 +3146,36 @@ onClick={() => {
               const bulkHasBreak = Boolean(
                 bulkScheduleDraft.breakStart && bulkScheduleDraft.breakEnd,
               );
+const getVisibleScheduleItemForDay = (day) => {
+  const shouldUseDraft =
+    scheduleEditorOpen &&
+    selectedScheduleDates.includes(day.dateKey) &&
+    day.isCurrentMonth;
 
+  if (!shouldUseDraft) {
+    return day.item;
+  }
+
+  return {
+    ...day.item,
+    enabled: bulkScheduleDraft.enabled,
+    start: bulkScheduleDraft.enabled
+      ? bulkScheduleDraft.start
+      : day.item.start,
+    end: bulkScheduleDraft.enabled
+      ? bulkScheduleDraft.end
+      : day.item.end,
+    breakStart: bulkScheduleDraft.enabled
+      ? bulkScheduleDraft.breakStart || ""
+      : "",
+    breakEnd: bulkScheduleDraft.enabled
+      ? bulkScheduleDraft.breakEnd || ""
+      : "",
+  };
+};
               return (
                 <div className="relative text-[#202020] ">
-<div className="mt-6 grid w-full gap-4 lg:grid-cols-[minmax(0,455px)_minmax(320px,450px)] lg:items-start lg:justify-center lg:gap-x-2">
+<div className="mt-0 grid w-full gap-4 lg:grid-cols-[minmax(0,455px)_minmax(320px,450px)] lg:items-start lg:justify-center lg:gap-x-2">
   {/* Ліва колонка: статистика + дата */}
   <div className="min-w-0">
     <div className="grid grid-cols-3 gap-2">
@@ -3277,8 +3336,8 @@ onClick={() => {
                         : "pb-4 sm:pb-5",
                     )}
                   >
-                    {currentMonthDays.map((day) => {
-                      const item = day.item;
+              {currentMonthDays.map((day) => {
+  const item = getVisibleScheduleItemForDay(day);
                       const isSelected = selectedScheduleDates.includes(day.dateKey);
                       const lines = getScheduleTimeLines(item);
                       const isDayOff = !item.enabled;
@@ -3363,8 +3422,8 @@ onClick={() => {
                   </div>
 
                   <div className="mt-3 hidden grid-cols-7 gap-1 lg:grid">
-                    {monthDays.map((day) => {
-                      const item = day.item;
+                 {monthDays.map((day) => {
+  const item = getVisibleScheduleItemForDay(day);
                       const isSelected = selectedScheduleDates.includes(day.dateKey);
                       const lines = getScheduleTimeLines(item);
                       const isDayOff = !item.enabled;

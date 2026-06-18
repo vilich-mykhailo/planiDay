@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../api/http";
 import XLSX from "xlsx-js-style";
 import { useStudio } from "../../context/studio/useStudio";
+import { useBookings } from "../../context/bookings/useBookings";
 import {
   AlertTriangle,
   CalendarDays,
@@ -11,6 +12,13 @@ import {
   Download,
   ChevronDown,
   ChevronUp,
+  CalendarCheck,
+ClipboardPen,
+Clock3,
+PhoneCall,
+Timer,
+
+
   FileSpreadsheet,
   Clock,
   X,
@@ -163,7 +171,7 @@ function getBookingStatusUi(status, canceledBy = null) {
 
   if (status === "COMPLETED") {
     return {
-      text: "Завершено",
+      text: "Сеанс завершено",
       icon: PartyPopper,
       badge: "border border-[#e5e7eb] bg-[#f8f9fa] text-[#6b7280]",
     };
@@ -176,6 +184,288 @@ function getBookingStatusUi(status, canceledBy = null) {
   };
 }
 
+function parseClientTimeToHHMM(timeStr) {
+  const value = String(timeStr || "").trim();
+
+  if (!value) return "";
+
+  const cleaned = value.replace(".", ":");
+  const match = cleaned.match(/^(\d{1,2}):(\d{2})$/);
+
+  if (!match) return value;
+
+  const hours = Math.min(23, Math.max(0, Number(match[1])));
+  const minutes = Math.min(59, Math.max(0, Number(match[2])));
+
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
+function getClientBookingDateTime(booking) {
+  const rawDate = String(booking?.date || "");
+
+  if (!rawDate) return null;
+
+  if (rawDate.includes("T")) {
+    const date = new Date(rawDate);
+
+    if (!Number.isNaN(date.getTime())) return date;
+  }
+
+  const time = parseClientTimeToHHMM(booking?.time) || "00:00";
+  const date = new Date(`${rawDate.slice(0, 10)}T${time}:00`);
+
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function getClientBookingStatusMeta(booking) {
+  const status = String(booking?.status || "").toUpperCase();
+  const canceledBy = String(booking?.canceledBy || "").toLowerCase();
+
+  if (status === "CONFIRMED") {
+    return {
+      status: "confirmed",
+      label: "Підтверджено",
+      Icon: CheckCheck,
+      text: "text-[#41a85f]",
+      border: "border-[#bbf7d0]",
+      dateText: "text-[#41a85f]",
+      top: "from-[#eafaf0] to-white",
+      iconColor: "text-[#41a85f]",
+      pillText: "text-[#41a85f]",
+      accent: "text-[#41a85f]",
+    };
+  }
+
+  if (status === "CANCELED") {
+    return {
+      status: "canceled",
+      label:
+        canceledBy === "owner" || canceledBy === "studio"
+          ? "Скасовано вами"
+          : "Скасовано клієнтом",
+      Icon: XCircle,
+      text: "text-[#ef4444]",
+      border: "border-[#fecaca]",
+      dateText: "text-[#ef4444]",
+      top: "from-[#fff1f1] to-white",
+      iconColor: "text-[#ef4444]",
+      pillText: "text-[#ef4444]",
+      accent: "text-[#ef4444]",
+    };
+  }
+
+  if (status === "COMPLETED") {
+    return {
+      status: "completed",
+      label: "Сеанс завершено",
+      Icon: PartyPopper,
+      text: "text-[#6b7280]",
+      border: "border-[#d1d5db]",
+      dateText: "text-[#6b7280]",
+      top: "from-[#f3f4f6] to-white",
+      iconColor: "text-[#6b7280]",
+      pillText: "text-[#6b7280]",
+      accent: "text-[#6b7280]",
+    };
+  }
+
+  return {
+    status: "pending",
+    label: "Очікує підтвердження",
+    Icon: Clock,
+    text: "text-[#ffb020]",
+    border: "border-[#fed7aa]",
+    dateText: "text-[#ffb020]",
+    top: "from-[#fff7ed] to-white",
+    iconColor: "text-[#ffb020]",
+    pillText: "text-[#ffb020]",
+    accent: "text-[#ffb020]",
+  };
+}
+
+function ClientHistoryBookingCard({ booking, client, onClick }) {
+  const fullName =
+    [client?.firstName, client?.lastName].filter(Boolean).join(" ") ||
+    "Клієнт";
+
+  const statusMeta = getClientBookingStatusMeta(booking);
+  const StatusIcon = statusMeta.Icon;
+
+  const date = getClientBookingDateTime(booking);
+  const timeLabel =
+    parseClientTimeToHHMM(booking?.time) ||
+    (date
+      ? `${String(date.getHours()).padStart(2, "0")}:${String(
+          date.getMinutes(),
+        ).padStart(2, "0")}`
+      : "—");
+
+  const dayLabel =
+    date && !Number.isNaN(date.getTime())
+      ? String(date.getDate()).padStart(2, "0")
+      : "—";
+
+  const monthLabel =
+    date && !Number.isNaN(date.getTime())
+      ? date.toLocaleDateString("uk-UA", { month: "long" })
+      : "";
+
+  return (
+    <li className="list-none">
+      <button
+        type="button"
+        onClick={onClick}
+        className={cn(
+          "group mt-1 w-full overflow-hidden rounded-[24px] border border-[#eadfce] bg-white text-left transition-all duration-200",
+          "hover:-translate-y-0.5 hover:!border-[#ffd6bd] hover:!bg-[#fff7f0]",
+          "active:scale-[0.99]",
+          "focus:outline-none focus:ring-4 focus:ring-[#ff6200]/10",
+          statusMeta.status === "completed" && "opacity-85",
+        )}
+      >
+        <div className="grid min-h-[108px] grid-cols-[92px_minmax(0,1fr)_96px] items-center gap-3 px-4 py-3 max-[639px]:min-h-0 max-[639px]:grid-cols-[1fr_82px] max-[639px]:gap-3 max-[639px]:px-3 max-[639px]:py-3">
+          <div className="contents max-[639px]:block max-[639px]:min-w-0">
+            <div className="mb-2 hidden justify-center max-[639px]:flex">
+              <div
+                className={cn(
+                  "inline-flex items-center justify-center gap-1.5 rounded-full border border-[#eadfce] bg-white px-3 py-1 text-center text-[10px] font-black shadow-sm",
+                  statusMeta.text,
+                )}
+              >
+                <StatusIcon className="h-3.5 w-3.5" />
+
+                <span className="text-center leading-[1.05]">
+                  {statusMeta.label}
+                </span>
+              </div>
+            </div>
+
+            <div className="contents max-[639px]:flex max-[639px]:items-center max-[639px]:gap-3">
+              <div className="grid h-[70px] w-[70px] shrink-0 place-items-center overflow-hidden rounded-full border border-[#eadfce] bg-white p-1 shadow-[0_8px_24px_rgba(15,23,42,0.06)] md:ml-2 lg:ml-3 max-[639px]:h-[64px] max-[639px]:w-[64px]">
+                <Avatar
+                  name={booking.master || "Майстер"}
+                  photoUrl={booking.masterPhotoUrl || ""}
+                  className="h-full w-full rounded-full border-0"
+                />
+              </div>
+
+              <div className="min-w-0">
+                <div
+                  className={cn(
+                    "mb-2 inline-flex w-fit items-center justify-center gap-1.5 rounded-full border border-[#eadfce] bg-white px-3 py-1 text-[10px] font-black shadow-sm max-[639px]:hidden",
+                    statusMeta.text,
+                  )}
+                >
+                  <StatusIcon className="h-3.5 w-3.5" />
+
+                  <span className="text-center leading-[1.05]">
+                    {statusMeta.label}
+                  </span>
+                </div>
+
+                <h2 className="line-clamp-1 text-[16px] font-black leading-tight tracking-[-0.04em] text-[#202020] max-[639px]:text-[13px] lg:text-[18px]">
+                  {booking.master || "Майстер"}
+                </h2>
+
+                <div className="mt-2 flex items-center gap-1.5 text-[10px] font-semibold text-[#77716b] max-[767px]:mt-1 max-[767px]:text-[8px] lg:text-[10px]">
+                  <ClipboardPen className="h-4 w-4 shrink-0 text-[#77716b] max-[767px]:h-3 max-[767px]:w-3" />
+
+                  <span className="line-clamp-2">
+                    {booking.service || "Послуга"}
+                  </span>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          <div
+            className={cn(
+              "hidden h-full items-center justify-center border-l pl-3 max-[639px]:flex",
+              statusMeta.border,
+            )}
+          >
+            <div className="flex h-[74px] w-[58px] flex-col items-center justify-center">
+              <p className="text-center text-[11px] font-bold capitalize text-[#aaa19a]">
+                {monthLabel}
+              </p>
+
+              <p
+                className={cn(
+                  "text-[28px] font-[300] leading-none tracking-[-0.05em]",
+                  statusMeta.dateText,
+                )}
+              >
+                {dayLabel}
+              </p>
+
+              <p className="text-[12px] font-semibold tracking-[0.08em] text-[#5f5a55]">
+                {timeLabel}
+              </p>
+            </div>
+          </div>
+
+          <div
+            className={cn(
+              "mr-2 flex items-center justify-center border-l pl-5 max-[639px]:hidden",
+              statusMeta.border,
+            )}
+          >
+            <div className="flex h-[82px] w-[78px] flex-col items-center justify-center">
+              <span className="text-[13px] font-bold capitalize text-[#aaa19a]">
+                {monthLabel}
+              </span>
+
+              <span
+                className={cn(
+                  "mt-0.5 text-[36px] font-[300] leading-none tracking-[-0.05em]",
+                  statusMeta.dateText,
+                )}
+              >
+                {dayLabel}
+              </span>
+
+              <span className="mt-1 text-[15px] font-black text-[#77716b]">
+                {timeLabel}
+              </span>
+            </div>
+          </div>
+        </div>
+      </button>
+    </li>
+  );
+}
+
+function ClientFallbackAvatar({ name, className = "", textClassName = "" }) {
+  const initials = initialsFromName(name);
+
+  return (
+    <div
+      className={cn(
+        "relative flex shrink-0 items-center justify-center overflow-hidden border border-[#e6ddd3] bg-[#f6f3ee]",
+        "shadow-[inset_0_1px_0_rgba(255,255,255,0.85),0_8px_22px_rgba(15,23,42,0.04)]",
+        className,
+      )}
+    >
+      <div className="absolute inset-0 bg-[linear-gradient(135deg,#fbfaf8_0%,#f1ebe4_48%,#e8ded4_100%)]" />
+
+      <div className="absolute left-[-18%] top-[-22%] h-[70%] w-[70%] rounded-full bg-white/70 blur-xl" />
+      <div className="absolute bottom-[-28%] right-[-24%] h-[76%] w-[76%] rounded-full bg-[#d8cec3]/45 blur-2xl" />
+
+      <div className="absolute inset-x-0 top-0 h-px bg-white/80" />
+
+      <span
+        className={cn(
+          "relative z-10 font-black tracking-[-0.06em] text-[#756d66]",
+          textClassName || "text-[24px]",
+        )}
+      >
+        {initials}
+      </span>
+    </div>
+  );
+}
+
 function Avatar({ name, photoUrl, className = "" }) {
   const initials = initialsFromName(name);
   const src = toPublicUrl(photoUrl);
@@ -183,7 +473,7 @@ function Avatar({ name, photoUrl, className = "" }) {
   return (
     <div
       className={cn(
-        "relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-[22px] border border-white bg-[#fff1e8] ",
+    "relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-[22px] border border-[#eadfce] bg-[#f6f3ee] ",
         className,
       )}
     >
@@ -193,18 +483,13 @@ function Avatar({ name, photoUrl, className = "" }) {
           alt={name || "Клієнт"}
           className="h-full w-full object-cover"
         />
-      ) : (
-        <>
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,90,0,0.18),transparent_35%),radial-gradient(circle_at_80%_90%,rgba(255,214,189,0.65),transparent_38%)]" />
-
-          <div className="absolute -right-3 -top-3 h-10 w-10 rounded-full bg-white/55 blur-sm" />
-          <div className="absolute -bottom-4 -left-4 h-12 w-12 rounded-full bg-[#f3eee7]/80 blur-sm" />
-
-          <span className="relative z-10 text-[25px] font-black tracking-[-0.03em] text-[#ff5a00]">
-            {initials}
-          </span>
-        </>
-      )}
+) : (
+  <ClientFallbackAvatar
+    name={name}
+    className="h-full w-full rounded-[20px]"
+    textClassName="text-[25px]"
+  />
+)}
     </div>
   );
 }
@@ -527,37 +812,47 @@ function StatCard({
   );
 }
 
+const clientStatusBadgeClass =
+  "border-[#eadbc9] bg-white shadow-[0_8px_22px_rgba(17,17,17,0.05)]";
+
+const clientStatusIconClass = "text-[#ff6200]";
+
 const statusMeta = {
   loyal: {
     label: "Постійний",
     icon: Repeat,
-    className: "border-violet-100 bg-violet-50 text-violet-700",
+    className: clientStatusBadgeClass,
+    iconClassName: clientStatusIconClass,
   },
 
   new: {
     label: "Новий",
     icon: UserPlus,
-    className: "border-sky-200 bg-sky-50 text-sky-700",
+    className: clientStatusBadgeClass,
+    iconClassName: clientStatusIconClass,
   },
 
   attention: {
     label: "Активний",
     icon: TrendingUp,
-    className: "border-emerald-100 bg-emerald-50 text-emerald-700",
+    className: clientStatusBadgeClass,
+    iconClassName: clientStatusIconClass,
   },
 
   risk: {
     label: "Неактивний",
     icon: TrendingDown,
-    className: "border-slate-200 bg-slate-100 text-slate-600",
+    className: clientStatusBadgeClass,
+    iconClassName: clientStatusIconClass,
   },
 
-vip: {
-  label: "VIP",
-  icon: Crown,
-  className:
-    "border-[#f6d365] bg-gradient-to-r from-[#fff8dc] via-[#fff3b0] to-[#ffe08a] text-[#9a6700] shadow-[0_0_12px_rgba(246,211,101,0.35)]",
-},
+  vip: {
+    label: "VIP",
+    icon: Crown,
+    className:
+      "border-[#f6d365] bg-gradient-to-r from-[#fff8dc] via-[#fff3b0] to-[#ffe08a] text-[#9a6700] shadow-[0_0_14px_rgba(246,211,101,0.45)]",
+    iconClassName: "text-[#9a6700]",
+  },
 };
 
 const statusDescriptions = {
@@ -779,6 +1074,52 @@ function findDuplicateClientByContacts(payload, clients = []) {
   });
 }
 
+function getClientSource(client) {
+  return String(
+    client?.source ||
+      client?.clientSource ||
+      client?.studioClientSource ||
+      client?.studioClient?.source ||
+      "",
+  ).toUpperCase();
+}
+
+function isManualClient(client) {
+  return (
+    getClientSource(client) === "MANUAL" ||
+    client?.isManual === true ||
+    client?.createdManually === true
+  );
+}
+
+function getClientBookingsCount(client) {
+  const historyCount = Array.isArray(client?.history)
+    ? client.history.length
+    : 0;
+
+  return Math.max(
+    historyCount,
+    Number(client?.bookings || 0),
+    Number(client?.totalBookings || 0),
+    Number(client?.bookingsCount || 0),
+    Number(client?.cancellations || 0),
+  );
+}
+
+function getDeleteClientBlockReason(client) {
+  if (!client) return "Клієнта не знайдено.";
+
+  if (!isManualClient(client)) {
+    return "Видаляти можна тільки клієнтів, які були додані вручну.";
+  }
+
+  if (getClientBookingsCount(client) > 0) {
+    return "У цього клієнта вже є записи. Спочатку видаліть усі записи цього клієнта, після цього його можна буде видалити.";
+  }
+
+  return "";
+}
+
 function CreateClientErrorBox({ error, onOpenDuplicate }) {
   if (!error) return null;
 
@@ -862,6 +1203,8 @@ function CreateClientErrorBox({ error, onOpenDuplicate }) {
 
 export default function Clients() {
   const { studio } = useStudio();
+  const { confirmBooking, cancelBooking } = useBookings();
+
   const studioId = studio?.id ?? null;
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("all");
@@ -870,6 +1213,12 @@ export default function Clients() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState(null);
   const [clientTabs, setClientTabs] = useState({});
+  const [detailsClientBooking, setDetailsClientBooking] = useState(null);
+  const [clientBookingActionLoading, setClientBookingActionLoading] =
+  useState(false);
+
+const [cancelClientBookingConfirm, setCancelClientBookingConfirm] =
+  useState(null);
   const clientsListRef = useRef(null);
   const [statusInfoClient, setStatusInfoClient] = useState(null);
   const filterRef = useRef(null);
@@ -883,7 +1232,12 @@ const createClientErrorRef = useRef(null);
   const [createClientForm, setCreateClientForm] = useState(emptyClientForm);
   const [createClientError, setCreateClientError] = useState("");
   const [creatingClient, setCreatingClient] = useState(false);
-  
+  const [deleteClientConfirm, setDeleteClientConfirm] = useState({
+  open: false,
+  client: null,
+  loading: false,
+  error: "",
+});
   const [exportFields, setExportFields] = useState({
     name: true,
     phone: true,
@@ -1205,26 +1559,28 @@ setCreateClientError("");
       });
 
       const createdClient = data?.client || data || {};
-      const normalizedClient = {
-        id: createdClient.id || `local-${Date.now()}`,
-        firstName: createdClient.firstName ?? payload.firstName,
-        lastName: createdClient.lastName ?? payload.lastName,
-        photoUrl: createdClient.photoUrl ?? payload.photoUrl,
-        photoKey: createdClient.photoKey ?? payload.photoKey,
-        birthDate: createdClient.birthDate ?? payload.birthDate,
-        email: createdClient.email ?? payload.email,
-        phone: createdClient.phone ?? payload.phone,
-        status: createdClient.status || "new",
-        bookings: createdClient.bookings ?? 0,
-        cancellations: createdClient.cancellations ?? 0,
-        spent: createdClient.spent ?? 0,
-        averageCheck: createdClient.averageCheck ?? 0,
-        favoriteService: createdClient.favoriteService || "",
-        notes: createdClient.notes || [],
-        history: createdClient.history || [],
-        registeredAt: createdClient.registeredAt || new Date().toISOString(),
-        ...createdClient,
-      };
+const normalizedClient = {
+  id: createdClient.id || `local-${Date.now()}`,
+  firstName: createdClient.firstName ?? payload.firstName,
+  lastName: createdClient.lastName ?? payload.lastName,
+  photoUrl: createdClient.photoUrl ?? payload.photoUrl,
+  photoKey: createdClient.photoKey ?? payload.photoKey,
+  birthDate: createdClient.birthDate ?? payload.birthDate,
+  email: createdClient.email ?? payload.email,
+  phone: createdClient.phone ?? payload.phone,
+  source: createdClient.source || "MANUAL",
+  isManual: createdClient.isManual ?? true,
+  status: createdClient.status || "new",
+  bookings: createdClient.bookings ?? 0,
+  cancellations: createdClient.cancellations ?? 0,
+  spent: createdClient.spent ?? 0,
+  averageCheck: createdClient.averageCheck ?? 0,
+  favoriteService: createdClient.favoriteService || "",
+  notes: createdClient.notes || [],
+  history: createdClient.history || [],
+  registeredAt: createdClient.registeredAt || new Date().toISOString(),
+  ...createdClient,
+};
 
       setAllClients((current) => [normalizedClient, ...current]);
       setSelectedClientId(normalizedClient.id);
@@ -1264,6 +1620,187 @@ setCreateClientError("");
     );
   }
 
+  function updateClientHistoryBookingStatus(bookingId, patch) {
+  setDetailsClientBooking((current) =>
+    current && String(current.id) === String(bookingId)
+      ? {
+          ...current,
+          ...patch,
+        }
+      : current,
+  );
+
+  setAllClients((current) =>
+    current.map((client) => ({
+      ...client,
+      history: (client.history || []).map((booking) =>
+        String(booking.id) === String(bookingId)
+          ? {
+              ...booking,
+              ...patch,
+            }
+          : booking,
+      ),
+      allBookings: (client.allBookings || []).map((booking) =>
+        String(booking.id) === String(bookingId)
+          ? {
+              ...booking,
+              ...patch,
+            }
+          : booking,
+      ),
+    })),
+  );
+}
+
+async function handleConfirmClientBooking(booking) {
+  if (!booking?.id || clientBookingActionLoading) return;
+
+  setClientBookingActionLoading(true);
+
+  try {
+    await confirmBooking(booking.id);
+
+    updateClientHistoryBookingStatus(booking.id, {
+      status: "CONFIRMED",
+      canceledBy: null,
+    });
+  } catch (error) {
+    alert(error?.message || "Не вдалося підтвердити запис");
+  } finally {
+    setClientBookingActionLoading(false);
+  }
+}
+
+async function handleCancelClientBooking(booking) {
+  if (!booking?.id || clientBookingActionLoading) return;
+
+  setClientBookingActionLoading(true);
+
+  try {
+    await cancelBooking(booking.id);
+
+    updateClientHistoryBookingStatus(booking.id, {
+      status: "CANCELED",
+      canceledBy: "owner",
+    });
+
+    setCancelClientBookingConfirm(null);
+  } catch (error) {
+    alert(error?.message || "Не вдалося скасувати запис");
+  } finally {
+    setClientBookingActionLoading(false);
+  }
+}
+
+  function openDeleteClientConfirm(client) {
+  setDeleteClientConfirm({
+    open: true,
+    client,
+    loading: false,
+    error: "",
+  });
+}
+
+function closeDeleteClientConfirm() {
+  if (deleteClientConfirm.loading) return;
+
+  setDeleteClientConfirm({
+    open: false,
+    client: null,
+    loading: false,
+    error: "",
+  });
+}
+
+async function deleteClientPhoto(currentStudioId, key) {
+  if (!key) return;
+
+  const token = localStorage.getItem("token");
+
+  const res = await fetch(
+    `${import.meta.env.VITE_API_URL}/media/studio/${currentStudioId}/client-photo`,
+    {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ key }),
+    },
+  );
+
+  const data = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    throw new Error(data?.message || `Delete client photo failed (${res.status})`);
+  }
+
+  return data;
+}
+
+async function confirmDeleteClient() {
+  const client = deleteClientConfirm.client;
+
+  if (!studioId || !client || deleteClientConfirm.loading) return;
+
+  const blockReason = getDeleteClientBlockReason(client);
+
+  if (blockReason) {
+    setDeleteClientConfirm((current) => ({
+      ...current,
+      error: blockReason,
+    }));
+    return;
+  }
+
+  setDeleteClientConfirm((current) => ({
+    ...current,
+    loading: true,
+    error: "",
+  }));
+
+  try {
+    await api(`/owner/studio/${studioId}/clients/${client.id}`, {
+      method: "DELETE",
+    });
+
+    if (client.photoKey) {
+      try {
+        await deleteClientPhoto(studioId, client.photoKey);
+      } catch (error) {
+        console.warn("Client photo delete failed:", error);
+      }
+    }
+
+    setAllClients((current) =>
+      current.filter((item) => String(item.id) !== String(client.id)),
+    );
+
+    if (String(selectedClientId) === String(client.id)) {
+      setSelectedClientId(null);
+    }
+
+    setNoteClient((current) =>
+      String(current?.id) === String(client.id) ? null : current,
+    );
+
+    setDeleteClientConfirm({
+      open: false,
+      client: null,
+      loading: false,
+      error: "",
+    });
+  } catch (error) {
+    setDeleteClientConfirm((current) => ({
+      ...current,
+      loading: false,
+      error:
+        error?.message ||
+        "Не вдалося видалити клієнта. Перевірте, чи немає у нього записів.",
+    }));
+  }
+}
 
 
   function handleExportClients() {
@@ -1736,7 +2273,11 @@ if (sort === "nameAsc") {
 
     return best;
   }, [statsBookings]);
-
+const clientToDelete = deleteClientConfirm.client;
+const clientToDeleteName = getClientFullName(clientToDelete);
+const clientToDeleteBookingsCount = getClientBookingsCount(clientToDelete);
+const deleteClientBlockReason = getDeleteClientBlockReason(clientToDelete);
+const canDeleteClient = Boolean(clientToDelete) && !deleteClientBlockReason;
   return (
     <div className="min-h-screen bg-[#fbfaf8] pb-8">
       <div className="mx-auto max-w-6xl space-y-6 ">
@@ -1966,7 +2507,7 @@ if (sort === "nameAsc") {
   }}
   onOpenStatusInfo={() => setStatusInfoClient(client)}
   onDeleteNote={(noteId) => handleDeleteNote(client.id, noteId)}
-
+  onAskDelete={() => openDeleteClientConfirm(client)}
   onCopyPhone={handleCopyPhone}
   copiedPhone={copiedPhone}
 />
@@ -2040,37 +2581,612 @@ if (sort === "nameAsc") {
 
       <Modal
         open={selectedClient != null}
-        onClose={() => setSelectedClientId(null)}
+        onClose={() => {
+  setSelectedClientId(null);
+  setDetailsClientBooking(null);
+}}
         title={"Профіль клієнта"}
         badge="Клієнт"
         icon={ContactRound}
         size="lg"
       >
         {selectedClient && (
-          <ClientDetails
-            client={{
-              ...selectedClient,
-              notes: selectedClient.notes || [],
-            }}
-            activeTab={clientTabs[selectedClient.id] || "history"}
-            onTabChange={(tab) =>
-              setClientTabs((current) => ({
-                ...current,
-                [selectedClient.id]: tab,
-              }))
-            }
-            onAddNote={() => {
-              setNoteClient(selectedClient);
-              setNoteDraft("");
-            }}
-            onDeleteNote={(noteId) =>
-              handleDeleteNote(selectedClient.id, noteId)
-            }
-          
-          />
+<ClientDetails
+  client={{
+    ...selectedClient,
+    notes: selectedClient.notes || [],
+  }}
+  activeTab={clientTabs[selectedClient.id] || "history"}
+  onTabChange={(tab) =>
+    setClientTabs((current) => ({
+      ...current,
+      [selectedClient.id]: tab,
+    }))
+  }
+  onAddNote={() => {
+    setNoteClient(selectedClient);
+    setNoteDraft("");
+  }}
+  onDeleteNote={(noteId) =>
+    handleDeleteNote(selectedClient.id, noteId)
+  }
+  onOpenBooking={(booking) =>
+    setDetailsClientBooking({
+      ...booking,
+      client: selectedClient,
+    })
+  }
+/>
         )}
       </Modal>
 
+{detailsClientBooking &&
+  (() => {
+    const selectedBooking = detailsClientBooking;
+
+    const rawStatus = String(selectedBooking.status || "").toLowerCase();
+    const isCanceled = rawStatus === "canceled";
+    const isConfirmed = rawStatus === "confirmed";
+    const dt = getClientBookingDateTime(selectedBooking);
+    const isArchived = dt ? dt.getTime() < Date.now() : false;
+
+const statusMeta = isCanceled
+  ? {
+      label:
+        selectedBooking.canceledBy === "client"
+          ? "Скасовано клієнтом"
+          : "Скасовано вами",
+      top: "from-[var(--color-canceled-light)] to-white",
+      Icon: XCircle,
+      iconColor: "text-[var(--color-canceled-dark)]",
+      pillText: "text-[var(--color-canceled-dark)]",
+      accent: "text-[var(--color-canceled)]",
+    }
+  : isArchived
+    ? {
+          label: "Сеанс завершено",
+          top: "from-[var(--color-archived-light)] to-white",
+          Icon: PartyPopper,
+        iconColor: "text-[var(--color-archived-dark)]",
+        pillText: "text-[var(--color-archived-dark)]",
+        accent: "text-[var(--color-archived)]",
+      }
+    : isConfirmed
+      ? {
+          label: "Підтверджено",
+          top: "from-[var(--color-confirmed-light)] to-white",
+          Icon: CheckCheck,
+          iconColor: "text-[var(--color-confirmed-dark)]",
+          pillText: "text-[var(--color-confirmed-dark)]",
+          accent: "text-[var(--color-confirmed)]",
+        }
+      : {
+          label: "Очікує підтвердження",
+          top: "from-[var(--color-pending-light)] to-white",
+          Icon: Clock,
+          iconColor: "text-[#ffb020]",
+          pillText: "text-[#ffb020]",
+          accent: "text-[#ffb020]",
+        };
+
+    const StatusIcon = statusMeta.Icon;
+
+    const client = selectedBooking.client || selectedClient || {};
+
+    const clientName =
+      [client.firstName, client.lastName].filter(Boolean).join(" ") ||
+      client.name ||
+      selectedBooking.clientName ||
+      "Клієнт";
+
+    const phone =
+      client.phone ||
+      selectedBooking.clientPhone ||
+      selectedBooking.phone ||
+      "";
+
+    const service =
+      selectedBooking.service ||
+      selectedBooking.serviceName ||
+      "Послуга";
+
+    const time =
+      parseClientTimeToHHMM(selectedBooking.time) ||
+      selectedBooking.time ||
+      "—";
+
+    const price =
+      selectedBooking.price ??
+      selectedBooking.servicePrice ??
+      selectedBooking.totalPrice ??
+      null;
+
+    const duration =
+      selectedBooking.duration ??
+      selectedBooking.serviceDuration ??
+      selectedBooking.durationMinutes ??
+      null;
+
+    const masterName =
+      selectedBooking.master ||
+      selectedBooking.masterName ||
+      selectedBooking.staffName ||
+      selectedBooking.employeeName ||
+      "Довільний майстер";
+
+    const dateLabel =
+      dt && !Number.isNaN(dt.getTime())
+        ? dt
+            .toLocaleDateString("uk-UA", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            })
+            .replace(" р.", "р.")
+        : "—";
+
+    const closeDetails = () => {
+      setDetailsClientBooking(null);
+      setCopiedPhone(false);
+    };
+
+    const clientPhoto = toPublicUrl(
+      client.photoUrl ||
+        selectedBooking.clientPhotoUrl ||
+        selectedBooking.clientPhoto ||
+        selectedBooking.client?.photoUrl ||
+        selectedBooking.client?.photo ||
+        selectedBooking.client?.avatar ||
+        "",
+    );
+
+    const masterPhoto = toPublicUrl(
+      selectedBooking.masterPhotoUrl ||
+        selectedBooking.masterPhoto ||
+        selectedBooking.master?.photoUrl ||
+        selectedBooking.master?.photo ||
+        selectedBooking.master?.avatar ||
+        "",
+    );
+
+    return (
+      <div
+        className="fixed inset-0 z-[10050] flex items-end justify-center bg-[#1b1b1b]/35 p-0 backdrop-blur-[10px] sm:items-center sm:p-5"
+        onMouseDown={(e) => {
+          if (e.target === e.currentTarget) {
+            closeDetails();
+          }
+        }}
+      >
+        <div
+          className={cn(
+            "relative flex w-full flex-col overflow-hidden bg-[#fbfaf8]",
+            "h-[100dvh] rounded-none border-0 shadow-none",
+            "sm:h-auto sm:max-h-[88vh] sm:max-w-[640px] sm:rounded-[34px] sm:border sm:border-[#eadfce] sm:shadow-[0_35px_110px_rgba(27,27,27,0.22)]",
+          )}
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div
+            className={cn(
+              "relative overflow-hidden px-5 pb-5 pt-[max(16px,env(safe-area-inset-top))] sm:px-6 sm:pt-6",
+              "bg-gradient-to-b",
+              statusMeta.top,
+            )}
+          >
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.58),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.20),rgba(255,255,255,0))]" />
+
+            <div className="relative flex items-center justify-between">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/80 px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] text-[#77716b] shadow-sm backdrop-blur">
+                <ClipboardPen className="h-4 w-4 text-[#ff6200]" />
+                Деталі запису
+              </div>
+
+              <button
+                type="button"
+                onClick={closeDetails}
+                className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-[#202020] shadow-[0_8px_24px_rgba(27,27,27,0.10)] transition hover:bg-[#fff7f0] active:scale-[0.98]"
+                aria-label="Закрити"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="relative mt-8 flex flex-col items-center text-center">
+              <div className="inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-[13px] font-black shadow-[0_8px_24px_rgba(27,27,27,0.08)] backdrop-blur">
+                <StatusIcon className={cn("h-4 w-4", statusMeta.iconColor)} />
+
+                <span className={statusMeta.pillText}>
+                  {statusMeta.label}
+                </span>
+              </div>
+
+              <h2 className="mt-8 break-words text-center text-[30px] font-black leading-[1.05] tracking-tight text-[#202020] sm:text-[34px]">
+                {service}
+              </h2>
+
+              <p className="mt-2 flex flex-wrap items-center justify-center gap-2 text-sm font-bold text-[#77716b]">
+                <CalendarDays className="h-4 w-4 text-[#ff6200]" />
+                <span>{dateLabel}</span>
+              </p>
+            </div>
+
+            <div className="relative mt-4 grid grid-cols-3 gap-2">
+              <div className="flex min-h-[90px] flex-col items-center justify-center rounded-[22px] border border-white/70 bg-white/88 p-3 text-center shadow-sm backdrop-blur">
+                <Clock3 className={cn("h-4 w-4", statusMeta.iconColor)} />
+
+                <p className="mt-2 text-[11px] font-black uppercase tracking-[0.12em] text-[#aaa19a]">
+                  Час запису
+                </p>
+
+                <p className="mt-1 text-sm font-black text-[#202020]">
+                  {time}
+                </p>
+              </div>
+
+              <div className="flex min-h-[90px] flex-col items-center justify-center rounded-[22px] border border-white/70 bg-white/88 p-3 text-center shadow-sm backdrop-blur">
+                <Banknote className={cn("h-4 w-4", statusMeta.iconColor)} />
+
+                <p className="mt-2 text-[11px] font-black uppercase tracking-[0.12em] text-[#aaa19a]">
+                  Сума
+                </p>
+
+                <p className="mt-1 text-sm font-black text-[#202020]">
+                  {price != null ? `${price} грн` : "—"}
+                </p>
+              </div>
+
+              <div className="flex min-h-[90px] flex-col items-center justify-center rounded-[22px] border border-white/70 bg-white/88 p-3 text-center shadow-sm backdrop-blur">
+                <Timer className={cn("h-4 w-4", statusMeta.iconColor)} />
+
+                <p className="mt-2 text-[11px] font-black uppercase tracking-[0.12em] text-[#aaa19a]">
+                  Тривалість
+                </p>
+
+                <p className="mt-1 text-sm font-black text-[#202020]">
+                  {duration != null ? `${duration} хв` : "—"}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="relative flex min-h-0 flex-1 flex-col bg-white px-4 pt-4 sm:px-6">
+            <div className="calendar-day-scroll min-h-0 flex-1 overflow-y-auto pb-28 sm:pb-24">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-[28px] border border-[#eadfce] bg-white p-4 sm:col-span-2">
+                  <div className="flex items-center gap-4">
+                    <div className="h-[72px] w-[72px] shrink-0 overflow-hidden rounded-full border border-[#eadfce] bg-white p-1">
+                      {clientPhoto ? (
+                        <img
+                          src={clientPhoto}
+                          alt={clientName}
+                          className="h-full w-full rounded-full object-cover"
+                        />
+                      ) : (
+<ClientFallbackAvatar
+  name={clientName}
+  className="h-full w-full rounded-full"
+  textClassName="text-[24px]"
+/>
+                      )}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#aaa19a]">
+                        Клієнт
+                      </p>
+
+                      <p className="truncate text-[20px] font-black text-[#202020]">
+                        {clientName}
+                      </p>
+
+                      <p className="mt-1 truncate text-sm font-bold text-[#77716b]">
+                        {phone || "Телефон не вказано"}
+                      </p>
+                    </div>
+
+                    {phone && (
+                      <div className="flex shrink-0 items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleCopyPhone(phone)}
+                          className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#eadfce] bg-white text-[#77716b] transition-all duration-200 hover:bg-[#fff7f0] hover:text-[#202020] active:scale-[0.95]"
+                          title="Скопіювати номер"
+                        >
+                          {copiedPhone ? (
+                            <CheckCheck className="h-4 w-4 text-emerald-600" />
+                          ) : (
+                            <Copy className="h-4 w-4" />
+                          )}
+                        </button>
+
+                        <a
+                          href={`tel:${phone}`}
+                          className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#ff6200] text-white transition-all duration-200 hover:bg-[#ef4f00] active:scale-[0.95]"
+                          title="Подзвонити"
+                        >
+                          <PhoneCall className="h-4 w-4" />
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="rounded-[24px] border border-[#eadfce] bg-white p-3 sm:col-span-2">
+                  <div className="ml-2 flex items-center gap-3">
+                    <div className="h-[62px] w-[62px] shrink-0 overflow-hidden rounded-full border border-[#eadfce] bg-white p-1">
+                      {masterPhoto ? (
+                        <img
+                          src={masterPhoto}
+                          alt={masterName}
+                          className="h-full w-full rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center rounded-full bg-[#fff1e8] text-[#ff6200]">
+                          <UserStar className="h-6 w-6" />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="ml-2 min-w-0 flex-1">
+                      <p className="text-[9px] font-black uppercase tracking-[0.12em] text-[#aaa19a]">
+                        Майстер
+                      </p>
+
+                      <p className="mt-0.5 truncate text-[15px] font-black text-[#202020]">
+                        {masterName}
+                      </p>
+
+                      <p className="truncate text-[12px] font-semibold text-[#77716b]">
+                        Виконавець послуги
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {!isArchived && !isCanceled && (
+              <div className="absolute inset-x-0 bottom-0 border-t border-[#eadfce] bg-white/92 px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 backdrop-blur sm:px-6 sm:pb-5">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {!isConfirmed && (
+                    <button
+                      type="button"
+                      disabled={clientBookingActionLoading}
+                      onClick={async () => {
+                        await handleConfirmClientBooking(selectedBooking);
+                        closeDetails();
+                      }}
+                      className="inline-flex h-12 items-center justify-center gap-2 rounded-[22px] bg-[var(--color-primary-buttom)] text-sm font-black text-white transition-all duration-200 hover:bg-[#4a4a4a] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50"
+                    >
+                      <CheckCheck className="h-4 w-4" />
+                      {clientBookingActionLoading
+                        ? "Підтверджуємо..."
+                        : "Підтвердити"}
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    disabled={clientBookingActionLoading}
+                    onClick={() => {
+                      closeDetails();
+                      setCancelClientBookingConfirm(selectedBooking);
+                    }}
+                    className={cn(
+                      "inline-flex h-12 items-center justify-center gap-2 rounded-[22px] border border-[#fecaca] bg-[#fff5f5] px-4 text-sm font-black text-[#ef4444] transition-all duration-200 hover:border-[#fca5a5] hover:bg-[#ffecec] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50",
+                      isConfirmed && "sm:col-span-2",
+                    )}
+                  >
+                    <XCircle className="h-4 w-4" />
+                    Скасувати запис
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  })()}
+
+<Modal
+  open={cancelClientBookingConfirm != null}
+  onClose={() => setCancelClientBookingConfirm(null)}
+  title="Скасувати запис?"
+  badge="Підтвердження"
+  icon={XCircle}
+  size="sm"
+  footer={
+    <div className="flex justify-end gap-2">
+      <Button
+        variant="secondary"
+        onClick={() => setCancelClientBookingConfirm(null)}
+        disabled={clientBookingActionLoading}
+        className="w-full sm:w-auto"
+      >
+        Назад
+      </Button>
+
+      <button
+        type="button"
+        disabled={clientBookingActionLoading}
+        onClick={() => handleCancelClientBooking(cancelClientBookingConfirm)}
+        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#ef4444] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#dc2626] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 sm:w-auto"
+      >
+        <XCircle className="h-4 w-4" />
+        {clientBookingActionLoading ? "Скасовуємо..." : "Так, скасувати"}
+      </button>
+    </div>
+  }
+>
+  <div className="space-y-4">
+    <div className="flex justify-center">
+      <div className="relative">
+        <div className="absolute inset-0 rounded-full bg-[#ef4444]/30 blur-2xl" />
+
+        <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-[#ef4444] text-white">
+          <XCircle className="h-7 w-7" />
+        </div>
+      </div>
+    </div>
+
+    <div className="text-center">
+      <h3 className="text-xl font-black tracking-tight text-[#202020]">
+        Скасувати запис?
+      </h3>
+
+      <p className="mt-2 text-sm leading-6 text-[#77716b]">
+        Запис буде позначений як скасований вами. Після цього він більше не
+        буде активним.
+      </p>
+    </div>
+
+    <div className="rounded-2xl border border-[#ffd8d8] bg-[#fff7f7] p-3.5">
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-[#ef4444] shadow-sm">
+          <AlertTriangle className="h-4 w-4" />
+        </div>
+
+        <div className="min-w-0">
+          <p className="text-sm font-bold text-[#202020]">
+            Після скасування
+          </p>
+
+          <p className="mt-1 text-xs leading-5 text-[#77716b]">
+            У профілі клієнта цей запис залишиться в історії зі статусом
+            “Скасовано вами”.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</Modal>
+<Modal
+  open={deleteClientConfirm.open}
+  onClose={closeDeleteClientConfirm}
+  title={canDeleteClient ? "Видалити клієнта?" : "Клієнта не можна видалити"}
+  badge="Підтвердження"
+  icon={Trash2}
+  size="sm"
+  footer={
+    <div className="flex flex-row gap-2 sm:justify-end">
+      <Button
+        variant="secondary"
+        disabled={deleteClientConfirm.loading}
+        onClick={closeDeleteClientConfirm}
+        className="flex-1 sm:flex-none"
+      >
+        Скасувати
+      </Button>
+
+      {canDeleteClient ? (
+        <Button
+          variant="danger"
+          disabled={deleteClientConfirm.loading}
+          onClick={confirmDeleteClient}
+          className="flex-1 sm:flex-none"
+        >
+          <Trash2 className="h-4 w-4" />
+          {deleteClientConfirm.loading ? "Видаляємо..." : "Видалити"}
+        </Button>
+      ) : (
+        <Button
+          variant="primary"
+          disabled={deleteClientConfirm.loading || !clientToDelete}
+          onClick={() => {
+            if (!clientToDelete) return;
+
+            setSelectedClientId(clientToDelete.id);
+            setClientTabs((current) => ({
+              ...current,
+              [clientToDelete.id]: current[clientToDelete.id] || "history",
+            }));
+            closeDeleteClientConfirm();
+          }}
+          className="flex-1 sm:flex-none"
+        >
+          <Eye className="h-4 w-4" />
+          Відкрити
+        </Button>
+      )}
+    </div>
+  }
+>
+  <div className="py-4 text-center">
+    <div className="mb-5 flex items-center justify-center gap-4">
+      <Avatar
+        name={clientToDeleteName}
+        photoUrl={clientToDelete?.photoUrl}
+        className="h-20 w-20 rounded-full border-4 border-white shadow-[0_12px_32px_rgba(15,23,42,0.12)]"
+      />
+
+      <div className="flex h-10 w-10 items-center justify-center rounded-full">
+        <ChevronRight className="h-5 w-5 text-[#ff6200]" />
+      </div>
+
+      <div
+        className={cn(
+          "flex h-20 w-20 items-center justify-center rounded-full border shadow-[0_12px_32px_rgba(229,72,77,0.12)]",
+          canDeleteClient
+            ? "border-[#fecaca] bg-[#fff1f1]"
+            : "border-[#ffd6bd] bg-[#fff7f0]",
+        )}
+      >
+        {canDeleteClient ? (
+          <Trash2 className="h-9 w-9 text-[#e5484d]" />
+        ) : (
+          <CircleAlert className="h-9 w-9 text-[#ff5a00]" />
+        )}
+      </div>
+    </div>
+
+    <h4 className="break-words text-lg font-black leading-6 text-[#202020]">
+      Клієнт
+
+      <span className="my-1 block break-words text-[28px] font-black leading-[1.3] text-[#ff6200] sm:text-[32px]">
+        {clientToDeleteName}
+      </span>
+
+      {canDeleteClient
+        ? "буде видалений зі списку клієнтів."
+        : "не може бути видалений."}
+    </h4>
+
+    {!canDeleteClient && (
+      <div className="mt-5 rounded-[22px] border border-[#ffd6bd] bg-[#fff7f0] p-4 text-left">
+        <div className="flex items-start gap-3">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-white text-[#ff6200] shadow-sm">
+            <CircleAlert className="h-5 w-5" />
+          </div>
+
+          <div className="min-w-0">
+            <p className="text-sm font-black text-[#202020]">
+              Спочатку видаліть записи клієнта
+            </p>
+
+            <p className="mt-1 text-sm font-semibold leading-5 text-[#77716b]">
+              {deleteClientBlockReason}
+            </p>
+
+            {clientToDeleteBookingsCount > 0 && (
+              <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-[#eadbc9] bg-white px-3 py-1.5 text-xs font-black text-[#202020] shadow-sm">
+                <CalendarDays className="h-3.5 w-3.5 text-[#ff6200]" />
+                Записів: {clientToDeleteBookingsCount}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    )}
+
+    {deleteClientConfirm.error && (
+      <div className="mt-4 rounded-[18px] border border-[#fecaca] bg-[#fff1f1] px-4 py-3 text-sm font-bold text-[#e5484d]">
+        {deleteClientConfirm.error}
+      </div>
+    )}
+  </div>
+</Modal>
       <Modal
         open={createClientOpen}
         onClose={closeCreateClientModal}
@@ -2540,30 +3656,58 @@ function ClientAccordion({
   onAddNote,
   onOpenStatusInfo,
   onToggleVip,
+  onAskDelete,
   onCopyPhone,
 }) {
   const fullName =
     [client.firstName, client.lastName].filter(Boolean).join(" ") || "Клієнт";
-const clientStatus =
-  client.isVip || client.status === "vip"
-    ? "vip"
-    : client.status || "new";
 
-  return (
-<article
-  className={cn(
-    "group/clientCard relative flex h-full flex-col overflow-hidden rounded-[18px] border bg-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#fff7f0]",
-    client.isVip
-      ? "border-[#f6d365] shadow-[0_0_0_1px_rgba(246,211,101,0.4),0_12px_32px_rgba(246,211,101,0.18)] hover:border-[#f6d365]"
-      : "border-[#eadbc9] shadow-[0_10px_30px_rgba(17,17,17,0.04)] hover:border-[#ffd6bd] ",
-  )}
->
+  const clientStatus =
+    client.isVip || client.status === "vip"
+      ? "vip"
+      : client.status || "new";
 
-  {client.isVip && (
-  <div className="absolute left-0 top-0 h-1 w-full bg-gradient-to-r from-[#f6d365] via-[#fbbf24] to-[#fde68a]" />
+  const showDeleteButton = isManualClient(client);
+  const deleteBlocked = getClientBookingsCount(client) > 0;
+
+return (
+  <article
+    className={cn(
+      "group/clientCard relative flex h-full flex-col overflow-hidden rounded-[18px] border bg-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#fff7f0]",
+      client.isVip
+        ? "border-[#f6d365] shadow-[0_0_0_1px_rgba(246,211,101,0.4),0_12px_32px_rgba(246,211,101,0.18)] hover:border-[#f6d365]"
+        : "border-[#eadbc9] shadow-[0_10px_30px_rgba(17,17,17,0.04)] hover:border-[#ffd6bd]",
+    )}
+  >
+    {showDeleteButton && (
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onAskDelete?.();
+        }}
+className={cn(
+  "absolute right-1  z-20 grid h-9 w-9 place-items-center transition-all duration-200 active:scale-[0.96]",
+  deleteBlocked
+    ? "border-[#eadbc9] text-[#b8afa6]"
+    : "border-[#ffd6bd] text-[#ff5a00] hover:scale-[1.1] ",
 )}
+        title={
+          deleteBlocked
+            ? "Спочатку видаліть записи цього клієнта"
+            : "Видалити клієнта"
+        }
+        aria-label="Видалити клієнта"
+      >
+        <Trash2 className="h-4 w-4" />
+      </button>
+    )}
 
-  <div className="flex flex-1 flex-col px-3">
+    {client.isVip && (
+      <div className="absolute left-0 top-0 h-1 w-full bg-gradient-to-r from-[#f6d365] via-[#fbbf24] to-[#fde68a]" />
+    )}
+
+    <div className="flex flex-1 flex-col px-3">
         <button
           type="button"
           onClick={onOpenDetails}
@@ -2811,7 +3955,7 @@ function ClientDetails({
   onTabChange,
   onAddNote,
   onDeleteNote,
-  onToggleVip,
+  onOpenBooking,
   compactHeader = false,
 }) {
   const [visibleHistoryCount, setVisibleHistoryCount] = useState(3);
@@ -2925,7 +4069,8 @@ async function handleCopyClientPhone(value) {
   )}
 </div>
 
-              <p className="truncate text-sm text-[#77716b]">{client.email}</p>
+              <p className="truncate text-sm text-[#77716b]">
+                {client.email}</p>
             </div>
           </div>
         )}
@@ -3075,83 +4220,54 @@ async function handleCopyClientPhone(value) {
       </div>
 
       <div className="py-4">
-        {activeTab === "history" && (
-          <div className="space-y-3">
-            {visibleBookings.map((booking) => {
-              const statusUi = getBookingStatusUi(
-                booking.status,
-                booking.canceledBy,
-              );
+{activeTab === "history" && (
+  <div className="space-y-3">
+    {bookings.length === 0 ? (
+      <div className="rounded-[24px] border border-[#eadbc9] bg-white p-5 text-center text-sm font-bold text-[#77716b]">
+        Історія записів поки порожня.
+      </div>
+    ) : (
+      <div className="space-y-3">
+        <ul className="space-y-3">
+          {visibleBookings.map((booking) => (
+            <ClientHistoryBookingCard
+              key={booking.id}
+              booking={booking}
+              client={client}
+              onClick={() => onOpenBooking?.(booking)}
+            />
+          ))}
+        </ul>
 
-              const StatusIcon = statusUi.icon;
+        <div className="flex flex-col items-center gap-2 pt-1">
+          <p className="text-xs font-bold text-[#77716b]">
+            Показано {visibleBookings.length} з {bookings.length}
+          </p>
 
-              return (
-                <div
-                  key={`${client.id}-${booking.date}-${booking.service}`}
-                  className="rounded-[18px] bg-[#fbfaf8] px-3 py-3"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <h4 className="line-clamp-1 text-[14px] font-black text-[#202020]">
-                        {booking.service}
-                      </h4>
+          {bookings.length > 5 && (
+            <Button
+              variant="secondary"
+              className="w-full"
+              onClick={() =>
+                setVisibleHistoryCount((count) =>
+                  hasMoreBookings ? count + 5 : 5,
+                )
+              }
+            >
+              {hasMoreBookings ? "Показати ще" : "Сховати все"}
 
-                      <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] font-medium text-[#77716b]">
-                        <span>{formatDateUA(booking.date)}</span>
-                        <span>•</span>
-                        <span>{booking.master}</span>
-                      </div>
-                    </div>
-
-                    <p className="shrink-0 text-[14px] font-black text-[#202020]">
-                      {formatMoney(booking.price)}
-                    </p>
-                  </div>
-
-                  <div
-                    className={cn(
-                      "mt-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold",
-                      booking.status === "CONFIRMED" &&
-                        "bg-emerald-50 text-emerald-700",
-                      booking.status === "COMPLETED" &&
-                        "bg-[#f3f4f6] text-[#6b7280]",
-                      booking.status === "CANCELED" &&
-                        "bg-rose-50 text-rose-700",
-                      (!booking.status || booking.status === "PENDING") &&
-                        "bg-amber-50 text-amber-700",
-                    )}
-                  >
-                    <StatusIcon className="h-3 w-3" />
-                    <span>{statusUi.text}</span>
-                  </div>
-                </div>
-              );
-            })}
-
-            {bookings.length > 3 && (
-              <div className="flex justify-center pt-1">
-                <Button
-                  onClick={() => {
-                    if (hasMoreBookings) {
-                      setVisibleHistoryCount((current) => current + 5);
-                      return;
-                    }
-
-                    setVisibleHistoryCount(3);
-                  }}
-                  className="w-full sm:w-auto"
-                >
-                  {hasMoreBookings ? "Показати ще" : "Сховати все"}
-                  {hasMoreBookings ? (
-                    <ChevronDown className="h-4 w-4" />
-                  ) : (
-                    <ChevronUp className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-            )}
-          </div>
-        )}
+              {hasMoreBookings ? (
+                <ChevronDown className="h-4 w-4" />
+              ) : (
+                <ChevronUp className="h-4 w-4" />
+              )}
+            </Button>
+          )}
+        </div>
+      </div>
+    )}
+  </div>
+)}
 
         {activeTab === "finance" && (
           <div className="space-y-3">
@@ -3208,24 +4324,26 @@ async function handleCopyClientPhone(value) {
             const meta = statusMeta[item.value] || statusMeta.new;
             const Icon = meta.icon;
 
-            return (
-              <div className={cn("rounded-[18px] px-4 py-3", meta.className)}>
-                <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/80">
-                    <Icon className="h-4 w-4" />
-                  </div>
+return (
+  <div className="rounded-[24px] border border-[#eadbc9] bg-white p-4 shadow-[0_8px_22px_rgba(17,17,17,0.05)]">
+    <div className="flex items-start gap-3">
+      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[#eadbc9] bg-[#fff7f0] text-[#ff6200]">
+        <Icon className="h-5 w-5" />
+      </div>
 
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[14px] font-black">{item.title}</p>
+      <div className="min-w-0 flex-1">
+        <div className="inline-flex h-7 items-center gap-1.5 rounded-full border border-[#eadbc9] bg-white px-2.5 text-[10px] font-black text-[#ff6200] shadow-[0_8px_22px_rgba(17,17,17,0.05)]">
+          <Icon className="h-3.5 w-3.5" />
+          {item.title}
+        </div>
 
-                    <p className="mt-0.5 text-[12px] leading-4 opacity-80">
-                      {item.description}
-                    </p>
-                  </div>
-                </div>
-                
-              </div>
-            );
+        <p className="mt-3 text-sm font-semibold leading-5 text-[#77716b]">
+          {item.description}
+        </p>
+      </div>
+    </div>
+  </div>
+);
           })()}
       </div>
       

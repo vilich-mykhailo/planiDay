@@ -23,6 +23,18 @@ ownerRouter.post("/", requireAuth, requireOwner, async (req, res) => {
   res.status(201).json(studio);
 });
 
+function hideManualEmail(email) {
+  const value = String(email || "").trim();
+
+  if (!value) return null;
+
+  if (value.endsWith("@manual.planiday.local")) {
+    return null;
+  }
+
+  return value;
+}
+
 // ✅ LIST my studios
 ownerRouter.get("/", requireAuth, requireOwner, async (req, res) => {
   const studios = await prisma.studio.findMany({
@@ -239,12 +251,13 @@ ownerRouter.get(
               duration: true,
             },
           },
-          master: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
+master: {
+  select: {
+    id: true,
+    name: true,
+    photoUrl: true,
+  },
+},
         },
       });
 
@@ -270,7 +283,7 @@ map.set(client.id, {
     "Клієнт",
 
   phone: client.phone || null,
-  email: client.email || null,
+  email: hideManualEmail(client.email),
   birthDate: client.birthDate || null,
   photoUrl: client.photoUrl || "",
   registeredAt: client.createdAt,
@@ -298,8 +311,9 @@ map.set(client.id, {
           item.spent += booking.service?.price || 0;
         }
 
-        const serviceName = booking.service?.name || "—";
-        const masterName = booking.master?.name || "—";
+ const serviceName = booking.service?.name || "—";
+const masterName = booking.master?.name || "—";
+const masterPhotoUrl = booking.master?.photoUrl || "";
 
         if (booking.status !== "CANCELED") {
           item.servicesCount[serviceName] =
@@ -322,20 +336,43 @@ if (
 ) {
   bookingStatus = "COMPLETED";
 }
-        item.allBookings.push({
-          id: booking.id,
-          date: booking.startAt,
-          time: startAt
-            ? `${String(startAt.getHours()).padStart(2, "0")}:${String(
-                startAt.getMinutes(),
-              ).padStart(2, "0")}`
-            : "",
-          service: serviceName,
-          master: masterName,
-          price: booking.service?.price || 0,
-         status: bookingStatus,
-          canceledBy: booking.canceledBy || null,
-        });
+const durationMin =
+  booking.service?.duration ??
+  (booking.startAt && booking.endAt
+    ? Math.round(
+        (new Date(booking.endAt).getTime() -
+          new Date(booking.startAt).getTime()) /
+          60000,
+      )
+    : null);
+
+item.allBookings.push({
+  id: booking.id,
+  date: booking.startAt,
+  time: startAt
+    ? `${String(startAt.getHours()).padStart(2, "0")}:${String(
+        startAt.getMinutes(),
+      ).padStart(2, "0")}`
+    : "",
+
+  service: serviceName,
+  serviceName,
+
+  master: masterName,
+  masterName,
+  masterPhotoUrl,
+  masterPhoto: masterPhotoUrl,
+
+  price: booking.service?.price || 0,
+  servicePrice: booking.service?.price || 0,
+
+  duration: durationMin,
+  serviceDuration: durationMin,
+  durationMinutes: durationMin,
+
+  status: bookingStatus,
+  canceledBy: booking.canceledBy || null,
+});
       }
 
 const manualClients = await prisma.studioClient.findMany({
@@ -346,39 +383,41 @@ const manualClients = await prisma.studioClient.findMany({
 for (const client of manualClients) {
   const accountId = client.accountId || null;
 
-  // Якщо цей StudioClient вже привʼязаний до ClientAccount,
-  // а ClientAccount вже є в map через бронювання — не створюємо дубль.
-  if (accountId && map.has(accountId)) {
-    const existing = map.get(accountId);
+if (accountId && map.has(accountId)) {
+  const existing = map.get(accountId);
 
-    map.set(accountId, {
-      ...existing,
+  map.set(accountId, {
+    ...existing,
 
-      // Підтягуємо дані з manual-профілю, якщо в ClientAccount вони пусті.
-      firstName: existing.firstName || client.firstName || "",
-      lastName: existing.lastName || client.lastName || "",
-      phone: existing.phone || client.phone || null,
-      email: existing.email || client.email || null,
-      birthDate: existing.birthDate || client.birthDate || null,
-      photoUrl: existing.photoUrl || client.photoUrl || "",
-      registeredAt: existing.registeredAt || client.createdAt,
+    firstName: existing.firstName || client.firstName || "",
+    lastName: existing.lastName || client.lastName || "",
+    phone: existing.phone || client.phone || null,
+    email: hideManualEmail(existing.email) || hideManualEmail(client.email),
+    birthDate: existing.birthDate || client.birthDate || null,
+    photoUrl: existing.photoUrl || client.photoUrl || "",
+    registeredAt: existing.registeredAt || client.createdAt,
 
-      studioClientId: client.id,
-    });
+    studioClientId: client.id,
+    source: client.source || "MANUAL",
+    isManual: client.source === "MANUAL",
+  });
 
-    continue;
-  }
+  continue;
+}
 
   // Якщо manual-клієнт вже був доданий по своєму id — пропускаємо.
   if (map.has(client.id)) continue;
 
-  map.set(client.id, {
-    id: client.id,
-    studioClientId: client.id,
-    accountId,
+map.set(client.id, {
+  id: client.id,
+  studioClientId: client.id,
+  accountId,
 
-    firstName: client.firstName || "",
-    lastName: client.lastName || "",
+  source: client.source || "MANUAL",
+  isManual: client.source === "MANUAL",
+
+  firstName: client.firstName || "",
+  lastName: client.lastName || "",
 
     name:
       [client.firstName, client.lastName]
@@ -387,7 +426,7 @@ for (const client of manualClients) {
         .trim() || "Клієнт",
 
     phone: client.phone || null,
-    email: client.email || null,
+    email: hideManualEmail(client.email),
     birthDate: client.birthDate || null,
 
     photoUrl: client.photoUrl || "",
@@ -550,13 +589,17 @@ const lastCompletedBooking =
         } else if (daysSinceLastVisit !== null && daysSinceLastVisit > 60) {
           status = "risk";
         }
-        return {
-          id: client.id,
-          // name: client.name,
-            firstName: client.firstName,
+return {
+  id: client.id,
+  studioClientId: client.studioClientId || null,
+  accountId: client.accountId || null,
+  source: client.source || "BOOKING",
+  isManual: client.isManual === true || client.source === "MANUAL",
+
+  firstName: client.firstName,
   lastName: client.lastName,
           phone: client.phone,
-          email: client.email,
+          email: hideManualEmail(client.email),
           photoUrl: client.photoUrl,
           registeredAt: client.registeredAt,
           birthDate: client.birthDate,
@@ -598,6 +641,127 @@ const lastCompletedBooking =
       console.error(e);
       res.status(500).json({
         message: e?.message || "Load clients failed",
+      });
+    }
+  },
+);
+
+ownerRouter.delete(
+  "/studio/:studioId/clients/:clientId",
+  requireAuth,
+  requireOwner,
+  async (req, res) => {
+    try {
+      const ownerId = req.auth.sub;
+      const { studioId, clientId } = req.params;
+
+      const studio = await prisma.studio.findFirst({
+        where: {
+          id: studioId,
+          ownerId,
+        },
+        select: { id: true },
+      });
+
+      if (!studio) {
+        return res.status(404).json({
+          message: "Studio not found",
+        });
+      }
+
+      const studioClient = await prisma.studioClient.findFirst({
+        where: {
+          id: clientId,
+          studioId,
+        },
+        select: {
+          id: true,
+          studioId: true,
+          accountId: true,
+          source: true,
+          photoKey: true,
+        },
+      });
+
+      if (!studioClient) {
+        return res.status(404).json({
+          message: "Клієнта не знайдено.",
+        });
+      }
+
+      if (studioClient.source !== "MANUAL") {
+        return res.status(403).json({
+          message: "Можна видаляти тільки клієнтів, які були додані вручну.",
+        });
+      }
+
+      const bookingOrConditions = [
+        {
+          studioClientId: studioClient.id,
+        },
+      ];
+
+      if (studioClient.accountId) {
+        bookingOrConditions.push({
+          clientId: studioClient.accountId,
+        });
+      }
+
+      const bookingsCount = await prisma.booking.count({
+        where: {
+          studioId,
+          OR: bookingOrConditions,
+        },
+      });
+
+      if (bookingsCount > 0) {
+        return res.status(409).json({
+          message:
+            "У цього клієнта є записи. Спочатку видаліть записи цього клієнта, після цього його можна буде видалити.",
+        });
+      }
+
+      const noteClientIds = [studioClient.id];
+
+      if (studioClient.accountId) {
+        noteClientIds.push(studioClient.accountId);
+      }
+
+      await prisma.$transaction(async (tx) => {
+        await tx.clientNote.deleteMany({
+          where: {
+            studioId,
+            clientId: {
+              in: noteClientIds,
+            },
+          },
+        });
+
+        await tx.clientSalonStatus.deleteMany({
+          where: {
+            studioId,
+            clientId: {
+              in: noteClientIds,
+            },
+          },
+        });
+
+        await tx.studioClient.delete({
+          where: {
+            id: studioClient.id,
+          },
+        });
+      });
+
+      return res.json({
+        ok: true,
+        deletedClientId: studioClient.id,
+      });
+    } catch (e) {
+      console.error("Delete manual client failed:", e);
+
+      return res.status(500).json({
+        message: e?.message || "Не вдалося видалити клієнта.",
       });
     }
   },

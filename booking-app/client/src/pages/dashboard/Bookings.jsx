@@ -43,6 +43,7 @@ import {
   Briefcase,
   UserStar,
   FilePenLine,
+  PartyPopper,
 } from "lucide-react";
 import { useBookings } from "../../context/bookings/useBookings";
 import { socket } from "../../lib/socket";
@@ -170,7 +171,7 @@ function getStatusUi(status, isArchived = false, canceledBy = null) {
   if (isArchived) {
     return {
       text: "Сеанс завершено",
-      icon: CheckCheck,
+      icon: PartyPopper,
       badge: "badge-theme-archived",
       side: "border-[var(--color-caramel)]",
       time: "text-[var(--color-archived-dark)]",
@@ -548,7 +549,7 @@ const emptyBookingInfo = {
   },
 
   archive: {
-    icon: FolderClock,
+    icon: PartyPopper,
     title: "Поки що немає завершених записів",
     description: (
       <span className="flex flex-col gap-1">
@@ -777,10 +778,10 @@ function AppointmentCard({ item, nowTs, onOpen }) {
     },
 
     completed: {
-      label: "Завершено",
+      label: "Сеанс завершено ",
       className:
         "border-[var(--color-archived-light)] text-[var(--color-archived-dark)]",
-      icon: CheckCheck,
+      icon: PartyPopper,
     },
 
     new: {
@@ -1719,8 +1720,8 @@ export default function Bookings() {
       },
       {
         key: "archive",
-        label: "Завершені",
-        icon: FolderClock,
+        label: "Завершені сеанси",
+        icon: PartyPopper,
         count: filterCounts.archive,
       },
     ],
@@ -2628,9 +2629,9 @@ export default function Bookings() {
 
             const statusMeta = isArchived
               ? {
-                  label: "Завершено",
+                  label: "Сеанс завершено",
                   top: "from-[var(--color-archived-light)] to-white",
-                  Icon: CalendarCheck,
+                  Icon: PartyPopper,
                   iconColor: "text-[var(--color-archived-dark)]",
                   pillText: "text-[var(--color-archived-dark)]",
                   accent: "text-[var(--color-archived)]",

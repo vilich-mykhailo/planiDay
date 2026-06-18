@@ -113,8 +113,11 @@ model StudioScheduleDay {
   day     Weekday
   enabled Boolean @default(true)
 
-  startMin Int @default(480) // 10:00
-  endMin   Int @default(1020) // 18:00
+  startMin Int @default(480)
+  endMin   Int @default(1020)
+
+  breakStartMin Int?
+  breakEndMin   Int?
 
   @@unique([studioId, day])
   @@index([studioId])
@@ -127,6 +130,10 @@ model StudioScheduleException {
   enabled   Boolean  @default(true)
   startMin  Int?
   endMin    Int?
+
+  breakStartMin Int?
+  breakEndMin   Int?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

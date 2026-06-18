@@ -48,6 +48,65 @@ const timeToMin = (t) => {
   return hh * 60 + mm;
 };
 
+function normalizeBreakMinutes({
+  enabled,
+  startMin,
+  endMin,
+  breakStart,
+  breakEnd,
+  dayName = "цього дня",
+}) {
+  if (!enabled) {
+    return {
+      breakStartMin: null,
+      breakEndMin: null,
+    };
+  }
+
+  const hasBreakStart =
+    breakStart !== undefined &&
+    breakStart !== null &&
+    String(breakStart).trim() !== "";
+
+  const hasBreakEnd =
+    breakEnd !== undefined &&
+    breakEnd !== null &&
+    String(breakEnd).trim() !== "";
+
+  if (!hasBreakStart && !hasBreakEnd) {
+    return {
+      breakStartMin: null,
+      breakEndMin: null,
+    };
+  }
+
+  if (!hasBreakStart || !hasBreakEnd) {
+    throw new Error(`Вкажіть початок і кінець перерви для ${dayName}`);
+  }
+
+  const breakStartMin = timeToMin(breakStart);
+  const breakEndMin = timeToMin(breakEnd);
+
+  if (!Number.isFinite(breakStartMin) || !Number.isFinite(breakEndMin)) {
+    throw new Error(`Невірний формат перерви для ${dayName}`);
+  }
+
+  if (
+    !(
+      startMin < breakStartMin &&
+      breakStartMin < breakEndMin &&
+      breakEndMin < endMin
+    )
+  ) {
+    throw new Error(`Перерва має бути всередині робочого часу для ${dayName}`);
+  }
+
+  return {
+    breakStartMin,
+    breakEndMin,
+  };
+}
+
 function parseDateOnly(value) {
   if (!value || typeof value !== "string") return null;
 
@@ -73,6 +132,9 @@ function toExceptionDto(item) {
     enabled: item.enabled,
     start: item.startMin != null ? minToTime(item.startMin) : null,
     end: item.endMin != null ? minToTime(item.endMin) : null,
+    breakStart:
+      item.breakStartMin != null ? minToTime(item.breakStartMin) : null,
+    breakEnd: item.breakEndMin != null ? minToTime(item.breakEndMin) : null,
   };
 }
 
@@ -165,13 +227,15 @@ router.get(
 
       const schedule = {};
 
-      for (const d of studio.scheduleDays) {
-        schedule[enumToKey[d.day]] = {
-          enabled: d.enabled,
-          start: minToTime(d.startMin),
-          end: minToTime(d.endMin),
-        };
-      }
+for (const d of studio.scheduleDays) {
+  schedule[enumToKey[d.day]] = {
+    enabled: d.enabled,
+    start: minToTime(d.startMin),
+    end: minToTime(d.endMin),
+    breakStart: d.breakStartMin != null ? minToTime(d.breakStartMin) : "",
+    breakEnd: d.breakEndMin != null ? minToTime(d.breakEndMin) : "",
+  };
+}
 
       res.json({
         slotDuration: studio.slotDuration ?? 15,
@@ -225,10 +289,13 @@ router.patch(
           const cfg = schedule[key];
           if (!cfg) return null;
 
-          const dayName = dayNamesUa[key] || key;
-          const enabled = Boolean(cfg.enabled);
-          const startMin = timeToMin(cfg.start);
-          const endMin = timeToMin(cfg.end);
+const dayName = dayNamesUa[key] || key;
+const enabled = Boolean(cfg.enabled);
+const startMin = timeToMin(cfg.start);
+const endMin = timeToMin(cfg.end);
+
+let breakStartMin = null;
+let breakEndMin = null;
 
           if (enabled) {
             if (!Number.isFinite(startMin) || !Number.isFinite(endMin)) {
@@ -255,25 +322,40 @@ router.patch(
                 ),
               );
             }
+            const normalizedBreak = normalizeBreakMinutes({
+  enabled,
+  startMin,
+  endMin,
+  breakStart: cfg.breakStart,
+  breakEnd: cfg.breakEnd,
+  dayName,
+});
+
+breakStartMin = normalizedBreak.breakStartMin;
+breakEndMin = normalizedBreak.breakEndMin;
           }
 
-          return prisma.studioScheduleDay.upsert({
-            where: {
-              studioId_day: { studioId, day: dayEnum },
-            },
-            update: {
-              enabled,
-              startMin,
-              endMin,
-            },
-            create: {
-              studioId,
-              day: dayEnum,
-              enabled,
-              startMin,
-              endMin,
-            },
-          });
+return prisma.studioScheduleDay.upsert({
+  where: {
+    studioId_day: { studioId, day: dayEnum },
+  },
+  update: {
+    enabled,
+    startMin,
+    endMin,
+    breakStartMin,
+    breakEndMin,
+  },
+  create: {
+    studioId,
+    day: dayEnum,
+    enabled,
+    startMin,
+    endMin,
+    breakStartMin,
+    breakEndMin,
+  },
+});
         })
         .filter(Boolean);
 
@@ -328,7 +410,7 @@ router.post(
   async (req, res) => {
     try {
       const { studioId } = req.params;
-      const { date, enabled, start, end } = req.body || {};
+      const { date, enabled, start, end, breakStart, breakEnd } = req.body || {};
 
       const parsedDate = parseDateOnly(date);
 
@@ -340,8 +422,10 @@ router.post(
 
       const isEnabled = Boolean(enabled);
 
-      let startMin = null;
-      let endMin = null;
+let startMin = null;
+let endMin = null;
+let breakStartMin = null;
+let breakEndMin = null;
 
       if (isEnabled) {
         startMin = timeToMin(start);
@@ -364,6 +448,17 @@ router.post(
             message: "Час завершення має бути пізніше за час початку",
           });
         }
+        const normalizedBreak = normalizeBreakMinutes({
+  enabled: isEnabled,
+  startMin,
+  endMin,
+  breakStart,
+  breakEnd,
+  dayName: "особливої дати",
+});
+
+breakStartMin = normalizedBreak.breakStartMin;
+breakEndMin = normalizedBreak.breakEndMin;
       }
 
       const saved = await prisma.studioScheduleException.upsert({
@@ -373,18 +468,22 @@ router.post(
             date: parsedDate,
           },
         },
-        update: {
-          enabled: isEnabled,
-          startMin,
-          endMin,
-        },
-        create: {
-          studioId,
-          date: parsedDate,
-          enabled: isEnabled,
-          startMin,
-          endMin,
-        },
+update: {
+  enabled: isEnabled,
+  startMin,
+  endMin,
+  breakStartMin,
+  breakEndMin,
+},
+create: {
+  studioId,
+  date: parsedDate,
+  enabled: isEnabled,
+  startMin,
+  endMin,
+  breakStartMin,
+  breakEndMin,
+},
       });
 
       res.json({
@@ -414,7 +513,7 @@ router.patch(
   async (req, res) => {
     try {
       const { studioId, exceptionId } = req.params;
-      const { date, enabled, start, end } = req.body || {};
+      const { date, enabled, start, end, breakStart, breakEnd } = req.body || {};
 
       const current = await prisma.studioScheduleException.findFirst({
         where: {
@@ -443,7 +542,8 @@ router.patch(
 
       let startMin = current.startMin;
       let endMin = current.endMin;
-
+let breakStartMin = current.breakStartMin;
+let breakEndMin = current.breakEndMin;
       if (isEnabled) {
         if (start !== undefined) startMin = timeToMin(start);
         if (end !== undefined) endMin = timeToMin(end);
@@ -465,19 +565,48 @@ router.patch(
             message: "Час завершення має бути пізніше за час початку",
           });
         }
-      } else {
-        startMin = null;
-        endMin = null;
-      }
+        const nextBreakStart =
+  breakStart !== undefined
+    ? breakStart
+    : breakStartMin != null
+      ? minToTime(breakStartMin)
+      : "";
+
+const nextBreakEnd =
+  breakEnd !== undefined
+    ? breakEnd
+    : breakEndMin != null
+      ? minToTime(breakEndMin)
+      : "";
+
+const normalizedBreak = normalizeBreakMinutes({
+  enabled: isEnabled,
+  startMin,
+  endMin,
+  breakStart: nextBreakStart,
+  breakEnd: nextBreakEnd,
+  dayName: "особливої дати",
+});
+
+breakStartMin = normalizedBreak.breakStartMin;
+breakEndMin = normalizedBreak.breakEndMin;
+} else {
+  startMin = null;
+  endMin = null;
+  breakStartMin = null;
+  breakEndMin = null;
+}
 
       const updated = await prisma.studioScheduleException.update({
         where: { id: exceptionId },
-        data: {
-          date: nextDate,
-          enabled: isEnabled,
-          startMin,
-          endMin,
-        },
+data: {
+  date: nextDate,
+  enabled: isEnabled,
+  startMin,
+  endMin,
+  breakStartMin,
+  breakEndMin,
+},
       });
 
       res.json({
