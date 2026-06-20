@@ -261,24 +261,24 @@ export default function TimeSelect({
     </div>
   ) : null;
 
-  return (
-    <div className="relative w-full">
-      <button
-        type="button"
-        onClick={handleOpen}
-        className={cn(
-          "flex h-9 w-full items-center justify-center rounded-[14px] bg-transparent px-3 text-sm font-bold text-[#202020] outline-none transition-all",
-          "hover:bg-white/70 focus-visible:ring-2 focus-visible:ring-[#ff6200]/20",
-          className,
-        )}
-      >
-        <span className={value ? "text-[#202020]" : "text-[#aaa19a]"}>
-          {value || placeholder}
-        </span>
-      </button>
+return (
+  <div className="relative h-full w-full">
+    <button
+      type="button"
+      onClick={handleOpen}
+      className={cn(
+        "absolute inset-0 flex h-full w-full items-center justify-center rounded-[inherit] bg-transparent px-0 text-sm font-bold text-[#202020] outline-none transition-none",
+        "hover:bg-transparent focus:bg-transparent active:bg-transparent",
+        "focus-visible:ring-2 focus-visible:ring-[#ff6200]/20",
+        className,
+      )}
+    >
+      <span className={value ? "text-[#202020]" : "text-[#aaa19a]"}>
+        {value || placeholder}
+      </span>
+    </button>
 
-      {timePickerModal &&
-        createPortal(timePickerModal, document.body)}
-    </div>
-  );
+    {timePickerModal && createPortal(timePickerModal, document.body)}
+  </div>
+);
 }

@@ -35,7 +35,7 @@ const DAYS = [
   { key: "sat", label: "Сб", full: "Субота" },
   { key: "sun", label: "Нд", full: "Неділя" },
 ];
-
+const EXCEPTIONS_PAGE_SIZE = 5;
 function cn(...classes) {
   return classes.filter(Boolean).join(" ");
 }
@@ -283,11 +283,7 @@ function getDefaultBreakForItem(item) {
       startMin + Math.max(5, Math.floor((duration - breakLength) / 2 / 5) * 5);
     const breakEnd = Math.min(endMin - 5, breakStart + breakLength);
 
-    if (
-      startMin < breakStart &&
-      breakStart < breakEnd &&
-      breakEnd < endMin
-    ) {
+    if (startMin < breakStart && breakStart < breakEnd && breakEnd < endMin) {
       return {
         breakStart: minutesToTime(breakStart),
         breakEnd: minutesToTime(breakEnd),
@@ -517,8 +513,7 @@ function Button({
   ...props
 }) {
   const variants = {
-    primary:
-       "bg-[var(--color-primary-buttom)] text-white hover:bg-[#4a4a4a]",
+    primary: "bg-[var(--color-primary-buttom)] text-white hover:bg-[#4a4a4a]",
     secondary:
       "border border-[#ebe7df] bg-white text-[#202020] hover:border-[#ffd8c2] hover:bg-[#fffaf6]",
     danger:
@@ -545,6 +540,39 @@ function Button({
     >
       {children}
     </button>
+  );
+}
+
+function TimeField({ children, className = "" }) {
+  const fieldRef = useRef(null);
+
+  function handleClick(event) {
+    const clickedControl = event.target.closest(
+      "button,input,[role='button']",
+    );
+
+    if (clickedControl && fieldRef.current?.contains(clickedControl)) {
+      return;
+    }
+
+    const control =
+      fieldRef.current?.querySelector("button,input,[role='button']") ||
+      fieldRef.current?.firstElementChild;
+
+    if (!control) return;
+
+    control.focus?.();
+    control.click?.();
+  }
+
+  return (
+    <div
+      ref={fieldRef}
+      onClick={handleClick}
+      className={cn("cursor-pointer", className)}
+    >
+      {children}
+    </div>
   );
 }
 
@@ -683,7 +711,54 @@ function Toast({ toast }) {
           </div>
         </div>
       </div>
+      <style>{`
+  .exception-date-picker > div {
+    width: 100%;
+  }
 
+  .exception-date-picker > div > div:not(.react-datepicker-popper),
+  .exception-date-picker > div > button {
+    height: 52px !important;
+    width: 100% !important;
+    border: 1px solid #eadbc9 !important;
+    border-radius: 12px !important;
+    background: #ffffff !important;
+    color: #202020 !important;
+    font-size: 14px !important;
+    font-weight: 900 !important;
+    transition: all 0.2s ease !important;
+    box-shadow: none !important;
+  }
+
+  .exception-date-picker > div > div:not(.react-datepicker-popper):hover,
+  .exception-date-picker > div > button:hover {
+    border-color: #ffd6bd !important;
+    background: #fff7f0 !important;
+  }
+
+  .exception-date-picker > div > div:not(.react-datepicker-popper):focus-within,
+  .exception-date-picker > div > button:focus,
+  .exception-date-picker > div > button:focus-visible {
+    outline: none !important;
+    box-shadow: 0 0 0 4px rgba(255, 98, 0, 0.1) !important;
+  }
+
+  .exception-date-picker input {
+    height: 100% !important;
+    border: 0 !important;
+    background: transparent !important;
+    color: #202020 !important;
+    font-size: 14px !important;
+    font-weight: 900 !important;
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+.exception-date-picker svg {
+  color: #ff6200 !important;
+  stroke: #ff6200 !important;
+}
+`}</style>
       <style>{`
         @keyframes toastbar {
           from { transform: scaleX(1); }
@@ -714,16 +789,38 @@ function formatExceptionDate(dateStr) {
 }
 
 function exceptionSubtitle(item) {
-  if (!item?.date) return "Нова особлива дата";
-  if (!item.enabled) return `${formatExceptionDate(item.date)} • Вихідний`;
+  if (!item?.enabled) return null;
 
+  const start = item?.start || "--:--";
+  const end = item?.end || "--:--";
   const breakStart = getBreakStart(item);
   const breakEnd = getBreakEnd(item);
-  if (breakStart && breakEnd) {
-    return `${formatExceptionDate(item.date)} • ${item.start}–${item.end} • перерва ${breakStart}–${breakEnd}`;
-  }
 
-  return `${formatExceptionDate(item.date)} • ${item.start}–${item.end}`;
+  return (
+    <span className="flex flex-wrap items-center gap-2">
+      <span className="inline-flex items-center gap-1.5">
+        <Clock className="h-3.5 w-3.5 text-[#ff6200]" />
+        {start}
+      </span>
+
+      <span className="text-[#c5b8ab]">—</span>
+
+      <span className="inline-flex items-center gap-1.5">
+        {end}
+      </span>
+
+      {breakStart && breakEnd && (
+        <>
+          <span className="text-[#d8cec4]">•</span>
+
+          <span className="inline-flex items-center gap-1.5">
+            <Coffee className="h-3.5 w-3.5 text-[#ff6200]" />
+            {breakStart} — {breakEnd}
+          </span>
+        </>
+      )}
+    </span>
+  );
 }
 
 function createEmptyException() {
@@ -775,7 +872,8 @@ function getScheduleDayTitle(date) {
 }
 
 function getScheduleTimeLines(item) {
-  if (!item?.enabled) return ["\u0412\u0438\u0445\u0456\u0434\u043d\u0438\u0439"];
+  if (!item?.enabled)
+    return ["\u0412\u0438\u0445\u0456\u0434\u043d\u0438\u0439"];
 
   const start = item?.start || "--:--";
   const end = item?.end || "--:--";
@@ -812,6 +910,7 @@ function Modal({
   title,
   badge = "Редагування",
   icon: Icon = CalendarDays,
+  subtitle,
   children,
   footer,
   size = "md",
@@ -843,14 +942,14 @@ function Modal({
   };
 
   return (
-<div
-  className="fixed inset-0 z-[9999] flex items-stretch justify-center bg-[#202020]/45 p-0 backdrop-blur-[6px] sm:items-center sm:p-6"
-  onMouseDown={(e) => {
-    if (e.target === e.currentTarget) {
-      onClose?.();
-    }
-  }}
->
+    <div
+      className="fixed inset-0 z-[9999] flex items-stretch justify-center bg-[#202020]/45 p-0 backdrop-blur-[6px] sm:items-center sm:p-6"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose?.();
+        }
+      }}
+    >
       <div
         className={cn(
           "flex h-dvh w-full flex-col overflow-hidden rounded-none border-0 bg-[#f7f5f1] shadow-[0_30px_90px_rgba(15,23,42,0.24)]",
@@ -888,7 +987,7 @@ function Modal({
           </div>
         )}
 
-        <div className="min-h-0 flex-1 overflow-y-auto bg-white px-5 py-5 pb-[110px] sm:px-6 sm:pb-5">
+        <div className="min-h-0 flex-1 overflow-y-auto bg-[#fbfaf8] px-5 py-5 pb-[110px] sm:px-6 sm:pb-5">
           {children}
         </div>
 
@@ -907,22 +1006,24 @@ export default function Schedule() {
   const queryClient = useQueryClient();
   const studioId = studio?.id ?? null;
 
-const fallbackSchedule = useMemo(() => getDefaultSchedule(), []);
-const fallbackSlotDuration = 10;
+  const fallbackSchedule = useMemo(() => getDefaultSchedule(), []);
+  const fallbackSlotDuration = 10;
 
-const [scheduleDraft, setScheduleDraft] = useState(null);
-const [slotDurationDraft, setSlotDuration] = useState(null);
-const [savedSchedule, setSavedSchedule] = useState(null);
-const [savedSlotDuration, setSavedSlotDuration] = useState(null);
+  const [scheduleDraft, setScheduleDraft] = useState(null);
+  const [slotDurationDraft, setSlotDuration] = useState(null);
+  const [savedSchedule, setSavedSchedule] = useState(null);
+  const [savedSlotDuration, setSavedSlotDuration] = useState(null);
   const [exceptions, setExceptions] = useState([]);
   const [preview, setPreview] = useState({});
   const [saving, setSaving] = useState(false);
   const [scheduleFieldErrors, setScheduleFieldErrors] = useState({});
   const [expandedExceptions, setExpandedExceptions] = useState({});
-const [exceptionModal, setExceptionModal] = useState({
-  open: false,
-  draft: createEmptyException(),
-});
+  const [visibleExceptionsCount, setVisibleExceptionsCount] =
+    useState(EXCEPTIONS_PAGE_SIZE);
+  const [exceptionModal, setExceptionModal] = useState({
+    open: false,
+    draft: createEmptyException(),
+  });
   const [scheduleViewMode, setScheduleViewMode] = useState("week");
   const [scheduleMonthDate, setScheduleMonthDate] = useState(() => {
     const now = new Date();
@@ -997,24 +1098,24 @@ const [exceptionModal, setExceptionModal] = useState({
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   });
-const loadedSchedule = useMemo(() => {
-  if (!scheduleQuery.data?.schedule) return fallbackSchedule;
+  const loadedSchedule = useMemo(() => {
+    if (!scheduleQuery.data?.schedule) return fallbackSchedule;
 
-  return normalizeSchedule(scheduleQuery.data.schedule);
-}, [fallbackSchedule, scheduleQuery.data?.schedule]);
+    return normalizeSchedule(scheduleQuery.data.schedule);
+  }, [fallbackSchedule, scheduleQuery.data?.schedule]);
 
-const loadedSlotDuration = useMemo(() => {
-  const value = scheduleQuery.data?.slotDuration;
+  const loadedSlotDuration = useMemo(() => {
+    const value = scheduleQuery.data?.slotDuration;
 
-  return typeof value === "number" ? value : fallbackSlotDuration;
-}, [fallbackSlotDuration, scheduleQuery.data?.slotDuration]);
+    return typeof value === "number" ? value : fallbackSlotDuration;
+  }, [fallbackSlotDuration, scheduleQuery.data?.slotDuration]);
 
-const schedule = scheduleDraft ?? savedSchedule ?? loadedSchedule;
-const slotDuration =
-  slotDurationDraft ?? savedSlotDuration ?? loadedSlotDuration;
+  const schedule = scheduleDraft ?? savedSchedule ?? loadedSchedule;
+  const slotDuration =
+    slotDurationDraft ?? savedSlotDuration ?? loadedSlotDuration;
 
-const rollbackSchedule = savedSchedule ?? loadedSchedule;
-const rollbackSlotDuration = savedSlotDuration ?? loadedSlotDuration;
+  const rollbackSchedule = savedSchedule ?? loadedSchedule;
+  const rollbackSlotDuration = savedSlotDuration ?? loadedSlotDuration;
   const showToast = useCallback(({ type = "success", title, text }) => {
     const duration = 2200;
 
@@ -1051,44 +1152,44 @@ const rollbackSlotDuration = savedSlotDuration ?? loadedSlotDuration;
   }
 
   function scheduleErrorKey(dayKey, field) {
-  return `${dayKey}.${field}`;
-}
+    return `${dayKey}.${field}`;
+  }
 
-function hasScheduleFieldError(dayKey, field) {
-  return Boolean(scheduleFieldErrors[scheduleErrorKey(dayKey, field)]);
-}
+  function hasScheduleFieldError(dayKey, field) {
+    return Boolean(scheduleFieldErrors[scheduleErrorKey(dayKey, field)]);
+  }
 
-function setScheduleDayErrors(dayKey, fields = []) {
-  setScheduleFieldErrors((prev) => {
-    const next = { ...prev };
+  function setScheduleDayErrors(dayKey, fields = []) {
+    setScheduleFieldErrors((prev) => {
+      const next = { ...prev };
 
-    Object.keys(next).forEach((key) => {
-      if (key.startsWith(`${dayKey}.`)) {
-        delete next[key];
-      }
+      Object.keys(next).forEach((key) => {
+        if (key.startsWith(`${dayKey}.`)) {
+          delete next[key];
+        }
+      });
+
+      fields.forEach((field) => {
+        next[scheduleErrorKey(dayKey, field)] = true;
+      });
+
+      return next;
     });
+  }
 
-    fields.forEach((field) => {
-      next[scheduleErrorKey(dayKey, field)] = true;
+  function clearScheduleDayErrors(dayKey) {
+    setScheduleFieldErrors((prev) => {
+      const next = { ...prev };
+
+      Object.keys(next).forEach((key) => {
+        if (key.startsWith(`${dayKey}.`)) {
+          delete next[key];
+        }
+      });
+
+      return next;
     });
-
-    return next;
-  });
-}
-
-function clearScheduleDayErrors(dayKey) {
-  setScheduleFieldErrors((prev) => {
-    const next = { ...prev };
-
-    Object.keys(next).forEach((key) => {
-      if (key.startsWith(`${dayKey}.`)) {
-        delete next[key];
-      }
-    });
-
-    return next;
-  });
-}
+  }
 
   async function handleSlotDurationChange(nextDuration) {
     if (!studioId) return;
@@ -1256,109 +1357,109 @@ function clearScheduleDayErrors(dayKey) {
     }
   }
 
-function updateTime(day, field, value) {
-  const baseSchedule = getDefaultSchedule();
+  function updateTime(day, field, value) {
+    const baseSchedule = getDefaultSchedule();
 
-  const currentSchedule = {
-    ...baseSchedule,
-    ...(schedule || {}),
-  };
+    const currentSchedule = {
+      ...baseSchedule,
+      ...(schedule || {}),
+    };
 
-  const nextDay = {
-    ...(baseSchedule[day] || {}),
-    ...(currentSchedule[day] || {}),
-    [field]: value,
-  };
+    const nextDay = {
+      ...(baseSchedule[day] || {}),
+      ...(currentSchedule[day] || {}),
+      [field]: value,
+    };
 
-  const nextSchedule = {
-    ...currentSchedule,
-    [day]: nextDay,
-  };
+    const nextSchedule = {
+      ...currentSchedule,
+      [day]: nextDay,
+    };
 
-  const invalidFields = getInvalidScheduleFields(nextDay);
+    const invalidFields = getInvalidScheduleFields(nextDay);
 
-  if (invalidFields.length > 0) {
-    setScheduleDayErrors(day, invalidFields);
-  } else {
-    clearScheduleDayErrors(day);
+    if (invalidFields.length > 0) {
+      setScheduleDayErrors(day, invalidFields);
+    } else {
+      clearScheduleDayErrors(day);
+    }
+
+    setScheduleDraft(nextSchedule);
   }
 
-  setScheduleDraft(nextSchedule);
-}
+  async function handleTimeCommit(dayKey, field, nextValue) {
+    if (!studioId) return;
 
-async function handleTimeCommit(dayKey, field, nextValue) {
-  if (!studioId) return;
+    const token = localStorage.getItem("token");
+    const previous = queryClient.getQueryData(["studio-schedule", studioId]);
 
-  const token = localStorage.getItem("token");
-  const previous = queryClient.getQueryData(["studio-schedule", studioId]);
+    const baseSchedule = getDefaultSchedule();
 
-  const baseSchedule = getDefaultSchedule();
+    const currentSchedule = {
+      ...baseSchedule,
+      ...(schedule || {}),
+    };
 
-  const currentSchedule = {
-    ...baseSchedule,
-    ...(schedule || {}),
-  };
+    const nextDay = {
+      ...(baseSchedule[dayKey] || {}),
+      ...(currentSchedule[dayKey] || {}),
+      [field]: nextValue,
+    };
 
-  const nextDay = {
-    ...(baseSchedule[dayKey] || {}),
-    ...(currentSchedule[dayKey] || {}),
-    [field]: nextValue,
-  };
+    const nextSchedule = {
+      ...currentSchedule,
+      [dayKey]: nextDay,
+    };
 
-  const nextSchedule = {
-    ...currentSchedule,
-    [dayKey]: nextDay,
-  };
+    const invalidFields = getInvalidScheduleFields(nextDay);
 
-  const invalidFields = getInvalidScheduleFields(nextDay);
+    if (invalidFields.length > 0) {
+      setScheduleDayErrors(dayKey, invalidFields);
+      showScheduleValidationError(DAYS.find((day) => day.key === dayKey));
+      return;
+    }
 
-  if (invalidFields.length > 0) {
-    setScheduleDayErrors(dayKey, invalidFields);
-    showScheduleValidationError(DAYS.find((day) => day.key === dayKey));
-    return;
+    clearScheduleDayErrors(dayKey);
+    setScheduleDraft(nextSchedule);
+
+    queryClient.setQueryData(["studio-schedule", studioId], (old) => ({
+      ...(old || {}),
+      schedule: nextSchedule,
+      slotDuration,
+    }));
+
+    try {
+      await api(`/studio/${studioId}/schedule`, {
+        method: "PATCH",
+        token,
+        body: {
+          schedule: nextSchedule,
+          slotDuration,
+        },
+      });
+
+      setSavedSchedule(nextSchedule);
+      setSavedSlotDuration(slotDuration);
+      setPreview({});
+
+      showToast({
+        type: "success",
+        title: "Час оновлено",
+        text: "Зміни збережено в розкладі.",
+      });
+    } catch (err) {
+      console.error(err);
+
+      setScheduleDayErrors(dayKey, [field]);
+      queryClient.setQueryData(["studio-schedule", studioId], previous);
+
+      showToast({
+        type: "error",
+        title: "Не вдалося зберегти",
+        text: err?.message || "Сталася помилка під час збереження.",
+      });
+    }
   }
-
-  clearScheduleDayErrors(dayKey);
-  setScheduleDraft(nextSchedule);
-
-  queryClient.setQueryData(["studio-schedule", studioId], (old) => ({
-    ...(old || {}),
-    schedule: nextSchedule,
-    slotDuration,
-  }));
-
-  try {
-    await api(`/studio/${studioId}/schedule`, {
-      method: "PATCH",
-      token,
-      body: {
-        schedule: nextSchedule,
-        slotDuration,
-      },
-    });
-
-    setSavedSchedule(nextSchedule);
-    setSavedSlotDuration(slotDuration);
-    setPreview({});
-
-    showToast({
-      type: "success",
-      title: "Час оновлено",
-      text: "Зміни збережено в розкладі.",
-    });
-  } catch (err) {
-    console.error(err);
-
-    setScheduleDayErrors(dayKey, [field]);
-    queryClient.setQueryData(["studio-schedule", studioId], previous);
-
-    showToast({
-      type: "error",
-      title: "Не вдалося зберегти",
-      text: err?.message || "Сталася помилка під час збереження.",
-    });
-  }
-}
 
   async function deleteExpiredExceptions(targetStudioId, token, list) {
     const expired = (list || []).filter(
@@ -1380,92 +1481,92 @@ async function handleTimeCommit(dayKey, field, nextValue) {
   }
 
   function openAddExceptionModal() {
-  setExceptionModal({
-    open: true,
-    draft: createEmptyException(),
-  });
-}
+    setExceptionModal({
+      open: true,
+      draft: createEmptyException(),
+    });
+  }
 
-function closeExceptionModal() {
-  if (saving) return;
+  function closeExceptionModal() {
+    if (saving) return;
 
-  setExceptionModal({
-    open: false,
-    draft: createEmptyException(),
-  });
-}
+    setExceptionModal({
+      open: false,
+      draft: createEmptyException(),
+    });
+  }
 
-function updateExceptionDraft(field, value) {
-  setExceptionModal((prev) => {
-    let draft = {
-      ...prev.draft,
-      [field]: value,
-    };
+  function updateExceptionDraft(field, value) {
+    setExceptionModal((prev) => {
+      let draft = {
+        ...prev.draft,
+        [field]: value,
+      };
 
-    if (field === "enabled") {
-      draft = value
-        ? withBreakState(
-            {
-              ...draft,
-              start: draft.start || "08:00",
-              end: draft.end || "18:00",
-            },
-            true,
-          )
-        : withBreakState(draft, false);
+      if (field === "enabled") {
+        draft = value
+          ? withBreakState(
+              {
+                ...draft,
+                start: draft.start || "08:00",
+                end: draft.end || "18:00",
+              },
+              true,
+            )
+          : withBreakState(draft, false);
+      }
+
+      return {
+        ...prev,
+        draft,
+      };
+    });
+  }
+
+  function updateExceptionDraftBreak(enabled) {
+    setExceptionModal((prev) => ({
+      ...prev,
+      draft: withBreakState(prev.draft, enabled),
+    }));
+  }
+
+  async function saveExceptionFromModal() {
+    const item = exceptionModal.draft;
+
+    if (!isExceptionValid(item)) {
+      showToast({
+        type: "error",
+        title: "Некоректний час",
+        text: "Перевірте години роботи та перерви.",
+      });
+      return;
     }
 
-    return {
-      ...prev,
-      draft,
-    };
-  });
-}
+    const duplicate = exceptions.find((row) => row.date === item.date);
 
-function updateExceptionDraftBreak(enabled) {
-  setExceptionModal((prev) => ({
-    ...prev,
-    draft: withBreakState(prev.draft, enabled),
-  }));
-}
+    if (duplicate) {
+      showToast({
+        type: "error",
+        title: "Дата вже існує",
+        text: "Для цієї дати вже додано особливий графік.",
+      });
+      return;
+    }
 
-async function saveExceptionFromModal() {
-  const item = exceptionModal.draft;
+    const nextExceptions = sortExceptions([...exceptions, item]);
+    const nextIndex = nextExceptions.findIndex((row) => row === item);
 
-  if (!isExceptionValid(item)) {
-    showToast({
-      type: "error",
-      title: "Некоректний час",
-      text: "Перевірте години роботи та перерви.",
-    });
-    return;
+    setExceptions(nextExceptions);
+
+    const saved = await saveException(item, nextIndex);
+
+    if (!saved) {
+      setExceptions((prev) => prev.filter((row) => row !== item));
+      return;
+    }
+
+    closeExceptionModal();
   }
-
-  const duplicate = exceptions.find((row) => row.date === item.date);
-
-  if (duplicate) {
-    showToast({
-      type: "error",
-      title: "Дата вже існує",
-      text: "Для цієї дати вже додано особливий графік.",
-    });
-    return;
-  }
-
-const nextExceptions = sortExceptions([...exceptions, item]);
-const nextIndex = nextExceptions.findIndex((row) => row === item);
-
-setExceptions(nextExceptions);
-
-const saved = await saveException(item, nextIndex);
-
-if (!saved) {
-  setExceptions((prev) => prev.filter((row) => row !== item));
-  return;
-}
-
-closeExceptionModal();
-}
 
   function generateSlots() {
     const result = {};
@@ -1507,7 +1608,6 @@ closeExceptionModal();
 
     setPreview(result);
   }
-
 
   function sortExceptions(list) {
     return [...list].sort((a, b) => {
@@ -1776,9 +1876,11 @@ closeExceptionModal();
         );
         const next = exists
           ? old.map((row) =>
-              (savedException.id
-                ? row.id === savedException.id
-                : row.date === savedException.date)
+              (
+                savedException.id
+                  ? row.id === savedException.id
+                  : row.date === savedException.date
+              )
                 ? savedException
                 : row,
             )
@@ -1796,9 +1898,11 @@ closeExceptionModal();
       );
       const next = exists
         ? prev.map((row) =>
-            (savedException.id
-              ? row.id === savedException.id
-              : row.date === savedException.date)
+            (
+              savedException.id
+                ? row.id === savedException.id
+                : row.date === savedException.date
+            )
               ? savedException
               : row,
           )
@@ -1821,7 +1925,8 @@ closeExceptionModal();
     if (invalidItem) {
       showToast({
         type: "error",
-        title: "\u041d\u0435\u043a\u043e\u0440\u0435\u043a\u0442\u043d\u0438\u0439 \u0447\u0430\u0441",
+        title:
+          "\u041d\u0435\u043a\u043e\u0440\u0435\u043a\u0442\u043d\u0438\u0439 \u0447\u0430\u0441",
         text: "\u041f\u0435\u0440\u0435\u0432\u0456\u0440\u0442\u0435 \u0433\u043e\u0434\u0438\u043d\u0438 \u0440\u043e\u0431\u043e\u0442\u0438 \u0442\u0430 \u043f\u0435\u0440\u0435\u0440\u0432\u0438.",
       });
       return;
@@ -1836,7 +1941,8 @@ closeExceptionModal();
 
       showToast({
         type: "success",
-        title: "\u0413\u0440\u0430\u0444\u0456\u043a \u043e\u043d\u043e\u0432\u043b\u0435\u043d\u043e",
+        title:
+          "\u0413\u0440\u0430\u0444\u0456\u043a \u043e\u043d\u043e\u0432\u043b\u0435\u043d\u043e",
         text: "\u0417\u043c\u0456\u043d\u0438 \u0434\u043b\u044f \u0432\u0438\u0431\u0440\u0430\u043d\u0438\u0445 \u0434\u0430\u0442 \u0437\u0431\u0435\u0440\u0435\u0436\u0435\u043d\u043e.",
       });
     } catch (error) {
@@ -1844,7 +1950,8 @@ closeExceptionModal();
 
       showToast({
         type: "error",
-        title: "\u041d\u0435 \u0432\u0434\u0430\u043b\u043e\u0441\u044f \u0437\u0431\u0435\u0440\u0435\u0433\u0442\u0438",
+        title:
+          "\u041d\u0435 \u0432\u0434\u0430\u043b\u043e\u0441\u044f \u0437\u0431\u0435\u0440\u0435\u0433\u0442\u0438",
         text:
           error?.message ||
           "\u0421\u0442\u0430\u043b\u0430\u0441\u044f \u043f\u043e\u043c\u0438\u043b\u043a\u0430 \u043f\u0456\u0434 \u0447\u0430\u0441 \u0437\u0431\u0435\u0440\u0435\u0436\u0435\u043d\u043d\u044f.",
@@ -1928,7 +2035,8 @@ closeExceptionModal();
         title: "Не вказано дату",
         text: "Оберіть дату для особливого графіка.",
       });
-      return;
+
+      return false;
     }
 
     if (!isExceptionValid(item)) {
@@ -1937,7 +2045,8 @@ closeExceptionModal();
         title: "Некоректний час",
         text: "Перевірте години роботи та перерви.",
       });
-      return;
+
+      return false;
     }
 
     const duplicate = exceptions.find(
@@ -1950,7 +2059,8 @@ closeExceptionModal();
         title: "Дата вже існує",
         text: "Для цієї дати вже додано особливий графік.",
       });
-      return;
+
+      return false;
     }
 
     try {
@@ -1988,9 +2098,11 @@ closeExceptionModal();
 
           if (exists) {
             return old.map((row) =>
-              (savedException.id
-                ? row.id === savedException.id
-                : row.date === savedException.date)
+              (
+                savedException.id
+                  ? row.id === savedException.id
+                  : row.date === savedException.date
+              )
                 ? savedException
                 : row,
             );
@@ -2041,6 +2153,8 @@ closeExceptionModal();
           ? "Графік для вибраної дати оновлено."
           : "Для вибраної дати встановлено вихідний.",
       });
+
+      return true;
     } catch (err) {
       console.error(err);
 
@@ -2049,6 +2163,8 @@ closeExceptionModal();
         title: "Не вдалося зберегти",
         text: err?.message || "Сталася помилка під час збереження.",
       });
+
+      return false;
     }
   }
 
@@ -2092,7 +2208,6 @@ closeExceptionModal();
     }
   }
 
-
   useEffect(() => {
     if (!exceptionsQuery.data) return;
 
@@ -2128,7 +2243,9 @@ closeExceptionModal();
     };
   }, [exceptionsQuery.data, studioId, showToast]);
 
-
+  const visibleExceptions = exceptions.slice(0, visibleExceptionsCount);
+  const hiddenExceptionsCount = exceptions.length - visibleExceptions.length;
+  const hasMoreExceptions = hiddenExceptionsCount > 0;
   const initialLoading = scheduleQuery.isLoading && !scheduleQuery.data;
   const exceptionsLoading = exceptionsQuery.isLoading && !exceptionsQuery.data;
 
@@ -2141,7 +2258,6 @@ closeExceptionModal();
           <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#ff7a18] via-[#ff6200] to-[#ff8c42]" />
 
           <div className="relative">
-
             <h1 className="text-4xl font-black leading-[0.95] tracking-tight text-[#202020] sm:text-6xl">
               Графік <span className="text-[#ff5a00]">роботи</span>
             </h1>
@@ -2174,7 +2290,11 @@ closeExceptionModal();
           actions={
             <div className="grid w-full grid-cols-2 rounded-2xl border border-[#ebe7df] bg-[#fcfbf9] p-1 sm:w-auto">
               {[
-                ["week", "\u0422\u0438\u0436\u0434\u0435\u043d\u044c", CalendarDays],
+                [
+                  "week",
+                  "\u0422\u0438\u0436\u0434\u0435\u043d\u044c",
+                  CalendarDays,
+                ],
                 ["days", "\u041f\u043e \u0434\u043d\u044f\u0445", ClipboardPen],
               ].map(([value, label, Icon]) => {
                 const active = scheduleViewMode === value;
@@ -2225,19 +2345,21 @@ closeExceptionModal();
                         type="button"
                         onClick={() => toggleDay(day.key)}
                         disabled={saving}
-                        className="flex items-center gap-3 text-left disabled:opacity-60"
+                        className="flex w-full items-center justify-between gap-3 text-left disabled:opacity-60 sm:w-auto sm:justify-start"
                       >
-                        <Toggle checked={enabled} />
-
-                        <div className="min-w-0">
+                        <div className="order-1 min-w-0 pl-2 sm:order-2 sm:pl-0">
                           <p className="text-[15px] font-black text-[#202020]">
                             {day.full}
                           </p>
 
                           <p className="text-xs font-semibold text-[#8a847d]">
-                            {enabled ? "Робочий день" : "Вихідний"}
+                            {enabled ? "Робочий" : "Вихідний"}
                           </p>
                         </div>
+
+                        <span className="order-2 shrink-0 sm:order-1">
+                          <Toggle checked={enabled} />
+                        </span>
                       </button>
 
                       <div
@@ -2246,71 +2368,55 @@ closeExceptionModal();
                           enabled ? "block" : "hidden sm:block sm:invisible",
                         )}
                       >
-                        <div className="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-[22px] border border-[#ece7e1] bg-[#fcfbf9] px-2.5 py-2 shadow-[0_6px_20px_rgba(15,23,42,0.05)]">
-                          <div className="min-w-0">
-                     <div
+<div className="grid w-full grid-cols-2 gap-2 min-[640px]:max-[739px]:ml-auto min-[640px]:max-[739px]:mr-0 min-[640px]:max-[739px]:max-w-[320px]">
+  {[
+    ["start", "Початок", Clock],
+    ["end", "Кінець", Timer],
+  ].map(([field, label, Icon]) => (
+                            <div key={field} className="min-w-0">
+                              <label className="mb-1.5 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#77716b]">
+                                <Icon className="h-3.5 w-3.5 text-[#ff6200]" />
+                                {label}
+                              </label>
+
+<TimeField
   className={cn(
-    "rounded-[14px] border transition-all duration-200",
-    hasScheduleFieldError(day.key, "start")
-      ? "border-[#ef4444] bg-[#fff5f5] ring-4 ring-[#ef4444]/10"
-      : "border-[#ece7e1] bg-white hover:bg-[#fffaf6]",
+    "schedule-time-field flex h-[50px] cursor-pointer items-center overflow-hidden rounded-[18px] border p-0 transition-all duration-200 focus-within:ring-4",
+    hasScheduleFieldError(day.key, field)
+      ? "border-[#ef4444] bg-[#fff5f5] focus-within:ring-[#ef4444]/10"
+      : "border-[#eadbc9] bg-white hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] focus-within:ring-[#ff6200]/10",
   )}
 >
-                              <TimeSelect
-                                value={config.start}
-                                label="Початок зміни"
-                                dayLabel={day.full}
-                                onChange={(value) =>
-                                  updateTime(day.key, "start", value)
-                                }
-                                onCommit={(value) =>
-                                  handleTimeCommit(day.key, "start", value)
-                                }
-                              />
+  <TimeSelect
+    value={config[field]}
+    label={label}
+    dayLabel={day.full}
+    onChange={(value) => updateTime(day.key, field, value)}
+    onCommit={(value) => handleTimeCommit(day.key, field, value)}
+    className="h-full w-full justify-center text-base"
+  />
+</TimeField>
                             </div>
-                          </div>
-
-                          <div className="flex items-center justify-center">
-                            <span className="block h-px w-3 bg-[#ddd6ce]" />
-                          </div>
-
-                          <div className="min-w-0">
-                           <div
-  className={cn(
-    "rounded-[14px] border transition-all duration-200",
-    hasScheduleFieldError(day.key, "end")
-      ? "border-[#ef4444] bg-[#fff5f5] ring-4 ring-[#ef4444]/10"
-      : "border-[#ece7e1] bg-white hover:bg-[#fffaf6]",
-  )}
->
-                              <TimeSelect
-                                value={config.end}
-                                label="Кінець зміни"
-                                dayLabel={day.full}
-                                onChange={(value) =>
-                                  updateTime(day.key, "end", value)
-                                }
-                                onCommit={(value) =>
-                                  handleTimeCommit(day.key, "end", value)
-                                }
-                              />
-                            </div>
-                          </div>
+                          ))}
                         </div>
 
                         {enabled && (
-                          <div
-                            className={cn(
-                              "mt-2 grid gap-2",
-                              hasBreak && "sm:grid-cols-[1fr_1fr_1fr]",
-                            )}
-                          >
-                            <button
-                              type="button"
-                              onClick={() => toggleDayBreak(day.key)}
-                              disabled={saving}
-                              className="flex h-[50px] w-full items-center justify-between gap-3 rounded-[18px] border border-[#ece7e1] bg-white px-4 text-left text-sm font-black text-[#202020] transition-all duration-200 hover:border-[#ffd8c2] hover:bg-[#fffaf6] disabled:opacity-60"
-                            >
+<div
+  className={cn(
+    "mt-2 grid w-full gap-2",
+    "min-[640px]:max-[739px]:ml-auto min-[640px]:max-[739px]:mr-0 min-[640px]:max-[739px]:max-w-[320px]",
+    hasBreak && "grid-cols-2 min-[740px]:grid-cols-[1fr_1fr_1fr]",
+  )}
+>
+  <button
+    type="button"
+    onClick={() => toggleDayBreak(day.key)}
+    disabled={saving}
+    className={cn(
+      "flex h-[50px] w-full items-center justify-between gap-3 rounded-[18px] border border-[#eadbc9] bg-white px-4 text-left text-sm font-black text-[#202020] transition-all duration-200 hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] disabled:opacity-60",
+      hasBreak && "col-span-2 min-[740px]:col-span-1",
+    )}
+  >
                               <span className="flex min-w-0 items-center gap-2">
                                 <Coffee
                                   className={cn(
@@ -2330,18 +2436,23 @@ closeExceptionModal();
 
                             {hasBreak &&
                               [
-                                ["breakStart", "Перерва з"],
-                                ["breakEnd", "Перерва до"],
-                              ].map(([field, label]) => (
+                                ["breakStart", "Перерва з", Coffee],
+                                ["breakEnd", "Перерва до", Coffee],
+                              ].map(([field, label, Icon]) => (
                                 <div key={field} className="min-w-0">
-                             <div
-  className={cn(
-    "flex h-[50px] items-center overflow-hidden rounded-[18px] border px-2 transition-all duration-200 focus-within:ring-4",
-    hasScheduleFieldError(day.key, field)
-      ? "border-[#ef4444] bg-[#fff5f5] focus-within:ring-[#ef4444]/10"
-      : "border-[#ece7e1] bg-white hover:bg-[#fffaf6] focus-within:ring-[#ff6200]/10",
-  )}
->
+                                  <label className="mb-1.5 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#77716b]">
+                                    <Icon className="h-3.5 w-3.5 text-[#ff6200]" />
+                                    {label}
+                                  </label>
+
+                                  <div
+                                    className={cn(
+                                      "schedule-time-field flex h-[50px] items-center overflow-hidden rounded-[18px] border px-2 transition-all duration-200 focus-within:ring-4",
+                                      hasScheduleFieldError(day.key, field)
+                                        ? "border-[#ef4444] bg-[#fff5f5] focus-within:ring-[#ef4444]/10"
+                                        : "border-[#eadbc9] bg-white hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] focus-within:ring-[#ff6200]/10",
+                                    )}
+                                  >
                                     <TimeSelect
                                       value={config[field]}
                                       label={label}
@@ -2352,6 +2463,7 @@ closeExceptionModal();
                                       onCommit={(value) =>
                                         handleTimeCommit(day.key, field, value)
                                       }
+                                      className="h-full w-full justify-center text-base"
                                     />
                                   </div>
                                 </div>
@@ -2359,12 +2471,13 @@ closeExceptionModal();
                           </div>
                         )}
                         {Object.keys(scheduleFieldErrors).some((key) =>
-  key.startsWith(`${day.key}.`),
-) && (
-  <p className="mt-2 rounded-2xl border border-[#fecaca] bg-[#fff5f5] px-3 py-2 text-xs font-bold text-[#dc2626]">
-    Перевірте час: завершення має бути пізніше початку, а перерва — всередині робочого часу.
-  </p>
-)}
+                          key.startsWith(`${day.key}.`),
+                        ) && (
+                          <p className="mt-2 rounded-2xl border border-[#fecaca] bg-[#fff5f5] px-3 py-2 text-xs font-bold text-[#dc2626]">
+                            Перевірте час: завершення має бути пізніше початку,
+                            а перерва — всередині робочого часу.
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -2406,119 +2519,124 @@ closeExceptionModal();
 
               return (
                 <div className="relative text-[#202020]">
-                  <div className="grid w-full gap-4 lg:grid-cols-[minmax(0,455px)_minmax(320px,450px)] lg:items-start lg:justify-center lg:gap-x-2">
-                    <div className="min-w-0">
-                      <div className="grid grid-cols-3 gap-2">
-                        <div className="flex h-12 items-center justify-center rounded-2xl bg-[#fcfbf9] px-3 text-center text-sm font-black text-[#77716b]">
-                          {workingDays}{" "}
-                          {"\u0440\u043e\u0431\u043e\u0447\u0438\u0445"}
-                        </div>
+<div className="rounded-[22px] border border-[#ebe7df] bg-[#fbfaf8] p-2.5">
+  <div className="grid gap-1.5">
+    <div className="grid gap-1.5 min-[640px]:grid-cols-[minmax(280px,1.25fr)_minmax(230px,1fr)] min-[640px]:items-stretch min-[1024px]:grid-cols-[minmax(320px,1.2fr)_minmax(280px,1fr)]">
+      <div className="grid grid-cols-[38px_minmax(0,1fr)_38px] items-center gap-1.5">
+        <button
+          type="button"
+          onClick={() => shiftScheduleMonth(-1)}
+          className="grid h-10 place-items-center rounded-[14px] border border-[#eadbc9] bg-white text-[#202020] transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] hover:text-[#ff6200]"
+          aria-label="Попередній місяць"
+        >
+          <ChevronRight className="h-4 w-4 rotate-180" />
+        </button>
 
-                        <div className="flex h-12 items-center justify-center rounded-2xl bg-[#fff1e8] px-3 text-center text-sm font-black text-[#ff5a00]">
-                          {daysOff}{" "}
-                          {"\u0432\u0438\u0445\u0456\u0434\u043d\u0438\u0445"}
-                        </div>
+        <button
+          type="button"
+          onClick={resetScheduleMonthToToday}
+          className="flex h-10 min-w-0 items-center justify-center gap-2 rounded-[14px] border border-[#eadbc9] bg-white px-3 text-center transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0]"
+        >
+          <CalendarDays className="h-4 w-4 shrink-0 text-[#ff6200]" />
 
-                        <div className="flex h-12 items-center justify-center rounded-2xl bg-[#fcfbf9] px-3 text-center text-sm font-black text-[#77716b]">
-                          {specialDays}{" "}
-                          {"\u043e\u0441\u043e\u0431\u043b."}
-                        </div>
-                      </div>
+          <span className="truncate text-[14px] font-black capitalize tracking-[-0.02em] text-[#202020]">
+            {getMonthTitle(scheduleMonthDate)}
+          </span>
+        </button>
 
-                      <div className="mt-4 grid grid-cols-[64px_minmax(0,1fr)_64px] items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => shiftScheduleMonth(-1)}
-                          className="grid h-[60px] place-items-center rounded-2xl border border-[#ebe7df] bg-white text-[#202020] transition hover:border-[#ffd8c2] hover:bg-[#fffaf6] hover:text-[#ff6200]"
-                          aria-label="\u041f\u043e\u043f\u0435\u0440\u0435\u0434\u043d\u0456\u0439 \u043c\u0456\u0441\u044f\u0446\u044c"
-                        >
-                          <ChevronRight className="h-5 w-5 rotate-180" />
-                        </button>
+        <button
+          type="button"
+          onClick={() => shiftScheduleMonth(1)}
+          className="grid h-10 place-items-center rounded-[14px] border border-[#eadbc9] bg-white text-[#202020] transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] hover:text-[#ff6200]"
+          aria-label="Наступний місяць"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      </div>
 
-                        <button
-                          type="button"
-                          onClick={resetScheduleMonthToToday}
-                          className="flex h-[60px] min-w-0 items-center justify-center gap-3 rounded-2xl border border-[#ebe7df] bg-white px-4 text-center transition hover:bg-[#fffaf6]"
-                        >
-                          <CalendarDays className="h-5 w-5 shrink-0 text-[#ff6200]" />
+<div className="grid min-w-0 grid-cols-3 gap-1.5">
+  <div className="flex h-10 min-w-0 flex-col items-center justify-center rounded-[14px] border border-[#eadbc9] bg-white px-1.5 text-center">
+    <p className="line-clamp-2 min-w-0 text-center text-[8px] font-black uppercase leading-[8.5px] tracking-wide text-[#77716b]">
+      Робочих
+    </p>
 
-                          <span className="truncate text-[18px] font-black capitalize tracking-[-0.03em] text-[#202020]">
-                            {getMonthTitle(scheduleMonthDate)}
-                          </span>
-                        </button>
+    <p className="mt-0.5 text-center text-[14px] font-black leading-none text-[#41a85f]">
+      {workingDays}
+    </p>
+  </div>
 
-                        <button
-                          type="button"
-                          onClick={() => shiftScheduleMonth(1)}
-                          className="grid h-[60px] place-items-center rounded-2xl border border-[#ebe7df] bg-white text-[#202020] transition hover:border-[#ffd8c2] hover:bg-[#fffaf6] hover:text-[#ff6200]"
-                          aria-label="\u041d\u0430\u0441\u0442\u0443\u043f\u043d\u0438\u0439 \u043c\u0456\u0441\u044f\u0446\u044c"
-                        >
-                          <ChevronRight className="h-5 w-5" />
-                        </button>
-                      </div>
-                    </div>
+  <div className="flex h-10 min-w-0 flex-col items-center justify-center rounded-[14px] border border-[#eadbc9] bg-white px-1.5 text-center">
+    <p className="line-clamp-2 min-w-0 text-center text-[8px] font-black uppercase leading-[8.5px] tracking-wide text-[#77716b]">
+      Вихідних
+    </p>
 
-                    <div
-                      className={cn(
-                        "grid gap-3 lg:pt-0",
-                        scheduleMultiSelect
-                          ? "grid-cols-2 md:grid-cols-[1fr_1fr_0.85fr] lg:grid-cols-2"
-                          : "grid-cols-1 md:grid-cols-2 lg:grid-cols-1",
-                      )}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => quickSelectWorkdays(monthDays)}
-                        className={cn(
-                          "inline-flex min-h-[60px] w-full items-center justify-center gap-3 rounded-2xl border border-[#ebe7df] bg-white px-5 text-center text-[15px] font-black leading-tight text-[#202020] transition hover:border-[#ffd8c2] hover:bg-[#fffaf6] hover:text-[#ff6200]",
-                          scheduleMultiSelect &&
-                            "col-span-2 md:col-span-1 lg:col-span-2",
-                        )}
-                      >
-                        <CalendarCheck className="h-5 w-5 shrink-0" />
-                        <span>
-                          {"\u0412\u0438\u0431\u0440\u0430\u0442\u0438"}
-                          <br />
-                          {"\u0440\u043e\u0431\u043e\u0447\u0456 \u0434\u043d\u0456"}
-                        </span>
-                      </button>
+    <p className="mt-0.5 text-center text-[14px] font-black leading-none text-[#ff5a00]">
+      {daysOff}
+    </p>
+  </div>
 
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!scheduleMultiSelect) {
-                            setScheduleMultiSelect(true);
-                            setSelectedScheduleDates([]);
-                            setScheduleEditorOpen(false);
-                          }
-                        }}
-                        className={cn(
-                          "inline-flex h-[56px] w-full items-center justify-center gap-2 rounded-2xl border px-3 text-[14px] font-black transition sm:h-[60px] sm:px-4 sm:text-[15px]",
-                          scheduleMultiSelect
-                            ? "border-[#ff6200] bg-[#fff1e8] text-[#ff6200]"
-                            : "border-[#ebe7df] bg-white text-[#202020] hover:border-[#ffd8c2] hover:bg-[#fffaf6] hover:text-[#ff6200]",
-                        )}
-                      >
-                        <ClipboardPen className="h-4 w-4 shrink-0" />
-                        <span className="truncate">
-                          {"\u041c\u043d\u043e\u0436\u0438\u043d\u043d\u0438\u0439 \u0432\u0438\u0431\u0456\u0440"}
-                        </span>
-                      </button>
+  <div className="flex h-10 min-w-0 flex-col items-center justify-center rounded-[14px] border border-[#eadbc9] bg-white px-1.5 text-center">
+    <p className="line-clamp-2 min-w-0 text-center text-[8px] font-black uppercase leading-[8.5px] tracking-wide text-[#77716b]">
+      Особливі дати
+    </p>
 
-                      {scheduleMultiSelect && (
-                        <button
-                          type="button"
-                          onClick={closeScheduleSelection}
-                          className="inline-flex h-[56px] w-full items-center justify-center gap-2 rounded-2xl border border-[#ebe7df] bg-white px-3 text-[14px] font-black text-[#202020] transition hover:border-[#ffd8c2] hover:bg-[#fffaf6] hover:text-[#ff6200] sm:h-[60px] sm:px-4 sm:text-[15px]"
-                        >
-                          <X className="h-4 w-4 shrink-0" />
-                          <span className="truncate">
-                            {"\u0421\u043a\u0430\u0441\u0443\u0432\u0430\u0442\u0438"}
-                          </span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
+    <p className="mt-0.5 text-center text-[14px] font-black leading-none text-[#ff6200]">
+      {specialDays}
+    </p>
+  </div>
+</div>
+    </div>
+
+    <div
+      className={cn(
+        "grid gap-1.5",
+        scheduleMultiSelect
+          ? "grid-cols-3"
+          : "grid-cols-2",
+      )}
+    >
+      <button
+        type="button"
+        onClick={() => quickSelectWorkdays(monthDays)}
+        className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-[14px] border border-[#eadbc9] bg-white px-2 text-[12px] font-black leading-none text-[#202020] transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] hover:text-[#ff6200]"
+      >
+        <CalendarCheck className="h-4 w-4 shrink-0 text-[#ff6200]" />
+        <span className="truncate">Вибрати будні</span>
+      </button>
+
+      <button
+        type="button"
+        onClick={() => {
+          if (!scheduleMultiSelect) {
+            setScheduleMultiSelect(true);
+            setSelectedScheduleDates([]);
+            setScheduleEditorOpen(false);
+          }
+        }}
+        className={cn(
+          "inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-[14px] border px-2 text-[12px] font-black leading-none transition",
+          scheduleMultiSelect
+            ? "border-[#ff6200] bg-[#fff1e8] text-[#ff6200]"
+            : "border-[#eadbc9] bg-white text-[#202020] hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] hover:text-[#ff6200]",
+        )}
+      >
+        <ClipboardPen className="h-4 w-4 shrink-0" />
+        <span className="truncate">Множинний</span>
+      </button>
+
+      {scheduleMultiSelect && (
+        <button
+          type="button"
+          onClick={closeScheduleSelection}
+          className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-[14px] border border-[#eadbc9] bg-white px-2 text-[12px] font-black text-[#202020] transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] hover:text-[#ff6200]"
+        >
+          <X className="h-4 w-4 shrink-0" />
+          <span className="truncate">Скасувати</span>
+        </button>
+      )}
+    </div>
+  </div>
+</div>
 
                   <div className="mt-5 hidden grid-cols-7 gap-3 lg:grid">
                     {weekdayLabels.map((label, index) => {
@@ -2617,7 +2735,9 @@ closeExceptionModal();
                               <p
                                 className={cn(
                                   "flex items-center gap-1.5 text-xs font-black capitalize",
-                                  isDayOff ? "text-[#ff5a00]" : "text-[#77716b]",
+                                  isDayOff
+                                    ? "text-[#ff5a00]"
+                                    : "text-[#77716b]",
                                 )}
                               >
                                 <CalendarDays className="h-3.5 w-3.5" />
@@ -2631,7 +2751,9 @@ closeExceptionModal();
                               </p>
                               {day.hasException && (
                                 <p className="mt-1 text-[11px] font-black text-[#ff6200]">
-                                  {"\u0406\u043d\u0434\u0438\u0432\u0456\u0434\u0443\u0430\u043b\u044c\u043d\u043e"}
+                                  {
+                                    "\u0406\u043d\u0434\u0438\u0432\u0456\u0434\u0443\u0430\u043b\u044c\u043d\u043e"
+                                  }
                                 </p>
                               )}
                             </div>
@@ -2667,83 +2789,85 @@ closeExceptionModal();
                   </div>
 
                   <div className="mt-3 hidden grid-cols-7 gap-1 lg:grid">
-                    {monthDays.map((day) => {
-                      const item = getVisibleScheduleItemForDay(day);
-                      const isSelected = selectedScheduleDates.includes(
-                        day.dateKey,
-                      );
-                      const lines = getScheduleTimeLines(item);
-                      const isDayOff = !item.enabled;
+{monthDays.map((day) => {
+  const item = getVisibleScheduleItemForDay(day);
+  const isSelected = selectedScheduleDates.includes(day.dateKey);
+  const lines = getScheduleTimeLines(item);
+  const isDayOff = !item.enabled;
 
-                      return (
-                        <button
-                          key={day.dateKey}
-                          type="button"
-                          disabled={!day.isCurrentMonth}
-                          onClick={() =>
-                            day.isCurrentMonth && toggleScheduleDate(day.dateKey)
-                          }
-                          className={cn(
-                            "relative flex min-h-[118px] flex-col items-center justify-start rounded-[12px] border p-3 text-center transition-all duration-200",
-                            day.isCurrentMonth
-                              ? "hover:-translate-y-0.5 hover:border-[#ffb784]"
-                              : "cursor-default border-[#ebe7df] bg-transparent opacity-45",
-                            day.isCurrentMonth &&
-                              (isDayOff
-                                ? "border-[#ffd6bd] bg-[#fff1e8] text-[#ff5a00]"
-                                : "border-[#ebe7df] bg-white text-[#202020]"),
-                            day.hasException &&
-                              day.isCurrentMonth &&
-                              !isSelected &&
-                              "ring-1 ring-[#ff6200]/10",
-                            isSelected &&
-                              (scheduleMultiSelect
-                                ? "border-[#41a85f] bg-[#f4fbf6] shadow-[0_0_0_2px_rgba(65,168,95,0.18)]"
-                                : "border-[#ff6200] bg-[#fff7f0] shadow-[0_0_0_2px_rgba(255,98,0,0.18)]"),
-                          )}
-                        >
-                          <span
-                            className={cn(
-                              "grid h-6 min-w-6 place-items-center rounded-full px-1 text-sm font-black",
-                              day.isToday && "bg-[#ff6200] text-white",
-                              !day.isToday &&
-                                (isDayOff ? "text-[#ff5a00]" : "text-[#202020]"),
-                              !day.isCurrentMonth && "text-[#aaa19a]",
-                            )}
-                          >
-                            {day.dayNumber}
-                          </span>
+  return (
+    <button
+      key={day.dateKey}
+      type="button"
+      disabled={!day.isCurrentMonth}
+      onClick={() =>
+        day.isCurrentMonth && toggleScheduleDate(day.dateKey)
+      }
+      className={cn(
+        "relative flex min-h-[88px] flex-col items-center justify-start rounded-[10px] border px-2 py-2 text-center transition-all duration-200",
+        day.isCurrentMonth
+          ? "hover:-translate-y-0.5 hover:border-[#ffb784]"
+          : "cursor-default border-[#ebe7df] bg-transparent opacity-40",
+        day.isCurrentMonth &&
+          (isDayOff
+            ? "border-[#ffd6bd] bg-[#fff7f0] text-[#ff5a00]"
+            : "border-[#ebe7df] bg-white text-[#202020]"),
+        day.hasException &&
+          day.isCurrentMonth &&
+          !isSelected &&
+          "ring-1 ring-[#ff6200]/10",
+        isSelected &&
+          (scheduleMultiSelect
+            ? "border-[#41a85f] bg-[#f4fbf6] shadow-[0_0_0_2px_rgba(65,168,95,0.18)]"
+            : "border-[#ff6200] bg-[#fff7f0] shadow-[0_0_0_2px_rgba(255,98,0,0.18)]"),
+      )}
+    >
+      <span
+        className={cn(
+          "grid h-6 min-w-6 place-items-center rounded-full px-1 text-[13px] font-black leading-none",
+          day.isToday && "bg-[#ff6200] text-white",
+          !day.isToday &&
+            (isDayOff ? "text-[#ff5a00]" : "text-[#202020]"),
+          !day.isCurrentMonth && "text-[#aaa19a]",
+        )}
+      >
+        {day.dayNumber}
+      </span>
 
-                          <span className="mt-2 h-px w-14 bg-[#eadbc9]" />
+      <div className="mt-2 w-full space-y-0.5 text-[10px] font-black leading-4">
+        {lines.slice(0, 2).map((line, lineIndex) => {
+          const LineIcon = isDayOff
+            ? XCircle
+            : lineIndex === 1
+              ? Coffee
+              : Clock;
 
-                          <div className="mt-auto space-y-1 pb-2 text-[12px] font-black leading-tight">
-                            {lines.map((line, lineIndex) => {
-                              const LineIcon = isDayOff
-                                ? XCircle
-                                : lineIndex === 1
-                                  ? Coffee
-                                  : Clock;
+          return (
+<p
+  key={line}
+  className="flex min-w-0 items-center justify-center gap-1 max-[1180px]:gap-0"
+>
+  <LineIcon className="h-3 w-3 shrink-0 max-[1180px]:hidden" />
+  <span className="truncate">{line}</span>
+</p>
+          );
+        })}
+      </div>
 
-                              return (
-                                <p
-                                  key={line}
-                                  className="flex items-center justify-center gap-1.5"
-                                >
-                                  <LineIcon className="h-3.5 w-3.5" />
-                                  {line}
-                                </p>
-                              );
-                            })}
-                          </div>
+      {day.hasException && day.isCurrentMonth && (
+        <span className="absolute right-1.5 top-1.5 grid h-4 w-4 place-items-center rounded-full bg-[#ff6200] text-white">
+          <CalendarCheck className="h-2.5 w-2.5" />
+        </span>
+      )}
 
-                          {day.hasException && day.isCurrentMonth && (
-                            <span className="absolute right-2 top-2 grid h-5 w-5 place-items-center rounded-full bg-[#ff6200] text-white">
-                              <CalendarCheck className="h-3 w-3" />
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
+      {scheduleMultiSelect && day.isCurrentMonth && isSelected && (
+        <span className="absolute left-1.5 top-1.5 grid h-4 w-4 place-items-center rounded-full bg-[#41a85f] text-white">
+          <Check className="h-2.5 w-2.5" />
+        </span>
+      )}
+    </button>
+  );
+})}
                   </div>
 
                   {scheduleMultiSelect &&
@@ -2758,8 +2882,7 @@ closeExceptionModal();
                             <div className="min-w-0">
                               <p className="text-sm font-black text-[#202020]">
                                 {"\u0412\u0438\u0431\u0440\u0430\u043d\u043e"}{" "}
-                                {selectedCount}{" "}
-                                {"\u0434\u043d\u0456\u0432"}
+                                {selectedCount} {"\u0434\u043d\u0456\u0432"}
                               </p>
                               <p className="truncate text-xs font-bold text-[#77716b]">
                                 {selectedLabel}
@@ -2773,9 +2896,13 @@ closeExceptionModal();
                             className="h-12 w-full sm:w-auto sm:px-5"
                           >
                             <Clock className="h-4 w-4" />
-                            {"\u0412\u0441\u0442\u0430\u043d\u043e\u0432\u0438\u0442\u0438 \u0433\u0440\u0430\u0444\u0456\u043a"}
+                            {
+                              "\u0412\u0441\u0442\u0430\u043d\u043e\u0432\u0438\u0442\u0438 \u0433\u0440\u0430\u0444\u0456\u043a"
+                            }
                             <span className="hidden min-[390px]:inline">
-                              {"\u043d\u0430 \u0432\u0438\u0431\u0440\u0430\u043d\u0456 \u0434\u0430\u0442\u0438"}
+                              {
+                                "\u043d\u0430 \u0432\u0438\u0431\u0440\u0430\u043d\u0456 \u0434\u0430\u0442\u0438"
+                              }
                             </span>
                           </Button>
                         </div>
@@ -2793,7 +2920,9 @@ closeExceptionModal();
                       <div className="mb-5 flex items-start justify-between gap-4 sm:hidden">
                         <div>
                           <h3 className="text-xl font-black text-[#202020]">
-                            {"\u0417\u043c\u0456\u043d\u0438\u0442\u0438 \u0433\u0440\u0430\u0444\u0456\u043a \u0440\u043e\u0431\u043e\u0442\u0438"}
+                            {
+                              "\u0417\u043c\u0456\u043d\u0438\u0442\u0438 \u0433\u0440\u0430\u0444\u0456\u043a \u0440\u043e\u0431\u043e\u0442\u0438"
+                            }
                           </h3>
                           <p className="mt-8 text-xs font-bold text-[#77716b]">
                             {selectedCount === 1
@@ -2854,7 +2983,7 @@ closeExceptionModal();
                                   enabled: !prev.enabled,
                                 }))
                               }
-                              className="flex h-[52px] w-full items-center justify-between gap-3 rounded-xl border border-[#ebe7df] bg-white px-4 text-sm font-black text-[#202020] transition hover:border-[#ffd8c2] hover:bg-[#fffaf6]"
+                              className="flex h-[50px] w-full items-center justify-between gap-3 rounded-xl border border-[#ebe7df] bg-white px-4 text-sm font-black text-[#202020] transition hover:border-[#ffd8c2] hover:bg-[#fffaf6]"
                             >
                               <span className="flex items-center gap-2">
                                 {bulkScheduleDraft.enabled ? (
@@ -2875,8 +3004,16 @@ closeExceptionModal();
 
                             {bulkScheduleDraft.enabled &&
                               [
-                                ["start", "\u041f\u043e\u0447\u0430\u0442\u043e\u043a", Clock],
-                                ["end", "\u041a\u0456\u043d\u0435\u0446\u044c", Timer],
+                                [
+                                  "start",
+                                  "\u041f\u043e\u0447\u0430\u0442\u043e\u043a",
+                                  Clock,
+                                ],
+                                [
+                                  "end",
+                                  "\u041a\u0456\u043d\u0435\u0446\u044c",
+                                  Timer,
+                                ],
                               ].map(([field, label, Icon]) => (
                                 <div key={field} className="min-w-0">
                                   <label className="mb-1.5 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#77716b]">
@@ -2884,7 +3021,7 @@ closeExceptionModal();
                                     {label}
                                   </label>
 
-                                  <div className="flex h-[52px] items-center overflow-hidden rounded-xl border border-[#ebe7df] bg-white px-2 transition hover:border-[#ffd8c2] hover:bg-[#fffaf6]">
+                                  <div className="schedule-time-field flex h-[52px] items-center overflow-hidden rounded-xl border border-[#ebe7df] bg-white px-2 transition hover:border-[#ffd8c2] hover:bg-[#fffaf6]">
                                     <TimeSelect
                                       value={bulkScheduleDraft[field]}
                                       label={label}
@@ -2896,7 +3033,7 @@ closeExceptionModal();
                                       onCommit={(value) =>
                                         updateBulkScheduleField(field, value)
                                       }
-                                      className="h-full justify-center text-base"
+                                      className="h-full w-full justify-center text-base"
                                     />
                                   </div>
                                 </div>
@@ -2955,7 +3092,7 @@ closeExceptionModal();
                                       {label}
                                     </label>
 
-                                    <div className="flex h-[52px] items-center overflow-hidden rounded-xl border border-[#ebe7df] bg-white px-2 transition hover:border-[#ffd8c2] hover:bg-[#fffaf6]">
+                                    <div className="schedule-time-field flex h-[52px] items-center overflow-hidden rounded-xl border border-[#ebe7df] bg-white px-2 transition hover:border-[#ffd8c2] hover:bg-[#fffaf6]">
                                       <TimeSelect
                                         value={bulkScheduleDraft[field]}
                                         label={label}
@@ -2967,7 +3104,7 @@ closeExceptionModal();
                                         onCommit={(value) =>
                                           updateBulkScheduleField(field, value)
                                         }
-                                        className="h-full justify-center text-base"
+                                        className="h-full w-full justify-center text-base"
                                       />
                                     </div>
                                   </div>
@@ -2998,7 +3135,9 @@ closeExceptionModal();
                             className="h-[54px] w-full"
                           >
                             <X className="h-4 w-4" />
-                            {"\u0421\u043a\u0430\u0441\u0443\u0432\u0430\u0442\u0438"}
+                            {
+                              "\u0421\u043a\u0430\u0441\u0443\u0432\u0430\u0442\u0438"
+                            }
                           </Button>
                         </div>
                       </div>
@@ -3016,7 +3155,7 @@ closeExceptionModal();
           badge={`К-ть днів: ${exceptions.length}`}
           actions={
             <Button
-             onClick={openAddExceptionModal}
+              onClick={openAddExceptionModal}
               variant="primary"
               className="h-11 w-full justify-center whitespace-nowrap rounded-2xl px-4 text-sm sm:w-auto"
             >
@@ -3041,13 +3180,12 @@ closeExceptionModal();
 
               <p className="mt-1 text-xs font-medium leading-5 text-[#8a847d]">
                 Тут ви можете додати свята, скорочені дні або вихідні.
-                <br />
-                У ці дні студія працюватиме за окремим графіком.
+                <br />У ці дні студія працюватиме за окремим графіком.
               </p>
             </div>
           ) : (
             <div className="space-y-3">
-              {exceptions.map((item, index) => {
+              {visibleExceptions.map((item, index) => {
                 const exceptionKey = getExceptionKey(item, index);
                 const isExpanded =
                   item.isNew || expandedExceptions[exceptionKey] === true;
@@ -3056,247 +3194,271 @@ closeExceptionModal();
                 const hasBreak = Boolean(breakStart && breakEnd);
                 const isValid = isExceptionValid(item);
 
-                return (
-                  <div
-                    key={exceptionKey}
-                    className="overflow-hidden rounded-[24px] border border-[#ebe7df] bg-white shadow-[0_8px_26px_rgba(15,23,42,0.04)]"
-                  >
-                    <button
-                      type="button"
-                      onClick={() =>
-                        !item.isNew && toggleExceptionExpanded(exceptionKey)
-                      }
-                      className={cn(
-                        "flex w-full items-start justify-between gap-3 p-4 text-left transition-colors",
-                        !item.isNew && "hover:bg-[#fffaf6]",
-                      )}
-                    >
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-[15px] font-black text-[#202020]">
-                            {item.date
-                              ? formatExceptionDate(item.date)
-                              : "Нова особлива дата"}
-                          </p>
+return (
+<div
+  key={exceptionKey}
+  className="overflow-hidden rounded-[24px] border border-[#eadbc9] bg-white shadow-[0_10px_28px_rgba(15,23,42,0.05)]"
+>
+    <button
+      type="button"
+      onClick={() =>
+        !item.isNew && toggleExceptionExpanded(exceptionKey)
+      }
+className={cn(
+  "relative w-full overflow-hidden bg-white px-4 py-4 text-left transition",
+  !item.isNew && "hover:bg-[#fffaf6]",
+)}
+    >
+     <div className="absolute right-[-45px] top-[-60px] h-[120px] w-[120px] rounded-full bg-[#ff6200]/5 blur-3xl" />
 
-                          <div className="rounded-full bg-[#fff4ec] px-3 py-1 text-xs font-black text-[#ff6200]">
-                            {item.enabled ? "Особливий графік" : "Вихідний"}
-                          </div>
-                        </div>
+      <div className="relative z-10 flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <span className="inline-flex h-7 items-center gap-1.5 rounded-full bg-[#fff4ec] px-2.5 text-[10px] font-black uppercase tracking-[0.08em] text-[#ff6200]">
+            <CalendarDays className="h-3.5 w-3.5" />
+            Особлива дата
+          </span>
+            <span
+              className={cn(
+                "inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 text-[11px] font-black",
+                item.enabled
+                  ? "text-[#41a85f]"
+                  : " text-[#c8483d]",
+              )}
+            >
+              {item.enabled ? (
+                <CalendarCheck className="h-3.5 w-3.5" />
+              ) : (
+                <XCircle className="h-3.5 w-3.5" />
+              )}
 
-                        <p className="mt-1 text-xs font-medium text-[#8a847d]">
-                          {exceptionSubtitle(item)}
-                        </p>
-                      </div>
+              {item.enabled ? "Робочий" : "Вихідний"}
+            </span>
+          <h3 className="mt-2 text-[20px] font-black leading-none tracking-[-0.03em] text-[#202020] sm:text-[24px]">
+            {item.date
+              ? formatExceptionDate(item.date)
+              : "Нова особлива дата"}
+          </h3>
 
-                      <div className="flex shrink-0 items-center gap-2">
-                        {!item.isNew && (
-                          <span className="hidden text-xs font-bold text-[#8a847d] sm:inline">
-                            {isExpanded ? "Згорнути" : "Розгорнути"}
-                          </span>
-                        )}
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
 
-                        {!item.isNew &&
-                          (isExpanded ? (
-                            <ChevronUp className="h-5 w-5 shrink-0 text-[#ff6200]" />
-                          ) : (
-                            <ChevronDown className="h-5 w-5 shrink-0 text-[#ff6200]" />
-                          ))}
-                      </div>
-                    </button>
 
-                    <div
-                      className={cn(
-                        "grid transition-all duration-300 ease-out",
-                        isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
-                      )}
-                    >
-                      <div className="overflow-hidden">
-                        <div className="border-t border-[#f1ece5] px-4 pb-4 pt-4">
-                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:items-end">
-                            <div className="min-w-0">
-                              <DatePicker
-                                label="Дата"
-                                value={item.date}
-                                onChange={(value) =>
-                                  updateException(index, "date", value)
-                                }
-                              />
-                            </div>
+{item.enabled && (
+  <span className="inline-flex min-h-7 items-center rounded-full bg-[#fbfaf8] px-2.5 py-1 text-[11px] font-bold text-[#77716b]">
+    {exceptionSubtitle(item)}
+  </span>
+)}
+          </div>
+        </div>
 
-                            <div>
-                              <label className="mb-1.5 block text-xs font-black uppercase tracking-wide text-[#8a847d]">
-                                Статус
-                              </label>
+        <div className="flex shrink-0 items-center gap-2">
+          {!item.isNew && (
+            <span className="hidden text-xs font-black uppercase tracking-wide text-[#8d8177] sm:inline">
+              {isExpanded ? "Згорнути" : "Редагувати"}
+            </span>
+          )}
 
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  updateException(
-                                    index,
-                                    "enabled",
-                                    !item.enabled,
-                                  )
-                                }
-                                className="flex h-[50px] w-full items-center gap-3 rounded-2xl border border-[#ebe7df] bg-white px-4 transition-all duration-200 hover:bg-[#fffaf6] focus:border-[#ff6200] focus:ring-4 focus:ring-[#ff6200]/10"
-                              >
-                                <Toggle checked={item.enabled} />
+          {!item.isNew &&
+            (isExpanded ? (
+              <ChevronUp className="h-5 w-5 shrink-0 text-[#ff6200]" />
+            ) : (
+              <ChevronDown className="h-5 w-5 shrink-0 text-[#ff6200]" />
+            ))}
+        </div>
+      </div>
+    </button>
 
-                                <span className="whitespace-nowrap text-sm font-black text-[#202020]">
-                                  {item.enabled ? "Робочий день" : "Вихідний"}
-                                </span>
-                              </button>
-                            </div>
+    <div
+      className={cn(
+        "grid transition-all duration-300 ease-out",
+        isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+      )}
+    >
+      <div className="overflow-hidden">
+<div className="border-t border-[#f0e7da] bg-white px-4 py-4">
+  <div className="space-y-3">
 
-                            {item.enabled ? (
-                              <div className="grid grid-cols-2 gap-2 sm:col-span-2">
-                                <div className="min-w-0">
-                                  <label className="mb-1.5 block text-xs font-black uppercase tracking-wide text-[#8a847d]">
-                                    Початок
-                                  </label>
+            <div
+              className={cn(
+                "grid grid-cols-2 gap-2 sm:items-end",
+                item.enabled && "sm:grid-cols-[1.35fr_0.82fr_0.82fr]",
+              )}
+            >
+              <button
+                type="button"
+                onClick={() =>
+                  updateException(index, "enabled", !item.enabled)
+                }
+                className="col-span-2 flex h-[52px] w-full items-center justify-between gap-3 rounded-xl border border-[#eadbc9] bg-white px-4 text-sm font-black text-[#202020] transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] sm:col-span-1"
+              >
+                <span className="flex min-w-0 items-center gap-2">
+                  {item.enabled ? (
+                    <CalendarCheck className="h-4 w-4 shrink-0 text-[#41a85f]" />
+                  ) : (
+                    <XCircle className="h-4 w-4 shrink-0 text-[#8d8177]" />
+                  )}
 
-                                  <div className="flex h-[50px] items-center overflow-hidden rounded-2xl border border-[#ebe7df] bg-white px-2 transition-all hover:bg-[#fffaf6] focus-within:ring-4 focus-within:ring-[#ff6200]/10">
-                                    <TimeSelect
-                                      value={item.start}
-                                      label="Початок"
-                                      dayLabel={item.date || "Особлива дата"}
-                                      onChange={(value) =>
-                                        updateException(index, "start", value)
-                                      }
-                                      onCommit={(value) =>
-                                        updateException(index, "start", value)
-                                      }
-                                    />
-                                  </div>
-                                </div>
+                  <span className="truncate">
+                    {item.enabled ? "Робочий" : "Вихідний"}
+                  </span>
+                </span>
 
-                                <div className="min-w-0">
-                                  <label className="mb-1.5 block text-xs font-black uppercase tracking-wide text-[#8a847d]">
-                                    Завершення
-                                  </label>
+                <Toggle checked={item.enabled} />
+              </button>
 
-                                  <div className="flex h-[50px] items-center overflow-hidden rounded-2xl border border-[#ebe7df] bg-white px-2 transition-all hover:bg-[#fffaf6] focus-within:ring-4 focus-within:ring-[#ff6200]/10">
-                                    <TimeSelect
-                                      value={item.end}
-                                      label="Завершення"
-                                      dayLabel={item.date || "Особлива дата"}
-                                      onChange={(value) =>
-                                        updateException(index, "end", value)
-                                      }
-                                      onCommit={(value) =>
-                                        updateException(index, "end", value)
-                                      }
-                                    />
-                                  </div>
-                                </div>
+              {item.enabled &&
+                [
+                  ["start", "Початок", Clock],
+                  ["end", "Кінець", Timer],
+                ].map(([field, label, Icon]) => (
+                  <div key={field} className="min-w-0">
+                    <label className="mb-1.5 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#77716b]">
+                      <Icon className="h-3.5 w-3.5 text-[#ff6200]" />
+                      {label}
+                    </label>
 
-                                <div
-                                  className={cn(
-                                    "col-span-2 grid gap-2",
-                                    hasBreak &&
-                                      "sm:grid-cols-[1fr_1fr_1fr] sm:items-end",
-                                  )}
-                                >
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      updateExceptionBreak(index, !hasBreak)
-                                    }
-                                    className="flex h-[50px] w-full items-center justify-between gap-3 rounded-2xl border border-[#ebe7df] bg-white px-4 text-sm font-black text-[#202020] transition-all duration-200 hover:bg-[#fffaf6] focus:border-[#ff6200] focus:ring-4 focus:ring-[#ff6200]/10"
-                                  >
-                                    <span className="flex min-w-0 items-center gap-2">
-                                      <Coffee
-                                        className={cn(
-                                          "h-4 w-4 shrink-0",
-                                          hasBreak
-                                            ? "text-[#41a85f]"
-                                            : "text-[#8a847d]",
-                                        )}
-                                      />
-                                      <span className="truncate">
-                                        {hasBreak ? "Перерва" : "Без перерви"}
-                                      </span>
-                                    </span>
-
-                                    <Toggle checked={hasBreak} />
-                                  </button>
-
-                                  {hasBreak &&
-                                    [
-                                      ["breakStart", "Перерва з"],
-                                      ["breakEnd", "Перерва до"],
-                                    ].map(([field, label]) => (
-                                      <div key={field} className="min-w-0">
-                                        <label className="mb-1.5 block text-xs font-black uppercase tracking-wide text-[#8a847d]">
-                                          {label}
-                                        </label>
-
-                                        <div className="flex h-[50px] items-center overflow-hidden rounded-2xl border border-[#ebe7df] bg-white px-2 transition-all hover:bg-[#fffaf6] focus-within:ring-4 focus-within:ring-[#ff6200]/10">
-                                          <TimeSelect
-                                            value={item[field]}
-                                            label={label}
-                                            dayLabel={
-                                              item.date || "Особлива дата"
-                                            }
-                                            onChange={(value) =>
-                                              updateException(
-                                                index,
-                                                field,
-                                                value,
-                                              )
-                                            }
-                                            onCommit={(value) =>
-                                              updateException(
-                                                index,
-                                                field,
-                                                value,
-                                              )
-                                            }
-                                          />
-                                        </div>
-                                      </div>
-                                    ))}
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="flex items-center sm:col-span-2">
-                                <div className="w-full rounded-2xl border border-[#f0b8b0] bg-[#fff4f2] px-4 py-3 text-center text-sm font-bold text-[#c8483d]">
-                                  У цей день студія не працюватиме
-                                </div>
-                              </div>
-                            )}
-
-                            <div className="grid grid-cols-2 gap-2 sm:col-span-2 sm:flex sm:justify-end">
-                              <Button
-                                onClick={() => saveException(item, index)}
-                                disabled={!isValid}
-                                variant="primary"
-                                className={cn(
-                                  "h-11 w-full rounded-2xl px-4 text-sm sm:w-auto",
-                                  !isValid &&
-                                    "cursor-not-allowed bg-[#f6f1eb] text-[#8a847d] hover:from-[#f6f1eb] hover:to-[#f6f1eb]",
-                                )}
-                              >
-                                <Check className="h-4 w-4" />
-                                Зберегти
-                              </Button>
-
-                              <Button
-                                onClick={() => removeException(item, index)}
-                                variant="secondary"
-                                className="h-11 w-full rounded-2xl px-4 text-sm sm:w-auto"
-                              >
-                                <Trash2 className="h-4 w-4 text-[#c8483d]" />
-                                Видалити
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    <TimeField className="schedule-time-field flex h-[52px] items-center overflow-hidden rounded-xl border border-[#eadbc9] bg-white p-0 transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0]">
+                      <TimeSelect
+                        value={item[field]}
+                        label={label}
+                        dayLabel={item.date || "Особлива дата"}
+                        placeholder="--:--"
+                        onChange={(value) =>
+                          updateException(index, field, value)
+                        }
+                        onCommit={(value) =>
+                          updateException(index, field, value)
+                        }
+                        className="h-full w-full justify-center text-base"
+                      />
+                    </TimeField>
                   </div>
-                );
+                ))}
+            </div>
+
+            {item.enabled ? (
+              <div
+                className={cn(
+                  "grid grid-cols-2 gap-2 sm:items-end",
+                  hasBreak && "sm:grid-cols-[1.35fr_0.82fr_0.82fr]",
+                )}
+              >
+                <button
+                  type="button"
+                  onClick={() => updateExceptionBreak(index, !hasBreak)}
+                  className="col-span-2 flex h-[52px] w-full items-center justify-between gap-3 rounded-xl border border-[#eadbc9] bg-white px-4 text-sm font-black text-[#202020] transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] sm:col-span-1"
+                >
+                  <span className="flex min-w-0 items-center gap-2">
+                    <Coffee
+                      className={cn(
+                        "h-4 w-4 shrink-0",
+                        hasBreak ? "text-[#41a85f]" : "text-[#8d8177]",
+                      )}
+                    />
+
+                    <span className="truncate">
+                      {hasBreak ? "Перерва" : "Без перерви"}
+                    </span>
+                  </span>
+
+                  <Toggle checked={hasBreak} />
+                </button>
+
+                {hasBreak &&
+                  [
+                    ["breakStart", "Перерва з", Coffee],
+                    ["breakEnd", "Перерва до", Coffee],
+                  ].map(([field, label, Icon]) => (
+                    <div key={field} className="min-w-0">
+                      <label className="mb-1.5 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#77716b]">
+                        <Icon className="h-3.5 w-3.5 text-[#ff6200]" />
+                        {label}
+                      </label>
+
+                      <TimeField className="schedule-time-field flex h-[52px] items-center overflow-hidden rounded-xl border border-[#eadbc9] bg-white p-0 transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0]">
+                        <TimeSelect
+                          value={item[field]}
+                          label={label}
+                          dayLabel={item.date || "Особлива дата"}
+                          placeholder="--:--"
+                          onChange={(value) =>
+                            updateException(index, field, value)
+                          }
+                          onCommit={(value) =>
+                            updateException(index, field, value)
+                          }
+                          className="h-full w-full justify-center text-base"
+                        />
+                      </TimeField>
+                    </div>
+                  ))}
+              </div>
+            ) : (
+              <div className="rounded-[22px] border border-[#ffd6bd] bg-[#fff1e8] p-4">
+                <div className="flex items-start gap-3">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white text-[#ff6200] shadow-sm">
+                    <XCircle className="h-5 w-5" />
+                  </span>
+
+                  <div className="min-w-0">
+                    <p className="text-sm font-black text-[#202020]">
+                      У цей день студія не працюватиме
+                    </p>
+
+<p className="mt-1 text-xs font-semibold leading-5 text-[#77716b] max-[639px]:hidden">
+  Клієнти не зможуть записатися на вибрану дату.
+</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-2 border-t border-[#f0e7da] pt-4 sm:flex sm:justify-end">
+              <Button
+                onClick={() => saveException(item, index)}
+                disabled={!isValid}
+                variant="primary"
+                className={cn(
+                  "h-11 w-full rounded-2xl px-4 text-sm sm:w-auto",
+                  !isValid &&
+                    "cursor-not-allowed bg-[#f6f1eb] text-[#8a847d]",
+                )}
+              >
+                <Save className="h-4 w-4" />
+                Зберегти
+              </Button>
+
+              <Button
+                onClick={() => removeException(item, index)}
+                variant="secondary"
+                className="h-11 w-full rounded-2xl px-4 text-sm sm:w-auto"
+              >
+                <Trash2 className="h-4 w-4 text-[#c8483d]" />
+                Видалити
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
               })}
+
+              {hasMoreExceptions && (
+                <Button
+                  onClick={() =>
+                    setVisibleExceptionsCount((prev) =>
+                      Math.min(prev + EXCEPTIONS_PAGE_SIZE, exceptions.length),
+                    )
+                  }
+                  variant="secondary"
+                  className="mt-1 h-12 w-full rounded-[18px] text-sm"
+                >
+                  <ChevronDown className="h-4 w-4" />
+                  Показати ще{" "}
+                  {Math.min(EXCEPTIONS_PAGE_SIZE, hiddenExceptionsCount)}
+                </Button>
+              )}
             </div>
           )}
         </SectionCard>
@@ -3374,164 +3536,200 @@ closeExceptionModal();
         )}
       </div>
 
-<Modal
-  open={exceptionModal.open}
-  title="Додати особливу дату"
-  onClose={closeExceptionModal}
-  icon={CalendarDays}
-  footer={
-    <div className="flex flex-row gap-2 sm:justify-end">
-      <Button
-        variant="secondary"
-        className="flex-1 sm:flex-none"
-        onClick={closeExceptionModal}
-      >
-        Скасувати
-      </Button>
-
-      <Button
-        variant="primary"
-        className="flex-1 sm:flex-none"
-        onClick={saveExceptionFromModal}
-        disabled={!isExceptionValid(exceptionModal.draft) || saving}
-      >
-        {saving ? "Завантаження..." : "Зберегти"}
-      </Button>
-    </div>
-  }
->
-  <div className="grid gap-4">
-    <DatePicker
-      label="Дата"
-      value={exceptionModal.draft.date}
-      onChange={(value) => updateExceptionDraft("date", value)}
-    />
-
-    <div>
-      <label className="mb-1.5 block text-xs font-black uppercase tracking-wide text-[#8a847d]">
-        Статус
-      </label>
-
-      <button
-        type="button"
-        onClick={() =>
-          updateExceptionDraft("enabled", !exceptionModal.draft.enabled)
-        }
-        className="flex h-[50px] w-full items-center gap-3 rounded-2xl border border-[#ebe7df] bg-white px-4 transition hover:bg-[#fffaf6]"
-      >
-        <Toggle checked={exceptionModal.draft.enabled} />
-
-        <span className="text-sm font-black text-[#202020]">
-          {exceptionModal.draft.enabled ? "Робочий день" : "Вихідний"}
-        </span>
-      </button>
-    </div>
-
-    {exceptionModal.draft.enabled ? (
-      <div className="grid grid-cols-2 gap-2">
-        <div>
-          <label className="mb-1.5 block text-xs font-black uppercase tracking-wide text-[#8a847d]">
-            Початок
-          </label>
-
-          <div className="flex h-[50px] items-center overflow-hidden rounded-2xl border border-[#ebe7df] bg-white px-2">
-            <TimeSelect
-              value={exceptionModal.draft.start}
-              label="Початок"
-              dayLabel={exceptionModal.draft.date || "Особлива дата"}
-              onChange={(value) => updateExceptionDraft("start", value)}
-              onCommit={(value) => updateExceptionDraft("start", value)}
-            />
-          </div>
-        </div>
-
-        <div>
-          <label className="mb-1.5 block text-xs font-black uppercase tracking-wide text-[#8a847d]">
-            Завершення
-          </label>
-
-          <div className="flex h-[50px] items-center overflow-hidden rounded-2xl border border-[#ebe7df] bg-white px-2">
-            <TimeSelect
-              value={exceptionModal.draft.end}
-              label="Завершення"
-              dayLabel={exceptionModal.draft.date || "Особлива дата"}
-              onChange={(value) => updateExceptionDraft("end", value)}
-              onCommit={(value) => updateExceptionDraft("end", value)}
-            />
-          </div>
-        </div>
-
-        {(() => {
-          const modalHasBreak = Boolean(
-            getBreakStart(exceptionModal.draft) &&
-              getBreakEnd(exceptionModal.draft),
-          );
-
-          return (
-            <div
-              className={cn(
-                "col-span-2 grid gap-2",
-                modalHasBreak && "sm:grid-cols-[1fr_1fr_1fr] sm:items-end",
-              )}
+      <Modal
+        open={exceptionModal.open}
+        title="Додати особливу дату"
+        badge="Особлива дата"
+        subtitle="Вкажіть дату, статус дня, години роботи та перерву для окремого графіка студії."
+        onClose={closeExceptionModal}
+        icon={CalendarDays}
+        size="md"
+        footer={
+          <div className="flex flex-row gap-2 sm:justify-end">
+            <Button
+              variant="secondary"
+              className="flex-1 sm:flex-none"
+              onClick={closeExceptionModal}
             >
-              <button
-                type="button"
-                onClick={() => updateExceptionDraftBreak(!modalHasBreak)}
-                className="flex h-[50px] w-full items-center justify-between gap-3 rounded-2xl border border-[#ebe7df] bg-white px-4 text-sm font-black text-[#202020] transition hover:bg-[#fffaf6]"
-              >
-                <span className="flex min-w-0 items-center gap-2">
-                  <Coffee
-                    className={cn(
-                      "h-4 w-4 shrink-0",
-                      modalHasBreak ? "text-[#41a85f]" : "text-[#8a847d]",
-                    )}
-                  />
-                  <span className="truncate">
-                    {modalHasBreak ? "Перерва" : "Без перерви"}
-                  </span>
+              <X className="h-4 w-4" />
+              Скасувати
+            </Button>
+            <Button
+              variant="primary"
+              className="flex-1 sm:flex-none"
+              onClick={saveExceptionFromModal}
+              disabled={!isExceptionValid(exceptionModal.draft) || saving}
+            >
+              <Save className="h-4 w-4" />
+              {saving ? "Зберігаємо..." : "Зберегти"}
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <div
+            className={cn(
+              "exception-date-picker",
+              "[&_label]:mb-1.5 [&_label]:flex [&_label]:items-center [&_label]:gap-1.5",
+              "[&_label]:text-[10px] [&_label]:font-black [&_label]:uppercase [&_label]:tracking-wide [&_label]:text-[#77716b]",
+            )}
+          >
+            <DatePicker
+              label={
+                <span className="flex items-center gap-1.5">
+                  <CalendarDays className="h-3.5 w-3.5 text-[#ff6200]" />
+                  Дата
+                </span>
+              }
+              value={exceptionModal.draft.date}
+              onChange={(value) => updateExceptionDraft("date", value)}
+            />
+          </div>
+
+          <div
+            className={cn(
+              "grid grid-cols-2 gap-2 sm:items-end",
+              exceptionModal.draft.enabled &&
+                "sm:grid-cols-[1.35fr_0.82fr_0.82fr]",
+            )}
+          >
+            <button
+              type="button"
+              onClick={() =>
+                updateExceptionDraft("enabled", !exceptionModal.draft.enabled)
+              }
+              className="col-span-2 flex h-[52px] w-full items-center justify-between gap-3 rounded-xl border border-[#eadbc9] bg-white px-4 text-sm font-black text-[#202020] transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] sm:col-span-1"
+            >
+              <span className="flex min-w-0 items-center gap-2">
+                {exceptionModal.draft.enabled ? (
+                  <CalendarCheck className="h-4 w-4 shrink-0 text-[#41a85f]" />
+                ) : (
+                  <XCircle className="h-4 w-4 shrink-0 text-[#8d8177]" />
+                )}
+
+                <span className="truncate">
+                  {exceptionModal.draft.enabled ? "Робочий" : "Вихідний"}
+                </span>
+              </span>
+
+              <Toggle checked={exceptionModal.draft.enabled} />
+            </button>
+
+            {exceptionModal.draft.enabled &&
+              [
+                ["start", "Початок", Clock],
+                ["end", "Кінець", Timer],
+              ].map(([field, label, Icon]) => (
+                <div key={field} className="min-w-0">
+                  <label className="mb-1.5 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#77716b]">
+                    <Icon className="h-3.5 w-3.5 text-[#ff6200]" />
+                    {label}
+                  </label>
+
+                  <div className="schedule-time-field flex h-[52px] items-center overflow-hidden rounded-xl border border-[#eadbc9] bg-white px-2 transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0]">
+                    <TimeSelect
+                      value={exceptionModal.draft[field]}
+                      label={label}
+                      dayLabel={exceptionModal.draft.date || "Особлива дата"}
+                      placeholder="--:--"
+                      onChange={(value) => updateExceptionDraft(field, value)}
+                      onCommit={(value) => updateExceptionDraft(field, value)}
+                      className="h-full w-full justify-center text-base"
+                    />
+                  </div>
+                </div>
+              ))}
+          </div>
+
+          {exceptionModal.draft.enabled ? (
+            (() => {
+              const modalHasBreak = Boolean(
+                getBreakStart(exceptionModal.draft) &&
+                getBreakEnd(exceptionModal.draft),
+              );
+
+              return (
+                <div
+                  className={cn(
+                    "grid grid-cols-2 gap-2 sm:items-end",
+                    modalHasBreak && "sm:grid-cols-[1.35fr_0.82fr_0.82fr]",
+                  )}
+                >
+                  <button
+                    type="button"
+                    onClick={() => updateExceptionDraftBreak(!modalHasBreak)}
+                    className="col-span-2 flex h-[52px] w-full items-center justify-between gap-3 rounded-xl border border-[#eadbc9] bg-white px-4 text-sm font-black text-[#202020] transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] sm:col-span-1"
+                  >
+                    <span className="flex min-w-0 items-center gap-2">
+                      <Coffee
+                        className={cn(
+                          "h-4 w-4 shrink-0",
+                          modalHasBreak ? "text-[#41a85f]" : "text-[#8d8177]",
+                        )}
+                      />
+
+                      <span className="truncate">
+                        {modalHasBreak ? "Перерва" : "Без перерви"}
+                      </span>
+                    </span>
+
+                    <Toggle checked={modalHasBreak} />
+                  </button>
+
+                  {modalHasBreak &&
+                    [
+                      ["breakStart", "Перерва з", Coffee],
+                      ["breakEnd", "Перерва до", Coffee],
+                    ].map(([field, label, Icon]) => (
+                      <div key={field} className="min-w-0">
+                        <label className="mb-1.5 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#77716b]">
+                          <Icon className="h-3.5 w-3.5 text-[#ff6200]" />
+                          {label}
+                        </label>
+
+                        <div className="schedule-time-field flex h-[52px] items-center overflow-hidden rounded-xl border border-[#eadbc9] bg-white px-2 transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0]">
+                          <TimeSelect
+                            value={exceptionModal.draft[field]}
+                            label={label}
+                            dayLabel={
+                              exceptionModal.draft.date || "Особлива дата"
+                            }
+                            placeholder="--:--"
+                            onChange={(value) =>
+                              updateExceptionDraft(field, value)
+                            }
+                            onCommit={(value) =>
+                              updateExceptionDraft(field, value)
+                            }
+                            className="h-full w-full justify-center text-base"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              );
+            })()
+          ) : (
+            <div className="rounded-[22px] border border-[#ffd6bd] bg-[#fff1e8] p-4">
+              <div className="flex items-start gap-3">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white text-[#ff6200] shadow-sm">
+                  <XCircle className="h-5 w-5" />
                 </span>
 
-                <Toggle checked={modalHasBreak} />
-              </button>
+                <div className="min-w-0">
+                  <p className="text-sm font-black text-[#202020]">
+                    У цей день студія не працюватиме
+                  </p>
 
-              {modalHasBreak &&
-                [
-                  ["breakStart", "Перерва з"],
-                  ["breakEnd", "Перерва до"],
-                ].map(([field, label]) => (
-                  <div key={field}>
-                    <label className="mb-1.5 block text-xs font-black uppercase tracking-wide text-[#8a847d]">
-                      {label}
-                    </label>
-
-                    <div className="flex h-[50px] items-center overflow-hidden rounded-2xl border border-[#ebe7df] bg-white px-2">
-                      <TimeSelect
-                        value={exceptionModal.draft[field]}
-                        label={label}
-                        dayLabel={
-                          exceptionModal.draft.date || "Особлива дата"
-                        }
-                        onChange={(value) =>
-                          updateExceptionDraft(field, value)
-                        }
-                        onCommit={(value) =>
-                          updateExceptionDraft(field, value)
-                        }
-                      />
-                    </div>
-                  </div>
-                ))}
+                  <p className="mt-1 text-xs font-semibold leading-5 text-[#77716b]">
+                    Клієнти не зможуть записатися на вибрану дату.
+                  </p>
+                </div>
+              </div>
             </div>
-          );
-        })()}
-      </div>
-    ) : (
-      <div className="rounded-2xl border border-[#f0b8b0] bg-[#fff4f2] px-4 py-3 text-center text-sm font-bold text-[#c8483d]">
-        У цей день студія не працюватиме
-      </div>
-    )}
-  </div>
-</Modal>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 }
