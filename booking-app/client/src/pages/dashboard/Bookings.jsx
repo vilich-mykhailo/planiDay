@@ -224,7 +224,7 @@ function SectionCard({
         className,
       )}
     >
-      <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#ff7a18] via-[#ff6200] to-[#ff8c42]" />
+    
 
       {hasHeader && (
         <div className="flex flex-col gap-3 border-b border-[#f1ece5] px-4 py-5 sm:px-5">

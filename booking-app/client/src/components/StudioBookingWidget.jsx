@@ -16,24 +16,130 @@ function timeToMinutes(t) {
   return (hh || 0) * 60 + (mm || 0);
 }
 
+function parseTimeToMinutes(value) {
+  const time = String(value || "").trim();
+
+  if (!/^\d{1,2}:\d{2}$/.test(time)) {
+    return null;
+  }
+
+  const [hh, mm] = time.split(":").map(Number);
+
+  if (
+    !Number.isFinite(hh) ||
+    !Number.isFinite(mm) ||
+    hh < 0 ||
+    hh > 23 ||
+    mm < 0 ||
+    mm > 59
+  ) {
+    return null;
+  }
+
+  return hh * 60 + mm;
+}
+
+function normalizeMaybeTime(value) {
+  if (value == null || value === "") return "";
+
+  if (typeof value === "string" && value.includes(":")) {
+    return value;
+  }
+
+  const minutes = Number(value);
+
+  if (!Number.isFinite(minutes)) return "";
+
+  return minutesToTime(minutes);
+}
+
+function getBreakStart(item) {
+  return normalizeMaybeTime(
+    item?.breakStart ??
+      item?.breakStartTime ??
+      item?.breakFrom ??
+      item?.pauseStart ??
+      item?.pauseFrom ??
+      item?.lunchStart ??
+      item?.breakStartMin,
+  );
+}
+
+function getBreakEnd(item) {
+  return normalizeMaybeTime(
+    item?.breakEnd ??
+      item?.breakEndTime ??
+      item?.breakTo ??
+      item?.pauseEnd ??
+      item?.pauseTo ??
+      item?.lunchEnd ??
+      item?.breakEndMin,
+  );
+}
+
+function getBreakRanges(...sources) {
+  return sources.flatMap((source) => {
+    if (!source) return [];
+
+    if (Array.isArray(source.breaks)) {
+      return source.breaks;
+    }
+
+    const breakStart = getBreakStart(source);
+    const breakEnd = getBreakEnd(source);
+
+    const startMin = parseTimeToMinutes(breakStart);
+    const endMin = parseTimeToMinutes(breakEnd);
+
+    if (startMin == null || endMin == null || endMin <= startMin) {
+      return [];
+    }
+
+    return [{ startMin, endMin }];
+  });
+}
+
+function slotOverlapsBreak(slotStartMin, slotEndMin, breaks = []) {
+  return breaks.some(
+    (breakRange) =>
+      slotStartMin < breakRange.endMin && slotEndMin > breakRange.startMin,
+  );
+}
+
+
 function minutesToTime(total) {
   const h = Math.floor(total / 60);
   const m = total % 60;
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
-function buildSlots(start, end, stepMinutes) {
+function buildSlots(
+  start,
+  end,
+  stepMinutes,
+  durationMinutes = stepMinutes,
+  breaks = [],
+) {
   const startM = timeToMinutes(start);
   const endM = timeToMinutes(end);
+
+  const step = Number(stepMinutes) > 0 ? Number(stepMinutes) : 15;
+  const duration =
+    Number(durationMinutes) > 0 ? Number(durationMinutes) : step;
 
   if (endM <= startM) return [];
 
   const slots = [];
   let minutes = startM;
 
-  while (minutes + stepMinutes <= endM) {
-    slots.push(minutesToTime(minutes));
-    minutes += stepMinutes;
+  while (minutes + duration <= endM) {
+    const slotEnd = minutes + duration;
+
+    if (!slotOverlapsBreak(minutes, slotEnd, breaks)) {
+      slots.push(minutesToTime(minutes));
+    }
+
+    minutes += step;
   }
 
   return slots;
@@ -72,30 +178,69 @@ const MASTER_PICK_MODE = {
   SPECIFIC: "specific",
 };
 
+function normalizeScheduleEntry(entry) {
+  if (!entry || typeof entry !== "object") return null;
+
+  if (entry.enabled === false) return null;
+
+  const start =
+    entry.start ??
+    entry.startTime ??
+    entry.from ??
+    entry.openTime ??
+    entry.startMin;
+
+  const end =
+    entry.end ??
+    entry.endTime ??
+    entry.to ??
+    entry.closeTime ??
+    entry.endMin;
+
+  const normalizedStart =
+    typeof start === "string" && start.includes(":")
+      ? start
+      : Number.isFinite(Number(start))
+        ? minutesToTime(Number(start))
+        : "";
+
+  const normalizedEnd =
+    typeof end === "string" && end.includes(":")
+      ? end
+      : Number.isFinite(Number(end))
+        ? minutesToTime(Number(end))
+        : "";
+
+  if (!normalizedStart || !normalizedEnd) return null;
+
+  return {
+    ...entry,
+    enabled: true,
+    start: normalizedStart,
+    end: normalizedEnd,
+    breakStart: getBreakStart(entry),
+    breakEnd: getBreakEnd(entry),
+  };
+}
+
 function getScheduleForDate(date, schedule, exceptions = []) {
   if (!date) return null;
 
   const iso = formatDateLocal(date);
 
-  const exactException = exceptions.find(
-    (item) => String(item?.date || "").slice(0, 10) === iso,
-  );
+  const exactException = Array.isArray(exceptions)
+    ? exceptions.find((item) => String(item?.date || "").slice(0, 10) === iso)
+    : null;
 
   if (exactException) {
-    if (!exactException.enabled) return null;
-
-    return {
-      enabled: true,
-      start: exactException.start,
-      end: exactException.end,
-    };
+    return normalizeScheduleEntry(exactException);
   }
 
   const dayKey = getDayKeyFromDateObj(date);
-  const fallback = schedule?.[dayKey];
+  const fallback =
+    schedule && typeof schedule === "object" ? schedule?.[dayKey] : null;
 
-  if (!fallback?.enabled) return null;
-  return fallback;
+  return normalizeScheduleEntry(fallback);
 }
 
 function resolveMasterDayForDate(date, master) {
@@ -114,11 +259,13 @@ function resolveMasterDayForDate(date, master) {
   if (exactException) {
     if (!exactException.enabled) return null;
 
-    return {
-      enabled: true,
-      start: exactException.start,
-      end: exactException.end,
-    };
+return {
+  enabled: true,
+  start: exactException.start,
+  end: exactException.end,
+  breakStart: getBreakStart(exactException),
+  breakEnd: getBreakEnd(exactException),
+};
   }
 
   // 2. Якщо є базовий графік — беремо його
@@ -162,11 +309,13 @@ function getMasterSchedule(master) {
         ? rawEnd
         : minutesToTime(Number(rawEnd || 0));
 
-    out[key] = {
-      enabled: Boolean(d.enabled),
-      start,
-      end,
-    };
+out[key] = {
+  enabled: Boolean(d.enabled),
+  start,
+  end,
+  breakStart: getBreakStart(d),
+  breakEnd: getBreakEnd(d),
+};
   }
 
   return out;
@@ -177,10 +326,12 @@ function getMasterExceptions(master) {
     ? master.scheduleExceptions
     : [];
 
-  return raw.map((item) => ({
-    ...item,
-    date: String(item?.date || "").slice(0, 10),
-  }));
+return raw.map((item) => ({
+  ...item,
+  date: String(item?.date || "").slice(0, 10),
+  breakStart: getBreakStart(item),
+  breakEnd: getBreakEnd(item),
+}));
 }
 
 export default function StudioBookingWidget({
@@ -489,20 +640,6 @@ useEffect(() => {
     masterPickMode === MASTER_PICK_MODE.ANY ||
     selectedMasterId === ANY_MASTER_ID;
 
-  const masterSchedule = useMemo(() => {
-    if (
-      initialMasterScheduleProp &&
-      typeof initialMasterScheduleProp === "object" &&
-      initialMaster?.id &&
-      selectedMaster?.id &&
-      String(initialMaster.id) === String(selectedMaster.id)
-    ) {
-      return initialMasterScheduleProp;
-    }
-
-    return getMasterSchedule(selectedMaster);
-  }, [initialMasterScheduleProp, initialMaster?.id, selectedMaster]);
-
   const masterScheduleExceptions = useMemo(() => {
     if (
       Array.isArray(initialMasterScheduleExceptionsProp) &&
@@ -527,11 +664,12 @@ useEffect(() => {
 
     if (end <= start) return null;
 
-    return {
-      enabled: true,
-      start: minutesToTime(start),
-      end: minutesToTime(end),
-    };
+return {
+  enabled: true,
+  start: minutesToTime(start),
+  end: minutesToTime(end),
+  breaks: getBreakRanges(a, b),
+};
   }
 
   const selectedDateStr = useMemo(
@@ -600,6 +738,24 @@ useEffect(() => {
     return Boolean(dayConfig?.enabled);
   }, [dayConfig]);
 
+  const selectedService = useMemo(
+  () =>
+    services.find((s) => String(s.id) === String(selectedServiceId)) || null,
+  [services, selectedServiceId],
+);
+
+const selectedServiceDuration = useMemo(() => {
+  const duration = Number(selectedService?.duration);
+
+  if (Number.isFinite(duration) && duration > 0) {
+    return duration;
+  }
+
+  return slotDuration;
+}, [selectedService?.duration, slotDuration]);
+
+const selectedServiceIdForBusy = selectedService?.id ?? null;
+
   const slots = useMemo(() => {
     if (!selectedDate || !dayConfig) return [];
 
@@ -619,22 +775,30 @@ useEffect(() => {
         if (!resolvedMasterDay) return;
 
         if (resolvedMasterDay === "__USE_STUDIO_SCHEDULE__") {
-          buildSlots(studioDay.start, studioDay.end, slotDuration).forEach(
-            (slot) => {
-              unique.add(slot);
-            },
-          );
+buildSlots(
+  studioDay.start,
+  studioDay.end,
+  slotDuration,
+  selectedServiceDuration,
+  getBreakRanges(studioDay),
+).forEach((slot) => {
+  unique.add(slot);
+});
           return;
         }
 
         const intersection = intersectSchedules(studioDay, resolvedMasterDay);
         if (!intersection) return;
 
-        buildSlots(intersection.start, intersection.end, slotDuration).forEach(
-          (slot) => {
-            unique.add(slot);
-          },
-        );
+buildSlots(
+  intersection.start,
+  intersection.end,
+  slotDuration,
+  selectedServiceDuration,
+  getBreakRanges(intersection),
+).forEach((slot) => {
+  unique.add(slot);
+});
       });
 
       return Array.from(unique).sort(
@@ -649,32 +813,37 @@ useEffect(() => {
 
     if (!resolvedMasterDay) return [];
 
-    if (resolvedMasterDay === "__USE_STUDIO_SCHEDULE__") {
-      return buildSlots(studioDay.start, studioDay.end, slotDuration);
-    }
+if (resolvedMasterDay === "__USE_STUDIO_SCHEDULE__") {
+return buildSlots(
+  studioDay.start,
+  studioDay.end,
+  slotDuration,
+  selectedServiceDuration,
+  getBreakRanges(studioDay),
+);
+}
 
     const intersection = intersectSchedules(studioDay, resolvedMasterDay);
     if (!intersection) return [];
 
-    return buildSlots(intersection.start, intersection.end, slotDuration);
-  }, [
-    selectedDate,
-    dayConfig,
-    isAnyMasterSelected,
-    availableMasters,
-    selectedMaster,
-    schedule,
-    scheduleExceptions,
-    slotDuration,
-  ]);
-
-  const selectedService = useMemo(
-    () =>
-      services.find((s) => String(s.id) === String(selectedServiceId)) || null,
-    [services, selectedServiceId],
-  );
-  
-  const selectedServiceIdForBusy = selectedService?.id ?? null;
+return buildSlots(
+  intersection.start,
+  intersection.end,
+  slotDuration,
+  selectedServiceDuration,
+  getBreakRanges(intersection),
+);
+}, [
+  selectedDate,
+  dayConfig,
+  isAnyMasterSelected,
+  availableMasters,
+  selectedMaster,
+  schedule,
+  scheduleExceptions,
+  slotDuration,
+  selectedServiceDuration,
+]);
 
 useEffect(() => {
   let alive = true;
@@ -695,11 +864,13 @@ if (isReschedule && rescheduleBookingId) {
   params.set("excludeBookingId", String(rescheduleBookingId));
 }
 
-      if (selectedMaster?.id) {
-        params.set("masterId", String(selectedMaster.id));
-      } else if (selectedServiceIdForBusy) {
-        params.set("serviceId", String(selectedServiceIdForBusy));
-      }
+if (selectedMaster?.id) {
+  params.set("masterId", String(selectedMaster.id));
+}
+
+if (selectedServiceIdForBusy) {
+  params.set("serviceId", String(selectedServiceIdForBusy));
+}
 
 const busyUrl = `${import.meta.env.VITE_API_URL}/bookings/studio/${studio.id}/busy?${params.toString()}`;
 

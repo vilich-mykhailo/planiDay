@@ -817,6 +817,30 @@ const excludeBookingId = String(req.query.excludeBookingId || "").trim();
         return res.json({ busy: [] });
       }
 
+let serviceDuration = slotStep;
+
+if (serviceId) {
+  const service = await prisma.service.findFirst({
+    where: {
+      id: serviceId,
+      studioId,
+    },
+    select: {
+      duration: true,
+    },
+  });
+
+  if (!service) {
+    return res.status(404).json({ message: "Service not found" });
+  }
+
+  const rawDuration = Number(service.duration);
+
+  if (Number.isFinite(rawDuration) && rawDuration > 0) {
+    serviceDuration = rawDuration;
+  }
+}
+
 const bookings = await prisma.booking.findMany({
   where: {
     studioId,
@@ -838,18 +862,26 @@ const bookings = await prisma.booking.findMany({
         effectiveSchedule.endMin,
         slotStep,
       );
+const busy = slots
+  .filter((slotStartMin) => {
+    const slotEndMin = slotStartMin + serviceDuration;
 
-      const busy = slots
-        .filter((slotStartMin) => {
-          const slotEndMin = slotStartMin + slotStep;
-          const slotStart = new Date(`${date}T${minToTime(slotStartMin)}:00`);
-          const slotEnd = new Date(`${date}T${minToTime(slotEndMin)}:00`);
+    if (
+      slotStartMin < effectiveSchedule.startMin ||
+      slotEndMin > effectiveSchedule.endMin ||
+      slotEndMin > studioSchedule.endMin
+    ) {
+      return true;
+    }
 
-          return bookings.some((b) =>
-            overlaps(slotStart, slotEnd, new Date(b.startAt), new Date(b.endAt)),
-          );
-        })
-        .map(minToTime);
+    const slotStart = new Date(`${date}T${minToTime(slotStartMin)}:00`);
+    const slotEnd = new Date(`${date}T${minToTime(slotEndMin)}:00`);
+
+    return bookings.some((b) =>
+      overlaps(slotStart, slotEnd, new Date(b.startAt), new Date(b.endAt)),
+    );
+  })
+  .map(minToTime);
 
       return res.json({ busy });
     }
@@ -937,7 +969,7 @@ const allBookings = await prisma.booking.findMany({
     for (const slotStartMin of studioSlots) {
       const slotEndMin = slotStartMin + serviceDuration;
 
-      if (slotEndMin > studioSchedule.endMin) continue;
+     if (slotEndMin > studioSchedule.endMin) continue;
 
       let hasFreeMaster = false;
 

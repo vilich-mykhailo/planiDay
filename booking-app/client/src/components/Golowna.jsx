@@ -13,18 +13,20 @@ import {
   Trash2,
   XCircle,
   Phone,
-  CircleCheck,
   CircleAlert,
   CircleCheckBig,
   ClockAlert,
-  CirclePause,
   ChartColumn,
   LayoutGrid,
   MoreHorizontal,
+  MoreVertical,
   SlidersHorizontal,
   Scissors,
   Minus,
   Plus,
+  Bell,
+  Megaphone,
+  Store,
 } from "lucide-react";
 
 const PUBLIC = import.meta.env.VITE_R2_PUBLIC_BASE_URL;
@@ -293,10 +295,10 @@ function updateCalendarScrollState(el, setHasScroll, setShowScrollHint) {
 
 const SCHEDULE_START_HOUR = 6;
 const SCHEDULE_END_HOUR = 20;
-const SCHEDULE_HOUR_HEIGHT = 88;
-const SCHEDULE_MIN_CARD_HEIGHT = 58;
+const SCHEDULE_HOUR_HEIGHT = 92;
+const SCHEDULE_MIN_CARD_HEIGHT = 54;
 const SCHEDULE_DEFAULT_DURATION = 60;
-const SCHEDULE_GRID_TOP_PADDING = 24;
+const SCHEDULE_GRID_TOP_PADDING = 18;
 
 const SCHEDULE_STATUS_FILTERS = [
   { key: "all", label: "Усі" },
@@ -900,34 +902,34 @@ function scheduleStatusLabel(booking, nowTs) {
 
 const SCHEDULE_CARD_TONES = {
   confirmed: {
-    bg: "linear-gradient(135deg, #eaf8f1 0%, #f7fcfa 100%)",
-    border: "#b6dfce",
-    accent: "#2f9b67",
-    soft: "#dff3ea",
+    bg: "#e7f7f8",
+    border: "#b8e5ea",
+    accent: "#00a6b2",
+    soft: "#d9f2f5",
   },
   pending: {
-    bg: "linear-gradient(135deg, #fff4e0 0%, #fffaf2 100%)",
-    border: "#f2c99b",
-    accent: "#df8a2d",
-    soft: "#ffe9cc",
+    bg: "#f9e7ec",
+    border: "#f3c6d2",
+    accent: "#f04f82",
+    soft: "#ffe2ea",
   },
   canceled: {
-    bg: "linear-gradient(135deg, #fff0f3 0%, #fff7f8 100%)",
-    border: "#f5b8c3",
-    accent: "#e75f72",
-    soft: "#ffe1e7",
+    bg: "#f1f2f4",
+    border: "#d7dce2",
+    accent: "#8b93a0",
+    soft: "#e8ebef",
   },
   archived: {
-    bg: "linear-gradient(135deg, #f1f2f4 0%, #fafafa 100%)",
-    border: "#d8dce2",
-    accent: "#7b8490",
-    soft: "#eceff3",
+    bg: "#dbe8ff",
+    border: "#b8cdf8",
+    accent: "#6d32d9",
+    soft: "#e9f0ff",
   },
   default: {
-    bg: "linear-gradient(135deg, #f1f2f4 0%, #fafafa 100%)",
-    border: "#d8dce2",
-    accent: "#7b8490",
-    soft: "#eceff3",
+    bg: "#eef3ff",
+    border: "#c9d8ff",
+    accent: "#5d6ce1",
+    soft: "#e5ebff",
   },
 };
 
@@ -1395,9 +1397,14 @@ export default function Rozklad({
 } = {}) {
   const bookingsContext = useBookings();
   const studioContext = useStudio();
-  const bookings = bookingsProp ?? bookingsContext?.bookings ?? [];
-  const loading = loadingProp ?? bookingsContext?.loading ?? false;
-  const studio = studioProp ?? studioContext?.studio ?? null;
+const contextBookings = bookingsContext?.bookings;
+const bookings = useMemo(
+  () => bookingsProp ?? contextBookings ?? [],
+  [bookingsProp, contextBookings],
+);
+
+const loading = loadingProp ?? bookingsContext?.loading ?? false;
+const studio = studioProp ?? studioContext?.studio ?? null;
   const [localNowTs, setLocalNowTs] = useState(() => Date.now());
   const nowTs = nowTsProp ?? localNowTs;
 
@@ -1417,10 +1424,11 @@ export default function Rozklad({
   const [selectedGroup, setSelectedGroup] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [agendaCollapsed, setAgendaCollapsed] = useState(false);
   const [hourHeight, setHourHeight] = useState(SCHEDULE_HOUR_HEIGHT);
-  const [staffColumnWidth, setStaffColumnWidth] = useState(220);
+  const [staffColumnWidth, setStaffColumnWidth] = useState(216);
   const scrollRef = useRef(null);
-  const topScrollRef = useRef(null);
   const headerScrollRef = useRef(null);
 const handleViewDateChange = (nextDate) => {
   setViewDate(nextDate);
@@ -1439,7 +1447,7 @@ const adjustHourHeight = (delta) => {
 };
 
 const adjustStaffColumnWidth = (delta) => {
-  setStaffColumnWidth((value) => Math.max(232, Math.min(360, value + delta)));
+  setStaffColumnWidth((value) => Math.max(188, Math.min(340, value + delta)));
 };
 
 const syncHorizontalScroll = (source, ...targetRefs) => {
@@ -1744,10 +1752,16 @@ const timeBounds = useMemo(() => {
   const gridBodyHeight =
     ((timeBounds.end - timeBounds.start) / 60) * hourHeight;
   const gridHeight = SCHEDULE_GRID_TOP_PADDING + gridBodyHeight;
-  const timeColumnWidth = 112;
-  const scheduleMinWidth = timeColumnWidth + columns.length * staffColumnWidth;
-  const scheduleWidth = Math.max(560, scheduleMinWidth);
-  const templateColumns = `${timeColumnWidth}px repeat(${columns.length}, ${staffColumnWidth}px)`;
+  const desktopTimeColumnWidth = 70;
+  const mobileTimeColumnWidth = 48;
+  const desktopColumnWidth = Math.max(212, staffColumnWidth);
+  const mobileColumnWidth = Math.max(214, Math.min(232, staffColumnWidth));
+  const desktopScheduleWidth =
+    desktopTimeColumnWidth + columns.length * desktopColumnWidth;
+  const mobileScheduleWidth =
+    mobileTimeColumnWidth + columns.length * mobileColumnWidth;
+  const desktopTemplateColumns = `${desktopTimeColumnWidth}px repeat(${columns.length}, ${desktopColumnWidth}px)`;
+  const mobileTemplateColumns = `${mobileTimeColumnWidth}px repeat(${columns.length}, ${mobileColumnWidth}px)`;
   const quarterMarks = useMemo(() => {
     const marks = [];
 
@@ -1779,56 +1793,43 @@ const timeBounds = useMemo(() => {
   const weekdayLabel = viewDate.toLocaleDateString("uk-UA", {
     weekday: "long",
   });
-const freeColumnsCount = columns.filter((column) => {
-  if (column.type !== "staff") return false;
+  const selectedDateKey = toISODateKey(viewDate);
+  const currentTimeLabel = now.toLocaleTimeString("uk-UA", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  const weekStripDays = useMemo(
+    () => Array.from({ length: 7 }, (_, index) => addDays(weekStart, index)),
+    [weekStart],
+  );
+  const agendaGroups = useMemo(() => {
+    return visibleDates
+      .map((date) => {
+        const dateKey = toISODateKey(date);
+        const items = filteredBookings
+          .filter((booking) => booking.dateKey === dateKey)
+          .sort((a, b) => a.startMin - b.startMin);
+        const totalPrice = items.reduce(
+          (sum, booking) => sum + (Number(booking.price) || 0),
+          0,
+        );
 
-  return !getMasterWorkStatus(column, viewDate).isWorking;
-}).length;
-  const plannerStats = [
-    {
-      label: rangeMode === "day" ? "Сьогодні" : "Усього",
-      value: statusCounts.all,
-      helper: "записів",
-      Icon: null,
-      valueClass: "text-[#202020]",
-      shell: "border-[#efd8c8] bg-[#fff9f3]",
-    },
-    {
-      label: "Підтверджені",
-      value: statusCounts.confirmed,
-      Icon: CircleCheckBig,
-      valueClass: "text-[#4c9b47]",
-      iconClass: "bg-[#eef8ea] text-[#4c9b47]",
-    },
-    {
-      label: "Очікують підтвердження",
-      value: statusCounts.pending,
-      Icon: ClockAlert,
-      valueClass: "text-[#e07d00]",
-      iconClass: "bg-[#fff4df] text-[#e07d00]",
-    },
-    {
-      label: "Завершені",
-      value: statusCounts.archived,
-      Icon: CircleCheck,
-      valueClass: "text-[#1f6c9c]",
-      iconClass: "bg-[#eaf4ff] text-[#1f6c9c]",
-    },
-    {
-      label: "Скасовані",
-      value: statusCounts.canceled,
-      Icon: XCircle,
-      valueClass: "text-[#e11d48]",
-      iconClass: "bg-[#fff0f3] text-[#e11d48]",
-    },
-    {
-      label: "Вихідний",
-      value: freeColumnsCount,
-      Icon: CirclePause,
-      valueClass: "text-[#b18b6a]",
-      iconClass: "bg-[#fff3e4] text-[#d09a60]",
-    },
-  ];
+        return { date, dateKey, items, totalPrice };
+      })
+      .filter((group) => group.items.length > 0);
+  }, [filteredBookings, visibleDates]);
+  const agendaTotalCount = agendaGroups.reduce(
+    (sum, group) => sum + group.items.length,
+    0,
+  );
+  const agendaTotalPrice = agendaGroups.reduce(
+    (sum, group) => sum + group.totalPrice,
+    0,
+  );
+  const formatPrice = (value) =>
+    Number(value || 0).toLocaleString("uk-UA", {
+      maximumFractionDigits: 0,
+    });
   const navigateRange = (direction) => {
     if (rangeMode === "month") {
       handleViewDateChange(addMonthsSafe(viewDate, direction));
@@ -1838,274 +1839,102 @@ const freeColumnsCount = columns.filter((column) => {
     handleViewDateChange(addDays(viewDate, direction * moveDays));
   };
 
-  return (
-    <div className="overflow-hidden rounded-[28px] border border-[#eadfce] bg-[#fffaf7] shadow-[0_18px_60px_rgba(39,28,20,0.08)]">
-      <div className="border-b border-[#eadfce] bg-[#fffaf7] px-5 py-5">
-        <div className="grid gap-4 xl:grid-cols-[1fr_auto_1fr] xl:items-center">
-          <div className="hidden xl:block" />
+  const renderScheduleGrid = ({ compact = false } = {}) => {
+    const scheduleWidth = compact ? mobileScheduleWidth : desktopScheduleWidth;
+    const templateColumns = compact ? mobileTemplateColumns : desktopTemplateColumns;
+    const headerHeight = compact ? "82px" : "112px";
+    const bodyHeight = compact
+      ? "calc(100dvh - 248px)"
+      : "clamp(420px, calc(100dvh - 210px), 590px)";
 
-          <div className="flex min-w-0 flex-wrap items-center justify-center gap-3">
-            <button
-              type="button"
-              onClick={() => navigateRange(-1)}
-              className="flex h-12 w-12 items-center justify-center rounded-[16px] border border-[#eadfce] bg-white text-[#202020] shadow-[0_8px_24px_rgba(39,28,20,0.06)] transition hover:bg-[#fff7f0] active:scale-[0.98]"
-              aria-label="Попередній період"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setCalendarOpen(true)}
-              className="grid h-12 min-w-[220px] grid-cols-[36px_1fr] items-center rounded-[16px] border border-[#eadfce] bg-white px-3 text-left shadow-[0_8px_24px_rgba(39,28,20,0.06)] transition hover:bg-[#fffaf6] active:scale-[0.99]"
-              aria-label="Відкрити календар"
-            >
-              <CalendarDays className="h-5 w-5 text-[#d38d5f]" />
-              <span className="min-w-0">
-                <span className="block truncate text-[16px] font-black leading-tight text-[#202020]">
-                  {formatDateLongUA(toISODateKey(viewDate))}
-                </span>
-                <span className="block truncate text-[11px] font-bold capitalize leading-tight text-[#8d8177]">
-                  {weekdayLabel}
-                </span>
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => navigateRange(1)}
-              className="flex h-12 w-12 items-center justify-center rounded-[16px] border border-[#eadfce] bg-white text-[#202020] shadow-[0_8px_24px_rgba(39,28,20,0.06)] transition hover:bg-[#fff7f0] active:scale-[0.98]"
-              aria-label="Наступний період"
-            >
-              <ChevronRight className="h-5 w-5" />
-            </button>
-
-            <div className="inline-flex h-12 rounded-[17px] border border-[#ded6cd] bg-white p-1 shadow-[0_8px_24px_rgba(39,28,20,0.06)]">
-              {rangeModeItems.map((item) => {
-                const active = rangeMode === item.key;
-
-                return (
-                  <button
-                    key={item.key}
-                    type="button"
-                    onClick={() => handleRangeModeChange(item.key)}
-                    className={cn(
-                      "h-10 rounded-[13px] px-4 text-[13px] font-black transition active:scale-[0.98]",
-                      active
-                        ? "bg-[#202020] text-white shadow-[0_8px_16px_rgba(32,32,32,0.18)]"
-                        : "text-[#4f4944] hover:bg-[#fff7f0]",
-                    )}
-                  >
-                    {item.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="flex items-center justify-start gap-3 xl:justify-end">
-            {viewSwitcher}
-          </div>
-        </div>
-
-        <div className="mt-6 grid gap-3 md:grid-cols-2 lg:grid-cols-[repeat(6,minmax(120px,1fr))_190px]">
-          {plannerStats.map((item) => {
-            const Icon = item.Icon;
-
-            return (
-              <div
-                key={item.label}
-                className={cn(
-                  "relative min-h-[86px] rounded-[18px] border bg-white px-4 py-3 shadow-[0_10px_28px_rgba(39,28,20,0.05)]",
-                  item.shell || "border-[#eadfce]",
-                )}
-              >
-                <div className="min-w-0">
-                  <p className="min-h-[32px] pr-1 text-[12px] font-bold leading-tight text-[#202020]">
-                    {item.label}
-                  </p>
-                  <div className={cn(
-                    "absolute bottom-4 left-4 flex items-end gap-2",
-                    Icon ? "right-14" : "right-4",
-                  )}>
-                    <p className={cn("text-[28px] font-black leading-none", item.valueClass)}>
-                      {item.value}
-                    </p>
-                    {item.helper && (
-                      <p className="pb-0.5 text-[12px] font-bold text-[#8d8177]">
-                        {item.helper}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {Icon && (
-                  <span
-                    className={cn(
-                      "absolute bottom-4 right-4 flex h-9 w-9 items-center justify-center rounded-full border border-white shadow-sm",
-                      item.iconClass,
-                    )}
-                  >
-                    <Icon className="h-4.5 w-4.5" />
-                  </span>
-                )}
-              </div>
-            );
-          })}
-
-          <div className="grid gap-2 self-center">
-            <label className="relative block h-[46px]">
-              <SlidersHorizontal className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8d6b52]" />
-              <select
-                value={statusFilter}
-                onChange={(event) => setStatusFilter(event.target.value)}
-                className="h-full w-full appearance-none rounded-[16px] border border-[#eadfce] bg-white pl-10 pr-9 text-[13px] font-black text-[#3b312b] shadow-[0_8px_24px_rgba(39,28,20,0.06)] outline-none transition focus:border-[#ffb489]"
-              >
-                {SCHEDULE_STATUS_FILTERS.map((item) => (
-                  <option key={item.key} value={item.key}>
-                    {item.label} ({statusCounts[item.key] || 0})
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8d6b52]" />
-            </label>
-
-            <label className="relative block h-[46px]">
-              <Users className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8d6b52]" />
-              <select
-                value={selectedGroup}
-                onChange={(event) => handleSelectedGroupChange(event.target.value)}
-                className="h-full w-full appearance-none rounded-[16px] border border-[#eadfce] bg-white pl-10 pr-9 text-[13px] font-black text-[#3b312b] shadow-[0_8px_24px_rgba(39,28,20,0.06)] outline-none transition focus:border-[#ffb489]"
-              >
-                <option value="all">Усі майстри</option>
-                {groupOptions.map((option) => (
-                  <option key={option.key} value={option.key}>
-                    {option.name}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8d6b52]" />
-            </label>
-          </div>
-        </div>
-      </div>
-
-      {calendarOpen && (
+    return (
+      <div className="min-w-0 bg-white">
         <div
-          className="fixed inset-0 z-[230] flex items-start justify-center bg-[#1b1b1b]/30 p-4 pt-24 backdrop-blur-[6px]"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) {
-              setCalendarOpen(false);
-            }
-          }}
-        >
-          <div
-            className="w-full max-w-[360px]"
-            onMouseDown={(event) => event.stopPropagation()}
-          >
-            <ScheduleMiniCalendar
-              viewDate={viewDate}
-              countsByDate={countsByDate}
-              onNavigateMonth={setViewDate}
-              onSelectDate={(date) => {
-                handleViewDateChange(date);
-                setCalendarOpen(false);
-              }}
-            />
-          </div>
-        </div>
-      )}
-
-    <div className="bg-white">
-
-        <div
-          ref={topScrollRef}
-          className="calendar-day-scroll h-3 overflow-x-auto overflow-y-hidden border-b border-[#eadfce] bg-[#fffaf7]"
-          onScroll={(event) =>
-            syncHorizontalScroll(event.currentTarget, headerScrollRef, scrollRef)
+          ref={compact ? null : headerScrollRef}
+          className="calendar-day-scroll overflow-x-auto overflow-y-hidden border-b border-[#ebeef3] bg-white"
+          onScroll={
+            compact
+              ? undefined
+              : (event) => syncHorizontalScroll(event.currentTarget, scrollRef)
           }
         >
-          <div style={{ width: scheduleWidth, height: 1 }} />
-        </div>
-
-        <div
-          ref={headerScrollRef}
-          className="calendar-day-scroll overflow-hidden border-b border-[#eadfce] bg-white"
-        >
-          <div
-            className="min-w-full"
-            style={{ minWidth: scheduleWidth }}
-          >
+          <div className="min-w-full" style={{ minWidth: scheduleWidth }}>
             <div
               className="grid bg-white"
               style={{ gridTemplateColumns: templateColumns }}
             >
-              <div className="sticky left-0 z-40 flex min-h-[108px] flex-col justify-between border-r border-[#eadfce] bg-white px-3 py-3 shadow-[8px_0_18px_rgba(39,28,20,0.04)]">
-<div className="grid gap-1.5">
-   <div className="flex h-8 overflow-hidden rounded-lg border border-[#eadfce] bg-[#fffaf7]">
+              <div
+                className={cn(
+                  "sticky left-0 z-40 border-r border-[#ebeef3] bg-white",
+                  compact
+                    ? "flex items-end justify-end px-2 pb-3 text-[10px] font-bold text-[#969da8]"
+                    : "px-3 py-3",
+                )}
+                style={{ height: headerHeight }}
+              >
+                {compact ? (
+                  <span>час</span>
+                ) : (
+                  <div className="grid h-full content-center gap-1.5">
+                    <div className="overflow-hidden rounded-md border border-[#e2e6ed] bg-[#fafbfc]">
+                      <div className="grid grid-cols-[22px_1fr_22px] items-center">
+                        <button
+                          type="button"
+                          onClick={() => adjustStaffColumnWidth(-12)}
+                          className="flex h-7 items-center justify-center text-[#6f7782] hover:bg-white"
+                          aria-label="Зменшити ширину колонок"
+                        >
+                          <Minus className="h-3 w-3" />
+                        </button>
+                        <span className="min-w-0 text-center leading-none">
+                          <span className="block text-[7px] font-black uppercase tracking-[0.08em] text-[#9aa1aa]">
+                            ширина
+                          </span>
+                          <span className="mt-0.5 block text-[9px] font-black text-[#1f2329]">
+                            {staffColumnWidth}
+                          </span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => adjustStaffColumnWidth(12)}
+                          className="flex h-7 items-center justify-center text-[#6f7782] hover:bg-white"
+                          aria-label="Збільшити ширину колонок"
+                        >
+                          <Plus className="h-3 w-3" />
+                        </button>
+                      </div>
+                    </div>
 
-    <button
-      type="button"
-      onClick={() => adjustStaffColumnWidth(-12)}
-      className="flex w-5 items-center justify-center text-[#8d8177] transition hover:bg-white hover:text-[#202020]"
-      aria-label="Зменшити ширину колонок"
-      title="Зменшити ширину колонок"
-    >
-      <Minus className="h-2.5 w-2.5" />
-    </button>
-
-    <span className="flex min-w-0 flex-1 flex-col items-center justify-center leading-none">
-      <span className="text-[7px] font-black uppercase tracking-[0.04em] text-[#8d8177]">
-        ШИРИНА
-      </span>
-      <span className="mt-0.5 text-[9px] font-black text-[#202020]">
-        {staffColumnWidth}
-      </span>
-    </span>
-
-    <button
-      type="button"
-      onClick={() => adjustStaffColumnWidth(12)}
-      className="flex w-5 items-center justify-center text-[#8d8177] transition hover:bg-white hover:text-[#202020]"
-      aria-label="Збільшити ширину колонок"
-      title="Збільшити ширину колонок"
-    >
-      <Plus className="h-2.5 w-2.5" />
-    </button>
-  </div>
-  <div className="flex h-8 overflow-hidden rounded-lg border border-[#eadfce] bg-[#fffaf7]">
-    <button
-      type="button"
-      onClick={() => adjustHourHeight(-8)}
-      className="flex w-5 items-center justify-center text-[#8d8177] transition hover:bg-white hover:text-[#202020]"
-      aria-label="Зменшити висоту рядків"
-      title="Зменшити висоту рядків"
-    >
-      <Minus className="h-2.5 w-2.5" />
-    </button>
-
-    <span className="flex min-w-0 flex-1 flex-col items-center justify-center leading-none">
-      <span className="text-[7px] font-black uppercase tracking-[0.04em] text-[#8d8177]">
-        ВИСОТА
-      </span>
-      <span className="mt-0.5 text-[9px] font-black text-[#202020]">
-        {hourHeight}
-      </span>
-    </span>
-
-    <button
-      type="button"
-      onClick={() => adjustHourHeight(8)}
-      className="flex w-5 items-center justify-center text-[#8d8177] transition hover:bg-white hover:text-[#202020]"
-      aria-label="Збільшити висоту рядків"
-      title="Збільшити висоту рядків"
-    >
-      <Plus className="h-2.5 w-2.5" />
-
-    </button>
-  </div>
-
-</div>
+                    <div className="overflow-hidden rounded-md border border-[#e2e6ed] bg-[#fafbfc]">
+                      <div className="grid grid-cols-[22px_1fr_22px] items-center">
+                        <button
+                          type="button"
+                          onClick={() => adjustHourHeight(-8)}
+                          className="flex h-7 items-center justify-center text-[#6f7782] hover:bg-white"
+                          aria-label="Зменшити висоту рядків"
+                        >
+                          <Minus className="h-3 w-3" />
+                        </button>
+                        <span className="min-w-0 text-center leading-none">
+                          <span className="block text-[7px] font-black uppercase tracking-[0.08em] text-[#9aa1aa]">
+                            висота
+                          </span>
+                          <span className="mt-0.5 block text-[9px] font-black text-[#1f2329]">
+                            {hourHeight}
+                          </span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => adjustHourHeight(8)}
+                          className="flex h-7 items-center justify-center text-[#6f7782] hover:bg-white"
+                          aria-label="Збільшити висоту рядків"
+                        >
+                          <Plus className="h-3 w-3" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {columns.map((column) => {
@@ -2121,31 +1950,33 @@ const freeColumnsCount = columns.filter((column) => {
                   summaryCounts.pending +
                   summaryCounts.archived;
                 const columnWorkStatus =
-  column.type === "staff"
-    ? getMasterWorkStatus(column, viewDate)
-    : null;
-const isColumnWorking = columnWorkStatus?.isWorking ?? false;
+                  column.type === "staff"
+                    ? getMasterWorkStatus(column, viewDate)
+                    : null;
 
                 return (
                   <div
                     key={column.key}
-                    className="relative min-h-[108px] min-w-0 border-r border-[#eadfce] bg-white px-2 py-3"
+                    className={cn(
+                      "relative min-w-0 border-r border-[#ebeef3] bg-white",
+                      compact ? "px-3 py-3" : "px-4 py-3",
+                    )}
+                    style={{ height: headerHeight }}
                   >
-                    <button
-                      type="button"
-                      className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full bg-[#fbf5ef] text-[#202020] transition hover:bg-[#fff1e8]"
-                      aria-label="Дії"
-                    >
-                      <MoreHorizontal className="h-4 w-4" />
-                    </button>
-
-                    <div className="flex min-w-0 items-center gap-3 pr-7">
+                    <div className="flex min-w-0 items-center gap-3">
                       {column.type === "date" ? (
-                        <div className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-full bg-[#fff1e8] text-[#ff6200]">
-                          <span className="text-[10px] font-black uppercase leading-none">
-                            {column.date.toLocaleDateString("uk-UA", { weekday: "short" }).slice(0, 2)}
+                        <div
+                          className={cn(
+                            "flex shrink-0 flex-col items-center justify-center rounded-full bg-[#ffe1e8] text-[#ff3369]",
+                            compact ? "h-10 w-10" : "h-11 w-11",
+                          )}
+                        >
+                          <span className="text-[9px] font-black uppercase leading-none">
+                            {column.date
+                              .toLocaleDateString("uk-UA", { weekday: "short" })
+                              .slice(0, 2)}
                           </span>
-                          <span className="text-sm font-black leading-none">
+                          <span className="mt-0.5 text-sm font-black leading-none">
                             {column.date.getDate()}
                           </span>
                         </div>
@@ -2153,66 +1984,37 @@ const isColumnWorking = columnWorkStatus?.isWorking ?? false;
                         <Avatar
                           name={column.name}
                           photoUrl={column.photoUrl}
-                          className="h-12 w-12 rounded-full"
+                          className={cn(
+                            "rounded-full",
+                            compact ? "h-10 w-10" : "h-11 w-11",
+                          )}
                         />
                       )}
 
                       <div className="min-w-0">
-                        <p className="truncate text-[14px] font-black leading-tight text-[#202020]">
+                        <p
+                          className={cn(
+                            "truncate font-black leading-tight text-[#1f2329]",
+                            compact ? "text-[14px]" : "text-[13px]",
+                          )}
+                        >
                           {column.name}
                         </p>
-                        <p className="mt-0.5 truncate text-[12px] font-bold text-[#8d8177]">
+                        <p className="mt-0.5 truncate text-[12px] font-medium leading-tight text-[#8a919a]">
                           {column.type === "date"
                             ? formatDateLongUA(toISODateKey(column.date))
-                            : column.role || "Співробітник"}
+                            : columnWorkStatus?.helper || column.role || "09:00-17:00"}
                         </p>
-                        <div className="mt-2 flex items-center gap-3 text-[11px] font-black text-[#5f554f]">
-                          <span className="inline-flex items-center gap-1">
-                            <CalendarDays className="h-3.5 w-3.5 text-[#8d8177]" />
-                            {totalCount}
-                          </span>
-                          <span className="inline-flex items-center gap-1">
-                            <CircleCheckBig className="h-3.5 w-3.5 text-[#4c9b47]" />
-                            {summaryCounts.confirmed}
-                          </span>
-                          <span className="inline-flex items-center gap-1">
-                            <ClockAlert className="h-3.5 w-3.5 text-[#e07d00]" />
-                            {summaryCounts.pending}
-                          </span>
-                          <span className="inline-flex items-center gap-1">
-                            <XCircle className="h-3.5 w-3.5 text-[#e11d48]" />
-                            {summaryCounts.canceled}
-                          </span>
-                        </div>
-
-{column.type === "staff" && (
-  <div
-    className={cn(
-      "mt-1.5 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-black",
-      isColumnWorking
-        ? "bg-[#eef8ea] text-[#2f8f55]"
-        : "bg-[#fff0f3] text-[#e11d48]",
-    )}
-    title={columnWorkStatus?.helper || ""}
-  >
-    <span
-      className={cn(
-        "h-1.5 w-1.5 rounded-full",
-        isColumnWorking ? "bg-[#2f8f55]" : "bg-[#e11d48]",
-      )}
-    />
-
-    {columnWorkStatus?.label || "Вихідний"}
-
-    {columnWorkStatus?.helper && (
-      <span className="ml-1 text-[9px] opacity-80">
-        {columnWorkStatus.helper}
-      </span>
-    )}
-  </div>
-)}
                       </div>
                     </div>
+
+                    {!compact && (
+                      <div className="absolute bottom-2 right-3 flex items-center gap-2 text-[10px] font-black text-[#89919b]">
+                        <span>{totalCount}</span>
+                        <CircleCheckBig className="h-3 w-3 text-[#00a35d]" />
+                        <span>{summaryCounts.confirmed}</span>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -2220,57 +2022,55 @@ const isColumnWorking = columnWorkStatus?.isWorking ?? false;
           </div>
         </div>
 
-<div
-  ref={scrollRef}
-  className="calendar-day-scroll relative overflow-auto bg-white pb-3"
-  style={{
-    height: "clamp(340px, calc(100dvh - 360px), 540px)",
-  }}
-  onScroll={(event) =>
-    syncHorizontalScroll(event.currentTarget, topScrollRef, headerScrollRef)
-  }
->
+        <div
+          ref={compact ? null : scrollRef}
+          className="calendar-day-scroll relative overflow-auto bg-white"
+          style={{ height: bodyHeight }}
+          onScroll={
+            compact
+              ? undefined
+              : (event) => syncHorizontalScroll(event.currentTarget, headerScrollRef)
+          }
+        >
           {!anyBookings && (
-  <div className="pointer-events-none sticky left-0 top-0 z-50 h-0 w-full">
-   <div className="flex h-[clamp(360px,calc(100dvh-360px),560px)] items-center justify-center px-3">
-      <div className="pointer-events-auto w-[min(360px,calc(100%-24px))] rounded-[22px] border-2 border-dashed border-[#eadbc9] bg-white/90 p-4 text-center shadow-sm backdrop-blur">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff1e8] text-[#ff6200]">
-          {loading ? (
-            <Sparkles className="h-5 w-5 animate-pulse" />
-          ) : (
-            <CalendarDays className="h-5 w-5" />
-          )}
-        </div>
-
-        <p className="mt-3 text-sm font-black text-[var(--color-ink)]">
-          {loading
-            ? "Завантажуємо записи"
-            : "На цей період записів немає"}
-        </p>
-
-        <p className="mt-1 text-xs font-medium text-[var(--color-caramel)]">
-          Нові бронювання з'являться у сітці за часом і виконавцем.
-        </p>
-      </div>
-    </div>
-  </div>
-)}
-          <div
-            className="min-w-full"
-            style={{ minWidth: scheduleWidth }}
-          >
-            <div className="relative grid" style={{ gridTemplateColumns: templateColumns }}>
+            <div className="pointer-events-none sticky left-0 top-0 z-50 h-0 w-full">
               <div
-                className="sticky left-0 z-40 border-r border-[#eadfce] bg-white shadow-[8px_0_18px_rgba(39,28,20,0.04)]"
+                className="flex items-center justify-center px-4"
+                style={{ height: Math.min(gridHeight, 520) }}
+              >
+                <div className="pointer-events-auto w-[min(340px,calc(100%-28px))] rounded-[18px] border border-dashed border-[#cfd6df] bg-white/90 p-5 text-center shadow-sm">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#ffe1e8] text-[#ff3369]">
+                    {loading ? (
+                      <Sparkles className="h-5 w-5 animate-pulse" />
+                    ) : (
+                      <CalendarDays className="h-5 w-5" />
+                    )}
+                  </div>
+                  <p className="mt-3 text-sm font-black text-[#1f2329]">
+                    {loading ? "Завантажуємо записи" : "Записів немає"}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="min-w-full" style={{ minWidth: scheduleWidth }}>
+            <div
+              className="relative grid"
+              style={{ gridTemplateColumns: templateColumns }}
+            >
+              <div
+                className="sticky left-0 z-40 border-r border-[#ebeef3] bg-white"
                 style={{ height: gridHeight }}
               >
                 {hours.map((hour) => (
                   <div
                     key={hour}
-                    className="absolute right-4 -translate-y-2 text-[12px] font-black text-[#3b312b]"
-                    style={{
-                      top: topForMinute(hour * 60),
-                    }}
+                    className={cn(
+                      "absolute right-2 -translate-y-2 font-medium text-[#8f98a3]",
+                      compact ? "text-[11px]" : "text-[10px]",
+                    )}
+                    style={{ top: topForMinute(hour * 60) }}
                   >
                     {pad2(hour)}:00
                   </div>
@@ -2281,21 +2081,19 @@ const isColumnWorking = columnWorkStatus?.isWorking ?? false;
                   .map((mark) => (
                     <div
                       key={`label-${mark.minute}`}
-                      className="absolute right-4 -translate-y-1/2 text-[11px] font-bold text-[#b0a49b]"
+                      className="absolute right-2 -translate-y-1/2 text-[10px] font-medium text-[#b6bdc5]"
                       style={{ top: topForMinute(mark.minute) }}
                     >
-                      :{pad2(mark.minute % 60)}
+                      {pad2(mark.minute % 60)}
                     </div>
                   ))}
 
                 {showNowLine && visibleDateKeys.has(todayKey) && (
                   <div
-                    className="absolute inset-x-0 z-30 border-t border-[#f35f49]"
+                    className="absolute inset-x-0 z-30 border-t border-[#ff245d]"
                     style={{ top: topForMinute(nowMinute) }}
                   >
-                    <span className="absolute left-1 top-[-10px] rounded-md bg-[#f35f49] px-1.5 py-0.5 text-[10px] font-black text-white shadow-sm">
-                      {scheduleTimeLabel(nowMinute)}
-                    </span>
+                    <span className="absolute -right-1 -top-[5px] h-2.5 w-2.5 rounded-full bg-[#ff245d]" />
                   </div>
                 )}
               </div>
@@ -2303,13 +2101,14 @@ const isColumnWorking = columnWorkStatus?.isWorking ?? false;
               {columns.map((column) => {
                 const columnBookings = bookingsByColumn[column.key] || [];
                 const isTodayColumn =
-                  (column.type === "date" && toISODateKey(column.date) === todayKey) ||
+                  (column.type === "date" &&
+                    toISODateKey(column.date) === todayKey) ||
                   (rangeMode === "day" && visibleDateKeys.has(todayKey));
 
                 return (
                   <div
                     key={column.key}
-                    className="relative border-r border-[#eadfce] bg-white"
+                    className="relative border-r border-[#ebeef3] bg-white"
                     style={{ height: gridHeight }}
                   >
                     {quarterMarks.map((mark) => (
@@ -2318,23 +2117,19 @@ const isColumnWorking = columnWorkStatus?.isWorking ?? false;
                         className={cn(
                           "absolute inset-x-0 border-t",
                           mark.isHour
-                            ? "border-[#eee7df]"
-                            : "border-dashed border-[#eadfce]/80",
+                            ? "border-[#edf0f4]"
+                            : "border-dashed border-[#e4e8ee]",
                         )}
-                        style={{
-                          top: topForMinute(mark.minute),
-                        }}
+                        style={{ top: topForMinute(mark.minute) }}
                       />
                     ))}
 
                     {showNowLine && isTodayColumn && (
                       <div
-                        className="absolute inset-x-0 z-20 border-t border-[#f35f49]"
-                        style={{
-                          top: topForMinute(nowMinute),
-                        }}
+                        className="absolute inset-x-0 z-20 border-t border-[#ff245d]"
+                        style={{ top: topForMinute(nowMinute) }}
                       >
-                        <span className="absolute -left-1 -top-[5px] h-2.5 w-2.5 rounded-full bg-[#f35f49]" />
+                        <span className="absolute -left-1 -top-[5px] h-2.5 w-2.5 rounded-full bg-[#ff245d]" />
                       </div>
                     )}
 
@@ -2343,80 +2138,95 @@ const isColumnWorking = columnWorkStatus?.isWorking ?? false;
                       const top = topForMinute(
                         Math.max(booking.startMin, timeBounds.start),
                       );
-                      const clippedEnd = Math.min(
-                        booking.endMin,
-                        timeBounds.end,
-                      );
+                      const clippedEnd = Math.min(booking.endMin, timeBounds.end);
                       const height = Math.max(
                         SCHEDULE_MIN_CARD_HEIGHT,
                         ((clippedEnd -
                           Math.max(booking.startMin, timeBounds.start)) /
                           60) *
                           hourHeight -
-                          10,
+                          8,
                       );
-                      const width = `calc(${100 / booking.laneCount}% - 6px)`;
-                      const left = `calc(${(100 / booking.laneCount) * booking.lane}% + 3px)`;
+                      const width = `calc(${100 / booking.laneCount}% - ${compact ? 8 : 10}px)`;
+                      const left = `calc(${(100 / booking.laneCount) * booking.lane}% + ${compact ? 4 : 5}px)`;
                       const visualStatus = scheduleVisualStatus(booking, nowTs);
                       const StatusIcon = scheduleStatusIcon(booking, nowTs);
                       const statusLabel = scheduleStatusLabel(booking, nowTs);
-                      const showClientLine = height >= 64;
-                      const showServiceLine = height >= 84;
-                      const showStatusLine = height >= 104;
                       const startLabel =
                         parseTimeToHHMM(booking.raw.time) ||
                         scheduleTimeLabel(booking.startMin);
                       const endLabel = scheduleTimeLabel(booking.endMin);
+                      const showClientLine = height >= 62;
+                      const showServiceLine = height >= 84;
 
                       return (
                         <button
                           key={`${booking.id}-${booking.dateKey}-${booking.startMin}`}
                           type="button"
-                          onClick={() => booking.id != null && onOpenBooking(booking.id)}
+                          onClick={() => booking.id != null && onOpenBooking?.(booking.id)}
                           className={cn(
-                            "group absolute z-10 overflow-visible rounded-[14px] border text-left transition duration-200 hover:z-30 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[#f35f49]/25",
+                            "group absolute z-10 overflow-visible rounded-[7px] text-left transition hover:z-30 focus:outline-none focus:ring-2 focus:ring-[#ff245d]/25",
                             visualStatus === "canceled" && "opacity-70",
                           )}
                           style={{
-                            top: top + 3,
+                            top: top + 4,
                             height,
                             left,
                             width,
                             background: tone.bg,
-                            borderColor: tone.border,
-                            boxShadow: "0 14px 34px rgba(39, 28, 20, 0.06)",
+                            boxShadow: compact
+                              ? "none"
+                              : "0 8px 18px rgba(15,23,42,0.04)",
                           }}
                         >
                           <div
-                            className="pointer-events-none absolute bottom-full left-1/2 z-[80] mb-2 hidden w-[240px] -translate-x-1/2 rounded-[16px] border bg-white px-3 py-3 text-left shadow-[0_18px_44px_rgba(39,28,20,0.16)] group-hover:block group-focus-visible:block"
+                            className={cn(
+                              "pointer-events-none absolute left-1/2 z-[90] hidden w-[270px] -translate-x-1/2 rounded-[14px] border bg-white p-3 text-left shadow-[0_18px_44px_rgba(15,23,42,0.18)] group-hover:block group-focus-visible:block",
+                              compact ? "bottom-full mb-2" : "top-full mt-2",
+                            )}
                             style={{ borderColor: tone.border }}
                           >
-                            <span
-                              className="mb-2 inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[10px] font-black"
-                              style={{
-                                backgroundColor: tone.soft,
-                                color: tone.accent,
-                              }}
-                            >
-                              <StatusIcon className="h-3.5 w-3.5" />
-                              {statusLabel}
-                            </span>
-                            <span className="block text-[13px] font-black text-[#202020]">
-                              {booking.clientName}
-                            </span>
-                            <span className="mt-1 block text-[12px] font-bold text-[#6d625c]">
-                              {booking.serviceName}
-                            </span>
-                            <span className="mt-2 flex items-center gap-2 text-[11px] font-black text-[#8d8177]">
-                              <Clock className="h-3.5 w-3.5" />
-                              {startLabel} - {endLabel}
-                            </span>
-                            {booking.clientPhone && (
-                              <span className="mt-1 flex items-center gap-2 text-[11px] font-bold text-[#8d8177]">
-                                <Phone className="h-3.5 w-3.5" />
-                                {booking.clientPhone}
+                            <div className="mb-2 flex items-start justify-between gap-3">
+                              <span
+                                className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[10px] font-black"
+                                style={{
+                                  backgroundColor: tone.soft,
+                                  color: tone.accent,
+                                }}
+                              >
+                                <StatusIcon className="h-3.5 w-3.5" />
+                                {statusLabel}
                               </span>
-                            )}
+                              {booking.price != null && (
+                                <span className="text-[12px] font-black text-[#00a35d]">
+                                  ₴{formatPrice(booking.price)}
+                                </span>
+                              )}
+                            </div>
+
+                            <p className="text-[13px] font-black text-[#15171d]">
+                              {booking.clientName}
+                            </p>
+                            <p className="mt-1 text-[12px] font-semibold text-[#59616d]">
+                              {booking.serviceName}
+                            </p>
+
+                            <div className="mt-3 grid gap-1.5 text-[11px] font-bold text-[#7b8490]">
+                              <span className="flex items-center gap-2">
+                                <Clock className="h-3.5 w-3.5" />
+                                {startLabel} - {endLabel}
+                              </span>
+                              <span className="flex items-center gap-2">
+                                <Users className="h-3.5 w-3.5" />
+                                {booking.staffName}
+                              </span>
+                              {booking.clientPhone && (
+                                <span className="flex items-center gap-2">
+                                  <Phone className="h-3.5 w-3.5" />
+                                  {booking.clientPhone}
+                                </span>
+                              )}
+                            </div>
                           </div>
 
                           <div
@@ -2424,38 +2234,44 @@ const isColumnWorking = columnWorkStatus?.isWorking ?? false;
                             style={{ backgroundColor: tone.accent }}
                           />
 
-                          <div className="flex h-full min-h-0 flex-col px-3 py-2 pl-4">
-                            <div
-                              className="flex min-w-0 items-center gap-1.5 text-[11px] font-black leading-tight"
-                              style={{ color: tone.accent }}
-                            >
-                              <Scissors className="h-3.5 w-3.5 shrink-0" />
-                              <span className="truncate">
-                                {startLabel} - {endLabel}
+                          <div className="absolute right-2 top-2 flex items-center gap-1">
+                            {booking.price != null && (
+                              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#00a35d] text-[11px] font-black text-white">
+                                ₴
                               </span>
-                              <StatusIcon className="h-3.5 w-3.5 shrink-0" />
-                            </div>
+                            )}
+                            <span
+                              className="flex h-5 w-5 items-center justify-center rounded-full text-white"
+                              style={{ backgroundColor: tone.accent }}
+                            >
+                              <StatusIcon className="h-3.5 w-3.5" />
+                            </span>
+                          </div>
 
+                          <div className="flex h-full min-h-0 flex-col px-2.5 py-2 pl-3.5 pr-8">
+                            <p
+                              className={cn(
+                                "truncate font-black leading-tight text-[#181b20]",
+                                compact ? "text-[16px]" : "text-[12px]",
+                              )}
+                            >
+                              {startLabel} - {endLabel}
+                            </p>
                             {showClientLine && (
-                              <p className="mt-1.5 truncate text-[13px] font-black leading-tight text-[#202020]">
+                              <p
+                                className={cn(
+                                  "mt-1 truncate font-medium leading-snug text-[#181b20]",
+                                  compact ? "text-[15px]" : "text-[11px]",
+                                )}
+                              >
                                 {booking.clientName}
+                                <span className="font-normal"> · {booking.serviceName}</span>
                               </p>
                             )}
-
-                            {showServiceLine && (
-                              <p className="mt-1 truncate text-[11px] font-bold leading-tight text-[#6d625c]">
-                                {booking.serviceName}
+                            {showServiceLine && !compact && (
+                              <p className="mt-0.5 truncate text-[10px] font-medium leading-tight text-[#717b87]">
+                                {booking.staffName}
                               </p>
-                            )}
-
-                            {showStatusLine && (
-                              <div className="mt-auto flex min-w-0 items-center gap-1.5 pt-1 text-[10px] font-black text-[#5f554f]">
-                                <StatusIcon
-                                  className="h-3.5 w-3.5 shrink-0"
-                                  style={{ color: tone.accent }}
-                                />
-                                <span className="truncate">{statusLabel}</span>
-                              </div>
                             )}
                           </div>
                         </button>
@@ -2464,11 +2280,469 @@ const isColumnWorking = columnWorkStatus?.isWorking ?? false;
                   </div>
                 );
               })}
-
             </div>
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
+
+  const renderFullDesign = () => {
+    const desktopNavItems = [
+      CalendarDays,
+      LayoutGrid,
+      Clock,
+      Users,
+      ChartColumn,
+      SlidersHorizontal,
+      CheckCheck,
+      Megaphone,
+      Store,
+    ];
+    const mobileNavItems = [
+      CalendarDays,
+      Users,
+      CheckCheck,
+      Megaphone,
+      Store,
+    ];
+
+    return (
+      <>
+        <div
+          className="hidden h-[min(760px,calc(100dvh-32px))] min-h-[620px] overflow-hidden rounded-[30px] border border-[#d8dde5] bg-white shadow-[0_24px_80px_rgba(15,23,42,0.16)] lg:grid"
+          style={{
+            gridTemplateColumns: agendaCollapsed
+              ? "48px minmax(0,1fr) 46px"
+              : "48px minmax(0,1fr) 326px",
+          }}
+        >
+          <aside className="flex flex-col items-center justify-between bg-[#171b23] px-2 py-3 text-white">
+            <div className="grid gap-2">
+              <button
+                type="button"
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white"
+                aria-label="Назад"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              {desktopNavItems.map((Icon, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  className={cn(
+                    "flex h-8 w-8 items-center justify-center rounded-lg text-white/58 transition hover:bg-white/10 hover:text-white",
+                    index === 1 && "bg-white/12 text-white",
+                  )}
+                  aria-label={`Навігація ${index + 1}`}
+                >
+                  <Icon className="h-4 w-4" />
+                </button>
+              ))}
+            </div>
+            <div className="flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-white/10 text-[10px] font-black">
+              AD
+            </div>
+          </aside>
+
+          <main className="min-w-0 bg-white">
+            <div className="flex h-[58px] items-center justify-between gap-3 border-b border-[#e6e9ef] px-4">
+              <div className="flex min-w-0 items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => navigateRange(-1)}
+                  className="flex h-8 w-8 items-center justify-center rounded-md border border-[#e1e5eb] bg-white text-[#59616d]"
+                  aria-label="Попередній період"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCalendarOpen(true)}
+                  className="flex h-8 min-w-[210px] items-center gap-2 rounded-md border border-[#e1e5eb] bg-white px-3 text-[11px] font-black text-[#15171d]"
+                  aria-label="Відкрити календар"
+                >
+                  <CalendarDays className="h-3.5 w-3.5 text-[#ff3369]" />
+                  <span className="truncate">{formatDateLongUA(toISODateKey(viewDate))}</span>
+                  <ChevronDown className="ml-auto h-3.5 w-3.5 text-[#8b94a0]" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigateRange(1)}
+                  className="flex h-8 w-8 items-center justify-center rounded-md border border-[#e1e5eb] bg-white text-[#59616d]"
+                  aria-label="Наступний період"
+                >
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </button>
+
+                <div className="ml-2 flex h-8 rounded-md border border-[#e1e5eb] bg-[#fafbfc] p-0.5">
+                  {rangeModeItems.map((item) => {
+                    const active = rangeMode === item.key;
+
+                    return (
+                      <button
+                        key={item.key}
+                        type="button"
+                        onClick={() => handleRangeModeChange(item.key)}
+                        className={cn(
+                          "rounded px-2.5 text-[10px] font-black transition",
+                          active
+                            ? "bg-white text-[#15171d] shadow-sm"
+                            : "text-[#8b94a0] hover:text-[#15171d]",
+                        )}
+                      >
+                        {item.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="flex min-w-0 items-center justify-end gap-2">
+                <select
+                  value={statusFilter}
+                  onChange={(event) => setStatusFilter(event.target.value)}
+                  className="h-8 max-w-[150px] rounded-md border border-[#e1e5eb] bg-white px-2 text-[11px] font-black text-[#15171d] outline-none"
+                  aria-label="Фільтр статусу"
+                >
+                  {SCHEDULE_STATUS_FILTERS.map((item) => (
+                    <option key={item.key} value={item.key}>
+                      {item.label} ({statusCounts[item.key] || 0})
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={selectedGroup}
+                  onChange={(event) => handleSelectedGroupChange(event.target.value)}
+                  className="h-8 max-w-[170px] rounded-md border border-[#e1e5eb] bg-white px-2 text-[11px] font-black text-[#15171d] outline-none"
+                  aria-label="Фільтр майстрів"
+                >
+                  <option value="all">Усі майстри</option>
+                  {groupOptions.map((option) => (
+                    <option key={option.key} value={option.key}>
+                      {option.name}
+                    </option>
+                  ))}
+                </select>
+                {viewSwitcher}
+              </div>
+            </div>
+            {renderScheduleGrid({ compact: false })}
+          </main>
+
+          <aside className="border-l border-[#e6e9ef] bg-white">
+            {agendaCollapsed ? (
+              <div className="flex h-full flex-col items-center gap-4 bg-[#fbfcfe] px-1 py-3">
+                <button
+                  type="button"
+                  onClick={() => setAgendaCollapsed(false)}
+                  className="flex h-8 w-8 items-center justify-center rounded-md border border-[#e1e5eb] bg-white text-[#59616d] shadow-sm"
+                  aria-label="Розгорнути список записів"
+                  title="Розгорнути список записів"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <span className="mt-2 rotate-90 whitespace-nowrap text-[10px] font-black uppercase tracking-[0.12em] text-[#8b94a0]">
+                  записи
+                </span>
+              </div>
+            ) : (
+              <>
+            <div className="flex h-[46px] items-center justify-between border-b border-[#e6e9ef] px-4">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setAgendaCollapsed(true)}
+                  className="flex h-7 w-7 items-center justify-center rounded-full text-[#59616d]"
+                  aria-label="Згорнути список записів"
+                  title="Згорнути список записів"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+                <p className="text-[13px] font-black text-[#15171d]">
+                  Список записів
+                </p>
+              </div>
+              <MoreHorizontal className="h-4 w-4 text-[#8c95a1]" />
+            </div>
+
+            <div className="calendar-day-scroll h-[calc(100%-46px)] overflow-y-auto px-4 py-3">
+              <div className="mb-4 rounded-md border border-[#e5e9ef] bg-[#fbfcfe] px-3 py-2">
+                <div className="flex items-center justify-between text-[10px] font-black uppercase text-[#8f98a3]">
+                  <span>Today</span>
+                  <span>
+                    {scheduleTimeLabel(timeBounds.start)} - {scheduleTimeLabel(timeBounds.end)}
+                  </span>
+                </div>
+                <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+                  <div>
+                    <p className="text-[15px] font-black text-[#15171d]">
+                      ₴{formatPrice(agendaTotalPrice)}
+                    </p>
+                    <p className="text-[9px] font-bold uppercase text-[#9aa2ad]">
+                      дохід
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[15px] font-black text-[#15171d]">
+                      {agendaTotalCount}
+                    </p>
+                    <p className="text-[9px] font-bold uppercase text-[#9aa2ad]">
+                      записи
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[15px] font-black text-[#15171d]">
+                      {columns.length}
+                    </p>
+                    <p className="text-[9px] font-bold uppercase text-[#9aa2ad]">
+                      майстри
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {agendaGroups.length === 0 ? (
+                <div className="rounded-md border border-dashed border-[#d7dee8] p-5 text-center">
+                  <CalendarDays className="mx-auto h-6 w-6 text-[#a1aab5]" />
+                  <p className="mt-3 text-[13px] font-black text-[#15171d]">
+                    Записів немає
+                  </p>
+                </div>
+              ) : (
+                agendaGroups.map((group) => (
+                  <div key={group.dateKey} className="mb-5">
+                    <div className="mb-2 flex items-center justify-between text-[11px] font-black text-[#5f6875]">
+                      <span className="capitalize">
+                        {group.date.toLocaleDateString("uk-UA", {
+                          weekday: "short",
+                          day: "numeric",
+                          month: "short",
+                        })}
+                      </span>
+                      <span className="rounded-full border border-[#e4e8ee] px-2 py-0.5 text-[9px] uppercase text-[#8b94a0]">
+                        Confirmed
+                      </span>
+                    </div>
+
+                    <div className="grid gap-3">
+                      {group.items.map((booking) => {
+                        const tone = scheduleCardTone(booking, nowTs);
+                        const startLabel =
+                          parseTimeToHHMM(booking.raw.time) ||
+                          scheduleTimeLabel(booking.startMin);
+                        const endLabel = scheduleTimeLabel(booking.endMin);
+                        const StatusIcon = scheduleStatusIcon(booking, nowTs);
+
+                        return (
+                          <button
+                            key={`agenda-${booking.id}-${booking.dateKey}-${booking.startMin}`}
+                            type="button"
+                            onClick={() => booking.id != null && onOpenBooking?.(booking.id)}
+                            className="grid grid-cols-[42px_1fr_auto] gap-3 rounded-md bg-white py-1 text-left transition hover:bg-[#fafbfc]"
+                          >
+                            <div className="pt-1 text-[10px] font-bold text-[#8b94a0]">
+                              {startLabel}
+                            </div>
+                            <div className="min-w-0 border-l-2 pl-3" style={{ borderColor: tone.accent }}>
+                              <p className="truncate text-[12px] font-black text-[#15171d]">
+                                {booking.clientName}
+                              </p>
+                              <p className="mt-0.5 truncate text-[10px] font-medium text-[#8b94a0]">
+                                {booking.serviceName} · {endLabel}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <StatusIcon className="h-4 w-4" style={{ color: tone.accent }} />
+                              <Avatar
+                                name={booking.staffName || booking.clientName}
+                                photoUrl={booking.staffPhotoUrl}
+                                className="h-7 w-7 rounded-full"
+                              />
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+              </>
+            )}
+          </aside>
+        </div>
+
+        <div className="relative mx-auto flex min-h-[100dvh] max-w-[520px] flex-col overflow-hidden bg-white pb-[112px] text-[#15171d] lg:hidden">
+          <div className="sticky top-0 z-[120] border-b border-[#e8ebf0] bg-white">
+            <div className="flex items-center justify-between px-7 pb-5 pt-6">
+              <span className="text-[23px] font-black leading-none">
+                {currentTimeLabel}
+              </span>
+              <div className="flex items-center gap-2 text-[#15171d]">
+                <span className="h-3 w-4 rounded-[2px] border-2 border-[#15171d]" />
+                <span className="h-3 w-4 rounded-[2px] border-2 border-[#15171d]" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-[64px_1fr_48px_38px] items-center px-6 pb-4">
+              <button
+                type="button"
+                className="flex h-11 w-11 items-center justify-center text-[#15171d]"
+                aria-label="Сповіщення"
+              >
+                <Bell className="h-7 w-7" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setCalendarOpen(true)}
+                className="border-l border-[#e4e7ec] pl-5 text-left"
+              >
+                <span className="flex items-center gap-2 text-[21px] font-black leading-tight">
+                  {viewDate.toLocaleDateString("uk-UA", {
+                    weekday: "short",
+                    day: "numeric",
+                    month: "short",
+                  })}
+                  <ChevronDown className="h-5 w-5" />
+                </span>
+                <span className="mt-1 block text-[16px] font-medium text-[#15171d]">
+                  {scheduleTimeLabel(timeBounds.start)} - {scheduleTimeLabel(timeBounds.end)}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setMobileFiltersOpen((value) => !value)}
+                className="flex h-11 w-11 items-center justify-center"
+                aria-label="Фільтри"
+              >
+                <SlidersHorizontal className="h-7 w-7" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setMobileFiltersOpen((value) => !value)}
+                className="flex h-11 w-8 items-center justify-center"
+                aria-label="Меню"
+              >
+                <MoreVertical className="h-7 w-7" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-7 px-5 pb-3 text-center">
+              {weekStripDays.map((date) => {
+                const key = toISODateKey(date);
+                const active = key === selectedDateKey;
+
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => handleViewDateChange(date)}
+                    className="flex h-[64px] flex-col items-center justify-center"
+                  >
+                    <span className="text-[13px] font-medium uppercase text-[#858b94]">
+                      {date.toLocaleDateString("uk-UA", { weekday: "short" }).slice(0, 3)}
+                    </span>
+                    <span
+                      className={cn(
+                        "mt-2 flex h-8 w-8 items-center justify-center rounded-full text-[20px] font-medium",
+                        active ? "bg-[#ffe1e8] text-[#ff3369]" : "text-[#15171d]",
+                      )}
+                    >
+                      {date.getDate()}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div
+              className={cn(
+                "grid-cols-2 gap-2 border-t border-[#eef1f5] px-5 py-3",
+                mobileFiltersOpen ? "grid" : "hidden",
+              )}
+            >
+              <select
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value)}
+                className="h-11 rounded-[14px] border border-[#e0e5ec] bg-white px-3 text-[13px] font-black outline-none"
+              >
+                {SCHEDULE_STATUS_FILTERS.map((item) => (
+                  <option key={item.key} value={item.key}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={selectedGroup}
+                onChange={(event) => handleSelectedGroupChange(event.target.value)}
+                className="h-11 rounded-[14px] border border-[#e0e5ec] bg-white px-3 text-[13px] font-black outline-none"
+              >
+                <option value="all">Усі майстри</option>
+                {groupOptions.map((option) => (
+                  <option key={option.key} value={option.key}>
+                    {option.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {renderScheduleGrid({ compact: true })}
+
+          <button
+            type="button"
+            className="fixed bottom-[86px] right-6 z-[140] flex h-16 w-16 items-center justify-center rounded-full bg-[#111318] text-white shadow-[0_14px_34px_rgba(15,23,42,0.35)]"
+            aria-label="Додати запис"
+          >
+            <Plus className="h-9 w-9" />
+          </button>
+
+          <nav className="fixed inset-x-0 bottom-0 z-[130] mx-auto flex h-[86px] max-w-[520px] items-center justify-around bg-[#111318] px-6 text-white">
+            {mobileNavItems.map((Icon, index) => (
+              <button
+                key={index}
+                type="button"
+                className={cn(
+                  "flex h-12 w-12 items-center justify-center rounded-2xl",
+                  index === 0 ? "text-white" : "text-white/45",
+                )}
+                aria-label={`Мобільна навігація ${index + 1}`}
+              >
+                <Icon className="h-7 w-7" />
+              </button>
+            ))}
+          </nav>
+        </div>
+
+        {calendarOpen && (
+          <div
+            className="fixed inset-0 z-[240] flex items-start justify-center bg-[#111318]/35 p-4 pt-24 backdrop-blur-[4px]"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) {
+                setCalendarOpen(false);
+              }
+            }}
+          >
+            <div
+              className="w-full max-w-[360px]"
+              onMouseDown={(event) => event.stopPropagation()}
+            >
+              <ScheduleMiniCalendar
+                viewDate={viewDate}
+                countsByDate={countsByDate}
+                onNavigateMonth={setViewDate}
+                onSelectDate={(date) => {
+                  handleViewDateChange(date);
+                  setCalendarOpen(false);
+                }}
+              />
+            </div>
+          </div>
+        )}
+      </>
+    );
+  };
+
+  return renderFullDesign();
 }

@@ -462,12 +462,13 @@ sidebarCollapsed
                 Розширте можливості вашої студії
               </p>
 
-              <button
-                type="button"
-                className="mt-4 h-10 w-full rounded-[14px] border border-[#ff865c] bg-white text-[13px] font-bold text-[#ff4f12] transition hover:bg-[#fff3ed]"
-              >
-                Оновити план
-              </button>
+<button
+  type="button"
+  onClick={() => navigate("/dashboard/billing")}
+  className="mt-4 h-10 w-full rounded-[14px] border border-[#ff865c] bg-white text-[13px] font-bold text-[#ff4f12] transition hover:bg-[#fff3ed] active:scale-[0.98]"
+>
+  Оновити план
+</button>
             </div>
           </div>
 

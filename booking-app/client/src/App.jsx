@@ -36,6 +36,7 @@ import TermsOwner from "./pages/dashboard/TermsOwner";
 import MessagesClient from "./pages/MessagesClient";
 import Clients from "./pages/dashboard/Clients";
 import Login from "./components/Login";
+import BillingPlans from "./pages/dashboard/BillingPlans";
 
 function StudioDetailsKeyed() {
   const { slug } = useParams();
@@ -80,6 +81,7 @@ export default function App() {
               <Route index element={<Golowna />} />
               <Route path="studio" element={<StudioSettings />} />
               <Route path="services" element={<Services />} />
+              <Route path="billing" element={<BillingPlans />} />
               <Route path="notifications" element={<Notifications />} />
               <Route path="schedule" element={<Schedule />} />
               <Route path="clients" element={<Clients />} />

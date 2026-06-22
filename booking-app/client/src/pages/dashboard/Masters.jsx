@@ -11,16 +11,16 @@ import {
   Trash2,
   X,
   FilePenLine,
-UserStar,
+  UserStar,
   Timer,
-    Copy,
+  Copy,
   PhoneCall,
   FileSpreadsheet,
-CircleAlert,
+  CircleAlert,
   Check,
   Camera,
   CalendarDays,
-    UserRound,
+  UserRound,
   ClipboardPen,
   CheckCheck,
   XCircle,
@@ -37,7 +37,6 @@ CircleAlert,
   ArrowDownToLine,
   Save,
   Building2,
-
 } from "lucide-react";
 import { useStudio } from "../../context/studio/useStudio";
 import TimeSelect from "../../components/TimeSelect";
@@ -61,7 +60,6 @@ async function uploadMasterPhoto(studioId, file) {
     throw new Error(data?.message || `Upload failed (${res.status})`);
   return data;
 }
-
 
 function initialsFromName(name) {
   const s = String(name || "").trim();
@@ -177,14 +175,14 @@ function getMasterBookingStatusMeta(booking, nowTs) {
     };
   }
 
-if (status === "canceled") {
-  return {
-    status: "canceled",
-    label: getCanceledBookingLabel(booking),
-    Icon: XCircle,
-    text: "text-[#ef4444]",
-  };
-}
+  if (status === "canceled") {
+    return {
+      status: "canceled",
+      label: getCanceledBookingLabel(booking),
+      Icon: XCircle,
+      text: "text-[#ef4444]",
+    };
+  }
 
   return {
     status: "new",
@@ -200,7 +198,7 @@ if (status === "canceled") {
   };
 }
 
-  function formatDateFullUA(dateStr) {
+function formatDateFullUA(dateStr) {
   const d = new Date(dateStr);
   if (Number.isNaN(d.getTime())) return "—";
 
@@ -345,7 +343,9 @@ function isExceptionValid(item) {
   if (!breakStart && !breakEnd) return true;
   if (!breakStart || !breakEnd) return false;
 
-  return item.start < breakStart && breakStart < breakEnd && breakEnd < item.end;
+  return (
+    item.start < breakStart && breakStart < breakEnd && breakEnd < item.end
+  );
 }
 
 function getExceptionBreakStart(item) {
@@ -360,11 +360,7 @@ function getExceptionBreakStart(item) {
 
 function getExceptionBreakEnd(item) {
   return (
-    item?.breakEnd ||
-    item?.pauseEnd ||
-    item?.lunchEnd ||
-    item?.break?.end ||
-    ""
+    item?.breakEnd || item?.pauseEnd || item?.lunchEnd || item?.break?.end || ""
   );
 }
 
@@ -376,8 +372,7 @@ function Button({
   ...props
 }) {
   const variants = {
-    primary:
-      "bg-[var(--color-primary-buttom)] text-white hover:bg-[#4a4a4a]",
+    primary: "bg-[var(--color-primary-buttom)] text-white hover:bg-[#4a4a4a]",
     secondary:
       "bg-white border border-[#eadbc9] text-[#202020] hover:!bg-[#fff7f0] hover:!border-[#ffd6bd]",
     danger:
@@ -417,8 +412,7 @@ function IconButton({
   ...props
 }) {
   const variants = {
-    primary:
-      "bg-[#ff5a00] text-white hover:bg-[#ef4f00]",
+    primary: "bg-[#ff5a00] text-white hover:bg-[#ef4f00]",
     secondary:
       "bg-white border border-[#eadbc9] text-[#202020] hover:!bg-[#fff7f0] hover:!border-[#ffd6bd]",
     danger:
@@ -453,6 +447,8 @@ function Modal({
   children,
   footer,
   size = "md",
+  zIndexClass = "z-[9999]",
+  mobileCompact = false,
 }) {
   useEffect(() => {
     if (open) {
@@ -486,23 +482,30 @@ function Modal({
 
   return (
 <div
-  className="fixed inset-0 z-[9999] flex items-stretch justify-center bg-[#202020]/45 p-0 backdrop-blur-[6px] sm:items-center sm:p-6"
->
-     <div
   className={cn(
-    "flex h-dvh w-full flex-col overflow-hidden rounded-none border-0 bg-[#f7f5f1] shadow-[0_30px_90px_rgba(15,23,42,0.24)]",
-    "sm:h-auto sm:max-h-[calc(100dvh-48px)] sm:rounded-[30px] sm:border sm:border-[#f0e2d3]",
-          "animate-in fade-in-0 zoom-in-95 duration-200",
-          sizeClasses[size],
-        )}
-        onClick={(e) => e.stopPropagation()}
-      >
+    "fixed inset-0 flex justify-center bg-[#202020]/45 backdrop-blur-[6px]",
+    mobileCompact
+      ? "items-center p-4 sm:p-6"
+      : "items-stretch p-0 sm:items-center sm:p-6",
+    zIndexClass,
+  )}
+>
+<div
+  className={cn(
+    "flex w-full flex-col overflow-hidden bg-[#f7f5f1] shadow-[0_30px_90px_rgba(15,23,42,0.24)]",
+    mobileCompact
+      ? "h-auto max-h-[calc(100dvh-32px)] rounded-[28px] border border-[#f0e2d3] sm:max-h-[calc(100dvh-48px)] sm:rounded-[30px]"
+      : "h-dvh rounded-none border-0 sm:h-auto sm:max-h-[calc(100dvh-48px)] sm:rounded-[30px] sm:border sm:border-[#f0e2d3]",
+    "animate-in fade-in-0 zoom-in-95 duration-200",
+    sizeClasses[size],
+  )}
+  onClick={(e) => e.stopPropagation()}
+>
         <div className="relative shrink-0 overflow-hidden bg-[#f3eee7] px-5 py-5 sm:px-6 sm:py-6">
           <div className="absolute right-[-55px] top-[-70px] h-[180px] w-[180px] rounded-full bg-[#ff6200]/10 blur-3xl" />
 
           <div className="relative z-10 flex items-start justify-between gap-4">
             <div className="min-w-0">
-
               <h3 className="text-[26px] font-black leading-[0.95] tracking-[-0.05em] text-[#202020] sm:text-[32px]">
                 {title}
               </h3>
@@ -525,16 +528,25 @@ function Modal({
           </div>
         </div>
 
-<div className="min-h-0 flex-1 overflow-y-auto bg-[#fbfaf8] px-5 py-5 pb-[110px] sm:px-6 sm:pb-5">
+<div
+  className={cn(
+    "min-h-0 flex-1 overflow-y-auto bg-[#fbfaf8] px-5 py-5 sm:px-6 sm:pb-5",
+    mobileCompact ? "pb-5" : "pb-[110px]",
+  )}
+>
   {children}
 </div>
 
 {footer && (
-  <div className="sticky bottom-0 shrink-0 border-t border-[#f0e7da] bg-[#fbfaf8] px-5 py-4 sm:px-6">
+  <div
+    className={cn(
+      "shrink-0 border-t border-[#f0e7da] bg-[#fbfaf8] px-5 py-4 sm:px-6",
+      !mobileCompact && "sticky bottom-0",
+    )}
+  >
     {footer}
   </div>
 )}
-    
       </div>
     </div>
   );
@@ -627,10 +639,10 @@ function MasterBookingCard({ booking, master, nowTs, onClick }) {
   const StatusIcon = statusMeta.Icon;
   const status = statusMeta.status;
 
-const clientName = getBookingClientName(booking);
-const service = getBookingServiceName(booking);
-const masterName = getBookingMasterName(booking, master);
-const clientPhoto = getBookingClientPhoto(booking);
+  const clientName = getBookingClientName(booking);
+  const service = getBookingServiceName(booking);
+  const masterName = getBookingMasterName(booking, master);
+  const clientPhoto = getBookingClientPhoto(booking);
 
   const timeLabel = parseTimeToHHMM(booking.time) || booking.time || "—";
 
@@ -666,17 +678,17 @@ const clientPhoto = getBookingClientPhoto(booking);
 
   return (
     <li className="list-none">
-<button
-  type="button"
-  onClick={onClick}
-  className={cn(
-    "group mt-1 w-full overflow-hidden rounded-[24px] border border-[#eadfce] bg-white text-left transition-all duration-200",
-    "hover:-translate-y-0.5 hover:!border-[#ffd6bd] hover:!bg-[#fff7f0]",
-    "active:scale-[0.99]",
-    "focus:outline-none focus:ring-4 focus:ring-[#ff6200]/10",
-    status === "completed" && "opacity-85",
-  )}
->
+      <button
+        type="button"
+        onClick={onClick}
+        className={cn(
+          "group mt-1 w-full overflow-hidden rounded-[24px] border border-[#eadfce] bg-white text-left transition-all duration-200",
+          "hover:-translate-y-0.5 hover:!border-[#ffd6bd] hover:!bg-[#fff7f0]",
+          "active:scale-[0.99]",
+          "focus:outline-none focus:ring-4 focus:ring-[#ff6200]/10",
+          status === "completed" && "opacity-85",
+        )}
+      >
         <div className="grid min-h-[108px] grid-cols-[92px_minmax(0,1fr)_96px] items-center gap-3 px-4 py-3 max-[639px]:min-h-0 max-[639px]:grid-cols-[1fr_82px] max-[639px]:gap-3 max-[639px]:px-3 max-[639px]:py-3">
           <div className="contents max-[639px]:block max-[639px]:min-w-0">
             <div className="mb-2 hidden justify-center max-[639px]:flex">
@@ -732,7 +744,6 @@ const clientPhoto = getBookingClientPhoto(booking);
 
                   <span className="line-clamp-2">{service}</span>
                 </div>
-
               </div>
             </div>
           </div>
@@ -789,7 +800,7 @@ const clientPhoto = getBookingClientPhoto(booking);
             </div>
           </div>
         </div>
-    </button>
+      </button>
     </li>
   );
 }
@@ -846,7 +857,14 @@ export default function Masters() {
   const [exceptionsMaster, setExceptionsMaster] = useState(null);
   const [exceptionsModalOpen, setExceptionsModalOpen] = useState(false);
   const [masterExceptions, setMasterExceptions] = useState([]);
+  const [studioSchedulePreview, setStudioSchedulePreview] = useState(null);
   const [exceptionsLoading, setExceptionsLoading] = useState(false);
+  const [scheduleErrorModal, setScheduleErrorModal] = useState({
+    open: false,
+    title: "Помилка графіка",
+    message: "",
+    hint: "",
+  });
   const [scheduleMonthDate, setScheduleMonthDate] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -862,152 +880,193 @@ export default function Masters() {
     breakEnd: "13:00",
   });
   const [bulkSaving, setBulkSaving] = useState(false);
+  const studioScheduleQuery = useQuery({
+    queryKey: ["studioScheduleWithExceptions", studioId],
+    queryFn: () => fetchStudioScheduleFromDb(),
+    enabled: Boolean(studioId),
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 15,
+    refetchOnWindowFocus: false,
+  });
+
+  const studioScheduleForCounters =
+    studioSchedulePreview || studioScheduleQuery.data || studio;
   const [bookingsMaster, setBookingsMaster] = useState(null);
   const [bookingsFilter, setBookingsFilter] = useState("all");
-const [bookingsModalOpen, setBookingsModalOpen] = useState(false);
-const [visibleMasterBookingsCount, setVisibleMasterBookingsCount] = useState(10);
-const [detailsBookingId, setDetailsBookingId] = useState(null);
-const [copiedPhone, setCopiedPhone] = useState(false);
-const bookingsQuery = useQuery({
-  queryKey: ["bookings", studioId],
-  queryFn: () => fetchStudioBookings(studioId),
-  enabled: Boolean(studioId),
-});
-const todayDate = new Date();
-const nowTs = Date.now();
-const masterBookings = (bookingsQuery.data || []).filter(
-  (b) => String(b.masterId) === String(bookingsMaster?.id),
-);
-
-const filteredMasterBookings = masterBookings.filter((booking) => {
-  const bookingDate = new Date(`${booking.date}T00:00:00`);
-  const today = new Date(
-    todayDate.getFullYear(),
-    todayDate.getMonth(),
-    todayDate.getDate(),
+  const [bookingsModalOpen, setBookingsModalOpen] = useState(false);
+  const [visibleMasterBookingsCount, setVisibleMasterBookingsCount] =
+    useState(10);
+  const [detailsBookingId, setDetailsBookingId] = useState(null);
+  const [copiedPhone, setCopiedPhone] = useState(false);
+  const bookingsQuery = useQuery({
+    queryKey: ["bookings", studioId],
+    queryFn: () => fetchStudioBookings(studioId),
+    enabled: Boolean(studioId),
+  });
+  const todayDate = new Date();
+  const nowTs = Date.now();
+  const masterBookings = (bookingsQuery.data || []).filter(
+    (b) => String(b.masterId) === String(bookingsMaster?.id),
   );
 
-  const diffDays = Math.floor((bookingDate - today) / 86400000);
-  const isCompleted = isMasterBookingCompleted(booking, nowTs);
+  const filteredMasterBookings = masterBookings.filter((booking) => {
+    const bookingDate = new Date(`${booking.date}T00:00:00`);
+    const today = new Date(
+      todayDate.getFullYear(),
+      todayDate.getMonth(),
+      todayDate.getDate(),
+    );
 
-  if (bookingsFilter === "completed") {
-    return isCompleted;
-  }
+    const diffDays = Math.floor((bookingDate - today) / 86400000);
+    const isCompleted = isMasterBookingCompleted(booking, nowTs);
 
-  if (bookingsFilter === "today") {
-    return diffDays === 0;
-  }
+    if (bookingsFilter === "completed") {
+      return isCompleted;
+    }
 
-  if (isCompleted) {
-    return false;
-  }
+    if (bookingsFilter === "all") {
+      return true;
+    }
 
-  if (bookingsFilter === "all") {
+    if (bookingsFilter === "today") {
+      return diffDays === 0;
+    }
+
+    if (isCompleted) {
+      return false;
+    }
+
+    if (bookingsFilter === "all") {
+      return true;
+    }
+
+    if (bookingsFilter === "week") {
+      return diffDays >= 0 && diffDays <= 7;
+    }
+
+    if (bookingsFilter === "month") {
+      return diffDays >= 0 && diffDays <= 30;
+    }
+
     return true;
-  }
+  });
 
-  if (bookingsFilter === "week") {
-    return diffDays >= 0 && diffDays <= 7;
-  }
+  const sortedMasterBookings = [...filteredMasterBookings].sort((a, b) => {
+    const dateCompare = String(a.date || "").localeCompare(
+      String(b.date || ""),
+    );
 
-  if (bookingsFilter === "month") {
-    return diffDays >= 0 && diffDays <= 30;
-  }
+    if (dateCompare !== 0) return dateCompare;
 
-  return true;
-});
+    return (parseTimeToHHMM(a.time) || "").localeCompare(
+      parseTimeToHHMM(b.time) || "",
+    );
+  });
 
-const sortedMasterBookings = [...filteredMasterBookings].sort((a, b) => {
-  const dateCompare = String(a.date || "").localeCompare(String(b.date || ""));
-
-  if (dateCompare !== 0) return dateCompare;
-
-  return (parseTimeToHHMM(a.time) || "").localeCompare(
-    parseTimeToHHMM(b.time) || "",
-  );
-});
-
-const visibleMasterBookings = sortedMasterBookings.slice(
-  0,
-  visibleMasterBookingsCount,
-);
-
-const hasMoreMasterBookings =
-  visibleMasterBookingsCount < sortedMasterBookings.length;
-const selectedMasterBooking = useMemo(() => {
-  if (detailsBookingId == null) return null;
-
-  const booking = (bookingsQuery.data || []).find(
-    (item) => String(item.id) === String(detailsBookingId),
+  const visibleMasterBookings = sortedMasterBookings.slice(
+    0,
+    visibleMasterBookingsCount,
   );
 
-  if (!booking) return null;
+  const hasMoreMasterBookings =
+    visibleMasterBookingsCount < sortedMasterBookings.length;
+  const selectedMasterBooking = useMemo(() => {
+    if (detailsBookingId == null) return null;
 
-  return booking;
-}, [detailsBookingId, bookingsQuery.data]);
+    const booking = (bookingsQuery.data || []).find(
+      (item) => String(item.id) === String(detailsBookingId),
+    );
 
-async function handleCopyPhone(value) {
-  if (!value) return;
+    if (!booking) return null;
 
-  try {
-    await navigator.clipboard.writeText(value);
-    setCopiedPhone(true);
-    window.setTimeout(() => setCopiedPhone(false), 1600);
-  } catch {
-    const ta = document.createElement("textarea");
-    ta.value = value;
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand("copy");
-    document.body.removeChild(ta);
+    return booking;
+  }, [detailsBookingId, bookingsQuery.data]);
 
-    setCopiedPhone(true);
-    window.setTimeout(() => setCopiedPhone(false), 1600);
+  async function handleCopyPhone(value) {
+    if (!value) return;
+
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopiedPhone(true);
+      window.setTimeout(() => setCopiedPhone(false), 1600);
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = value;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+
+      setCopiedPhone(true);
+      window.setTimeout(() => setCopiedPhone(false), 1600);
+    }
   }
-}
 
-function closeBookingDetails() {
-  setDetailsBookingId(null);
-  setCopiedPhone(false);
-}
-const [deleteConfirm, setDeleteConfirm] = useState({
-  open: false,
-  master: null,
-  loading: false,
-});
-const [cropModal, setCropModal] = useState({
-  open: false,
-  imageUrl: "",
-  file: null,
-  target: "", // "add" або "edit"
-});
+  function closeBookingDetails() {
+    setDetailsBookingId(null);
+    setCopiedPhone(false);
+  }
 
-const [crop, setCrop] = useState({ x: 0, y: 0 });
-const [zoom, setZoom] = useState(1);
-const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+  function openScheduleError({
+    title = "Помилка графіка",
+    message,
+    hint = "",
+  }) {
+    setScheduleErrorModal({
+      open: true,
+      title,
+      message: message || "Перевірте графік роботи",
+      hint,
+    });
+  }
 
-async function fetchStudioBookings(studioId) {
-  if (!studioId) return [];
+  function closeScheduleError() {
+    setScheduleErrorModal({
+      open: false,
+      title: "Помилка графіка",
+      message: "",
+      hint: "",
+    });
+  }
 
-  const token = localStorage.getItem("token");
+  const [deleteConfirm, setDeleteConfirm] = useState({
+    open: false,
+    master: null,
+    loading: false,
+  });
+  const [cropModal, setCropModal] = useState({
+    open: false,
+    imageUrl: "",
+    file: null,
+    target: "", // "add" або "edit"
+  });
 
-  const res = await fetch(
-    `${import.meta.env.VITE_API_URL}/bookings/studio/${studioId}`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+
+  async function fetchStudioBookings(studioId) {
+    if (!studioId) return [];
+
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(
+      `${import.meta.env.VITE_API_URL}/bookings/studio/${studioId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       },
-    },
-  );
+    );
 
-  const data = await res.json().catch(() => null);
+    const data = await res.json().catch(() => null);
 
-  if (!res.ok) {
-    throw new Error(data?.message || "Load bookings failed");
+    if (!res.ok) {
+      throw new Error(data?.message || "Load bookings failed");
+    }
+
+    return Array.isArray(data?.bookings) ? data.bookings : [];
   }
-
-  return Array.isArray(data?.bookings) ? data.bookings : [];
-}
 
   async function syncMastersRelatedQueries() {
     if (!studioId) return;
@@ -1048,71 +1107,71 @@ async function fetchStudioBookings(studioId) {
   }
 
   async function getCroppedImage(imageSrc, cropPixels) {
-  const image = new Image();
-  image.src = imageSrc;
+    const image = new Image();
+    image.src = imageSrc;
 
-  await new Promise((resolve, reject) => {
-    image.onload = resolve;
-    image.onerror = reject;
-  });
+    await new Promise((resolve, reject) => {
+      image.onload = resolve;
+      image.onerror = reject;
+    });
 
-  const canvas = document.createElement("canvas");
-  canvas.width = 900;
-  canvas.height = 900;
+    const canvas = document.createElement("canvas");
+    canvas.width = 900;
+    canvas.height = 900;
 
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Canvas error");
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Canvas error");
 
-  ctx.drawImage(
-    image,
-    cropPixels.x,
-    cropPixels.y,
-    cropPixels.width,
-    cropPixels.height,
-    0,
-    0,
-    900,
-    900,
-  );
-
-  return new Promise((resolve, reject) => {
-    canvas.toBlob(
-      (blob) => {
-        if (!blob) {
-          reject(new Error("Crop failed"));
-          return;
-        }
-
-        resolve(
-          new File([blob], "master-photo.jpg", {
-            type: "image/jpeg",
-            lastModified: Date.now(),
-          }),
-        );
-      },
-      "image/jpeg",
-      0.82,
+    ctx.drawImage(
+      image,
+      cropPixels.x,
+      cropPixels.y,
+      cropPixels.width,
+      cropPixels.height,
+      0,
+      0,
+      900,
+      900,
     );
-  });
-}
+
+    return new Promise((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            reject(new Error("Crop failed"));
+            return;
+          }
+
+          resolve(
+            new File([blob], "master-photo.jpg", {
+              type: "image/jpeg",
+              lastModified: Date.now(),
+            }),
+          );
+        },
+        "image/jpeg",
+        0.82,
+      );
+    });
+  }
 
   async function confirmDeleteMaster() {
-  if (!deleteConfirm.master || deleteConfirm.loading) return;
+    if (!deleteConfirm.master || deleteConfirm.loading) return;
 
-  setDeleteConfirm((prev) => ({ ...prev, loading: true }));
+    setDeleteConfirm((prev) => ({ ...prev, loading: true }));
 
-  try {
-    await deleteMaster(deleteConfirm.master);
+    try {
+      await deleteMaster(deleteConfirm.master);
 
-    setDeleteConfirm({
-      open: false,
-      master: null,
-      loading: false,
-    });
-  } catch {
-    setDeleteConfirm((prev) => ({ ...prev, loading: false }));
+      setDeleteConfirm({
+        open: false,
+        master: null,
+        loading: false,
+      });
+    } catch {
+      setDeleteConfirm((prev) => ({ ...prev, loading: false }));
+    }
   }
-}
 
   async function deleteMasterPhoto(currentStudioId, key) {
     if (!key) return;
@@ -1142,22 +1201,19 @@ async function fetchStudioBookings(studioId) {
     photoUrl: "",
   });
 
-  const masters = useMemo(
-  () => mastersQuery.data || [],
-  [mastersQuery.data],
-);
+  const masters = useMemo(() => mastersQuery.data || [], [mastersQuery.data]);
   const loading = mastersQuery.isLoading;
   const [query, setQuery] = useState("");
-const [exportOpen, setExportOpen] = useState(false);
-const [infoOpen, setInfoOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
 
-const [exportFields, setExportFields] = useState({
-  name: true,
-  role: true,
-  bio: false,
-  status: true,
-  exceptionsCount: true,
-});
+  const [exportFields, setExportFields] = useState({
+    name: true,
+    role: true,
+    bio: false,
+    status: true,
+    exceptionsCount: true,
+  });
   const [form, setForm] = useState({
     name: "",
     role: "",
@@ -1167,7 +1223,6 @@ const [exportFields, setExportFields] = useState({
     photoFile: null,
   });
 
-  
   const [editMaster, setEditMaster] = useState(null);
   const [editDraft, setEditDraft] = useState({
     id: "",
@@ -1183,25 +1238,25 @@ const [exportFields, setExportFields] = useState({
     setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
   }
 
-async function handlePickPhoto(e) {
-  const file = e.target.files?.[0];
-  e.target.value = "";
+  async function handlePickPhoto(e) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
 
-  if (!file) return;
+    if (!file) return;
 
-  const imageUrl = URL.createObjectURL(file);
+    const imageUrl = URL.createObjectURL(file);
 
-  setCrop({ x: 0, y: 0 });
-  setZoom(1);
-  setCroppedAreaPixels(null);
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+    setCroppedAreaPixels(null);
 
-  setCropModal({
-    open: true,
-    imageUrl,
-    file,
-    target: "add",
-  });
-}
+    setCropModal({
+      open: true,
+      imageUrl,
+      file,
+      target: "add",
+    });
+  }
 
   function removePhoto() {
     setPhotoBroken(false);
@@ -1456,16 +1511,29 @@ async function handlePickPhoto(e) {
           ...masterExceptions[index],
           breakStart: getExceptionBreakStart(masterExceptions[index]),
           breakEnd: getExceptionBreakEnd(masterExceptions[index]),
+          isStudioDefault: false,
         },
       };
     }
+
+    const studioSchedule =
+      getStudioScheduleForDay(
+        getScheduleDayMeta(dateKey),
+        studioSchedulePreview,
+      ) || getStudioScheduleForDay(getScheduleDayMeta(dateKey), studio);
 
     return {
       index: -1,
       item: {
         ...createEmptyException(),
         date: dateKey,
+        enabled: studioSchedule ? studioSchedule.enabled : false,
+        start: studioSchedule?.start || "09:00",
+        end: studioSchedule?.end || "18:00",
+        breakStart: studioSchedule?.breakStart || "",
+        breakEnd: studioSchedule?.breakEnd || "",
         isGenerated: true,
+        isStudioDefault: Boolean(studioSchedule),
       },
     };
   }
@@ -1544,6 +1612,10 @@ async function handlePickPhoto(e) {
     setScheduleEditorOpen(false);
   }
 
+  function closeScheduleEditorWindow() {
+    setScheduleEditorOpen(false);
+  }
+
   function shiftScheduleMonth(amount) {
     setScheduleMonthDate((prev) => addMonths(prev, amount));
     closeScheduleSelection();
@@ -1610,28 +1682,28 @@ async function handlePickPhoto(e) {
     setScheduleEditorOpen(true);
   }
 
-function getScheduleTimeLines(item) {
-  if (!item.enabled) return ["Вихідний"];
+  function getScheduleTimeLines(item) {
+    if (!item.enabled) return ["Вихідний"];
 
-  const start = parseTimeToHHMM(item.start) || item.start || "--:--";
-  const end = parseTimeToHHMM(item.end) || item.end || "--:--";
+    const start = parseTimeToHHMM(item.start) || item.start || "--:--";
+    const end = parseTimeToHHMM(item.end) || item.end || "--:--";
 
-  const breakStartRaw = getExceptionBreakStart(item);
-  const breakEndRaw = getExceptionBreakEnd(item);
+    const breakStartRaw = getExceptionBreakStart(item);
+    const breakEndRaw = getExceptionBreakEnd(item);
 
-  const breakStart = parseTimeToHHMM(breakStartRaw) || breakStartRaw || "";
-  const breakEnd = parseTimeToHHMM(breakEndRaw) || breakEndRaw || "";
+    const breakStart = parseTimeToHHMM(breakStartRaw) || breakStartRaw || "";
+    const breakEnd = parseTimeToHHMM(breakEndRaw) || breakEndRaw || "";
 
-  const lines = [`${start} – ${end}`];
+    const lines = [`${start} – ${end}`];
 
-  if (breakStart && breakEnd) {
-    lines.push(`${breakStart} – ${breakEnd}`);
-  } else {
-    lines.push("Без перерви");
+    if (breakStart && breakEnd) {
+      lines.push(`${breakStart} – ${breakEnd}`);
+    } else {
+      lines.push("Без перерви");
+    }
+
+    return lines;
   }
-
-  return lines;
-}
 
   function buildBulkScheduleItem(dateKey, enabled) {
     const current = getScheduleItemForDate(dateKey);
@@ -1727,6 +1799,23 @@ function getScheduleTimeLines(item) {
     return null;
   }
 
+  function getStudioScheduleExceptionSources(sourceStudio) {
+    const roots = [
+      sourceStudio?.scheduleExceptions,
+      sourceStudio?.exceptions,
+      sourceStudio?.schedule?.exceptions,
+      sourceStudio?.schedule?.scheduleExceptions,
+      sourceStudio?.workSchedule?.exceptions,
+      sourceStudio?.workingHours?.exceptions,
+      sourceStudio?.settings?.scheduleExceptions,
+      sourceStudio?.settings?.exceptions,
+      sourceStudio?.settings?.schedule?.exceptions,
+      sourceStudio?.settings?.schedule?.scheduleExceptions,
+    ];
+
+    return roots.filter(Boolean);
+  }
+
   function getStudioScheduleSources(sourceStudio) {
     const roots = [
       sourceStudio?.schedule,
@@ -1793,15 +1882,52 @@ function getScheduleTimeLines(item) {
     return direct;
   }
 
+  async function fetchStudioScheduleExceptionsFromDb() {
+    if (!studio?.id) return [];
+
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(
+      `${import.meta.env.VITE_API_URL}/studio/${studio.id}/schedule/exceptions`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      return [];
+    }
+
+    return Array.isArray(data?.exceptions)
+      ? data.exceptions.map((item) => ({
+          ...item,
+          date: String(item?.date || "").slice(0, 10),
+          enabled: item?.enabled !== false,
+          breakStart: getExceptionBreakStart(item),
+          breakEnd: getExceptionBreakEnd(item),
+        }))
+      : [];
+  }
+
   async function fetchStudioScheduleFromDb() {
+    const studioExceptions = await fetchStudioScheduleExceptionsFromDb();
     const studioFromContext = normalizeStudioPayload(studio);
 
     if (hasStudioSchedulePayload(studioFromContext)) {
-      return studioFromContext;
+      return {
+        ...studioFromContext,
+        scheduleExceptions: studioExceptions,
+      };
     }
 
     if (!studio?.id) {
-      throw new Error("\u041d\u0435 \u0432\u0434\u0430\u043b\u043e\u0441\u044f \u0432\u0438\u0437\u043d\u0430\u0447\u0438\u0442\u0438 \u0441\u0442\u0443\u0434\u0456\u044e");
+      throw new Error(
+        "\u041d\u0435 \u0432\u0434\u0430\u043b\u043e\u0441\u044f \u0432\u0438\u0437\u043d\u0430\u0447\u0438\u0442\u0438 \u0441\u0442\u0443\u0434\u0456\u044e",
+      );
     }
 
     const token = localStorage.getItem("token");
@@ -1832,7 +1958,10 @@ function getScheduleTimeLines(item) {
         const studioFromDb = normalizeStudioPayload(data);
 
         if (hasStudioSchedulePayload(studioFromDb)) {
-          return studioFromDb;
+          return {
+            ...studioFromDb,
+            scheduleExceptions: studioExceptions,
+          };
         }
       } catch (error) {
         lastMessage = error?.message || lastMessage;
@@ -1846,9 +1975,15 @@ function getScheduleTimeLines(item) {
   }
 
   function getStudioScheduleForDay(day, sourceStudio = studio) {
-    const raw = getStudioScheduleSources(sourceStudio)
+    const exceptionRaw = getStudioScheduleExceptionSources(sourceStudio)
       .map((source) => pickScheduleEntry(source, day))
       .find(Boolean);
+
+    const raw =
+      exceptionRaw ||
+      getStudioScheduleSources(sourceStudio)
+        .map((source) => pickScheduleEntry(source, day))
+        .find(Boolean);
 
     if (!raw) return null;
 
@@ -1867,6 +2002,7 @@ function getScheduleTimeLines(item) {
         end: "18:00",
         breakStart: "",
         breakEnd: "",
+        isStudioException: Boolean(exceptionRaw),
       };
     }
 
@@ -1880,6 +2016,7 @@ function getScheduleTimeLines(item) {
         raw?.opensAt ||
         raw?.workStart,
     );
+
     const end = parseTimeToHHMM(
       raw?.end ||
         raw?.endTime ||
@@ -1903,6 +2040,7 @@ function getScheduleTimeLines(item) {
         raw?.lunch?.start ||
         raw?.breaks?.[0]?.start,
     );
+
     const breakEnd = parseTimeToHHMM(
       getExceptionBreakEnd(raw) ||
         raw?.breakTo ||
@@ -1920,121 +2058,340 @@ function getScheduleTimeLines(item) {
       end,
       breakStart: breakStart || "",
       breakEnd: breakEnd || "",
+      isStudioException: Boolean(exceptionRaw),
     };
+  }
+
+  function getScheduleDayMeta(dateKey) {
+    const date = new Date(`${dateKey}T00:00:00`);
+
+    return {
+      date,
+      dateKey,
+      weekdayIndex: (date.getDay() + 6) % 7,
+    };
+  }
+  function timeToMinutes(value) {
+    const time = parseTimeToHHMM(value);
+
+    if (!time) return null;
+
+    const [hours, minutes] = time.split(":").map(Number);
+
+    if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
+      return null;
+    }
+
+    return hours * 60 + minutes;
+  }
+  function normalizeScheduleForCompare(item) {
+    const enabled = item?.enabled !== false;
+
+    if (!enabled) {
+      return {
+        enabled: false,
+        start: "",
+        end: "",
+        breakStart: "",
+        breakEnd: "",
+      };
+    }
+
+    return {
+      enabled: true,
+      start: parseTimeToHHMM(item?.start) || "",
+      end: parseTimeToHHMM(item?.end) || "",
+      breakStart: parseTimeToHHMM(getExceptionBreakStart(item)) || "",
+      breakEnd: parseTimeToHHMM(getExceptionBreakEnd(item)) || "",
+    };
+  }
+
+  function isSameScheduleAsStudio(item, studioSchedule) {
+    if (!studioSchedule) return false;
+
+    const masterSchedule = normalizeScheduleForCompare(item);
+    const studioDaySchedule = normalizeScheduleForCompare(studioSchedule);
+
+    if (masterSchedule.enabled !== studioDaySchedule.enabled) {
+      return false;
+    }
+
+    if (!masterSchedule.enabled && !studioDaySchedule.enabled) {
+      return true;
+    }
+
+    return (
+      masterSchedule.start === studioDaySchedule.start &&
+      masterSchedule.end === studioDaySchedule.end &&
+      masterSchedule.breakStart === studioDaySchedule.breakStart &&
+      masterSchedule.breakEnd === studioDaySchedule.breakEnd
+    );
+  }
+
+  function validateMasterScheduleInsideStudio(item, studioSchedule) {
+    if (!studioSchedule) {
+      throw new Error("Не знайдено графік студії для цієї дати");
+    }
+
+    const masterSchedule = normalizeScheduleForCompare(item);
+    const studioDaySchedule = normalizeScheduleForCompare(studioSchedule);
+
+    if (!masterSchedule.enabled) {
+      return;
+    }
+
+    if (!studioDaySchedule.enabled) {
+      throw new Error(
+        "Студія у цей день не працює, тому майстер не може мати робочий графік",
+      );
+    }
+
+    const masterStart = timeToMinutes(masterSchedule.start);
+    const masterEnd = timeToMinutes(masterSchedule.end);
+    const studioStart = timeToMinutes(studioDaySchedule.start);
+    const studioEnd = timeToMinutes(studioDaySchedule.end);
+
+    if (
+      masterStart == null ||
+      masterEnd == null ||
+      studioStart == null ||
+      studioEnd == null
+    ) {
+      throw new Error("Не вдалося перевірити години майстра та студії");
+    }
+
+    if (masterStart < studioStart) {
+      throw new Error(
+        `Майстер не може починати раніше за студію. Студія відкривається о ${studioDaySchedule.start}`,
+      );
+    }
+
+    if (masterEnd > studioEnd) {
+      throw new Error(
+        `Майстер не може закінчувати пізніше за студію. Студія працює до ${studioDaySchedule.end}`,
+      );
+    }
+  }
+
+  function isRealMasterException(item, sourceStudio = studio) {
+    const dateKey = getExceptionDateValue(item);
+
+    if (!dateKey) return false;
+
+    const studioSchedule = getStudioScheduleForDay(
+      getScheduleDayMeta(dateKey),
+      sourceStudio,
+    );
+
+    if (!studioSchedule) return true;
+
+    return !isSameScheduleAsStudio(item, studioSchedule);
+  }
+
+  function getMasterScheduleExceptions(master) {
+    return Array.isArray(master?.scheduleExceptions)
+      ? master.scheduleExceptions.map((item) => ({
+          ...item,
+          date: String(item?.date || "").slice(0, 10),
+          enabled: item?.enabled !== false,
+          breakStart: getExceptionBreakStart(item),
+          breakEnd: getExceptionBreakEnd(item),
+        }))
+      : [];
+  }
+
+  function getMasterIndividualExceptions(
+    master,
+    sourceStudio = studioScheduleForCounters,
+  ) {
+    return getMasterScheduleExceptions(master).filter((item) => {
+      const dateKey = getExceptionDateValue(item);
+
+      if (!dateKey) return false;
+
+      return isRealMasterException(item, sourceStudio);
+    });
+  }
+
+  function getActiveMasterIndividualExceptionsCount(
+    master,
+    sourceStudio = studioScheduleForCounters,
+  ) {
+    const today = dateToInputValue(new Date());
+
+    return getMasterIndividualExceptions(master, sourceStudio).filter(
+      (item) => {
+        const dateKey = getExceptionDateValue(item);
+
+        return dateKey >= today;
+      },
+    ).length;
+  }
+
+  function getMasterTodayWorkingStatus(
+    master,
+    today,
+    sourceStudio = studioScheduleForCounters,
+  ) {
+    const todayException = getMasterIndividualExceptions(
+      master,
+      sourceStudio,
+    ).find((item) => getExceptionDateValue(item) === today);
+
+    if (todayException) {
+      return todayException.enabled !== false;
+    }
+
+    const studioTodaySchedule = getStudioScheduleForDay(
+      getScheduleDayMeta(today),
+      sourceStudio,
+    );
+
+    if (!studioTodaySchedule) return true;
+
+    return studioTodaySchedule.enabled !== false;
   }
 
   async function applyStudioScheduleToMonth(monthDays) {
     if (bulkSaving) return;
 
+    if (scheduleMultiSelect && selectedScheduleDates.length === 0) {
+      openScheduleError({
+        title: "Дати не вибрано",
+        message: "Оберіть дати, для яких потрібно застосувати графік студії",
+        hint: "У режимі множинного вибору спочатку натисніть на потрібні дні в календарі.",
+      });
+
+      return;
+    }
+
     setBulkSaving(true);
 
     try {
       const studioFromDb = await fetchStudioScheduleFromDb();
-      const items = monthDays
-        .filter((day) => day.isCurrentMonth)
-        .map((day) => {
-          const current = getScheduleItemForDate(day.dateKey);
-          const studioSchedule = getStudioScheduleForDay(day, studioFromDb);
+      setStudioSchedulePreview(studioFromDb);
 
-          if (!studioSchedule) {
-            throw new Error(
-              `Не знайдено графік студії для ${getScheduleDayTitle(day.date)}`,
-            );
-          }
+      const shouldUseSelectedDates =
+        scheduleMultiSelect && selectedScheduleDates.length > 0;
 
-          return {
-            index: current.index,
-            item: {
-              ...current.item,
-              date: day.dateKey,
-              ...studioSchedule,
-            },
-          };
-        });
+      const selectedDatesSet = new Set(selectedScheduleDates);
+
+      const targetDays = monthDays.filter((day) => {
+        if (!day.isCurrentMonth) return false;
+
+        if (shouldUseSelectedDates) {
+          return selectedDatesSet.has(day.dateKey);
+        }
+
+        return true;
+      });
+
+      const items = targetDays.map((day) => {
+        const current = getScheduleItemForDate(day.dateKey);
+        const studioSchedule = getStudioScheduleForDay(day, studioFromDb);
+
+        if (!studioSchedule) {
+          throw new Error(
+            `Не знайдено графік студії для ${getScheduleDayTitle(day.date)}`,
+          );
+        }
+
+        return {
+          index: current.index,
+          item: {
+            ...current.item,
+            date: day.dateKey,
+            ...studioSchedule,
+          },
+        };
+      });
 
       const invalidItem = items.find(({ item }) => !isExceptionValid(item));
 
       if (invalidItem) {
         throw new Error(
-          "\u041f\u0435\u0440\u0435\u0432\u0456\u0440\u0442\u0435 \u0433\u0440\u0430\u0444\u0456\u043a \u0441\u0442\u0443\u0434\u0456\u0457: \u0433\u043e\u0434\u0438\u043d\u0438 \u0430\u0431\u043e \u043f\u0435\u0440\u0435\u0440\u0432\u0430 \u0437\u0430\u043f\u043e\u0432\u043d\u0435\u043d\u0456 \u043d\u0435\u043a\u043e\u0440\u0435\u043a\u0442\u043d\u043e",
+          "Перевірте графік студії: години або перерва заповнені некоректно",
         );
       }
 
       for (const { item, index } of items) {
-        await persistScheduleException(item, index);
+        await persistScheduleException(item, index, studioFromDb);
       }
 
       await syncScheduleAfterSave();
       closeScheduleSelection();
     } catch (error) {
-      alert(error?.message || "Не вдалося застосувати графік студії");
+      openScheduleError({
+        title: "Не вдалося застосувати графік студії",
+        message: error?.message || "Не вдалося застосувати графік студії",
+        hint: "Перевірте, чи для студії збережено графік на ці дні.",
+      });
     } finally {
       setBulkSaving(false);
     }
   }
 
+  function getBookingClientName(booking) {
+    return (
+      booking?.clientName ||
+      booking?.client?.name ||
+      [booking?.client?.firstName, booking?.client?.lastName]
+        .filter(Boolean)
+        .join(" ") ||
+      [booking?.clientAccount?.firstName, booking?.clientAccount?.lastName]
+        .filter(Boolean)
+        .join(" ") ||
+      "Клієнт"
+    );
+  }
 
-function getBookingClientName(booking) {
-  return (
-    booking?.clientName ||
-    booking?.client?.name ||
-    [booking?.client?.firstName, booking?.client?.lastName]
-      .filter(Boolean)
-      .join(" ") ||
-    [booking?.clientAccount?.firstName, booking?.clientAccount?.lastName]
-      .filter(Boolean)
-      .join(" ") ||
-    "Клієнт"
-  );
-}
+  function getBookingClientPhone(booking) {
+    return (
+      booking?.clientPhone ||
+      booking?.phone ||
+      booking?.client?.phone ||
+      booking?.clientAccount?.phone ||
+      ""
+    );
+  }
 
-function getBookingClientPhone(booking) {
-  return (
-    booking?.clientPhone ||
-    booking?.phone ||
-    booking?.client?.phone ||
-    booking?.clientAccount?.phone ||
-    ""
-  );
-}
+  function getBookingServiceName(booking) {
+    return (
+      booking?.serviceName ||
+      booking?.service?.name ||
+      booking?.service?.title ||
+      "Послуга"
+    );
+  }
 
-function getBookingServiceName(booking) {
-  return (
-    booking?.serviceName ||
-    booking?.service?.name ||
-    booking?.service?.title ||
-    "Послуга"
-  );
-}
+  function getBookingMasterName(booking, fallbackMaster) {
+    return (
+      booking?.masterName ||
+      booking?.master?.name ||
+      fallbackMaster?.name ||
+      "Майстер"
+    );
+  }
 
-function getBookingMasterName(booking, fallbackMaster) {
-  return (
-    booking?.masterName ||
-    booking?.master?.name ||
-    fallbackMaster?.name ||
-    "Майстер"
-  );
-}
+  function getBookingClientPhoto(booking) {
+    return toPublicUrl(
+      booking?.clientPhotoUrl ||
+        booking?.clientPhoto ||
+        booking?.client?.photoUrl ||
+        booking?.clientAccount?.photoUrl ||
+        "",
+    );
+  }
 
-function getBookingClientPhoto(booking) {
-  return toPublicUrl(
-    booking?.clientPhotoUrl ||
-      booking?.clientPhoto ||
-      booking?.client?.photoUrl ||
-      booking?.clientAccount?.photoUrl ||
-      "",
-  );
-}
-
-function getBookingMasterPhoto(booking, fallbackMaster) {
-  return toPublicUrl(
-    booking?.masterPhotoUrl ||
-      booking?.masterPhoto ||
-      booking?.master?.photoUrl ||
-      fallbackMaster?.photoUrl ||
-      "",
-  );
-}
+  function getBookingMasterPhoto(booking, fallbackMaster) {
+    return toPublicUrl(
+      booking?.masterPhotoUrl ||
+        booking?.masterPhoto ||
+        booking?.master?.photoUrl ||
+        fallbackMaster?.photoUrl ||
+        "",
+    );
+  }
 
   async function openMasterExceptions(master) {
     if (!studio?.id || !master?.id) return;
@@ -2045,12 +2402,17 @@ function getBookingMasterPhoto(booking, fallbackMaster) {
     setScheduleMultiSelect(false);
     setSelectedScheduleDates([]);
     setScheduleEditorOpen(false);
+    setMasterExceptions([]);
+    setStudioSchedulePreview(null);
     setScheduleMonthDate(() => {
       const now = new Date();
       return new Date(now.getFullYear(), now.getMonth(), 1);
     });
 
     try {
+      const studioFromDb = await fetchStudioScheduleFromDb();
+      setStudioSchedulePreview(studioFromDb);
+
       const token = localStorage.getItem("token");
 
       const res = await fetch(
@@ -2065,7 +2427,9 @@ function getBookingMasterPhoto(booking, fallbackMaster) {
       const data = await res.json().catch(() => null);
 
       if (!res.ok) {
-        throw new Error(data?.message || "Не вдалося завантажити особливі дати");
+        throw new Error(
+          data?.message || "Не вдалося завантажити особливі дати",
+        );
       }
 
       const rawExceptions = Array.isArray(data?.exceptions)
@@ -2081,39 +2445,114 @@ function getBookingMasterPhoto(booking, fallbackMaster) {
 
       setMasterExceptions(sortExceptions(rawExceptions));
     } catch (error) {
-      alert(error?.message || "Помилка завантаження");
+      openScheduleError({
+        title: "Помилка завантаження",
+        message: error?.message || "Не вдалося завантажити особливі дати",
+        hint: "Закрийте вікно майстра та відкрийте його ще раз.",
+      });
     } finally {
       setExceptionsLoading(false);
     }
   }
+  async function deleteScheduleException(item) {
+    const dateKey = getExceptionDateValue(item);
 
-  async function persistScheduleException(item, index) {
+    if (!item?.id) {
+      setMasterExceptions((prev) =>
+        prev.filter((row) => getExceptionDateValue(row) !== dateKey),
+      );
+
+      return null;
+    }
+
     if (!exceptionsMaster?.id) return null;
 
     const token = localStorage.getItem("token");
 
-    if (!item.date) {
+    const res = await fetch(
+      `${import.meta.env.VITE_API_URL}/studio/masters/${exceptionsMaster.id}/schedule/exceptions/${item.id}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      throw new Error(data?.message || "Не вдалося видалити особливу дату");
+    }
+
+    setMasterExceptions((prev) =>
+      prev.filter(
+        (row) =>
+          String(row.id) !== String(item.id) &&
+          getExceptionDateValue(row) !== dateKey,
+      ),
+    );
+
+    return data;
+  }
+  async function persistScheduleException(item, index, sourceStudio = null) {
+    if (!exceptionsMaster?.id) return null;
+
+    const dateKey = getExceptionDateValue(item);
+
+    if (!dateKey) {
       throw new Error("Оберіть дату");
     }
 
-    if (!isExceptionValid(item)) {
+    const normalizedItem = {
+      ...item,
+      date: dateKey,
+      breakStart: getExceptionBreakStart(item),
+      breakEnd: getExceptionBreakEnd(item),
+    };
+
+    const studioFromDb = sourceStudio || (await fetchStudioScheduleFromDb());
+
+    const studioSchedule = getStudioScheduleForDay(
+      getScheduleDayMeta(dateKey),
+      studioFromDb,
+    );
+
+    if (!studioSchedule) {
+      throw new Error(`Не знайдено графік студії для ${dateKey}`);
+    }
+
+    if (!isExceptionValid(normalizedItem)) {
       throw new Error("Перевірте години роботи та перерви");
     }
 
+    validateMasterScheduleInsideStudio(normalizedItem, studioSchedule);
+
+    if (isSameScheduleAsStudio(normalizedItem, studioSchedule)) {
+      await deleteScheduleException(normalizedItem);
+      return null;
+    }
+
+    const token = localStorage.getItem("token");
+
     const body = {
-      date: item.date,
-      enabled: item.enabled,
-      start: item.enabled ? item.start : null,
-      end: item.enabled ? item.end : null,
-      breakStart: item.enabled ? getExceptionBreakStart(item) || null : null,
-      breakEnd: item.enabled ? getExceptionBreakEnd(item) || null : null,
+      date: normalizedItem.date,
+      enabled: normalizedItem.enabled,
+      start: normalizedItem.enabled ? normalizedItem.start : null,
+      end: normalizedItem.enabled ? normalizedItem.end : null,
+      breakStart: normalizedItem.enabled
+        ? getExceptionBreakStart(normalizedItem) || null
+        : null,
+      breakEnd: normalizedItem.enabled
+        ? getExceptionBreakEnd(normalizedItem) || null
+        : null,
     };
 
-    const url = item.id
-      ? `${import.meta.env.VITE_API_URL}/studio/masters/${exceptionsMaster.id}/schedule/exceptions/${item.id}`
+    const url = normalizedItem.id
+      ? `${import.meta.env.VITE_API_URL}/studio/masters/${exceptionsMaster.id}/schedule/exceptions/${normalizedItem.id}`
       : `${import.meta.env.VITE_API_URL}/studio/masters/${exceptionsMaster.id}/schedule/exceptions`;
 
-    const method = item.id ? "PATCH" : "POST";
+    const method = normalizedItem.id ? "PATCH" : "POST";
 
     const res = await fetch(url, {
       method,
@@ -2131,11 +2570,17 @@ function getBookingMasterPhoto(booking, fallbackMaster) {
     }
 
     const savedException = {
-      ...(data?.exception || item),
-      date: String(data?.exception?.date || item.date || "").slice(0, 10),
+      ...(data?.exception || normalizedItem),
+      date: String(data?.exception?.date || normalizedItem.date || "").slice(
+        0,
+        10,
+      ),
       breakStart:
-        getExceptionBreakStart(data?.exception) || getExceptionBreakStart(item),
-      breakEnd: getExceptionBreakEnd(data?.exception) || getExceptionBreakEnd(item),
+        getExceptionBreakStart(data?.exception) ||
+        getExceptionBreakStart(normalizedItem),
+      breakEnd:
+        getExceptionBreakEnd(data?.exception) ||
+        getExceptionBreakEnd(normalizedItem),
       isNew: false,
       isGenerated: false,
     };
@@ -2172,7 +2617,11 @@ function getBookingMasterPhoto(booking, fallbackMaster) {
       await persistScheduleException(item, index);
       await syncScheduleAfterSave();
     } catch (error) {
-      alert(error?.message || "Не вдалося зберегти");
+      openScheduleError({
+        title: "Не вдалося зберегти графік",
+        message: error?.message || "Не вдалося зберегти графік майстра",
+        hint: "Перевірте, щоб години майстра не виходили за межі графіка студії.",
+      });
     }
   }
 
@@ -2182,6 +2631,8 @@ function getBookingMasterPhoto(booking, fallbackMaster) {
     setBulkSaving(true);
 
     try {
+      const studioFromDb = await fetchStudioScheduleFromDb();
+      setStudioSchedulePreview(studioFromDb);
       const items = selectedScheduleDates.map((dateKey) => {
         const current = getScheduleItemForDate(dateKey);
         return {
@@ -2190,21 +2641,69 @@ function getBookingMasterPhoto(booking, fallbackMaster) {
         };
       });
 
-      const invalidItem = items.find(({ item }) => !isExceptionValid(item));
+      const invalidItem = items.find(({ item }) => {
+        const dateKey = getExceptionDateValue(item);
+
+        const studioSchedule = getStudioScheduleForDay(
+          getScheduleDayMeta(dateKey),
+          studioFromDb,
+        );
+
+        if (!isExceptionValid(item)) {
+          return true;
+        }
+
+        try {
+          validateMasterScheduleInsideStudio(item, studioSchedule);
+          return false;
+        } catch {
+          return true;
+        }
+      });
 
       if (invalidItem) {
-        alert("Перевірте години роботи та перерви");
+        const dateKey = getExceptionDateValue(invalidItem.item);
+
+        const studioSchedule = getStudioScheduleForDay(
+          getScheduleDayMeta(dateKey),
+          studioFromDb,
+        );
+
+        try {
+          validateMasterScheduleInsideStudio(invalidItem.item, studioSchedule);
+        } catch (error) {
+          openScheduleError({
+            title: "Графік поза межами студії",
+            message:
+              error?.message ||
+              "Графік майстра має бути в межах графіка студії",
+            hint: "Наприклад, якщо студія працює 07:00–20:00, майстер не може працювати 06:00–20:05.",
+          });
+
+          return;
+        }
+
+        openScheduleError({
+          title: "Некоректний графік",
+          message: "Перевірте години роботи та перерви",
+          hint: "Початок має бути раніше кінця, а перерва має бути всередині робочого часу.",
+        });
+
         return;
       }
 
       for (const { item, index } of items) {
-        await persistScheduleException(item, index);
+        await persistScheduleException(item, index, studioFromDb);
       }
 
       await syncScheduleAfterSave();
       closeScheduleSelection();
     } catch (error) {
-      alert(error?.message || "Не вдалося застосувати графік");
+      openScheduleError({
+        title: "Не вдалося застосувати графік",
+        message: error?.message || "Не вдалося застосувати графік",
+        hint: "Перевірте вибрані дати та графік студії.",
+      });
     } finally {
       setBulkSaving(false);
     }
@@ -2256,80 +2755,80 @@ function getBookingMasterPhoto(booking, fallbackMaster) {
     setEditOriginal({ photoKey: null, photoUrl: "" });
   }
 
-async function editPickPhoto(e) {
-  const file = e.target.files?.[0];
-  e.target.value = "";
+  async function editPickPhoto(e) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
 
-  if (!file) return;
+    if (!file) return;
 
-  const imageUrl = URL.createObjectURL(file);
+    const imageUrl = URL.createObjectURL(file);
 
-  setCrop({ x: 0, y: 0 });
-  setZoom(1);
-  setCroppedAreaPixels(null);
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+    setCroppedAreaPixels(null);
 
-  setCropModal({
-    open: true,
-    imageUrl,
-    file,
-    target: "edit",
-  });
-}
-
-async function confirmCrop() {
-  if (!cropModal.imageUrl || !croppedAreaPixels) return;
-
-  const croppedFile = await getCroppedImage(
-    cropModal.imageUrl,
-    croppedAreaPixels,
-  );
-
-  const localUrl = URL.createObjectURL(croppedFile);
-
-  if (cropModal.target === "add") {
-    setForm((p) => {
-      if (p.photoUrl?.startsWith("blob:")) {
-        URL.revokeObjectURL(p.photoUrl);
-      }
-
-      return {
-        ...p,
-        photoUrl: localUrl,
-        photoFile: croppedFile,
-        photoKey: null,
-      };
-    });
-
-    setPhotoBroken(false);
-  }
-
-  if (cropModal.target === "edit") {
-    setEditDraft((p) => {
-      if (p.photoUrl?.startsWith("blob:")) {
-        URL.revokeObjectURL(p.photoUrl);
-      }
-
-      return {
-        ...p,
-        photoUrl: localUrl,
-        photoFile: croppedFile,
-      };
+    setCropModal({
+      open: true,
+      imageUrl,
+      file,
+      target: "edit",
     });
   }
 
-  URL.revokeObjectURL(cropModal.imageUrl);
+  async function confirmCrop() {
+    if (!cropModal.imageUrl || !croppedAreaPixels) return;
 
-  setCropModal({
-    open: false,
-    imageUrl: "",
-    file: null,
-    target: "",
-  });
+    const croppedFile = await getCroppedImage(
+      cropModal.imageUrl,
+      croppedAreaPixels,
+    );
 
-  setCrop({ x: 0, y: 0 });
-  setZoom(1);
-  setCroppedAreaPixels(null);
-}
+    const localUrl = URL.createObjectURL(croppedFile);
+
+    if (cropModal.target === "add") {
+      setForm((p) => {
+        if (p.photoUrl?.startsWith("blob:")) {
+          URL.revokeObjectURL(p.photoUrl);
+        }
+
+        return {
+          ...p,
+          photoUrl: localUrl,
+          photoFile: croppedFile,
+          photoKey: null,
+        };
+      });
+
+      setPhotoBroken(false);
+    }
+
+    if (cropModal.target === "edit") {
+      setEditDraft((p) => {
+        if (p.photoUrl?.startsWith("blob:")) {
+          URL.revokeObjectURL(p.photoUrl);
+        }
+
+        return {
+          ...p,
+          photoUrl: localUrl,
+          photoFile: croppedFile,
+        };
+      });
+    }
+
+    URL.revokeObjectURL(cropModal.imageUrl);
+
+    setCropModal({
+      open: false,
+      imageUrl: "",
+      file: null,
+      target: "",
+    });
+
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+    setCroppedAreaPixels(null);
+  }
 
   const inputBaseClass =
     "w-full rounded-2xl border border-[#eadbc9] bg-white px-4 py-3 " +
@@ -2436,233 +2935,230 @@ async function confirmCrop() {
   }, [masters, query]);
   const [photoBroken, setPhotoBroken] = useState(false);
 
- async function handleExportMasters() {
-  const sortedMasters = [...filteredMasters].sort((a, b) =>
-    String(a.name || "").localeCompare(String(b.name || ""), "uk", {
-      sensitivity: "base",
-    }),
-  );
-console.log("MASTER", sortedMasters[0]);
-console.log(
-  "EXCEPTIONS",
-  sortedMasters[0]?.scheduleExceptions
-);
-const token = localStorage.getItem("token");
+  async function handleExportMasters() {
+    const sortedMasters = [...filteredMasters].sort((a, b) =>
+      String(a.name || "").localeCompare(String(b.name || ""), "uk", {
+        sensitivity: "base",
+      }),
+    );
+    console.log("MASTER", sortedMasters[0]);
+    console.log("EXCEPTIONS", sortedMasters[0]?.scheduleExceptions);
+    const token = localStorage.getItem("token");
 
-const rows = await Promise.all(
-  sortedMasters.map(async (master) => {
-    const row = {};
+    const rows = await Promise.all(
+      sortedMasters.map(async (master) => {
+        const row = {};
 
-    const now = new Date();
-    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+        const now = new Date();
+        const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
-    const res = await fetch(
-      `${import.meta.env.VITE_API_URL}/studio/masters/${master.id}/schedule/exceptions`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      },
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL}/studio/masters/${master.id}/schedule/exceptions`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+
+        const data = await res.json().catch(() => null);
+
+        const scheduleExceptions = Array.isArray(data?.exceptions)
+          ? data.exceptions
+          : [];
+
+        const todayException = scheduleExceptions.find(
+          (e) => String(e.date || "").slice(0, 10) === today,
+        );
+
+        const isWorkingToday = !todayException || todayException.enabled;
+
+        if (exportFields.name) row["Імʼя"] = master.name || "-";
+        if (exportFields.role) row["Спеціалізація"] = master.role || "-";
+        if (exportFields.status)
+          row["Статус сьогодні"] = isWorkingToday ? "Працює" : "Вихідний";
+
+        if (exportFields.exceptionsCount) {
+          const exceptions = scheduleExceptions
+            .filter((e) => e.date)
+            .sort((a, b) => String(a.date).localeCompare(String(b.date)))
+            .map((e) => {
+              const date = formatExceptionDate(String(e.date).slice(0, 10));
+
+              if (!e.enabled) {
+                return `${date} — Вихідний`;
+              }
+
+              return `${date} — ${e.start || "--:--"} - ${e.end || "--:--"}`;
+            });
+
+          row["Особливі дати"] = exceptions.length
+            ? exceptions.join("\n")
+            : "-";
+        }
+
+        return row;
+      }),
     );
 
-    const data = await res.json().catch(() => null);
+    if (!rows.length) {
+      alert("Немає майстрів для експорту");
+      return;
+    }
 
-    const scheduleExceptions = Array.isArray(data?.exceptions)
-      ? data.exceptions
-      : [];
+    const worksheet = XLSX.utils.json_to_sheet(rows);
 
-    const todayException = scheduleExceptions.find(
-      (e) => String(e.date || "").slice(0, 10) === today,
-    );
+    worksheet["!cols"] = Object.keys(rows[0] || {}).map((key) => {
+      worksheet["!rows"] = rows.map((row) => {
+        const exceptions = String(row["Особливі дати"] || "");
 
-    const isWorkingToday = !todayException || todayException.enabled;
+        const lines = exceptions.split("\n").length;
 
-    if (exportFields.name) row["Імʼя"] = master.name || "-";
-    if (exportFields.role) row["Спеціалізація"] = master.role || "-";
-    if (exportFields.status) row["Статус сьогодні"] = isWorkingToday ? "Працює" : "Вихідний";
-
-if (exportFields.exceptionsCount) {
-  const exceptions = scheduleExceptions
-    .filter((e) => e.date)
-    .sort((a, b) => String(a.date).localeCompare(String(b.date)))
-    .map((e) => {
-      const date = formatExceptionDate(String(e.date).slice(0, 10));
-
-      if (!e.enabled) {
-        return `${date} — Вихідний`;
+        return {
+          hpt: Math.max(28, lines * 22),
+        };
+      });
+      if (key === "Опис") {
+        return { wch: 40 };
       }
 
-      return `${date} — ${e.start || "--:--"} - ${e.end || "--:--"}`;
+      if (key === "Особливі дати") {
+        return { wch: 32 };
+      }
+
+      const maxLength = Math.max(
+        key.length,
+        ...rows.map((row) => String(row[key] ?? "").length),
+      );
+
+      return { wch: Math.max(maxLength + 8, 18) };
     });
 
-  row["Особливі дати"] = exceptions.length ? exceptions.join("\n") : "-";
-}
+    const range = XLSX.utils.decode_range(worksheet["!ref"]);
 
-    return row;
-  }),
-);
+    for (let row = range.s.r; row <= range.e.r; row++) {
+      for (let col = range.s.c; col <= range.e.c; col++) {
+        const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
 
-  if (!rows.length) {
-    alert("Немає майстрів для експорту");
-    return;
+        if (!worksheet[cellAddress]) continue;
+
+        worksheet[cellAddress].s = {
+          font: { bold: row === 0 },
+          alignment: {
+            horizontal: "center",
+            vertical: "center",
+            wrapText: true,
+          },
+        };
+      }
+    }
+    worksheet["!rows"] = [
+      { hpt: 28 }, // заголовок
+      ...rows.map((row) => {
+        const exceptions = String(row["Особливі дати"] || "");
+
+        const lines = exceptions.split("\n").length;
+
+        return {
+          hpt: Math.max(24, lines * 22),
+        };
+      }),
+    ];
+    const workbook = XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Майстри");
+    XLSX.writeFile(
+      workbook,
+      `masters-${new Date().toISOString().slice(0, 10)}.xlsx`,
+    );
   }
 
-  const worksheet = XLSX.utils.json_to_sheet(rows);
+  return (
+    <div className="min-h-screen bg-[#fbfaf8]">
+      <div className="mx-auto max-w-6xl space-y-6">
+        <div className="relative mb-6 overflow-hidden rounded-[32px] border border-[#ebe7df] bg-white/95 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.06)] backdrop-blur-xl sm:p-7">
+          <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#ff7a18] via-[#ff6200] to-[#ff8c42]" />
 
-worksheet["!cols"] = Object.keys(rows[0] || {}).map((key) => {
-  worksheet["!rows"] = rows.map((row) => {
-  const exceptions = String(row["Особливі дати"] || "");
+          <div className="relative flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <h1 className="text-5xl font-black leading-[0.95] tracking-tight text-[#202020] sm:text-6xl">
+                Май<span className="text-[#ff5a00]">стри</span>
+              </h1>
 
-  const lines = exceptions.split("\n").length;
+              <p className="mt-3 max-w-[640px] text-[14px] leading-6 text-[#7b766f] sm:text-[16px]">
+                Керуйте командою студії, профілями майстрів та їхніми особливими
+                датами.
+              </p>
+            </div>
 
-  return {
-    hpt: Math.max(28, lines * 22),
-  };
-});
-  if (key === "Опис") {
-    return { wch: 40 };
-  }
+            <div className="flex shrink-0 items-center">
+              <button
+                type="button"
+                onClick={() => setInfoOpen(true)}
+                className="grid !px-0 h-10 w-10 place-items-center rounded-full text-[#ff6200] transition-all  hover:!bg-[#fff7f0] active:scale-95 "
+                title="Інформація"
+              >
+                <CircleAlert className="h-5 w-5" />
+              </button>
 
-if (key === "Особливі дати") {
-  return { wch: 32 };
-}
+              <div className="hidden sm:block">
+                <Button
+                  variant="ghost"
+                  className="h-12 !px-1.5 transition-all active:scale-95 mr-2"
+                  onClick={() => setExportOpen(true)}
+                >
+                  <ArrowDownToLine className="h-4 w-4 text-emerald-600" />
+                  Експорт
+                </Button>
+              </div>
 
-  const maxLength = Math.max(
-    key.length,
-    ...rows.map((row) => String(row[key] ?? "").length),
-  );
-
-  return { wch: Math.max(maxLength + 8, 18) };
-});
-
-const range = XLSX.utils.decode_range(worksheet["!ref"]);
-
-for (let row = range.s.r; row <= range.e.r; row++) {
-  for (let col = range.s.c; col <= range.e.c; col++) {
-    const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
-
-    if (!worksheet[cellAddress]) continue;
-
-    worksheet[cellAddress].s = {
-      font: { bold: row === 0 },
-      alignment: {
-        horizontal: "center",
-        vertical: "center",
-        wrapText: true,
-      },
-    };
-  }
-}
-worksheet["!rows"] = [
-  { hpt: 28 }, // заголовок
-  ...rows.map((row) => {
-    const exceptions = String(row["Особливі дати"] || "");
-
-    const lines = exceptions.split("\n").length;
-
-    return {
-      hpt: Math.max(24, lines * 22),
-    };
-  }),
-];
-  const workbook = XLSX.utils.book_new();
-
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Майстри");
-  XLSX.writeFile(
-    workbook,
-    `masters-${new Date().toISOString().slice(0, 10)}.xlsx`,
-  );
-  
-}
-
- return (
-  <div className="min-h-screen bg-[#fbfaf8]">
-   <div className="mx-auto max-w-6xl space-y-6">
-  <div className="relative mb-6 overflow-hidden rounded-[32px] border border-[#ebe7df] bg-white/95 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.06)] backdrop-blur-xl sm:p-7">
-    <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#ff7a18] via-[#ff6200] to-[#ff8c42]" />
-
-    <div className="relative flex items-start justify-between gap-4">
-      <div className="min-w-0">
-        <h1 className="text-5xl font-black leading-[0.95] tracking-tight text-[#202020] sm:text-6xl">
-          Май<span className="text-[#ff5a00]">стри</span>
-        </h1>
-
-        <p className="mt-3 max-w-[640px] text-[14px] leading-6 text-[#7b766f] sm:text-[16px]">
-          Керуйте командою студії, профілями майстрів та їхніми особливими
-          датами.
-        </p>
-      </div>
-
-<div className="flex shrink-0 items-center">
-  <button
-    type="button"
-    onClick={() => setInfoOpen(true)}
-    className="grid !px-0 h-10 w-10 place-items-center rounded-full text-[#ff6200] transition-all  hover:!bg-[#fff7f0] active:scale-95 "
-    title="Інформація"
-  >
-    <CircleAlert className="h-5 w-5" />
-  </button>
-
-<div className="hidden sm:block">
-  <Button
-    variant="ghost"
-    className="h-12 !px-1.5 transition-all active:scale-95 mr-2"
-    onClick={() => setExportOpen(true)}
-  >
-    <ArrowDownToLine className="h-4 w-4 text-emerald-600" />
-    Експорт
-  </Button>
-</div>
-
-  <Button
-    variant="primary"
-    onClick={() => setAddOpen(true)}
-    className="h-10 shrink-0 px-3 sm:h-12 sm:px-5"
-  >
-    <Plus className="h-4 w-4" />
-    <span className="hidden sm:inline">Додати майстра</span>
-  </Button>
-</div>
-    </div>
-  </div>
-
-<SectionCard
-  title={
-    <div className="flex items-center gap-3">
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-primary-buttom)] text-white">
-        <Users className="h-5 w-5" />
-      </div>
-
-      <div>
-        <div className="flex items-center gap-2">
-          <h2 className="text-lg font-black tracking-[-0.03em] text-[#202020]">
-            Майстри
-          </h2>
-
-          <span className="inline-flex items-center rounded-full bg-[#fff7f0] px-2.5 py-1 text-xs font-black text-[#ff6200]">
-            {filteredMasters.length}
-          </span>
+              <Button
+                variant="primary"
+                onClick={() => setAddOpen(true)}
+                className="h-10 shrink-0 px-3 sm:h-12 sm:px-5"
+              >
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Додати майстра</span>
+              </Button>
+            </div>
+          </div>
         </div>
 
-        <p className="mt-1 text-sm font-medium text-[var(--color-caramel)]">
-          Керуйте майстрами, редагуйте профілі та додавайте особливі дати.
-        </p>
-      </div>
-    </div>
-  }
->
+        <SectionCard
+          title={
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-primary-buttom)] text-white">
+                <Users className="h-5 w-5" />
+              </div>
 
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg font-black tracking-[-0.03em] text-[#202020]">
+                    Майстри
+                  </h2>
 
+                  <span className="inline-flex items-center rounded-full bg-[#fff7f0] px-2.5 py-1 text-xs font-black text-[#ff6200]">
+                    {filteredMasters.length}
+                  </span>
+                </div>
 
-<div className="flex flex-col mb-3 gap-2 sm:flex-row sm:items-center sm:justify-between">
-<div className="relative w-full sm:max-w-[360px]">
-  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8a847d]" />
+                <p className="mt-1 text-sm font-medium text-[var(--color-caramel)]">
+                  Керуйте майстрами, редагуйте профілі та додавайте особливі
+                  дати.
+                </p>
+              </div>
+            </div>
+          }
+        >
+          <div className="flex flex-col mb-3 gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="relative w-full sm:max-w-[360px]">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8a847d]" />
 
-  <input
-    value={query}
-    onChange={(e) => setQuery(e.target.value)}
-    placeholder="Пошук майстрів..."
-    className="
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Пошук майстрів..."
+                className="
       h-10 w-full
       rounded-xl
       border border-[#ebe7df]
@@ -2687,185 +3183,176 @@ worksheet["!rows"] = [
       focus:ring-4
       focus:ring-[#ff6200]/10
     "
-  />
-</div>
-
-</div>
+              />
+            </div>
+          </div>
 
           {loading ? (
             <MastersListSkeleton />
           ) : total === 0 ? (
-<div className="rounded-[32px] border-2 border-dashed border-[#ffd6bd] bg-[#fff7f0] px-6 py-12 text-center">
-  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-[#ff6200] shadow-sm">
-    <Users className="h-7 w-7" />
-  </div>
+            <div className="rounded-[32px] border-2 border-dashed border-[#ffd6bd] bg-[#fff7f0] px-6 py-12 text-center">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-[#ff6200] shadow-sm">
+                <Users className="h-7 w-7" />
+              </div>
 
-  <h2 className="mt-4 text-xl font-black text-[#202020]">
-    Поки що немає майстрів
-  </h2>
+              <h2 className="mt-4 text-xl font-black text-[#202020]">
+                Поки що немає майстрів
+              </h2>
 
-  <p className="mt-2 text-sm text-[#77716b]">
-    Додайте першого майстра, щоб почати приймати записи клієнтів.
-  </p>
-</div>
+              <p className="mt-2 text-sm text-[#77716b]">
+                Додайте першого майстра, щоб почати приймати записи клієнтів.
+              </p>
+            </div>
           ) : filteredMasters.length === 0 ? (
-<div className="rounded-[32px] border-2 border-dashed border-[#ffd6bd] bg-[#fff7f0] px-6 py-12 text-center">
-  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-[#ff6200] shadow-sm">
-    <Search className="h-7 w-7" />
-  </div>
+            <div className="rounded-[32px] border-2 border-dashed border-[#ffd6bd] bg-[#fff7f0] px-6 py-12 text-center">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-[#ff6200] shadow-sm">
+                <Search className="h-7 w-7" />
+              </div>
 
-  <h2 className="mt-4 text-xl font-black text-[#202020]">
-    Нічого не знайдено
-  </h2>
+              <h2 className="mt-4 text-xl font-black text-[#202020]">
+                Нічого не знайдено
+              </h2>
 
-  <p className="mt-2 text-sm text-[#77716b]">
-    За запитом{" "}
-    <span className="font-black text-[#202020]">
-      "{query}"
-    </span>{" "}
-    не знайдено жодного майстра.
-  </p>
-</div>
+              <p className="mt-2 text-sm text-[#77716b]">
+                За запитом{" "}
+                <span className="font-black text-[#202020]">"{query}"</span> не
+                знайдено жодного майстра.
+              </p>
+            </div>
           ) : (
             <>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-{filteredMasters.map((m) => {
-  const now = new Date();
-const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+                {filteredMasters.map((m) => {
+                  const now = new Date();
+                  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
-const todayException = m.scheduleExceptions?.find(
-  (e) => String(e.date || "").slice(0, 10) === today,
-);
-const activeExceptionsCount =
-  (m.scheduleExceptions || []).filter((e) => {
-    const date = String(e.date || "").slice(0, 10);
-    return date >= today;
-  }).length;
-  const isWorkingToday =
-    !todayException || todayException.enabled;
+                  const activeExceptionsCount =
+                    getActiveMasterIndividualExceptionsCount(m);
 
-  return (
-<article
-  key={m.id}
-  className="group/masterCard overflow-hidden rounded-[18px] border border-[#eadbc9] bg-white shadow-[0_10px_30px_rgba(17,17,17,0.04)] transition-all duration-200 hover:-translate-y-0.5 hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] "
->
-                    <div className="px-3">
-<button
-  type="button"
-  onClick={() => {
-    setBookingsMaster(m);
-    setBookingsFilter("today");
-    setVisibleMasterBookingsCount(10);
-    setBookingsModalOpen(true);
-  }}
-  className="mt-3 block w-full text-left"
->
-  <div className="flex gap-3">
-    <div className="relative shrink-0">
-<Avatar
-  name={m.name}
-  photoUrl={m.photoUrl}
-  size="lg"
-  className="h-20 w-20 rounded-[20px] border-[#eef1f5] transition-all duration-200 group-hover/masterCard:border-[#ffd6bd] group-hover/masterCard:shadow-[0_12px_30px_rgba(255,98,0,0.14)]"
-/>
+                  const isWorkingToday = getMasterTodayWorkingStatus(m, today);
 
-      <div
-        className={cn(
-          "absolute -bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-2 py-0.5 text-[9px] font-black shadow-sm",
-          isWorkingToday
-            ? "bg-emerald-500 text-white"
-            : "bg-red-500 text-white",
-        )}
-      >
-        {isWorkingToday ? "Працює" : "Вихідний"}
-      </div>
-    </div>
+                  return (
+                    <article
+                      key={m.id}
+                      className="group/masterCard overflow-hidden rounded-[18px] border border-[#eadbc9] bg-white shadow-[0_10px_30px_rgba(17,17,17,0.04)] transition-all duration-200 hover:-translate-y-0.5 hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] "
+                    >
+                      <div className="px-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setBookingsMaster(m);
+                            setBookingsFilter("all");
+                            setVisibleMasterBookingsCount(10);
+                            setBookingsModalOpen(true);
+                          }}
+                          className="mt-3 block w-full text-left"
+                        >
+                          <div className="flex gap-3">
+                            <div className="relative shrink-0">
+                              <Avatar
+                                name={m.name}
+                                photoUrl={m.photoUrl}
+                                size="lg"
+                                className="h-20 w-20 rounded-[20px] border-[#eef1f5] transition-all duration-200 group-hover/masterCard:border-[#ffd6bd] group-hover/masterCard:shadow-[0_12px_30px_rgba(255,98,0,0.14)]"
+                              />
 
-<div className="flex min-h-[48px] min-w-0 flex-1 flex-col justify-center">
-  <h3 className="line-clamp-2 text-[15px] font-black text-[#202020]">
-    {m.name || "Майстер"}
-  </h3>
+                              <div
+                                className={cn(
+                                  "absolute -bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-2 py-0.5 text-[9px] font-black shadow-sm",
+                                  isWorkingToday
+                                    ? "bg-emerald-500 text-white"
+                                    : "bg-red-500 text-white",
+                                )}
+                              >
+                                {isWorkingToday ? "Працює" : "Вихідний"}
+                              </div>
+                            </div>
 
-  <p className="mt-1 line-clamp-2 text-[12px] font-bold text-[#77716b]">
-    {m.role || "Спеціалізація не вказана"}
-  </p>
-</div>
-  </div>
+                            <div className="flex min-h-[48px] min-w-0 flex-1 flex-col justify-center">
+                              <h3 className="line-clamp-2 text-[15px] font-black text-[#202020]">
+                                {m.name || "Майстер"}
+                              </h3>
 
-{m.bio ? (
-  <p className="mt-2.5 mb-2.5 min-h-[36px] line-clamp-2 text-[11px] font-medium leading-4 text-[#77716b]">
-    {m.bio}
-  </p>
-) : (
-  <div className="mt-2.5 mb-2.5 flex min-h-[36px] items-center justify-center px-2 text-center">
-    <p className="text-[11px] font-semibold italic text-[#b8afa5] leading-4">
-      Додайте опис майстра
-    </p>
-  </div>
-)}
-</button>
-                    </div>
+                              <p className="mt-1 line-clamp-2 text-[12px] font-bold text-[#77716b]">
+                                {m.role || "Спеціалізація не вказана"}
+                              </p>
+                            </div>
+                          </div>
 
-                   <div className="grid grid-cols-4 border-t border-[#edf0f4] bg-[#fbfcfd]">
-<button
-  type="button"
-  onClick={() => openMasterExceptions(m)}
-  className="relative grid h-11 place-items-center text-[#657084] transition hover:!bg-[#fff7f0] hover:text-[#ff6200]"
-  title="Особливі дати"
-  aria-label="Особливі дати"
->
-  <CalendarDays className="h-4 w-4" />
+                          {m.bio ? (
+                            <p className="mt-2.5 mb-2.5 min-h-[36px] line-clamp-2 text-[11px] font-medium leading-4 text-[#77716b]">
+                              {m.bio}
+                            </p>
+                          ) : (
+                            <div className="mt-2.5 mb-2.5 flex min-h-[36px] items-center justify-center px-2 text-center">
+                              <p className="text-[11px] font-semibold italic text-[#b8afa5] leading-4">
+                                Додайте опис майстра
+                              </p>
+                            </div>
+                          )}
+                        </button>
+                      </div>
 
-{activeExceptionsCount > 0 && (
-  <span className="absolute left-[52%] top-[18%] flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#ff5a00] px-1 text-[9px] font-black text-white">
-    {activeExceptionsCount}
-  </span>
-)}
-</button>
-<button
-  type="button"
-onClick={() => {
-  setBookingsMaster(m);
-  setBookingsFilter("today");
-  setVisibleMasterBookingsCount(10);
-  setBookingsModalOpen(true);
-}}
-  className="grid h-11 place-items-center border-l border-[#edf0f4] text-[#657084] transition hover:!bg-[#fff7f0] hover:text-[#ff6200]"
-  title="Записи майстра"
-  aria-label="Записи майстра"
->
-  <CalendarCheck className="h-4 w-4" />
-</button>
+                      <div className="grid grid-cols-4 border-t border-[#edf0f4] bg-[#fbfcfd]">
+                        <button
+                          type="button"
+                          onClick={() => openMasterExceptions(m)}
+                          className="relative grid h-11 place-items-center text-[#657084] transition hover:!bg-[#fff7f0] hover:text-[#ff6200]"
+                          title="Особливі дати"
+                          aria-label="Особливі дати"
+                        >
+                          <CalendarDays className="h-4 w-4" />
 
-                      <button
-                        type="button"
-                        onClick={() => openEdit(m)}
-                        className="grid h-11 place-items-center border-x border-[#edf0f4] text-[#657084] transition hover:!bg-[#fff7f0] hover:text-[#ff6200]"
-                        title="Редагувати"
-                        aria-label="Редагувати"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
+                          {activeExceptionsCount > 0 && (
+                            <span className="absolute left-[52%] top-[18%] flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#ff5a00] px-1 text-[9px] font-black text-white">
+                              {activeExceptionsCount}
+                            </span>
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setBookingsMaster(m);
+                            setBookingsFilter("all");
+                            setVisibleMasterBookingsCount(10);
+                            setBookingsModalOpen(true);
+                          }}
+                          className="grid h-11 place-items-center border-l border-[#edf0f4] text-[#657084] transition hover:!bg-[#fff7f0] hover:text-[#ff6200]"
+                          title="Записи майстра"
+                          aria-label="Записи майстра"
+                        >
+                          <CalendarCheck className="h-4 w-4" />
+                        </button>
 
-                      <button
-                        type="button"
-                       onClick={() =>
-  setDeleteConfirm({
-    open: true,
-    master: m,
-    loading: false,
-  })
-}
-                        className="grid h-11 place-items-center text-[#e5484d] transition hover:bg-[#fff7f7]"
-                        title="Видалити"
-                        aria-label="Видалити"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-    </article>
-  );
-})}
+                        <button
+                          type="button"
+                          onClick={() => openEdit(m)}
+                          className="grid h-11 place-items-center border-x border-[#edf0f4] text-[#657084] transition hover:!bg-[#fff7f0] hover:text-[#ff6200]"
+                          title="Редагувати"
+                          aria-label="Редагувати"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setDeleteConfirm({
+                              open: true,
+                              master: m,
+                              loading: false,
+                            })
+                          }
+                          className="grid h-11 place-items-center text-[#e5484d] transition hover:bg-[#fff7f7]"
+                          title="Видалити"
+                          aria-label="Видалити"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </article>
+                  );
+                })}
               </div>
 
               <p className="text-sm mt-6 mb-2 font-medium text-[#6b7280]">
@@ -2873,7 +3360,7 @@ onClick={() => {
               </p>
             </>
           )}
-      </SectionCard>
+        </SectionCard>
 
         <Modal
           open={addOpen}
@@ -3126,7 +3613,9 @@ onClick={() => {
             (() => {
               const weekdayLabels = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"];
               const monthDays = buildMasterScheduleMonth(scheduleMonthDate);
-              const currentMonthDays = monthDays.filter((day) => day.isCurrentMonth);
+              const currentMonthDays = monthDays.filter(
+                (day) => day.isCurrentMonth,
+              );
               const workingDays = currentMonthDays.filter(
                 (day) => day.item.enabled,
               ).length;
@@ -3137,7 +3626,9 @@ onClick={() => {
               );
               const selectedCount = selectedScheduleDates.length;
               const selectedDays = selectedScheduleDates
-                .map((dateKey) => monthDays.find((day) => day.dateKey === dateKey))
+                .map((dateKey) =>
+                  monthDays.find((day) => day.dateKey === dateKey),
+                )
                 .filter(Boolean);
               const selectedLabel =
                 selectedCount === 1 && selectedDays[0]
@@ -3146,145 +3637,145 @@ onClick={() => {
               const bulkHasBreak = Boolean(
                 bulkScheduleDraft.breakStart && bulkScheduleDraft.breakEnd,
               );
-const getVisibleScheduleItemForDay = (day) => {
-  const shouldUseDraft =
-    scheduleEditorOpen &&
-    selectedScheduleDates.includes(day.dateKey) &&
-    day.isCurrentMonth;
+              const getVisibleScheduleItemForDay = (day) => {
+                const shouldUseDraft =
+                  scheduleEditorOpen &&
+                  selectedScheduleDates.includes(day.dateKey) &&
+                  day.isCurrentMonth;
 
-  if (!shouldUseDraft) {
-    return day.item;
-  }
+                if (!shouldUseDraft) {
+                  return day.item;
+                }
 
-  return {
-    ...day.item,
-    enabled: bulkScheduleDraft.enabled,
-    start: bulkScheduleDraft.enabled
-      ? bulkScheduleDraft.start
-      : day.item.start,
-    end: bulkScheduleDraft.enabled
-      ? bulkScheduleDraft.end
-      : day.item.end,
-    breakStart: bulkScheduleDraft.enabled
-      ? bulkScheduleDraft.breakStart || ""
-      : "",
-    breakEnd: bulkScheduleDraft.enabled
-      ? bulkScheduleDraft.breakEnd || ""
-      : "",
-  };
-};
+                return {
+                  ...day.item,
+                  enabled: bulkScheduleDraft.enabled,
+                  start: bulkScheduleDraft.enabled
+                    ? bulkScheduleDraft.start
+                    : day.item.start,
+                  end: bulkScheduleDraft.enabled
+                    ? bulkScheduleDraft.end
+                    : day.item.end,
+                  breakStart: bulkScheduleDraft.enabled
+                    ? bulkScheduleDraft.breakStart || ""
+                    : "",
+                  breakEnd: bulkScheduleDraft.enabled
+                    ? bulkScheduleDraft.breakEnd || ""
+                    : "",
+                };
+              };
               return (
                 <div className="relative text-[#202020] ">
-<div className="mt-0 grid w-full gap-4 lg:grid-cols-[minmax(0,455px)_minmax(320px,450px)] lg:items-start lg:justify-center lg:gap-x-2">
-  {/* Ліва колонка: статистика + дата */}
-  <div className="min-w-0">
-    <div className="grid grid-cols-3 gap-2">
-      <div className="flex h-12 items-center justify-center rounded-2xl bg-white px-3 text-center text-sm font-black text-[#77716b]">
-        {workingDays} робочих
-      </div>
+                  <div className="mt-0 grid w-full gap-4 lg:grid-cols-[minmax(0,455px)_minmax(320px,450px)] lg:items-start lg:justify-center lg:gap-x-2">
+                    {/* Ліва колонка: статистика + дата */}
+                    <div className="min-w-0">
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="flex h-12 items-center justify-center rounded-2xl bg-white px-3 text-center text-sm font-black text-[#77716b]">
+                          {workingDays} робочих
+                        </div>
 
-      <div className="flex h-12 items-center justify-center rounded-2xl bg-[#fff1e8] px-3 text-center text-sm font-black text-[#ff5a00]">
-        {daysOff} вихідних
-      </div>
+                        <div className="flex h-12 items-center justify-center rounded-2xl bg-[#fff1e8] px-3 text-center text-sm font-black text-[#ff5a00]">
+                          {daysOff} вихідних
+                        </div>
 
-      <div className="flex h-12 items-center justify-center rounded-2xl bg-white px-3 text-center text-sm font-black text-[#77716b]">
-        {totalBookings} записів
-      </div>
-    </div>
+                        <div className="flex h-12 items-center justify-center rounded-2xl bg-white px-3 text-center text-sm font-black text-[#77716b]">
+                          {totalBookings} записів
+                        </div>
+                      </div>
 
-    <div className="mt-4 grid grid-cols-[64px_minmax(0,1fr)_64px] items-center gap-2">
-      <button
-        type="button"
-        onClick={() => shiftScheduleMonth(-1)}
-        className="grid h-[60px] place-items-center rounded-2xl border border-[#eadbc9] bg-white text-[#202020] transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] hover:text-[#ff6200]"
-        aria-label="Попередній місяць"
-      >
-        <ChevronRight className="h-5 w-5 rotate-180" />
-      </button>
+                      <div className="mt-4 grid grid-cols-[64px_minmax(0,1fr)_64px] items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => shiftScheduleMonth(-1)}
+                          className="grid h-[60px] place-items-center rounded-2xl border border-[#eadbc9] bg-white text-[#202020] transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] hover:text-[#ff6200]"
+                          aria-label="Попередній місяць"
+                        >
+                          <ChevronRight className="h-5 w-5 rotate-180" />
+                        </button>
 
-      <button
-        type="button"
-        onClick={resetScheduleMonthToToday}
-        className="flex h-[60px] min-w-0 items-center justify-center gap-3 rounded-2xl border border-[#eadbc9] bg-white px-4 text-center transition "
-      >
-        <CalendarDays className="h-5 w-5 shrink-0 text-[#ff6200]" />
+                        <button
+                          type="button"
+                          onClick={resetScheduleMonthToToday}
+                          className="flex h-[60px] min-w-0 items-center justify-center gap-3 rounded-2xl border border-[#eadbc9] bg-white px-4 text-center transition "
+                        >
+                          <CalendarDays className="h-5 w-5 shrink-0 text-[#ff6200]" />
 
-        <span className="truncate text-[18px] font-black capitalize tracking-[-0.03em] text-[#202020]">
-          {getMonthTitle(scheduleMonthDate)}
-        </span>
-      </button>
+                          <span className="truncate text-[18px] font-black capitalize tracking-[-0.03em] text-[#202020]">
+                            {getMonthTitle(scheduleMonthDate)}
+                          </span>
+                        </button>
 
-      <button
-        type="button"
-        onClick={() => shiftScheduleMonth(1)}
-        className="grid h-[60px] place-items-center rounded-2xl border border-[#eadbc9] bg-white text-[#202020] transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] hover:text-[#ff6200]"
-        aria-label="Наступний місяць"
-      >
-        <ChevronRight className="h-5 w-5" />
-      </button>
-    </div>
-  </div>
+                        <button
+                          type="button"
+                          onClick={() => shiftScheduleMonth(1)}
+                          className="grid h-[60px] place-items-center rounded-2xl border border-[#eadbc9] bg-white text-[#202020] transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] hover:text-[#ff6200]"
+                          aria-label="Наступний місяць"
+                        >
+                          <ChevronRight className="h-5 w-5" />
+                        </button>
+                      </div>
+                    </div>
 
-{/* Права колонка: кнопки */}
-<div
-  className={cn(
-    "grid gap-3 lg:pt-0",
-    scheduleMultiSelect
-      ? "grid-cols-2 md:grid-cols-[1.35fr_0.85fr_0.85fr] lg:grid-cols-2"
-      : "grid-cols-1 md:grid-cols-2 lg:grid-cols-1",
-  )}
->
-  <button
-    type="button"
-    onClick={() => applyStudioScheduleToMonth(monthDays)}
-    disabled={bulkSaving}
-    className={cn(
-      "inline-flex min-h-[60px] w-full items-center justify-center gap-3 rounded-2xl border border-[#eadbc9] bg-white px-5 text-center text-[16px] font-black leading-tight text-[#202020] transition hover:border-[#ffd6bd] hover:bg-[#fff7f0] hover:text-[#ff6200] disabled:opacity-60",
-      scheduleMultiSelect && "col-span-2 md:col-span-1 lg:col-span-2",
-    )}
-  >
-    
-    <Building2 className="h-5 w-5 shrink-0" />
+                    {/* Права колонка: кнопки */}
+                    <div
+                      className={cn(
+                        "grid gap-3 lg:pt-0",
+                        scheduleMultiSelect
+                          ? "grid-cols-2 md:grid-cols-[1.35fr_0.85fr_0.85fr] lg:grid-cols-2"
+                          : "grid-cols-1 md:grid-cols-2 lg:grid-cols-1",
+                      )}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => applyStudioScheduleToMonth(monthDays)}
+                        disabled={bulkSaving}
+                        className={cn(
+                          "inline-flex min-h-[60px] w-full items-center justify-center gap-3 rounded-2xl border border-[#eadbc9] bg-white px-5 text-center text-[16px] font-black leading-tight text-[#202020] transition hover:border-[#ffd6bd] hover:bg-[#fff7f0] hover:text-[#ff6200] disabled:opacity-60",
+                          scheduleMultiSelect &&
+                            "col-span-2 md:col-span-1 lg:col-span-2",
+                        )}
+                      >
+                        <Building2 className="h-5 w-5 shrink-0" />
 
-    <span>
-      Автоматично заповнити
-      <br />
-      за графіком студії
-    </span>
-  </button>
+                        <span>
+                          Автоматично заповнити
+                          <br />
+                          за графіком студії
+                        </span>
+                      </button>
 
-  <button
-    type="button"
-    onClick={() => {
-      if (!scheduleMultiSelect) {
-        setScheduleMultiSelect(true);
-        setSelectedScheduleDates([]);
-        setScheduleEditorOpen(false);
-      }
-    }}
-    className={cn(
-      "inline-flex h-[56px] w-full items-center justify-center gap-2 rounded-2xl border px-3 text-[14px] font-black transition sm:h-[60px] sm:px-4 sm:text-[15px]",
-      scheduleMultiSelect
-        ? "border-[#ff6200] bg-[#fff1e8] text-[#ff6200]"
-        : "border-[#eadbc9] bg-white text-[#202020] hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] hover:text-[#ff6200]",
-    )}
-  >
-    <ClipboardPen className="h-4 w-4 shrink-0" />
-    <span className="truncate">Множинний вибір</span>
-  </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!scheduleMultiSelect) {
+                            setScheduleMultiSelect(true);
+                            setSelectedScheduleDates([]);
+                            setScheduleEditorOpen(false);
+                          }
+                        }}
+                        className={cn(
+                          "inline-flex h-[56px] w-full items-center justify-center gap-2 rounded-2xl border px-3 text-[14px] font-black transition sm:h-[60px] sm:px-4 sm:text-[15px]",
+                          scheduleMultiSelect
+                            ? "border-[#ff6200] bg-[#fff1e8] text-[#ff6200]"
+                            : "border-[#eadbc9] bg-white text-[#202020] hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] hover:text-[#ff6200]",
+                        )}
+                      >
+                        <ClipboardPen className="h-4 w-4 shrink-0" />
+                        <span className="truncate">Множинний вибір</span>
+                      </button>
 
-  {scheduleMultiSelect && (
-    <button
-      type="button"
-      onClick={closeScheduleSelection}
-      className="inline-flex h-[56px] w-full items-center justify-center gap-2 rounded-2xl border border-[#eadbc9] bg-white px-3 text-[14px] font-black text-[#202020] transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] hover:text-[#ff6200] sm:h-[60px] sm:px-4 sm:text-[15px]"
-    >
-      <X className="h-4 w-4 shrink-0" />
-      <span className="truncate">Скасувати</span>
-    </button>
-  )}
-</div>
-</div>
+                      {scheduleMultiSelect && (
+                        <button
+                          type="button"
+                          onClick={closeScheduleSelection}
+                          className="inline-flex h-[56px] w-full items-center justify-center gap-2 rounded-2xl border border-[#eadbc9] bg-white px-3 text-[14px] font-black text-[#202020] transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] hover:text-[#ff6200] sm:h-[60px] sm:px-4 sm:text-[15px]"
+                        >
+                          <X className="h-4 w-4 shrink-0" />
+                          <span className="truncate">Скасувати</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
 
                   <div className="mt-5 hidden grid-cols-7 gap-3 lg:grid">
                     {weekdayLabels.map((label, index) => {
@@ -3314,9 +3805,9 @@ const getVisibleScheduleItemForDay = (day) => {
                             <span
                               className={cn(
                                 "grid h-7 w-7 place-items-center rounded-lg border transition",
-                                allSelected
-                                  ? "border-[#41a85f] bg-[#41a85f] text-white"
-                                  : "border-[#eadbc9] bg-white text-transparent",
+allSelected
+  ? "border-[#ff6200] bg-[#fff1e8] text-[#ff6200]"
+  : "border-[#eadbc9] bg-white text-transparent",
                               )}
                             >
                               <Check className="h-4 w-4" />
@@ -3331,17 +3822,23 @@ const getVisibleScheduleItemForDay = (day) => {
                   <div
                     className={cn(
                       "mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:hidden",
-                      scheduleMultiSelect && selectedCount > 0 && !scheduleEditorOpen
+                      scheduleMultiSelect &&
+                        selectedCount > 0 &&
+                        !scheduleEditorOpen
                         ? "pb-28"
                         : "pb-4 sm:pb-5",
                     )}
                   >
-              {currentMonthDays.map((day) => {
-  const item = getVisibleScheduleItemForDay(day);
-                      const isSelected = selectedScheduleDates.includes(day.dateKey);
+                    {currentMonthDays.map((day) => {
+                      const item = getVisibleScheduleItemForDay(day);
+                      const isSelected = selectedScheduleDates.includes(
+                        day.dateKey,
+                      );
                       const lines = getScheduleTimeLines(item);
                       const isDayOff = !item.enabled;
-
+                      const isSpecialDay =
+                        day.isCurrentMonth &&
+                        day.item.isStudioDefault === false;
                       return (
                         <button
                           key={day.dateKey}
@@ -3352,10 +3849,10 @@ const getVisibleScheduleItemForDay = (day) => {
                             isDayOff
                               ? "border-[#ffd6bd] bg-[#fff1e8] text-[#ff5a00]"
                               : "border-[#eadbc9] bg-white text-[#202020]",
-                            isSelected &&
-                              (scheduleMultiSelect
-                                ? "border-[#41a85f] shadow-[0_0_0_2px_rgba(65,168,95,0.18)]"
-                                : "border-[#ff6200] shadow-[0_0_0_2px_rgba(255,98,0,0.16)]"),
+isSelected &&
+  (scheduleMultiSelect
+    ? "border-[#ff6200] bg-[#fff1e8] text-[#ff6200] shadow-[0_0_0_2px_rgba(255,98,0,0.16)]"
+    : "border-[#ff6200] shadow-[0_0_0_2px_rgba(255,98,0,0.16)]"),
                           )}
                         >
                           <div className="flex min-w-0 items-center gap-3">
@@ -3363,9 +3860,9 @@ const getVisibleScheduleItemForDay = (day) => {
                               <span
                                 className={cn(
                                   "grid h-9 w-9 shrink-0 place-items-center rounded-xl border transition",
-                                  isSelected
-                                    ? "border-[#41a85f] bg-[#41a85f] text-white"
-                                    : "border-[#eadbc9] bg-white text-transparent",
+isSelected
+  ? "border-[#ff6200] bg-[#fff1e8] text-[#ff6200]"
+  : "border-[#eadbc9] bg-white text-transparent",
                                 )}
                               >
                                 <Check className="h-5 w-5" />
@@ -3376,7 +3873,9 @@ const getVisibleScheduleItemForDay = (day) => {
                               <p
                                 className={cn(
                                   "flex items-center gap-1.5 text-xs font-black capitalize",
-                                  isDayOff ? "text-[#ff5a00]" : "text-[#77716b]",
+                                  isDayOff
+                                    ? "text-[#ff5a00]"
+                                    : "text-[#77716b]",
                                 )}
                               >
                                 <CalendarDays className="h-3.5 w-3.5" />
@@ -3418,15 +3917,17 @@ const getVisibleScheduleItemForDay = (day) => {
                         </button>
                       );
                     })}
-
                   </div>
 
                   <div className="mt-3 hidden grid-cols-7 gap-1 lg:grid">
-                 {monthDays.map((day) => {
-  const item = getVisibleScheduleItemForDay(day);
-                      const isSelected = selectedScheduleDates.includes(day.dateKey);
+                    {monthDays.map((day) => {
+                      const item = getVisibleScheduleItemForDay(day);
+                      const isSelected = selectedScheduleDates.includes(
+                        day.dateKey,
+                      );
                       const lines = getScheduleTimeLines(item);
                       const isDayOff = !item.enabled;
+                      const isSpecialDay = item.isStudioDefault === false;
 
                       return (
                         <button
@@ -3434,10 +3935,11 @@ const getVisibleScheduleItemForDay = (day) => {
                           type="button"
                           disabled={!day.isCurrentMonth}
                           onClick={() =>
-                            day.isCurrentMonth && toggleScheduleDate(day.dateKey)
+                            day.isCurrentMonth &&
+                            toggleScheduleDate(day.dateKey)
                           }
                           className={cn(
-                            "relative flex min-h-[118px] flex-col items-center justify-start rounded-[12px] border p-3 text-center transition-all duration-200",
+                            "relative flex min-h-[118px] flex-col items-center justify-start overflow-hidden rounded-[12px] border p-3 text-center transition-all duration-200",
                             day.isCurrentMonth
                               ? "hover:-translate-y-0.5 hover:border-[#ffb784]"
                               : "cursor-default border-[#eadbc9] bg-transparent opacity-45",
@@ -3445,10 +3947,12 @@ const getVisibleScheduleItemForDay = (day) => {
                               (isDayOff
                                 ? "border-[#ffd6bd] bg-[#fff1e8] text-[#ff5a00]"
                                 : "border-[#eadbc9] bg-white text-[#202020]"),
-                            isSelected &&
-                              (scheduleMultiSelect
-                                ? "border-[#41a85f] bg-[#f4fbf6] shadow-[0_0_0_2px_rgba(65,168,95,0.18)]"
-                                : "border-[#ff6200] bg-[#fff7f0] shadow-[0_0_0_2px_rgba(255,98,0,0.18)]"),
+                            isSpecialDay &&
+                              "border-[#ff6200] bg-[#fff7f0] shadow-[0_0_0_2px_rgba(255,98,0,0.12)]",
+isSelected &&
+  (scheduleMultiSelect
+    ? "border-[#ff6200] bg-[#fff1e8] text-[#ff6200] shadow-[0_0_0_2px_rgba(255,98,0,0.16)]"
+    : "border-[#ff6200] bg-[#fff7f0] shadow-[0_0_0_2px_rgba(255,98,0,0.18)]"),
                           )}
                         >
                           <span
@@ -3456,14 +3960,24 @@ const getVisibleScheduleItemForDay = (day) => {
                               "grid h-6 min-w-6 place-items-center rounded-full px-1 text-sm font-black",
                               day.isToday && "bg-[#ff6200] text-white",
                               !day.isToday &&
-                                (isDayOff ? "text-[#ff5a00]" : "text-[#202020]"),
+                                (isDayOff
+                                  ? "text-[#ff5a00]"
+                                  : "text-[#202020]"),
                               !day.isCurrentMonth && "text-[#aaa19a]",
                             )}
                           >
                             {day.dayNumber}
                           </span>
 
-                          <span className="mt-2 h-px w-14 bg-[#eadbc9]" />
+                          {isSpecialDay && (
+                            <span className="mt-1 inline-flex items-center justify-center rounded-full bg-[#ff6200] px-1.5 py-0.5 text-[9px] font-black uppercase leading-none tracking-wide text-white shadow-sm">
+                              Індивідуально
+                            </span>
+                          )}
+
+                          {!isSpecialDay && (
+                            <span className="mt-2 h-px w-14 bg-[#eadbc9]" />
+                          )}
 
                           <div className="mt-auto space-y-1 pb-2 text-[12px] font-black leading-tight">
                             {lines.map((line, lineIndex) => {
@@ -3486,7 +4000,7 @@ const getVisibleScheduleItemForDay = (day) => {
                           </div>
 
                           {day.bookingsCount > 0 && (
-                            <span className="absolute right-2 top-2 rounded-full bg-[#ff6200] px-1.5 py-0.5 text-[10px] font-black text-white">
+                            <span className="absolute right-2 top-2 rounded-full bg-[#41a85f] px-1.5 py-0.5 text-[10px] font-black text-white shadow-sm">
                               {day.bookingsCount}
                             </span>
                           )}
@@ -3506,8 +4020,8 @@ const getVisibleScheduleItemForDay = (day) => {
                             </span>
                             <div className="min-w-0">
                               <p className="text-sm font-black text-[#202020]">
-                                {"\u0412\u0438\u0431\u0440\u0430\u043d\u043e"} {selectedCount}{" "}
-                                {"\u0434\u043d\u0456\u0432"}
+                                {"\u0412\u0438\u0431\u0440\u0430\u043d\u043e"}{" "}
+                                {selectedCount} {"\u0434\u043d\u0456\u0432"}
                               </p>
                               <p className="truncate text-xs font-bold text-[#77716b]">
                                 {selectedLabel}
@@ -3521,9 +4035,13 @@ const getVisibleScheduleItemForDay = (day) => {
                             className="h-12 w-full sm:w-auto sm:px-5"
                           >
                             <Clock className="h-4 w-4" />
-                            {"\u0412\u0441\u0442\u0430\u043d\u043e\u0432\u0438\u0442\u0438 \u0433\u0440\u0430\u0444\u0456\u043a"}
+                            {
+                              "\u0412\u0441\u0442\u0430\u043d\u043e\u0432\u0438\u0442\u0438 \u0433\u0440\u0430\u0444\u0456\u043a"
+                            }
                             <span className="hidden min-[390px]:inline">
-                              {"\u043d\u0430 \u0432\u0438\u0431\u0440\u0430\u043d\u0456 \u0434\u0430\u0442\u0438"}
+                              {
+                                "\u043d\u0430 \u0432\u0438\u0431\u0440\u0430\u043d\u0456 \u0434\u0430\u0442\u0438"
+                              }
                             </span>
                           </Button>
                         </div>
@@ -3531,176 +4049,102 @@ const getVisibleScheduleItemForDay = (day) => {
                     )}
 
                   {scheduleEditorOpen && selectedCount > 0 && (
-                    <div
-                      className={cn(
-                        "z-[10080] !bg-[#fbfaf8] text-[#202020]",
-                        "max-[639px]:fixed max-[639px]:inset-0 max-[639px]:flex max-[639px]:flex-col max-[639px]:p-4",
-                        "sm:sticky sm:bottom-0 sm:z-20 sm:mt-5 sm:rounded-[22px] sm:border sm:border-[#eadbc9] sm:bg-white/95 sm:p-3 sm:shadow-[0_16px_45px_rgba(15,23,42,0.12)] sm:backdrop-blur",
-                      )}
-                    >
-                      <div className="mb-5 flex items-start justify-between gap-4 sm:hidden">
-                        <div>
-                          <h3 className="text-xl font-black text-[#202020]">
-                            Змінити графік роботи
-                          </h3>
-                          <p className="mt-8 text-xs font-bold text-[#77716b]">
-                            {selectedCount === 1 ? "На дату" : "Вибрано"}
-                          </p>
-                          <p className="mt-1 text-base font-black capitalize text-[#202020]">
-                            {selectedLabel}
-                          </p>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={closeScheduleSelection}
-                          className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-[#f2eee8] text-[#77716b] transition hover:bg-[#fff1e8] hover:text-[#ff6200]"
-                          aria-label="Закрити"
-                        >
-                          <X className="h-5 w-5" />
-                        </button>
-                      </div>
-
-                      <div className="hidden items-center justify-between gap-3 border-b border-[#eadbc9] pb-3 sm:flex">
-                        <div>
-                          <p className="text-sm font-black text-[#202020]">
-                            {selectedCount === 1 ? "Налаштування дня" : `Вибрано ${selectedCount} днів`}
-                          </p>
-                          <p className="mt-0.5 text-xs font-bold capitalize text-[#77716b]">
-                            {selectedLabel}
-                          </p>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={closeScheduleSelection}
-                          className="grid h-10 w-10 place-items-center rounded-xl border border-[#eadbc9] bg-white text-[#77716b] transition hover:!bg-[#fff7f0] hover:text-[#ff6200]"
-                          aria-label="Скасувати вибір"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-
-                      <div className="flex flex-1 flex-col gap-3 sm:flex-none sm:pt-3 lg:grid lg:grid-cols-[minmax(0,1fr)_260px] lg:items-end">
-                        <div className="flex flex-col gap-3">
-                          <div
-className={cn(
-  "grid gap-2 sm:items-end",
-  bulkScheduleDraft.enabled &&
-    "sm:grid-cols-[1.35fr_0.82fr_0.82fr]",
-)}
+                    <Modal
+                      open={scheduleEditorOpen && selectedCount > 0}
+                      onClose={closeScheduleEditorWindow}
+                      title={
+                        selectedCount === 1
+                          ? "Налаштування дня"
+                          : `Вибрано ${selectedCount} днів`
+                      }
+                      subtitle={selectedLabel}
+                      badge="Графік"
+                      icon={Clock}
+                      size="lg"
+                      zIndexClass="z-[10020]"
+                      footer={
+                        <div className="grid grid-cols-2 gap-3">
+                          <Button
+                            variant="primary"
+                            onClick={() =>
+                              applyBulkSchedule(bulkScheduleDraft.enabled)
+                            }
+                            disabled={bulkSaving}
+                            className="h-[54px] w-full"
                           >
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setBulkScheduleDraft((prev) => ({
-                                  ...prev,
-                                  enabled: !prev.enabled,
-                                }))
-                              }
-                              className="flex h-[52px] w-full items-center justify-between gap-3 rounded-xl border border-[#eadbc9] bg-white px-4 text-sm font-black text-[#202020] transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0]"
+                            <Save className="h-4 w-4" />
+                            {bulkSaving ? "Зберігаємо" : "Зберегти"}
+                          </Button>
+
+                          <Button
+                            variant="secondary"
+                            onClick={closeScheduleEditorWindow}
+                            disabled={bulkSaving}
+                            className="h-[54px] w-full"
+                          >
+                            <X className="h-4 w-4" />
+                            Скасувати
+                          </Button>
+                        </div>
+                      }
+                    >
+                      <div className="space-y-4">
+                        <div className="flex flex-1 flex-col gap-3 sm:flex-none sm:pt-3 lg:grid  lg:items-end">
+                          <div className="flex flex-col gap-3">
+                            <div
+                              className={cn(
+                                "grid grid-cols-2 gap-2 sm:items-end",
+                                bulkScheduleDraft.enabled &&
+                                  "sm:grid-cols-[1.35fr_0.82fr_0.82fr]",
+                              )}
                             >
-<span className="flex items-center gap-2">
-  {bulkScheduleDraft.enabled ? (
-    <CalendarCheck className="h-4 w-4 shrink-0 text-[#41a85f]" />
-  ) : (
-    <XCircle className="h-4 w-4 shrink-0 text-[#8d8177]" />
-  )}
-
-  <span>{bulkScheduleDraft.enabled ? "Робочий" : "Вихідний"}</span>
-</span>
-
-                              <span
-                                className={cn(
-                                  "relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-all duration-300",
-                                  bulkScheduleDraft.enabled
-                                    ? "bg-[#41a85f]"
-                                    : "bg-[#c9c2b9]",
-                                )}
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setBulkScheduleDraft((prev) => ({
+                                    ...prev,
+                                    enabled: !prev.enabled,
+                                  }))
+                                }
+                                className="col-span-2 flex h-[52px] w-full items-center justify-between gap-3 rounded-xl border border-[#eadbc9] bg-white px-4 text-sm font-black text-[#202020] transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] sm:col-span-1"
                               >
+                                <span className="flex items-center gap-2">
+                                  {bulkScheduleDraft.enabled ? (
+                                    <CalendarCheck className="h-4 w-4 shrink-0 text-[#41a85f]" />
+                                  ) : (
+                                    <XCircle className="h-4 w-4 shrink-0 text-[#8d8177]" />
+                                  )}
+
+                                  <span>
+                                    {bulkScheduleDraft.enabled
+                                      ? "Робочий"
+                                      : "Вихідний"}
+                                  </span>
+                                </span>
+
                                 <span
                                   className={cn(
-                                    "inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-300",
+                                    "relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-all duration-300",
                                     bulkScheduleDraft.enabled
-                                      ? "translate-x-6"
-                                      : "translate-x-1",
+                                      ? "bg-[#41a85f]"
+                                      : "bg-[#c9c2b9]",
                                   )}
-                                />
-                              </span>
-                            </button>
+                                >
+                                  <span
+                                    className={cn(
+                                      "inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-300",
+                                      bulkScheduleDraft.enabled
+                                        ? "translate-x-6"
+                                        : "translate-x-1",
+                                    )}
+                                  />
+                                </span>
+                              </button>
 
-                            {bulkScheduleDraft.enabled &&
-                              [
-                                ["start", "Початок", Clock],
-                                ["end", "Кінець", Timer],
-                              ].map(([field, label, Icon]) => (
-                                <div key={field} className="min-w-0">
-                                  <label className="mb-1.5 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#77716b]">
-                                    <Icon className="h-3.5 w-3.5 text-[#ff6200]" />
-                                    {label}
-                                  </label>
-
-                                  <div className="flex h-[52px] items-center overflow-hidden rounded-xl border border-[#eadbc9] bg-white px-2 transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0]">
-                                    <TimeSelect
-                                      value={bulkScheduleDraft[field]}
-                                      label={label}
-                                      dayLabel={selectedLabel}
-                                      placeholder="--:--"
-                                      onChange={(value) =>
-                                        updateBulkScheduleField(field, value)
-                                      }
-                                      onCommit={(value) =>
-                                        updateBulkScheduleField(field, value)
-                                      }
-                                      className="h-full justify-center text-base"
-                                    />
-                                  </div>
-                                </div>
-                              ))}
-                          </div>
-
-                          {bulkScheduleDraft.enabled && (
-                            <div
-className={cn(
-  "grid gap-2 sm:items-end",
-  bulkHasBreak &&
-    "sm:grid-cols-[1.35fr_0.82fr_0.82fr]",
-)}
-                            >
-<button
-  type="button"
-  onClick={() => updateBulkScheduleBreak(!bulkHasBreak)}
-  className="flex h-[52px] w-full items-center justify-between gap-3 rounded-xl border border-[#eadbc9] bg-white px-4 text-sm font-black text-[#202020] transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0]"
->
-<span className="flex items-center gap-2">
-  {bulkHasBreak ? (
-    <Coffee className="h-4 w-4 text-[#41a85f]" />
-  ) : (
-    <Coffee className="h-4 w-4 text-[#8d8177]" />
-  )}
-
-  {bulkHasBreak ? "Перерва" : "Без перерви"}
-</span>
-
-  <span
-    className={cn(
-      "relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-all duration-300",
-      bulkHasBreak ? "bg-[#41a85f]" : "bg-[#c9c2b9]",
-    )}
-  >
-    <span
-      className={cn(
-        "inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-300",
-        bulkHasBreak ? "translate-x-6" : "translate-x-1",
-      )}
-    />
-  </span>
-</button>
-
-                              {bulkHasBreak &&
+                              {bulkScheduleDraft.enabled &&
                                 [
-                                  ["breakStart", "Перерва з", Coffee],
-                                  ["breakEnd", "Перерва до", Coffee],
+                                  ["start", "Початок", Clock],
+                                  ["end", "Кінець", Timer],
                                 ].map(([field, label, Icon]) => (
                                   <div key={field} className="min-w-0">
                                     <label className="mb-1.5 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#77716b]">
@@ -3726,674 +4170,770 @@ className={cn(
                                   </div>
                                 ))}
                             </div>
-                          )}
-                        </div>
 
-                        <div className="mt-auto grid grid-cols-2 gap-3 border-t border-[#eadbc9] pt-4 sm:mt-0 sm:border-t-0 sm:pt-0 lg:self-end">
-                          <Button
-                            variant="primary"
-                            onClick={() =>
-                              applyBulkSchedule(bulkScheduleDraft.enabled)
-                            }
-                            disabled={bulkSaving}
-                            className="h-[54px] w-full"
-                          >
-                            <Save className="h-4 w-4" />
-                            {bulkSaving ? "Зберігаємо" : "Зберегти"}
-                          </Button>
+                            {bulkScheduleDraft.enabled && (
+                              <div
+                                className={cn(
+                                  "grid grid-cols-2 gap-2 sm:items-end",
+                                  bulkHasBreak &&
+                                    "sm:grid-cols-[1.35fr_0.82fr_0.82fr]",
+                                )}
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    updateBulkScheduleBreak(!bulkHasBreak)
+                                  }
+                                  className="col-span-2 flex h-[52px] w-full items-center justify-between gap-3 rounded-xl border border-[#eadbc9] bg-white px-4 text-sm font-black text-[#202020] transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] sm:col-span-1"
+                                >
+                                  <span className="flex items-center gap-2">
+                                    {bulkHasBreak ? (
+                                      <Coffee className="h-4 w-4 text-[#41a85f]" />
+                                    ) : (
+                                      <Coffee className="h-4 w-4 text-[#8d8177]" />
+                                    )}
 
-                          <Button
-                            variant="secondary"
-                            onClick={closeScheduleSelection}
-                            disabled={bulkSaving}
-                            className="h-[54px] w-full"
-                          >
-                            <X className="h-4 w-4" />
-                            Скасувати
-                          </Button>
+                                    {bulkHasBreak ? "Перерва" : "Без перерви"}
+                                  </span>
+
+                                  <span
+                                    className={cn(
+                                      "relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-all duration-300",
+                                      bulkHasBreak
+                                        ? "bg-[#41a85f]"
+                                        : "bg-[#c9c2b9]",
+                                    )}
+                                  >
+                                    <span
+                                      className={cn(
+                                        "inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-300",
+                                        bulkHasBreak
+                                          ? "translate-x-6"
+                                          : "translate-x-1",
+                                      )}
+                                    />
+                                  </span>
+                                </button>
+
+                                {bulkHasBreak &&
+                                  [
+                                    ["breakStart", "Перерва з", Coffee],
+                                    ["breakEnd", "Перерва до", Coffee],
+                                  ].map(([field, label, Icon]) => (
+                                    <div key={field} className="min-w-0">
+                                      <label className="mb-1.5 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#77716b]">
+                                        <Icon className="h-3.5 w-3.5 text-[#ff6200]" />
+                                        {label}
+                                      </label>
+
+                                      <div className="flex h-[52px] items-center overflow-hidden rounded-xl border border-[#eadbc9] bg-white px-2 transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0]">
+                                        <TimeSelect
+                                          value={bulkScheduleDraft[field]}
+                                          label={label}
+                                          dayLabel={selectedLabel}
+                                          placeholder="--:--"
+                                          onChange={(value) =>
+                                            updateBulkScheduleField(
+                                              field,
+                                              value,
+                                            )
+                                          }
+                                          onCommit={(value) =>
+                                            updateBulkScheduleField(
+                                              field,
+                                              value,
+                                            )
+                                          }
+                                          className="h-full justify-center text-base"
+                                        />
+                                      </div>
+                                    </div>
+                                  ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    </Modal>
                   )}
-
                 </div>
               );
             })()
           )}
         </Modal>
       </div>
-<Modal
-  open={bookingsModalOpen}
-onClose={() => {
-  setBookingsModalOpen(false);
-  setBookingsMaster(null);
-  setBookingsFilter("today");
-  setVisibleMasterBookingsCount(10);
-}}
-  title={`Записи — ${bookingsMaster?.name || ""}`}
-  badge="Записи"
-  icon={CalendarCheck}
-  subtitle={`Усі записи вибраного майстра: ${filteredMasterBookings.length}`}
-  size="md"
->
-  {bookingsQuery.isLoading ? (
-    <div className="rounded-[24px] border border-[#eadbc9] bg-white p-5 text-center text-sm font-bold text-[#77716b]">
-      Завантажуємо записи...
-    </div>
- ) : masterBookings.length === 0 ? (
-    <div className="rounded-[24px] border-2 border-dashed border-[#ffd6bd] bg-[#fff7f0] p-8 text-center">
-      <CalendarCheck className="mx-auto h-10 w-10 text-[#ff6200]" />
-
-      <p className="mt-3 text-sm font-black text-[#202020]">
-        Записів поки немає
-      </p>
-
-      <p className="mt-1 text-xs font-medium text-[#77716b]">
-        Для цього майстра ще немає записів.
-      </p>
-    </div>
-  ) : (
-    <div className="space-y-3">
-<div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-5">
-  {[
-    ["today", "Сьогодні"],
-    ["week", "Тиждень"],
-    ["month", "Місяць"],
-    ["all", "Усі"],
-    ["completed", "Завершені"],
-  ].map(([value, label]) => (
-    <button
-      key={value}
-      type="button"
-    onClick={() => {
-  setBookingsFilter(value);
-  setVisibleMasterBookingsCount(10);
-}}
-className={cn(
-  "h-9 rounded-xl border px-2 text-[11px] font-black transition-all duration-300",
-  bookingsFilter === value
-    ? "border-[#ff6200] bg-[#ff6200] text-white "
-    : "border-[#eadbc9] bg-white text-[#77716b] hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] hover:!text-[#202020] active:scale-[0.98]",
-)}
-    >
-      {label}
-    </button>
-  ))}
-</div>
- {sortedMasterBookings.length === 0 ? (
-      <div className="rounded-[24px] border border-[#eadbc9] bg-white p-5 text-center text-sm font-bold text-[#77716b]">
-        За вибраний період записів немає.
-      </div>
-    ) : (
-<div className="space-y-3">
-  <ul className="space-y-3">
-    {visibleMasterBookings.map((booking) => (
-      <MasterBookingCard
-        key={booking.id}
-        booking={booking}
-        master={bookingsMaster}
-        nowTs={nowTs}
-        onClick={() => setDetailsBookingId(booking.id)}
-      />
-    ))}
-  </ul>
-
-  <div className="flex flex-col items-center gap-2 pt-1">
-    <p className="text-xs font-bold text-[#77716b]">
-      Показано {visibleMasterBookings.length} з {sortedMasterBookings.length}
-    </p>
-
-    {hasMoreMasterBookings && (
-      <button
-        type="button"
-        onClick={() =>
-          setVisibleMasterBookingsCount((prev) => prev + 10)
-        }
-        className="inline-flex h-11 w-full items-center justify-center rounded-2xl border border-[#eadbc9] bg-white px-4 text-sm font-black text-[#202020] transition-all duration-200 hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] active:scale-[0.98]"
+      <Modal
+        open={bookingsModalOpen}
+        onClose={() => {
+          setBookingsModalOpen(false);
+          setBookingsMaster(null);
+          setBookingsFilter("today");
+          setVisibleMasterBookingsCount(10);
+        }}
+        title={`Записи — ${bookingsMaster?.name || ""}`}
+        badge="Записи"
+        icon={CalendarCheck}
+        subtitle={`Усі записи вибраного майстра: ${filteredMasterBookings.length}`}
+        size="md"
       >
-        Показати ще
-      </button>
-    )}
-  </div>
-</div>
-    )}
-  </div>
-)}
-  
-</Modal>
-<Modal
-  open={deleteConfirm.open}
-  onClose={() =>
-    !deleteConfirm.loading &&
-    setDeleteConfirm({ open: false, master: null, loading: false })
-  }
-  title="Видалити майстра?"
-  badge="Підтвердження"
-  icon={Trash2}
-  size="sm"
-  footer={
-    <div className="flex flex-row gap-2 sm:justify-end">
-      <Button
-        variant="secondary"
-        disabled={deleteConfirm.loading}
-        onClick={() =>
+        {bookingsQuery.isLoading ? (
+          <div className="rounded-[24px] border border-[#eadbc9] bg-white p-5 text-center text-sm font-bold text-[#77716b]">
+            Завантажуємо записи...
+          </div>
+        ) : masterBookings.length === 0 ? (
+          <div className="rounded-[24px] border-2 border-dashed border-[#ffd6bd] bg-[#fff7f0] p-8 text-center">
+            <CalendarCheck className="mx-auto h-10 w-10 text-[#ff6200]" />
+
+            <p className="mt-3 text-sm font-black text-[#202020]">
+              Записів поки немає
+            </p>
+
+            <p className="mt-1 text-xs font-medium text-[#77716b]">
+              Для цього майстра ще немає записів.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-5">
+              {[
+                ["all", "Усі"],
+                ["today", "Сьогодні"],
+                ["week", "Тиждень"],
+                ["month", "Місяць"],
+                ["completed", "Завершені"],
+              ].map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => {
+                    setBookingsFilter(value);
+                    setVisibleMasterBookingsCount(10);
+                  }}
+                  className={cn(
+                    "h-9 rounded-xl border px-2 text-[11px] font-black transition-all duration-300",
+                    bookingsFilter === value
+                      ? "border-[#ff6200] bg-[#ff6200] text-white "
+                      : "border-[#eadbc9] bg-white text-[#77716b] hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] hover:!text-[#202020] active:scale-[0.98]",
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {sortedMasterBookings.length === 0 ? (
+              <div className="rounded-[24px] border border-[#eadbc9] bg-white p-5 text-center text-sm font-bold text-[#77716b]">
+                За вибраний період записів немає.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <ul className="space-y-3">
+                  {visibleMasterBookings.map((booking) => (
+                    <MasterBookingCard
+                      key={booking.id}
+                      booking={booking}
+                      master={bookingsMaster}
+                      nowTs={nowTs}
+                      onClick={() => setDetailsBookingId(booking.id)}
+                    />
+                  ))}
+                </ul>
+
+                <div className="flex flex-col items-center gap-2 pt-1">
+                  <p className="text-xs font-bold text-[#77716b]">
+                    Показано {visibleMasterBookings.length} з{" "}
+                    {sortedMasterBookings.length}
+                  </p>
+
+                  {hasMoreMasterBookings && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setVisibleMasterBookingsCount((prev) => prev + 10)
+                      }
+                      className="inline-flex h-11 w-full items-center justify-center rounded-2xl border border-[#eadbc9] bg-white px-4 text-sm font-black text-[#202020] transition-all duration-200 hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] active:scale-[0.98]"
+                    >
+                      Показати ще
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
+      <Modal
+        open={deleteConfirm.open}
+        onClose={() =>
+          !deleteConfirm.loading &&
           setDeleteConfirm({ open: false, master: null, loading: false })
         }
-        className="flex-1 sm:flex-none"
-      >
-        Скасувати
-      </Button>
+        title="Видалити майстра?"
+        badge="Підтвердження"
+        icon={Trash2}
+        size="sm"
+        footer={
+          <div className="flex flex-row gap-2 sm:justify-end">
+            <Button
+              variant="secondary"
+              disabled={deleteConfirm.loading}
+              onClick={() =>
+                setDeleteConfirm({ open: false, master: null, loading: false })
+              }
+              className="flex-1 sm:flex-none"
+            >
+              Скасувати
+            </Button>
 
-      <Button
-        variant="danger"
-        disabled={deleteConfirm.loading}
-        onClick={confirmDeleteMaster}
-        className="flex-1 sm:flex-none"
-      >
-        <Trash2 className="h-4 w-4" />
-        {deleteConfirm.loading ? "Видаляємо..." : "Видалити"}
-      </Button>
-    </div>
-  }
->
-  <div className="py-4 text-center">
-<div className="mb-5 flex items-center justify-center gap-4">
-  <Avatar
-    name={deleteConfirm.master?.name || "Майстер"}
-    photoUrl={deleteConfirm.master?.photoUrl}
-    size="md"
-    className="h-20 w-20 rounded-full border-4 border-white shadow-[0_12px_32px_rgba(15,23,42,0.12)]"
-  />
-
-  <div className="flex h-10 w-10 items-center justify-center rounded-full">
-    <ArrowRight className="h-5 w-5 text-[#ff6200]" />
-  </div>
-
-<div className="flex h-20 w-20 items-center justify-center rounded-full border border-[#fecaca] bg-[#fff1f1] shadow-[0_12px_32px_rgba(229,72,77,0.12)]">
-  <Trash2 className="h-9 w-9 text-[#e5484d]" />
-</div>
-</div>
-
-<h4 className="break-words text-lg font-black leading-6 text-[#202020]">
-  Майстер
-
-  <span className="my-1 block break-words text-[28px] font-black leading-[1.3] text-[#ff6200] sm:text-[32px]">
-    {deleteConfirm.master?.name || "Без імені"}
-  </span>
-
-  буде видалений зі списку майстрів.
-</h4>
-
-  </div>
-</Modal>
-{cropModal.open && (
-  <div className="fixed inset-0 z-[9999] flex items-end justify-center bg-[#202020]/45 px-3 pb-3 backdrop-blur-[6px] sm:items-center sm:p-6">
-    <div className="w-full max-w-lg overflow-hidden rounded-[30px] border border-[#f0e2d3] bg-white shadow-[0_30px_90px_rgba(15,23,42,0.24)]">
-      <div className="px-5 py-5 text-center">
-        <h3 className="text-[24px] font-black tracking-[-0.04em] text-[#202020]">
-          Обрізати фото
-        </h3>
-
-        <p className="mt-2 text-sm font-medium text-[#77716b]">
-          Виберіть область, яка буде видима у профілі майстра.
-        </p>
-      </div>
-
-      <div className="mx-5 h-[340px] overflow-hidden rounded-[26px] bg-black">
-        <div className="relative h-full w-full">
-          <Cropper
-            image={cropModal.imageUrl}
-            crop={crop}
-            zoom={zoom}
-            aspect={1}
-            cropShape="round"
-            showGrid={false}
-            onCropChange={setCrop}
-            onZoomChange={setZoom}
-            onCropComplete={(_, croppedPixels) => {
-              setCroppedAreaPixels(croppedPixels);
-            }}
-          />
-        </div>
-      </div>
-
-      <div className="px-5 py-4">
-        <label className="mb-2 block text-sm font-black text-[#202020]">
-          Масштаб
-        </label>
-
-        <input
-          type="range"
-          min={1}
-          max={3}
-          step={0.1}
-          value={zoom}
-          onChange={(e) => setZoom(Number(e.target.value))}
-          className="w-full"
-        />
-      </div>
-
-      <div className="flex gap-2 border-t border-[#f0e7da] bg-[#fbfaf8] px-5 py-4">
-        <Button
-          variant="secondary"
-          className="flex-1"
-          onClick={() => {
-            if (cropModal.imageUrl) URL.revokeObjectURL(cropModal.imageUrl);
-
-            setCropModal({
-              open: false,
-              imageUrl: "",
-              file: null,
-              target: "",
-            });
-
-            setCroppedAreaPixels(null);
-            setCrop({ x: 0, y: 0 });
-            setZoom(1);
-          }}
-        >
-          Скасувати
-        </Button>
-
-        <Button
-          variant="primary"
-          className="flex-1"
-          onClick={confirmCrop}
-        >
-          <Check className="h-4 w-4" />
-          Застосувати
-        </Button>
-      </div>
-    </div>
-  </div>
-)}
-<Modal
-  open={exportOpen}
-  onClose={() => setExportOpen(false)}
-  title="Експорт майстрів"
-  badge="Експорт"
-  icon={FileSpreadsheet}
-  subtitle="Оберіть, які дані майстрів потрібно додати в Excel-файл."
-  size="sm"
-  footer={
-    <div className="flex gap-2">
-      <Button
-        variant="secondary"
-        className="flex-1"
-        onClick={() => setExportOpen(false)}
-      >
-        Скасувати
-      </Button>
-
-      <Button
-        variant="primary"
-        className="flex-1"
-        onClick={() => {
-          handleExportMasters();
-          setExportOpen(false);
-        }}
-      >
-        <Download className="h-4 w-4" />
-        Експорт
-      </Button>
-    </div>
-  }
->
-  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-    {[
-      ["name", "Імʼя"],
-      ["role", "Спеціалізація"],
-      ["status", "Статус сьогодні"],
-      ["exceptionsCount", "Особливі дати"],
-    ].map(([key, label]) => (
-      <label
-        key={key}
-        className="flex cursor-pointer items-center justify-between rounded-xl border border-[#eadbc9] p-3"
-      >
-        <span className="text-sm font-semibold">{label}</span>
-
-        <input
-          type="checkbox"
-          checked={exportFields[key]}
-          onChange={(e) =>
-            setExportFields((prev) => ({
-              ...prev,
-              [key]: e.target.checked,
-            }))
-          }
-          className="h-4 w-4 rounded border-[#eadbc9] text-[#ff5a00] focus:ring-[#ff5a00]"
-        />
-      </label>
-    ))}
-  </div>
-</Modal>
-
-<Modal
-  open={infoOpen}
-  onClose={() => setInfoOpen(false)}
-  title="Інформація про майстрів"
-  badge="Інформація"
-  icon={CircleAlert}
-  subtitle="Ця сторінка відповідає за майстрів студії, їхні профілі, записи та особливі дати."
-  size="lg"
->
-  <div className="space-y-5 text-sm font-medium leading-6 text-[#77716b]">
-    <div>
-      <h4 className="text-base font-black text-[#202020]">
-        Можливості сторінки
-      </h4>
-
-      <ul className="mt-2 list-disc space-y-1 pl-5">
-        <li>Додавання нових майстрів.</li>
-        <li>Редагування фото, імені, спеціалізації та опису.</li>
-        <li>Перегляд записів конкретного майстра.</li>
-        <li>Додавання особливих дат або вихідних.</li>
-        <li>Видалення майстрів із підтвердженням.</li>
-        <li>Експорт списку майстрів у Excel.</li>
-      </ul>
-    </div>
-  </div>
-</Modal>
-{selectedMasterBooking &&
-  detailsBookingId != null &&
-  (() => {
-    const booking = selectedMasterBooking;
-
-    const isCanceled = booking.status === "canceled";
-    const isConfirmed = booking.status === "confirmed";
-    const dt = getBookingDateTime(booking);
-    const isArchived = dt ? dt.getTime() < nowTs : false;
-
-    const statusMeta = isArchived
-      ? {
-          label: "Завершено",
-          top: "from-[var(--color-archived-light)] to-white",
-          Icon: CalendarCheck,
-          iconColor: "text-[var(--color-archived-dark)]",
-          pillText: "text-[var(--color-archived-dark)]",
-          accent: "text-[var(--color-archived)]",
+            <Button
+              variant="danger"
+              disabled={deleteConfirm.loading}
+              onClick={confirmDeleteMaster}
+              className="flex-1 sm:flex-none"
+            >
+              <Trash2 className="h-4 w-4" />
+              {deleteConfirm.loading ? "Видаляємо..." : "Видалити"}
+            </Button>
+          </div>
         }
-      : isConfirmed
-        ? {
-            label: "Підтверджено",
-            top: "from-[var(--color-confirmed-light)] to-white",
-            Icon: CheckCheck,
-            iconColor: "text-[var(--color-confirmed-dark)]",
-            pillText: "text-[var(--color-confirmed-dark)]",
-            accent: "text-[var(--color-confirmed)]",
-          }
-: isCanceled
-  ? {
-      label: getCanceledBookingLabel(booking),
-      top: "from-[var(--color-canceled-light)] to-white",
-      Icon: XCircle,
-      iconColor: "text-[var(--color-canceled-dark)]",
-      pillText: "text-[var(--color-canceled-dark)]",
-      accent: "text-[var(--color-canceled)]",
-    }
-          : {
-              label: "Очікує підтвердження",
-              top: "from-[var(--color-pending-light)] to-white",
-              Icon: Clock,
-              iconColor: "text-[#ffb020]",
-              pillText: "text-[#ffb020]",
-              accent: "text-[#ffb020]",
-            };
-
-    const StatusIcon = statusMeta.Icon;
-
-    const clientName = getBookingClientName(booking);
-    const phone = getBookingClientPhone(booking);
-    const service = getBookingServiceName(booking);
-    const masterName = getBookingMasterName(booking, bookingsMaster);
-
-    const time = parseTimeToHHMM(booking.time) || booking.time || "—";
-
-    const price =
-      booking.price ??
-      booking.servicePrice ??
-      booking.totalPrice ??
-      booking.service?.price ??
-      null;
-
-    const duration =
-      booking.duration ??
-      booking.serviceDuration ??
-      booking.durationMinutes ??
-      booking.service?.duration ??
-      null;
-
-    const dateLabel = formatDateFullUA(booking?.date);
-
-    const clientPhoto = getBookingClientPhoto(booking);
-    const masterPhoto = getBookingMasterPhoto(booking, bookingsMaster);
-
-    const closeDetails = () => {
-      closeBookingDetails();
-    };
-
-    return (
-      <div
-        className="fixed inset-0 z-[10050] flex items-end justify-center bg-[#1b1b1b]/35 p-0 backdrop-blur-[10px] sm:items-center sm:p-5"
-        onMouseDown={(e) => {
-          if (e.target === e.currentTarget) {
-            closeDetails();
-          }
-        }}
       >
-        <div
-          className={cn(
-            "relative flex w-full flex-col overflow-hidden bg-[#fbfaf8]",
-            "h-[100dvh] rounded-none border-0 shadow-none",
-            "sm:h-auto sm:max-h-[88vh] sm:max-w-[640px] sm:rounded-[34px] sm:border sm:border-[#eadfce] sm:shadow-[0_35px_110px_rgba(27,27,27,0.22)]",
-          )}
-          onMouseDown={(e) => e.stopPropagation()}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div
-            className={cn(
-              "relative overflow-hidden px-5 pb-5 pt-[max(16px,env(safe-area-inset-top))] sm:px-6 sm:pt-6",
-              "bg-gradient-to-b",
-              statusMeta.top,
-            )}
-          >
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.58),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.20),rgba(255,255,255,0))]" />
+        <div className="py-4 text-center">
+          <div className="mb-5 flex items-center justify-center gap-4">
+            <Avatar
+              name={deleteConfirm.master?.name || "Майстер"}
+              photoUrl={deleteConfirm.master?.photoUrl}
+              size="md"
+              className="h-20 w-20 rounded-full border-4 border-white shadow-[0_12px_32px_rgba(15,23,42,0.12)]"
+            />
 
-            <div className="relative flex items-center justify-between">
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/80 px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] text-[#77716b] shadow-sm backdrop-blur">
-                <ClipboardPen className="h-4 w-4 text-[#ff6200]" />
-                Деталі запису
-              </div>
-
-              <button
-                type="button"
-                onClick={closeDetails}
-                className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-[#202020] shadow-[0_8px_24px_rgba(27,27,27,0.10)] transition hover:!bg-[#fff7f0] active:scale-[0.98]"
-                aria-label="Закрити"
-              >
-                <X className="h-5 w-5" />
-              </button>
+            <div className="flex h-10 w-10 items-center justify-center rounded-full">
+              <ArrowRight className="h-5 w-5 text-[#ff6200]" />
             </div>
 
-            <div className="relative mt-8 flex flex-col items-center text-center">
-              <div className="inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-[13px] font-black shadow-[0_8px_24px_rgba(27,27,27,0.08)] backdrop-blur">
-                <StatusIcon className={cn("h-4 w-4", statusMeta.iconColor)} />
+            <div className="flex h-20 w-20 items-center justify-center rounded-full border border-[#fecaca] bg-[#fff1f1] shadow-[0_12px_32px_rgba(229,72,77,0.12)]">
+              <Trash2 className="h-9 w-9 text-[#e5484d]" />
+            </div>
+          </div>
 
-                <span className={statusMeta.pillText}>
-                  {statusMeta.label}
-                </span>
-              </div>
+          <h4 className="break-words text-lg font-black leading-6 text-[#202020]">
+            Майстер
+            <span className="my-1 block break-words text-[28px] font-black leading-[1.3] text-[#ff6200] sm:text-[32px]">
+              {deleteConfirm.master?.name || "Без імені"}
+            </span>
+            буде видалений зі списку майстрів.
+          </h4>
+        </div>
+      </Modal>
+      {cropModal.open && (
+        <div className="fixed inset-0 z-[9999] flex items-end justify-center bg-[#202020]/45 px-3 pb-3 backdrop-blur-[6px] sm:items-center sm:p-6">
+          <div className="w-full max-w-lg overflow-hidden rounded-[30px] border border-[#f0e2d3] bg-white shadow-[0_30px_90px_rgba(15,23,42,0.24)]">
+            <div className="px-5 py-5 text-center">
+              <h3 className="text-[24px] font-black tracking-[-0.04em] text-[#202020]">
+                Обрізати фото
+              </h3>
 
-              <h2 className="mt-8 break-words text-center text-[30px] font-black leading-[1.05] tracking-tight text-[#202020] sm:text-[34px]">
-                {service}
-              </h2>
-
-              <p className="mt-2 flex flex-wrap items-center justify-center gap-2 text-sm font-bold text-[#77716b]">
-                <CalendarDays className="h-4 w-4 text-[#ff6200]" />
-                <span>{dateLabel}</span>
+              <p className="mt-2 text-sm font-medium text-[#77716b]">
+                Виберіть область, яка буде видима у профілі майстра.
               </p>
             </div>
 
-            <div className="relative mt-4 grid grid-cols-3 gap-2">
-              <div className="flex min-h-[90px] flex-col items-center justify-center rounded-[22px] border border-white/70 bg-white/88 p-3 text-center shadow-sm backdrop-blur">
-                <Clock3 className={cn("h-4 w-4", statusMeta.iconColor)} />
-
-                <p className="mt-2 text-[11px] font-black uppercase tracking-[0.12em] text-[#aaa19a]">
-                  Час запису
-                </p>
-
-                <p className="mt-1 text-sm font-black text-[#202020]">
-                  {time}
-                </p>
-              </div>
-
-              <div className="flex min-h-[90px] flex-col items-center justify-center rounded-[22px] border border-white/70 bg-white/88 p-3 text-center shadow-sm backdrop-blur">
-                <Banknote className={cn("h-4 w-4", statusMeta.iconColor)} />
-
-                <p className="mt-2 text-[11px] font-black uppercase tracking-[0.12em] text-[#aaa19a]">
-                  Сума
-                </p>
-
-                <p className="mt-1 text-sm font-black text-[#202020]">
-                  {price != null ? `${price} грн` : "—"}
-                </p>
-              </div>
-
-              <div className="flex min-h-[90px] flex-col items-center justify-center rounded-[22px] border border-white/70 bg-white/88 p-3 text-center shadow-sm backdrop-blur">
-                <Timer className={cn("h-4 w-4", statusMeta.iconColor)} />
-
-                <p className="mt-2 text-[11px] font-black uppercase tracking-[0.12em] text-[#aaa19a]">
-                  Тривалість
-                </p>
-
-                <p className="mt-1 text-sm font-black text-[#202020]">
-                  {duration != null ? `${duration} хв` : "—"}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="relative flex min-h-0 flex-1 flex-col bg-white px-4 pt-4 sm:px-6">
-            <div className="calendar-day-scroll min-h-0 flex-1 overflow-y-auto pb-28 sm:pb-24">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-[28px] border border-[#eadfce] bg-white p-4 sm:col-span-2">
-                  <div className="flex items-center gap-4">
-                    <div className="h-[72px] w-[72px] shrink-0 overflow-hidden rounded-full border border-[#eadfce] bg-white p-1">
-                      {clientPhoto ? (
-                        <img
-                          src={clientPhoto}
-                          alt={clientName}
-                          className="h-full w-full rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center rounded-full bg-[#fff1e8] text-[#ff6200]">
-                          <UserRound className="h-5 w-5" />
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#aaa19a]">
-                        Клієнт
-                      </p>
-
-                      <p className="truncate text-[20px] font-black text-[#202020]">
-                        {clientName}
-                      </p>
-
-                      <p className="mt-1 truncate text-sm font-bold text-[#77716b]">
-                        {phone || "Телефон не вказано"}
-                      </p>
-                    </div>
-
-                    {phone && (
-                      <div className="flex shrink-0 items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleCopyPhone(phone)}
-                          className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#eadfce] bg-white text-[#77716b] transition-all duration-200 hover:!bg-[#fff7f0] hover:text-[#202020] active:scale-[0.95]"
-                          title="Скопіювати номер"
-                        >
-                          {copiedPhone ? (
-                            <CheckCheck className="h-4 w-4 text-emerald-600" />
-                          ) : (
-                            <Copy className="h-4 w-4" />
-                          )}
-                        </button>
-
-                        <a
-                          href={`tel:${phone}`}
-                          className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#ff6200] text-white transition-all duration-200 hover:bg-[#ef4f00] active:scale-[0.95]"
-                          title="Подзвонити"
-                        >
-                          <PhoneCall className="h-4 w-4" />
-                        </a>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="rounded-[24px] border border-[#eadfce] bg-white p-3 sm:col-span-2">
-                  <div className="ml-2 flex items-center gap-3">
-                    <div className="h-[62px] w-[62px] shrink-0 overflow-hidden rounded-full border border-[#eadfce] bg-white p-1">
-                      {masterPhoto ? (
-                        <img
-                          src={masterPhoto}
-                          alt={masterName}
-                          className="h-full w-full rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center rounded-full bg-[#fff1e8] text-[#ff6200]">
-                          <UserRound className="h-5 w-5" />
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="ml-2 min-w-0 flex-1">
-                      <p className="text-[9px] font-black uppercase tracking-[0.12em] text-[#aaa19a]">
-                        Майстер
-                      </p>
-
-                      <p className="mt-0.5 truncate text-[15px] font-black text-[#202020]">
-                        {masterName}
-                      </p>
-
-                      <p className="truncate text-[12px] font-semibold text-[#77716b]">
-                        Виконавець послуги
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {(booking.comment || booking.note) && (
-                  <div className="rounded-[24px] border border-[#eadfce] bg-white p-4 sm:col-span-2">
-                    <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#aaa19a]">
-                      Коментар
-                    </p>
-
-                    <p className="mt-2 text-sm font-semibold leading-6 text-[#202020]">
-                      {booking.comment || booking.note}
-                    </p>
-                  </div>
-                )}
+            <div className="mx-5 h-[340px] overflow-hidden rounded-[26px] bg-black">
+              <div className="relative h-full w-full">
+                <Cropper
+                  image={cropModal.imageUrl}
+                  crop={crop}
+                  zoom={zoom}
+                  aspect={1}
+                  cropShape="round"
+                  showGrid={false}
+                  onCropChange={setCrop}
+                  onZoomChange={setZoom}
+                  onCropComplete={(_, croppedPixels) => {
+                    setCroppedAreaPixels(croppedPixels);
+                  }}
+                />
               </div>
             </div>
 
-            <div className="absolute inset-x-0 bottom-0 border-[#eadfce] bg-white/92 px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 backdrop-blur sm:px-6 sm:pb-5">
-              <button
-                type="button"
-                onClick={closeDetails}
-                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[22px] bg-[var(--color-primary-buttom)] text-sm font-black text-white transition-all duration-200 hover:bg-[#4a4a4a] active:scale-[0.98]"
+            <div className="px-5 py-4">
+              <label className="mb-2 block text-sm font-black text-[#202020]">
+                Масштаб
+              </label>
+
+              <input
+                type="range"
+                min={1}
+                max={3}
+                step={0.1}
+                value={zoom}
+                onChange={(e) => setZoom(Number(e.target.value))}
+                className="w-full"
+              />
+            </div>
+
+            <div className="flex gap-2 border-t border-[#f0e7da] bg-[#fbfaf8] px-5 py-4">
+              <Button
+                variant="secondary"
+                className="flex-1"
+                onClick={() => {
+                  if (cropModal.imageUrl)
+                    URL.revokeObjectURL(cropModal.imageUrl);
+
+                  setCropModal({
+                    open: false,
+                    imageUrl: "",
+                    file: null,
+                    target: "",
+                  });
+
+                  setCroppedAreaPixels(null);
+                  setCrop({ x: 0, y: 0 });
+                  setZoom(1);
+                }}
               >
-                <X className="h-4 w-4" />
-                Закрити
-              </button>
+                Скасувати
+              </Button>
+
+              <Button
+                variant="primary"
+                className="flex-1"
+                onClick={confirmCrop}
+              >
+                <Check className="h-4 w-4" />
+                Застосувати
+              </Button>
             </div>
           </div>
         </div>
-      </div>
-    );
-  })()}
+      )}
+      <Modal
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        title="Експорт майстрів"
+        badge="Експорт"
+        icon={FileSpreadsheet}
+        subtitle="Оберіть, які дані майстрів потрібно додати в Excel-файл."
+        size="sm"
+        footer={
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              className="flex-1"
+              onClick={() => setExportOpen(false)}
+            >
+              Скасувати
+            </Button>
+
+            <Button
+              variant="primary"
+              className="flex-1"
+              onClick={() => {
+                handleExportMasters();
+                setExportOpen(false);
+              }}
+            >
+              <Download className="h-4 w-4" />
+              Експорт
+            </Button>
+          </div>
+        }
+      >
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {[
+            ["name", "Імʼя"],
+            ["role", "Спеціалізація"],
+            ["status", "Статус сьогодні"],
+            ["exceptionsCount", "Особливі дати"],
+          ].map(([key, label]) => (
+            <label
+              key={key}
+              className="flex cursor-pointer items-center justify-between rounded-xl border border-[#eadbc9] p-3"
+            >
+              <span className="text-sm font-semibold">{label}</span>
+
+              <input
+                type="checkbox"
+                checked={exportFields[key]}
+                onChange={(e) =>
+                  setExportFields((prev) => ({
+                    ...prev,
+                    [key]: e.target.checked,
+                  }))
+                }
+                className="h-4 w-4 rounded border-[#eadbc9] text-[#ff5a00] focus:ring-[#ff5a00]"
+              />
+            </label>
+          ))}
+        </div>
+      </Modal>
+
+      <Modal
+        open={infoOpen}
+        onClose={() => setInfoOpen(false)}
+        title="Інформація про майстрів"
+        badge="Інформація"
+        icon={CircleAlert}
+        subtitle="Ця сторінка відповідає за майстрів студії, їхні профілі, записи та особливі дати."
+        size="lg"
+      >
+        <div className="space-y-5 text-sm font-medium leading-6 text-[#77716b]">
+          <div>
+            <h4 className="text-base font-black text-[#202020]">
+              Можливості сторінки
+            </h4>
+
+            <ul className="mt-2 list-disc space-y-1 pl-5">
+              <li>Додавання нових майстрів.</li>
+              <li>Редагування фото, імені, спеціалізації та опису.</li>
+              <li>Перегляд записів конкретного майстра.</li>
+              <li>Додавання особливих дат або вихідних.</li>
+              <li>Видалення майстрів із підтвердженням.</li>
+              <li>Експорт списку майстрів у Excel.</li>
+            </ul>
+          </div>
+        </div>
+      </Modal>
+<Modal
+  open={scheduleErrorModal.open}
+  onClose={closeScheduleError}
+  title={scheduleErrorModal.title}
+  badge="Перевірка"
+  icon={CircleAlert}
+  subtitle="Графік майстра має бути в межах графіка студії"
+  size="sm"
+  zIndexClass="z-[10050]"
+  mobileCompact
+        footer={
+          <div className="flex justify-end">
+            <Button variant="primary" onClick={closeScheduleError}>
+              Зрозуміло
+            </Button>
+          </div>
+        }
+      >
+        <div className="rounded-[24px] border border-[#ffd6bd] bg-[#fff7f0] p-4">
+          <div className="flex items-start gap-3">
+            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#fff1e8] text-[#ff6200]">
+              <CircleAlert className="h-5 w-5" />
+            </div>
+
+            <div className="min-w-0">
+              <p className="text-sm font-black leading-5 text-[#202020]">
+                {scheduleErrorModal.message}
+              </p>
+
+              {scheduleErrorModal.hint && (
+                <p className="mt-2 text-xs font-semibold leading-5 text-[#77716b]">
+                  {scheduleErrorModal.hint}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      </Modal>
+      {selectedMasterBooking &&
+        detailsBookingId != null &&
+        (() => {
+          const booking = selectedMasterBooking;
+
+          const isCanceled = booking.status === "canceled";
+          const isConfirmed = booking.status === "confirmed";
+          const dt = getBookingDateTime(booking);
+          const isArchived = dt ? dt.getTime() < nowTs : false;
+
+          const statusMeta = isArchived
+            ? {
+                label: "Завершено",
+                top: "from-[var(--color-archived-light)] to-white",
+                Icon: CalendarCheck,
+                iconColor: "text-[var(--color-archived-dark)]",
+                pillText: "text-[var(--color-archived-dark)]",
+                accent: "text-[var(--color-archived)]",
+              }
+            : isConfirmed
+              ? {
+                  label: "Підтверджено",
+                  top: "from-[var(--color-confirmed-light)] to-white",
+                  Icon: CheckCheck,
+                  iconColor: "text-[var(--color-confirmed-dark)]",
+                  pillText: "text-[var(--color-confirmed-dark)]",
+                  accent: "text-[var(--color-confirmed)]",
+                }
+              : isCanceled
+                ? {
+                    label: getCanceledBookingLabel(booking),
+                    top: "from-[var(--color-canceled-light)] to-white",
+                    Icon: XCircle,
+                    iconColor: "text-[var(--color-canceled-dark)]",
+                    pillText: "text-[var(--color-canceled-dark)]",
+                    accent: "text-[var(--color-canceled)]",
+                  }
+                : {
+                    label: "Очікує підтвердження",
+                    top: "from-[var(--color-pending-light)] to-white",
+                    Icon: Clock,
+                    iconColor: "text-[#ffb020]",
+                    pillText: "text-[#ffb020]",
+                    accent: "text-[#ffb020]",
+                  };
+
+          const StatusIcon = statusMeta.Icon;
+
+          const clientName = getBookingClientName(booking);
+          const phone = getBookingClientPhone(booking);
+          const service = getBookingServiceName(booking);
+          const masterName = getBookingMasterName(booking, bookingsMaster);
+
+          const time = parseTimeToHHMM(booking.time) || booking.time || "—";
+
+          const price =
+            booking.price ??
+            booking.servicePrice ??
+            booking.totalPrice ??
+            booking.service?.price ??
+            null;
+
+          const duration =
+            booking.duration ??
+            booking.serviceDuration ??
+            booking.durationMinutes ??
+            booking.service?.duration ??
+            null;
+
+          const dateLabel = formatDateFullUA(booking?.date);
+
+          const clientPhoto = getBookingClientPhoto(booking);
+          const masterPhoto = getBookingMasterPhoto(booking, bookingsMaster);
+
+          const closeDetails = () => {
+            closeBookingDetails();
+          };
+
+          return (
+            <div
+              className="fixed inset-0 z-[10050] flex items-end justify-center bg-[#1b1b1b]/35 p-0 backdrop-blur-[10px] sm:items-center sm:p-5"
+              onMouseDown={(e) => {
+                if (e.target === e.currentTarget) {
+                  closeDetails();
+                }
+              }}
+            >
+              <div
+                className={cn(
+                  "relative flex w-full flex-col overflow-hidden bg-[#fbfaf8]",
+                  "h-[100dvh] rounded-none border-0 shadow-none",
+                  "sm:h-auto sm:max-h-[88vh] sm:max-w-[640px] sm:rounded-[34px] sm:border sm:border-[#eadfce] sm:shadow-[0_35px_110px_rgba(27,27,27,0.22)]",
+                )}
+                onMouseDown={(e) => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div
+                  className={cn(
+                    "relative overflow-hidden px-5 pb-5 pt-[max(16px,env(safe-area-inset-top))] sm:px-6 sm:pt-6",
+                    "bg-gradient-to-b",
+                    statusMeta.top,
+                  )}
+                >
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.58),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.20),rgba(255,255,255,0))]" />
+
+                  <div className="relative flex items-center justify-between">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/80 px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] text-[#77716b] shadow-sm backdrop-blur">
+                      <ClipboardPen className="h-4 w-4 text-[#ff6200]" />
+                      Деталі запису
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={closeDetails}
+                      className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-[#202020] shadow-[0_8px_24px_rgba(27,27,27,0.10)] transition hover:!bg-[#fff7f0] active:scale-[0.98]"
+                      aria-label="Закрити"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
+
+                  <div className="relative mt-8 flex flex-col items-center text-center">
+                    <div className="inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-[13px] font-black shadow-[0_8px_24px_rgba(27,27,27,0.08)] backdrop-blur">
+                      <StatusIcon
+                        className={cn("h-4 w-4", statusMeta.iconColor)}
+                      />
+
+                      <span className={statusMeta.pillText}>
+                        {statusMeta.label}
+                      </span>
+                    </div>
+
+                    <h2 className="mt-8 break-words text-center text-[30px] font-black leading-[1.05] tracking-tight text-[#202020] sm:text-[34px]">
+                      {service}
+                    </h2>
+
+                    <p className="mt-2 flex flex-wrap items-center justify-center gap-2 text-sm font-bold text-[#77716b]">
+                      <CalendarDays className="h-4 w-4 text-[#ff6200]" />
+                      <span>{dateLabel}</span>
+                    </p>
+                  </div>
+
+                  <div className="relative mt-4 grid grid-cols-3 gap-2">
+                    <div className="flex min-h-[90px] flex-col items-center justify-center rounded-[22px] border border-white/70 bg-white/88 p-3 text-center shadow-sm backdrop-blur">
+                      <Clock3 className={cn("h-4 w-4", statusMeta.iconColor)} />
+
+                      <p className="mt-2 text-[11px] font-black uppercase tracking-[0.12em] text-[#aaa19a]">
+                        Час запису
+                      </p>
+
+                      <p className="mt-1 text-sm font-black text-[#202020]">
+                        {time}
+                      </p>
+                    </div>
+
+                    <div className="flex min-h-[90px] flex-col items-center justify-center rounded-[22px] border border-white/70 bg-white/88 p-3 text-center shadow-sm backdrop-blur">
+                      <Banknote
+                        className={cn("h-4 w-4", statusMeta.iconColor)}
+                      />
+
+                      <p className="mt-2 text-[11px] font-black uppercase tracking-[0.12em] text-[#aaa19a]">
+                        Сума
+                      </p>
+
+                      <p className="mt-1 text-sm font-black text-[#202020]">
+                        {price != null ? `${price} грн` : "—"}
+                      </p>
+                    </div>
+
+                    <div className="flex min-h-[90px] flex-col items-center justify-center rounded-[22px] border border-white/70 bg-white/88 p-3 text-center shadow-sm backdrop-blur">
+                      <Timer className={cn("h-4 w-4", statusMeta.iconColor)} />
+
+                      <p className="mt-2 text-[11px] font-black uppercase tracking-[0.12em] text-[#aaa19a]">
+                        Тривалість
+                      </p>
+
+                      <p className="mt-1 text-sm font-black text-[#202020]">
+                        {duration != null ? `${duration} хв` : "—"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="relative flex min-h-0 flex-1 flex-col bg-white px-4 pt-4 sm:px-6">
+                  <div className="calendar-day-scroll min-h-0 flex-1 overflow-y-auto pb-28 sm:pb-24">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="rounded-[28px] border border-[#eadfce] bg-white p-4 sm:col-span-2">
+                        <div className="flex items-center gap-4">
+                          <div className="h-[72px] w-[72px] shrink-0 overflow-hidden rounded-full border border-[#eadfce] bg-white p-1">
+                            {clientPhoto ? (
+                              <img
+                                src={clientPhoto}
+                                alt={clientName}
+                                className="h-full w-full rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center rounded-full bg-[#fff1e8] text-[#ff6200]">
+                                <UserRound className="h-5 w-5" />
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#aaa19a]">
+                              Клієнт
+                            </p>
+
+                            <p className="truncate text-[20px] font-black text-[#202020]">
+                              {clientName}
+                            </p>
+
+                            <p className="mt-1 truncate text-sm font-bold text-[#77716b]">
+                              {phone || "Телефон не вказано"}
+                            </p>
+                          </div>
+
+                          {phone && (
+                            <div className="flex shrink-0 items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleCopyPhone(phone)}
+                                className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#eadfce] bg-white text-[#77716b] transition-all duration-200 hover:!bg-[#fff7f0] hover:text-[#202020] active:scale-[0.95]"
+                                title="Скопіювати номер"
+                              >
+                                {copiedPhone ? (
+                                  <CheckCheck className="h-4 w-4 text-emerald-600" />
+                                ) : (
+                                  <Copy className="h-4 w-4" />
+                                )}
+                              </button>
+
+                              <a
+                                href={`tel:${phone}`}
+                                className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#ff6200] text-white transition-all duration-200 hover:bg-[#ef4f00] active:scale-[0.95]"
+                                title="Подзвонити"
+                              >
+                                <PhoneCall className="h-4 w-4" />
+                              </a>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="rounded-[24px] border border-[#eadfce] bg-white p-3 sm:col-span-2">
+                        <div className="ml-2 flex items-center gap-3">
+                          <div className="h-[62px] w-[62px] shrink-0 overflow-hidden rounded-full border border-[#eadfce] bg-white p-1">
+                            {masterPhoto ? (
+                              <img
+                                src={masterPhoto}
+                                alt={masterName}
+                                className="h-full w-full rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center rounded-full bg-[#fff1e8] text-[#ff6200]">
+                                <UserRound className="h-5 w-5" />
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="ml-2 min-w-0 flex-1">
+                            <p className="text-[9px] font-black uppercase tracking-[0.12em] text-[#aaa19a]">
+                              Майстер
+                            </p>
+
+                            <p className="mt-0.5 truncate text-[15px] font-black text-[#202020]">
+                              {masterName}
+                            </p>
+
+                            <p className="truncate text-[12px] font-semibold text-[#77716b]">
+                              Виконавець послуги
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {(booking.comment || booking.note) && (
+                        <div className="rounded-[24px] border border-[#eadfce] bg-white p-4 sm:col-span-2">
+                          <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#aaa19a]">
+                            Коментар
+                          </p>
+
+                          <p className="mt-2 text-sm font-semibold leading-6 text-[#202020]">
+                            {booking.comment || booking.note}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="absolute inset-x-0 bottom-0 border-[#eadfce] bg-white/92 px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 backdrop-blur sm:px-6 sm:pb-5">
+                    <button
+                      type="button"
+                      onClick={closeDetails}
+                      className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[22px] bg-[var(--color-primary-buttom)] text-sm font-black text-white transition-all duration-200 hover:bg-[#4a4a4a] active:scale-[0.98]"
+                    >
+                      <X className="h-4 w-4" />
+                      Закрити
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
     </div>
   );
 }

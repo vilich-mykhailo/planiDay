@@ -370,26 +370,56 @@ router.get(
     try {
       const { studioId } = req.params;
 
-const masters = await prisma.master.findMany({
-  where: { studioId },
-  include: {
-    scheduleExceptions: {
-      select: {
-        id: true,
-        date: true,
-        enabled: true,
-      },
-    },
-  },
-  orderBy: { createdAt: "asc" },
-});
+      const studio = await prisma.studio.findFirst({
+        where: {
+          id: studioId,
+          ownerId: req.auth.sub,
+        },
+        select: { id: true },
+      });
 
-const mastersWithCounts = masters.map((master) => ({
-  ...master,
-  exceptionsCount: master.scheduleExceptions.length,
-}));
+      if (!studio) {
+        return res.status(404).json({ message: "Studio not found" });
+      }
 
-     res.json({ masters: mastersWithCounts });
+      const masters = await prisma.master.findMany({
+        where: { studioId },
+        include: {
+          scheduleDays: {
+            select: {
+              id: true,
+              day: true,
+              enabled: true,
+              startMin: true,
+              endMin: true,
+              breakStartMin: true,
+              breakEndMin: true,
+            },
+          },
+          scheduleExceptions: {
+            select: {
+              id: true,
+              date: true,
+              enabled: true,
+              startMin: true,
+              endMin: true,
+              breakStartMin: true,
+              breakEndMin: true,
+              createdAt: true,
+              updatedAt: true,
+            },
+            orderBy: { date: "asc" },
+          },
+        },
+        orderBy: { createdAt: "asc" },
+      });
+
+      const mastersWithCounts = masters.map((master) => ({
+        ...master,
+        exceptionsCount: master.scheduleExceptions.length,
+      }));
+
+      res.json({ masters: mastersWithCounts });
     } catch (e) {
       console.error(e);
       res.status(500).json({ message: "Load masters failed" });

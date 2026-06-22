@@ -547,9 +547,7 @@ function TimeField({ children, className = "" }) {
   const fieldRef = useRef(null);
 
   function handleClick(event) {
-    const clickedControl = event.target.closest(
-      "button,input,[role='button']",
-    );
+    const clickedControl = event.target.closest("button,input,[role='button']");
 
     if (clickedControl && fieldRef.current?.contains(clickedControl)) {
       return;
@@ -805,9 +803,7 @@ function exceptionSubtitle(item) {
 
       <span className="text-[#c5b8ab]">—</span>
 
-      <span className="inline-flex items-center gap-1.5">
-        {end}
-      </span>
+      <span className="inline-flex items-center gap-1.5">{end}</span>
 
       {breakStart && breakEnd && (
         <>
@@ -2357,7 +2353,7 @@ export default function Schedule() {
                           </p>
                         </div>
 
-                        <span className="order-2 shrink-0 sm:order-1">
+                        <span className="order-2 shrink-0 sm:order-1 sm:ml-5">
                           <Toggle checked={enabled} />
                         </span>
                       </button>
@@ -2368,55 +2364,61 @@ export default function Schedule() {
                           enabled ? "block" : "hidden sm:block sm:invisible",
                         )}
                       >
-<div className="grid w-full grid-cols-2 gap-2 min-[640px]:max-[739px]:ml-auto min-[640px]:max-[739px]:mr-0 min-[640px]:max-[739px]:max-w-[320px]">
-  {[
-    ["start", "Початок", Clock],
-    ["end", "Кінець", Timer],
-  ].map(([field, label, Icon]) => (
+                        <div className="grid w-full grid-cols-2 gap-2 min-[640px]:max-[739px]:ml-auto min-[640px]:max-[739px]:mr-0 min-[640px]:max-[739px]:max-w-[320px]">
+                          {[
+                            ["start", "Початок", Clock],
+                            ["end", "Кінець", Timer],
+                          ].map(([field, label, Icon]) => (
                             <div key={field} className="min-w-0">
                               <label className="mb-1.5 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#77716b]">
                                 <Icon className="h-3.5 w-3.5 text-[#ff6200]" />
                                 {label}
                               </label>
 
-<TimeField
-  className={cn(
-    "schedule-time-field flex h-[50px] cursor-pointer items-center overflow-hidden rounded-[18px] border p-0 transition-all duration-200 focus-within:ring-4",
-    hasScheduleFieldError(day.key, field)
-      ? "border-[#ef4444] bg-[#fff5f5] focus-within:ring-[#ef4444]/10"
-      : "border-[#eadbc9] bg-white hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] focus-within:ring-[#ff6200]/10",
-  )}
->
-  <TimeSelect
-    value={config[field]}
-    label={label}
-    dayLabel={day.full}
-    onChange={(value) => updateTime(day.key, field, value)}
-    onCommit={(value) => handleTimeCommit(day.key, field, value)}
-    className="h-full w-full justify-center text-base"
-  />
-</TimeField>
+                              <TimeField
+                                className={cn(
+                                  "schedule-time-field flex h-[50px] cursor-pointer items-center overflow-hidden rounded-[18px] border p-0 transition-all duration-200 focus-within:ring-4",
+                                  hasScheduleFieldError(day.key, field)
+                                    ? "border-[#ef4444] bg-[#fff5f5] focus-within:ring-[#ef4444]/10"
+                                    : "border-[#eadbc9] bg-white hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] focus-within:ring-[#ff6200]/10",
+                                )}
+                              >
+                                <TimeSelect
+                                  value={config[field]}
+                                  label={label}
+                                  dayLabel={day.full}
+                                  onChange={(value) =>
+                                    updateTime(day.key, field, value)
+                                  }
+                                  onCommit={(value) =>
+                                    handleTimeCommit(day.key, field, value)
+                                  }
+                                  className="h-full w-full justify-center text-base"
+                                />
+                              </TimeField>
                             </div>
                           ))}
                         </div>
 
                         {enabled && (
-<div
-  className={cn(
-    "mt-2 grid w-full gap-2",
-    "min-[640px]:max-[739px]:ml-auto min-[640px]:max-[739px]:mr-0 min-[640px]:max-[739px]:max-w-[320px]",
-    hasBreak && "grid-cols-2 min-[740px]:grid-cols-[1fr_1fr_1fr]",
-  )}
->
-  <button
-    type="button"
-    onClick={() => toggleDayBreak(day.key)}
-    disabled={saving}
-    className={cn(
-      "flex h-[50px] w-full items-center justify-between gap-3 rounded-[18px] border border-[#eadbc9] bg-white px-4 text-left text-sm font-black text-[#202020] transition-all duration-200 hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] disabled:opacity-60",
-      hasBreak && "col-span-2 min-[740px]:col-span-1",
-    )}
-  >
+                          <div
+                            className={cn(
+                              "mt-2 grid w-full gap-2",
+                              "min-[640px]:max-[739px]:ml-auto min-[640px]:max-[739px]:mr-0 min-[640px]:max-[739px]:max-w-[320px]",
+                              hasBreak &&
+                                "grid-cols-2 min-[740px]:grid-cols-[1fr_1fr_1fr]",
+                            )}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => toggleDayBreak(day.key)}
+                              disabled={saving}
+                              className={cn(
+                                "flex h-[50px] w-full items-center justify-between gap-3 rounded-[18px] border border-[#eadbc9] bg-white px-4 text-left text-sm font-black text-[#202020] transition-all duration-200 hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] disabled:opacity-60",
+                                hasBreak &&
+                                  "col-span-2 min-[740px]:col-span-1 min-[740px]:mt-[21px]",
+                              )}
+                            >
                               <span className="flex min-w-0 items-center gap-2">
                                 <Coffee
                                   className={cn(
@@ -2519,124 +2521,122 @@ export default function Schedule() {
 
               return (
                 <div className="relative text-[#202020]">
-<div className="rounded-[22px] border border-[#ebe7df] bg-[#fbfaf8] p-2.5">
-  <div className="grid gap-1.5">
-    <div className="grid gap-1.5 min-[640px]:grid-cols-[minmax(280px,1.25fr)_minmax(230px,1fr)] min-[640px]:items-stretch min-[1024px]:grid-cols-[minmax(320px,1.2fr)_minmax(280px,1fr)]">
-      <div className="grid grid-cols-[38px_minmax(0,1fr)_38px] items-center gap-1.5">
-        <button
-          type="button"
-          onClick={() => shiftScheduleMonth(-1)}
-          className="grid h-10 place-items-center rounded-[14px] border border-[#eadbc9] bg-white text-[#202020] transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] hover:text-[#ff6200]"
-          aria-label="Попередній місяць"
-        >
-          <ChevronRight className="h-4 w-4 rotate-180" />
-        </button>
+                  <div className="rounded-[22px] border border-[#ebe7df] bg-[#fbfaf8] p-2.5">
+                    <div className="grid gap-1.5">
+                      <div className="grid gap-1.5 min-[640px]:grid-cols-[minmax(280px,1.25fr)_minmax(230px,1fr)] min-[640px]:items-stretch min-[1024px]:grid-cols-[minmax(320px,1.2fr)_minmax(280px,1fr)]">
+                        <div className="grid grid-cols-[38px_minmax(0,1fr)_38px] items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => shiftScheduleMonth(-1)}
+                            className="grid h-10 place-items-center rounded-[14px] border border-[#eadbc9] bg-white text-[#202020] transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] hover:text-[#ff6200]"
+                            aria-label="Попередній місяць"
+                          >
+                            <ChevronRight className="h-4 w-4 rotate-180" />
+                          </button>
 
-        <button
-          type="button"
-          onClick={resetScheduleMonthToToday}
-          className="flex h-10 min-w-0 items-center justify-center gap-2 rounded-[14px] border border-[#eadbc9] bg-white px-3 text-center transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0]"
-        >
-          <CalendarDays className="h-4 w-4 shrink-0 text-[#ff6200]" />
+                          <button
+                            type="button"
+                            onClick={resetScheduleMonthToToday}
+                            className="flex h-10 min-w-0 items-center justify-center gap-2 rounded-[14px] border border-[#eadbc9] bg-white px-3 text-center transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0]"
+                          >
+                            <CalendarDays className="h-4 w-4 shrink-0 text-[#ff6200]" />
 
-          <span className="truncate text-[14px] font-black capitalize tracking-[-0.02em] text-[#202020]">
-            {getMonthTitle(scheduleMonthDate)}
-          </span>
-        </button>
+                            <span className="truncate text-[14px] font-black capitalize tracking-[-0.02em] text-[#202020]">
+                              {getMonthTitle(scheduleMonthDate)}
+                            </span>
+                          </button>
 
-        <button
-          type="button"
-          onClick={() => shiftScheduleMonth(1)}
-          className="grid h-10 place-items-center rounded-[14px] border border-[#eadbc9] bg-white text-[#202020] transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] hover:text-[#ff6200]"
-          aria-label="Наступний місяць"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </button>
-      </div>
+                          <button
+                            type="button"
+                            onClick={() => shiftScheduleMonth(1)}
+                            className="grid h-10 place-items-center rounded-[14px] border border-[#eadbc9] bg-white text-[#202020] transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] hover:text-[#ff6200]"
+                            aria-label="Наступний місяць"
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </button>
+                        </div>
 
-<div className="grid min-w-0 grid-cols-3 gap-1.5">
-  <div className="flex h-10 min-w-0 flex-col items-center justify-center rounded-[14px] border border-[#eadbc9] bg-white px-1.5 text-center">
-    <p className="line-clamp-2 min-w-0 text-center text-[8px] font-black uppercase leading-[8.5px] tracking-wide text-[#77716b]">
-      Робочих
-    </p>
+                        <div className="grid min-w-0 grid-cols-3 gap-1.5">
+                          <div className="flex h-10 min-w-0 flex-col items-center justify-center rounded-[14px] border border-[#eadbc9] bg-white px-1.5 text-center">
+                            <p className="line-clamp-2 min-w-0 text-center text-[8px] font-black uppercase leading-[8.5px] tracking-wide text-[#77716b]">
+                              Робочих
+                            </p>
 
-    <p className="mt-0.5 text-center text-[14px] font-black leading-none text-[#41a85f]">
-      {workingDays}
-    </p>
-  </div>
+                            <p className="mt-0.5 text-center text-[14px] font-black leading-none text-[#41a85f]">
+                              {workingDays}
+                            </p>
+                          </div>
 
-  <div className="flex h-10 min-w-0 flex-col items-center justify-center rounded-[14px] border border-[#eadbc9] bg-white px-1.5 text-center">
-    <p className="line-clamp-2 min-w-0 text-center text-[8px] font-black uppercase leading-[8.5px] tracking-wide text-[#77716b]">
-      Вихідних
-    </p>
+                          <div className="flex h-10 min-w-0 flex-col items-center justify-center rounded-[14px] border border-[#eadbc9] bg-white px-1.5 text-center">
+                            <p className="line-clamp-2 min-w-0 text-center text-[8px] font-black uppercase leading-[8.5px] tracking-wide text-[#77716b]">
+                              Вихідних
+                            </p>
 
-    <p className="mt-0.5 text-center text-[14px] font-black leading-none text-[#ff5a00]">
-      {daysOff}
-    </p>
-  </div>
+                            <p className="mt-0.5 text-center text-[14px] font-black leading-none text-[#ff5a00]">
+                              {daysOff}
+                            </p>
+                          </div>
 
-  <div className="flex h-10 min-w-0 flex-col items-center justify-center rounded-[14px] border border-[#eadbc9] bg-white px-1.5 text-center">
-    <p className="line-clamp-2 min-w-0 text-center text-[8px] font-black uppercase leading-[8.5px] tracking-wide text-[#77716b]">
-      Особливі дати
-    </p>
+                          <div className="flex h-10 min-w-0 flex-col items-center justify-center rounded-[14px] border border-[#eadbc9] bg-white px-1.5 text-center">
+                            <p className="line-clamp-2 min-w-0 text-center text-[8px] font-black uppercase leading-[8.5px] tracking-wide text-[#77716b]">
+                              Особливі дати
+                            </p>
 
-    <p className="mt-0.5 text-center text-[14px] font-black leading-none text-[#ff6200]">
-      {specialDays}
-    </p>
-  </div>
-</div>
-    </div>
+                            <p className="mt-0.5 text-center text-[14px] font-black leading-none text-[#ff6200]">
+                              {specialDays}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
 
-    <div
-      className={cn(
-        "grid gap-1.5",
-        scheduleMultiSelect
-          ? "grid-cols-3"
-          : "grid-cols-2",
-      )}
-    >
-      <button
-        type="button"
-        onClick={() => quickSelectWorkdays(monthDays)}
-        className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-[14px] border border-[#eadbc9] bg-white px-2 text-[12px] font-black leading-none text-[#202020] transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] hover:text-[#ff6200]"
-      >
-        <CalendarCheck className="h-4 w-4 shrink-0 text-[#ff6200]" />
-        <span className="truncate">Вибрати будні</span>
-      </button>
+                      <div
+                        className={cn(
+                          "grid gap-1.5",
+                          scheduleMultiSelect ? "grid-cols-3" : "grid-cols-2",
+                        )}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => quickSelectWorkdays(monthDays)}
+                          className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-[14px] border border-[#eadbc9] bg-white px-2 text-[12px] font-black leading-none text-[#202020] transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] hover:text-[#ff6200]"
+                        >
+                          <CalendarCheck className="h-4 w-4 shrink-0 text-[#ff6200]" />
+                          <span className="truncate">Вибрати будні</span>
+                        </button>
 
-      <button
-        type="button"
-        onClick={() => {
-          if (!scheduleMultiSelect) {
-            setScheduleMultiSelect(true);
-            setSelectedScheduleDates([]);
-            setScheduleEditorOpen(false);
-          }
-        }}
-        className={cn(
-          "inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-[14px] border px-2 text-[12px] font-black leading-none transition",
-          scheduleMultiSelect
-            ? "border-[#ff6200] bg-[#fff1e8] text-[#ff6200]"
-            : "border-[#eadbc9] bg-white text-[#202020] hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] hover:text-[#ff6200]",
-        )}
-      >
-        <ClipboardPen className="h-4 w-4 shrink-0" />
-        <span className="truncate">Множинний</span>
-      </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!scheduleMultiSelect) {
+                              setScheduleMultiSelect(true);
+                              setSelectedScheduleDates([]);
+                              setScheduleEditorOpen(false);
+                            }
+                          }}
+                          className={cn(
+                            "inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-[14px] border px-2 text-[12px] font-black leading-none transition",
+                            scheduleMultiSelect
+                              ? "border-[#ff6200] bg-[#fff1e8] text-[#ff6200]"
+                              : "border-[#eadbc9] bg-white text-[#202020] hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] hover:text-[#ff6200]",
+                          )}
+                        >
+                          <ClipboardPen className="h-4 w-4 shrink-0" />
+                          <span className="truncate">Множинний</span>
+                        </button>
 
-      {scheduleMultiSelect && (
-        <button
-          type="button"
-          onClick={closeScheduleSelection}
-          className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-[14px] border border-[#eadbc9] bg-white px-2 text-[12px] font-black text-[#202020] transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] hover:text-[#ff6200]"
-        >
-          <X className="h-4 w-4 shrink-0" />
-          <span className="truncate">Скасувати</span>
-        </button>
-      )}
-    </div>
-  </div>
-</div>
+                        {scheduleMultiSelect && (
+                          <button
+                            type="button"
+                            onClick={closeScheduleSelection}
+                            className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-[14px] border border-[#eadbc9] bg-white px-2 text-[12px] font-black text-[#202020] transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] hover:text-[#ff6200]"
+                          >
+                            <X className="h-4 w-4 shrink-0" />
+                            <span className="truncate">Скасувати</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
 
                   <div className="mt-5 hidden grid-cols-7 gap-3 lg:grid">
                     {weekdayLabels.map((label, index) => {
@@ -2789,85 +2789,92 @@ export default function Schedule() {
                   </div>
 
                   <div className="mt-3 hidden grid-cols-7 gap-1 lg:grid">
-{monthDays.map((day) => {
-  const item = getVisibleScheduleItemForDay(day);
-  const isSelected = selectedScheduleDates.includes(day.dateKey);
-  const lines = getScheduleTimeLines(item);
-  const isDayOff = !item.enabled;
+                    {monthDays.map((day) => {
+                      const item = getVisibleScheduleItemForDay(day);
+                      const isSelected = selectedScheduleDates.includes(
+                        day.dateKey,
+                      );
+                      const lines = getScheduleTimeLines(item);
+                      const isDayOff = !item.enabled;
 
-  return (
-    <button
-      key={day.dateKey}
-      type="button"
-      disabled={!day.isCurrentMonth}
-      onClick={() =>
-        day.isCurrentMonth && toggleScheduleDate(day.dateKey)
-      }
-      className={cn(
-        "relative flex min-h-[88px] flex-col items-center justify-start rounded-[10px] border px-2 py-2 text-center transition-all duration-200",
-        day.isCurrentMonth
-          ? "hover:-translate-y-0.5 hover:border-[#ffb784]"
-          : "cursor-default border-[#ebe7df] bg-transparent opacity-40",
-        day.isCurrentMonth &&
-          (isDayOff
-            ? "border-[#ffd6bd] bg-[#fff7f0] text-[#ff5a00]"
-            : "border-[#ebe7df] bg-white text-[#202020]"),
-        day.hasException &&
-          day.isCurrentMonth &&
-          !isSelected &&
-          "ring-1 ring-[#ff6200]/10",
-        isSelected &&
-          (scheduleMultiSelect
-            ? "border-[#41a85f] bg-[#f4fbf6] shadow-[0_0_0_2px_rgba(65,168,95,0.18)]"
-            : "border-[#ff6200] bg-[#fff7f0] shadow-[0_0_0_2px_rgba(255,98,0,0.18)]"),
-      )}
-    >
-      <span
-        className={cn(
-          "grid h-6 min-w-6 place-items-center rounded-full px-1 text-[13px] font-black leading-none",
-          day.isToday && "bg-[#ff6200] text-white",
-          !day.isToday &&
-            (isDayOff ? "text-[#ff5a00]" : "text-[#202020]"),
-          !day.isCurrentMonth && "text-[#aaa19a]",
-        )}
-      >
-        {day.dayNumber}
-      </span>
+                      return (
+                        <button
+                          key={day.dateKey}
+                          type="button"
+                          disabled={!day.isCurrentMonth}
+                          onClick={() =>
+                            day.isCurrentMonth &&
+                            toggleScheduleDate(day.dateKey)
+                          }
+                          className={cn(
+                            "relative flex min-h-[88px] flex-col items-center justify-start rounded-[10px] border px-2 py-2 text-center transition-all duration-200",
+                            day.isCurrentMonth
+                              ? "hover:-translate-y-0.5 hover:border-[#ffb784]"
+                              : "cursor-default border-[#ebe7df] bg-transparent opacity-40",
+                            day.isCurrentMonth &&
+                              (isDayOff
+                                ? "border-[#ffd6bd] bg-[#fff7f0] text-[#ff5a00]"
+                                : "border-[#ebe7df] bg-white text-[#202020]"),
+                            day.hasException &&
+                              day.isCurrentMonth &&
+                              !isSelected &&
+                              "ring-1 ring-[#ff6200]/10",
+                            isSelected &&
+                              (scheduleMultiSelect
+                                ? "border-[#41a85f] bg-[#f4fbf6] shadow-[0_0_0_2px_rgba(65,168,95,0.18)]"
+                                : "border-[#ff6200] bg-[#fff7f0] shadow-[0_0_0_2px_rgba(255,98,0,0.18)]"),
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "grid h-6 min-w-6 place-items-center rounded-full px-1 text-[13px] font-black leading-none",
+                              day.isToday && "bg-[#ff6200] text-white",
+                              !day.isToday &&
+                                (isDayOff
+                                  ? "text-[#ff5a00]"
+                                  : "text-[#202020]"),
+                              !day.isCurrentMonth && "text-[#aaa19a]",
+                            )}
+                          >
+                            {day.dayNumber}
+                          </span>
 
-      <div className="mt-2 w-full space-y-0.5 text-[10px] font-black leading-4">
-        {lines.slice(0, 2).map((line, lineIndex) => {
-          const LineIcon = isDayOff
-            ? XCircle
-            : lineIndex === 1
-              ? Coffee
-              : Clock;
+                          <div className="mt-2 w-full space-y-0.5 text-[10px] font-black leading-4">
+                            {lines.slice(0, 2).map((line, lineIndex) => {
+                              const LineIcon = isDayOff
+                                ? XCircle
+                                : lineIndex === 1
+                                  ? Coffee
+                                  : Clock;
 
-          return (
-<p
-  key={line}
-  className="flex min-w-0 items-center justify-center gap-1 max-[1180px]:gap-0"
->
-  <LineIcon className="h-3 w-3 shrink-0 max-[1180px]:hidden" />
-  <span className="truncate">{line}</span>
-</p>
-          );
-        })}
-      </div>
+                              return (
+                                <p
+                                  key={line}
+                                  className="flex min-w-0 items-center justify-center gap-1 max-[1180px]:gap-0"
+                                >
+                                  <LineIcon className="h-3 w-3 shrink-0 max-[1180px]:hidden" />
+                                  <span className="truncate">{line}</span>
+                                </p>
+                              );
+                            })}
+                          </div>
 
-      {day.hasException && day.isCurrentMonth && (
-        <span className="absolute right-1.5 top-1.5 grid h-4 w-4 place-items-center rounded-full bg-[#ff6200] text-white">
-          <CalendarCheck className="h-2.5 w-2.5" />
-        </span>
-      )}
+                          {day.hasException && day.isCurrentMonth && (
+                            <span className="absolute right-1.5 top-1.5 grid h-4 w-4 place-items-center rounded-full bg-[#ff6200] text-white">
+                              <CalendarCheck className="h-2.5 w-2.5" />
+                            </span>
+                          )}
 
-      {scheduleMultiSelect && day.isCurrentMonth && isSelected && (
-        <span className="absolute left-1.5 top-1.5 grid h-4 w-4 place-items-center rounded-full bg-[#41a85f] text-white">
-          <Check className="h-2.5 w-2.5" />
-        </span>
-      )}
-    </button>
-  );
-})}
+                          {scheduleMultiSelect &&
+                            day.isCurrentMonth &&
+                            isSelected && (
+                              <span className="absolute left-1.5 top-1.5 grid h-4 w-4 place-items-center rounded-full bg-[#41a85f] text-white">
+                                <Check className="h-2.5 w-2.5" />
+                              </span>
+                            )}
+                        </button>
+                      );
+                    })}
                   </div>
 
                   {scheduleMultiSelect &&
@@ -3194,254 +3201,264 @@ export default function Schedule() {
                 const hasBreak = Boolean(breakStart && breakEnd);
                 const isValid = isExceptionValid(item);
 
-return (
-<div
-  key={exceptionKey}
-  className="overflow-hidden rounded-[24px] border border-[#eadbc9] bg-white shadow-[0_10px_28px_rgba(15,23,42,0.05)]"
->
-    <button
-      type="button"
-      onClick={() =>
-        !item.isNew && toggleExceptionExpanded(exceptionKey)
-      }
-className={cn(
-  "relative w-full overflow-hidden bg-white px-4 py-4 text-left transition",
-  !item.isNew && "hover:bg-[#fffaf6]",
-)}
-    >
-     <div className="absolute right-[-45px] top-[-60px] h-[120px] w-[120px] rounded-full bg-[#ff6200]/5 blur-3xl" />
-
-      <div className="relative z-10 flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <span className="inline-flex h-7 items-center gap-1.5 rounded-full bg-[#fff4ec] px-2.5 text-[10px] font-black uppercase tracking-[0.08em] text-[#ff6200]">
-            <CalendarDays className="h-3.5 w-3.5" />
-            Особлива дата
-          </span>
-            <span
-              className={cn(
-                "inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 text-[11px] font-black",
-                item.enabled
-                  ? "text-[#41a85f]"
-                  : " text-[#c8483d]",
-              )}
-            >
-              {item.enabled ? (
-                <CalendarCheck className="h-3.5 w-3.5" />
-              ) : (
-                <XCircle className="h-3.5 w-3.5" />
-              )}
-
-              {item.enabled ? "Робочий" : "Вихідний"}
-            </span>
-          <h3 className="mt-2 text-[20px] font-black leading-none tracking-[-0.03em] text-[#202020] sm:text-[24px]">
-            {item.date
-              ? formatExceptionDate(item.date)
-              : "Нова особлива дата"}
-          </h3>
-
-          <div className="mt-2 flex flex-wrap items-center gap-1.5">
-
-
-{item.enabled && (
-  <span className="inline-flex min-h-7 items-center rounded-full bg-[#fbfaf8] px-2.5 py-1 text-[11px] font-bold text-[#77716b]">
-    {exceptionSubtitle(item)}
-  </span>
-)}
-          </div>
-        </div>
-
-        <div className="flex shrink-0 items-center gap-2">
-          {!item.isNew && (
-            <span className="hidden text-xs font-black uppercase tracking-wide text-[#8d8177] sm:inline">
-              {isExpanded ? "Згорнути" : "Редагувати"}
-            </span>
-          )}
-
-          {!item.isNew &&
-            (isExpanded ? (
-              <ChevronUp className="h-5 w-5 shrink-0 text-[#ff6200]" />
-            ) : (
-              <ChevronDown className="h-5 w-5 shrink-0 text-[#ff6200]" />
-            ))}
-        </div>
-      </div>
-    </button>
-
-    <div
-      className={cn(
-        "grid transition-all duration-300 ease-out",
-        isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
-      )}
-    >
-      <div className="overflow-hidden">
-<div className="border-t border-[#f0e7da] bg-white px-4 py-4">
-  <div className="space-y-3">
-
-            <div
-              className={cn(
-                "grid grid-cols-2 gap-2 sm:items-end",
-                item.enabled && "sm:grid-cols-[1.35fr_0.82fr_0.82fr]",
-              )}
-            >
-              <button
-                type="button"
-                onClick={() =>
-                  updateException(index, "enabled", !item.enabled)
-                }
-                className="col-span-2 flex h-[52px] w-full items-center justify-between gap-3 rounded-xl border border-[#eadbc9] bg-white px-4 text-sm font-black text-[#202020] transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] sm:col-span-1"
-              >
-                <span className="flex min-w-0 items-center gap-2">
-                  {item.enabled ? (
-                    <CalendarCheck className="h-4 w-4 shrink-0 text-[#41a85f]" />
-                  ) : (
-                    <XCircle className="h-4 w-4 shrink-0 text-[#8d8177]" />
-                  )}
-
-                  <span className="truncate">
-                    {item.enabled ? "Робочий" : "Вихідний"}
-                  </span>
-                </span>
-
-                <Toggle checked={item.enabled} />
-              </button>
-
-              {item.enabled &&
-                [
-                  ["start", "Початок", Clock],
-                  ["end", "Кінець", Timer],
-                ].map(([field, label, Icon]) => (
-                  <div key={field} className="min-w-0">
-                    <label className="mb-1.5 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#77716b]">
-                      <Icon className="h-3.5 w-3.5 text-[#ff6200]" />
-                      {label}
-                    </label>
-
-                    <TimeField className="schedule-time-field flex h-[52px] items-center overflow-hidden rounded-xl border border-[#eadbc9] bg-white p-0 transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0]">
-                      <TimeSelect
-                        value={item[field]}
-                        label={label}
-                        dayLabel={item.date || "Особлива дата"}
-                        placeholder="--:--"
-                        onChange={(value) =>
-                          updateException(index, field, value)
-                        }
-                        onCommit={(value) =>
-                          updateException(index, field, value)
-                        }
-                        className="h-full w-full justify-center text-base"
-                      />
-                    </TimeField>
-                  </div>
-                ))}
-            </div>
-
-            {item.enabled ? (
-              <div
-                className={cn(
-                  "grid grid-cols-2 gap-2 sm:items-end",
-                  hasBreak && "sm:grid-cols-[1.35fr_0.82fr_0.82fr]",
-                )}
-              >
-                <button
-                  type="button"
-                  onClick={() => updateExceptionBreak(index, !hasBreak)}
-                  className="col-span-2 flex h-[52px] w-full items-center justify-between gap-3 rounded-xl border border-[#eadbc9] bg-white px-4 text-sm font-black text-[#202020] transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] sm:col-span-1"
-                >
-                  <span className="flex min-w-0 items-center gap-2">
-                    <Coffee
+                return (
+                  <div
+                    key={exceptionKey}
+                    className="overflow-hidden rounded-[24px] border border-[#eadbc9] bg-white shadow-[0_10px_28px_rgba(15,23,42,0.05)]"
+                  >
+                    <button
+                      type="button"
+                      onClick={() =>
+                        !item.isNew && toggleExceptionExpanded(exceptionKey)
+                      }
                       className={cn(
-                        "h-4 w-4 shrink-0",
-                        hasBreak ? "text-[#41a85f]" : "text-[#8d8177]",
+                        "relative w-full overflow-hidden bg-white px-4 py-4 text-left transition",
+                        !item.isNew && "hover:bg-[#fffaf6]",
                       )}
-                    />
+                    >
+                      <div className="absolute right-[-45px] top-[-60px] h-[120px] w-[120px] rounded-full bg-[#ff6200]/5 blur-3xl" />
 
-                    <span className="truncate">
-                      {hasBreak ? "Перерва" : "Без перерви"}
-                    </span>
-                  </span>
+                      <div className="relative z-10 flex items-start justify-between gap-4">
+                        <div className="min-w-0">
+                          <span className="inline-flex h-7 items-center gap-1.5 rounded-full bg-[#fff4ec] px-2.5 text-[10px] font-black uppercase tracking-[0.08em] text-[#ff6200]">
+                            <CalendarDays className="h-3.5 w-3.5" />
+                            Особлива дата
+                          </span>
+                          <span
+                            className={cn(
+                              "inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 text-[11px] font-black",
+                              item.enabled
+                                ? "text-[#41a85f]"
+                                : " text-[#c8483d]",
+                            )}
+                          >
+                            {item.enabled ? (
+                              <CalendarCheck className="h-3.5 w-3.5" />
+                            ) : (
+                              <XCircle className="h-3.5 w-3.5" />
+                            )}
 
-                  <Toggle checked={hasBreak} />
-                </button>
+                            {item.enabled ? "Робочий" : "Вихідний"}
+                          </span>
+                          <h3 className="mt-2 text-[20px] font-black leading-none tracking-[-0.03em] text-[#202020] sm:text-[24px]">
+                            {item.date
+                              ? formatExceptionDate(item.date)
+                              : "Нова особлива дата"}
+                          </h3>
 
-                {hasBreak &&
-                  [
-                    ["breakStart", "Перерва з", Coffee],
-                    ["breakEnd", "Перерва до", Coffee],
-                  ].map(([field, label, Icon]) => (
-                    <div key={field} className="min-w-0">
-                      <label className="mb-1.5 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#77716b]">
-                        <Icon className="h-3.5 w-3.5 text-[#ff6200]" />
-                        {label}
-                      </label>
+                          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                            {item.enabled && (
+                              <span className="inline-flex min-h-7 items-center rounded-full bg-[#fbfaf8] px-2.5 py-1 text-[11px] font-bold text-[#77716b]">
+                                {exceptionSubtitle(item)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
 
-                      <TimeField className="schedule-time-field flex h-[52px] items-center overflow-hidden rounded-xl border border-[#eadbc9] bg-white p-0 transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0]">
-                        <TimeSelect
-                          value={item[field]}
-                          label={label}
-                          dayLabel={item.date || "Особлива дата"}
-                          placeholder="--:--"
-                          onChange={(value) =>
-                            updateException(index, field, value)
-                          }
-                          onCommit={(value) =>
-                            updateException(index, field, value)
-                          }
-                          className="h-full w-full justify-center text-base"
-                        />
-                      </TimeField>
+                        <div className="flex shrink-0 items-center gap-2">
+                          {!item.isNew && (
+                            <span className="hidden text-xs font-black uppercase tracking-wide text-[#8d8177] sm:inline">
+                              {isExpanded ? "Згорнути" : "Редагувати"}
+                            </span>
+                          )}
+
+                          {!item.isNew &&
+                            (isExpanded ? (
+                              <ChevronUp className="h-5 w-5 shrink-0 text-[#ff6200]" />
+                            ) : (
+                              <ChevronDown className="h-5 w-5 shrink-0 text-[#ff6200]" />
+                            ))}
+                        </div>
+                      </div>
+                    </button>
+
+                    <div
+                      className={cn(
+                        "grid transition-all duration-300 ease-out",
+                        isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+                      )}
+                    >
+                      <div className="overflow-hidden">
+                        <div className="border-t border-[#f0e7da] bg-white px-4 py-4">
+                          <div className="space-y-3">
+                            <div
+                              className={cn(
+                                "grid grid-cols-2 gap-2 sm:items-end",
+                                item.enabled &&
+                                  "sm:grid-cols-[1.35fr_0.82fr_0.82fr]",
+                              )}
+                            >
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  updateException(
+                                    index,
+                                    "enabled",
+                                    !item.enabled,
+                                  )
+                                }
+                                className="col-span-2 flex h-[52px] w-full items-center justify-between gap-3 rounded-xl border border-[#eadbc9] bg-white px-4 text-sm font-black text-[#202020] transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] sm:col-span-1"
+                              >
+                                <span className="flex min-w-0 items-center gap-2">
+                                  {item.enabled ? (
+                                    <CalendarCheck className="h-4 w-4 shrink-0 text-[#41a85f]" />
+                                  ) : (
+                                    <XCircle className="h-4 w-4 shrink-0 text-[#8d8177]" />
+                                  )}
+
+                                  <span className="truncate">
+                                    {item.enabled ? "Робочий" : "Вихідний"}
+                                  </span>
+                                </span>
+
+                                <Toggle checked={item.enabled} />
+                              </button>
+
+                              {item.enabled &&
+                                [
+                                  ["start", "Початок", Clock],
+                                  ["end", "Кінець", Timer],
+                                ].map(([field, label, Icon]) => (
+                                  <div key={field} className="min-w-0">
+                                    <label className="mb-1.5 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#77716b]">
+                                      <Icon className="h-3.5 w-3.5 text-[#ff6200]" />
+                                      {label}
+                                    </label>
+
+                                    <TimeField className="schedule-time-field flex h-[52px] items-center overflow-hidden rounded-xl border border-[#eadbc9] bg-white p-0 transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0]">
+                                      <TimeSelect
+                                        value={item[field]}
+                                        label={label}
+                                        dayLabel={item.date || "Особлива дата"}
+                                        placeholder="--:--"
+                                        onChange={(value) =>
+                                          updateException(index, field, value)
+                                        }
+                                        onCommit={(value) =>
+                                          updateException(index, field, value)
+                                        }
+                                        className="h-full w-full justify-center text-base"
+                                      />
+                                    </TimeField>
+                                  </div>
+                                ))}
+                            </div>
+
+                            {item.enabled ? (
+                              <div
+                                className={cn(
+                                  "grid grid-cols-2 gap-2 sm:items-end",
+                                  hasBreak &&
+                                    "sm:grid-cols-[1.35fr_0.82fr_0.82fr]",
+                                )}
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    updateExceptionBreak(index, !hasBreak)
+                                  }
+                                  className="col-span-2 flex h-[52px] w-full items-center justify-between gap-3 rounded-xl border border-[#eadbc9] bg-white px-4 text-sm font-black text-[#202020] transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] sm:col-span-1"
+                                >
+                                  <span className="flex min-w-0 items-center gap-2">
+                                    <Coffee
+                                      className={cn(
+                                        "h-4 w-4 shrink-0",
+                                        hasBreak
+                                          ? "text-[#41a85f]"
+                                          : "text-[#8d8177]",
+                                      )}
+                                    />
+
+                                    <span className="truncate">
+                                      {hasBreak ? "Перерва" : "Без перерви"}
+                                    </span>
+                                  </span>
+
+                                  <Toggle checked={hasBreak} />
+                                </button>
+
+                                {hasBreak &&
+                                  [
+                                    ["breakStart", "Перерва з", Coffee],
+                                    ["breakEnd", "Перерва до", Coffee],
+                                  ].map(([field, label, Icon]) => (
+                                    <div key={field} className="min-w-0">
+                                      <label className="mb-1.5 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#77716b]">
+                                        <Icon className="h-3.5 w-3.5 text-[#ff6200]" />
+                                        {label}
+                                      </label>
+
+                                      <TimeField className="schedule-time-field flex h-[52px] items-center overflow-hidden rounded-xl border border-[#eadbc9] bg-white p-0 transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0]">
+                                        <TimeSelect
+                                          value={item[field]}
+                                          label={label}
+                                          dayLabel={
+                                            item.date || "Особлива дата"
+                                          }
+                                          placeholder="--:--"
+                                          onChange={(value) =>
+                                            updateException(index, field, value)
+                                          }
+                                          onCommit={(value) =>
+                                            updateException(index, field, value)
+                                          }
+                                          className="h-full w-full justify-center text-base"
+                                        />
+                                      </TimeField>
+                                    </div>
+                                  ))}
+                              </div>
+                            ) : (
+                              <div className="rounded-[22px] border border-[#ffd6bd] bg-[#fff1e8] p-4">
+                                <div className="flex items-start gap-3">
+                                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white text-[#ff6200] shadow-sm">
+                                    <XCircle className="h-5 w-5" />
+                                  </span>
+
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-black text-[#202020]">
+                                      У цей день студія не працюватиме
+                                    </p>
+
+                                    <p className="mt-1 text-xs font-semibold leading-5 text-[#77716b] max-[639px]:hidden">
+                                      Клієнти не зможуть записатися на вибрану
+                                      дату.
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            <div className="grid grid-cols-2 gap-2 border-t border-[#f0e7da] pt-4 sm:flex sm:justify-end">
+                              <Button
+                                onClick={() => saveException(item, index)}
+                                disabled={!isValid}
+                                variant="primary"
+                                className={cn(
+                                  "h-11 w-full rounded-2xl px-4 text-sm sm:w-auto",
+                                  !isValid &&
+                                    "cursor-not-allowed bg-[#f6f1eb] text-[#8a847d]",
+                                )}
+                              >
+                                <Save className="h-4 w-4" />
+                                Зберегти
+                              </Button>
+
+                              <Button
+                                onClick={() => removeException(item, index)}
+                                variant="secondary"
+                                className="h-11 w-full rounded-2xl px-4 text-sm sm:w-auto"
+                              >
+                                <Trash2 className="h-4 w-4 text-[#c8483d]" />
+                                Видалити
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  ))}
-              </div>
-            ) : (
-              <div className="rounded-[22px] border border-[#ffd6bd] bg-[#fff1e8] p-4">
-                <div className="flex items-start gap-3">
-                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white text-[#ff6200] shadow-sm">
-                    <XCircle className="h-5 w-5" />
-                  </span>
-
-                  <div className="min-w-0">
-                    <p className="text-sm font-black text-[#202020]">
-                      У цей день студія не працюватиме
-                    </p>
-
-<p className="mt-1 text-xs font-semibold leading-5 text-[#77716b] max-[639px]:hidden">
-  Клієнти не зможуть записатися на вибрану дату.
-</p>
                   </div>
-                </div>
-              </div>
-            )}
-
-            <div className="grid grid-cols-2 gap-2 border-t border-[#f0e7da] pt-4 sm:flex sm:justify-end">
-              <Button
-                onClick={() => saveException(item, index)}
-                disabled={!isValid}
-                variant="primary"
-                className={cn(
-                  "h-11 w-full rounded-2xl px-4 text-sm sm:w-auto",
-                  !isValid &&
-                    "cursor-not-allowed bg-[#f6f1eb] text-[#8a847d]",
-                )}
-              >
-                <Save className="h-4 w-4" />
-                Зберегти
-              </Button>
-
-              <Button
-                onClick={() => removeException(item, index)}
-                variant="secondary"
-                className="h-11 w-full rounded-2xl px-4 text-sm sm:w-auto"
-              >
-                <Trash2 className="h-4 w-4 text-[#c8483d]" />
-                Видалити
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-);
+                );
               })}
 
               {hasMoreExceptions && (

@@ -73,11 +73,15 @@ function studioScheduleToMap(scheduleDays = []) {
     const key = weekdayEnumToKey(d.weekday || d.day);
     if (!key) continue;
 
-    out[key] = {
-      enabled: Boolean(d.enabled),
-      start: minutesToTime(Number(d.startMin || 0)),
-      end: minutesToTime(Number(d.endMin || 0)),
-    };
+out[key] = {
+  enabled: Boolean(d.enabled),
+  start: minutesToTime(Number(d.startMin || 0)),
+  end: minutesToTime(Number(d.endMin || 0)),
+  breakStart:
+    d.breakStartMin == null ? "" : minutesToTime(Number(d.breakStartMin)),
+  breakEnd:
+    d.breakEndMin == null ? "" : minutesToTime(Number(d.breakEndMin)),
+};
   }
 
   return out;
@@ -95,6 +99,14 @@ function exceptionsToList(exceptions = []) {
       item?.endMin == null
         ? null
         : minutesToTime(Number(item.endMin || 0)),
+    breakStart:
+      item?.breakStartMin == null
+        ? ""
+        : minutesToTime(Number(item.breakStartMin)),
+    breakEnd:
+      item?.breakEndMin == null
+        ? ""
+        : minutesToTime(Number(item.breakEndMin)),
   }));
 }
 
@@ -103,31 +115,69 @@ function getDayKeyFromDateObj(date) {
   return map[date.getDay()];
 }
 
+function normalizeScheduleEntry(entry) {
+  if (!entry || typeof entry !== "object") return null;
+
+  if (entry.enabled === false) return null;
+
+  const start =
+    entry.start ??
+    entry.startTime ??
+    entry.from ??
+    entry.openTime ??
+    entry.startMin;
+
+  const end =
+    entry.end ??
+    entry.endTime ??
+    entry.to ??
+    entry.closeTime ??
+    entry.endMin;
+
+  const normalizedStart =
+    typeof start === "string" && start.includes(":")
+      ? start
+      : Number.isFinite(Number(start))
+        ? minutesToTime(Number(start))
+        : "";
+
+  const normalizedEnd =
+    typeof end === "string" && end.includes(":")
+      ? end
+      : Number.isFinite(Number(end))
+        ? minutesToTime(Number(end))
+        : "";
+
+  if (!normalizedStart || !normalizedEnd) return null;
+
+  return {
+    ...entry,
+    enabled: true,
+    start: normalizedStart,
+    end: normalizedEnd,
+    breakStart: getBreakStart(entry),
+    breakEnd: getBreakEnd(entry),
+  };
+}
+
 function getScheduleForDate(date, schedule, exceptions = []) {
   if (!date) return null;
 
-  const iso = formatLocalDate(date);
+  const iso = formatDateLocal(date);
 
-  const exactException = exceptions.find(
-    (item) => String(item?.date || "").slice(0, 10) === iso,
-  );
+  const exactException = Array.isArray(exceptions)
+    ? exceptions.find((item) => String(item?.date || "").slice(0, 10) === iso)
+    : null;
 
   if (exactException) {
-    if (!exactException.enabled) return null;
-
-    return {
-      enabled: true,
-      start: exactException.start,
-      end: exactException.end,
-    };
+    return normalizeScheduleEntry(exactException);
   }
 
   const dayKey = getDayKeyFromDateObj(date);
-  const fallback = schedule?.[dayKey];
+  const fallback =
+    schedule && typeof schedule === "object" ? schedule?.[dayKey] : null;
 
-  if (!fallback?.enabled) return null;
-
-  return fallback;
+  return normalizeScheduleEntry(fallback);
 }
 
 function intersectSchedules(a, b) {
@@ -222,24 +272,29 @@ clientRouter.get("/", async (req, res) => {
         createdAt: true,
         updatedAt: true,
 
-        scheduleDays: {
-          select: {
-            day: true,
-            enabled: true,
-            startMin: true,
-            endMin: true,
-          },
-        },
+scheduleDays: {
+  select: {
+    day: true,
+    enabled: true,
+    startMin: true,
+    endMin: true,
+    breakStartMin: true,
+    breakEndMin: true,
+  },
+  orderBy: { day: "asc" },
+},
 
-        scheduleExceptions: {
-          select: {
-            id: true,
-            date: true,
-            enabled: true,
-            startMin: true,
-            endMin: true,
-          },
-        },
+scheduleExceptions: {
+  select: {
+    id: true,
+    date: true,
+    enabled: true,
+    startMin: true,
+    endMin: true,
+    breakStartMin: true,
+    breakEndMin: true,
+  },
+},
       },
       orderBy: { updatedAt: "desc" },
     });
@@ -332,23 +387,28 @@ studio: {
     createdAt: true,
     updatedAt: true,
 
-    scheduleDays: {
-      select: {
-        day: true,
-        enabled: true,
-        startMin: true,
-        endMin: true,
-      },
-    },
+scheduleDays: {
+  select: {
+    day: true,
+    enabled: true,
+    startMin: true,
+    endMin: true,
+    breakStartMin: true,
+    breakEndMin: true,
+  },
+},
 
-    scheduleExceptions: {
-      select: {
-        date: true,
-        enabled: true,
-        startMin: true,
-        endMin: true,
-      },
-    },
+scheduleExceptions: {
+  select: {
+    id: true,
+    date: true,
+    enabled: true,
+    startMin: true,
+    endMin: true,
+    breakStartMin: true,
+    breakEndMin: true,
+  },
+},
   },
 },
         },
@@ -743,23 +803,27 @@ clientRouter.patch(
             select: {
               id: true,
               slotDuration: true,
-              scheduleDays: {
-                select: {
-                  day: true,
-                  enabled: true,
-                  startMin: true,
-                  endMin: true,
-                },
-              },
-              scheduleExceptions: {
-                select: {
-                  id: true,
-                  date: true,
-                  enabled: true,
-                  startMin: true,
-                  endMin: true,
-                },
-              },
+scheduleDays: {
+  select: {
+    day: true,
+    enabled: true,
+    startMin: true,
+    endMin: true,
+    breakStartMin: true,
+    breakEndMin: true,
+  },
+},
+scheduleExceptions: {
+  select: {
+    id: true,
+    date: true,
+    enabled: true,
+    startMin: true,
+    endMin: true,
+    breakStartMin: true,
+    breakEndMin: true,
+  },
+},
             },
           },
         },
@@ -819,17 +883,21 @@ scheduleDays: {
     enabled: true,
     startMin: true,
     endMin: true,
+    breakStartMin: true,
+    breakEndMin: true,
   },
 },
-            scheduleExceptions: {
-              select: {
-                id: true,
-                date: true,
-                enabled: true,
-                startMin: true,
-                endMin: true,
-              },
-            },
+scheduleExceptions: {
+  select: {
+    id: true,
+    date: true,
+    enabled: true,
+    startMin: true,
+    endMin: true,
+    breakStartMin: true,
+    breakEndMin: true,
+  },
+},
           },
         });
 
@@ -1108,23 +1176,32 @@ clientRouter.get("/:id", async (req, res) => {
         slotDuration: true,
         premium: true,
 
-        scheduleDays: {
-          select: { day: true, enabled: true, startMin: true, endMin: true },
-          orderBy: { day: "asc" },
-        },
+scheduleDays: {
+  select: {
+    day: true,
+    enabled: true,
+    startMin: true,
+    endMin: true,
+    breakStartMin: true,
+    breakEndMin: true,
+  },
+  orderBy: { day: "asc" },
+},
 
-        scheduleExceptions: {
-          select: {
-            id: true,
-            date: true,
-            enabled: true,
-            startMin: true,
-            endMin: true,
-          },
-          orderBy: { date: "asc" },
-        },
+scheduleExceptions: {
+  select: {
+    id: true,
+    date: true,
+    enabled: true,
+    startMin: true,
+    endMin: true,
+    breakStartMin: true,
+    breakEndMin: true,
+  },
+  orderBy: { date: "asc" },
+},
 
-        masters: {
+masters: {
           orderBy: { createdAt: "asc" },
           select: {
             id: true,
@@ -1134,28 +1211,30 @@ clientRouter.get("/:id", async (req, res) => {
             photoUrl: true,
             createdAt: true,
 
-            scheduleDays: {
-              select: {
-                day: true,
-                enabled: true,
-                startMin: true,
-                endMin: true,
-              },
-              orderBy: { day: "asc" },
-            },
+scheduleDays: {
+  select: {
+    day: true,
+    enabled: true,
+    startMin: true,
+    endMin: true,
+    breakStartMin: true,
+    breakEndMin: true,
+  },
+  orderBy: { day: "asc" },
+},
 
-            scheduleExceptions: {
-              select: {
-                id: true,
-                date: true,
-                enabled: true,
-                startMin: true,
-                endMin: true,
-                createdAt: true,
-                updatedAt: true,
-              },
-              orderBy: { date: "asc" },
-            },
+scheduleExceptions: {
+  select: {
+    id: true,
+    date: true,
+    enabled: true,
+    startMin: true,
+    endMin: true,
+    breakStartMin: true,
+    breakEndMin: true,
+  },
+  orderBy: { date: "asc" },
+},
           },
         },
 
@@ -1243,22 +1322,30 @@ clientRouter.get("/:id", async (req, res) => {
     for (const row of studio.scheduleDays || []) {
       const key = dayToKey(row.day);
       if (!key) continue;
-      schedule[key] = {
-        enabled: Boolean(row.enabled),
-        start: minToTime(row.startMin ?? 600),
-        end: minToTime(row.endMin ?? 1080),
-      };
+schedule[key] = {
+  enabled: Boolean(row.enabled),
+  start: minToTime(row.startMin ?? 600),
+  end: minToTime(row.endMin ?? 1080),
+  breakStart:
+    row.breakStartMin == null ? "" : minToTime(row.breakStartMin),
+  breakEnd:
+    row.breakEndMin == null ? "" : minToTime(row.breakEndMin),
+};
     }
 
-    const scheduleExceptions = (studio.scheduleExceptions || []).map(
-      (item) => ({
-        id: item.id,
-        date: new Date(item.date).toISOString().slice(0, 10),
-        enabled: Boolean(item.enabled),
-        start: item.startMin != null ? minToTime(item.startMin) : null,
-        end: item.endMin != null ? minToTime(item.endMin) : null,
-      }),
-    );
+const scheduleExceptions = (studio.scheduleExceptions || []).map(
+  (item) => ({
+    id: item.id,
+    date: new Date(item.date).toISOString().slice(0, 10),
+    enabled: Boolean(item.enabled),
+    start: item.startMin != null ? minToTime(item.startMin) : null,
+    end: item.endMin != null ? minToTime(item.endMin) : null,
+    breakStart:
+      item.breakStartMin == null ? "" : minToTime(item.breakStartMin),
+    breakEnd:
+      item.breakEndMin == null ? "" : minToTime(item.breakEndMin),
+  }),
+);
 
     const masters = (studio.masters || []).map((master) => {
       const masterSchedule = {};
@@ -1267,22 +1354,30 @@ clientRouter.get("/:id", async (req, res) => {
         const key = dayToKey(row.day);
         if (!key) continue;
 
-        masterSchedule[key] = {
-          enabled: Boolean(row.enabled),
-          start: minToTime(row.startMin ?? 600),
-          end: minToTime(row.endMin ?? 1080),
-        };
+masterSchedule[key] = {
+  enabled: Boolean(row.enabled),
+  start: minToTime(row.startMin ?? 600),
+  end: minToTime(row.endMin ?? 1080),
+  breakStart:
+    row.breakStartMin == null ? "" : minToTime(row.breakStartMin),
+  breakEnd:
+    row.breakEndMin == null ? "" : minToTime(row.breakEndMin),
+};
       }
 
-      const masterScheduleExceptions = (master.scheduleExceptions || []).map(
-        (item) => ({
-          id: item.id,
-          date: new Date(item.date).toISOString().slice(0, 10),
-          enabled: Boolean(item.enabled),
-          start: item.startMin != null ? minToTime(item.startMin) : null,
-          end: item.endMin != null ? minToTime(item.endMin) : null,
-        }),
-      );
+const masterScheduleExceptions = (master.scheduleExceptions || []).map(
+  (item) => ({
+    id: item.id,
+    date: new Date(item.date).toISOString().slice(0, 10),
+    enabled: Boolean(item.enabled),
+    start: item.startMin != null ? minToTime(item.startMin) : null,
+    end: item.endMin != null ? minToTime(item.endMin) : null,
+    breakStart:
+      item.breakStartMin == null ? "" : minToTime(item.breakStartMin),
+    breakEnd:
+      item.breakEndMin == null ? "" : minToTime(item.breakEndMin),
+  }),
+);
 
       return {
         id: master.id,
