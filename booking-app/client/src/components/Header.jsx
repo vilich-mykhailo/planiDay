@@ -19,7 +19,7 @@ import {
   CalendarDays,
   ShieldCheck,
   Building2,
-  BriefcaseBusiness,
+  ClipboardPen,
   LayoutDashboard,
   Clock3,
   Users,
@@ -525,17 +525,17 @@ links: [
                     {
             to: "/dashboard/services",
             label: "Послуги",
-            icon: <BriefcaseBusiness className="h-4 w-4" />,
+            icon: <ClipboardPen className="h-4 w-4" />,
           },
                     {
             to: "/dashboard/clients",
             label: "Клієнти",
-            icon: <UserStar className="h-4 w-4" />,
+            icon: <Users className="h-4 w-4" />,
           },
                     {
             to: "/dashboard/masters",
             label: "Майстри",
-            icon: <Users className="h-4 w-4" />,
+            icon: <UserStar className="h-4 w-4" />,
           },
 
           {

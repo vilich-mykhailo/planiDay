@@ -672,39 +672,50 @@ const [isProOpen, setIsProOpen] = useState(false);
     });
   }
 
-  async function saveModalChanges() {
-    try {
-      setSaving(true);
+async function saveModalChanges() {
+  try {
+    setSaving(true);
 
-      const body = {
-        firstName: profile.firstName,
-        lastName: profile.lastName,
-        birthDate: profile.birthDate || null,
-        gender: profile.gender,
-        photoUrl: profile.photoUrl || null,
-      };
+    const body = {
+      firstName: profile.firstName,
+      lastName: profile.lastName,
+      phone: profile.phone || "",
+      birthDate: profile.birthDate || null,
+      gender: profile.gender,
+      photoUrl: profile.photoUrl || null,
+    };
 
-      if (modal.type === "name") {
-        body.firstName = draft.firstName;
-        body.lastName = draft.lastName;
-      }
-
-      if (modal.type === "birthDate") body.birthDate = draft.birthDate || null;
-      if (modal.type === "gender") body.gender = draft.gender;
-
-      await patchProfile(body);
-      closeEditModal();
-      showToast({
-        type: "success",
-        title: "Збережено",
-        text: "Дані профілю оновлено",
-      });
-    } catch (error) {
-      showSaveError(error);
-    } finally {
-      setSaving(false);
+    if (modal.type === "name") {
+      body.firstName = draft.firstName;
+      body.lastName = draft.lastName;
     }
+
+    if (modal.type === "birthDate") {
+      body.birthDate = draft.birthDate || null;
+    }
+
+    if (modal.type === "gender") {
+      body.gender = draft.gender;
+    }
+
+    if (modal.type === "phone") {
+      body.phone = draft.phone.trim();
+    }
+
+    await patchProfile(body);
+    closeEditModal();
+
+    showToast({
+      type: "success",
+      title: "Збережено",
+      text: "Дані профілю оновлено",
+    });
+  } catch (error) {
+    showSaveError(error);
+  } finally {
+    setSaving(false);
   }
+}
 
   async function uploadClientPhoto(file, token) {
     const fd = new FormData();
@@ -838,13 +849,14 @@ async function confirmCrop() {
     const out = await uploadClientPhoto(croppedFile, token);
     const nextPhotoKey = out?.key || "";
 
-    await patchProfile({
-      firstName: profile.firstName,
-      lastName: profile.lastName,
-      birthDate: profile.birthDate || null,
-      gender: profile.gender,
-      photoUrl: nextPhotoKey || null,
-    });
+await patchProfile({
+  firstName: profile.firstName,
+  lastName: profile.lastName,
+  phone: profile.phone || "",
+  birthDate: profile.birthDate || null,
+  gender: profile.gender,
+  photoUrl: nextPhotoKey || null,
+});
 
     setPhotoFile(null);
     setPhotoPreviewUrl("");
@@ -893,13 +905,14 @@ async function confirmCrop() {
     try {
       setSaving(true);
 
-      await patchProfile({
-        firstName: profile.firstName,
-        lastName: profile.lastName,
-        birthDate: profile.birthDate || null,
-        gender: profile.gender,
-        photoUrl: null,
-      });
+await patchProfile({
+  firstName: profile.firstName,
+  lastName: profile.lastName,
+  phone: profile.phone || "",
+  birthDate: profile.birthDate || null,
+  gender: profile.gender,
+  photoUrl: null,
+});
 
       setPhotoFile(null);
       setPhotoPreviewUrl("");
@@ -1343,35 +1356,30 @@ async function confirmCrop() {
       onChange={(event) => onPickPhoto(event.target.files?.[0])}
     />
 
-    <EditModal
-        open={modal.open && modal.type === "name"}
-        title="Змінити ім’я та прізвище"
-        onClose={closeEditModal}
-        onSave={saveModalChanges}
-        saveDisabled={!draft.firstName.trim()}
-        saving={saving}
-      >
-        <div className="grid gap-4 sm:grid-cols-2">
-          <FormField label="Ім’я">
-            <Input
-              value={draft.firstName}
-              onChange={(event) =>
-                setDraft((prev) => ({ ...prev, firstName: event.target.value }))
-              }
-              placeholder="Наприклад, Михайло"
-            />
-          </FormField>
-          <FormField label="Прізвище">
-            <Input
-              value={draft.lastName}
-              onChange={(event) =>
-                setDraft((prev) => ({ ...prev, lastName: event.target.value }))
-              }
-              placeholder="Наприклад, Петренко"
-            />
-          </FormField>
-        </div>
-      </EditModal>
+<EditModal
+  open={modal.open && modal.type === "phone"}
+  title="Змінити номер телефону"
+  onClose={closeEditModal}
+  onSave={saveModalChanges}
+  saveDisabled={!draft.phone.trim()}
+  saving={saving}
+>
+  <div className="space-y-4">
+    <FormField label="Новий номер">
+      <Input
+        value={draft.phone}
+        onChange={(event) =>
+          setDraft((prev) => ({ ...prev, phone: event.target.value }))
+        }
+        placeholder="+380..."
+      />
+    </FormField>
+
+    <p className="text-sm leading-6 text-[color:var(--color-caramel)]/85">
+      Тут можна підключити існуючу логіку підтвердження через SMS-код.
+    </p>
+  </div>
+</EditModal>
 
       <EditModal
         open={modal.open && modal.type === "gender"}
@@ -1415,36 +1423,14 @@ async function confirmCrop() {
         </FormField>
       </EditModal>
 
-      <EditModal
-        open={modal.open && modal.type === "phone"}
-        title="Змінити номер телефону"
-        onClose={closeEditModal}
-        onSave={closeEditModal}
-        saveDisabled={!draft.phone.trim()}
-      >
-        <div className="space-y-4">
-          <FormField label="Новий номер">
-            <Input
-              value={draft.phone}
-              onChange={(event) =>
-                setDraft((prev) => ({ ...prev, phone: event.target.value }))
-              }
-              placeholder="+380..."
-            />
-          </FormField>
-          <p className="text-sm leading-6 text-[color:var(--color-caramel)]/85">
-            Тут можна підключити існуючу логіку підтвердження через SMS-код.
-          </p>
-        </div>
-      </EditModal>
-
-      <EditModal
-        open={modal.open && modal.type === "email"}
-        title="Змінити email"
-        onClose={closeEditModal}
-        onSave={closeEditModal}
-        saveDisabled={!draft.email.trim()}
-      >
+<EditModal
+  open={modal.open && modal.type === "email"}
+  title="Змінити email"
+  onClose={closeEditModal}
+  onSave={saveModalChanges}
+  saveDisabled={!draft.email.trim()}
+  saving={saving}
+>
         <div className="space-y-4">
           <FormField label="Нова пошта">
             <Input

@@ -115,6 +115,43 @@ function getDayKeyFromDateObj(date) {
   return map[date.getDay()];
 }
 
+function normalizeMaybeTime(value) {
+  if (value == null || value === "") return "";
+
+  if (typeof value === "string" && value.includes(":")) {
+    return value;
+  }
+
+  const minutes = Number(value);
+  if (!Number.isFinite(minutes)) return "";
+
+  return minutesToTime(minutes);
+}
+
+function getBreakStart(item) {
+  return normalizeMaybeTime(
+    item?.breakStart ??
+      item?.breakStartTime ??
+      item?.breakFrom ??
+      item?.pauseStart ??
+      item?.pauseFrom ??
+      item?.lunchStart ??
+      item?.breakStartMin,
+  );
+}
+
+function getBreakEnd(item) {
+  return normalizeMaybeTime(
+    item?.breakEnd ??
+      item?.breakEndTime ??
+      item?.breakTo ??
+      item?.pauseEnd ??
+      item?.pauseTo ??
+      item?.lunchEnd ??
+      item?.breakEndMin,
+  );
+}
+
 function normalizeScheduleEntry(entry) {
   if (!entry || typeof entry !== "object") return null;
 
@@ -163,7 +200,7 @@ function normalizeScheduleEntry(entry) {
 function getScheduleForDate(date, schedule, exceptions = []) {
   if (!date) return null;
 
-  const iso = formatDateLocal(date);
+  const iso = formatLocalDate(date);
 
   const exactException = Array.isArray(exceptions)
     ? exceptions.find((item) => String(item?.date || "").slice(0, 10) === iso)
@@ -328,13 +365,14 @@ scheduleExceptions: {
 });
 
 clientRouter.patch("/me", requireAuth, requireClient, async (req, res) => {
-  const { firstName, lastName, birthDate, gender, photoUrl } = req.body;
+  const { firstName, lastName, phone, birthDate, gender, photoUrl } = req.body;
 
   const updated = await prisma.clientAccount.update({
     where: { id: req.auth.sub },
     data: {
       ...(firstName !== undefined ? { firstName: firstName || null } : {}),
       ...(lastName !== undefined ? { lastName: lastName || null } : {}),
+      ...(phone !== undefined ? { phone: phone || null } : {}),
       ...(gender !== undefined ? { gender: gender || null } : {}),
       ...(photoUrl !== undefined ? { photoUrl: photoUrl || null } : {}),
       ...(birthDate !== undefined

@@ -834,7 +834,7 @@ function AppointmentCard({ item, nowTs, onOpen }) {
           <div className="mb-2 hidden justify-center max-[639px]:flex">
             <div
               className={cn(
-                "inline-flex items-center justify-center gap-1.5 rounded-full border px-3 py-1 text-center text-[10px] font-black shadow-sm",
+               "inline-flex items-center justify-center gap-1.5 rounded-full border bg-white px-3 py-1 text-center text-[10px] font-black shadow-sm group-hover:bg-white",
                 statusBadge.className,
               )}
             >
@@ -930,7 +930,7 @@ function AppointmentCard({ item, nowTs, onOpen }) {
         <div className="hidden min-w-0 flex-col items-center justify-center max-[639px]:hidden sm:flex sm:-ml-2 pr-4 lg:pr-6">
           <div
             className={cn(
-              "mb-2 inline-flex w-fit items-center justify-center gap-1.5 rounded-full border px-3 py-1.5 text-[10px] font-black shadow-sm",
+              "mb-2 inline-flex w-fit items-center justify-center gap-1.5 rounded-full border bg-white px-3 py-1.5 text-[10px] font-black shadow-sm group-hover:bg-white",
               statusBadge.className,
             )}
           >
@@ -1197,6 +1197,26 @@ const DatePickerButton = forwardRef(function DatePickerButton(
     </button>
   );
 });
+
+function TwoLineName({ value, fallback = "—" }) {
+  const text = String(value || fallback).trim();
+  const parts = text.split(/\s+/);
+
+  const firstLine = parts[0] || fallback;
+  const secondLine = parts.slice(1).join(" ");
+
+  return (
+    <span className="block max-w-full leading-[1.15]">
+      <span className="block truncate">{firstLine}</span>
+
+      {secondLine && (
+        <span className="block truncate text-[13px] font-semibold text-[#77716b]">
+          {secondLine}
+        </span>
+      )}
+    </span>
+  );
+}
 
 export default function Bookings() {
   const { bookings, confirmBooking, cancelBooking, deleteBooking, loading } =
@@ -3062,22 +3082,82 @@ export default function Bookings() {
 
                           const actionsCount = actions.length;
                           const isExpanded = !!expandedCalendarCards[b.id];
+const statusUi = getStatusUi(
+  isCanceled
+    ? "canceled"
+    : isConfirmed
+      ? "confirmed"
+      : "new",
+  isArchived,
+  b.canceledBy,
+);
 
-                          const statusUi = getStatusUi(
-                            isCanceled
-                              ? "canceled"
-                              : isConfirmed
-                                ? "confirmed"
-                                : "new",
-                            isArchived,
-                            b.canceledBy,
-                          );
+const statusKey = isArchived
+  ? "completed"
+  : isConfirmed
+    ? "confirmed"
+    : isCanceled
+      ? "canceled"
+      : "new";
 
-                          const masterName =
-                            b.masterName ||
-                            b.staffName ||
-                            b.employeeName ||
-                            "Довільний майстер";
+const statusBadge = {
+  canceled: {
+    label:
+      b.canceledBy === "client" ? "Скасовано клієнтом" : "Скасовано вами",
+    className:
+      "border-[var(--color-canceled-light)] text-[var(--color-canceled-dark)]",
+    icon: XCircle,
+  },
+
+  confirmed: {
+    label: "Підтверджено",
+    className:
+      "border-[var(--color-confirmed-light)] text-[var(--color-confirmed-dark)]",
+    icon: CheckCheck,
+  },
+
+  completed: {
+    label: "Сеанс завершено",
+    className:
+      "border-[var(--color-archived-light)] text-[var(--color-archived-dark)]",
+    icon: PartyPopper,
+  },
+
+  new: {
+    label: "Очікує підтвердження",
+    className: "border-[var(--color-pending-light)] text-[#ffb020]",
+    icon: Clock,
+  },
+}[statusKey];
+
+const StatusIcon = statusBadge.icon;
+
+const clientName = b.clientName || b.client?.name || "Клієнт";
+
+const masterName =
+  b.masterName ||
+  b.master?.name ||
+  b.staffName ||
+  b.employeeName ||
+  "Довільний майстер";
+
+const clientPhoto = toPublicUrl(
+  b.clientPhotoUrl ||
+    b.clientPhoto ||
+    b.client?.photoUrl ||
+    b.client?.photo ||
+    b.client?.avatar ||
+    "",
+);
+
+const masterPhoto = toPublicUrl(
+  b.masterPhotoUrl ||
+    b.masterPhoto ||
+    b.master?.photoUrl ||
+    b.master?.photo ||
+    b.master?.avatar ||
+    "",
+);
 
                           const price =
                             b.price ?? b.servicePrice ?? b.totalPrice ?? null;
@@ -3099,15 +3179,18 @@ export default function Bookings() {
                             >
                               <div className="p-4">
                                 <div className="flex items-start justify-between gap-3">
-                                  <div
-                                    className={cn(
-                                      "inline-flex items-center justify-center gap-2 px-3 py-1 text-xs font-semibold rounded-2xl border border-[var(--border-soft)] bg-white shadow-sm transition-all duration-200",
-                                      statusUi.badge,
-                                    )}
-                                  >
-                                    <statusUi.icon className="h-3.5 w-3.5" />
-                                    {statusUi.text}
-                                  </div>
+<div
+  className={cn(
+    "inline-flex items-center justify-center gap-1.5 rounded-full border bg-white px-3 py-1.5 text-[10px] font-black shadow-sm transition-all duration-200 group-hover:bg-white",
+    statusBadge.className,
+  )}
+>
+  <StatusIcon className="h-3.5 w-3.5" />
+
+  <span className="whitespace-nowrap text-center leading-[1.05]">
+    {statusBadge.label}
+  </span>
+</div>
 
                                   <button
                                     type="button"
@@ -3177,35 +3260,57 @@ export default function Bookings() {
                                 <div className="overflow-hidden">
                                   <div className="border-t border-[var(--color-cream)] bg-[var(--color-cream)] p-4">
                                     <div className="grid grid-cols-2 gap-2">
-                                      <div className="flex items-center gap-3 rounded-2xl bg-white px-3 py-3">
-                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-cream)] text-[var(--color-ink)] shadow-sm">
-                                          <UserRound className="h-4 w-4" />
-                                        </div>
+<div className="flex items-center gap-3 rounded-2xl bg-white px-3 py-3">
+  <div className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full border border-[#eadfce] bg-white p-0.5 shadow-sm">
+    {clientPhoto ? (
+      <img
+        src={clientPhoto}
+        alt={clientName}
+        className="h-full w-full rounded-full object-cover"
+      />
+    ) : (
+      <div className="grid h-full w-full place-items-center rounded-full bg-[#fff1e8] text-[#ff6200]">
+        <UserRound className="h-5 w-5" />
+      </div>
+    )}
+  </div>
 
-                                        <div className="min-w-0">
-                                          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--color-forest)]">
-                                            Клієнт
-                                          </p>
-                                          <p className="truncate text-sm font-bold text-[var(--color-ink)]">
-                                            {b.clientName || "—"}
-                                          </p>
-                                        </div>
-                                      </div>
+  <div className="min-w-0">
+    <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--color-forest)]">
+      Клієнт
+    </p>
 
-                                      <div className="flex items-center gap-3 rounded-2xl bg-white px-3 py-3">
-                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-cream)] text-[var(--color-ink)] shadow-sm">
-                                          <Scissors className="h-4 w-4" />
-                                        </div>
+    <p className="truncate text-sm font-bold text-[var(--color-ink)]">
+      <TwoLineName value={clientName} />
+    </p>
+  </div>
+</div>
 
-                                        <div className="min-w-0">
-                                          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--color-forest)]">
-                                            Майстер
-                                          </p>
-                                          <p className="truncate text-sm font-bold text-[var(--color-ink)]">
-                                            {masterName}
-                                          </p>
-                                        </div>
-                                      </div>
+<div className="flex items-center gap-3 rounded-2xl bg-white px-3 py-3">
+  <div className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full border border-[#eadfce] bg-white p-0.5 shadow-sm">
+    {masterPhoto ? (
+      <img
+        src={masterPhoto}
+        alt={masterName}
+        className="h-full w-full rounded-full object-cover"
+      />
+    ) : (
+      <div className="flex h-full w-full items-center justify-center rounded-full bg-[#fff1e8] text-[11px] font-black text-[#ff6200]">
+        {masterName?.[0] || "М"}
+      </div>
+    )}
+  </div>
+
+  <div className="min-w-0">
+    <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--color-forest)]">
+      Майстер
+    </p>
+
+    <p className="truncate text-sm font-bold text-[var(--color-ink)]">
+      <TwoLineName value={masterName} />
+    </p>
+  </div>
+</div>
                                     </div>
 
                                     {b.clientPhone && (
@@ -3270,10 +3375,7 @@ export default function Bookings() {
                                               }
                                             }}
                                             className={cn(
-                                              "inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-black text-white transition-all duration-200",
-                                              "bg-[#22c55e]",
-                                              "hover:bg-[#16a34a] hover:-translate-y-[1px]",
-                                              "active:scale-[0.98]",
+                                              "inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-black text-white rounded-[22px] bg-[var(--color-primary-buttom)] text-sm font-black text-white transition-all duration-200 hover:bg-[#4a4a4a] active:scale-[0.98]",
                                               actionsCount > 1
                                                 ? "w-full"
                                                 : "min-w-[160px]",

@@ -1081,7 +1081,24 @@ const EMPTY_NOTIFICATIONS = [];
 const EMPTY_CLIENTS = [];
 export default function Notifications() {
   const queryClient = useQueryClient();
-  const studioId = localStorage.getItem("studioId");
+  const [studioId, setStudioId] = useState(
+  () => localStorage.getItem("studioId") || "",
+);
+useEffect(() => {
+  const syncStudioId = () => {
+    setStudioId(localStorage.getItem("studioId") || "");
+  };
+
+  syncStudioId();
+
+  window.addEventListener("storage", syncStudioId);
+  window.addEventListener("auth-changed", syncStudioId);
+
+  return () => {
+    window.removeEventListener("storage", syncStudioId);
+    window.removeEventListener("auth-changed", syncStudioId);
+  };
+}, []);
 const [clients, setClients] = useState([]);
 const [visibleCount, setVisibleCount] = useState(10);
 const [typeFilter, setTypeFilter] = useState("all");
@@ -1094,20 +1111,29 @@ const datePickerToRef = useRef(null);
 const [selectedReschedule, setSelectedReschedule] = useState(null);
 const [selectedCanceled, setSelectedCanceled] = useState(null);
 const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [socketState, setSocketState] = useState(
-    socket.connected ? "ok" : "offline",
-  );
+const [socketState, setSocketState] = useState(() =>
+  socket.connected ? "ok" : "pending",
+);
 
-  const notificationsQuery = useQuery({
+const notificationsQuery = useQuery({
+  queryKey: ["notifications", studioId],
+  queryFn: () => fetchNotifications(studioId),
+  enabled: Boolean(studioId),
+  staleTime: 0,
+  gcTime: 1000 * 60 * 30,
+  refetchOnMount: "always",
+  refetchOnWindowFocus: true,
+  refetchOnReconnect: true,
+});
+
+useEffect(() => {
+  if (!studioId) return;
+
+  queryClient.invalidateQueries({
     queryKey: ["notifications", studioId],
-    queryFn: () => fetchNotifications(studioId),
-    enabled: Boolean(studioId),
-    staleTime: 1000 * 60 * 10,
-    gcTime: 1000 * 60 * 30,
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
+    exact: true,
   });
+}, [studioId, queryClient]);
 
   useEffect(() => {
     if (!studioId) return;
@@ -1327,57 +1353,86 @@ const dateFilterOptions = useMemo(() => {
     };
   }, []);
 
-  useEffect(() => {
-    const userId = localStorage.getItem("userId");
+useEffect(() => {
+  if (!studioId) return;
 
-    const joinRooms = () => {
-      if (userId) {
-        socket.emit("auth:join", { userId, studioId, role: "owner" });
-      }
-      if (studioId) {
-        socket.emit("join:studio", { studioId });
-      }
-      setSocketState("ok");
-    };
+  const userId = localStorage.getItem("userId");
 
-    const handleConnect = () => joinRooms();
-    const handleDisconnect = () => setSocketState("offline");
+  const refetchNotifications = () => {
+    queryClient.invalidateQueries({
+      queryKey: ["notifications", studioId],
+      exact: true,
+    });
+  };
 
-    const handleNewNotification = (payload) => {
-      if (!payload || String(payload.studioId) !== String(studioId)) return;
-
-      queryClient.setQueryData(["notifications", studioId], (old = []) => {
-        const exists = old.some((item) => String(item.id) === String(payload.id));
-        if (exists) return old;
-        return [payload, ...old];
+  const joinRooms = () => {
+    if (userId) {
+      socket.emit("auth:join", {
+        userId,
+        studioId,
+        role: "owner",
       });
-    };
-
-    const handleNotificationsUpdated = async () => {
-      await queryClient.invalidateQueries({
-        queryKey: ["notifications", studioId],
-        exact: true,
-      });
-    };
-
-    if (socket.connected) {
-      joinRooms();
-    } else {
-      setTimeout(() => setSocketState("offline"), 0);
     }
 
-    socket.on("connect", handleConnect);
-    socket.on("disconnect", handleDisconnect);
-    socket.on("notification:new", handleNewNotification);
-    socket.on("notifications:updated", handleNotificationsUpdated);
+    socket.emit("join:studio", { studioId });
 
-    return () => {
-      socket.off("connect", handleConnect);
-      socket.off("disconnect", handleDisconnect);
-      socket.off("notification:new", handleNewNotification);
-      socket.off("notifications:updated", handleNotificationsUpdated);
-    };
-  }, [studioId, queryClient]);
+    refetchNotifications();
+  };
+
+  const handleConnect = () => {
+    joinRooms();
+    setSocketState("ok");
+  };
+
+  const handleDisconnect = () => {
+    setSocketState("offline");
+  };
+
+  const handleNewNotification = (payload) => {
+    if (!payload) return;
+    if (String(payload.studioId) !== String(studioId)) return;
+
+    queryClient.setQueryData(["notifications", studioId], (old) => {
+      const list = Array.isArray(old) ? old : [];
+
+      const exists = list.some(
+        (item) => String(item.id) === String(payload.id),
+      );
+
+      if (exists) return list;
+
+      return [payload, ...list];
+    });
+
+    refetchNotifications();
+  };
+
+  const handleNotificationsUpdated = (payload) => {
+    if (payload?.studioId && String(payload.studioId) !== String(studioId)) {
+      return;
+    }
+
+    refetchNotifications();
+  };
+
+  socket.on("connect", handleConnect);
+  socket.on("disconnect", handleDisconnect);
+  socket.on("notification:new", handleNewNotification);
+  socket.on("notifications:updated", handleNotificationsUpdated);
+
+  if (socket.connected) {
+    joinRooms();
+  } else {
+    socket.connect?.();
+  }
+
+  return () => {
+    socket.off("connect", handleConnect);
+    socket.off("disconnect", handleDisconnect);
+    socket.off("notification:new", handleNewNotification);
+    socket.off("notifications:updated", handleNotificationsUpdated);
+  };
+}, [studioId, queryClient]);
 
 useEffect(() => {
   if (selectedReschedule || selectedCanceled) {

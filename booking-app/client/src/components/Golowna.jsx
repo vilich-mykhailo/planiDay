@@ -330,6 +330,80 @@ const MASTER_ENUM_TO_KEY = {
   SUN: "sun",
 };
 
+const SCHEDULE_DAY_ALIASES = {
+  mon: "mon",
+  monday: "mon",
+  понеділок: "mon",
+  пн: "mon",
+  tue: "tue",
+  tuesday: "tue",
+  вівторок: "tue",
+  вт: "tue",
+  wed: "wed",
+  wednesday: "wed",
+  середа: "wed",
+  ср: "wed",
+  thu: "thu",
+  thursday: "thu",
+  четвер: "thu",
+  чт: "thu",
+  fri: "fri",
+  friday: "fri",
+  пʼятниця: "fri",
+  "п'ятниця": "fri",
+  пт: "fri",
+  sat: "sat",
+  saturday: "sat",
+  субота: "sat",
+  сб: "sat",
+  sun: "sun",
+  sunday: "sun",
+  неділя: "sun",
+  нд: "sun",
+};
+
+function scheduleDayKey(value) {
+  if (value == null) return "";
+
+  if (typeof value === "number" || /^\d+$/.test(String(value).trim())) {
+    const dayNumber = Number(value);
+
+    if (dayNumber === 0) return "sun";
+    if (dayNumber >= 1 && dayNumber <= 7) {
+      return ["mon", "tue", "wed", "thu", "fri", "sat", "sun"][
+        dayNumber - 1
+      ];
+    }
+  }
+
+  const normalized = String(value)
+    .trim()
+    .toLowerCase()
+    .replace(/[._\s-]+/g, "");
+
+  return (
+    MASTER_ENUM_TO_KEY[String(value).trim().toUpperCase()] ||
+    SCHEDULE_DAY_ALIASES[normalized] ||
+    ""
+  );
+}
+
+function scheduleObject(value) {
+  if (!value) return null;
+  if (typeof value === "object") return value;
+
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      return parsed && typeof parsed === "object" ? parsed : null;
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
+}
+
 function normalizeEnabled(value, fallback = true) {
   if (value === false || value === "false") return false;
   if (value === true || value === "true") return true;
@@ -378,20 +452,40 @@ function normalizeMasterSchedule(master) {
 }
 
 function normalizeMasterExceptions(master) {
-  const list = master?.scheduleExceptions || master?.exceptions || [];
+  const list =
+    [
+      master?.scheduleExceptions,
+      master?.workScheduleExceptions,
+      master?.workingHoursExceptions,
+      master?.specialDates,
+      master?.specialDays,
+      master?.exceptions,
+    ].find((value) => Array.isArray(value) && value.length > 0) || [];
 
   return Array.isArray(list)
     ? list.map((item) => ({
         ...item,
-        date: scheduleDateKey(item?.date),
+        date: scheduleDateKey(
+          item?.date ||
+            item?.dateKey ||
+            item?.day ||
+            item?.exceptionDate ||
+            item?.specialDate,
+        ),
         enabled: normalizeEnabled(item?.enabled, true),
         start:
           item?.start ||
+          item?.startTime ||
+          item?.from ||
+          item?.open ||
           (Number.isFinite(Number(item?.startMin))
             ? scheduleTimeLabel(Number(item.startMin))
             : null),
         end:
           item?.end ||
+          item?.endTime ||
+          item?.to ||
+          item?.close ||
           (Number.isFinite(Number(item?.endMin))
             ? scheduleTimeLabel(Number(item.endMin))
             : null),
@@ -400,19 +494,69 @@ function normalizeMasterExceptions(master) {
 }
 
 function masterScheduleWindowFromRow(row, fallbackEnabled = true) {
-  const enabled = normalizeEnabled(row?.enabled, fallbackEnabled);
+  const interval =
+    (Array.isArray(row?.intervals) && row.intervals[0]) ||
+    (Array.isArray(row?.periods) && row.periods[0]) ||
+    (Array.isArray(row?.slots) && row.slots[0]) ||
+    null;
+  const explicitlyClosed =
+    row?.closed === true ||
+    row?.isClosed === true ||
+    row?.open === false ||
+    row?.dayOff === true ||
+    row?.isDayOff === true;
+  const enabledValue =
+    row?.enabled ??
+    row?.isOpen ??
+    row?.isWorking ??
+    row?.working ??
+    row?.active;
+  const enabled = explicitlyClosed
+    ? false
+    : normalizeEnabled(enabledValue, fallbackEnabled);
 
   if (!enabled) {
     return { isWorking: false, startMin: null, endMin: null };
   }
 
-  const startMin = Number.isFinite(Number(row?.startMin))
-    ? Number(row.startMin)
-    : scheduleMinutesFromTime(row?.start);
-
-  const endMin = Number.isFinite(Number(row?.endMin))
-    ? Number(row.endMin)
-    : scheduleMinutesFromTime(row?.end);
+  const rawStart =
+    row?.start ??
+    row?.startTime ??
+    row?.from ??
+    row?.fromTime ??
+    row?.open ??
+    row?.openingTime ??
+    row?.opensAt ??
+    row?.openTime ??
+    row?.workingFrom ??
+    row?.workStart ??
+    interval?.start ??
+    interval?.startTime ??
+    interval?.from;
+  const rawEnd =
+    row?.end ??
+    row?.endTime ??
+    row?.to ??
+    row?.toTime ??
+    row?.close ??
+    row?.closingTime ??
+    row?.closesAt ??
+    row?.closeTime ??
+    row?.workingTo ??
+    row?.workEnd ??
+    interval?.end ??
+    interval?.endTime ??
+    interval?.to;
+  const startMinuteValue =
+    row?.startMin ?? row?.fromMin ?? row?.openMin ?? interval?.startMin;
+  const endMinuteValue =
+    row?.endMin ?? row?.toMin ?? row?.closeMin ?? interval?.endMin;
+  const startMin = Number.isFinite(Number(startMinuteValue))
+    ? Number(startMinuteValue)
+    : scheduleMinutesFromTime(rawStart);
+  const endMin = Number.isFinite(Number(endMinuteValue))
+    ? Number(endMinuteValue)
+    : scheduleMinutesFromTime(rawEnd);
 
   if (
     !Number.isFinite(startMin) ||
@@ -441,17 +585,24 @@ function getMasterScheduleWindow(master, date = new Date()) {
   }
 
   const dayKey = MASTER_DAY_KEY_BY_INDEX[date.getDay()];
-  const scheduleDays = Array.isArray(master?.scheduleDays)
-    ? master.scheduleDays
-    : [];
+  const scheduleDays =
+    [
+      master?.scheduleDays,
+      master?.workScheduleDays,
+      master?.workingHoursDays,
+      master?.weeklySchedule,
+    ].find((value) => Array.isArray(value) && value.length > 0) || [];
 
   if (scheduleDays.length > 0) {
     const row = scheduleDays.find((item) => {
-      const itemKey =
-        MASTER_ENUM_TO_KEY[item?.day] ||
-        String(item?.day || "").toLowerCase();
-
-      return itemKey === dayKey;
+      return (
+        scheduleDayKey(
+          item?.day ??
+            item?.dayOfWeek ??
+            item?.weekday ??
+            item?.weekDay,
+        ) === dayKey
+      );
     });
 
     if (!row) {
@@ -464,12 +615,28 @@ function getMasterScheduleWindow(master, date = new Date()) {
     };
   }
 
-  if (
-    master?.schedule &&
-    typeof master.schedule === "object" &&
-    !Array.isArray(master.schedule)
-  ) {
-    const day = master.schedule[dayKey];
+  const schedule =
+    [
+      master?.schedule,
+      master?.workSchedule,
+      master?.workingHours,
+      master?.openingHours,
+      master?.businessHours,
+      master?.workHours,
+      master?.hours,
+    ]
+      .map(scheduleObject)
+      .find(Boolean) || null;
+  const nestedSchedule =
+    scheduleObject(schedule?.days) ||
+    scheduleObject(schedule?.week) ||
+    scheduleObject(schedule?.weekly) ||
+    schedule;
+
+  if (nestedSchedule && !Array.isArray(nestedSchedule)) {
+    const day = Object.entries(nestedSchedule).find(
+      ([key]) => scheduleDayKey(key) === dayKey,
+    )?.[1];
 
     if (!day) {
       return { isWorking: false, startMin: null, endMin: null, source: "schedule" };
@@ -482,6 +649,327 @@ function getMasterScheduleWindow(master, date = new Date()) {
   }
 
   return null;
+}
+
+function getStudioScheduleSources(studio) {
+  const hasContent = (value) =>
+    Array.isArray(value)
+      ? value.length > 0
+      : Boolean(
+          value &&
+            typeof value === "object" &&
+            Object.keys(value).length > 0,
+        );
+  const directStudioSchedule =
+    studio &&
+    typeof studio === "object" &&
+    (Object.keys(studio).some((key) => scheduleDayKey(key)) ||
+      studio.days ||
+      studio.weekdays ||
+      studio.weekDays ||
+      studio.workingDays)
+      ? studio
+      : null;
+  const roots = [
+    directStudioSchedule,
+    studio?.schedule,
+    studio?.workSchedule,
+    studio?.workingHours,
+    studio?.workingSchedule,
+    studio?.workHours,
+    studio?.hours,
+    studio?.openingHours,
+    studio?.businessHours,
+    studio?.studioSchedule,
+    studio?.scheduleSettings,
+    studio?.settings?.schedule,
+    studio?.settings?.workSchedule,
+    studio?.settings?.workingHours,
+    studio?.settings?.workingSchedule,
+    studio?.settings?.workHours,
+    studio?.settings?.hours,
+    studio?.settings?.openingHours,
+    studio?.settings?.businessHours,
+  ]
+    .map(scheduleObject)
+    .filter(hasContent);
+
+  return roots.flatMap((source) => [
+    source,
+    scheduleObject(source?.days),
+    scheduleObject(source?.weekdays),
+    scheduleObject(source?.weekDays),
+    scheduleObject(source?.workingDays),
+    scheduleObject(source?.items),
+    scheduleObject(source?.entries),
+    scheduleObject(source?.schedule),
+  ]).filter(hasContent);
+}
+
+function hasStudioSchedulePayload(studio) {
+  return (
+    getStudioScheduleSources(studio).length > 0 ||
+    [
+      studio?.scheduleDays,
+      studio?.workScheduleDays,
+      studio?.openingHoursDays,
+      studio?.workingHoursDays,
+    ].some((value) => Array.isArray(value) && value.length > 0)
+  );
+}
+
+function pickStudioScheduleEntry(source, date) {
+  if (!source) return null;
+
+  const dateKey = toISODateKey(date);
+  const weekdayIndex = (date.getDay() + 6) % 7;
+  const longKeys = [
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+    "sunday",
+  ];
+  const shortKeys = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+  const ukKeys = [
+    "Понеділок",
+    "Вівторок",
+    "Середа",
+    "Четвер",
+    "П'ятниця",
+    "Субота",
+    "Неділя",
+  ];
+
+  if (Array.isArray(source)) {
+    return (
+      source.find((item) => {
+        const rawDay = String(
+          item?.date ??
+            item?.day ??
+            item?.weekday ??
+            item?.dayOfWeek ??
+            item?.name ??
+            "",
+        ).toLowerCase();
+
+        return (
+          scheduleDateKey(item?.date || item?.dateKey) === dateKey ||
+          Number(item?.dayOfWeek) === weekdayIndex + 1 ||
+          Number(item?.dayOfWeek) === (weekdayIndex + 1) % 7 ||
+          Number(item?.weekday) === weekdayIndex ||
+          Number(item?.weekday) === weekdayIndex + 1 ||
+          rawDay === longKeys[weekdayIndex] ||
+          rawDay === shortKeys[weekdayIndex] ||
+          rawDay === ukKeys[weekdayIndex].toLowerCase()
+        );
+      }) || null
+    );
+  }
+
+  if (typeof source === "object") {
+    return (
+      source[dateKey] ||
+      source[longKeys[weekdayIndex]] ||
+      source[shortKeys[weekdayIndex]] ||
+      source[ukKeys[weekdayIndex]] ||
+      source[String(weekdayIndex)] ||
+      source[String(weekdayIndex + 1)] ||
+      null
+    );
+  }
+
+  return null;
+}
+
+function normalizeStudioSchedulePayload(data, studioId) {
+  const direct = data?.studio || data?.data?.studio || data?.data || data;
+  const list =
+    (Array.isArray(data) ? data : null) ||
+    (Array.isArray(data?.data) ? data.data : null) ||
+    data?.studios ||
+    data?.data?.studios ||
+    data?.items ||
+    data?.data?.items ||
+    null;
+
+  if (hasStudioSchedulePayload(direct)) return direct;
+
+  if (Array.isArray(list)) {
+    return (
+      list.find((item) => String(item?.id) === String(studioId)) ||
+      list.find(hasStudioSchedulePayload) ||
+      direct
+    );
+  }
+
+  return direct;
+}
+
+function getStudioScheduleWindow(studio, date = new Date()) {
+  if (!studio) return null;
+
+  const dateKey = toISODateKey(date);
+  const studioSchedule = getStudioScheduleSources(studio)[0] || null;
+  const exceptionSources = [
+    studio.scheduleExceptions,
+    studio.openingExceptions,
+    studio.workScheduleExceptions,
+    studio.workingHoursExceptions,
+    studio.settings?.scheduleExceptions,
+    studio.settings?.openingExceptions,
+    studio.settings?.workScheduleExceptions,
+    studio.specialDates,
+    studio.specialDays,
+    studio.specialSchedule,
+    studio.holidays,
+    studioSchedule?.scheduleExceptions,
+    studioSchedule?.exceptions,
+    studioSchedule?.specialDates,
+    studioSchedule?.specialDays,
+  ];
+  const exceptionValue = exceptionSources.find(
+    (value) => {
+      const objectValue = scheduleObject(value);
+
+      return (
+        (Array.isArray(value) && value.length > 0) ||
+        (!Array.isArray(value) &&
+          objectValue &&
+          Object.keys(objectValue).length > 0)
+      );
+    },
+  );
+  const exceptionObject = scheduleObject(exceptionValue);
+  const exceptions = Array.isArray(exceptionValue)
+    ? exceptionValue
+    : exceptionObject
+      ? Object.entries(exceptionObject).map(([date, value]) => ({
+          ...(value && typeof value === "object" ? value : {}),
+          date,
+        }))
+      : [];
+  const exception = exceptions.find(
+    (item) =>
+      scheduleDateKey(
+        item?.date ||
+          item?.dateKey ||
+          item?.day ||
+          item?.exceptionDate ||
+          item?.specialDate,
+      ) === dateKey,
+  );
+
+  if (exception) {
+    return {
+      ...masterScheduleWindowFromRow(exception, true),
+      source: "studio-exception",
+    };
+  }
+
+  const scheduleDayLists = [
+    studio.scheduleDays,
+    studio.workScheduleDays,
+    studio.openingHoursDays,
+    studio.workingHoursDays,
+    studio.businessHoursDays,
+    studio.weeklySchedule,
+  ];
+  const scheduleDays =
+    scheduleDayLists.find(
+      (value) => Array.isArray(value) && value.length > 0,
+    ) || [];
+
+  if (scheduleDays.length > 0) {
+    const row = pickStudioScheduleEntry(scheduleDays, date);
+
+    if (!row) {
+      return {
+        isWorking: false,
+        startMin: null,
+        endMin: null,
+        source: "studio-schedule",
+      };
+    }
+
+    return {
+      ...masterScheduleWindowFromRow(row, true),
+      source: "studio-schedule",
+    };
+  }
+
+  const scheduleObjects = [
+    ...getStudioScheduleSources(studio),
+    studio.weeklySchedule,
+  ]
+    .map(scheduleObject)
+    .filter(Boolean);
+  const row = scheduleObjects
+    .map((schedule) => pickStudioScheduleEntry(schedule, date))
+    .find(Boolean);
+
+  if (row) {
+    return {
+      ...masterScheduleWindowFromRow(row, true),
+      source: "studio-schedule",
+    };
+  }
+
+  const directWindow = masterScheduleWindowFromRow(
+    {
+      enabled:
+        studio.enabled ??
+        studio.isOpen ??
+        studio.isWorking,
+      start:
+        studio.start ||
+        studio.startTime ||
+        studio.open ||
+        studio.openTime ||
+        studio.openingTime ||
+        studio.opensAt ||
+        studio.workingFrom,
+      end:
+        studio.end ||
+        studio.endTime ||
+        studio.close ||
+        studio.closeTime ||
+        studio.closingTime ||
+        studio.closesAt ||
+        studio.workingTo,
+      startMin: studio.startMin ?? studio.openMin,
+      endMin: studio.endMin ?? studio.closeMin,
+    },
+    true,
+  );
+
+  if (directWindow.isWorking) {
+    return { ...directWindow, source: "studio-schedule" };
+  }
+
+  return null;
+}
+
+function intersectScheduleWindows(...windows) {
+  const known = windows.filter(Boolean);
+
+  if (known.some((window) => window.isWorking === false)) {
+    return { isWorking: false, startMin: null, endMin: null };
+  }
+
+  const working = known.filter((window) => window.isWorking);
+  if (working.length === 0) return null;
+
+  const startMin = Math.max(...working.map((window) => window.startMin));
+  const endMin = Math.min(...working.map((window) => window.endMin));
+
+  if (endMin <= startMin) {
+    return { isWorking: false, startMin: null, endMin: null };
+  }
+
+  return { isWorking: true, startMin, endMin };
 }
 
 function getMasterWorkStatus(master, date = new Date()) {
@@ -830,40 +1318,40 @@ function schedulePalette(booking, nowTs) {
 
   if (status === "confirmed") {
     return {
-      bg: "bg-[#edf8f0]",
-      border: "border-[#ccebd6]",
-      accent: "bg-[var(--color-buttom-ok)]",
-      text: "text-[var(--color-confirmed-dark)]",
-      shadow: "shadow-[0_14px_34px_rgba(47,126,83,0.11)]",
+      bg: "bg-[#ecfdf3]",
+      border: "border-[#abefc6]",
+      accent: "bg-[#039855]",
+      text: "text-[#027a48]",
+      shadow: "shadow-[0_14px_34px_rgba(3,152,85,0.11)]",
     };
   }
 
   if (status === "pending") {
     return {
-      bg: "bg-[#fff7dc]",
-      border: "border-[#ffe5a7]",
-      accent: "bg-[#ffb020]",
-      text: "text-[#8a5f00]",
-      shadow: "shadow-[0_14px_34px_rgba(255,176,32,0.12)]",
+      bg: "bg-[#fffaeb]",
+      border: "border-[#fedf89]",
+      accent: "bg-[#dc6803]",
+      text: "text-[#b54708]",
+      shadow: "shadow-[0_14px_34px_rgba(220,104,3,0.12)]",
     };
   }
 
   if (status === "canceled") {
     return {
-      bg: "bg-[#fff5f5]",
-      border: "border-[#fecaca]",
-      accent: "bg-[var(--color-danger)]",
-      text: "text-[var(--color-canceled-dark)]",
+      bg: "bg-[#fef3f2]",
+      border: "border-[#fecdca]",
+      accent: "bg-[#d92d20]",
+      text: "text-[#b42318]",
       shadow: "shadow-none",
     };
   }
 
   if (status === "archived") {
     return {
-      bg: "bg-[var(--color-archived-light)]",
-      border: "border-[#eadbc9]",
-      accent: "bg-[var(--color-caramel)]",
-      text: "text-[var(--color-archived-dark)]",
+      bg: "bg-[#f2f4f7]",
+      border: "border-[#d0d5dd]",
+      accent: "bg-[#667085]",
+      text: "text-[#475467]",
       shadow: "shadow-none",
     };
   }
@@ -877,16 +1365,30 @@ function schedulePalette(booking, nowTs) {
   };
 }
 
-function scheduleStatusIcon(booking, nowTs) {
+function ScheduleStatusIcon({ booking, nowTs, className = "", style }) {
   const status = scheduleVisualStatus(booking, nowTs);
 
-  if (status === "confirmed") return CircleCheckBig;
-  if (status === "pending") return ClockAlert;
-  if (status === "canceled") return XCircle;
-  if (status === "archived") return CheckCheck;
-  if (status === "deleted") return Trash2;
+  if (status === "confirmed") {
+    return <CircleCheckBig className={className} style={style} />;
+  }
 
-  return CircleAlert;
+  if (status === "pending") {
+    return <ClockAlert className={className} style={style} />;
+  }
+
+  if (status === "canceled") {
+    return <XCircle className={className} style={style} />;
+  }
+
+  if (status === "archived") {
+    return <CheckCheck className={className} style={style} />;
+  }
+
+  if (status === "deleted") {
+    return <Trash2 className={className} style={style} />;
+  }
+
+  return <CircleAlert className={className} style={style} />;
 }
 
 function scheduleStatusLabel(booking, nowTs) {
@@ -900,36 +1402,182 @@ function scheduleStatusLabel(booking, nowTs) {
   return "Запис";
 }
 
+function scheduleBookingNotes(booking) {
+  return (
+    booking?.notes ||
+    booking?.note ||
+    booking?.comment ||
+    booking?.comments ||
+    booking?.clientComment ||
+    booking?.customerComment ||
+    booking?.description ||
+    ""
+  );
+}
+
+function scheduleClientEmail(booking) {
+  return (
+    booking?.clientEmail ||
+    booking?.customerEmail ||
+    booking?.email ||
+    booking?.client?.email ||
+    booking?.customer?.email ||
+    ""
+  );
+}
+
+function BookingHoverCard({ preview, nowTs, formatPrice }) {
+  if (!preview?.booking) return null;
+
+  const booking = preview.booking;
+  const tone = scheduleCardTone(booking, nowTs);
+  const statusLabel = scheduleStatusLabel(booking, nowTs);
+  const startLabel =
+    parseTimeToHHMM(booking.raw?.time) ||
+    scheduleTimeLabel(booking.startMin);
+  const endLabel = scheduleTimeLabel(booking.endMin);
+  const notes = String(scheduleBookingNotes(booking.raw) || "");
+  const email = String(scheduleClientEmail(booking.raw) || "");
+  const services = scheduleServices(booking.raw);
+
+  return (
+    <div
+      className="pointer-events-none fixed z-[320] max-h-[calc(100dvh-24px)] w-[min(340px,calc(100vw-24px))] overflow-y-auto rounded-[18px] border bg-white shadow-[0_24px_70px_rgba(15,23,42,0.24)]"
+      style={{
+        left: preview.left,
+        top: preview.top,
+        borderColor: tone.border,
+      }}
+      role="tooltip"
+    >
+      <div
+        className="h-1.5 w-full"
+        style={{ backgroundColor: tone.accent }}
+      />
+
+      <div className="p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <span
+              className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-black"
+              style={{ backgroundColor: tone.soft, color: tone.accent }}
+            >
+             <ScheduleStatusIcon
+  booking={booking}
+  nowTs={nowTs}
+  className="h-3.5 w-3.5"
+/>
+              {statusLabel}
+            </span>
+            <p className="mt-2 truncate text-[16px] font-black text-[#15171d]">
+              {booking.clientName}
+            </p>
+            <p className="mt-0.5 text-[12px] font-semibold text-[#59616d]">
+              {booking.serviceName}
+            </p>
+          </div>
+
+          {booking.price != null && (
+            <span className="shrink-0 rounded-full bg-[#edf8f0] px-2.5 py-1 text-[13px] font-black text-[#008c4f]">
+              ₴{formatPrice(booking.price)}
+            </span>
+          )}
+        </div>
+
+        <div className="mt-4 grid gap-2 rounded-[13px] bg-[#f7f8fa] p-3 text-[11px] font-bold text-[#59616d]">
+          <span className="flex items-center gap-2">
+            <CalendarDays className="h-4 w-4 shrink-0 text-[#89919b]" />
+            {formatDateLongUA(booking.dateKey)}
+          </span>
+          <span className="flex items-center gap-2">
+            <Clock className="h-4 w-4 shrink-0 text-[#89919b]" />
+            {startLabel} – {endLabel} · {booking.duration} хв
+          </span>
+          <span className="flex items-center gap-2">
+            <Users className="h-4 w-4 shrink-0 text-[#89919b]" />
+            {booking.staffName}
+            {booking.staffRole ? ` · ${booking.staffRole}` : ""}
+          </span>
+          <span className="flex items-center gap-2">
+            <Store className="h-4 w-4 shrink-0 text-[#89919b]" />
+            {booking.resourceName}
+          </span>
+          {booking.clientPhone && (
+            <span className="flex items-center gap-2">
+              <Phone className="h-4 w-4 shrink-0 text-[#89919b]" />
+              {booking.clientPhone}
+            </span>
+          )}
+          {email && (
+            <span className="break-all">
+              Email: {email}
+            </span>
+          )}
+        </div>
+
+        {services.length > 1 && (
+          <div className="mt-3">
+            <p className="text-[10px] font-black uppercase tracking-[0.08em] text-[#969da8]">
+              Послуги
+            </p>
+            <div className="mt-1.5 grid gap-1">
+              {services.map((service, index) => (
+                <p
+                  key={service?.id || service?._id || `${service?.name || "service"}-${index}`}
+                  className="text-[11px] font-semibold text-[#59616d]"
+                >
+                  {service?.name || service?.title || service?.serviceName || "Послуга"}
+                </p>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {notes && (
+          <div className="mt-3 border-t border-[#eceff3] pt-3">
+            <p className="text-[10px] font-black uppercase tracking-[0.08em] text-[#969da8]">
+              Коментар
+            </p>
+            <p className="mt-1 whitespace-pre-wrap break-words text-[11px] font-medium leading-relaxed text-[#59616d]">
+              {notes}
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 const SCHEDULE_CARD_TONES = {
   confirmed: {
-    bg: "#e7f7f8",
-    border: "#b8e5ea",
-    accent: "#00a6b2",
-    soft: "#d9f2f5",
+    bg: "#ecfdf3",
+    border: "#abefc6",
+    accent: "#039855",
+    soft: "#d1fadf",
   },
   pending: {
-    bg: "#f9e7ec",
-    border: "#f3c6d2",
-    accent: "#f04f82",
-    soft: "#ffe2ea",
+    bg: "#fffaeb",
+    border: "#fedf89",
+    accent: "#dc6803",
+    soft: "#fef0c7",
   },
   canceled: {
-    bg: "#f1f2f4",
-    border: "#d7dce2",
-    accent: "#8b93a0",
-    soft: "#e8ebef",
+    bg: "#fef3f2",
+    border: "#fecdca",
+    accent: "#d92d20",
+    soft: "#fee4e2",
   },
   archived: {
-    bg: "#dbe8ff",
-    border: "#b8cdf8",
-    accent: "#6d32d9",
-    soft: "#e9f0ff",
+    bg: "#f2f4f7",
+    border: "#d0d5dd",
+    accent: "#667085",
+    soft: "#eaecf0",
   },
   default: {
-    bg: "#eef3ff",
-    border: "#c9d8ff",
-    accent: "#5d6ce1",
-    soft: "#e5ebff",
+    bg: "#f2f4f7",
+    border: "#d0d5dd",
+    accent: "#667085",
+    soft: "#eaecf0",
   },
 };
 
@@ -1094,11 +1742,21 @@ return {
       item?.image ||
       "",
   ),
-  schedule: item?.schedule || null,
-  scheduleDays: Array.isArray(item?.scheduleDays) ? item.scheduleDays : [],
-  scheduleExceptions: Array.isArray(item?.scheduleExceptions)
-    ? item.scheduleExceptions
-    : [],
+  schedule:
+    item?.schedule ||
+    item?.workSchedule ||
+    item?.workingHours ||
+    null,
+  scheduleDays:
+    [item?.scheduleDays, item?.workScheduleDays, item?.workingHoursDays].find(
+      Array.isArray,
+    ) || [],
+  scheduleExceptions:
+    [
+      item?.scheduleExceptions,
+      item?.workScheduleExceptions,
+      item?.workingHoursExceptions,
+    ].find((value) => Array.isArray(value) && value.length > 0) || [],
 };
     })
     .filter(Boolean);
@@ -1141,23 +1799,29 @@ const nextOption = {
   schedule:
     existingOption?.schedule ||
     booking.raw?.master?.schedule ||
+    booking.raw?.master?.workSchedule ||
+    booking.raw?.master?.workingHours ||
     null,
 
   scheduleDays:
     Array.isArray(existingOption?.scheduleDays) &&
     existingOption.scheduleDays.length > 0
       ? existingOption.scheduleDays
-      : Array.isArray(booking.raw?.master?.scheduleDays)
-        ? booking.raw.master.scheduleDays
-        : [],
+      : [
+          booking.raw?.master?.scheduleDays,
+          booking.raw?.master?.workScheduleDays,
+          booking.raw?.master?.workingHoursDays,
+        ].find((value) => Array.isArray(value) && value.length > 0) || [],
 
   scheduleExceptions:
     Array.isArray(existingOption?.scheduleExceptions) &&
     existingOption.scheduleExceptions.length > 0
       ? existingOption.scheduleExceptions
-      : Array.isArray(booking.raw?.master?.scheduleExceptions)
-        ? booking.raw.master.scheduleExceptions
-        : [],
+      : [
+          booking.raw?.master?.scheduleExceptions,
+          booking.raw?.master?.workScheduleExceptions,
+          booking.raw?.master?.workingHoursExceptions,
+        ].find((value) => Array.isArray(value) && value.length > 0) || [],
 };
 
     if (existingKey && existingKey !== booking.staffKey) {
@@ -1425,6 +2089,7 @@ const studio = studioProp ?? studioContext?.studio ?? null;
   const [statusFilter, setStatusFilter] = useState("all");
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [bookingPreview, setBookingPreview] = useState(null);
   const [agendaCollapsed, setAgendaCollapsed] = useState(false);
   const [hourHeight, setHourHeight] = useState(SCHEDULE_HOUR_HEIGHT);
   const [staffColumnWidth, setStaffColumnWidth] = useState(216);
@@ -1459,6 +2124,30 @@ const syncHorizontalScroll = (source, ...targetRefs) => {
     target.scrollLeft = source.scrollLeft;
   }
 };
+
+const showBookingPreview = (event, booking) => {
+  if (event.pointerType === "touch") return;
+
+  const rect = event.currentTarget.getBoundingClientRect();
+  const cardWidth = Math.min(340, window.innerWidth - 24);
+  const estimatedHeight = Math.min(520, window.innerHeight - 24);
+  const gap = 12;
+  const preferredLeft = rect.right + gap;
+  const canOpenRight = preferredLeft + cardWidth <= window.innerWidth - 12;
+  const left = canOpenRight
+    ? preferredLeft
+    : Math.max(12, rect.left - cardWidth - gap);
+  const top = Math.max(
+    12,
+    Math.min(rect.top, window.innerHeight - estimatedHeight - 12),
+  );
+
+  setBookingPreview({ booking, left, top });
+};
+
+const hideBookingPreview = () => {
+  setBookingPreview(null);
+};
   const normalizedBookings = useMemo(() => {
     return (bookings || []).map(normalizeScheduleBooking).filter(Boolean);
   }, [bookings]);
@@ -1475,61 +2164,160 @@ const countsByDate = useMemo(() => {
 }, [normalizedBookings, nowTs]);
 
 const [scheduleMasters, setScheduleMasters] = useState([]);
-
+const [scheduleStudio, setScheduleStudio] = useState(null);
+const [scheduleDataLoading, setScheduleDataLoading] = useState(false);
+const [scheduleDataError, setScheduleDataError] = useState("");
+const studioId = studio?.id || studio?._id || localStorage.getItem("studioId");
 useEffect(() => {
-  const studioId = studio?.id || localStorage.getItem("studioId");
-  const token = localStorage.getItem("token");
+   const token = localStorage.getItem("token");
 
   if (!studioId || !token) return;
 
-  let alive = true;
+  const controller = new AbortController();
+  const apiUrl = import.meta.env.VITE_API_URL;
 
-  async function loadScheduleMasters() {
+  async function loadScheduleData() {
+    setScheduleDataLoading(true);
+    setScheduleDataError("");
+
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/studio/${studioId}/masters`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+      const requestOptions = {
+        signal: controller.signal,
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
-      );
+      };
+      const loadStudioSchedule = async () => {
+        const urls = [
+          `${apiUrl}/studio/${studioId}/schedule`,
+          `${apiUrl}/studio/${studioId}`,
+          `${apiUrl}/studios/${studioId}`,
+          `${apiUrl}/studio/me`,
+          `${apiUrl}/studio/profile`,
+          `${apiUrl}/studio`,
+          `${apiUrl}/studios`,
+        ];
+        let lastError = "";
 
-      const data = await res.json().catch(() => null);
+        for (const url of urls) {
+          try {
+            const response = await fetch(url, requestOptions);
+            const data = await response.json().catch(() => null);
 
-      if (!res.ok) {
-        throw new Error(data?.message || "Load masters failed");
+            if (!response.ok) {
+              lastError = data?.message || lastError;
+              continue;
+            }
+
+            const nextStudio = normalizeStudioSchedulePayload(data, studioId);
+
+            if (hasStudioSchedulePayload(nextStudio)) {
+              return nextStudio;
+            }
+          } catch (error) {
+            if (controller.signal.aborted) throw error;
+            lastError = error?.message || lastError;
+          }
+        }
+
+        const contextStudio = normalizeStudioSchedulePayload(studio, studioId);
+
+        if (hasStudioSchedulePayload(contextStudio)) {
+          return contextStudio;
+        }
+
+        throw new Error(
+          lastError || "У студії не знайдено збережений графік",
+        );
+      };
+      const [studioResult, mastersResult] = await Promise.allSettled([
+        loadStudioSchedule(),
+        fetch(`${apiUrl}/studio/${studioId}/masters`, requestOptions),
+      ]);
+
+      if (controller.signal.aborted) return;
+
+      if (studioResult.status === "fulfilled") {
+        setScheduleStudio(studioResult.value);
+      } else {
+        throw studioResult.reason;
       }
 
-      if (!alive) return;
+      if (mastersResult.status === "fulfilled") {
+        const response = mastersResult.value;
+        const data = await response.json().catch(() => null);
 
-      setScheduleMasters(Array.isArray(data?.masters) ? data.masters : []);
+        if (!response.ok) {
+          throw new Error(data?.message || "Не вдалося завантажити майстрів");
+        }
+
+        const masters =
+          data?.masters ||
+          data?.data?.masters ||
+          (Array.isArray(data?.data) ? data.data : null) ||
+          (Array.isArray(data) ? data : []);
+
+        setScheduleMasters(Array.isArray(masters) ? masters : []);
+      } else {
+        throw mastersResult.reason;
+      }
     } catch (error) {
-      console.error("Load schedule masters failed:", error);
+      if (controller.signal.aborted) return;
 
-      if (alive) {
-        setScheduleMasters([]);
+      console.error("Load schedule data failed:", error);
+      setScheduleDataError(
+        error?.message || "Не вдалося оновити графік із бази даних",
+      );
+    } finally {
+      if (!controller.signal.aborted) {
+        setScheduleDataLoading(false);
       }
     }
   }
 
-  loadScheduleMasters();
+  loadScheduleData();
 
   return () => {
-    alive = false;
+    controller.abort();
   };
-}, [studio?.id]);
+}, [studioId, studio]);
 
 const studioForSchedule = useMemo(() => {
+  const dbStudio = scheduleStudio || {};
+  const contextStudio = studio || {};
+
   return {
-    ...(studio || {}),
+    ...contextStudio,
+    ...dbStudio,
+    schedule:
+      dbStudio.schedule ||
+      dbStudio.workSchedule ||
+      dbStudio.workingHours ||
+      contextStudio.schedule ||
+      contextStudio.workSchedule ||
+      contextStudio.workingHours ||
+      null,
+    scheduleDays:
+      dbStudio.scheduleDays ||
+      dbStudio.workScheduleDays ||
+      contextStudio.scheduleDays ||
+      contextStudio.workScheduleDays ||
+      [],
+    scheduleExceptions:
+      dbStudio.scheduleExceptions ||
+      dbStudio.openingExceptions ||
+      contextStudio.scheduleExceptions ||
+      contextStudio.openingExceptions ||
+      [],
     masters: scheduleMasters.length
       ? scheduleMasters
-      : Array.isArray(studio?.masters)
-        ? studio.masters
-        : [],
+      : Array.isArray(dbStudio.masters)
+        ? dbStudio.masters
+        : Array.isArray(contextStudio.masters)
+          ? contextStudio.masters
+          : [],
   };
-}, [studio, scheduleMasters]);
+}, [studio, scheduleStudio, scheduleMasters]);
 
 const staffOptions = useMemo(
   () => scheduleEntityOptions(normalizedBookings, studioForSchedule, "staff"),
@@ -1645,14 +2433,6 @@ const staffOptions = useMemo(
     );
   }, [baseFilteredBookings, nowTs, statusFilter]);
 
-  const timeBoundsMasters = useMemo(() => {
-  if (rangeMode !== "day") return groupOptions;
-
-  return selectedGroup === "all"
-    ? groupOptions
-    : groupOptions.filter((option) => option.key === selectedGroup);
-}, [groupOptions, rangeMode, selectedGroup]);
-
 const timeBounds = useMemo(() => {
   let start = null;
   let end = null;
@@ -1666,17 +2446,11 @@ const timeBounds = useMemo(() => {
   };
 
   for (const date of visibleDates) {
-    for (const master of timeBoundsMasters) {
-      const workWindow = getMasterScheduleWindow(master, date);
+    const studioWindow = getStudioScheduleWindow(studioForSchedule, date);
 
-      if (!workWindow?.isWorking) continue;
-
-      includeWindow(workWindow.startMin, workWindow.endMin);
+    if (studioWindow?.isWorking) {
+      includeWindow(studioWindow.startMin, studioWindow.endMin);
     }
-  }
-
-  for (const booking of rangeBookings) {
-    includeWindow(booking.startMin - 30, booking.endMin + 30);
   }
 
   if (start == null || end == null) {
@@ -1688,7 +2462,7 @@ const timeBounds = useMemo(() => {
   end = Math.min(24 * 60, Math.ceil(end / 60) * 60);
 
   return { start, end };
-}, [rangeBookings, timeBoundsMasters, visibleDates]);
+}, [studioForSchedule, visibleDates]);
 
   const hours = useMemo(() => {
     const startHour = Math.floor(timeBounds.start / 60);
@@ -1794,6 +2568,16 @@ const timeBounds = useMemo(() => {
     weekday: "long",
   });
   const selectedDateKey = toISODateKey(viewDate);
+  const selectedStudioWindow = getStudioScheduleWindow(
+    studioForSchedule,
+    viewDate,
+  );
+  const studioClosedForSelectedDay =
+    rangeMode === "day" && selectedStudioWindow?.isWorking === false;
+  const studioClosedHelper =
+    selectedStudioWindow?.source === "studio-exception"
+      ? "Особлива дата у графіку студії"
+      : "Вихідний за графіком студії";
   const currentTimeLabel = now.toLocaleTimeString("uk-UA", {
     hour: "2-digit",
     minute: "2-digit",
@@ -1830,6 +2614,29 @@ const timeBounds = useMemo(() => {
     Number(value || 0).toLocaleString("uk-UA", {
       maximumFractionDigits: 0,
     });
+  const selectedMaster =
+    selectedGroup === "all"
+      ? null
+      : groupOptions.find((option) => option.key === selectedGroup) || null;
+  const getColumnWorkWindow = (column) => {
+    const date = column.type === "date" ? column.date : viewDate;
+    const studioWindow = getStudioScheduleWindow(studioForSchedule, date);
+    const master =
+      column.type === "staff" ? column : selectedMaster;
+    const masterWindow = master
+      ? getMasterScheduleWindow(master, date)
+      : null;
+
+    return intersectScheduleWindows(studioWindow, masterWindow);
+  };
+  const workWindowLabel = (workWindow, fallback = "") => {
+    if (!workWindow) return fallback || "Графік не задано";
+    if (!workWindow.isWorking) return "Вихідний";
+
+    return `${scheduleTimeLabel(workWindow.startMin)} – ${scheduleTimeLabel(
+      workWindow.endMin,
+    )}`;
+  };
   const navigateRange = (direction) => {
     if (rangeMode === "month") {
       handleViewDateChange(addMonthsSafe(viewDate, direction));
@@ -1851,11 +2658,14 @@ const timeBounds = useMemo(() => {
       <div className="min-w-0 bg-white">
         <div
           ref={compact ? null : headerScrollRef}
-          className="calendar-day-scroll overflow-x-auto overflow-y-hidden border-b border-[#ebeef3] bg-white"
+          className="calendar-day-scroll touch-pan-x overflow-x-auto overflow-y-hidden overscroll-x-contain border-b border-[#ebeef3] bg-white [scrollbar-gutter:stable]"
           onScroll={
             compact
               ? undefined
-              : (event) => syncHorizontalScroll(event.currentTarget, scrollRef)
+              : (event) => {
+                  hideBookingPreview();
+                  syncHorizontalScroll(event.currentTarget, scrollRef);
+                }
           }
         >
           <div className="min-w-full" style={{ minWidth: scheduleWidth }}>
@@ -1949,10 +2759,7 @@ const timeBounds = useMemo(() => {
                   summaryCounts.canceled +
                   summaryCounts.pending +
                   summaryCounts.archived;
-                const columnWorkStatus =
-                  column.type === "staff"
-                    ? getMasterWorkStatus(column, viewDate)
-                    : null;
+                const columnWorkWindow = getColumnWorkWindow(column);
 
                 return (
                   <div
@@ -2002,17 +2809,49 @@ const timeBounds = useMemo(() => {
                         </p>
                         <p className="mt-0.5 truncate text-[12px] font-medium leading-tight text-[#8a919a]">
                           {column.type === "date"
-                            ? formatDateLongUA(toISODateKey(column.date))
-                            : columnWorkStatus?.helper || column.role || "09:00-17:00"}
+                            ? `${formatDateLongUA(toISODateKey(column.date))} · ${workWindowLabel(columnWorkWindow)}`
+                            : workWindowLabel(columnWorkWindow, column.role)}
                         </p>
                       </div>
                     </div>
 
                     {!compact && (
-                      <div className="absolute bottom-2 right-3 flex items-center gap-2 text-[10px] font-black text-[#89919b]">
-                        <span>{totalCount}</span>
-                        <CircleCheckBig className="h-3 w-3 text-[#00a35d]" />
-                        <span>{summaryCounts.confirmed}</span>
+                      <div className="absolute inset-x-4 bottom-2 flex items-center gap-2.5 text-[10px] font-black">
+                        <span
+                          className="flex items-center gap-1 text-[#667085]"
+                          title={`Усього записів: ${totalCount}`}
+                        >
+                          <CalendarDays className="h-3.5 w-3.5" />
+                          {totalCount}
+                        </span>
+                        <span
+                          className="flex items-center gap-1 text-[#dc6803]"
+                          title={`Очікують: ${summaryCounts.pending}`}
+                        >
+                          <ClockAlert className="h-3.5 w-3.5" />
+                          {summaryCounts.pending}
+                        </span>
+                        <span
+                          className="flex items-center gap-1 text-[#039855]"
+                          title={`Підтверджені: ${summaryCounts.confirmed}`}
+                        >
+                          <CircleCheckBig className="h-3.5 w-3.5" />
+                          {summaryCounts.confirmed}
+                        </span>
+                        <span
+                          className="flex items-center gap-1 text-[#d92d20]"
+                          title={`Скасовані: ${summaryCounts.canceled}`}
+                        >
+                          <XCircle className="h-3.5 w-3.5" />
+                          {summaryCounts.canceled}
+                        </span>
+                        <span
+                          className="flex items-center gap-1 text-[#667085]"
+                          title={`Завершені: ${summaryCounts.archived}`}
+                        >
+                          <CheckCheck className="h-3.5 w-3.5" />
+                          {summaryCounts.archived}
+                        </span>
                       </div>
                     )}
                   </div>
@@ -2024,12 +2863,20 @@ const timeBounds = useMemo(() => {
 
         <div
           ref={compact ? null : scrollRef}
-          className="calendar-day-scroll relative overflow-auto bg-white"
+          className={cn(
+            "calendar-day-scroll relative touch-pan-x overflow-auto overscroll-x-contain [scrollbar-gutter:stable]",
+            studioClosedForSelectedDay
+              ? "bg-[repeating-linear-gradient(135deg,rgba(148,163,184,0.10)_0,rgba(148,163,184,0.10)_8px,rgba(255,255,255,0.42)_8px,rgba(255,255,255,0.42)_16px)]"
+              : "bg-white",
+          )}
           style={{ height: bodyHeight }}
           onScroll={
             compact
               ? undefined
-              : (event) => syncHorizontalScroll(event.currentTarget, headerScrollRef)
+              : (event) => {
+                  hideBookingPreview();
+                  syncHorizontalScroll(event.currentTarget, headerScrollRef);
+                }
           }
         >
           {!anyBookings && (
@@ -2039,16 +2886,34 @@ const timeBounds = useMemo(() => {
                 style={{ height: Math.min(gridHeight, 520) }}
               >
                 <div className="pointer-events-auto w-[min(340px,calc(100%-28px))] rounded-[18px] border border-dashed border-[#cfd6df] bg-white/90 p-5 text-center shadow-sm">
-                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#ffe1e8] text-[#ff3369]">
+                  <div
+                    className={cn(
+                      "mx-auto flex h-12 w-12 items-center justify-center rounded-full",
+                      studioClosedForSelectedDay
+                        ? "bg-[#eaecf0] text-[#667085]"
+                        : "bg-[#ffe1e8] text-[#ff3369]",
+                    )}
+                  >
                     {loading ? (
                       <Sparkles className="h-5 w-5 animate-pulse" />
+                    ) : studioClosedForSelectedDay ? (
+                      <Store className="h-5 w-5" />
                     ) : (
                       <CalendarDays className="h-5 w-5" />
                     )}
                   </div>
                   <p className="mt-3 text-sm font-black text-[#1f2329]">
-                    {loading ? "Завантажуємо записи" : "Записів немає"}
+                    {loading
+                      ? "Завантажуємо записи"
+                      : studioClosedForSelectedDay
+                        ? "Студія не працює"
+                        : "Записів немає"}
                   </p>
+                  {!loading && studioClosedForSelectedDay && (
+                    <p className="mt-1.5 text-[11px] font-semibold text-[#667085]">
+                      {studioClosedHelper}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -2060,7 +2925,12 @@ const timeBounds = useMemo(() => {
               style={{ gridTemplateColumns: templateColumns }}
             >
               <div
-                className="sticky left-0 z-40 border-r border-[#ebeef3] bg-white"
+                className={cn(
+                  "sticky left-0 z-40 border-r border-[#ebeef3]",
+                  studioClosedForSelectedDay
+                    ? "bg-[repeating-linear-gradient(135deg,rgba(148,163,184,0.10)_0,rgba(148,163,184,0.10)_8px,rgba(255,255,255,0.42)_8px,rgba(255,255,255,0.42)_16px)]"
+                    : "bg-white",
+                )}
                 style={{ height: gridHeight }}
               >
                 {hours.map((hour) => (
@@ -2088,7 +2958,9 @@ const timeBounds = useMemo(() => {
                     </div>
                   ))}
 
-                {showNowLine && visibleDateKeys.has(todayKey) && (
+                {showNowLine &&
+                  !studioClosedForSelectedDay &&
+                  visibleDateKeys.has(todayKey) && (
                   <div
                     className="absolute inset-x-0 z-30 border-t border-[#ff245d]"
                     style={{ top: topForMinute(nowMinute) }}
@@ -2100,10 +2972,29 @@ const timeBounds = useMemo(() => {
 
               {columns.map((column) => {
                 const columnBookings = bookingsByColumn[column.key] || [];
+                const columnDate =
+                  column.type === "date" ? column.date : viewDate;
+                const columnStudioWindow = getStudioScheduleWindow(
+                  studioForSchedule,
+                  columnDate,
+                );
+                const isStudioClosed =
+                  columnStudioWindow?.isWorking === false;
+                const columnWorkWindow = getColumnWorkWindow(column);
                 const isTodayColumn =
                   (column.type === "date" &&
                     toISODateKey(column.date) === todayKey) ||
                   (rangeMode === "day" && visibleDateKeys.has(todayKey));
+                const workStartTop = columnWorkWindow?.isWorking
+                  ? topForMinute(
+                      Math.max(columnWorkWindow.startMin, timeBounds.start),
+                    )
+                  : SCHEDULE_GRID_TOP_PADDING;
+                const workEndTop = columnWorkWindow?.isWorking
+                  ? topForMinute(
+                      Math.min(columnWorkWindow.endMin, timeBounds.end),
+                    )
+                  : gridHeight;
 
                 return (
                   <div
@@ -2124,7 +3015,61 @@ const timeBounds = useMemo(() => {
                       />
                     ))}
 
-                    {showNowLine && isTodayColumn && (
+                    {isStudioClosed && (
+                      <div
+                        className="pointer-events-none absolute inset-x-0 z-[2] flex items-start justify-center bg-[repeating-linear-gradient(135deg,rgba(148,163,184,0.10)_0,rgba(148,163,184,0.10)_8px,rgba(255,255,255,0.42)_8px,rgba(255,255,255,0.42)_16px)] pt-6"
+                        style={{
+                          top: SCHEDULE_GRID_TOP_PADDING,
+                          height: gridBodyHeight,
+                        }}
+                      >
+                        <span className="rounded-full border border-[#dfe4ea] bg-white/90 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.08em] text-[#8b94a0] shadow-sm">
+                          Студія не працює
+                        </span>
+                      </div>
+                    )}
+
+                    {!isStudioClosed &&
+                      columnWorkWindow &&
+                      !columnWorkWindow.isWorking && (
+                        <div
+                          className="pointer-events-none absolute inset-x-0 z-[2] flex items-start justify-center bg-[repeating-linear-gradient(135deg,rgba(148,163,184,0.10)_0,rgba(148,163,184,0.10)_8px,rgba(255,255,255,0.42)_8px,rgba(255,255,255,0.42)_16px)] pt-6"
+                          style={{
+                            top: SCHEDULE_GRID_TOP_PADDING,
+                            height: gridBodyHeight,
+                          }}
+                        >
+                          <span className="rounded-full border border-[#dfe4ea] bg-white/90 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.08em] text-[#8b94a0] shadow-sm">
+                            Майстер не працює
+                          </span>
+                        </div>
+                      )}
+
+                    {!isStudioClosed &&
+                      columnWorkWindow?.isWorking &&
+                      workStartTop > SCHEDULE_GRID_TOP_PADDING && (
+                      <div
+                        className="pointer-events-none absolute inset-x-0 z-[2] bg-[repeating-linear-gradient(135deg,rgba(148,163,184,0.09)_0,rgba(148,163,184,0.09)_8px,rgba(255,255,255,0.38)_8px,rgba(255,255,255,0.38)_16px)]"
+                        style={{
+                          top: SCHEDULE_GRID_TOP_PADDING,
+                          height: workStartTop - SCHEDULE_GRID_TOP_PADDING,
+                        }}
+                      />
+                    )}
+
+                    {!isStudioClosed &&
+                      columnWorkWindow?.isWorking &&
+                      workEndTop < gridHeight && (
+                      <div
+                        className="pointer-events-none absolute inset-x-0 z-[2] bg-[repeating-linear-gradient(135deg,rgba(148,163,184,0.09)_0,rgba(148,163,184,0.09)_8px,rgba(255,255,255,0.38)_8px,rgba(255,255,255,0.38)_16px)]"
+                        style={{
+                          top: workEndTop,
+                          height: gridHeight - workEndTop,
+                        }}
+                      />
+                    )}
+
+                    {showNowLine && !isStudioClosed && isTodayColumn && (
                       <div
                         className="absolute inset-x-0 z-20 border-t border-[#ff245d]"
                         style={{ top: topForMinute(nowMinute) }}
@@ -2150,8 +3095,7 @@ const timeBounds = useMemo(() => {
                       const width = `calc(${100 / booking.laneCount}% - ${compact ? 8 : 10}px)`;
                       const left = `calc(${(100 / booking.laneCount) * booking.lane}% + ${compact ? 4 : 5}px)`;
                       const visualStatus = scheduleVisualStatus(booking, nowTs);
-                      const StatusIcon = scheduleStatusIcon(booking, nowTs);
-                      const statusLabel = scheduleStatusLabel(booking, nowTs);
+                    
                       const startLabel =
                         parseTimeToHHMM(booking.raw.time) ||
                         scheduleTimeLabel(booking.startMin);
@@ -2164,6 +3108,10 @@ const timeBounds = useMemo(() => {
                           key={`${booking.id}-${booking.dateKey}-${booking.startMin}`}
                           type="button"
                           onClick={() => booking.id != null && onOpenBooking?.(booking.id)}
+                          onPointerEnter={(event) => showBookingPreview(event, booking)}
+                          onPointerLeave={hideBookingPreview}
+                          onFocus={(event) => showBookingPreview(event, booking)}
+                          onBlur={hideBookingPreview}
                           className={cn(
                             "group absolute z-10 overflow-visible rounded-[7px] text-left transition hover:z-30 focus:outline-none focus:ring-2 focus:ring-[#ff245d]/25",
                             visualStatus === "canceled" && "opacity-70",
@@ -2180,56 +3128,6 @@ const timeBounds = useMemo(() => {
                           }}
                         >
                           <div
-                            className={cn(
-                              "pointer-events-none absolute left-1/2 z-[90] hidden w-[270px] -translate-x-1/2 rounded-[14px] border bg-white p-3 text-left shadow-[0_18px_44px_rgba(15,23,42,0.18)] group-hover:block group-focus-visible:block",
-                              compact ? "bottom-full mb-2" : "top-full mt-2",
-                            )}
-                            style={{ borderColor: tone.border }}
-                          >
-                            <div className="mb-2 flex items-start justify-between gap-3">
-                              <span
-                                className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[10px] font-black"
-                                style={{
-                                  backgroundColor: tone.soft,
-                                  color: tone.accent,
-                                }}
-                              >
-                                <StatusIcon className="h-3.5 w-3.5" />
-                                {statusLabel}
-                              </span>
-                              {booking.price != null && (
-                                <span className="text-[12px] font-black text-[#00a35d]">
-                                  ₴{formatPrice(booking.price)}
-                                </span>
-                              )}
-                            </div>
-
-                            <p className="text-[13px] font-black text-[#15171d]">
-                              {booking.clientName}
-                            </p>
-                            <p className="mt-1 text-[12px] font-semibold text-[#59616d]">
-                              {booking.serviceName}
-                            </p>
-
-                            <div className="mt-3 grid gap-1.5 text-[11px] font-bold text-[#7b8490]">
-                              <span className="flex items-center gap-2">
-                                <Clock className="h-3.5 w-3.5" />
-                                {startLabel} - {endLabel}
-                              </span>
-                              <span className="flex items-center gap-2">
-                                <Users className="h-3.5 w-3.5" />
-                                {booking.staffName}
-                              </span>
-                              {booking.clientPhone && (
-                                <span className="flex items-center gap-2">
-                                  <Phone className="h-3.5 w-3.5" />
-                                  {booking.clientPhone}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-
-                          <div
                             className="absolute inset-y-0 left-0 w-1"
                             style={{ backgroundColor: tone.accent }}
                           />
@@ -2244,7 +3142,11 @@ const timeBounds = useMemo(() => {
                               className="flex h-5 w-5 items-center justify-center rounded-full text-white"
                               style={{ backgroundColor: tone.accent }}
                             >
-                              <StatusIcon className="h-3.5 w-3.5" />
+                              <ScheduleStatusIcon
+  booking={booking}
+  nowTs={nowTs}
+  className="h-3.5 w-3.5"
+/>
                             </span>
                           </div>
 
@@ -2288,17 +3190,6 @@ const timeBounds = useMemo(() => {
   };
 
   const renderFullDesign = () => {
-    const desktopNavItems = [
-      CalendarDays,
-      LayoutGrid,
-      Clock,
-      Users,
-      ChartColumn,
-      SlidersHorizontal,
-      CheckCheck,
-      Megaphone,
-      Store,
-    ];
     const mobileNavItems = [
       CalendarDays,
       Users,
@@ -2310,44 +3201,16 @@ const timeBounds = useMemo(() => {
     return (
       <>
         <div
-          className="hidden h-[min(760px,calc(100dvh-32px))] min-h-[620px] overflow-hidden rounded-[30px] border border-[#d8dde5] bg-white shadow-[0_24px_80px_rgba(15,23,42,0.16)] lg:grid"
+          className="hidden h-[min(760px,calc(100dvh-32px))] min-h-[620px] overflow-hidden rounded-[30px] border border-[#d8dde5] bg-white shadow-[0_24px_80px_rgba(15,23,42,0.16)] md:grid"
           style={{
             gridTemplateColumns: agendaCollapsed
-              ? "48px minmax(0,1fr) 46px"
-              : "48px minmax(0,1fr) 326px",
+              ? "minmax(0,1fr) 46px"
+              : "minmax(0,1fr) clamp(280px,24vw,326px)",
           }}
         >
-          <aside className="flex flex-col items-center justify-between bg-[#171b23] px-2 py-3 text-white">
-            <div className="grid gap-2">
-              <button
-                type="button"
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white"
-                aria-label="Назад"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              {desktopNavItems.map((Icon, index) => (
-                <button
-                  key={index}
-                  type="button"
-                  className={cn(
-                    "flex h-8 w-8 items-center justify-center rounded-lg text-white/58 transition hover:bg-white/10 hover:text-white",
-                    index === 1 && "bg-white/12 text-white",
-                  )}
-                  aria-label={`Навігація ${index + 1}`}
-                >
-                  <Icon className="h-4 w-4" />
-                </button>
-              ))}
-            </div>
-            <div className="flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-white/10 text-[10px] font-black">
-              AD
-            </div>
-          </aside>
-
           <main className="min-w-0 bg-white">
-            <div className="flex h-[58px] items-center justify-between gap-3 border-b border-[#e6e9ef] px-4">
-              <div className="flex min-w-0 items-center gap-2">
+            <div className="flex min-h-[58px] flex-wrap items-center justify-between gap-2 border-b border-[#e6e9ef] px-3 py-2 xl:px-4">
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={() => navigateRange(-1)}
@@ -2359,7 +3222,7 @@ const timeBounds = useMemo(() => {
                 <button
                   type="button"
                   onClick={() => setCalendarOpen(true)}
-                  className="flex h-8 min-w-[210px] items-center gap-2 rounded-md border border-[#e1e5eb] bg-white px-3 text-[11px] font-black text-[#15171d]"
+                  className="flex h-8 min-w-[176px] items-center gap-2 rounded-md border border-[#e1e5eb] bg-white px-3 text-[11px] font-black text-[#15171d] xl:min-w-[210px]"
                   aria-label="Відкрити календар"
                 >
                   <CalendarDays className="h-3.5 w-3.5 text-[#ff3369]" />
@@ -2398,7 +3261,20 @@ const timeBounds = useMemo(() => {
                 </div>
               </div>
 
-              <div className="flex min-w-0 items-center justify-end gap-2">
+              <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
+                {(scheduleDataLoading || scheduleDataError) && (
+                  <span
+                    className={cn(
+                      "max-w-[190px] truncate rounded-full px-2.5 py-1 text-[9px] font-black",
+                      scheduleDataError
+                        ? "bg-[#fff0f0] text-[#b42318]"
+                        : "bg-[#eef8ff] text-[#1261a0]",
+                    )}
+                    title={scheduleDataError || "Оновлюємо графік із бази даних"}
+                  >
+                    {scheduleDataError ? "Дані БД: використано кеш" : "Синхронізація з БД…"}
+                  </span>
+                )}
                 <select
                   value={statusFilter}
                   onChange={(event) => setStatusFilter(event.target.value)}
@@ -2504,10 +3380,21 @@ const timeBounds = useMemo(() => {
 
               {agendaGroups.length === 0 ? (
                 <div className="rounded-md border border-dashed border-[#d7dee8] p-5 text-center">
-                  <CalendarDays className="mx-auto h-6 w-6 text-[#a1aab5]" />
+                  {studioClosedForSelectedDay ? (
+                    <Store className="mx-auto h-6 w-6 text-[#667085]" />
+                  ) : (
+                    <CalendarDays className="mx-auto h-6 w-6 text-[#a1aab5]" />
+                  )}
                   <p className="mt-3 text-[13px] font-black text-[#15171d]">
-                    Записів немає
+                    {studioClosedForSelectedDay
+                      ? "Студія не працює"
+                      : "Записів немає"}
                   </p>
+                  {studioClosedForSelectedDay && (
+                    <p className="mt-1 text-[10px] font-semibold text-[#667085]">
+                      {studioClosedHelper}
+                    </p>
+                  )}
                 </div>
               ) : (
                 agendaGroups.map((group) => (
@@ -2521,7 +3408,8 @@ const timeBounds = useMemo(() => {
                         })}
                       </span>
                       <span className="rounded-full border border-[#e4e8ee] px-2 py-0.5 text-[9px] uppercase text-[#8b94a0]">
-                        Confirmed
+                        {group.items.length}{" "}
+                        {pluralUa(group.items.length, "запис", "записи", "записів")}
                       </span>
                     </div>
 
@@ -2532,7 +3420,7 @@ const timeBounds = useMemo(() => {
                           parseTimeToHHMM(booking.raw.time) ||
                           scheduleTimeLabel(booking.startMin);
                         const endLabel = scheduleTimeLabel(booking.endMin);
-                        const StatusIcon = scheduleStatusIcon(booking, nowTs);
+                      
 
                         return (
                           <button
@@ -2553,7 +3441,12 @@ const timeBounds = useMemo(() => {
                               </p>
                             </div>
                             <div className="flex items-center gap-2">
-                              <StatusIcon className="h-4 w-4" style={{ color: tone.accent }} />
+                              <ScheduleStatusIcon
+  booking={booking}
+  nowTs={nowTs}
+  className="h-4 w-4"
+  style={{ color: tone.accent }}
+/>
                               <Avatar
                                 name={booking.staffName || booking.clientName}
                                 photoUrl={booking.staffPhotoUrl}
@@ -2573,7 +3466,7 @@ const timeBounds = useMemo(() => {
           </aside>
         </div>
 
-        <div className="relative mx-auto flex min-h-[100dvh] max-w-[520px] flex-col overflow-hidden bg-white pb-[112px] text-[#15171d] lg:hidden">
+        <div className="relative mx-auto flex min-h-[100dvh] max-w-[520px] flex-col overflow-hidden bg-white pb-[112px] text-[#15171d] md:hidden">
           <div className="sticky top-0 z-[120] border-b border-[#e8ebf0] bg-white">
             <div className="flex items-center justify-between px-7 pb-5 pt-6">
               <span className="text-[23px] font-black leading-none">
@@ -2715,9 +3608,15 @@ const timeBounds = useMemo(() => {
           </nav>
         </div>
 
+        <BookingHoverCard
+          preview={bookingPreview}
+          nowTs={nowTs}
+          formatPrice={formatPrice}
+        />
+
         {calendarOpen && (
           <div
-            className="fixed inset-0 z-[240] flex items-start justify-center bg-[#111318]/35 p-4 pt-24 backdrop-blur-[4px]"
+            className="fixed inset-0 z-[240] flex items-center justify-center bg-[#111318]/35 p-4 backdrop-blur-[4px]"
             onMouseDown={(event) => {
               if (event.target === event.currentTarget) {
                 setCalendarOpen(false);

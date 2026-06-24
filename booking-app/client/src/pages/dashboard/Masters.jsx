@@ -84,8 +84,12 @@ const PUBLIC = import.meta.env.VITE_R2_PUBLIC_BASE_URL;
 function toPublicUrl(v) {
   const s = String(v || "").trim();
   if (!s) return "";
-  if (/^https?:\/\//i.test(s)) return s;
-  return PUBLIC ? `${PUBLIC}/${s}` : s;
+
+  if (/^(https?:|blob:|data:)/i.test(s)) return s;
+
+  if (!PUBLIC) return s;
+
+  return `${PUBLIC.replace(/\/$/, "")}/${s.replace(/^\/+/, "")}`;
 }
 
 function pad2(n) {
