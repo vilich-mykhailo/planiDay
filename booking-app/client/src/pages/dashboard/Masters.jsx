@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import XLSX from "xlsx-js-style";
 import Cropper from "react-easy-crop";
+import { useBookings } from "../../context/bookings/useBookings";
 import {
   Sparkles,
   Download,
@@ -844,7 +845,7 @@ function MastersListSkeleton() {
 export default function Masters() {
   const { studio } = useStudio();
   const queryClient = useQueryClient();
-
+const { confirmBooking, cancelBooking } = useBookings();
   const studioId = studio?.id ?? null;
   const mastersQuery = useQuery({
     queryKey: ["masters", studioId],
@@ -900,8 +901,12 @@ export default function Masters() {
   const [bookingsModalOpen, setBookingsModalOpen] = useState(false);
   const [visibleMasterBookingsCount, setVisibleMasterBookingsCount] =
     useState(10);
-  const [detailsBookingId, setDetailsBookingId] = useState(null);
-  const [copiedPhone, setCopiedPhone] = useState(false);
+const [detailsBookingId, setDetailsBookingId] = useState(null);
+const [copiedPhone, setCopiedPhone] = useState(false);
+const [masterBookingActionLoading, setMasterBookingActionLoading] =
+  useState(false);
+const [cancelMasterBookingConfirm, setCancelMasterBookingConfirm] =
+  useState(null);
   const bookingsQuery = useQuery({
     queryKey: ["bookings", studioId],
     queryFn: () => fetchStudioBookings(studioId),
@@ -1010,6 +1015,71 @@ export default function Masters() {
     setDetailsBookingId(null);
     setCopiedPhone(false);
   }
+
+  function updateMasterBookingStatus(bookingId, patch) {
+  queryClient.setQueryData(["bookings", studioId], (old = []) => {
+    if (!Array.isArray(old)) return old;
+
+    return old.map((booking) =>
+      String(booking.id) === String(bookingId)
+        ? {
+            ...booking,
+            ...patch,
+          }
+        : booking,
+    );
+  });
+}
+
+async function handleConfirmMasterBooking(booking) {
+  if (!booking?.id || masterBookingActionLoading) return;
+
+  setMasterBookingActionLoading(true);
+
+  try {
+    await confirmBooking(booking.id);
+
+    updateMasterBookingStatus(booking.id, {
+      status: "confirmed",
+      canceledBy: null,
+    });
+
+    await queryClient.invalidateQueries({
+      queryKey: ["bookings", studioId],
+      exact: true,
+    });
+  } catch (error) {
+    alert(error?.message || "Не вдалося підтвердити запис");
+  } finally {
+    setMasterBookingActionLoading(false);
+  }
+}
+
+async function handleCancelMasterBooking(booking) {
+  if (!booking?.id || masterBookingActionLoading) return;
+
+  setMasterBookingActionLoading(true);
+
+  try {
+    await cancelBooking(booking.id);
+
+    updateMasterBookingStatus(booking.id, {
+      status: "canceled",
+      canceledBy: "owner",
+    });
+
+    setCancelMasterBookingConfirm(null);
+
+    await queryClient.invalidateQueries({
+      queryKey: ["bookings", studioId],
+      exact: true,
+    });
+  } catch (error) {
+    alert(error?.message || "Не вдалося скасувати запис");
+  } finally {
+    setMasterBookingActionLoading(false);
+  }
+}
 
   function openScheduleError({
     title = "Помилка графіка",
@@ -1412,6 +1482,14 @@ export default function Masters() {
     return `${y}-${m}-${d}`;
   }
 
+  function getTodayDateKey() {
+  return dateToInputValue(new Date());
+}
+
+function isPastDateKey(dateKey) {
+  return String(dateKey || "") < getTodayDateKey();
+}
+
   function createEmptyException() {
     return {
       id: "",
@@ -1559,17 +1637,20 @@ export default function Masters() {
       const schedule = getScheduleItemForDate(dateKey);
       const dayBookings = getMasterBookingsForDate(exceptionsMaster, dateKey);
 
-      return {
-        date,
-        dateKey,
-        dayNumber: date.getDate(),
-        weekday: getWeekdayShort(date),
-        weekdayIndex: (date.getDay() + 6) % 7,
-        isCurrentMonth: date.getMonth() === firstDay.getMonth(),
-        isToday: dateKey === dateToInputValue(new Date()),
-        bookingsCount: dayBookings.length,
-        ...schedule,
-      };
+const todayKey = getTodayDateKey();
+
+return {
+  date,
+  dateKey,
+  dayNumber: date.getDate(),
+  weekday: getWeekdayShort(date),
+  weekdayIndex: (date.getDay() + 6) % 7,
+  isCurrentMonth: date.getMonth() === firstDay.getMonth(),
+  isToday: dateKey === todayKey,
+  isPast: dateKey < todayKey,
+  bookingsCount: dayBookings.length,
+  ...schedule,
+};
     });
   }
 
@@ -1631,51 +1712,71 @@ export default function Masters() {
     closeScheduleSelection();
   }
 
-  function toggleScheduleDate(dateKey) {
-    if (!scheduleMultiSelect) {
-      const current = getScheduleItemForDate(dateKey);
+function toggleScheduleDate(dateKey) {
+  if (isPastDateKey(dateKey)) {
+    return;
+  }
 
-      setBulkScheduleDraft(getBulkDraftFromItem(current.item));
-      setSelectedScheduleDates([dateKey]);
-      setScheduleEditorOpen(true);
-      return;
+  if (!scheduleMultiSelect) {
+    const current = getScheduleItemForDate(dateKey);
+
+    setBulkScheduleDraft(getBulkDraftFromItem(current.item));
+    setSelectedScheduleDates([dateKey]);
+    setScheduleEditorOpen(true);
+    return;
+  }
+
+  setScheduleEditorOpen(false);
+
+  setSelectedScheduleDates((prev) =>
+    prev.includes(dateKey)
+      ? prev.filter((key) => key !== dateKey)
+      : [...prev, dateKey],
+  );
+}
+
+function toggleScheduleWeekday(monthDays, weekdayIndex) {
+  const keys = monthDays
+    .filter(
+      (day) =>
+        day.isCurrentMonth &&
+        day.weekdayIndex === weekdayIndex &&
+        !day.isPast,
+    )
+    .map((day) => day.dateKey);
+
+  if (!keys.length) return;
+
+  setScheduleMultiSelect(true);
+  setScheduleEditorOpen(false);
+
+  setSelectedScheduleDates((prev) => {
+    const allSelected = keys.every((key) => prev.includes(key));
+
+    if (allSelected) {
+      return prev.filter((key) => !keys.includes(key));
     }
 
-    setScheduleEditorOpen(false);
-    setSelectedScheduleDates((prev) =>
-      prev.includes(dateKey)
-        ? prev.filter((key) => key !== dateKey)
-        : [...prev, dateKey],
-    );
-  }
+    return [...new Set([...prev, ...keys])];
+  });
+}
 
-  function toggleScheduleWeekday(monthDays, weekdayIndex) {
-    const keys = monthDays
-      .filter((day) => day.isCurrentMonth && day.weekdayIndex === weekdayIndex)
-      .map((day) => day.dateKey);
+function quickSelectWorkdays(monthDays) {
+  const keys = monthDays
+    .filter(
+      (day) =>
+        day.isCurrentMonth &&
+        day.weekdayIndex < 5 &&
+        !day.isPast,
+    )
+    .map((day) => day.dateKey);
 
-    setScheduleMultiSelect(true);
-    setScheduleEditorOpen(false);
-    setSelectedScheduleDates((prev) => {
-      const allSelected = keys.every((key) => prev.includes(key));
+  if (!keys.length) return;
 
-      if (allSelected) {
-        return prev.filter((key) => !keys.includes(key));
-      }
-
-      return [...new Set([...prev, ...keys])];
-    });
-  }
-
-  function quickSelectWorkdays(monthDays) {
-    const keys = monthDays
-      .filter((day) => day.isCurrentMonth && day.weekdayIndex < 5)
-      .map((day) => day.dateKey);
-
-    setScheduleMultiSelect(true);
-    setScheduleEditorOpen(false);
-    setSelectedScheduleDates(keys);
-  }
+  setScheduleMultiSelect(true);
+  setScheduleEditorOpen(false);
+  setSelectedScheduleDates(keys);
+}
 
   function openScheduleEditorForSelectedDates() {
     if (!selectedScheduleDates.length) return;
@@ -3833,31 +3934,33 @@ allSelected
                         : "pb-4 sm:pb-5",
                     )}
                   >
-                    {currentMonthDays.map((day) => {
-                      const item = getVisibleScheduleItemForDay(day);
-                      const isSelected = selectedScheduleDates.includes(
-                        day.dateKey,
-                      );
-                      const lines = getScheduleTimeLines(item);
+{currentMonthDays.map((day) => {
+  const item = getVisibleScheduleItemForDay(day);
+  const isSelected = selectedScheduleDates.includes(day.dateKey);
+  const isPastDay = day.isPast;
+  const lines = getScheduleTimeLines(item);
                       const isDayOff = !item.enabled;
                       const isSpecialDay =
                         day.isCurrentMonth &&
                         day.item.isStudioDefault === false;
                       return (
-                        <button
-                          key={day.dateKey}
-                          type="button"
-                          onClick={() => toggleScheduleDate(day.dateKey)}
-                          className={cn(
-                            "flex min-h-[74px] w-full items-center justify-between gap-3 rounded-[14px] border px-4 py-3 text-left transition-all duration-200",
-                            isDayOff
-                              ? "border-[#ffd6bd] bg-[#fff1e8] text-[#ff5a00]"
-                              : "border-[#eadbc9] bg-white text-[#202020]",
-isSelected &&
-  (scheduleMultiSelect
-    ? "border-[#ff6200] bg-[#fff1e8] text-[#ff6200] shadow-[0_0_0_2px_rgba(255,98,0,0.16)]"
-    : "border-[#ff6200] shadow-[0_0_0_2px_rgba(255,98,0,0.16)]"),
-                          )}
+<button
+  key={day.dateKey}
+  type="button"
+  disabled={isPastDay}
+  onClick={() => toggleScheduleDate(day.dateKey)}
+className={cn(
+  "flex min-h-[74px] w-full items-center justify-between gap-3 rounded-[14px] border px-4 py-3 text-left transition-all duration-200",
+  isDayOff
+    ? "border-[#ffd6bd] bg-[#fff1e8] text-[#ff5a00]"
+    : "border-[#eadbc9] bg-white text-[#202020]",
+  isSelected &&
+    (scheduleMultiSelect
+      ? "border-[#ff6200] bg-[#fff1e8] text-[#ff6200] shadow-[0_0_0_2px_rgba(255,98,0,0.16)]"
+      : "border-[#ff6200] shadow-[0_0_0_2px_rgba(255,98,0,0.16)]"),
+  isPastDay &&
+    "pointer-events-none cursor-not-allowed border-[#e5e7eb] bg-[#f3f4f6] text-[#9ca3af] opacity-55 shadow-none",
+)}
                         >
                           <div className="flex min-w-0 items-center gap-3">
                             {scheduleMultiSelect && (
@@ -3923,55 +4026,69 @@ isSelected
                     })}
                   </div>
 
-                  <div className="mt-3 hidden grid-cols-7 gap-1 lg:grid">
-                    {monthDays.map((day) => {
-                      const item = getVisibleScheduleItemForDay(day);
-                      const isSelected = selectedScheduleDates.includes(
-                        day.dateKey,
-                      );
-                      const lines = getScheduleTimeLines(item);
-                      const isDayOff = !item.enabled;
-                      const isSpecialDay = item.isStudioDefault === false;
+<div className="mt-3 hidden grid-cols-7 gap-1 lg:grid">
+  {monthDays.map((day) => {
+    const item = getVisibleScheduleItemForDay(day);
+    const isSelected = selectedScheduleDates.includes(
+      day.dateKey,
+    );
+    const lines = getScheduleTimeLines(item);
+    const isDayOff = !item.enabled;
+    const isSpecialDay = item.isStudioDefault === false;
+    const isPastDay = day.isPast;
 
-                      return (
-                        <button
-                          key={day.dateKey}
-                          type="button"
-                          disabled={!day.isCurrentMonth}
-                          onClick={() =>
-                            day.isCurrentMonth &&
-                            toggleScheduleDate(day.dateKey)
-                          }
-                          className={cn(
-                            "relative flex min-h-[118px] flex-col items-center justify-start overflow-hidden rounded-[12px] border p-3 text-center transition-all duration-200",
-                            day.isCurrentMonth
-                              ? "hover:-translate-y-0.5 hover:border-[#ffb784]"
-                              : "cursor-default border-[#eadbc9] bg-transparent opacity-45",
-                            day.isCurrentMonth &&
-                              (isDayOff
-                                ? "border-[#ffd6bd] bg-[#fff1e8] text-[#ff5a00]"
-                                : "border-[#eadbc9] bg-white text-[#202020]"),
-                            isSpecialDay &&
-                              "border-[#ff6200] bg-[#fff7f0] shadow-[0_0_0_2px_rgba(255,98,0,0.12)]",
-isSelected &&
-  (scheduleMultiSelect
-    ? "border-[#ff6200] bg-[#fff1e8] text-[#ff6200] shadow-[0_0_0_2px_rgba(255,98,0,0.16)]"
-    : "border-[#ff6200] bg-[#fff7f0] shadow-[0_0_0_2px_rgba(255,98,0,0.18)]"),
-                          )}
-                        >
-                          <span
-                            className={cn(
-                              "grid h-6 min-w-6 place-items-center rounded-full px-1 text-sm font-black",
-                              day.isToday && "bg-[#ff6200] text-white",
-                              !day.isToday &&
-                                (isDayOff
-                                  ? "text-[#ff5a00]"
-                                  : "text-[#202020]"),
-                              !day.isCurrentMonth && "text-[#aaa19a]",
-                            )}
-                          >
-                            {day.dayNumber}
-                          </span>
+    return (
+      <button
+        key={day.dateKey}
+        type="button"
+        disabled={!day.isCurrentMonth || isPastDay}
+        onClick={() =>
+          day.isCurrentMonth &&
+          !isPastDay &&
+          toggleScheduleDate(day.dateKey)
+        }
+        className={cn(
+          "relative flex min-h-[118px] flex-col items-center justify-start overflow-hidden rounded-[12px] border p-3 text-center transition-all duration-200",
+
+          day.isCurrentMonth && !isPastDay
+            ? "hover:-translate-y-0.5 hover:border-[#ffb784]"
+            : "cursor-default border-[#eadbc9] bg-transparent opacity-45",
+
+          day.isCurrentMonth &&
+            !isPastDay &&
+            (isDayOff
+              ? "border-[#ffd6bd] bg-[#fff1e8] text-[#ff5a00]"
+              : "border-[#eadbc9] bg-white text-[#202020]"),
+
+          isSpecialDay &&
+            !isPastDay &&
+            "border-[#ff6200] bg-[#fff7f0] shadow-[0_0_0_2px_rgba(255,98,0,0.12)]",
+
+          isSelected &&
+            !isPastDay &&
+            (scheduleMultiSelect
+              ? "border-[#ff6200] bg-[#fff1e8] text-[#ff6200] shadow-[0_0_0_2px_rgba(255,98,0,0.16)]"
+              : "border-[#ff6200] bg-[#fff7f0] shadow-[0_0_0_2px_rgba(255,98,0,0.18)]"),
+
+          isPastDay &&
+            "pointer-events-none cursor-not-allowed border-[#e5e7eb] bg-[#f3f4f6] text-[#9ca3af] opacity-55 shadow-none",
+        )}
+      >
+                        <span
+  className={cn(
+    "grid h-6 min-w-6 place-items-center rounded-full px-1 text-sm font-black",
+    day.isToday && !isPastDay && "bg-[#ff6200] text-white",
+    !day.isToday &&
+      !isPastDay &&
+      (isDayOff
+        ? "text-[#ff5a00]"
+        : "text-[#202020]"),
+    !day.isCurrentMonth && "text-[#aaa19a]",
+    isPastDay && "text-[#9ca3af] line-through",
+  )}
+>
+  {day.dayNumber}
+</span>
 
                           {isSpecialDay && (
                             <span className="mt-1 inline-flex items-center justify-center rounded-full bg-[#ff6200] px-1.5 py-0.5 text-[9px] font-black uppercase leading-none tracking-wide text-white shadow-sm">
@@ -4923,21 +5040,117 @@ isSelected &&
                     </div>
                   </div>
 
-                  <div className="absolute inset-x-0 bottom-0 border-[#eadfce] bg-white/92 px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 backdrop-blur sm:px-6 sm:pb-5">
-                    <button
-                      type="button"
-                      onClick={closeDetails}
-                      className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[22px] bg-[var(--color-primary-buttom)] text-sm font-black text-white transition-all duration-200 hover:bg-[#4a4a4a] active:scale-[0.98]"
-                    >
-                      <X className="h-4 w-4" />
-                      Закрити
-                    </button>
-                  </div>
+{!isArchived && !isCanceled && (
+  <div className="absolute inset-x-0 bottom-0 border-[#eadfce] bg-white/92 px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 backdrop-blur sm:px-6 sm:pb-5">
+    <div
+      className={cn(
+        "grid gap-3",
+        !isConfirmed ? "sm:grid-cols-2" : "sm:grid-cols-1",
+      )}
+    >
+      {!isConfirmed && (
+        <button
+          type="button"
+          disabled={masterBookingActionLoading}
+          onClick={() => handleConfirmMasterBooking(booking)}
+          className="inline-flex h-12 items-center justify-center gap-2 rounded-[22px] bg-[var(--color-primary-buttom)] px-4 text-sm font-black text-white transition-all duration-200 hover:bg-[#4a4a4a] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50"
+        >
+          <CheckCheck className="h-4 w-4" />
+          {masterBookingActionLoading ? "Підтверджуємо..." : "Підтвердити"}
+        </button>
+      )}
+
+      <button
+        type="button"
+        disabled={masterBookingActionLoading}
+        onClick={() => setCancelMasterBookingConfirm(booking)}
+        className="inline-flex h-12 items-center justify-center gap-2 rounded-[22px] border border-[#fecaca] bg-[#fff5f5] px-4 text-sm font-black text-[#ef4444] transition-all duration-200 hover:border-[#fca5a5] hover:bg-[#ffecec] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50"
+      >
+        <XCircle className="h-4 w-4" />
+        Скасувати запис
+      </button>
+    </div>
+  </div>
+)}
                 </div>
               </div>
             </div>
           );
         })()}
+        <Modal
+  open={cancelMasterBookingConfirm != null}
+  onClose={() => setCancelMasterBookingConfirm(null)}
+  title="Скасувати запис?"
+  badge="Підтвердження"
+  icon={XCircle}
+  size="sm"
+  zIndexClass="z-[10060]"
+  mobileCompact
+  footer={
+    <div className="flex justify-end gap-2">
+      <Button
+        variant="secondary"
+        onClick={() => setCancelMasterBookingConfirm(null)}
+        disabled={masterBookingActionLoading}
+        className="w-full sm:w-auto"
+      >
+        Назад
+      </Button>
+
+      <button
+        type="button"
+        disabled={masterBookingActionLoading}
+        onClick={() => handleCancelMasterBooking(cancelMasterBookingConfirm)}
+        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#ef4444] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#dc2626] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 sm:w-auto"
+      >
+        <XCircle className="h-4 w-4" />
+        {masterBookingActionLoading ? "Скасовуємо..." : "Так, скасувати"}
+      </button>
+    </div>
+  }
+>
+  <div className="space-y-4">
+    <div className="flex justify-center">
+      <div className="relative">
+        <div className="absolute inset-0 rounded-full bg-[#ef4444]/30 blur-2xl" />
+
+        <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-[#ef4444] text-white">
+          <XCircle className="h-7 w-7" />
+        </div>
+      </div>
+    </div>
+
+    <div className="text-center">
+      <h3 className="text-xl font-black tracking-tight text-[#202020]">
+        Скасувати запис?
+      </h3>
+
+      <p className="mt-2 text-sm leading-6 text-[#77716b]">
+        Запис буде позначений як скасований вами. Після цього він більше не
+        буде активним.
+      </p>
+    </div>
+
+    <div className="rounded-2xl border border-[#ffd8d8] bg-[#fff7f7] p-3.5">
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-[#ef4444] shadow-sm">
+          <CircleAlert className="h-4 w-4" />
+        </div>
+
+        <div className="min-w-0">
+          <p className="text-sm font-bold text-[#202020]">
+            Після скасування
+          </p>
+
+          <p className="mt-1 text-xs leading-5 text-[#77716b]">
+            У записах майстра цей запис залишиться в історії зі статусом
+            “Скасовано вами”.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</Modal>
     </div>
   );
 }

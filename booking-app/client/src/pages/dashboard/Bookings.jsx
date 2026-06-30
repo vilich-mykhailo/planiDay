@@ -1979,7 +1979,7 @@ export default function Bookings() {
                   variant="primary"
                   size="md"
                   onClick={() => setManualBookingOpen(true)}
-                  className="h-11 w-full rounded-2xl px-4 sm:w-auto"
+                  className="h-11 w-full rounded-2xl px-4 sm:w-auto bg-[var(--color-primary-buttom)] text-white hover:!bg-[#4a4a4a]"
                 >
                   <UserPlus className="h-4 w-4" />
                   Додати запис вручну

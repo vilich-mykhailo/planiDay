@@ -5,6 +5,7 @@ import {
   Sparkles,
   CalendarDays,
   Clock,
+  Clock3,
   Users,
   ChevronLeft,
   ChevronRight,
@@ -12,7 +13,16 @@ import {
   ChevronDown,
   Trash2,
   XCircle,
+  X,
   Phone,
+  PhoneCall,
+  Copy,
+  Banknote,
+  Timer,
+  UserRound,
+  ClipboardPen,
+  PartyPopper,
+  AlertTriangle,
   CircleAlert,
   CircleCheckBig,
   ClockAlert,
@@ -21,11 +31,7 @@ import {
   MoreHorizontal,
   MoreVertical,
   SlidersHorizontal,
-  Scissors,
-  Minus,
   Plus,
-  Bell,
-  Megaphone,
   Store,
 } from "lucide-react";
 
@@ -295,10 +301,13 @@ function updateCalendarScrollState(el, setHasScroll, setShowScrollHint) {
 
 const SCHEDULE_START_HOUR = 6;
 const SCHEDULE_END_HOUR = 20;
-const SCHEDULE_HOUR_HEIGHT = 92;
+const SCHEDULE_HOUR_HEIGHT = 104;
 const SCHEDULE_MIN_CARD_HEIGHT = 54;
 const SCHEDULE_DEFAULT_DURATION = 60;
 const SCHEDULE_GRID_TOP_PADDING = 18;
+const SCHEDULE_GRID_BOTTOM_PADDING = 24;
+const SCHEDULE_DESKTOP_COLUMN_WIDTH = 188;
+const SCHEDULE_MOBILE_COLUMN_MIN_WIDTH = 176;
 
 const SCHEDULE_STATUS_FILTERS = [
   { key: "all", label: "Усі" },
@@ -1033,7 +1042,7 @@ function scheduleDateTimeMinutes(value) {
 }
 
 function scheduleTimeLabel(minutes) {
-  const safe = Math.max(0, Math.min(24 * 60 - 1, Math.round(minutes || 0)));
+  const safe = Math.max(0, Math.min(24 * 60, Math.round(minutes || 0)));
   return `${pad2(Math.floor(safe / 60))}:${pad2(safe % 60)}`;
 }
 
@@ -1543,6 +1552,138 @@ function BookingHoverCard({ preview, nowTs, formatPrice }) {
             </p>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+function ScheduleActionConfirmModal({
+  open,
+  onClose,
+  onConfirm,
+  icon: Icon,
+  title,
+  description,
+  warningTitle,
+  warningText,
+  actionLabel,
+  actionIcon: ActionIcon,
+}) {
+  useEffect(() => {
+    if (!open) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleEscape = (event) => {
+      if (event.key === "Escape") onClose?.();
+    };
+
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  const FooterIcon = ActionIcon || Icon;
+
+  return (
+    <div
+      className="fixed inset-0 z-[260] flex items-stretch justify-center bg-[#202020]/45 p-0 backdrop-blur-[6px] sm:items-center sm:p-6"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose?.();
+      }}
+    >
+      <div
+        className="flex h-dvh w-full max-w-md flex-col overflow-hidden rounded-none border-0 bg-[#f7f5f1] shadow-[0_30px_90px_rgba(15,23,42,0.24)] sm:h-auto sm:max-h-[85vh] sm:rounded-[30px] sm:border sm:border-[#f0e2d3]"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <div className="relative shrink-0 overflow-hidden bg-[#f3eee7] px-5 py-5 sm:px-6 sm:py-6">
+          <div className="absolute right-[-55px] top-[-70px] h-[180px] w-[180px] rounded-full bg-[#ff6200]/10 blur-3xl" />
+
+          <div className="relative z-10 flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-white px-3 text-[11px] font-black uppercase tracking-[0.08em] text-[#ff6200] shadow-[0_8px_20px_rgba(255,98,0,0.08)]">
+                <Icon className="h-3.5 w-3.5" />
+                Дія із записом
+              </span>
+
+              <h3 className="mt-3 text-[26px] font-black leading-[0.95] tracking-tight text-[#202020] sm:text-[32px]">
+                {title}
+              </h3>
+
+              {description && (
+                <p className="mt-2 text-sm font-medium leading-6 text-[#77716b]">
+                  {description}
+                </p>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white text-[#77716b] shadow-[0_10px_24px_rgba(15,23,42,0.06)] transition hover:bg-[#fff3e9] hover:text-[#ff6200] active:scale-[0.96]"
+              aria-label="Закрити"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto bg-white px-5 py-5 sm:px-6">
+          <div className="space-y-4">
+            <div className="flex justify-center">
+              <div className="relative">
+                <div className="absolute inset-0 rounded-full bg-[var(--color-danger-bg)]/90 blur-2xl" />
+                <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--color-danger)] text-white shadow-[0_16px_36px_rgba(213,92,82,0.24)]">
+                  <Icon className="h-7 w-7" />
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl bg-[var(--color-danger-bg)] p-3.5">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-[var(--color-danger-dark)] shadow-sm">
+                  <AlertTriangle className="h-4 w-4" />
+                </div>
+
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-[var(--color-danger-dark)]">
+                    {warningTitle}
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-[var(--color-ink)]">
+                    {warningText}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="sticky bottom-0 shrink-0 border-t border-[#f0e7da] bg-[#fbfaf8] px-5 py-4 sm:px-6">
+          <div className="flex flex-col justify-end gap-2 sm:flex-row">
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-[#eadbc9] bg-white px-4 py-2.5 text-sm font-black text-[#202020] transition hover:border-[#ffd6bd] hover:bg-[#fff7f0] active:scale-[0.98] sm:w-auto"
+            >
+              Назад
+            </button>
+
+            <button
+              type="button"
+              onClick={onConfirm}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-danger)] px-4 py-2.5 text-sm font-black text-white transition hover:bg-[var(--color-danger-dark)] active:scale-[0.98] sm:w-auto"
+            >
+              <FooterIcon className="h-4 w-4" />
+              {actionLabel}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -2066,6 +2207,9 @@ const bookings = useMemo(
   () => bookingsProp ?? contextBookings ?? [],
   [bookingsProp, contextBookings],
 );
+const confirmBooking = bookingsContext?.confirmBooking;
+const cancelBooking = bookingsContext?.cancelBooking;
+const deleteBooking = bookingsContext?.deleteBooking;
 
 const loading = loadingProp ?? bookingsContext?.loading ?? false;
 const studio = studioProp ?? studioContext?.studio ?? null;
@@ -2091,8 +2235,11 @@ const studio = studioProp ?? studioContext?.studio ?? null;
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [bookingPreview, setBookingPreview] = useState(null);
   const [agendaCollapsed, setAgendaCollapsed] = useState(false);
-  const [hourHeight, setHourHeight] = useState(SCHEDULE_HOUR_HEIGHT);
-  const [staffColumnWidth, setStaffColumnWidth] = useState(216);
+  const [detailsId, setDetailsId] = useState(null);
+  const [cancelConfirmId, setCancelConfirmId] = useState(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+  const [copiedPhone, setCopiedPhone] = useState(false);
+  const hourHeight = SCHEDULE_HOUR_HEIGHT;
   const scrollRef = useRef(null);
   const headerScrollRef = useRef(null);
 const handleViewDateChange = (nextDate) => {
@@ -2105,14 +2252,6 @@ const handleSelectedGroupChange = (nextGroup) => {
 
 const handleRangeModeChange = (nextMode) => {
   setRangeMode(nextMode);
-};
-
-const adjustHourHeight = (delta) => {
-  setHourHeight((value) => Math.max(50, Math.min(300, value + delta)));
-};
-
-const adjustStaffColumnWidth = (delta) => {
-  setStaffColumnWidth((value) => Math.max(188, Math.min(340, value + delta)));
 };
 
 const syncHorizontalScroll = (source, ...targetRefs) => {
@@ -2151,6 +2290,116 @@ const hideBookingPreview = () => {
   const normalizedBookings = useMemo(() => {
     return (bookings || []).map(normalizeScheduleBooking).filter(Boolean);
   }, [bookings]);
+
+  const selectedBooking = useMemo(() => {
+    if (detailsId == null) return null;
+    return (
+      normalizedBookings.find((booking) => String(booking.id) === String(detailsId)) ||
+      null
+    );
+  }, [detailsId, normalizedBookings]);
+
+  useEffect(() => {
+    if (detailsId == null) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleEscape = (event) => {
+      if (event.key === "Escape") {
+        setDetailsId(null);
+        setCopiedPhone(false);
+      }
+    };
+
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [detailsId]);
+
+  const closeBookingDetails = () => {
+    setDetailsId(null);
+    setCopiedPhone(false);
+  };
+
+  const openBookingDetails = (id) => {
+    if (id == null) return;
+    hideBookingPreview();
+    setCalendarOpen(false);
+    setDetailsId(id);
+    onOpenBooking?.(id);
+  };
+
+  async function handleCopyPhone(value) {
+    if (!value) return;
+
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopiedPhone(true);
+      window.setTimeout(() => setCopiedPhone(false), 1600);
+    } catch {
+      const textarea = document.createElement("textarea");
+      textarea.value = value;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+      setCopiedPhone(true);
+      window.setTimeout(() => setCopiedPhone(false), 1600);
+    }
+  }
+
+  const handleConfirmBooking = async (id) => {
+    if (id == null) return;
+
+    if (!confirmBooking) {
+      alert("Підтвердження запису недоступне");
+      return;
+    }
+
+    try {
+      await confirmBooking(id);
+      closeBookingDetails();
+    } catch (error) {
+      alert(error?.message || "Не вдалося підтвердити запис");
+    }
+  };
+
+  const handleCancelBooking = async (id) => {
+    if (id == null) return;
+
+    if (!cancelBooking) {
+      alert("Скасування запису недоступне");
+      return;
+    }
+
+    try {
+      await cancelBooking(id);
+      setCancelConfirmId(null);
+    } catch (error) {
+      alert(error?.message || "Не вдалося скасувати запис");
+    }
+  };
+
+  const handleDeleteBooking = async (id) => {
+    if (id == null) return;
+
+    if (!deleteBooking) {
+      alert("Видалення запису недоступне");
+      return;
+    }
+
+    try {
+      await deleteBooking(id);
+      setDeleteConfirmId(null);
+      closeBookingDetails();
+    } catch (error) {
+      alert(error?.message || "Не вдалося видалити запис");
+    }
+  };
 
 const countsByDate = useMemo(() => {
   const result = {};
@@ -2525,17 +2774,18 @@ const timeBounds = useMemo(() => {
 
   const gridBodyHeight =
     ((timeBounds.end - timeBounds.start) / 60) * hourHeight;
-  const gridHeight = SCHEDULE_GRID_TOP_PADDING + gridBodyHeight;
-  const desktopTimeColumnWidth = 70;
-  const mobileTimeColumnWidth = 48;
-  const desktopColumnWidth = Math.max(212, staffColumnWidth);
-  const mobileColumnWidth = Math.max(214, Math.min(232, staffColumnWidth));
+  const gridScheduleEnd = SCHEDULE_GRID_TOP_PADDING + gridBodyHeight;
+  const gridHeight = gridScheduleEnd + SCHEDULE_GRID_BOTTOM_PADDING;
+  const desktopTimeColumnWidth = 54;
+  const mobileTimeColumnWidth = 40;
+  const desktopColumnWidth = SCHEDULE_DESKTOP_COLUMN_WIDTH;
+  const mobileColumnMinWidth = SCHEDULE_MOBILE_COLUMN_MIN_WIDTH;
   const desktopScheduleWidth =
     desktopTimeColumnWidth + columns.length * desktopColumnWidth;
   const mobileScheduleWidth =
-    mobileTimeColumnWidth + columns.length * mobileColumnWidth;
+    mobileTimeColumnWidth + columns.length * mobileColumnMinWidth;
   const desktopTemplateColumns = `${desktopTimeColumnWidth}px repeat(${columns.length}, ${desktopColumnWidth}px)`;
-  const mobileTemplateColumns = `${mobileTimeColumnWidth}px repeat(${columns.length}, ${mobileColumnWidth}px)`;
+  const mobileTemplateColumns = `repeat(${columns.length}, minmax(${mobileColumnMinWidth}px, 1fr)) ${mobileTimeColumnWidth}px`;
   const quarterMarks = useMemo(() => {
     const marks = [];
 
@@ -2578,10 +2828,6 @@ const timeBounds = useMemo(() => {
     selectedStudioWindow?.source === "studio-exception"
       ? "Особлива дата у графіку студії"
       : "Вихідний за графіком студії";
-  const currentTimeLabel = now.toLocaleTimeString("uk-UA", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
   const weekStripDays = useMemo(
     () => Array.from({ length: 7 }, (_, index) => addDays(weekStart, index)),
     [weekStart],
@@ -2650,15 +2896,13 @@ const timeBounds = useMemo(() => {
     const scheduleWidth = compact ? mobileScheduleWidth : desktopScheduleWidth;
     const templateColumns = compact ? mobileTemplateColumns : desktopTemplateColumns;
     const headerHeight = compact ? "82px" : "112px";
-    const bodyHeight = compact
-      ? "calc(100dvh - 248px)"
-      : "clamp(420px, calc(100dvh - 210px), 590px)";
+    const bodyHeight = "clamp(500px, calc(100dvh - 190px), 700px)";
 
     return (
-      <div className="min-w-0 bg-white">
+      <div className={cn("min-w-0 bg-white", compact && "flex min-h-0 flex-1 flex-col")}>
         <div
           ref={compact ? null : headerScrollRef}
-          className="calendar-day-scroll touch-pan-x overflow-x-auto overflow-y-hidden overscroll-x-contain border-b border-[#ebeef3] bg-white [scrollbar-gutter:stable]"
+          className="calendar-day-scroll shrink-0 touch-pan-x overflow-x-auto overflow-y-hidden overscroll-x-contain border-b border-[#ebeef3] bg-white [scrollbar-gutter:stable]"
           onScroll={
             compact
               ? undefined
@@ -2675,76 +2919,17 @@ const timeBounds = useMemo(() => {
             >
               <div
                 className={cn(
-                  "sticky left-0 z-40 border-r border-[#ebeef3] bg-white",
+                  "sticky z-40 flex items-end border-[#ebeef3] bg-white pb-3 text-[10px] font-bold text-[#969da8]",
                   compact
-                    ? "flex items-end justify-end px-2 pb-3 text-[10px] font-bold text-[#969da8]"
-                    : "px-3 py-3",
+                    ? "right-0 justify-start border-l px-2"
+                    : "left-0 justify-end border-r px-2",
                 )}
-                style={{ height: headerHeight }}
+                style={{
+                  height: headerHeight,
+                  gridColumn: compact ? `${columns.length + 1}` : undefined,
+                }}
               >
-                {compact ? (
-                  <span>час</span>
-                ) : (
-                  <div className="grid h-full content-center gap-1.5">
-                    <div className="overflow-hidden rounded-md border border-[#e2e6ed] bg-[#fafbfc]">
-                      <div className="grid grid-cols-[22px_1fr_22px] items-center">
-                        <button
-                          type="button"
-                          onClick={() => adjustStaffColumnWidth(-12)}
-                          className="flex h-7 items-center justify-center text-[#6f7782] hover:bg-white"
-                          aria-label="Зменшити ширину колонок"
-                        >
-                          <Minus className="h-3 w-3" />
-                        </button>
-                        <span className="min-w-0 text-center leading-none">
-                          <span className="block text-[7px] font-black uppercase tracking-[0.08em] text-[#9aa1aa]">
-                            ширина
-                          </span>
-                          <span className="mt-0.5 block text-[9px] font-black text-[#1f2329]">
-                            {staffColumnWidth}
-                          </span>
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => adjustStaffColumnWidth(12)}
-                          className="flex h-7 items-center justify-center text-[#6f7782] hover:bg-white"
-                          aria-label="Збільшити ширину колонок"
-                        >
-                          <Plus className="h-3 w-3" />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="overflow-hidden rounded-md border border-[#e2e6ed] bg-[#fafbfc]">
-                      <div className="grid grid-cols-[22px_1fr_22px] items-center">
-                        <button
-                          type="button"
-                          onClick={() => adjustHourHeight(-8)}
-                          className="flex h-7 items-center justify-center text-[#6f7782] hover:bg-white"
-                          aria-label="Зменшити висоту рядків"
-                        >
-                          <Minus className="h-3 w-3" />
-                        </button>
-                        <span className="min-w-0 text-center leading-none">
-                          <span className="block text-[7px] font-black uppercase tracking-[0.08em] text-[#9aa1aa]">
-                            висота
-                          </span>
-                          <span className="mt-0.5 block text-[9px] font-black text-[#1f2329]">
-                            {hourHeight}
-                          </span>
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => adjustHourHeight(8)}
-                          className="flex h-7 items-center justify-center text-[#6f7782] hover:bg-white"
-                          aria-label="Збільшити висоту рядків"
-                        >
-                          <Plus className="h-3 w-3" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                <span>час</span>
               </div>
 
               {columns.map((column) => {
@@ -2865,11 +3050,12 @@ const timeBounds = useMemo(() => {
           ref={compact ? null : scrollRef}
           className={cn(
             "calendar-day-scroll relative touch-pan-x overflow-auto overscroll-x-contain [scrollbar-gutter:stable]",
+            compact && "min-h-0 flex-1",
             studioClosedForSelectedDay
               ? "bg-[repeating-linear-gradient(135deg,rgba(148,163,184,0.10)_0,rgba(148,163,184,0.10)_8px,rgba(255,255,255,0.42)_8px,rgba(255,255,255,0.42)_16px)]"
               : "bg-white",
           )}
-          style={{ height: bodyHeight }}
+          style={compact ? undefined : { height: bodyHeight }}
           onScroll={
             compact
               ? undefined
@@ -2885,24 +3071,24 @@ const timeBounds = useMemo(() => {
                 className="flex items-center justify-center px-4"
                 style={{ height: Math.min(gridHeight, 520) }}
               >
-                <div className="pointer-events-auto w-[min(340px,calc(100%-28px))] rounded-[18px] border border-dashed border-[#cfd6df] bg-white/90 p-5 text-center shadow-sm">
+                <div className="pointer-events-auto w-[min(260px,calc(100%-32px))] rounded-[14px] border border-dashed border-[#cfd6df] bg-white/90 p-3 text-center shadow-sm">
                   <div
                     className={cn(
-                      "mx-auto flex h-12 w-12 items-center justify-center rounded-full",
+                      "mx-auto flex h-10 w-10 items-center justify-center rounded-full",
                       studioClosedForSelectedDay
                         ? "bg-[#eaecf0] text-[#667085]"
                         : "bg-[#ffe1e8] text-[#ff3369]",
                     )}
                   >
                     {loading ? (
-                      <Sparkles className="h-5 w-5 animate-pulse" />
+                      <Sparkles className="h-4 w-4 animate-pulse" />
                     ) : studioClosedForSelectedDay ? (
-                      <Store className="h-5 w-5" />
+                      <Store className="h-4 w-4" />
                     ) : (
-                      <CalendarDays className="h-5 w-5" />
+                      <CalendarDays className="h-4 w-4" />
                     )}
                   </div>
-                  <p className="mt-3 text-sm font-black text-[#1f2329]">
+                  <p className="mt-2 text-[13px] font-black text-[#1f2329]">
                     {loading
                       ? "Завантажуємо записи"
                       : studioClosedForSelectedDay
@@ -2910,7 +3096,7 @@ const timeBounds = useMemo(() => {
                         : "Записів немає"}
                   </p>
                   {!loading && studioClosedForSelectedDay && (
-                    <p className="mt-1.5 text-[11px] font-semibold text-[#667085]">
+                    <p className="mt-1 text-[10px] font-semibold text-[#667085]">
                       {studioClosedHelper}
                     </p>
                   )}
@@ -2926,19 +3112,23 @@ const timeBounds = useMemo(() => {
             >
               <div
                 className={cn(
-                  "sticky left-0 z-40 border-r border-[#ebeef3]",
+                  "sticky z-40 border-[#ebeef3]",
+                  compact ? "right-0 border-l" : "left-0 border-r",
                   studioClosedForSelectedDay
                     ? "bg-[repeating-linear-gradient(135deg,rgba(148,163,184,0.10)_0,rgba(148,163,184,0.10)_8px,rgba(255,255,255,0.42)_8px,rgba(255,255,255,0.42)_16px)]"
                     : "bg-white",
                 )}
-                style={{ height: gridHeight }}
+                style={{
+                  height: gridHeight,
+                  gridColumn: compact ? `${columns.length + 1}` : undefined,
+                }}
               >
                 {hours.map((hour) => (
                   <div
                     key={hour}
                     className={cn(
-                      "absolute right-2 -translate-y-2 font-medium text-[#8f98a3]",
-                      compact ? "text-[11px]" : "text-[10px]",
+                      "absolute -translate-y-2 font-medium text-[#8f98a3]",
+                      compact ? "left-2 text-[11px]" : "right-2 text-[10px]",
                     )}
                     style={{ top: topForMinute(hour * 60) }}
                   >
@@ -2951,7 +3141,10 @@ const timeBounds = useMemo(() => {
                   .map((mark) => (
                     <div
                       key={`label-${mark.minute}`}
-                      className="absolute right-2 -translate-y-1/2 text-[10px] font-medium text-[#b6bdc5]"
+                      className={cn(
+                        "absolute -translate-y-1/2 text-[10px] font-medium text-[#b6bdc5]",
+                        compact ? "left-2" : "right-2",
+                      )}
                       style={{ top: topForMinute(mark.minute) }}
                     >
                       {pad2(mark.minute % 60)}
@@ -2965,7 +3158,12 @@ const timeBounds = useMemo(() => {
                     className="absolute inset-x-0 z-30 border-t border-[#ff245d]"
                     style={{ top: topForMinute(nowMinute) }}
                   >
-                    <span className="absolute -right-1 -top-[5px] h-2.5 w-2.5 rounded-full bg-[#ff245d]" />
+                    <span
+                      className={cn(
+                        "absolute -top-[5px] h-2.5 w-2.5 rounded-full bg-[#ff245d]",
+                        compact ? "-left-1" : "-right-1",
+                      )}
+                    />
                   </div>
                 )}
               </div>
@@ -2994,7 +3192,7 @@ const timeBounds = useMemo(() => {
                   ? topForMinute(
                       Math.min(columnWorkWindow.endMin, timeBounds.end),
                     )
-                  : gridHeight;
+                  : gridScheduleEnd;
 
                 return (
                   <div
@@ -3059,12 +3257,12 @@ const timeBounds = useMemo(() => {
 
                     {!isStudioClosed &&
                       columnWorkWindow?.isWorking &&
-                      workEndTop < gridHeight && (
+                      workEndTop < gridScheduleEnd && (
                       <div
                         className="pointer-events-none absolute inset-x-0 z-[2] bg-[repeating-linear-gradient(135deg,rgba(148,163,184,0.09)_0,rgba(148,163,184,0.09)_8px,rgba(255,255,255,0.38)_8px,rgba(255,255,255,0.38)_16px)]"
                         style={{
                           top: workEndTop,
-                          height: gridHeight - workEndTop,
+                          height: gridScheduleEnd - workEndTop,
                         }}
                       />
                     )}
@@ -3107,7 +3305,7 @@ const timeBounds = useMemo(() => {
                         <button
                           key={`${booking.id}-${booking.dateKey}-${booking.startMin}`}
                           type="button"
-                          onClick={() => booking.id != null && onOpenBooking?.(booking.id)}
+                          onClick={() => openBookingDetails(booking.id)}
                           onPointerEnter={(event) => showBookingPreview(event, booking)}
                           onPointerLeave={hideBookingPreview}
                           onFocus={(event) => showBookingPreview(event, booking)}
@@ -3189,19 +3387,335 @@ const timeBounds = useMemo(() => {
     );
   };
 
-  const renderFullDesign = () => {
-    const mobileNavItems = [
-      CalendarDays,
-      Users,
-      CheckCheck,
-      Megaphone,
-      Store,
-    ];
+  const renderBookingDetailsModal = () => {
+    if (!selectedBooking || detailsId == null) return null;
 
+    const raw = selectedBooking.raw || {};
+    const visualStatus = scheduleVisualStatus(selectedBooking, nowTs);
+    const isArchived = visualStatus === "archived";
+    const isCanceled = visualStatus === "canceled";
+    const isConfirmed = visualStatus === "confirmed";
+    const isDeleted = visualStatus === "deleted";
+    const statusMeta = isDeleted
+      ? {
+          label: "Видалено",
+          top: "from-[var(--color-archived-light)] to-white",
+          Icon: Trash2,
+          iconColor: "text-[var(--color-archived-dark)]",
+          pillText: "text-[var(--color-archived-dark)]",
+        }
+      : isArchived
+        ? {
+            label: "Сеанс завершено",
+            top: "from-[var(--color-archived-light)] to-white",
+            Icon: PartyPopper,
+            iconColor: "text-[var(--color-archived-dark)]",
+            pillText: "text-[var(--color-archived-dark)]",
+          }
+        : isConfirmed
+          ? {
+              label: "Підтверджено",
+              top: "from-[var(--color-confirmed-light)] to-white",
+              Icon: CheckCheck,
+              iconColor: "text-[var(--color-confirmed-dark)]",
+              pillText: "text-[var(--color-confirmed-dark)]",
+            }
+          : isCanceled
+            ? {
+                label:
+                  raw.canceledBy === "client"
+                    ? "Скасовано клієнтом"
+                    : "Скасовано вами",
+                top: "from-[var(--color-canceled-light)] to-white",
+                Icon: XCircle,
+                iconColor: "text-[var(--color-canceled-dark)]",
+                pillText: "text-[var(--color-canceled-dark)]",
+              }
+            : {
+                label: "Очікує підтвердження",
+                top: "from-[var(--color-pending-light)] to-white",
+                Icon: Clock,
+                iconColor: "text-[#ffb020]",
+                pillText: "text-[#ffb020]",
+              };
+    const StatusIcon = statusMeta.Icon;
+    const clientName = selectedBooking.clientName || "—";
+    const phone = selectedBooking.clientPhone || "";
+    const service = selectedBooking.serviceName || "Послуга";
+    const time =
+      parseTimeToHHMM(raw.time) ||
+      parseTimeToHHMM(raw.startTime) ||
+      scheduleTimeLabel(selectedBooking.startMin);
+    const price = selectedBooking.price;
+    const duration = selectedBooking.duration;
+    const masterName = selectedBooking.staffName || "Довільний майстер";
+    const dateLabel = formatDateLongUA(selectedBooking.dateKey);
+    const clientPhoto = toPublicUrl(
+      raw.clientPhotoUrl ||
+        raw.clientPhoto ||
+        raw.customerPhoto ||
+        raw.client?.photoUrl ||
+        raw.client?.photo ||
+        raw.client?.avatar ||
+        raw.customer?.photoUrl ||
+        raw.customer?.photo ||
+        raw.customer?.avatar ||
+        "",
+    );
+    const masterPhoto = toPublicUrl(
+      selectedBooking.staffPhotoUrl ||
+        raw.masterPhotoUrl ||
+        raw.masterPhoto ||
+        raw.staffPhotoUrl ||
+        raw.staffPhoto ||
+        raw.master?.photoUrl ||
+        raw.master?.photo ||
+        raw.master?.avatar ||
+        raw.staff?.photoUrl ||
+        raw.staff?.photo ||
+        raw.staff?.avatar ||
+        "",
+    );
+    const resourceName = selectedBooking.resourceName || "";
+
+    return (
+      <div
+        className="fixed inset-0 z-[220] flex items-end justify-center bg-[#1b1b1b]/35 p-0 backdrop-blur-[10px] sm:items-center sm:p-5"
+        onMouseDown={(event) => {
+          if (event.target === event.currentTarget) {
+            closeBookingDetails();
+          }
+        }}
+      >
+        <div
+          className={cn(
+            "relative flex w-full flex-col overflow-hidden bg-[#fbfaf8]",
+            "h-[100dvh] rounded-none border-0 shadow-none",
+            "sm:h-auto sm:max-h-[88vh] sm:max-w-[640px] sm:rounded-[34px] sm:border sm:border-[#eadfce] sm:shadow-[0_35px_110px_rgba(27,27,27,0.22)]",
+          )}
+          onMouseDown={(event) => event.stopPropagation()}
+          onClick={(event) => event.stopPropagation()}
+        >
+          <div
+            className={cn(
+              "relative overflow-hidden px-5 pb-5 pt-[max(16px,env(safe-area-inset-top))] sm:px-6 sm:pt-6",
+              "bg-gradient-to-b",
+              statusMeta.top,
+            )}
+          >
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.58),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.20),rgba(255,255,255,0))]" />
+
+            <div className="relative flex items-center justify-between">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/80 px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] text-[#77716b] shadow-sm backdrop-blur">
+                <ClipboardPen className="h-4 w-4 text-[#ff6200]" />
+                Деталі запису
+              </div>
+
+              <button
+                type="button"
+                onClick={closeBookingDetails}
+                className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-[#202020] shadow-[0_8px_24px_rgba(27,27,27,0.10)] transition hover:bg-[#fff7f0] active:scale-[0.98]"
+                aria-label="Закрити"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="relative mt-8 flex flex-col items-center text-center">
+              <div className="inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-[13px] font-black shadow-[0_8px_24px_rgba(27,27,27,0.08)] backdrop-blur">
+                <StatusIcon className={cn("h-4 w-4", statusMeta.iconColor)} />
+                <span className={statusMeta.pillText}>{statusMeta.label}</span>
+              </div>
+
+              <h2 className="mt-8 break-words text-center text-[30px] font-black leading-[1.05] tracking-tight text-[#202020] sm:text-[34px]">
+                {service}
+              </h2>
+
+              <p className="mt-2 flex flex-wrap items-center justify-center gap-2 text-sm font-bold text-[#77716b]">
+                <CalendarDays className="h-4 w-4 text-[#ff6200]" />
+                <span>{dateLabel}</span>
+              </p>
+            </div>
+
+            <div className="relative mt-4 grid grid-cols-3 gap-2">
+              <div className="flex min-h-[90px] flex-col items-center justify-center rounded-[22px] border border-white/70 bg-white/88 p-3 text-center shadow-sm backdrop-blur">
+                <Clock3 className={cn("h-4 w-4", statusMeta.iconColor)} />
+                <p className="mt-2 text-[11px] font-black uppercase tracking-[0.12em] text-[#aaa19a]">
+                  Час запису
+                </p>
+                <p className="mt-1 text-sm font-black text-[#202020]">{time}</p>
+              </div>
+
+              <div className="flex min-h-[90px] flex-col items-center justify-center rounded-[22px] border border-white/70 bg-white/88 p-3 text-center shadow-sm backdrop-blur">
+                <Banknote className={cn("h-4 w-4", statusMeta.iconColor)} />
+                <p className="mt-2 text-[11px] font-black uppercase tracking-[0.12em] text-[#aaa19a]">
+                  Сума
+                </p>
+                <p className="mt-1 text-sm font-black text-[#202020]">
+                  {price != null ? `${formatPrice(price)} грн` : "—"}
+                </p>
+              </div>
+
+              <div className="flex min-h-[90px] flex-col items-center justify-center rounded-[22px] border border-white/70 bg-white/88 p-3 text-center shadow-sm backdrop-blur">
+                <Timer className={cn("h-4 w-4", statusMeta.iconColor)} />
+                <p className="mt-2 text-[11px] font-black uppercase tracking-[0.12em] text-[#aaa19a]">
+                  Тривалість
+                </p>
+                <p className="mt-1 text-sm font-black text-[#202020]">
+                  {duration != null ? `${duration} хв` : "—"}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="relative flex min-h-0 flex-1 flex-col bg-white px-4 pt-4 sm:px-6">
+            <div className="calendar-day-scroll min-h-0 flex-1 overflow-y-auto pb-28 sm:pb-24">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-[28px] border border-[#eadfce] bg-white p-4 sm:col-span-2">
+                  <div className="flex items-center gap-4">
+                    <div className="h-[72px] w-[72px] shrink-0 overflow-hidden rounded-full border border-[#eadfce] bg-white p-1">
+                      {clientPhoto ? (
+                        <img
+                          src={clientPhoto}
+                          alt={clientName}
+                          className="h-full w-full rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center rounded-full bg-[#fff1e8] text-[#ff6200]">
+                          <UserRound className="h-5 w-5" />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#aaa19a]">
+                        Клієнт
+                      </p>
+                      <p className="truncate text-[20px] font-black text-[#202020]">
+                        {clientName}
+                      </p>
+                      <p className="mt-1 truncate text-sm font-bold text-[#77716b]">
+                        {phone || "Телефон не вказано"}
+                      </p>
+                    </div>
+
+                    {phone && (
+                      <div className="flex shrink-0 items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleCopyPhone(phone)}
+                          className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#eadfce] bg-white text-[#77716b] transition-all duration-200 hover:bg-[#fff7f0] hover:text-[#202020] active:scale-[0.95]"
+                          title="Скопіювати номер"
+                        >
+                          {copiedPhone ? (
+                            <CheckCheck className="h-4 w-4 text-emerald-600" />
+                          ) : (
+                            <Copy className="h-4 w-4" />
+                          )}
+                        </button>
+
+                        <a
+                          href={`tel:${phone}`}
+                          className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#ff6200] text-white transition-all duration-200 hover:bg-[#ef4f00] active:scale-[0.95]"
+                          title="Подзвонити"
+                        >
+                          <PhoneCall className="h-4 w-4" />
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="rounded-[24px] border border-[#eadfce] bg-white p-3 sm:col-span-2">
+                  <div className="ml-2 flex items-center gap-3">
+                    <div className="h-[62px] w-[62px] shrink-0 overflow-hidden rounded-full border border-[#eadfce] bg-white p-1">
+                      {masterPhoto ? (
+                        <img
+                          src={masterPhoto}
+                          alt={masterName}
+                          className="h-full w-full rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center rounded-full bg-[#fff1e8] text-[#ff6200]">
+                          <UserRound className="h-5 w-5" />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="ml-2 min-w-0 flex-1">
+                      <p className="text-[9px] font-black uppercase tracking-[0.12em] text-[#aaa19a]">
+                        Майстер
+                      </p>
+                      <p className="mt-0.5 truncate text-[15px] font-black text-[#202020]">
+                        {masterName}
+                      </p>
+                      <p className="truncate text-[12px] font-semibold text-[#77716b]">
+                        {resourceName || "Виконавець послуги"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {!isArchived && !isDeleted && (
+              <div className="absolute inset-x-0 bottom-0 border-[#eadfce] bg-white/92 px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 backdrop-blur sm:px-6 sm:pb-5">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {!isConfirmed && !isCanceled && (
+                    <button
+                      type="button"
+                      onClick={() => handleConfirmBooking(selectedBooking.id)}
+                      className="inline-flex h-12 items-center justify-center gap-2 rounded-[22px] bg-[var(--color-primary-buttom)] text-sm font-black text-white transition-all duration-200 hover:bg-[#4a4a4a] active:scale-[0.98]"
+                    >
+                      <CheckCheck className="h-4 w-4" />
+                      Підтвердити
+                    </button>
+                  )}
+
+                  {!isCanceled && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        closeBookingDetails();
+                        setCancelConfirmId(selectedBooking.id);
+                      }}
+                      className={cn(
+                        "inline-flex h-12 items-center justify-center gap-2 rounded-[22px] border border-[#fecaca] bg-[#fff5f5] px-4 text-sm font-black text-[#ef4444] transition-all duration-200 hover:border-[#fca5a5] hover:bg-[#ffecec] active:scale-[0.98]",
+                        isConfirmed && "sm:col-span-2",
+                      )}
+                    >
+                      <XCircle className="h-4 w-4" />
+                      Скасувати запис
+                    </button>
+                  )}
+
+                  {isCanceled && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        closeBookingDetails();
+                        setDeleteConfirmId(selectedBooking.id);
+                      }}
+                      className="inline-flex h-12 items-center justify-center gap-2 rounded-[22px] border border-[#fecaca] bg-[#fff5f5] px-4 text-sm font-black text-[#ef4444] transition-all duration-200 hover:border-[#fca5a5] hover:bg-[#ffecec] active:scale-[0.98] sm:col-span-2"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Видалити запис
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderFullDesign = () => {
     return (
       <>
         <div
-          className="hidden h-[min(760px,calc(100dvh-32px))] min-h-[620px] overflow-hidden rounded-[30px] border border-[#d8dde5] bg-white shadow-[0_24px_80px_rgba(15,23,42,0.16)] md:grid"
+          className="hidden h-[min(900px,calc(100dvh-16px))] min-h-[680px] overflow-hidden rounded-[30px] border border-[#d8dde5] bg-white shadow-[0_24px_80px_rgba(15,23,42,0.16)] md:grid"
           style={{
             gridTemplateColumns: agendaCollapsed
               ? "minmax(0,1fr) 46px"
@@ -3426,7 +3940,7 @@ const timeBounds = useMemo(() => {
                           <button
                             key={`agenda-${booking.id}-${booking.dateKey}-${booking.startMin}`}
                             type="button"
-                            onClick={() => booking.id != null && onOpenBooking?.(booking.id)}
+                            onClick={() => openBookingDetails(booking.id)}
                             className="grid grid-cols-[42px_1fr_auto] gap-3 rounded-md bg-white py-1 text-left transition hover:bg-[#fafbfc]"
                           >
                             <div className="pt-1 text-[10px] font-bold text-[#8b94a0]">
@@ -3466,30 +3980,13 @@ const timeBounds = useMemo(() => {
           </aside>
         </div>
 
-        <div className="relative mx-auto flex min-h-[100dvh] max-w-[520px] flex-col overflow-hidden bg-white pb-[112px] text-[#15171d] md:hidden">
-          <div className="sticky top-0 z-[120] border-b border-[#e8ebf0] bg-white">
-            <div className="flex items-center justify-between px-7 pb-5 pt-6">
-              <span className="text-[23px] font-black leading-none">
-                {currentTimeLabel}
-              </span>
-              <div className="flex items-center gap-2 text-[#15171d]">
-                <span className="h-3 w-4 rounded-[2px] border-2 border-[#15171d]" />
-                <span className="h-3 w-4 rounded-[2px] border-2 border-[#15171d]" />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-[64px_1fr_48px_38px] items-center px-6 pb-4">
-              <button
-                type="button"
-                className="flex h-11 w-11 items-center justify-center text-[#15171d]"
-                aria-label="Сповіщення"
-              >
-                <Bell className="h-7 w-7" />
-              </button>
+        <div className="relative left-1/2 flex h-[100dvh] min-h-[100dvh] w-screen -translate-x-1/2 flex-col overflow-hidden bg-white text-[#15171d] md:hidden">
+          <div className="sticky top-0 z-[120] shrink-0 border-b border-[#e8ebf0] bg-white">
+            <div className="grid grid-cols-[1fr_48px_38px] items-center px-5 pb-4 pt-5">
               <button
                 type="button"
                 onClick={() => setCalendarOpen(true)}
-                className="border-l border-[#e4e7ec] pl-5 text-left"
+                className="min-w-0 text-left"
               >
                 <span className="flex items-center gap-2 text-[21px] font-black leading-tight">
                   {viewDate.toLocaleDateString("uk-UA", {
@@ -3585,33 +4082,45 @@ const timeBounds = useMemo(() => {
 
           <button
             type="button"
-            className="fixed bottom-[86px] right-6 z-[140] flex h-16 w-16 items-center justify-center rounded-full bg-[#111318] text-white shadow-[0_14px_34px_rgba(15,23,42,0.35)]"
+            className="fixed bottom-6 right-5 z-[140] flex h-16 w-16 items-center justify-center rounded-full bg-[#111318] text-white shadow-[0_14px_34px_rgba(15,23,42,0.35)]"
             aria-label="Додати запис"
           >
             <Plus className="h-9 w-9" />
           </button>
-
-          <nav className="fixed inset-x-0 bottom-0 z-[130] mx-auto flex h-[86px] max-w-[520px] items-center justify-around bg-[#111318] px-6 text-white">
-            {mobileNavItems.map((Icon, index) => (
-              <button
-                key={index}
-                type="button"
-                className={cn(
-                  "flex h-12 w-12 items-center justify-center rounded-2xl",
-                  index === 0 ? "text-white" : "text-white/45",
-                )}
-                aria-label={`Мобільна навігація ${index + 1}`}
-              >
-                <Icon className="h-7 w-7" />
-              </button>
-            ))}
-          </nav>
         </div>
 
         <BookingHoverCard
           preview={bookingPreview}
           nowTs={nowTs}
           formatPrice={formatPrice}
+        />
+
+        {renderBookingDetailsModal()}
+
+        <ScheduleActionConfirmModal
+          open={cancelConfirmId != null}
+          onClose={() => setCancelConfirmId(null)}
+          onConfirm={() => handleCancelBooking(cancelConfirmId)}
+          icon={XCircle}
+          actionIcon={XCircle}
+          title="Скасувати запис?"
+          description="Запис вважатиметься не активним і буде позначений як скасований."
+          warningTitle="Після скасування"
+          warningText="Клієнт отримає статус скасованого."
+          actionLabel="Так, скасувати"
+        />
+
+        <ScheduleActionConfirmModal
+          open={deleteConfirmId != null}
+          onClose={() => setDeleteConfirmId(null)}
+          onConfirm={() => handleDeleteBooking(deleteConfirmId)}
+          icon={Trash2}
+          actionIcon={Trash2}
+          title="Видалити запис?"
+          description="Цю дію не можна буде швидко повернути назад."
+          warningTitle="Увага"
+          warningText="Видалений запис не можна буде повернути назад."
+          actionLabel="Так, видалити"
         />
 
         {calendarOpen && (

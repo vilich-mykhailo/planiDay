@@ -163,101 +163,168 @@ export default function Dashboard() {
     }
   }, [token, navigate]);
 
-  const loadUnreadNotifications = useCallback(async () => {
-    const currentToken = localStorage.getItem("token");
-    const currentStudioId = localStorage.getItem("studioId");
+const getCurrentStudioId = useCallback(async () => {
+  const currentToken = localStorage.getItem("token");
 
-    if (!currentToken || !currentStudioId) {
-      setUnreadNotifications(0);
-      setStudioId(currentStudioId || null);
-      return;
+  if (!currentToken) return null;
+
+  try {
+    const res = await fetch(`${API_URL}/owner`, {
+      headers: {
+        Authorization: `Bearer ${currentToken}`,
+      },
+    });
+
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      throw new Error(data?.message || "Не вдалося отримати студії");
     }
 
-    setStudioId(currentStudioId);
+    const studios = Array.isArray(data) ? data : [];
 
-    try {
-      const res = await fetch(
-        `${API_URL}/owner/studio/${currentStudioId}/notifications`,
-        {
-          headers: {
-            Authorization: `Bearer ${currentToken}`,
-          },
+    if (!studios.length) {
+      localStorage.removeItem("studioId");
+      setStudioId(null);
+      return null;
+    }
+
+    const savedStudioId = localStorage.getItem("studioId");
+
+    const validSavedStudio = savedStudioId
+      ? studios.find((studio) => String(studio.id) === String(savedStudioId))
+      : null;
+
+    const currentStudioId = validSavedStudio?.id || studios[0]?.id || null;
+
+    if (currentStudioId) {
+      localStorage.setItem("studioId", currentStudioId);
+      setStudioId(currentStudioId);
+    }
+
+    return currentStudioId;
+  } catch (e) {
+    console.error("Failed to resolve studio id:", e);
+    localStorage.removeItem("studioId");
+    setStudioId(null);
+    return null;
+  }
+}, []);
+
+const loadUnreadNotifications = useCallback(async () => {
+  const currentToken = localStorage.getItem("token");
+
+  if (!currentToken) {
+    setUnreadNotifications(0);
+    setStudioId(null);
+    return;
+  }
+
+  const currentStudioId = await getCurrentStudioId();
+
+  if (!currentStudioId) {
+    setUnreadNotifications(0);
+    setStudioId(null);
+    return;
+  }
+
+  setStudioId(currentStudioId);
+
+  try {
+    const res = await fetch(
+      `${API_URL}/owner/studio/${currentStudioId}/notifications`,
+      {
+        headers: {
+          Authorization: `Bearer ${currentToken}`,
         },
-      );
+      },
+    );
 
-      const data = await res.json().catch(() => null);
+    const data = await res.json().catch(() => null);
 
-      if (!res.ok) {
-        throw new Error(data?.message || "Не вдалося завантажити повідомлення");
+    if (!res.ok) {
+      if (res.status === 404) {
+        localStorage.removeItem("studioId");
+        setStudioId(null);
       }
 
-      const items = Array.isArray(data?.notifications)
-        ? data.notifications
-        : [];
-
-      setUnreadNotifications(items.filter((item) => !item.isRead).length);
-    } catch (e) {
-      console.error("Failed to load unread notifications:", e);
-      setUnreadNotifications(0);
+      throw new Error(data?.message || "Не вдалося завантажити повідомлення");
     }
-  }, []);
+
+    const items = Array.isArray(data?.notifications)
+      ? data.notifications
+      : [];
+
+    setUnreadNotifications(items.filter((item) => !item.isRead).length);
+  } catch (e) {
+    console.error("Failed to load unread notifications:", e);
+    setUnreadNotifications(0);
+  }
+}, [getCurrentStudioId]);
 
   useEffect(() => {
     if (!token) return;
     loadUnreadNotifications();
   }, [token, loadUnreadNotifications]);
 
-  useEffect(() => {
-    if (!token) return;
+useEffect(() => {
+  if (!token) return;
 
-    const currentStudioId = localStorage.getItem("studioId");
-    if (!currentStudioId) return;
+  let activeStudioId = null;
+  let isMounted = true;
 
-    const joinStudio = () => {
-      socket.emit("join:studio", { studioId: currentStudioId });
-    };
+  const joinResolvedStudio = async () => {
+    const resolvedStudioId = await getCurrentStudioId();
 
-    if (socket.connected) {
-      joinStudio();
+    if (!isMounted || !resolvedStudioId) return;
+
+    activeStudioId = resolvedStudioId;
+
+    socket.emit("join:studio", { studioId: resolvedStudioId });
+  };
+
+  joinResolvedStudio();
+
+  const handleConnect = () => {
+    joinResolvedStudio();
+    loadUnreadNotifications();
+  };
+
+  const handleNotificationNew = (payload) => {
+    if (!payload) return;
+
+    const currentStudioId = activeStudioId || localStorage.getItem("studioId");
+
+    if (String(payload.studioId) !== String(currentStudioId)) {
+      return;
     }
 
-    const handleConnect = () => {
-      joinStudio();
-      loadUnreadNotifications();
-    };
+    setUnreadNotifications((prev) => prev + 1);
+  };
 
-    const handleNotificationNew = (payload) => {
-      if (!payload) return;
+  const handleNotificationsUpdated = () => {
+    loadUnreadNotifications();
+  };
 
-      if (
-        String(payload.studioId) !== String(localStorage.getItem("studioId"))
-      ) {
-        return;
-      }
+  const handleAuthChanged = () => {
+    joinResolvedStudio();
+    loadUnreadNotifications();
+  };
 
-      setUnreadNotifications((prev) => prev + 1);
-    };
+  socket.on("connect", handleConnect);
+  socket.on("notification:new", handleNotificationNew);
+  socket.on("notifications:updated", handleNotificationsUpdated);
+  window.addEventListener("auth-changed", handleAuthChanged);
 
-    const handleNotificationsUpdated = () => {
-      loadUnreadNotifications();
-    };
+  return () => {
+    isMounted = false;
 
-    const handleAuthChanged = () => {
-      loadUnreadNotifications();
-    };
-
-    socket.on("connect", handleConnect);
-    socket.on("notification:new", handleNotificationNew);
-    socket.on("notifications:updated", handleNotificationsUpdated);
-    window.addEventListener("auth-changed", handleAuthChanged);
-
-    return () => {
-      socket.off("connect", handleConnect);
-      socket.off("notification:new", handleNotificationNew);
-      socket.off("notifications:updated", handleNotificationsUpdated);
-      window.removeEventListener("auth-changed", handleAuthChanged);
-    };
-  }, [token, loadUnreadNotifications]);
+    socket.off("connect", handleConnect);
+    socket.off("notification:new", handleNotificationNew);
+    socket.off("notifications:updated", handleNotificationsUpdated);
+    window.removeEventListener("auth-changed", handleAuthChanged);
+  };
+}, [token, getCurrentStudioId, loadUnreadNotifications]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");

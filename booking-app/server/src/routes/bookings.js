@@ -132,22 +132,55 @@ function formatDateOnly(date) {
   return new Date(date).toISOString().slice(0, 10);
 }
 
-function resolveEffectiveMasterSchedule(dateStr, studioSchedule, masterDays = [], masterExceptions = []) {
-  const hasCustomMasterSchedule =
-    (Array.isArray(masterDays) && masterDays.length > 0) ||
-    (Array.isArray(masterExceptions) && masterExceptions.length > 0);
+function resolveEffectiveMasterSchedule(
+  dateStr,
+  studioSchedule,
+  masterDays = [],
+  masterExceptions = [],
+) {
+  if (!studioSchedule) return null;
 
-  if (!hasCustomMasterSchedule) {
-    return studioSchedule;
+  const exactException = Array.isArray(masterExceptions)
+    ? masterExceptions.find((item) => formatDateOnly(item.date) === dateStr)
+    : null;
+
+  // 1. Якщо є особлива дата саме на вибраний день — вона головна
+  if (exactException) {
+    if (!exactException.enabled) return null;
+
+    const masterExceptionSchedule = {
+      enabled: true,
+      startMin: exactException.startMin,
+      endMin: exactException.endMin,
+    };
+
+    return intersectSchedules(studioSchedule, masterExceptionSchedule);
   }
 
-  const masterSchedule = getScheduleForDate(dateStr, masterDays, masterExceptions);
+  // 2. Якщо особливої дати на цей день немає, але є тижневий графік майстра — беремо його
+  if (Array.isArray(masterDays) && masterDays.length > 0) {
+    const dayEnum = getDayEnumFromDate(dateStr);
+    const dayRow = masterDays.find((item) => item.day === dayEnum);
 
-  if (!masterSchedule) {
-    return null;
+    if (!dayRow) {
+      return studioSchedule;
+    }
+
+    if (!dayRow.enabled) {
+      return null;
+    }
+
+    const masterDaySchedule = {
+      enabled: true,
+      startMin: dayRow.startMin,
+      endMin: dayRow.endMin,
+    };
+
+    return intersectSchedules(studioSchedule, masterDaySchedule);
   }
 
-  return intersectSchedules(studioSchedule, masterSchedule);
+  // 3. Якщо в майстра немає тижневого графіка — він працює за графіком студії
+  return studioSchedule;
 }
 
 function getDayEnumFromDate(dateStr) {
