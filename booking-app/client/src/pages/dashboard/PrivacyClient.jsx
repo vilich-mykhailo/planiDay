@@ -34,7 +34,7 @@ export default function PrivacyClient() {
           <p className="text-sm leading-6 text-gray-700">
             Ця Політика конфіденційності пояснює, які дані ми збираємо від
             клієнтів, як їх використовуємо та які у вас є права. Використовуючи{" "}
-            <span className="font-semibold">PlaniDay</span>, ви погоджуєтеся з
+            <span className="font-semibold">Aveliio</span>, ви погоджуєтеся з
             цією Політикою.
           </p>
 

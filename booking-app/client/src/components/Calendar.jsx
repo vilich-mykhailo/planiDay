@@ -144,7 +144,7 @@ export default function Calendar({ selected, onSelect, disabled }) {
             type="button"
             onClick={goPrev}
             data-testid="calendar-prev-btn"
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-stone-200 bg-white text-stone-700 transition-all duration-200 hover:bg-stone-50 hover:text-stone-900 active:scale-95"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-stone-200 bg-white text-stone-700 transition-all duration-200 hover:!bg-[#ff6200]/5 hover:text-stone-900 active:scale-95"
             aria-label="Попередній місяць"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -154,7 +154,7 @@ export default function Calendar({ selected, onSelect, disabled }) {
             type="button"
             onClick={goToday}
             data-testid="calendar-today-btn"
-            className="hidden h-10 items-center justify-center rounded-xl border border-stone-200 bg-white px-3 text-sm font-semibold text-stone-700 transition-all duration-200 hover:bg-stone-50 hover:text-stone-900 active:scale-95 sm:inline-flex"
+            className="hidden h-10 items-center justify-center rounded-xl border border-stone-200 bg-white px-3 text-sm font-semibold text-stone-700 transition-all duration-200 hover:!bg-[#ff6200]/5 hover:text-stone-900 active:scale-95 sm:inline-flex"
             aria-label="Сьогодні"
             title="Сьогодні"
           >
@@ -166,7 +166,7 @@ export default function Calendar({ selected, onSelect, disabled }) {
             type="button"
             onClick={goToday}
             data-testid="calendar-today-mobile-btn"
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-stone-200 bg-white text-stone-700 transition-all duration-200 hover:bg-stone-50 hover:text-stone-900 active:scale-95 sm:hidden"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-stone-200 bg-white text-stone-700 transition-all duration-200 hover:!bg-[#ff6200]/5 hover:text-stone-900 active:scale-95 sm:hidden"
             aria-label="Сьогодні"
           >
             <CalendarDays className="h-4 w-4 text-amber-600" />
@@ -176,7 +176,7 @@ export default function Calendar({ selected, onSelect, disabled }) {
             type="button"
             onClick={goNext}
             data-testid="calendar-next-btn"
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-stone-200 bg-white text-stone-700 transition-all duration-200 hover:bg-stone-50 hover:text-stone-900 active:scale-95"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-stone-200 bg-white text-stone-700 transition-all duration-200 hover:!bg-[#ff6200]/5 hover:text-stone-900 active:scale-95"
             aria-label="Наступний місяць"
           >
             <ChevronRight className="h-4 w-4" />
@@ -232,12 +232,12 @@ export default function Calendar({ selected, onSelect, disabled }) {
                 className={cn(
                   "relative flex h-11 w-full items-center justify-center rounded-2xl text-xs font-semibold sm:h-12 sm:text-sm",
 isSelected
-  ? "border border-transparent text-white bg-gradient-to-r from-[rgba(var(--color-nude-green-500),1)] to-[rgba(var(--color-nude-green-600),1)] ring-2 ring-[rgba(var(--color-nude-green-500),0.25)]"
+  ? "border border-[#ff6200] bg-[#ff6200]/5 text-[#202020] ring-2 ring-[#ff6200]/15"
   : dis
     ? "cursor-not-allowed border border-stone-200 bg-stone-100 text-stone-400"
     : isToday
       ? "border border-amber-300 text-stone-900 hover:bg-amber-100"
-      : "border border-transparent text-stone-800 hover:border-stone-200 hover:bg-stone-50",
+      : "border border-transparent text-stone-800 hover:border-stone-200 hover:bg-[#ff6200]/5",
                 )}
               >
                 <span>{day.getDate()}</span>

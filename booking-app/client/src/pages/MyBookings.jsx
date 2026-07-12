@@ -105,7 +105,7 @@ function EmptyState({ isSearch = false, query = "", onClearSearch }) {
   const searchText = query.trim();
 
   return (
-    <div className="rounded-[32px] border-2 border-dashed border-[#ffd6bd] bg-[#fff7f0] px-6 py-12 text-center">
+    <div className="rounded-[15px] border-2 border-dashed border-[#ffd6bd] bg-[#fff7f0] px-6 py-12 text-center">
       <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-[#ff6200]">
         {isSearch ? (
           <Search className="h-7 w-7" />

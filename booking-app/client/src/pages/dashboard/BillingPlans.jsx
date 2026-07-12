@@ -26,7 +26,7 @@ const plans = [
     period: "6 місяців",
     badge: "Для старту",
     description:
-      "Базовий план, щоб запустити студію в PlaniDay і приймати перші онлайн-записи.",
+      "Базовий план, щоб запустити студію в Aveliio і приймати перші онлайн-записи.",
     features: [
       "Профіль студії в каталозі",
       "Послуги та категорії",
@@ -101,7 +101,7 @@ export default function BillingPlans() {
 
         <div className="hidden items-center gap-2 rounded-full border border-[#ffe0d2] bg-[#fff7f2] px-4 py-2 text-[12px] font-black text-[#ff4f12] sm:flex">
           <Sparkles className="h-4 w-4" />
-          Тарифи PlaniDay
+          Тарифи Aveliio
         </div>
       </div>
 
@@ -124,7 +124,7 @@ export default function BillingPlans() {
               <p className="mt-4 max-w-[680px] text-[14px] font-medium leading-7 text-[#6b7280] sm:text-[15px]">
                 Підключіть більше можливостей для онлайн-запису, роботи з
                 клієнтами, майстрами, графіком та просуванням студії в
-                PlaniDay.
+                Aveliio.
               </p>
             </div>
 

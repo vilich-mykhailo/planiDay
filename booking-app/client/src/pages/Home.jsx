@@ -228,7 +228,7 @@ export default function Home() {
         {/* FOOTER */}
         <div className="mt-12 border-t border-gray-200 pt-6 text-center">
           <p className="text-xs text-gray-500">
-            © {new Date().getFullYear()} PlaniDay - Онлайн-запис до майстрів
+            © {new Date().getFullYear()} Aveliio - Онлайн-запис до майстрів
           </p>
         </div>
       </div>

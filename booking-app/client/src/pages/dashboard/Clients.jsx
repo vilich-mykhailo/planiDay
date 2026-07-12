@@ -598,7 +598,7 @@ function SectionCard({
   return (
     <section
       className={cn(
-        "group relative overflow-hidden rounded-[32px] border border-[#ebe7df] bg-white shadow-[0_14px_44px_rgba(15,23,42,0.05)] transition-all duration-300 hover:shadow-[0_20px_60px_rgba(15,23,42,0.08)]",
+        "group relative overflow-hidden rounded-[15px] border border-[#ebe7df] bg-white shadow-[0_14px_44px_rgba(15,23,42,0.05)] transition-all duration-300 hover:shadow-[0_20px_60px_rgba(15,23,42,0.08)]",
         className,
       )}
     >
@@ -2282,7 +2282,7 @@ const canDeleteClient = Boolean(clientToDelete) && !deleteClientBlockReason;
     <div className="min-h-screen bg-[#fbfaf8] pb-8">
       <div className="mx-auto max-w-6xl space-y-6 ">
 
-<div className="relative mb-6 overflow-hidden rounded-[32px] border border-[#ebe7df] bg-white/95 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.06)] backdrop-blur-xl sm:p-7">
+<div className="relative mb-6 overflow-hidden rounded-[15px] border border-[#ebe7df] bg-white/95 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.06)] backdrop-blur-xl sm:p-7">
   <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#ff7a18] via-[#ff6200] to-[#ff8c42]" />
 
   <div className="relative flex items-start justify-between gap-3">
@@ -2464,7 +2464,7 @@ const canDeleteClient = Boolean(clientToDelete) && !deleteClientBlockReason;
           )}
 
 {!loading && !error && clients.length === 0 ? (
-  <div className="rounded-[32px] border-2 border-dashed border-[#ffd6bd] bg-[#fff7f0] px-6 py-12 text-center">
+  <div className="rounded-[15px] border-2 border-dashed border-[#ffd6bd] bg-[#fff7f0] px-6 py-12 text-center">
     <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-[#ff6200] shadow-sm">
       <EmptyIcon className="h-7 w-7" />
     </div>
@@ -3865,7 +3865,7 @@ function getClientStatusReason(client, status) {
     [client.firstName, client.lastName].filter(Boolean).join(" ") || "Клієнт";
 
   if (status === "vip") {
-    return `${fullName} має VIP-статус, тому що це один із найцінніших клієнтів платформи PlaniDay. Такий статус визначається платформою або логікою лояльності.`;
+    return `${fullName} має VIP-статус, тому що це один із найцінніших клієнтів платформи Aveliio. Такий статус визначається платформою або логікою лояльності.`;
   }
 
   if (status === "new") {

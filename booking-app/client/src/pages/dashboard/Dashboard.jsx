@@ -360,8 +360,8 @@ sidebarCollapsed
 >
   {sidebarCollapsed && (
     <img
-      src="/IMG_830741.png"
-      alt="PlaniDay"
+      src="/avellio_logo.png"
+      alt="Aveliio"
       className="mb-3 h-[44px] w-[74px] object-contain transition-all duration-300"
     />
   )}
@@ -380,14 +380,14 @@ sidebarCollapsed
     className="flex flex-col items-center"
   >
 <img
-  src="/IMG_830741.png"
-  alt="PlaniDay"
+  src="/avellio_logo.png"
+  alt="Aveliio"
   className="h-[40px] w-auto shrink-0 object-contain select-none"
   draggable={false}
 />
 
     <span className="whitespace-nowrap text-[25px] font-black leading-tight tracking-[-0.06em] text-[#111827]">
-      Plani<span className="text-[#ff4f12]">Day</span>
+      Avel<span className="text-[#fc511e]">ii</span>o
     </span>
   </button>
 </div>

@@ -197,7 +197,7 @@ function SectionShell({ children, className = "" }) {
   return (
     <div
       className={cn(
-        "group relative overflow-hidden rounded-[32px] border border-[#ebe7df] bg-white shadow-[0_14px_44px_rgba(15,23,42,0.05)] transition-all duration-300 hover:shadow-[0_20px_60px_rgba(15,23,42,0.08)]",
+        "group relative overflow-hidden rounded-[15px] border border-[#ebe7df] bg-white shadow-[0_14px_44px_rgba(15,23,42,0.05)] transition-all duration-300 hover:shadow-[0_20px_60px_rgba(15,23,42,0.08)]",
         className,
       )}
     >
@@ -301,13 +301,13 @@ function updateCalendarScrollState(el, setHasScroll, setShowScrollHint) {
 
 const SCHEDULE_START_HOUR = 6;
 const SCHEDULE_END_HOUR = 20;
-const SCHEDULE_HOUR_HEIGHT = 104;
-const SCHEDULE_MIN_CARD_HEIGHT = 54;
+const SCHEDULE_HOUR_HEIGHT = 84;
+const SCHEDULE_MIN_CARD_HEIGHT = 42;
 const SCHEDULE_DEFAULT_DURATION = 60;
-const SCHEDULE_GRID_TOP_PADDING = 18;
-const SCHEDULE_GRID_BOTTOM_PADDING = 24;
-const SCHEDULE_DESKTOP_COLUMN_WIDTH = 188;
-const SCHEDULE_MOBILE_COLUMN_MIN_WIDTH = 176;
+const SCHEDULE_GRID_TOP_PADDING = 12;
+const SCHEDULE_GRID_BOTTOM_PADDING = 18;
+const SCHEDULE_DESKTOP_COLUMN_WIDTH = 172;
+const SCHEDULE_MOBILE_COLUMN_MIN_WIDTH = 152;
 
 const SCHEDULE_STATUS_FILTERS = [
   { key: "all", label: "Усі" },
@@ -1593,31 +1593,29 @@ function ScheduleActionConfirmModal({
 
   return (
     <div
-      className="fixed inset-0 z-[260] flex items-stretch justify-center bg-[#202020]/45 p-0 backdrop-blur-[6px] sm:items-center sm:p-6"
+      className="fixed inset-0 z-[260] flex items-stretch justify-center bg-[#202020]/35 p-0 backdrop-blur-[3px] sm:items-center sm:p-4"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose?.();
       }}
     >
       <div
-        className="flex h-dvh w-full max-w-md flex-col overflow-hidden rounded-none border-0 bg-[#f7f5f1] shadow-[0_30px_90px_rgba(15,23,42,0.24)] sm:h-auto sm:max-h-[85vh] sm:rounded-[30px] sm:border sm:border-[#f0e2d3]"
+        className="flex h-dvh w-full max-w-sm flex-col overflow-hidden rounded-none border-0 bg-white shadow-[0_24px_64px_rgba(15,23,42,0.20)] sm:h-auto sm:max-h-[80vh] sm:rounded-2xl sm:border sm:border-[#e4e7ec]"
         onMouseDown={(event) => event.stopPropagation()}
       >
-        <div className="relative shrink-0 overflow-hidden bg-[#f3eee7] px-5 py-5 sm:px-6 sm:py-6">
-          <div className="absolute right-[-55px] top-[-70px] h-[180px] w-[180px] rounded-full bg-[#ff6200]/10 blur-3xl" />
-
+        <div className="relative shrink-0 overflow-hidden border-b border-[#eef1f5] bg-white px-4 py-4 sm:px-5">
           <div className="relative z-10 flex items-start justify-between gap-4">
             <div className="min-w-0">
-              <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-white px-3 text-[11px] font-black uppercase tracking-[0.08em] text-[#ff6200] shadow-[0_8px_20px_rgba(255,98,0,0.08)]">
+              <span className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[#ffe1d2] bg-[#fff7f2] px-2.5 text-[10px] font-black uppercase tracking-[0.08em] text-[#ff6200]">
                 <Icon className="h-3.5 w-3.5" />
                 Дія із записом
               </span>
 
-              <h3 className="mt-3 text-[26px] font-black leading-[0.95] tracking-tight text-[#202020] sm:text-[32px]">
+              <h3 className="mt-2 text-[21px] font-black leading-tight text-[#202020] sm:text-[22px]">
                 {title}
               </h3>
 
               {description && (
-                <p className="mt-2 text-sm font-medium leading-6 text-[#77716b]">
+                <p className="mt-1.5 text-[13px] font-medium leading-5 text-[#77716b]">
                   {description}
                 </p>
               )}
@@ -1626,7 +1624,7 @@ function ScheduleActionConfirmModal({
             <button
               type="button"
               onClick={onClose}
-              className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white text-[#77716b] shadow-[0_10px_24px_rgba(15,23,42,0.06)] transition hover:bg-[#fff3e9] hover:text-[#ff6200] active:scale-[0.96]"
+              className="grid h-8 w-8 shrink-0 place-items-center rounded-md border border-[#e4e7ec] bg-white text-[#77716b] transition hover:bg-[#f8fafc] hover:text-[#202020] active:scale-[0.96]"
               aria-label="Закрити"
             >
               <X className="h-5 w-5" />
@@ -1634,28 +1632,28 @@ function ScheduleActionConfirmModal({
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto bg-white px-5 py-5 sm:px-6">
-          <div className="space-y-4">
+        <div className="min-h-0 flex-1 overflow-y-auto bg-white px-4 py-4 sm:px-5">
+          <div className="space-y-3">
             <div className="flex justify-center">
               <div className="relative">
-                <div className="absolute inset-0 rounded-full bg-[var(--color-danger-bg)]/90 blur-2xl" />
-                <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--color-danger)] text-white shadow-[0_16px_36px_rgba(213,92,82,0.24)]">
-                  <Icon className="h-7 w-7" />
+                <div className="absolute inset-0 rounded-full bg-[var(--color-danger-bg)]/80 blur-xl" />
+                <div className="relative flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--color-danger)] text-white shadow-[0_10px_22px_rgba(213,92,82,0.20)]">
+                  <Icon className="h-5 w-5" />
                 </div>
               </div>
             </div>
 
-            <div className="rounded-2xl bg-[var(--color-danger-bg)] p-3.5">
+            <div className="rounded-xl bg-[var(--color-danger-bg)] p-3">
               <div className="flex items-start gap-3">
-                <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-[var(--color-danger-dark)] shadow-sm">
+                <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-[var(--color-danger-dark)] shadow-sm">
                   <AlertTriangle className="h-4 w-4" />
                 </div>
 
                 <div className="min-w-0">
-                  <p className="text-sm font-bold text-[var(--color-danger-dark)]">
+                  <p className="text-[13px] font-bold text-[var(--color-danger-dark)]">
                     {warningTitle}
                   </p>
-                  <p className="mt-1 text-xs leading-5 text-[var(--color-ink)]">
+                  <p className="mt-1 text-[12px] leading-5 text-[var(--color-ink)]">
                     {warningText}
                   </p>
                 </div>
@@ -1664,12 +1662,12 @@ function ScheduleActionConfirmModal({
           </div>
         </div>
 
-        <div className="sticky bottom-0 shrink-0 border-t border-[#f0e7da] bg-[#fbfaf8] px-5 py-4 sm:px-6">
+        <div className="sticky bottom-0 shrink-0 border-t border-[#eef1f5] bg-white px-4 py-3 sm:px-5">
           <div className="flex flex-col justify-end gap-2 sm:flex-row">
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-[#eadbc9] bg-white px-4 py-2.5 text-sm font-black text-[#202020] transition hover:border-[#ffd6bd] hover:bg-[#fff7f0] active:scale-[0.98] sm:w-auto"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-[#d0d5dd] bg-white px-4 py-2 text-[13px] font-black text-[#202020] transition hover:bg-[#f8fafc] active:scale-[0.98] sm:w-auto"
             >
               Назад
             </button>
@@ -1677,7 +1675,7 @@ function ScheduleActionConfirmModal({
             <button
               type="button"
               onClick={onConfirm}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-danger)] px-4 py-2.5 text-sm font-black text-white transition hover:bg-[var(--color-danger-dark)] active:scale-[0.98] sm:w-auto"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-[var(--color-danger)] px-4 py-2 text-[13px] font-black text-white transition hover:bg-[var(--color-danger-dark)] active:scale-[0.98] sm:w-auto"
             >
               <FooterIcon className="h-4 w-4" />
               {actionLabel}
@@ -2776,8 +2774,8 @@ const timeBounds = useMemo(() => {
     ((timeBounds.end - timeBounds.start) / 60) * hourHeight;
   const gridScheduleEnd = SCHEDULE_GRID_TOP_PADDING + gridBodyHeight;
   const gridHeight = gridScheduleEnd + SCHEDULE_GRID_BOTTOM_PADDING;
-  const desktopTimeColumnWidth = 54;
-  const mobileTimeColumnWidth = 40;
+  const desktopTimeColumnWidth = 48;
+  const mobileTimeColumnWidth = 34;
   const desktopColumnWidth = SCHEDULE_DESKTOP_COLUMN_WIDTH;
   const mobileColumnMinWidth = SCHEDULE_MOBILE_COLUMN_MIN_WIDTH;
   const desktopScheduleWidth =
@@ -2895,14 +2893,14 @@ const timeBounds = useMemo(() => {
   const renderScheduleGrid = ({ compact = false } = {}) => {
     const scheduleWidth = compact ? mobileScheduleWidth : desktopScheduleWidth;
     const templateColumns = compact ? mobileTemplateColumns : desktopTemplateColumns;
-    const headerHeight = compact ? "82px" : "112px";
-    const bodyHeight = "clamp(500px, calc(100dvh - 190px), 700px)";
+    const headerHeight = compact ? "64px" : "78px";
+    const bodyHeight = "clamp(500px, calc(100dvh - 142px), 760px)";
 
     return (
       <div className={cn("min-w-0 bg-white", compact && "flex min-h-0 flex-1 flex-col")}>
         <div
           ref={compact ? null : headerScrollRef}
-          className="calendar-day-scroll shrink-0 touch-pan-x overflow-x-auto overflow-y-hidden overscroll-x-contain border-b border-[#ebeef3] bg-white [scrollbar-gutter:stable]"
+          className="calendar-day-scroll shrink-0 touch-pan-x overflow-x-auto overflow-y-hidden overscroll-x-contain border-b border-[#e4e7ec] bg-[#fbfcfe] [scrollbar-gutter:stable]"
           onScroll={
             compact
               ? undefined
@@ -2914,12 +2912,12 @@ const timeBounds = useMemo(() => {
         >
           <div className="min-w-full" style={{ minWidth: scheduleWidth }}>
             <div
-              className="grid bg-white"
+              className="grid bg-[#fbfcfe]"
               style={{ gridTemplateColumns: templateColumns }}
             >
               <div
                 className={cn(
-                  "sticky z-40 flex items-end border-[#ebeef3] bg-white pb-3 text-[10px] font-bold text-[#969da8]",
+                  "sticky z-40 flex items-center border-[#e4e7ec] bg-[#fbfcfe] text-[10px] font-bold uppercase text-[#98a2b3]",
                   compact
                     ? "right-0 justify-start border-l px-2"
                     : "left-0 justify-end border-r px-2",
@@ -2950,17 +2948,17 @@ const timeBounds = useMemo(() => {
                   <div
                     key={column.key}
                     className={cn(
-                      "relative min-w-0 border-r border-[#ebeef3] bg-white",
-                      compact ? "px-3 py-3" : "px-4 py-3",
+                      "relative min-w-0 border-r border-[#e4e7ec] bg-[#fbfcfe]",
+                      compact ? "px-2.5 py-2" : "px-3 py-2.5",
                     )}
                     style={{ height: headerHeight }}
                   >
-                    <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex min-w-0 items-center gap-2">
                       {column.type === "date" ? (
                         <div
                           className={cn(
-                            "flex shrink-0 flex-col items-center justify-center rounded-full bg-[#ffe1e8] text-[#ff3369]",
-                            compact ? "h-10 w-10" : "h-11 w-11",
+                            "flex shrink-0 flex-col items-center justify-center rounded-lg border border-[#ffd5df] bg-white text-[#ff3369]",
+                            compact ? "h-8 w-8" : "h-9 w-9",
                           )}
                         >
                           <span className="text-[9px] font-black uppercase leading-none">
@@ -2978,7 +2976,7 @@ const timeBounds = useMemo(() => {
                           photoUrl={column.photoUrl}
                           className={cn(
                             "rounded-full",
-                            compact ? "h-10 w-10" : "h-11 w-11",
+                            compact ? "h-8 w-8" : "h-9 w-9",
                           )}
                         />
                       )}
@@ -2987,12 +2985,12 @@ const timeBounds = useMemo(() => {
                         <p
                           className={cn(
                             "truncate font-black leading-tight text-[#1f2329]",
-                            compact ? "text-[14px]" : "text-[13px]",
+                            compact ? "text-[12px]" : "text-[12px]",
                           )}
                         >
                           {column.name}
                         </p>
-                        <p className="mt-0.5 truncate text-[12px] font-medium leading-tight text-[#8a919a]">
+                        <p className="mt-0.5 truncate text-[10px] font-medium leading-tight text-[#8a919a]">
                           {column.type === "date"
                             ? `${formatDateLongUA(toISODateKey(column.date))} · ${workWindowLabel(columnWorkWindow)}`
                             : workWindowLabel(columnWorkWindow, column.role)}
@@ -3001,40 +2999,40 @@ const timeBounds = useMemo(() => {
                     </div>
 
                     {!compact && (
-                      <div className="absolute inset-x-4 bottom-2 flex items-center gap-2.5 text-[10px] font-black">
+                      <div className="absolute inset-x-3 bottom-1.5 flex items-center gap-1.5 text-[9px] font-black">
                         <span
                           className="flex items-center gap-1 text-[#667085]"
                           title={`Усього записів: ${totalCount}`}
                         >
-                          <CalendarDays className="h-3.5 w-3.5" />
+                          <CalendarDays className="h-3 w-3" />
                           {totalCount}
                         </span>
                         <span
                           className="flex items-center gap-1 text-[#dc6803]"
                           title={`Очікують: ${summaryCounts.pending}`}
                         >
-                          <ClockAlert className="h-3.5 w-3.5" />
+                          <ClockAlert className="h-3 w-3" />
                           {summaryCounts.pending}
                         </span>
                         <span
                           className="flex items-center gap-1 text-[#039855]"
                           title={`Підтверджені: ${summaryCounts.confirmed}`}
                         >
-                          <CircleCheckBig className="h-3.5 w-3.5" />
+                          <CircleCheckBig className="h-3 w-3" />
                           {summaryCounts.confirmed}
                         </span>
                         <span
                           className="flex items-center gap-1 text-[#d92d20]"
                           title={`Скасовані: ${summaryCounts.canceled}`}
                         >
-                          <XCircle className="h-3.5 w-3.5" />
+                          <XCircle className="h-3 w-3" />
                           {summaryCounts.canceled}
                         </span>
                         <span
                           className="flex items-center gap-1 text-[#667085]"
                           title={`Завершені: ${summaryCounts.archived}`}
                         >
-                          <CheckCheck className="h-3.5 w-3.5" />
+                          <CheckCheck className="h-3 w-3" />
                           {summaryCounts.archived}
                         </span>
                       </div>
@@ -3068,10 +3066,10 @@ const timeBounds = useMemo(() => {
           {!anyBookings && (
             <div className="pointer-events-none sticky left-0 top-0 z-50 h-0 w-full">
               <div
-                className="flex items-center justify-center px-4"
+                className="flex items-center justify-center px-3"
                 style={{ height: Math.min(gridHeight, 520) }}
               >
-                <div className="pointer-events-auto w-[min(260px,calc(100%-32px))] rounded-[14px] border border-dashed border-[#cfd6df] bg-white/90 p-3 text-center shadow-sm">
+                <div className="pointer-events-auto w-[min(240px,calc(100%-24px))] rounded-lg border border-dashed border-[#cfd6df] bg-white/95 p-3 text-center shadow-sm">
                   <div
                     className={cn(
                       "mx-auto flex h-10 w-10 items-center justify-center rounded-full",
@@ -3088,7 +3086,7 @@ const timeBounds = useMemo(() => {
                       <CalendarDays className="h-4 w-4" />
                     )}
                   </div>
-                  <p className="mt-2 text-[13px] font-black text-[#1f2329]">
+                  <p className="mt-2 text-[12px] font-black text-[#1f2329]">
                     {loading
                       ? "Завантажуємо записи"
                       : studioClosedForSelectedDay
@@ -3112,7 +3110,7 @@ const timeBounds = useMemo(() => {
             >
               <div
                 className={cn(
-                  "sticky z-40 border-[#ebeef3]",
+                  "sticky z-40 border-[#e4e7ec]",
                   compact ? "right-0 border-l" : "left-0 border-r",
                   studioClosedForSelectedDay
                     ? "bg-[repeating-linear-gradient(135deg,rgba(148,163,184,0.10)_0,rgba(148,163,184,0.10)_8px,rgba(255,255,255,0.42)_8px,rgba(255,255,255,0.42)_16px)]"
@@ -3154,18 +3152,18 @@ const timeBounds = useMemo(() => {
                 {showNowLine &&
                   !studioClosedForSelectedDay &&
                   visibleDateKeys.has(todayKey) && (
-                  <div
-                    className="absolute inset-x-0 z-30 border-t border-[#ff245d]"
-                    style={{ top: topForMinute(nowMinute) }}
-                  >
-                    <span
-                      className={cn(
-                        "absolute -top-[5px] h-2.5 w-2.5 rounded-full bg-[#ff245d]",
-                        compact ? "-left-1" : "-right-1",
-                      )}
-                    />
-                  </div>
-                )}
+                    <div
+                      className="absolute inset-x-0 z-30 border-t border-[#ff245d]"
+                      style={{ top: topForMinute(nowMinute) }}
+                    >
+                      <span
+                        className={cn(
+                          "absolute -top-[5px] h-2.5 w-2.5 rounded-full bg-[#ff245d]",
+                          compact ? "-left-1" : "-right-1",
+                        )}
+                      />
+                    </div>
+                  )}
               </div>
 
               {columns.map((column) => {
@@ -3197,7 +3195,7 @@ const timeBounds = useMemo(() => {
                 return (
                   <div
                     key={column.key}
-                    className="relative border-r border-[#ebeef3] bg-white"
+                    className="relative border-r border-[#e4e7ec] bg-white"
                     style={{ height: gridHeight }}
                   >
                     {quarterMarks.map((mark) => (
@@ -3207,7 +3205,7 @@ const timeBounds = useMemo(() => {
                           "absolute inset-x-0 border-t",
                           mark.isHour
                             ? "border-[#edf0f4]"
-                            : "border-dashed border-[#e4e8ee]",
+                            : "border-dashed border-[#e7ebf0]",
                         )}
                         style={{ top: topForMinute(mark.minute) }}
                       />
@@ -3246,26 +3244,26 @@ const timeBounds = useMemo(() => {
                     {!isStudioClosed &&
                       columnWorkWindow?.isWorking &&
                       workStartTop > SCHEDULE_GRID_TOP_PADDING && (
-                      <div
-                        className="pointer-events-none absolute inset-x-0 z-[2] bg-[repeating-linear-gradient(135deg,rgba(148,163,184,0.09)_0,rgba(148,163,184,0.09)_8px,rgba(255,255,255,0.38)_8px,rgba(255,255,255,0.38)_16px)]"
-                        style={{
-                          top: SCHEDULE_GRID_TOP_PADDING,
-                          height: workStartTop - SCHEDULE_GRID_TOP_PADDING,
-                        }}
-                      />
-                    )}
+                        <div
+                          className="pointer-events-none absolute inset-x-0 z-[2] bg-[repeating-linear-gradient(135deg,rgba(148,163,184,0.09)_0,rgba(148,163,184,0.09)_8px,rgba(255,255,255,0.38)_8px,rgba(255,255,255,0.38)_16px)]"
+                          style={{
+                            top: SCHEDULE_GRID_TOP_PADDING,
+                            height: workStartTop - SCHEDULE_GRID_TOP_PADDING,
+                          }}
+                        />
+                      )}
 
                     {!isStudioClosed &&
                       columnWorkWindow?.isWorking &&
                       workEndTop < gridScheduleEnd && (
-                      <div
-                        className="pointer-events-none absolute inset-x-0 z-[2] bg-[repeating-linear-gradient(135deg,rgba(148,163,184,0.09)_0,rgba(148,163,184,0.09)_8px,rgba(255,255,255,0.38)_8px,rgba(255,255,255,0.38)_16px)]"
-                        style={{
-                          top: workEndTop,
-                          height: gridScheduleEnd - workEndTop,
-                        }}
-                      />
-                    )}
+                        <div
+                          className="pointer-events-none absolute inset-x-0 z-[2] bg-[repeating-linear-gradient(135deg,rgba(148,163,184,0.09)_0,rgba(148,163,184,0.09)_8px,rgba(255,255,255,0.38)_8px,rgba(255,255,255,0.38)_16px)]"
+                          style={{
+                            top: workEndTop,
+                            height: gridScheduleEnd - workEndTop,
+                          }}
+                        />
+                      )}
 
                     {showNowLine && !isStudioClosed && isTodayColumn && (
                       <div
@@ -3290,16 +3288,16 @@ const timeBounds = useMemo(() => {
                           hourHeight -
                           8,
                       );
-                      const width = `calc(${100 / booking.laneCount}% - ${compact ? 8 : 10}px)`;
-                      const left = `calc(${(100 / booking.laneCount) * booking.lane}% + ${compact ? 4 : 5}px)`;
+                      const width = `calc(${100 / booking.laneCount}% - ${compact ? 6 : 8}px)`;
+                      const left = `calc(${(100 / booking.laneCount) * booking.lane}% + ${compact ? 3 : 4}px)`;
                       const visualStatus = scheduleVisualStatus(booking, nowTs);
-                    
+
                       const startLabel =
                         parseTimeToHHMM(booking.raw.time) ||
                         scheduleTimeLabel(booking.startMin);
                       const endLabel = scheduleTimeLabel(booking.endMin);
-                      const showClientLine = height >= 62;
-                      const showServiceLine = height >= 84;
+                      const showClientLine = height >= 50;
+                      const showServiceLine = height >= 72;
 
                       return (
                         <button
@@ -3311,7 +3309,7 @@ const timeBounds = useMemo(() => {
                           onFocus={(event) => showBookingPreview(event, booking)}
                           onBlur={hideBookingPreview}
                           className={cn(
-                            "group absolute z-10 overflow-visible rounded-[7px] text-left transition hover:z-30 focus:outline-none focus:ring-2 focus:ring-[#ff245d]/25",
+                            "group absolute z-10 overflow-hidden rounded-md border text-left transition-colors hover:z-30 hover:ring-1 hover:ring-[#cfd6df] focus:outline-none focus:ring-2 focus:ring-[#ff245d]/25",
                             visualStatus === "canceled" && "opacity-70",
                           )}
                           style={{
@@ -3320,39 +3318,40 @@ const timeBounds = useMemo(() => {
                             left,
                             width,
                             background: tone.bg,
+                            borderColor: tone.border,
                             boxShadow: compact
                               ? "none"
-                              : "0 8px 18px rgba(15,23,42,0.04)",
+                              : "0 4px 10px rgba(15,23,42,0.035)",
                           }}
                         >
                           <div
-                            className="absolute inset-y-0 left-0 w-1"
+                            className="absolute inset-y-0 left-0 w-[3px]"
                             style={{ backgroundColor: tone.accent }}
                           />
 
-                          <div className="absolute right-2 top-2 flex items-center gap-1">
+                          <div className="absolute right-1.5 top-1.5 flex items-center gap-1">
                             {booking.price != null && (
-                              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#00a35d] text-[11px] font-black text-white">
+                              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#00a35d] text-[9px] font-black text-white">
                                 ₴
                               </span>
                             )}
                             <span
-                              className="flex h-5 w-5 items-center justify-center rounded-full text-white"
+                              className="flex h-4 w-4 items-center justify-center rounded-full text-white"
                               style={{ backgroundColor: tone.accent }}
                             >
                               <ScheduleStatusIcon
-  booking={booking}
-  nowTs={nowTs}
-  className="h-3.5 w-3.5"
-/>
+                                booking={booking}
+                                nowTs={nowTs}
+                                className="h-3 w-3"
+                              />
                             </span>
                           </div>
 
-                          <div className="flex h-full min-h-0 flex-col px-2.5 py-2 pl-3.5 pr-8">
+                          <div className="flex h-full min-h-0 flex-col px-2 py-1.5 pl-3 pr-6">
                             <p
                               className={cn(
-                                "truncate font-black leading-tight text-[#181b20]",
-                                compact ? "text-[16px]" : "text-[12px]",
+                                "truncate font-extrabold leading-tight text-[#181b20]",
+                                compact ? "text-[13px]" : "text-[11px]",
                               )}
                             >
                               {startLabel} - {endLabel}
@@ -3360,8 +3359,8 @@ const timeBounds = useMemo(() => {
                             {showClientLine && (
                               <p
                                 className={cn(
-                                  "mt-1 truncate font-medium leading-snug text-[#181b20]",
-                                  compact ? "text-[15px]" : "text-[11px]",
+                                  "mt-0.5 truncate font-medium leading-snug text-[#181b20]",
+                                  compact ? "text-[12px]" : "text-[10px]",
                                 )}
                               >
                                 {booking.clientName}
@@ -3369,7 +3368,7 @@ const timeBounds = useMemo(() => {
                               </p>
                             )}
                             {showServiceLine && !compact && (
-                              <p className="mt-0.5 truncate text-[10px] font-medium leading-tight text-[#717b87]">
+                              <p className="mt-0.5 truncate text-[9px] font-medium leading-tight text-[#717b87]">
                                 {booking.staffName}
                               </p>
                             )}
@@ -3480,7 +3479,7 @@ const timeBounds = useMemo(() => {
 
     return (
       <div
-        className="fixed inset-0 z-[220] flex items-end justify-center bg-[#1b1b1b]/35 p-0 backdrop-blur-[10px] sm:items-center sm:p-5"
+        className="fixed inset-0 z-[220] flex items-end justify-center bg-[#1b1b1b]/32 p-0 backdrop-blur-[4px] sm:items-center sm:p-4"
         onMouseDown={(event) => {
           if (event.target === event.currentTarget) {
             closeBookingDetails();
@@ -3489,24 +3488,24 @@ const timeBounds = useMemo(() => {
       >
         <div
           className={cn(
-            "relative flex w-full flex-col overflow-hidden bg-[#fbfaf8]",
+            "relative flex w-full flex-col overflow-hidden bg-white",
             "h-[100dvh] rounded-none border-0 shadow-none",
-            "sm:h-auto sm:max-h-[88vh] sm:max-w-[640px] sm:rounded-[34px] sm:border sm:border-[#eadfce] sm:shadow-[0_35px_110px_rgba(27,27,27,0.22)]",
+            "sm:h-auto sm:max-h-[86vh] sm:max-w-[560px] sm:rounded-2xl sm:border sm:border-[#e4e7ec] sm:shadow-[0_24px_70px_rgba(27,27,27,0.18)]",
           )}
           onMouseDown={(event) => event.stopPropagation()}
           onClick={(event) => event.stopPropagation()}
         >
           <div
             className={cn(
-              "relative overflow-hidden px-5 pb-5 pt-[max(16px,env(safe-area-inset-top))] sm:px-6 sm:pt-6",
+              "relative overflow-hidden border-b border-[#eef1f5] px-4 pb-4 pt-[max(14px,env(safe-area-inset-top))] sm:px-5 sm:pt-5",
               "bg-gradient-to-b",
               statusMeta.top,
             )}
           >
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.58),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.20),rgba(255,255,255,0))]" />
+            <div className="absolute inset-0 bg-white/30" />
 
             <div className="relative flex items-center justify-between">
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/80 px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] text-[#77716b] shadow-sm backdrop-blur">
+              <div className="inline-flex items-center gap-1.5 rounded-md border border-white/70 bg-white/80 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-[#77716b] shadow-sm backdrop-blur">
                 <ClipboardPen className="h-4 w-4 text-[#ff6200]" />
                 Деталі запису
               </div>
@@ -3514,41 +3513,41 @@ const timeBounds = useMemo(() => {
               <button
                 type="button"
                 onClick={closeBookingDetails}
-                className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-[#202020] shadow-[0_8px_24px_rgba(27,27,27,0.10)] transition hover:bg-[#fff7f0] active:scale-[0.98]"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#e4e7ec] bg-white text-[#202020] transition hover:bg-[#f8fafc] active:scale-[0.98]"
                 aria-label="Закрити"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="relative mt-8 flex flex-col items-center text-center">
-              <div className="inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-[13px] font-black shadow-[0_8px_24px_rgba(27,27,27,0.08)] backdrop-blur">
+            <div className="relative mt-4 flex flex-col items-start text-left">
+              <div className="inline-flex items-center gap-1.5 rounded-md bg-white/90 px-2.5 py-1.5 text-[11px] font-black shadow-sm backdrop-blur">
                 <StatusIcon className={cn("h-4 w-4", statusMeta.iconColor)} />
                 <span className={statusMeta.pillText}>{statusMeta.label}</span>
               </div>
 
-              <h2 className="mt-8 break-words text-center text-[30px] font-black leading-[1.05] tracking-tight text-[#202020] sm:text-[34px]">
+              <h2 className="mt-3 break-words text-left text-[22px] font-black leading-tight text-[#202020] sm:text-[24px]">
                 {service}
               </h2>
 
-              <p className="mt-2 flex flex-wrap items-center justify-center gap-2 text-sm font-bold text-[#77716b]">
+              <p className="mt-1.5 flex flex-wrap items-center justify-start gap-1.5 text-[12px] font-bold text-[#77716b]">
                 <CalendarDays className="h-4 w-4 text-[#ff6200]" />
                 <span>{dateLabel}</span>
               </p>
             </div>
 
-            <div className="relative mt-4 grid grid-cols-3 gap-2">
-              <div className="flex min-h-[90px] flex-col items-center justify-center rounded-[22px] border border-white/70 bg-white/88 p-3 text-center shadow-sm backdrop-blur">
+            <div className="relative mt-3 grid grid-cols-3 gap-2">
+              <div className="flex min-h-[64px] flex-col items-center justify-center rounded-lg border border-white/80 bg-white/90 p-2 text-center shadow-sm backdrop-blur">
                 <Clock3 className={cn("h-4 w-4", statusMeta.iconColor)} />
-                <p className="mt-2 text-[11px] font-black uppercase tracking-[0.12em] text-[#aaa19a]">
+                <p className="mt-1.5 text-[9px] font-black uppercase tracking-[0.08em] text-[#aaa19a]">
                   Час запису
                 </p>
                 <p className="mt-1 text-sm font-black text-[#202020]">{time}</p>
               </div>
 
-              <div className="flex min-h-[90px] flex-col items-center justify-center rounded-[22px] border border-white/70 bg-white/88 p-3 text-center shadow-sm backdrop-blur">
+              <div className="flex min-h-[64px] flex-col items-center justify-center rounded-lg border border-white/80 bg-white/90 p-2 text-center shadow-sm backdrop-blur">
                 <Banknote className={cn("h-4 w-4", statusMeta.iconColor)} />
-                <p className="mt-2 text-[11px] font-black uppercase tracking-[0.12em] text-[#aaa19a]">
+                <p className="mt-1.5 text-[9px] font-black uppercase tracking-[0.08em] text-[#aaa19a]">
                   Сума
                 </p>
                 <p className="mt-1 text-sm font-black text-[#202020]">
@@ -3556,9 +3555,9 @@ const timeBounds = useMemo(() => {
                 </p>
               </div>
 
-              <div className="flex min-h-[90px] flex-col items-center justify-center rounded-[22px] border border-white/70 bg-white/88 p-3 text-center shadow-sm backdrop-blur">
+              <div className="flex min-h-[64px] flex-col items-center justify-center rounded-lg border border-white/80 bg-white/90 p-2 text-center shadow-sm backdrop-blur">
                 <Timer className={cn("h-4 w-4", statusMeta.iconColor)} />
-                <p className="mt-2 text-[11px] font-black uppercase tracking-[0.12em] text-[#aaa19a]">
+                <p className="mt-1.5 text-[9px] font-black uppercase tracking-[0.08em] text-[#aaa19a]">
                   Тривалість
                 </p>
                 <p className="mt-1 text-sm font-black text-[#202020]">
@@ -3568,12 +3567,12 @@ const timeBounds = useMemo(() => {
             </div>
           </div>
 
-          <div className="relative flex min-h-0 flex-1 flex-col bg-white px-4 pt-4 sm:px-6">
-            <div className="calendar-day-scroll min-h-0 flex-1 overflow-y-auto pb-28 sm:pb-24">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-[28px] border border-[#eadfce] bg-white p-4 sm:col-span-2">
-                  <div className="flex items-center gap-4">
-                    <div className="h-[72px] w-[72px] shrink-0 overflow-hidden rounded-full border border-[#eadfce] bg-white p-1">
+          <div className="relative flex min-h-0 flex-1 flex-col bg-white px-4 pt-3 sm:px-5">
+            <div className="calendar-day-scroll min-h-0 flex-1 overflow-y-auto pb-24 sm:pb-20">
+              <div className="grid gap-2 sm:grid-cols-2">
+                <div className="rounded-xl border border-[#e4e7ec] bg-white p-3 sm:col-span-2">
+                  <div className="flex items-center gap-3">
+                    <div className="h-[52px] w-[52px] shrink-0 overflow-hidden rounded-full border border-[#e4e7ec] bg-white p-0.5">
                       {clientPhoto ? (
                         <img
                           src={clientPhoto}
@@ -3588,13 +3587,13 @@ const timeBounds = useMemo(() => {
                     </div>
 
                     <div className="min-w-0 flex-1">
-                      <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#aaa19a]">
+                      <p className="text-[10px] font-black uppercase tracking-[0.1em] text-[#aaa19a]">
                         Клієнт
                       </p>
-                      <p className="truncate text-[20px] font-black text-[#202020]">
+                      <p className="truncate text-[17px] font-black text-[#202020]">
                         {clientName}
                       </p>
-                      <p className="mt-1 truncate text-sm font-bold text-[#77716b]">
+                      <p className="mt-0.5 truncate text-[12px] font-bold text-[#77716b]">
                         {phone || "Телефон не вказано"}
                       </p>
                     </div>
@@ -3604,7 +3603,7 @@ const timeBounds = useMemo(() => {
                         <button
                           type="button"
                           onClick={() => handleCopyPhone(phone)}
-                          className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#eadfce] bg-white text-[#77716b] transition-all duration-200 hover:bg-[#fff7f0] hover:text-[#202020] active:scale-[0.95]"
+                          className="flex h-9 w-9 items-center justify-center rounded-md border border-[#d0d5dd] bg-white text-[#77716b] transition-all duration-200 hover:bg-[#f8fafc] hover:text-[#202020] active:scale-[0.95]"
                           title="Скопіювати номер"
                         >
                           {copiedPhone ? (
@@ -3616,7 +3615,7 @@ const timeBounds = useMemo(() => {
 
                         <a
                           href={`tel:${phone}`}
-                          className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#ff6200] text-white transition-all duration-200 hover:bg-[#ef4f00] active:scale-[0.95]"
+                          className="flex h-9 w-9 items-center justify-center rounded-md bg-[#ff6200] text-white transition-all duration-200 hover:bg-[#ef4f00] active:scale-[0.95]"
                           title="Подзвонити"
                         >
                           <PhoneCall className="h-4 w-4" />
@@ -3626,9 +3625,9 @@ const timeBounds = useMemo(() => {
                   </div>
                 </div>
 
-                <div className="rounded-[24px] border border-[#eadfce] bg-white p-3 sm:col-span-2">
-                  <div className="ml-2 flex items-center gap-3">
-                    <div className="h-[62px] w-[62px] shrink-0 overflow-hidden rounded-full border border-[#eadfce] bg-white p-1">
+                <div className="rounded-xl border border-[#e4e7ec] bg-white p-3 sm:col-span-2">
+                  <div className="flex items-center gap-3">
+                    <div className="h-[46px] w-[46px] shrink-0 overflow-hidden rounded-full border border-[#e4e7ec] bg-white p-0.5">
                       {masterPhoto ? (
                         <img
                           src={masterPhoto}
@@ -3642,7 +3641,7 @@ const timeBounds = useMemo(() => {
                       )}
                     </div>
 
-                    <div className="ml-2 min-w-0 flex-1">
+                    <div className="min-w-0 flex-1">
                       <p className="text-[9px] font-black uppercase tracking-[0.12em] text-[#aaa19a]">
                         Майстер
                       </p>
@@ -3659,13 +3658,13 @@ const timeBounds = useMemo(() => {
             </div>
 
             {!isArchived && !isDeleted && (
-              <div className="absolute inset-x-0 bottom-0 border-[#eadfce] bg-white/92 px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 backdrop-blur sm:px-6 sm:pb-5">
-                <div className="grid gap-3 sm:grid-cols-2">
+              <div className="absolute inset-x-0 bottom-0 border-t border-[#eef1f5] bg-white/94 px-4 pb-[max(14px,env(safe-area-inset-bottom))] pt-3 backdrop-blur sm:px-5 sm:pb-4">
+                <div className="grid gap-2 sm:grid-cols-2">
                   {!isConfirmed && !isCanceled && (
                     <button
                       type="button"
                       onClick={() => handleConfirmBooking(selectedBooking.id)}
-                      className="inline-flex h-12 items-center justify-center gap-2 rounded-[22px] bg-[var(--color-primary-buttom)] text-sm font-black text-white transition-all duration-200 hover:bg-[#4a4a4a] active:scale-[0.98]"
+                      className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[var(--color-primary-buttom)] text-[13px] font-black text-white transition-all duration-200 hover:bg-[#4a4a4a] active:scale-[0.98]"
                     >
                       <CheckCheck className="h-4 w-4" />
                       Підтвердити
@@ -3680,7 +3679,7 @@ const timeBounds = useMemo(() => {
                         setCancelConfirmId(selectedBooking.id);
                       }}
                       className={cn(
-                        "inline-flex h-12 items-center justify-center gap-2 rounded-[22px] border border-[#fecaca] bg-[#fff5f5] px-4 text-sm font-black text-[#ef4444] transition-all duration-200 hover:border-[#fca5a5] hover:bg-[#ffecec] active:scale-[0.98]",
+                        "inline-flex h-10 items-center justify-center gap-2 rounded-md border border-[#fecaca] bg-[#fff5f5] px-4 text-[13px] font-black text-[#ef4444] transition-all duration-200 hover:border-[#fca5a5] hover:bg-[#ffecec] active:scale-[0.98]",
                         isConfirmed && "sm:col-span-2",
                       )}
                     >
@@ -3696,7 +3695,7 @@ const timeBounds = useMemo(() => {
                         closeBookingDetails();
                         setDeleteConfirmId(selectedBooking.id);
                       }}
-                      className="inline-flex h-12 items-center justify-center gap-2 rounded-[22px] border border-[#fecaca] bg-[#fff5f5] px-4 text-sm font-black text-[#ef4444] transition-all duration-200 hover:border-[#fca5a5] hover:bg-[#ffecec] active:scale-[0.98] sm:col-span-2"
+                      className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-[#fecaca] bg-[#fff5f5] px-4 text-[13px] font-black text-[#ef4444] transition-all duration-200 hover:border-[#fca5a5] hover:bg-[#ffecec] active:scale-[0.98] sm:col-span-2"
                     >
                       <Trash2 className="h-4 w-4" />
                       Видалити запис
@@ -3715,20 +3714,20 @@ const timeBounds = useMemo(() => {
     return (
       <>
         <div
-          className="hidden h-[min(900px,calc(100dvh-16px))] min-h-[680px] overflow-hidden rounded-[30px] border border-[#d8dde5] bg-white shadow-[0_24px_80px_rgba(15,23,42,0.16)] md:grid"
+          className="hidden h-[min(860px,calc(100dvh-12px))] min-h-[620px] overflow-hidden border border-[#d8dde5] bg-white shadow-[0_18px_54px_rgba(15,23,42,0.12)] md:grid"
           style={{
             gridTemplateColumns: agendaCollapsed
               ? "minmax(0,1fr) 46px"
-              : "minmax(0,1fr) clamp(280px,24vw,326px)",
+              : "minmax(0,1fr) clamp(286px,22vw,312px)",
           }}
         >
           <main className="min-w-0 bg-white">
-            <div className="flex min-h-[58px] flex-wrap items-center justify-between gap-2 border-b border-[#e6e9ef] px-3 py-2 xl:px-4">
+            <div className="flex min-h-[48px] flex-wrap items-center justify-between gap-1.5 border-b border-[#e6e9ef] px-3 py-1.5 xl:px-4">
               <div className="flex min-w-0 flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={() => navigateRange(-1)}
-                  className="flex h-8 w-8 items-center justify-center rounded-md border border-[#e1e5eb] bg-white text-[#59616d]"
+                  className="flex h-7 w-7 items-center justify-center rounded-md border border-[#e1e5eb] bg-white text-[#59616d] transition hover:bg-[#f8fafc]"
                   aria-label="Попередній період"
                 >
                   <ChevronLeft className="h-3.5 w-3.5" />
@@ -3736,7 +3735,7 @@ const timeBounds = useMemo(() => {
                 <button
                   type="button"
                   onClick={() => setCalendarOpen(true)}
-                  className="flex h-8 min-w-[176px] items-center gap-2 rounded-md border border-[#e1e5eb] bg-white px-3 text-[11px] font-black text-[#15171d] xl:min-w-[210px]"
+                  className="flex h-7 min-w-[168px] items-center gap-2 rounded-md border border-[#e1e5eb] bg-white px-2.5 text-[10px] font-black text-[#15171d] transition hover:bg-[#f8fafc] xl:min-w-[200px]"
                   aria-label="Відкрити календар"
                 >
                   <CalendarDays className="h-3.5 w-3.5 text-[#ff3369]" />
@@ -3746,13 +3745,13 @@ const timeBounds = useMemo(() => {
                 <button
                   type="button"
                   onClick={() => navigateRange(1)}
-                  className="flex h-8 w-8 items-center justify-center rounded-md border border-[#e1e5eb] bg-white text-[#59616d]"
+                  className="flex h-7 w-7 items-center justify-center rounded-md border border-[#e1e5eb] bg-white text-[#59616d] transition hover:bg-[#f8fafc]"
                   aria-label="Наступний період"
                 >
                   <ChevronRight className="h-3.5 w-3.5" />
                 </button>
 
-                <div className="ml-2 flex h-8 rounded-md border border-[#e1e5eb] bg-[#fafbfc] p-0.5">
+                <div className="ml-1 flex h-7 rounded-md border border-[#e1e5eb] bg-[#fafbfc] p-0.5">
                   {rangeModeItems.map((item) => {
                     const active = rangeMode === item.key;
 
@@ -3762,7 +3761,7 @@ const timeBounds = useMemo(() => {
                         type="button"
                         onClick={() => handleRangeModeChange(item.key)}
                         className={cn(
-                          "rounded px-2.5 text-[10px] font-black transition",
+                          "rounded px-2 text-[10px] font-black transition",
                           active
                             ? "bg-white text-[#15171d] shadow-sm"
                             : "text-[#8b94a0] hover:text-[#15171d]",
@@ -3779,7 +3778,7 @@ const timeBounds = useMemo(() => {
                 {(scheduleDataLoading || scheduleDataError) && (
                   <span
                     className={cn(
-                      "max-w-[190px] truncate rounded-full px-2.5 py-1 text-[9px] font-black",
+                      "max-w-[170px] truncate rounded-md px-2 py-1 text-[9px] font-black",
                       scheduleDataError
                         ? "bg-[#fff0f0] text-[#b42318]"
                         : "bg-[#eef8ff] text-[#1261a0]",
@@ -3792,7 +3791,7 @@ const timeBounds = useMemo(() => {
                 <select
                   value={statusFilter}
                   onChange={(event) => setStatusFilter(event.target.value)}
-                  className="h-8 max-w-[150px] rounded-md border border-[#e1e5eb] bg-white px-2 text-[11px] font-black text-[#15171d] outline-none"
+                  className="h-7 max-w-[140px] rounded-md border border-[#e1e5eb] bg-white px-2 text-[10px] font-black text-[#15171d] outline-none"
                   aria-label="Фільтр статусу"
                 >
                   {SCHEDULE_STATUS_FILTERS.map((item) => (
@@ -3804,7 +3803,7 @@ const timeBounds = useMemo(() => {
                 <select
                   value={selectedGroup}
                   onChange={(event) => handleSelectedGroupChange(event.target.value)}
-                  className="h-8 max-w-[170px] rounded-md border border-[#e1e5eb] bg-white px-2 text-[11px] font-black text-[#15171d] outline-none"
+                  className="h-7 max-w-[160px] rounded-md border border-[#e1e5eb] bg-white px-2 text-[10px] font-black text-[#15171d] outline-none"
                   aria-label="Фільтр майстрів"
                 >
                   <option value="all">Усі майстри</option>
@@ -3822,11 +3821,11 @@ const timeBounds = useMemo(() => {
 
           <aside className="border-l border-[#e6e9ef] bg-white">
             {agendaCollapsed ? (
-              <div className="flex h-full flex-col items-center gap-4 bg-[#fbfcfe] px-1 py-3">
+              <div className="flex h-full flex-col items-center gap-3 bg-[#fbfcfe] px-1 py-3">
                 <button
                   type="button"
                   onClick={() => setAgendaCollapsed(false)}
-                  className="flex h-8 w-8 items-center justify-center rounded-md border border-[#e1e5eb] bg-white text-[#59616d] shadow-sm"
+                  className="flex h-7 w-7 items-center justify-center rounded-md border border-[#e1e5eb] bg-white text-[#59616d] shadow-sm"
                   aria-label="Розгорнути список записів"
                   title="Розгорнути список записів"
                 >
@@ -3838,35 +3837,35 @@ const timeBounds = useMemo(() => {
               </div>
             ) : (
               <>
-            <div className="flex h-[46px] items-center justify-between border-b border-[#e6e9ef] px-4">
+                <div className="flex h-[42px] items-center justify-between border-b border-[#e6e9ef] px-3">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setAgendaCollapsed(true)}
-                  className="flex h-7 w-7 items-center justify-center rounded-full text-[#59616d]"
+                  className="flex h-7 w-7 items-center justify-center rounded-md text-[#59616d] hover:bg-[#f2f4f7]"
                   aria-label="Згорнути список записів"
                   title="Згорнути список записів"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </button>
-                <p className="text-[13px] font-black text-[#15171d]">
+                <p className="text-[12px] font-black text-[#15171d]">
                   Список записів
                 </p>
               </div>
               <MoreHorizontal className="h-4 w-4 text-[#8c95a1]" />
             </div>
 
-            <div className="calendar-day-scroll h-[calc(100%-46px)] overflow-y-auto px-4 py-3">
-              <div className="mb-4 rounded-md border border-[#e5e9ef] bg-[#fbfcfe] px-3 py-2">
+                <div className="calendar-day-scroll h-[calc(100%-42px)] overflow-y-auto px-3 py-3">
+              <div className="mb-3 rounded-md border border-[#e5e9ef] bg-[#fbfcfe] px-3 py-2">
                 <div className="flex items-center justify-between text-[10px] font-black uppercase text-[#8f98a3]">
                   <span>Today</span>
                   <span>
                     {scheduleTimeLabel(timeBounds.start)} - {scheduleTimeLabel(timeBounds.end)}
                   </span>
                 </div>
-                <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+                <div className="mt-2 grid grid-cols-3 gap-2 text-center">
                   <div>
-                    <p className="text-[15px] font-black text-[#15171d]">
+                    <p className="text-[14px] font-black text-[#15171d]">
                       ₴{formatPrice(agendaTotalPrice)}
                     </p>
                     <p className="text-[9px] font-bold uppercase text-[#9aa2ad]">
@@ -3874,7 +3873,7 @@ const timeBounds = useMemo(() => {
                     </p>
                   </div>
                   <div>
-                    <p className="text-[15px] font-black text-[#15171d]">
+                    <p className="text-[14px] font-black text-[#15171d]">
                       {agendaTotalCount}
                     </p>
                     <p className="text-[9px] font-bold uppercase text-[#9aa2ad]">
@@ -3882,7 +3881,7 @@ const timeBounds = useMemo(() => {
                     </p>
                   </div>
                   <div>
-                    <p className="text-[15px] font-black text-[#15171d]">
+                    <p className="text-[14px] font-black text-[#15171d]">
                       {columns.length}
                     </p>
                     <p className="text-[9px] font-bold uppercase text-[#9aa2ad]">
@@ -3912,7 +3911,7 @@ const timeBounds = useMemo(() => {
                 </div>
               ) : (
                 agendaGroups.map((group) => (
-                  <div key={group.dateKey} className="mb-5">
+                  <div key={group.dateKey} className="mb-4">
                     <div className="mb-2 flex items-center justify-between text-[11px] font-black text-[#5f6875]">
                       <span className="capitalize">
                         {group.date.toLocaleDateString("uk-UA", {
@@ -3927,7 +3926,7 @@ const timeBounds = useMemo(() => {
                       </span>
                     </div>
 
-                    <div className="grid gap-3">
+                    <div className="grid gap-1.5">
                       {group.items.map((booking) => {
                         const tone = scheduleCardTone(booking, nowTs);
                         const startLabel =
@@ -3941,13 +3940,13 @@ const timeBounds = useMemo(() => {
                             key={`agenda-${booking.id}-${booking.dateKey}-${booking.startMin}`}
                             type="button"
                             onClick={() => openBookingDetails(booking.id)}
-                            className="grid grid-cols-[42px_1fr_auto] gap-3 rounded-md bg-white py-1 text-left transition hover:bg-[#fafbfc]"
+                            className="grid grid-cols-[38px_1fr_auto] gap-2 rounded-md border border-transparent bg-white px-2 py-2 text-left transition hover:border-[#e4e7ec] hover:bg-[#fafbfc]"
                           >
-                            <div className="pt-1 text-[10px] font-bold text-[#8b94a0]">
+                            <div className="pt-0.5 text-[10px] font-bold text-[#8b94a0]">
                               {startLabel}
                             </div>
-                            <div className="min-w-0 border-l-2 pl-3" style={{ borderColor: tone.accent }}>
-                              <p className="truncate text-[12px] font-black text-[#15171d]">
+                            <div className="min-w-0 border-l-2 pl-2.5" style={{ borderColor: tone.accent }}>
+                              <p className="truncate text-[12px] font-extrabold text-[#15171d]">
                                 {booking.clientName}
                               </p>
                               <p className="mt-0.5 truncate text-[10px] font-medium text-[#8b94a0]">
@@ -3956,15 +3955,15 @@ const timeBounds = useMemo(() => {
                             </div>
                             <div className="flex items-center gap-2">
                               <ScheduleStatusIcon
-  booking={booking}
-  nowTs={nowTs}
-  className="h-4 w-4"
-  style={{ color: tone.accent }}
-/>
+                                booking={booking}
+                                nowTs={nowTs}
+                                className="h-4 w-4"
+                                style={{ color: tone.accent }}
+                              />
                               <Avatar
                                 name={booking.staffName || booking.clientName}
                                 photoUrl={booking.staffPhotoUrl}
-                                className="h-7 w-7 rounded-full"
+                                className="h-6 w-6 rounded-full"
                               />
                             </div>
                           </button>
@@ -3974,7 +3973,7 @@ const timeBounds = useMemo(() => {
                   </div>
                 ))
               )}
-            </div>
+                </div>
               </>
             )}
           </aside>
@@ -3982,43 +3981,43 @@ const timeBounds = useMemo(() => {
 
         <div className="relative left-1/2 flex h-[100dvh] min-h-[100dvh] w-screen -translate-x-1/2 flex-col overflow-hidden bg-white text-[#15171d] md:hidden">
           <div className="sticky top-0 z-[120] shrink-0 border-b border-[#e8ebf0] bg-white">
-            <div className="grid grid-cols-[1fr_48px_38px] items-center px-5 pb-4 pt-5">
+            <div className="grid grid-cols-[1fr_40px_34px] items-center px-4 pb-2.5 pt-3">
               <button
                 type="button"
                 onClick={() => setCalendarOpen(true)}
                 className="min-w-0 text-left"
               >
-                <span className="flex items-center gap-2 text-[21px] font-black leading-tight">
+                <span className="flex items-center gap-2 text-[18px] font-black leading-tight">
                   {viewDate.toLocaleDateString("uk-UA", {
                     weekday: "short",
                     day: "numeric",
                     month: "short",
                   })}
-                  <ChevronDown className="h-5 w-5" />
+                  <ChevronDown className="h-4 w-4" />
                 </span>
-                <span className="mt-1 block text-[16px] font-medium text-[#15171d]">
+                <span className="mt-0.5 block text-[12px] font-semibold text-[#59616d]">
                   {scheduleTimeLabel(timeBounds.start)} - {scheduleTimeLabel(timeBounds.end)}
                 </span>
               </button>
               <button
                 type="button"
                 onClick={() => setMobileFiltersOpen((value) => !value)}
-                className="flex h-11 w-11 items-center justify-center"
+                className="flex h-9 w-9 items-center justify-center rounded-md hover:bg-[#f2f4f7]"
                 aria-label="Фільтри"
               >
-                <SlidersHorizontal className="h-7 w-7" />
+                <SlidersHorizontal className="h-5 w-5" />
               </button>
               <button
                 type="button"
                 onClick={() => setMobileFiltersOpen((value) => !value)}
-                className="flex h-11 w-8 items-center justify-center"
+                className="flex h-9 w-8 items-center justify-center rounded-md hover:bg-[#f2f4f7]"
                 aria-label="Меню"
               >
-                <MoreVertical className="h-7 w-7" />
+                <MoreVertical className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="grid grid-cols-7 px-5 pb-3 text-center">
+            <div className="grid grid-cols-7 px-3 pb-2 text-center">
               {weekStripDays.map((date) => {
                 const key = toISODateKey(date);
                 const active = key === selectedDateKey;
@@ -4028,14 +4027,14 @@ const timeBounds = useMemo(() => {
                     key={key}
                     type="button"
                     onClick={() => handleViewDateChange(date)}
-                    className="flex h-[64px] flex-col items-center justify-center"
+                    className="flex h-[50px] flex-col items-center justify-center"
                   >
-                    <span className="text-[13px] font-medium uppercase text-[#858b94]">
+                    <span className="text-[10px] font-semibold uppercase text-[#858b94]">
                       {date.toLocaleDateString("uk-UA", { weekday: "short" }).slice(0, 3)}
                     </span>
                     <span
                       className={cn(
-                        "mt-2 flex h-8 w-8 items-center justify-center rounded-full text-[20px] font-medium",
+                        "mt-1 flex h-7 w-7 items-center justify-center rounded-full text-[14px] font-bold",
                         active ? "bg-[#ffe1e8] text-[#ff3369]" : "text-[#15171d]",
                       )}
                     >
@@ -4048,14 +4047,14 @@ const timeBounds = useMemo(() => {
 
             <div
               className={cn(
-                "grid-cols-2 gap-2 border-t border-[#eef1f5] px-5 py-3",
+                "grid-cols-2 gap-2 border-t border-[#eef1f5] px-4 py-2.5",
                 mobileFiltersOpen ? "grid" : "hidden",
               )}
             >
               <select
                 value={statusFilter}
                 onChange={(event) => setStatusFilter(event.target.value)}
-                className="h-11 rounded-[14px] border border-[#e0e5ec] bg-white px-3 text-[13px] font-black outline-none"
+                className="h-9 rounded-md border border-[#e0e5ec] bg-white px-2.5 text-[12px] font-black outline-none"
               >
                 {SCHEDULE_STATUS_FILTERS.map((item) => (
                   <option key={item.key} value={item.key}>
@@ -4066,7 +4065,7 @@ const timeBounds = useMemo(() => {
               <select
                 value={selectedGroup}
                 onChange={(event) => handleSelectedGroupChange(event.target.value)}
-                className="h-11 rounded-[14px] border border-[#e0e5ec] bg-white px-3 text-[13px] font-black outline-none"
+                className="h-9 rounded-md border border-[#e0e5ec] bg-white px-2.5 text-[12px] font-black outline-none"
               >
                 <option value="all">Усі майстри</option>
                 {groupOptions.map((option) => (
@@ -4082,10 +4081,10 @@ const timeBounds = useMemo(() => {
 
           <button
             type="button"
-            className="fixed bottom-6 right-5 z-[140] flex h-16 w-16 items-center justify-center rounded-full bg-[#111318] text-white shadow-[0_14px_34px_rgba(15,23,42,0.35)]"
+            className="fixed bottom-5 right-4 z-[140] flex h-12 w-12 items-center justify-center rounded-full bg-[#111318] text-white shadow-[0_10px_24px_rgba(15,23,42,0.28)]"
             aria-label="Додати запис"
           >
-            <Plus className="h-9 w-9" />
+            <Plus className="h-6 w-6" />
           </button>
         </div>
 

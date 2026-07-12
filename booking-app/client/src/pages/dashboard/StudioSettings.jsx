@@ -162,7 +162,7 @@ function SectionCard({
   return (
     <section
 className={cn(
-  "group relative overflow-hidden rounded-[32px] border border-[#ebe7df] bg-white shadow-[0_14px_44px_rgba(15,23,42,0.05)] transition-all duration-300 hover:shadow-[0_20px_60px_rgba(15,23,42,0.08)]",
+  "group relative overflow-hidden rounded-[15px] border border-[#ebe7df] bg-white shadow-[0_14px_44px_rgba(15,23,42,0.05)] transition-all duration-300 hover:shadow-[0_20px_60px_rgba(15,23,42,0.08)]",
   className,
 )}
     >
@@ -1966,7 +1966,7 @@ async function saveStudioEditModal() {
         <div className="mb-6">
 <div
   ref={headerTriggerRef}
-  className="relative overflow-hidden rounded-[32px] border border-[#ebe7df] bg-white/95 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.06)] backdrop-blur-xl sm:p-7"
+  className="relative overflow-hidden rounded-[15px] border border-[#ebe7df] bg-white/95 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.06)] backdrop-blur-xl sm:p-7"
 >
   <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#ff7a18] via-[#ff6200] to-[#ff8c42]" />
 
@@ -1985,7 +1985,7 @@ async function saveStudioEditModal() {
             </div>
           </div>
 
-         <div className="mt-4 rounded-[32px] border border-[#ebe7df] bg-white p-2 shadow-[0_10px_32px_rgba(15,23,42,0.04)]">
+         <div className="mt-4 rounded-[15px] border border-[#ebe7df] bg-white p-2 shadow-[0_10px_32px_rgba(15,23,42,0.04)]">
           <div
   className={cn(
     "flex flex-col gap-3 md:flex-row md:items-center",
@@ -2227,7 +2227,7 @@ async function saveStudioEditModal() {
                 (initialLoading ? (
                   <StudioProfileFormSkeleton />
                 ) : (
-<section className="relative overflow-hidden rounded-[30px] border border-[#eadfce] bg-white shadow-[0_14px_36px_rgba(15,23,42,0.06)]">
+<section className="relative overflow-hidden rounded-[15px] border border-[#eadfce] bg-white shadow-[0_14px_36px_rgba(15,23,42,0.06)]">
   <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#ff7a18] via-[#ff6200] to-[#ff8c42]" />
   <div className="flex items-center justify-between gap-3 border-b border-[#eee8df] px-5 py-4 sm:px-7">
     <h3 className="text-[24px] font-black tracking-[-0.05em] text-[#202020]">
@@ -2459,7 +2459,7 @@ onClick={() => openStudioEditModal(item.field)}
 
                           <div className="mt-4">
                             {!hasAnyPortfolio ? (
-<div className="rounded-[32px] border-2 border-dashed border-[#ffd6bd] bg-[#fff7f0] px-6 py-12 text-center">
+<div className="rounded-[15px] border-2 border-dashed border-[#ffd6bd] bg-[#fff7f0] px-6 py-12 text-center">
   <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-[#ff6200] shadow-sm">
     <ImageIcon className="h-7 w-7" />
   </div>

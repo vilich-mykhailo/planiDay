@@ -217,7 +217,7 @@ function SectionCard({ title, subtitle, actions, children, className = "" }) {
   return (
     <section
       className={cn(
-        "group relative overflow-hidden rounded-[28px] border border-[#eadbc9] bg-white shadow-[0_18px_50px_rgba(17,17,17,0.06)] transition-all duration-300 hover:shadow-[0_24px_70px_rgba(17,17,17,0.09)]",
+        "group relative overflow-hidden rounded-[15px] border border-[#eadbc9] bg-white shadow-[0_18px_50px_rgba(17,17,17,0.06)] transition-all duration-300 hover:shadow-[0_24px_70px_rgba(17,17,17,0.09)]",
         className,
       )}
     >
@@ -345,7 +345,7 @@ const clientName = item.clientName || getClientTitle(matchedClient);
     }
   }}
 >
-      <div className="flex h-dvh w-full max-w-2xl flex-col overflow-hidden rounded-none border-0 bg-[#fbfaf8] shadow-[0_30px_90px_rgba(15,23,42,0.24)] sm:h-auto sm:max-h-[calc(100dvh-48px)] sm:rounded-[32px] sm:border sm:border-[#f0e2d3]">
+      <div className="flex h-dvh w-full max-w-2xl flex-col overflow-hidden rounded-none border-0 bg-[#fbfaf8] shadow-[0_30px_90px_rgba(15,23,42,0.24)] sm:h-auto sm:max-h-[calc(100dvh-48px)] sm:rounded-[15px] sm:border sm:border-[#f0e2d3]">
         <div className="relative shrink-0 overflow-hidden bg-[#202020] px-4 pb-5 pt-4 text-white sm:px-6 sm:pb-6 sm:pt-5">
           <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#ef4444] via-[#dc2626] to-[#b91c1c]" />
 
@@ -480,7 +480,7 @@ const clientName = item.clientName || getClientTitle(matchedClient);
     }
   }}
 >
-      <div className="flex h-dvh w-full max-w-2xl flex-col overflow-hidden rounded-none border-0 bg-[#fbfaf8] shadow-[0_30px_90px_rgba(15,23,42,0.24)] sm:h-auto sm:max-h-[calc(100dvh-48px)] sm:rounded-[32px] sm:border sm:border-[#f0e2d3]">
+      <div className="flex h-dvh w-full max-w-2xl flex-col overflow-hidden rounded-none border-0 bg-[#fbfaf8] shadow-[0_30px_90px_rgba(15,23,42,0.24)] sm:h-auto sm:max-h-[calc(100dvh-48px)] sm:rounded-[15px] sm:border sm:border-[#f0e2d3]">
         <div className="relative shrink-0 overflow-hidden bg-[#202020] px-4 pb-5 pt-4 text-white sm:px-6 sm:pb-6 sm:pt-5">
           <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#ff7a18] via-[#ff6200] to-[#ff8c42]" />
 
@@ -1487,7 +1487,7 @@ useEffect(() => {
   return (
     <div className="min-h-screen space-y-6 bg-[#faf8f4] pb-10">
       <div className="mx-auto max-w-6xl space-y-6">
-<div className="relative overflow-hidden rounded-[32px] border border-[#ebe7df] bg-white/95 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.06)] backdrop-blur-xl sm:p-7">
+<div className="relative overflow-hidden rounded-[15px] border border-[#ebe7df] bg-white/95 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.06)] backdrop-blur-xl sm:p-7">
   <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#ff7a18] via-[#ff6200] to-[#ff8c42]" />
 
   <div className="absolute -right-7 -top-10 hidden h-28 w-28 rounded-full bg-white/40 sm:block" />

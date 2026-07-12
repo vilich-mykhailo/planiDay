@@ -35,7 +35,7 @@ export default function PrivacyOwner() {
             Ця Політика конфіденційності пояснює, які дані ми збираємо від
             власників салонів, студій або майстрів, як їх використовуємо та які
             у вас є права. Використовуючи{" "}
-            <span className="font-semibold">PlaniDay</span>, ви погоджуєтеся з
+            <span className="font-semibold">Aveliio</span>, ви погоджуєтеся з
             цією Політикою.
           </p>
 

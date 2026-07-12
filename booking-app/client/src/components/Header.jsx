@@ -117,7 +117,7 @@ function ButtonLink({
   const styles =
     variant === "primary"
       ? "bg-[var(--color-ink)] text-white  hover:bg-[var(--color-ink-soft)]"
-      : "border border-[var(--color-cream)] bg-white text-[var(--color-ink)] hover:bg-[var(--color-cream)]";
+      : "border border-[var(--color-cream)] bg-white text-[var(--color-ink)] hover:bg-[#ff6200]/5";
 
   const disabledStyles = "pointer-events-none cursor-not-allowed opacity-50";
 
@@ -226,10 +226,10 @@ const [unreadNotifications, setUnreadNotifications] = useState(0);
       .toUpperCase() || "U";
   const identityTitle =
     role === "owner"
-      ? studioName || "PlaniDay Studio"
+      ? studioName || "Aveliio Studio"
       : role === "client"
         ? clientFullName || "Мій профіль"
-        : "PlaniDay";
+        : "Aveliio";
   const identitySubtitle =
     role === "owner"
       ? "Кабінет керування"
@@ -620,14 +620,18 @@ if (isStudioPublicPage || hideHeader) {
       <Link
         to="/"
         className="flex min-w-0 items-center gap-2 rounded-2xl px-1.5 py-1 transition active:scale-[0.98]"
-        aria-label="PlaniDay"
+        aria-label="Aveliio"
       >
-        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#111111] text-sm font-black text-white shadow-[0_10px_24px_rgba(15,23,42,0.14)]">
-          P
-        </span>
+<span className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden shadow-[0_10px_24px_rgba(15,23,42,0.14)]">
+  <img
+    src="/aveliio_logo.png"
+    alt="Aveliio"
+    className="h-full w-full object-contain"
+  />
+</span>
 
         <span className="truncate text-[15px] font-black tracking-[-0.04em] text-[#202020] sm:text-[16px]">
-          Plani<span className="text-[#ff6200]">Day</span>
+         Avel<span className="text-[#ff6200]">ii</span>o
         </span>
       </Link>
 
@@ -693,9 +697,13 @@ if (isStudioPublicPage || hideHeader) {
           <img src={clientPhoto} alt="" className="h-full w-full object-cover" />
         ) : role === "client" ? (
           clientInitials
-        ) : (
-          "P"
-        )}
+) : (
+  <img
+    src="/aveliio_logo.png"
+    alt="Aveliio"
+    className="h-full w-full object-contain"
+  />
+)}
       </div>
 
       <div className="min-w-0 flex-1">

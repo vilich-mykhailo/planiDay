@@ -1112,7 +1112,7 @@ await patchProfile({
     }
   }}
   className={cn(
-    "relative overflow-hidden rounded-[28px] border border-[#eadfce] bg-white p-4 shadow-[0_14px_36px_rgba(15,23,42,0.06)] sm:rounded-[32px] sm:p-5",
+    "relative overflow-hidden rounded-[28px] border border-[#eadfce] bg-white p-4 shadow-[0_14px_36px_rgba(15,23,42,0.06)] sm:rounded-[15px] sm:p-5",
     !isProOpen && "max-[639px]:cursor-pointer",
   )}
 >

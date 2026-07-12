@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useMemo, useState } from "react";
+import { continuePendingAuthAction } from "../utils/pendingAuthAction";
 import {
   ArrowRight,
   Building2,
@@ -105,20 +106,20 @@ const [showPassword, setShowPassword] = useState(false);
         return;
       }
 
-      const data = await api("/auth/client/login", {
-        method: "POST",
-        body: {
-          email: form.email.trim(),
-          password: form.password,
-        },
-      });
+const data = await api("/auth/client/login", {
+  method: "POST",
+  body: {
+    email: form.email.trim(),
+    password: form.password,
+  },
+});
 
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("role", data.kind || "client");
+localStorage.setItem("token", data.token);
+localStorage.setItem("role", data.kind || "client");
 
-      window.dispatchEvent(new Event("auth-changed"));
+window.dispatchEvent(new Event("auth-changed"));
 
-      navigate("/");
+continuePendingAuthAction(navigate);
     } catch (err) {
       setError(err?.message || "Невірний email або пароль");
     } finally {
@@ -140,7 +141,7 @@ const [showPassword, setShowPassword] = useState(false);
           <div className="relative flex h-full flex-col px-12 pb-20 pt-[31%] text-white">
 <div className="flex flex-col items-center text-center">
   <p className="text-[88px] font-black leading-none tracking-[-0.065em]">
-    Plani<span className="text-[#fc511e]">Day</span>
+    Avel<span className="text-[#fc511e]">ii</span>o
   </p>
 
   <p className="mt-9 max-w-[320px] text-[18px] font-semibold leading-[1.6] text-white/95">
@@ -241,7 +242,7 @@ const [showPassword, setShowPassword] = useState(false);
               </button>
             </div>
 
-            <div className="mt-5 rounded-[24px] border border-[#eadfce] bg-white p-4 shadow-[0_10px_30px_rgba(15,23,42,0.05)] sm:mt-7 sm:rounded-[32px] sm:p-7 sm:shadow-[0_16px_44px_rgba(15,23,42,0.05)]">
+            <div className="mt-5 rounded-[24px] border border-[#eadfce] bg-white p-4 shadow-[0_10px_30px_rgba(15,23,42,0.05)] sm:mt-7 sm:rounded-[15px] sm:p-7 sm:shadow-[0_16px_44px_rgba(15,23,42,0.05)]">
               <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
                 <Input
                   label="Email"

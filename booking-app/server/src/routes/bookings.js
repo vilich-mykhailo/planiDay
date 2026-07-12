@@ -459,12 +459,21 @@ const client = await prisma.clientAccount.findUnique({
       }
     }
 
-    const startAt = new Date(`${date}T${time}:00`);
-    if (Number.isNaN(startAt.getTime())) {
-      return res.status(400).json({ message: "Некоректна дата або час" });
-    }
+const startAt = new Date(`${date}T${time}:00`);
 
-    const endAt = new Date(startAt.getTime() + durationMin * 60_000);
+if (Number.isNaN(startAt.getTime())) {
+  return res.status(400).json({
+    message: "Некоректна дата або час",
+  });
+}
+
+if (startAt.getTime() <= Date.now()) {
+  return res.status(400).json({
+    message: "Не можна створити запис на минулий час",
+  });
+}
+
+const endAt = new Date(startAt.getTime() + durationMin * 60_000);
 
     let finalMasterId = masterId || null;
 
@@ -1059,9 +1068,26 @@ router.patch("/studio/:studioId/:bookingId/reschedule", requireAuth, requireClie
 
     if (!booking) return res.status(404).json({ message: "Booking not found" });
 
-    const oldStartAt = booking.startAt;
-    const startAt = new Date(`${newDate}T${newTime}:00`);
-    const endAt = new Date(startAt.getTime() + (booking.endAt - booking.startAt));
+const oldStartAt = booking.startAt;
+const startAt = new Date(`${newDate}T${newTime}:00`);
+
+if (Number.isNaN(startAt.getTime())) {
+  return res.status(400).json({
+    message: "Некоректна дата або час",
+  });
+}
+
+if (startAt.getTime() <= Date.now()) {
+  return res.status(400).json({
+    message: "Не можна перенести запис у минулий час",
+  });
+}
+
+const durationMs =
+  new Date(booking.endAt).getTime() -
+  new Date(booking.startAt).getTime();
+
+const endAt = new Date(startAt.getTime() + durationMs);
 
     const updated = await prisma.booking.update({
       where: { id: bookingId },

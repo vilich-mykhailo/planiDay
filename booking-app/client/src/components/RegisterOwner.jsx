@@ -163,7 +163,7 @@ export default function RegisterOwner() {
           <div className="relative flex h-full flex-col px-12 pb-20 pt-[31%] text-white">
             <div className="flex flex-col items-center text-center">
               <p className="text-[88px] font-black leading-none tracking-[-0.065em]">
-                Plani<span className="text-[#fc511e]">Day</span>
+               Avel<span className="text-[#fc511e]">ii</span>o
               </p>
 
               <p className="mt-9 max-w-[320px] text-[18px] font-semibold leading-[1.6] text-white/95">
@@ -228,7 +228,7 @@ export default function RegisterOwner() {
               </p>
             </div>
 
-            <div className="mt-3 rounded-[22px] border border-[#eadfce] bg-white p-3.5 shadow-[0_10px_30px_rgba(15,23,42,0.05)] sm:mt-7 sm:rounded-[32px] sm:p-7 sm:shadow-[0_16px_44px_rgba(15,23,42,0.05)]">
+            <div className="mt-3 rounded-[22px] border border-[#eadfce] bg-white p-3.5 shadow-[0_10px_30px_rgba(15,23,42,0.05)] sm:mt-7 sm:rounded-[15px] sm:p-7 sm:shadow-[0_16px_44px_rgba(15,23,42,0.05)]">
               <form onSubmit={handleSubmit} className="space-y-2.5 sm:space-y-5">
                 <Input
                   label="Назва салону"

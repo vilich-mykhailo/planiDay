@@ -1,9 +1,17 @@
 // StudioPublicPage.jsx
-import { useState, useEffect, useMemo, useRef } from "react";
+import {
+  useState,
+  useEffect,
+  useMemo,
+  useRef,
+  useCallback,
+} from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { PenLine } from "lucide-react";
+import { ClipboardPen, ClipboardPenIcon } from "lucide-react";
 import BookingSuccessModal from "../../components/BookingSuccessModal";
+import { useFavourites } from "../../context/favourites.context";
+import { savePendingAuthAction } from "../../utils/pendingAuthAction";
 import {
   MapPin,
   Clock,
@@ -30,6 +38,12 @@ function cn(...classes) {
   return classes.filter(Boolean).join(" ");
 }
 
+const ACTIVE_SELECTION_CLASS =
+  "border-[#ef4444] bg-[#ff6200]/15 text-[#202020] ring-2 ring-[#ef4444]/15";
+
+const ACTIVE_SELECTION_ICON =
+  "border-[#ef4444] bg-[#ff6200]/20 text-[#ef4444]";
+  
 function toPublicUrl(v) {
   const s = String(v || "").trim();
   if (!s) return "";
@@ -105,7 +119,7 @@ function SectionShell({ children, className = "" }) {
   return (
     <section
       className={cn(
-        "group relative overflow-hidden rounded-[32px] border border-[#ebe7df] bg-white shadow-[0_14px_44px_rgba(15,23,42,0.05)] transition-all duration-300 hover:shadow-[0_20px_60px_rgba(15,23,42,0.08)]",
+        "group relative overflow-hidden rounded-[15px] border border-[#ebe7df] bg-white shadow-[0_14px_44px_rgba(15,23,42,0.05)] transition-all duration-300 hover:shadow-[0_20px_60px_rgba(15,23,42,0.08)]",
         className,
       )}
     >
@@ -138,29 +152,27 @@ function BookingModal({ open, title, onClose, children }) {
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex items-stretch justify-center bg-[#202020]/45 p-0 backdrop-blur-[6px] sm:items-center sm:p-6"
+   className="fixed inset-0 z-[9999] flex items-stretch justify-center bg-[#202020]/50 p-0 sm:items-center sm:p-6"
       data-testid="booking-modal"
       role="presentation"
     >
-      <motion.button
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
+<motion.button
+  initial={{ opacity: 0 }}
+  animate={{ opacity: 1 }}
         type="button"
         aria-label="Закрити"
         onClick={onClose}
         className="absolute inset-0"
       />
 
-      <motion.div
-        initial={{ opacity: 0, scale: 0.96, y: 18 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.96, y: 18 }}
+<motion.div
+  initial={{ opacity: 0, scale: 0.96, y: 18 }}
+  animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-        className={cn(
-          "relative z-10 flex h-dvh w-full max-w-2xl flex-col overflow-hidden rounded-none border-0 bg-[#f7f5f1] shadow-[0_30px_90px_rgba(15,23,42,0.24)]",
-          "sm:h-auto sm:max-h-[calc(100dvh-48px)] sm:rounded-[30px] sm:border sm:border-[#f0e2d3]",
-        )}
+className={cn(
+  "relative z-10 flex h-dvh w-full max-w-2xl flex-col overflow-hidden rounded-none border-0 bg-[#f7f5f1] shadow-[0_30px_90px_rgba(15,23,42,0.24)]",
+  "sm:h-[calc(100dvh-48px)] sm:max-h-[860px] sm:rounded-[30px] sm:border sm:border-[#f0e2d3]",
+)}
         role="dialog"
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
@@ -180,7 +192,7 @@ function BookingModal({ open, title, onClose, children }) {
               </h3>
 
               <p className="mt-2 text-sm font-medium leading-6 text-[#77716b]">
-                Оберіть послугу, майстра, дату та зручний час для бронювання.
+                Оберіть послугу, майстра, дату та час.
               </p>
             </div>
 
@@ -195,9 +207,9 @@ function BookingModal({ open, title, onClose, children }) {
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto bg-white px-5 py-5 pb-[110px] sm:px-6 sm:pb-5">
-          {children}
-        </div>
+<div className="min-h-0 flex-1 overflow-hidden bg-white">
+  {children}
+</div>
       </motion.div>
     </div>
   );
@@ -322,47 +334,49 @@ function ImageLightbox({ open, images = [], startIndex = 0, onClose }) {
 
 function ServiceRow({ service, onBook }) {
   return (
-    <div className="group overflow-hidden rounded-[24px] border border-[#eadfce] bg-white text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-[#ffd6bd] hover:bg-[#fff7f0] active:scale-[0.99]">
-      <div className="flex items-center gap-4 px-4 py-4 sm:px-5 sm:py-5">
-        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-[#eadbc9] bg-[#fff1e8] text-[#ff6200] shadow-sm">
-          <PenLine className="h-5 w-5" />
+    <div className="group overflow-hidden rounded-[18px] border border-[#eadfce] bg-white text-left transition-all duration-200 hover:border-[#ffd6bd] hover:bg-[#fff7f0] active:scale-[0.99] sm:rounded-[24px] sm:hover:-translate-y-0.5">
+      <div className="grid grid-cols-[40px_minmax(0,1fr)] gap-x-3 gap-y-2.5 p-3 sm:flex sm:items-center sm:gap-4 sm:px-5 sm:py-5">
+        {/* Іконка */}
+        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-[13px] border border-[#eadbc9] bg-[#fff1e8] text-[#ff6200] sm:h-12 sm:w-12 sm:rounded-2xl">
+          <ClipboardPen className="h-[18px] w-[18px] sm:h-5 sm:w-5" />
         </div>
 
-        <div className="min-w-0 flex-1">
-          <h3 className="line-clamp-1 text-[15px] font-black leading-tight tracking-[-0.03em] text-[#202020] sm:text-base">
+        {/* Назва і параметри */}
+        <div className="min-w-0 self-center sm:flex-1">
+          <h3 className="line-clamp-3 text-[13px] font-black leading-[1.25] tracking-[-0.02em] text-[#202020] sm:line-clamp-2 sm:text-base sm:leading-tight">
             {service.name}
           </h3>
 
           {!!service.description && (
-            <p className="mt-1 line-clamp-2 text-xs font-medium leading-5 text-[#77716b] sm:text-sm">
+            <p className="mt-1 hidden line-clamp-2 text-sm font-medium leading-5 text-[#77716b] sm:block">
               {service.description}
             </p>
           )}
 
-          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-black text-[#77716b]">
+          <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] font-black text-[#77716b] sm:mt-3 sm:gap-2 sm:text-xs">
             {service.duration && (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#eadbc9] bg-white px-2.5 py-1 shadow-sm">
-                <Clock className="h-3.5 w-3.5 text-[#ff6200]" />
+              <span className="inline-flex h-6 items-center gap-1 rounded-full border border-[#eadbc9] bg-white px-2 shadow-sm sm:h-auto sm:gap-1.5 sm:px-2.5 sm:py-1">
+                <Clock className="h-3 w-3 text-[#ff6200] sm:h-3.5 sm:w-3.5" />
                 {service.duration} хв
               </span>
             )}
 
             {service.price != null && (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#eadbc9] bg-white px-2.5 py-1 text-[#202020] shadow-sm">
-                <Banknote className="h-3.5 w-3.5 text-[#ff6200]" />
+              <span className="inline-flex h-6 items-center gap-1 rounded-full border border-[#eadbc9] bg-white px-2 text-[#202020] shadow-sm sm:h-auto sm:gap-1.5 sm:px-2.5 sm:py-1">
+                <Banknote className="h-3 w-3 text-[#ff6200] sm:h-3.5 sm:w-3.5" />
                 {service.price} грн
               </span>
             )}
           </div>
         </div>
 
+        {/* Кнопка */}
         <button
           type="button"
           onClick={() => onBook(service)}
-          className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-2xl bg-[#ff5a00] px-4 text-xs font-black text-white shadow-sm transition-all duration-200 hover:bg-[#ef4f00] active:scale-[0.98] sm:px-5 sm:text-sm"
+          className="col-span-2 inline-flex h-9 w-full items-center justify-center rounded-xl border border-[#ff6200]/40 bg-[#ff6200]/5 px-3 text-[11px] font-black text-[#ff6200] transition-all duration-200 hover:border-[#ff6200]/60 hover:bg-[#ff6200]/10 active:scale-[0.98] sm:col-span-1 sm:h-11 sm:w-auto sm:shrink-0 sm:rounded-2xl sm:px-5 sm:text-sm"
         >
           Забронювати
-          <Sparkles className="h-4 w-4" />
         </button>
       </div>
     </div>
@@ -383,7 +397,7 @@ function CategoryAccordion({ category, onBook }) {
       >
         <div className="flex min-w-0 items-center gap-3">
           <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-[#eadbc9] bg-[#fff1e8] text-[#ff6200] shadow-sm">
-            <PenLine className="h-5 w-5" />
+            <ClipboardPenIcon className="h-5 w-5" />
           </div>
 
           <div className="min-w-0">
@@ -398,11 +412,11 @@ function CategoryAccordion({ category, onBook }) {
 
         <div
           className={cn(
-            "grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-[#eadbc9] bg-white text-[#77716b] shadow-sm transition-all duration-300",
-            open ? "rotate-180 border-[#ff6200] bg-[#fff1e8] text-[#ff6200]" : "",
+            "grid h-10 w-10 shrink-0 place-items-center text-[#77716b] transition-all duration-300",
+            open ? "rotate-180 text-[#ff6200]" : "",
           )}
         >
-          <ChevronDown className="h-4 w-4" />
+          <ChevronDown className="h-5 w-5" />
         </div>
       </button>
 
@@ -613,6 +627,52 @@ function SkeletonBlock({ className = "" }) {
   );
 }
 
+function getStudioCacheKey(slug) {
+  return slug ? `aveliio:studio:${slug}` : "";
+}
+
+function readStudioCache(slug) {
+  if (!slug) return null;
+
+  try {
+    const raw = sessionStorage.getItem(getStudioCacheKey(slug));
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw);
+
+    if (!parsed?.studio || !parsed?.savedAt) {
+      return null;
+    }
+
+    // Кеш діє 5 хвилин
+    const maxAge = 5 * 60 * 1000;
+
+    if (Date.now() - parsed.savedAt > maxAge) {
+      sessionStorage.removeItem(getStudioCacheKey(slug));
+      return null;
+    }
+
+    return parsed.studio;
+  } catch {
+    return null;
+  }
+}
+
+function saveStudioCache(slug, studio) {
+  if (!slug || !studio) return;
+
+  try {
+    sessionStorage.setItem(
+      getStudioCacheKey(slug),
+      JSON.stringify({
+        studio,
+        savedAt: Date.now(),
+      }),
+    );
+  } catch {
+    // Ігноруємо помилки sessionStorage
+  }
+}
 
 function StudioPublicPageSkeleton() {
   return (
@@ -729,9 +789,10 @@ function StudioPublicPageSkeleton() {
 
 export default function StudioPublicPage() {
   const { slug } = useParams();
+  const cachedStudioRef = useRef(readStudioCache(slug));
   const location = useLocation();
-  const [studio, setStudio] = useState(null);
-  const [loading, setLoading] = useState(false);
+const [studio, setStudio] = useState(() => cachedStudioRef.current);
+const [loading, setLoading] = useState(() => !cachedStudioRef.current);
   const [heroImageLoading, setHeroImageLoading] = useState(true);
   const [error, setError] = useState("");
   const [loadedHeroSrc, setLoadedHeroSrc] = useState("");
@@ -751,11 +812,15 @@ export default function StudioPublicPage() {
   const portfolioRef = useRef(null);
   const detailsRef = useRef(null);
   const navigate = useNavigate();
+const {
+  toggleFavourite,
+  isFavourite: checkIsFavourite,
+  loading: favouritesLoading,
+} = useFavourites();
   const [rescheduleMode, setRescheduleMode] = useState(false);
   const [rescheduleBookingId, setRescheduleBookingId] = useState(null);
   const [preselectedDate, setPreselectedDate] = useState(null);
   const [preselectedTime, setPreselectedTime] = useState(null);
-  const [isFavourite, setIsFavourite] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const [heroDirection, setHeroDirection] = useState(0);
   const [showHeroLoader, setShowHeroLoader] = useState(false);
@@ -799,80 +864,135 @@ export default function StudioPublicPage() {
     });
   }, [location.state, location.pathname, navigate, studio]);
 
-  useEffect(() => {
-    let alive = true;
+useEffect(() => {
+  if (!slug) {
+    setStudio(null);
+    setError("Не вказано адресу студії");
+    setLoading(false);
+    return undefined;
+  }
 
-    async function loadStudio() {
-      if (!slug) return;
+  let alive = true;
+  const controller = new AbortController();
 
-      setLoading(true);
-      setError("");
+  const cachedStudio = readStudioCache(slug);
 
-      try {
-        const res = await fetch(
-          `${import.meta.env.VITE_API_URL}/client/${slug}`,
+  if (cachedStudio) {
+    setStudio(cachedStudio);
+    setLoading(false);
+  } else {
+    setStudio(null);
+    setLoading(true);
+  }
+
+  setError("");
+
+  async function loadStudio() {
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/client/${slug}`,
+        {
+          signal: controller.signal,
+        },
+      );
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        throw new Error(
+          data?.message || `Load failed (${res.status})`,
         );
-        const data = await res.json().catch(() => null);
+      }
 
-        if (!res.ok) {
-          throw new Error(data?.message || `Load failed (${res.status})`);
-        }
+      const receivedStudio = data?.studio || null;
 
-        const s = data?.studio || null;
-        if (!s) throw new Error("Studio missing in response");
+      if (!receivedStudio) {
+        throw new Error("Студію не знайдено");
+      }
 
-        const normalized = {
-          ...s,
-          slug: s.slug || s.id,
-          coverUrl: toPublicUrl(s.coverUrl),
-          logoUrl: toPublicUrl(s.logoUrl),
-          portfolioUrls: s.portfolioUrls ?? [],
-          schedule: s.schedule || {},
-          scheduleExceptions: Array.isArray(s.scheduleExceptions)
-            ? s.scheduleExceptions.map((item) => ({
-                ...item,
-                date: String(item?.date || "").slice(0, 10),
-              }))
-            : [],
-          masters: Array.isArray(s.masters)
-            ? s.masters.map((master) => ({
-                ...master,
-                schedule:
-                  master?.schedule &&
-                  typeof master.schedule === "object" &&
-                  Object.keys(master.schedule).length > 0
-                    ? master.schedule
-                    : undefined,
-                scheduleExceptions: Array.isArray(master?.scheduleExceptions)
-                  ? master.scheduleExceptions.map((item) => ({
-                      ...item,
-                      date: String(item?.date || "").slice(0, 10),
-                    }))
-                  : [],
-              }))
-            : [],
-          slotDuration:
-            typeof s.slotDuration === "number" ? s.slotDuration : 15,
-        };
+      const normalized = {
+        ...receivedStudio,
 
-        if (alive) setStudio(normalized);
-      } catch (e) {
-        console.error(e);
-        if (alive) {
-          setStudio(null);
-          setError(String(e?.message || "Load failed"));
-        }
-      } finally {
-        if (alive) setLoading(false);
+        slug: receivedStudio.slug || receivedStudio.id,
+
+        coverUrl: toPublicUrl(receivedStudio.coverUrl),
+        logoUrl: toPublicUrl(receivedStudio.logoUrl),
+
+        portfolioUrls: Array.isArray(receivedStudio.portfolioUrls)
+          ? receivedStudio.portfolioUrls
+          : [],
+
+        schedule: receivedStudio.schedule || {},
+
+        scheduleExceptions: Array.isArray(
+          receivedStudio.scheduleExceptions,
+        )
+          ? receivedStudio.scheduleExceptions.map((item) => ({
+              ...item,
+              date: String(item?.date || "").slice(0, 10),
+            }))
+          : [],
+
+        masters: Array.isArray(receivedStudio.masters)
+          ? receivedStudio.masters.map((master) => ({
+              ...master,
+
+              schedule:
+                master?.schedule &&
+                typeof master.schedule === "object" &&
+                Object.keys(master.schedule).length > 0
+                  ? master.schedule
+                  : undefined,
+
+              scheduleExceptions: Array.isArray(
+                master?.scheduleExceptions,
+              )
+                ? master.scheduleExceptions.map((item) => ({
+                    ...item,
+                    date: String(item?.date || "").slice(0, 10),
+                  }))
+                : [],
+            }))
+          : [],
+
+        slotDuration:
+          typeof receivedStudio.slotDuration === "number"
+            ? receivedStudio.slotDuration
+            : 15,
+      };
+
+      if (!alive) return;
+
+      setStudio(normalized);
+      saveStudioCache(slug, normalized);
+      setError("");
+    } catch (err) {
+      if (err?.name === "AbortError") return;
+      if (!alive) return;
+
+      console.error("Studio loading failed:", err);
+
+      // Якщо є кеш, залишаємо сторінку з кешу
+      if (!cachedStudio) {
+        setStudio(null);
+        setError(
+          String(err?.message || "Не вдалося завантажити студію"),
+        );
+      }
+    } finally {
+      if (alive) {
+        setLoading(false);
       }
     }
+  }
 
-    loadStudio();
+  loadStudio();
 
-    return () => {
-      alive = false;
-    };
-  }, [slug]);
+  return () => {
+    alive = false;
+    controller.abort();
+  };
+}, [slug]);
 
   const name = safe(studio?.name) || "Студія";
   const category = safe(studio?.category);
@@ -889,15 +1009,56 @@ export default function StudioPublicPage() {
     [studio],
   );
 
-  const heroImages = useMemo(() => {
-    const arr = [coverUrl, ...portfolio].filter(Boolean);
-    return arr.filter((url, index, self) => self.indexOf(url) === index);
-  }, [coverUrl, portfolio]);
+const heroImages = useMemo(() => {
+  const arr = [coverUrl, ...portfolio].filter(Boolean);
 
-  useEffect(() => {
-    setHeroIndex(0);
-    setHeroPreviewIndex(null);
-  }, [slug]);
+  return arr.filter(
+    (url, index, self) => self.indexOf(url) === index,
+  );
+}, [coverUrl, portfolio]);
+
+const isFavourite = studio?.id
+  ? checkIsFavourite(studio.id)
+  : false;
+
+useEffect(() => {
+  const pendingStudioId =
+    location.state?.continueFavouriteStudioId;
+
+  if (!pendingStudioId) return;
+  if (!studio?.id) return;
+  if (favouritesLoading) return;
+
+  navigate(location.pathname, {
+    replace: true,
+    state: {},
+  });
+
+  const isCurrentStudio =
+    String(pendingStudioId) === String(studio.id);
+
+  if (!isCurrentStudio || isFavourite) return;
+
+  toggleFavourite(studio).catch((error) => {
+    console.error(
+      "Continue favourite action failed:",
+      error,
+    );
+  });
+}, [
+  location.state,
+  location.pathname,
+  navigate,
+  studio,
+  isFavourite,
+  favouritesLoading,
+  toggleFavourite,
+]);
+
+useEffect(() => {
+  setHeroIndex(0);
+  setHeroPreviewIndex(null);
+}, [slug]);
 
   useEffect(() => {
     const nextSrc = heroImages[heroIndex];
@@ -1019,15 +1180,43 @@ export default function StudioPublicPage() {
     setTimeout(() => setCopied(false), 1500);
   }
 
-  function openBookingForService(service) {
-    setPreselectedService({ categoryId: null, serviceId: service.id });
-    setSelectedMaster(null);
-    setRescheduleMode(false);
-    setRescheduleBookingId(null);
-    setPreselectedDate(null);
-    setPreselectedTime(null);
-    setOpenBooking(true);
-  }
+function openBookingForService(service) {
+  const hasAccess = requireClientAuth({
+    type: "booking",
+    serviceId: service?.id || null,
+  });
+
+  if (!hasAccess) return;
+
+  setPreselectedService({
+    categoryId: null,
+    serviceId: service.id,
+  });
+
+  setSelectedMaster(null);
+  setRescheduleMode(false);
+  setRescheduleBookingId(null);
+  setPreselectedDate(null);
+  setPreselectedTime(null);
+  setOpenBooking(true);
+}
+
+function openGeneralBooking() {
+  const hasAccess = requireClientAuth({
+    type: "booking",
+    serviceId: null,
+  });
+
+  if (!hasAccess) return;
+
+  setPreselectedService(null);
+  setSelectedMaster(null);
+  setRescheduleMode(false);
+  setRescheduleBookingId(null);
+  setPreselectedDate(null);
+  setPreselectedTime(null);
+  setOpenBooking(true);
+}
 
   function scrollToSection(key) {
     setActiveTab(key);
@@ -1115,26 +1304,73 @@ export default function StudioPublicPage() {
     }
   }
 
-  function handleToggleFavourite() {
-    setIsFavourite((prev) => !prev);
+  function requireClientAuth(action) {
+  const token = localStorage.getItem("token");
+  const role = localStorage.getItem("role");
+
+  if (token && role === "client") {
+    return true;
   }
 
-  if (loading) {
-    return <StudioPublicPageSkeleton />;
-  }
+  savePendingAuthAction({
+    ...action,
+    studioId: studio?.id || null,
+    studioSlug: studio?.slug || slug,
+    returnTo: location.pathname,
+  });
 
-  if (!studio) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center px-4">
-        <div className="w-full max-w-2xl rounded-[28px] border border-[#eadfce] bg-white p-12 text-center shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
-          <h1 className="text-xl font-bold text-[#202020]">
-            {error ? "Не вдалося завантажити студію" : "Студію не знайдено"}
-          </h1>
-          {error ? <p className="mt-2 text-sm text-red-600">{error}</p> : null}
-        </div>
+  navigate("/login");
+
+  return false;
+}
+
+async function handleToggleFavourite() {
+  if (!studio?.id || favouritesLoading) return;
+
+  const hasAccess = requireClientAuth({
+    type: "favourite",
+  });
+
+  if (!hasAccess) return;
+
+  try {
+    await toggleFavourite(studio);
+  } catch (error) {
+    console.error("Favourite toggle failed:", error);
+    alert("Не вдалося оновити список улюблених");
+  }
+}
+
+const closeBookingModal = useCallback(() => {
+  setOpenBooking(false);
+}, []);
+if (loading || (!studio && !error)) {
+  return <StudioPublicPageSkeleton />;
+}
+
+if (error && !studio) {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-[#f7f5f1] px-4">
+      <div className="w-full max-w-md rounded-[28px] border border-[#eadfce] bg-white p-8 text-center shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
+        <h1 className="text-xl font-bold text-[#202020]">
+          Не вдалося завантажити студію
+        </h1>
+
+        <p className="mt-2 text-sm text-red-600">
+          {error}
+        </p>
+
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="mt-5 inline-flex h-11 items-center justify-center rounded-2xl bg-[#2C2C2C] px-5 text-sm font-bold text-white transition hover:bg-[#1f1f1f] active:scale-[0.98]"
+        >
+          Спробувати ще раз
+        </button>
       </div>
-    );
-  }
+    </div>
+  );
+}
   function paginateHero(direction) {
     if (!heroImages.length) return;
 
@@ -1304,21 +1540,35 @@ export default function StudioPublicPage() {
                     <Share2 className="h-[25px] w-[25px] text-white transition-transform duration-200 group-hover:rotate-6" />
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={handleToggleFavourite}
-                    aria-label="В обране"
-                    className={heroIconButtonClass(isFavourite)}
-                  >
-                    <Heart
-                      className={cn(
-                        "h-[25px] w-[25px] transition-all duration-200",
-                        isFavourite
-                          ? "fill-current scale-105"
-                          : "text-white group-hover:scale-110",
-                      )}
-                    />
-                  </button>
+<button
+  type="button"
+  onClick={handleToggleFavourite}
+  disabled={favouritesLoading}
+  aria-label={
+    isFavourite
+      ? "Видалити з улюблених"
+      : "Додати в улюблені"
+  }
+  aria-pressed={isFavourite}
+  title={
+    isFavourite
+      ? "Видалити з улюблених"
+      : "Додати в улюблені"
+  }
+  className={cn(
+    heroIconButtonClass(isFavourite),
+    favouritesLoading && "cursor-wait opacity-70",
+  )}
+>
+  <Heart
+    className={cn(
+      "h-[25px] w-[25px] transition-all duration-200",
+      isFavourite
+        ? "scale-105 fill-current"
+        : "text-white group-hover:scale-110",
+    )}
+  />
+</button>
                 </div>
               </div>
             </div>
@@ -1411,15 +1661,7 @@ export default function StudioPublicPage() {
                     <div className="hidden lg:block mt-4">
 <button
   type="button"
-  onClick={() => {
-    setPreselectedService(null);
-    setSelectedMaster(null);
-    setRescheduleMode(false);
-    setRescheduleBookingId(null);
-    setPreselectedDate(null);
-    setPreselectedTime(null);
-    setOpenBooking(true);
-  }}
+onClick={openGeneralBooking}
   className={cn(
     "rounded-2xl bg-[#ff5a00] px-7 py-4 text-sm font-black text-white shadow-sm",
     "transition-all duration-200 active:scale-[0.98]",
@@ -1433,7 +1675,6 @@ export default function StudioPublicPage() {
 >
   <span className="flex items-center gap-2 whitespace-nowrap">
     Забронювати онлайн
-    <Sparkles className="h-4 w-4 opacity-75" />
   </span>
 </button>
                     </div>
@@ -1880,7 +2121,7 @@ export default function StudioPublicPage() {
                         ) : (
                           <div className="rounded-[28px] border border-dashed border-[#eadbc9] bg-gradient-to-br from-stone-50 to-amber-50/40 p-8 text-center shadow-[0_8px_24px_rgba(15,23,42,0.04)] sm:p-10">
                             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-sm">
-                              <PenLine className="h-6 w-6 text-[#ff6200]" />
+                              <ClipboardPen className="h-6 w-6 text-[#ff6200]" />
                             </div>
 
                             <h3 className="mt-4 text-lg font-bold text-[#202020]">
@@ -2531,15 +2772,7 @@ export default function StudioPublicPage() {
               <div className="mx-auto max-w-md rounded-[28px] border border-white/60 backdrop-blur-2xl">
                 <button
                   type="button"
-                  onClick={() => {
-                    setPreselectedService(null);
-                    setSelectedMaster(null);
-                    setRescheduleMode(false);
-                    setRescheduleBookingId(null);
-                    setPreselectedDate(null);
-                    setPreselectedTime(null);
-                    setOpenBooking(true);
-                  }}
+onClick={openGeneralBooking}
                   className={cn(
                     "flex h-12 w-full items-center justify-center gap-2.5",
                     "rounded-[22px] bg-[#ff5a00] px-5 text-sm font-black text-white shadow-sm",
@@ -2557,63 +2790,40 @@ export default function StudioPublicPage() {
             </div>
           </div>
 
-          <AnimatePresence>
-            {openBooking && (
-              <BookingModal
-                open={openBooking}
-                title={name}
-                onClose={() => {
-                  setOpenBooking(false);
-                  setPreselectedService(null);
-                  setSelectedMaster(null);
-                  setRescheduleMode(false);
-                  setRescheduleBookingId(null);
-                  setPreselectedDate(null);
-                  setPreselectedTime(null);
-                }}
-              >
-                <StudioBookingWidget
-                  studio={studio}
-                  schedule={studio?.schedule || {}}
-                  scheduleExceptions={studio?.scheduleExceptions || []}
-                  slotDuration={studio?.slotDuration || 15}
-                  master={selectedMaster || null}
-                  masterSchedule={selectedMaster?.schedule || {}}
-                  masterScheduleExceptions={
-                    selectedMaster?.scheduleExceptions || []
-                  }
-                  preselectedService={preselectedService}
-                  isReschedule={rescheduleMode}
-                  rescheduleBookingId={rescheduleBookingId}
-                  preselectedDate={preselectedDate}
-                  preselectedTime={preselectedTime}
-                  onCancel={() => {
-                    setOpenBooking(false);
-                    setPreselectedService(null);
-                    setSelectedMaster(null);
-                    setRescheduleMode(false);
-                    setRescheduleBookingId(null);
-                    setPreselectedDate(null);
-                    setPreselectedTime(null);
-                  }}
-                  onSuccess={(data) => {
-                    setSuccessData({
-                      ...data,
-                      address: fullAddress,
-                      studioName: name,
-                    });
-                    setOpenBooking(false);
-                    setPreselectedService(null);
-                    setSelectedMaster(null);
-                    setRescheduleMode(false);
-                    setRescheduleBookingId(null);
-                    setPreselectedDate(null);
-                    setPreselectedTime(null);
-                  }}
-                />
-              </BookingModal>
-            )}
-          </AnimatePresence>
+{openBooking && (
+  <BookingModal
+    open
+    title={name}
+    onClose={closeBookingModal}
+  >
+    <StudioBookingWidget
+      studio={studio}
+      schedule={studio?.schedule || {}}
+      scheduleExceptions={studio?.scheduleExceptions || []}
+      slotDuration={studio?.slotDuration || 15}
+      master={selectedMaster || null}
+      masterSchedule={selectedMaster?.schedule || {}}
+      masterScheduleExceptions={
+        selectedMaster?.scheduleExceptions || []
+      }
+      preselectedService={preselectedService}
+      isReschedule={rescheduleMode}
+      rescheduleBookingId={rescheduleBookingId}
+      preselectedDate={preselectedDate}
+      preselectedTime={preselectedTime}
+      onCancel={closeBookingModal}
+      onSuccess={(data) => {
+        setSuccessData({
+          ...data,
+          address: fullAddress,
+          studioName: name,
+        });
+
+        setOpenBooking(false);
+      }}
+    />
+  </BookingModal>
+)}
           <AnimatePresence>
             {heroPreviewIndex !== null && (
               <ImageLightbox

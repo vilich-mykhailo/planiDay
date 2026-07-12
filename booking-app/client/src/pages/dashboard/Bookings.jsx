@@ -220,7 +220,7 @@ function SectionCard({
   return (
     <section
       className={cn(
-        "group relative overflow-hidden rounded-[32px] border border-[#ebe7df] bg-white shadow-[0_14px_44px_rgba(15,23,42,0.05)] transition-all duration-300 hover:shadow-[0_20px_60px_rgba(15,23,42,0.08)]",
+        "group relative overflow-hidden rounded-[15px] border border-[#ebe7df] bg-white shadow-[0_14px_44px_rgba(15,23,42,0.05)] transition-all duration-300 hover:shadow-[0_20px_60px_rgba(15,23,42,0.08)]",
         className,
       )}
     >
@@ -1878,7 +1878,7 @@ export default function Bookings() {
   return (
     <div className="h-full">
       <div className="mx-auto max-w-6xl space-y-6">
-        <div className="relative overflow-hidden rounded-[32px] border border-[#ebe7df] bg-white/95 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.06)] backdrop-blur-xl sm:p-7">
+        <div className="relative overflow-hidden rounded-[15px] border border-[#ebe7df] bg-white/95 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.06)] backdrop-blur-xl sm:p-7">
           <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#ff7a18] via-[#ff6200] to-[#ff8c42]" />
 
           <div className="absolute -right-7 -top-10 hidden h-28 w-28 rounded-full bg-white/40 sm:block" />
@@ -2178,7 +2178,7 @@ export default function Bookings() {
                 return (
                   <section
                     key={key}
-                    className="overflow-hidden rounded-[28px] border border-[#eadbc9] bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]"
+                    className="overflow-hidden rounded-[15px] border border-[#eadbc9] bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]"
                   >
                     <button
                       type="button"
@@ -2203,7 +2203,7 @@ export default function Bookings() {
                         </p>
                       </div>
 
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[#eadbc9] bg-white text-[#202020]">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center text-[#202020]">
                         {isCollapsed ? (
                           <ChevronDown className="h-5 w-5" />
                         ) : (
