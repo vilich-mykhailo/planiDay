@@ -240,9 +240,9 @@ if (isCategory && filled) {
         disabled={disabled}
         onClick={toggle}
         className={cn(
-          "group relative h-10 w-full rounded-[16px] border border-[#eadfce] bg-white pl-11 pr-9 text-left transition-all duration-200",
+          "group relative h-10 w-full rounded-[10px] border border-[#eadfce] bg-white pl-11 pr-9 text-left transition-all duration-200",
           "shadow-[0_8px_22px_rgba(15,23,42,0.035)]",
-          "sm:h-[54px] sm:rounded-[20px] sm:pl-[52px] sm:pr-9",
+          "sm:h-[54px] sm:rounded-[15px] sm:pl-[52px] sm:pr-9",
           "active:scale-[0.99]",
           open
             ? "border-[#f1dfbf] ring-4 ring-orange-200/20"

@@ -44,6 +44,7 @@ import {
   ShoppingBag,
   HeartHandshake,
   Brush,
+  FunnelX,
 } from "lucide-react";
 import AnimatedDropdown from "../components/AnimatedDropdown";
 import FavouriteButton from "../components/FavouriteButton";
@@ -110,7 +111,16 @@ const CITY_TO_REGION = {
 };
 
 const QUERY_EXPAND = {
-  стриж: ["перукар", "перукарня", "барбер", "уклад", "фарб", "haircut"],
+  стрижк: [
+  "стрижка",
+  "стрижки",
+  "перукар",
+  "перукарня",
+  "барбер",
+  "укладка",
+  "фарбування",
+  "haircut",
+],
   перукар: ["стриж", "уклад", "фарб", "перукарня"],
   барбер: ["стриж", "barber", "barbershop"],
   манік: ["нігт", "гель", "лак", "покрит", "shellac", "шелак", "френч"],
@@ -523,10 +533,7 @@ console.log("studio schedule:", studio.name, studio.schedule, studio.scheduleExc
 >
 <article
   className={cn(
-    "relative z-10 overflow-hidden bg-[#202020] text-white shadow-[0_14px_34px_rgba(0,0,0,0.16)]",
-isPremium
-  ? "h-[398px] rounded-[30px] max-[639px]:h-[190px] max-[639px]:rounded-[20px] sm:h-[202px] sm:rounded-[18px]"
-  : "h-[410px] rounded-[30px] max-[639px]:h-[200px] max-[639px]:rounded-[20px] sm:h-[215px] sm:rounded-[18px]"
+    "relative z-10 h-[200px] overflow-hidden rounded-[20px] bg-[#202020] text-white shadow-[0_14px_34px_rgba(0,0,0,0.16)] sm:h-[215px] sm:rounded-[18px]",
   )}
 >
     {coverUrl ? (
@@ -584,7 +591,7 @@ isPremium
         </h2>
 
         {fullAddress ? (
-          <p className="mt-1 flex items-center gap-1 truncate leading-none text-[10px] font-medium text-white sm:text-[10px] md:text-[10px] lg:text-[11px]">
+         <p className="mt-2 flex items-center gap-1 truncate leading-none text-[10px] font-medium text-white sm:mt-2.5 sm:text-[10px] md:text-[10px] lg:text-[11px]">
             <MapPin className="-mt-[1px] h-3 w-3 shrink-0 text-[#ff6200] sm:h-3 sm:w-3" />
             {fullAddress}
           </p>
@@ -635,6 +642,104 @@ isPremium
   );
 }
 
+  const CATEGORY_SERVICE_TERMS = {
+  nails: [
+    "манікюр",
+    "педикюр",
+    "нігті",
+    "гель лак",
+    "шелак",
+    "покриття",
+    "френч",
+  ],
+
+  hair: [
+    "стрижка",
+    "зачіска",
+    "укладка",
+    "фарбування",
+    "волосся",
+  ],
+
+  barber: [
+    "чоловіча стрижка",
+    "борода",
+    "барбер",
+  ],
+
+  brows_lashes: [
+    "брови",
+    "вії",
+    "ламінування",
+    "нарощування вій",
+  ],
+
+  massage: [
+    "масаж",
+    "спина",
+    "шия",
+    "релакс",
+  ],
+};
+
+function getStudioServicesSearchText(studio) {
+  const directServices = Array.isArray(studio?.services)
+    ? studio.services
+    : [];
+
+  const serviceCategories = [
+    ...(Array.isArray(studio?.serviceCategories)
+      ? studio.serviceCategories
+      : []),
+
+    ...(Array.isArray(studio?.categories)
+      ? studio.categories
+      : []),
+  ];
+
+  const directServicesText = directServices.flatMap((service) => [
+    service?.name,
+    service?.description,
+    service?.category?.name,
+    service?.serviceCategory?.name,
+  ]);
+
+  const categoryServicesText = serviceCategories.flatMap((category) => [
+    category?.name,
+
+    ...(Array.isArray(category?.services)
+      ? category.services.flatMap((service) => [
+          service?.name,
+          service?.description,
+        ])
+      : []),
+  ]);
+
+  return [...directServicesText, ...categoryServicesText]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function getSelectedCategoryTerms(categoryKey) {
+  if (!categoryKey) return [];
+
+  return [
+    getCategoryLabel(categoryKey),
+    ...(CATEGORY_SERVICE_TERMS[categoryKey] || []),
+  ]
+    .map((term) => normalizeUa(term))
+    .filter(Boolean);
+}
+
+function getSelectedCategoryTokens(categoryKey) {
+  return Array.from(
+    new Set(
+      getSelectedCategoryTerms(categoryKey)
+        .flatMap((term) => expandQueryTokens(term))
+        .filter((token) => token.length >= 3),
+    ),
+  );
+}
 export default function Studios() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -681,7 +786,9 @@ export default function Studios() {
     sort,
   }));
   
-  const recommendedScrollRef = useRef(null);
+ const recommendedScrollRef = useRef(null);
+const categoryScrollRef = useRef(null);
+
   useEffect(() => {
     if (!shouldRestoreScroll) return;
 
@@ -786,16 +893,65 @@ export default function Studios() {
       .sort((a, b) => a.label.localeCompare(b.label, "uk"));
   }, [studios]);
 
+useEffect(() => {
+  const container = categoryScrollRef.current;
+  if (!container) return undefined;
+
+  function handleCategoryWheel(event) {
+    const maxScroll =
+      container.scrollWidth - container.clientWidth;
+
+    if (maxScroll <= 0) return;
+
+    const delta =
+      Math.abs(event.deltaX) > Math.abs(event.deltaY)
+        ? event.deltaX
+        : event.deltaY;
+
+    if (!delta) return;
+
+    const canScrollLeft =
+      delta < 0 && container.scrollLeft > 0;
+
+    const canScrollRight =
+      delta > 0 &&
+      container.scrollLeft < maxScroll;
+
+    if (!canScrollLeft && !canScrollRight) {
+      return;
+    }
+
+    event.preventDefault();
+    container.scrollLeft += delta;
+  }
+
+  container.addEventListener(
+    "wheel",
+    handleCategoryWheel,
+    { passive: false },
+  );
+
+  return () => {
+    container.removeEventListener(
+      "wheel",
+      handleCategoryWheel,
+    );
+  };
+}, [categories.length]);
+
   const filtered = useMemo(() => {
     const cityN = normalize(applied.city);
     const catN = normalize(applied.category);
     const min = toNumber(applied.minPrice);
     const max = toNumber(applied.maxPrice);
     const qTokens = expandQueryTokens(applied.q);
+    const selectedCategoryTerms = getSelectedCategoryTerms(catN);
+    const selectedCategoryTokens = getSelectedCategoryTokens(catN);
 
     const scored = studios
       .map((s) => {
         const catNItem = normalize(s.category);
+
         const locationValues = [
           s.city,
           s.region,
@@ -807,65 +963,147 @@ export default function Studios() {
           .filter(Boolean);
 
         const matchCity = !cityN || locationValues.includes(cityN);
-        const matchCategory = !catN || catNItem === catN;
+
+        const servicesSearchText = getStudioServicesSearchText(s);
+        const normalizedServicesSearchText =
+          normalizeUa(servicesSearchText);
+        const servicesTokens = tokenizeAndStem(servicesSearchText).filter(
+  (token) => token.length >= 3,
+);
+
+        const exactCategoryMatch =
+          Boolean(catN) && catNItem === catN;
+
+        const serviceCategoryMatch =
+          Boolean(catN) &&
+          (
+            selectedCategoryTerms.some((term) =>
+              normalizedServicesSearchText.includes(term),
+            ) ||
+selectedCategoryTokens.some((categoryToken) =>
+  servicesTokens.some(
+    (serviceToken) =>
+      serviceToken === categoryToken ||
+      serviceToken.startsWith(categoryToken),
+  ),
+)
+          );
+
+        const matchCategory =
+          !catN || exactCategoryMatch || serviceCategoryMatch;
+
+        const categoryPriority =
+          !catN || exactCategoryMatch ? 0 : 1;
+
         const priceFrom = toNumber(s.priceFrom);
-        const matchMin = min == null || (priceFrom != null && priceFrom >= min);
-        const matchMax = max == null || (priceFrom != null && priceFrom <= max);
+
+        const matchMin =
+          min == null || (priceFrom != null && priceFrom >= min);
+
+        const matchMax =
+          max == null || (priceFrom != null && priceFrom <= max);
 
         if (!matchCity || !matchCategory || !matchMin || !matchMax) {
-          return { s, score: -1, matchQuery: false };
+          return {
+            s,
+            score: -1,
+            matchQuery: false,
+            categoryPriority,
+          };
         }
 
         const nameTokens = tokensFrom(s.name);
         const categoryTokens = tokensFrom(s.category);
         const descTokens = tokensFrom(s.description);
-        const servicesTokens = tokenizeAndStem(
-          (Array.isArray(s.services) ? s.services.map((x) => x?.name) : []).join(" "),
-        );
 
-        if (qTokens.length === 0) return { s, score: 0, matchQuery: true };
+        if (qTokens.length === 0) {
+          return {
+            s,
+            score: 0,
+            matchQuery: true,
+            categoryPriority,
+          };
+        }
 
         const nameHits = countTokenHits(nameTokens, qTokens);
         const catHits = countTokenHits(categoryTokens, qTokens);
         const descHits = countTokenHits(descTokens, qTokens);
         const servicesHits = countTokenHits(servicesTokens, qTokens);
-        const matchQuery = nameHits + catHits + descHits + servicesHits > 0;
 
-        if (!matchQuery) return { s, score: -1, matchQuery: false };
+        const matchQuery =
+          nameHits + catHits + descHits + servicesHits > 0;
+
+        if (!matchQuery) {
+          return {
+            s,
+            score: -1,
+            matchQuery: false,
+            categoryPriority,
+          };
+        }
 
         let score = 0;
+
         score += nameHits * 6;
         score += catHits * 5;
         score += servicesHits * 4;
         score += descHits * 2;
+
         if (nameHits > 0) score += 4;
         if (catHits > 0) score += 3;
         if (servicesHits > 0) score += 2;
         if (s.premium) score += 1;
 
-        return { s, score, matchQuery: true };
+        return {
+          s,
+          score,
+          matchQuery: true,
+          categoryPriority,
+        };
       })
-      .filter((x) => x.matchQuery && x.score >= 0);
+      .filter((item) => item.matchQuery && item.score >= 0);
 
     const sorted = scored.sort((a, b) => {
-      const aPrem = a.s.premium ? 1 : 0;
-      const bPrem = b.s.premium ? 1 : 0;
-      if (bPrem !== aPrem) return bPrem - aPrem;
-
-      const ap = toNumber(a.s.priceFrom) ?? Number.POSITIVE_INFINITY;
-      const bp = toNumber(b.s.priceFrom) ?? Number.POSITIVE_INFINITY;
-
-      if (applied.sort === "priceAsc") return ap - bp;
-      if (applied.sort === "priceDesc") return bp - ap;
-      if (applied.sort === "nameAsc") {
-        return safeText(a.s.name).localeCompare(safeText(b.s.name), "uk");
+      if (a.categoryPriority !== b.categoryPriority) {
+        return a.categoryPriority - b.categoryPriority;
       }
 
-      if (b.score !== a.score) return b.score - a.score;
-      return ap - bp;
+      const aPremium = a.s.premium ? 1 : 0;
+      const bPremium = b.s.premium ? 1 : 0;
+
+      if (bPremium !== aPremium) {
+        return bPremium - aPremium;
+      }
+
+      const aPrice =
+        toNumber(a.s.priceFrom) ?? Number.POSITIVE_INFINITY;
+
+      const bPrice =
+        toNumber(b.s.priceFrom) ?? Number.POSITIVE_INFINITY;
+
+      if (applied.sort === "priceAsc") {
+        return aPrice - bPrice;
+      }
+
+      if (applied.sort === "priceDesc") {
+        return bPrice - aPrice;
+      }
+
+      if (applied.sort === "nameAsc") {
+        return safeText(a.s.name).localeCompare(
+          safeText(b.s.name),
+          "uk",
+        );
+      }
+
+      if (b.score !== a.score) {
+        return b.score - a.score;
+      }
+
+      return aPrice - bPrice;
     });
 
-    return sorted.map((x) => x.s);
+    return sorted.map((item) => item.s);
   }, [applied, studios]);
 
 const premiumStudios = studios.filter(
@@ -895,11 +1133,61 @@ const recommended =
     });
   }
 
-  function handleApply() {
-    setApplied({ q, city, category, minPrice, maxPrice, sort });
+function handleApply() {
+  const searchQuery = q.trim();
+
+  const nextCategory = searchQuery
+    ? ""
+    : category;
+
+  if (searchQuery) {
+    setCategory("");
   }
 
-  function openStudio(studio) {
+  setApplied({
+    q: searchQuery,
+    city,
+    category: nextCategory,
+    minPrice,
+    maxPrice,
+    sort,
+  });
+}
+
+function handleCategorySelect(nextCategory) {
+  setCategory(nextCategory);
+
+  if (nextCategory) {
+    setQ("");
+  }
+
+  setApplied((prev) => ({
+    ...prev,
+    q: nextCategory ? "" : prev.q,
+    category: nextCategory,
+  }));
+}
+
+function handleCitySelect(nextCity) {
+  setCity(nextCity);
+
+  setApplied((prev) => ({
+    ...prev,
+    city: nextCity,
+  }));
+}
+
+
+function handleClearSearch() {
+  setQ("");
+
+  setApplied((prev) => ({
+    ...prev,
+    q: "",
+  }));
+}
+
+function openStudio(studio) {
     if (location.pathname === "/") {
       sessionStorage.setItem("studios-scroll-y", String(window.scrollY));
       sessionStorage.setItem("restore-studios-scroll", "1");
@@ -920,6 +1208,21 @@ const heroImageBoxClass =
   
 const heroImageClass =
   "h-full w-full object-contain object-right";
+
+  function scrollCategories(direction) {
+  const container = categoryScrollRef.current;
+  if (!container) return;
+
+  const scrollAmount = Math.max(
+    280,
+    container.clientWidth * 0.65,
+  );
+
+  container.scrollBy({
+    left: direction * scrollAmount,
+    behavior: "smooth",
+  });
+}
 
   function scrollRecommended(direction) {
   const container = recommendedScrollRef.current;
@@ -973,21 +1276,27 @@ const heroImageClass =
         </section>
 
         <section className="relative mt-10 sm:mt-8">
-<div className="flex h-[56px] items-center rounded-[30px] border border-[#eadfce] bg-white pl-5 pr-3 shadow-[0_10px_30px_rgba(15,23,42,0.04)] transition-all duration-200 hover:border-[#f1dfbf] hover:ring-4 hover:ring-orange-200/20 sm:max-w-[450px] md:max-w-[500px] lg:max-w-[660px]">
+<div className="flex h-[56px] items-center rounded-[15px] border border-[#eadfce] bg-white pl-5 pr-3 shadow-[0_10px_30px_rgba(15,23,42,0.04)] transition-all duration-200 hover:border-[#f1dfbf] hover:ring-4 hover:ring-orange-200/20 sm:max-w-[450px] md:max-w-[500px] lg:max-w-[660px]">
   <Search className="h-5 w-5 shrink-0 text-[#8b8794] sm:h-6 sm:w-6" />
 
 <div className="flex min-w-0 flex-1 items-center">
-  <input
-    value={q}
-    onChange={(event) => setQ(event.target.value)}
-    placeholder="Пошук послуг"
-    className="min-w-0 flex-1 bg-transparent px-4 text-[15px] font-semibold text-[#111111] outline-none placeholder:font-semibold placeholder:text-[#8b8794] sm:text-[18px]"
-  />
+<input
+  value={q}
+  onChange={(event) => setQ(event.target.value)}
+  onKeyDown={(event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      handleApply();
+    }
+  }}
+  placeholder="Пошук послуг"
+  className="min-w-0 flex-1 bg-transparent px-4 text-[15px] font-semibold text-[#111111] outline-none placeholder:font-semibold placeholder:text-[#8b8794] sm:text-[18px]"
+/>
 
   {q ? (
     <button
       type="button"
-      onClick={() => setQ("")}
+     onClick={handleClearSearch}
       className="mr-2 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#f5f1eb] text-[#8b8794] transition hover:bg-[#fff1e7] hover:text-[#ff6200]"
     >
       <X className="h-4 w-4" />
@@ -1000,7 +1309,7 @@ const heroImageClass =
     onClick={handleApply}
     disabled={!hasPendingChanges}
 className={cn(
-  "flex h-[38px] items-center justify-center rounded-full px-4 text-[14px] font-black text-white transition-all duration-300 active:scale-[0.98] sm:h-[38px] sm:px-5 sm:text-[13px]",
+  "flex h-[38px] items-center justify-center rounded-[11px] px-4 text-[14px] font-black text-white transition-all duration-300 active:scale-[0.98] sm:h-[38px] sm:px-5 sm:text-[13px]",
   hasPendingChanges
     ? "animate-[heartbeat_1.8s_ease-in-out_infinite] bg-[#ff6200] shadow-[0_12px_30px_rgba(255,98,0,0.24)] hover:bg-[#ff6f14]"
     : "bg-[#ff6200] shadow-[0_10px_24px_rgba(255,98,0,0.18)] opacity-70",
@@ -1016,7 +1325,7 @@ className={cn(
   icon={MapPin}
   label="Місто"
   value={city}
-  onChange={setCity}
+  onChange={handleCitySelect}
   placeholder="Локація"
   options={cities.map((c) => ({
     value: c,
@@ -1032,7 +1341,7 @@ className={cn(
   icon={Grid2X2}
   label="Категорія"
   value={category}
-  onChange={setCategory}
+  onChange={handleCategorySelect}
   placeholder="Категорія"
   options={categories}
   searchable
@@ -1043,28 +1352,40 @@ className={cn(
   onClick={clearAll}
   className={cn(
     "hidden sm:flex",
-    "group relative h-10 w-full items-center justify-center gap-2 rounded-[16px] border border-[#eadfce] bg-white px-4 text-left transition-all duration-200",
+    "group relative h-10 w-full items-center justify-center gap-2 rounded-[15px] border border-[#eadfce] bg-white px-4 text-left transition-all duration-200",
     "shadow-[0_8px_22px_rgba(15,23,42,0.035)]",
-    "sm:h-[50px] sm:min-w-[120px] sm:rounded-[18px]",
+    "sm:h-[50px] sm:min-w-[120px] sm:rounded-[13px]",
     "active:scale-[0.99]",
     "hover:border-[#f1dfbf] hover:ring-4 hover:ring-orange-200/20",
   )}
 >
-  <SlidersHorizontal className="h-4 w-4 text-[#8a8580] transition-colors duration-200 group-hover:text-[#ff6b00] sm:h-[12px] sm:w-[12px]" />
+  <FunnelX className="h-6 w-6 text-[#8a8580] transition-colors duration-200 group-hover:text-[#ff6b00] sm:h-[14px] sm:w-[22px]" />
 
-  <span className="text-[12px] font-bold text-[#77716b] sm:text-[16px]">
-    Скинути
+  <span className="text-[12px] font-bold text-[#77716b] sm:text-[14px]">
+    Очистити фільтри
   </span>
 </button>
           </div>
 
 <div className="relative mt-6 sm:mt-5">
-  <div className="-mx-5 overflow-x-auto overflow-y-hidden px-5 pb-3 [-ms-overflow-style:none] [scrollbar-width:none] sm:-mx-6 sm:px-6 lg:-mx-10 lg:px-10 [&::-webkit-scrollbar]:hidden">
-    <div className="flex w-max min-w-full touch-pan-x snap-x snap-mandatory flex-nowrap gap-2.5 scroll-smooth sm:gap-4">
+  <button
+    type="button"
+    onClick={() => scrollCategories(-1)}
+    aria-label="Попередні категорії"
+    className="absolute left-0 top-1/2 z-20 hidden h-9 w-9 -translate-y-[65%] place-items-center rounded-full border border-[#eadfce] bg-white text-[#6f6a65] shadow-[0_8px_22px_rgba(15,23,42,0.10)] transition hover:border-[#ffceb0] hover:text-[#ff6200] active:scale-95 lg:grid"
+  >
+    <ChevronLeft className="h-5 w-5" />
+  </button>
+
+  <div
+    ref={categoryScrollRef}
+    className="-mx-5 overflow-x-auto overflow-y-hidden px-5 pb-3 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] sm:-mx-6 sm:px-6 lg:mx-11 lg:px-1 [&::-webkit-scrollbar]:hidden"
+  >
+    <div className="flex w-max min-w-full touch-pan-x snap-x snap-mandatory flex-nowrap gap-2.5 sm:gap-4">
       <FeaturePill
         active={!category}
         icon={Grid2X2}
-        onClick={() => setCategory("")}
+        onClick={() => handleCategorySelect("")}
       >
         Усі категорії
       </FeaturePill>
@@ -1074,19 +1395,28 @@ className={cn(
           key={cat.value}
           active={category === cat.value}
           icon={getCategoryIcon(cat.value)}
-          onClick={() => setCategory(cat.value)}
+          onClick={() => handleCategorySelect(cat.value)}
         >
           {cat.label}
         </FeaturePill>
       ))}
     </div>
   </div>
+
+  <button
+    type="button"
+    onClick={() => scrollCategories(1)}
+    aria-label="Наступні категорії"
+    className="absolute right-0 top-1/2 z-20 hidden h-9 w-9 -translate-y-[65%] place-items-center rounded-full border border-[#eadfce] bg-white text-[#6f6a65] shadow-[0_8px_22px_rgba(15,23,42,0.10)] transition hover:border-[#ffceb0] hover:text-[#ff6200] active:scale-95 lg:grid"
+  >
+    <ChevronRight className="h-5 w-5" />
+  </button>
 </div>
         </section>
 
 {allStudios.length > 0 ? (
   <>
-    <section className="mt-8 max-[639px]:mt-7 sm:mt-8">
+    {/* <section className="mt-8 max-[639px]:mt-7 sm:mt-8">
       <div className="mb-6 flex items-center justify-between gap-4 sm:mb-4">
         <h2 className="text-[18px] font-black tracking-[-0.05em] sm:!text-xl">
           Рекомендовані
@@ -1200,7 +1530,7 @@ className={cn(
           />
         ))}
       </div>
-    </section>
+    </section> */}
 
     <section className="mt-9 sm:mt-7">
       <div className="mb-5 flex items-end justify-between gap-4 sm:mb-4">
@@ -1239,7 +1569,7 @@ className={cn(
   </>
 ) : (
 <section className="mt-8">
-  <div className="rounded-[15px] border-2 border-dashed border-[#ffd6bd] bg-[#fff7f0] px-6 py-12 text-center">
+  <div className=" px-6 py-12 text-center">
     <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-[#ff6200] shadow-sm">
       <Search className="h-7 w-7" />
     </div>

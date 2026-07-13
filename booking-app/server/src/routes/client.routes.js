@@ -338,25 +338,82 @@ scheduleExceptions: {
 
     const ids = studios.map((s) => s.id);
 
-    const mins = ids.length
-      ? await prisma.service.groupBy({
-          by: ["studioId"],
-          where: { studioId: { in: ids } },
-          _min: { price: true },
-        })
-      : [];
+const serviceRows = ids.length
+  ? await prisma.service.findMany({
+      where: {
+        studioId: {
+          in: ids,
+        },
+      },
+      select: {
+        id: true,
+        studioId: true,
+        name: true,
+        price: true,
 
-    const minMap = new Map(mins.map((x) => [x.studioId, x._min.price ?? null]));
+        category: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "asc",
+      },
+    })
+  : [];
+
+  const servicesMap = new Map();
+const minMap = new Map();
+
+for (const service of serviceRows) {
+  const studioServices =
+    servicesMap.get(service.studioId) || [];
+
+studioServices.push({
+  id: service.id,
+  name: service.name,
+  category: service.category
+    ? {
+        id: service.category.id,
+        name: service.category.name,
+      }
+    : null,
+});
+
+  servicesMap.set(
+    service.studioId,
+    studioServices,
+  );
+
+  if (service.price != null) {
+    const currentMin =
+      minMap.get(service.studioId);
+
+    if (
+      currentMin == null ||
+      Number(service.price) <
+        Number(currentMin)
+    ) {
+      minMap.set(
+        service.studioId,
+        service.price,
+      );
+    }
+  }
+}
 
     res.json({
-      studios: studios.map((s) => ({
-        ...s,
-        slug: s.id,
-        priceFrom: minMap.get(s.id) ?? null,
-        premium: Boolean(s.premium),
-        schedule: studioScheduleToMap(s.scheduleDays || []),
-        scheduleExceptions: exceptionsToList(s.scheduleExceptions || []),
-      })),
+studios: studios.map((s) => ({
+  ...s,
+  slug: s.id,
+  services: servicesMap.get(s.id) || [],
+  priceFrom: minMap.get(s.id) ?? null,
+  premium: Boolean(s.premium),
+  schedule: studioScheduleToMap(s.scheduleDays || []),
+  scheduleExceptions: exceptionsToList(s.scheduleExceptions || []),
+})),
     });
   } catch (e) {
     console.error(e);

@@ -1644,7 +1644,7 @@ onSelect={(d) => {
               ? "border-[#ff6200] bg-[#ff6200]/5 text-[#202020] ring-2 ring-[#ff6200]/15"
               : busy
                 ? "cursor-not-allowed border-stone-200 bg-stone-100 text-stone-400 line-through"
-                : "border-stone-200 bg-white text-stone-800 hover:border-[#ff6200] hover:bg-[#ff6200]/5",
+                : "border-stone-200 bg-white text-stone-800 hover:border-[#ff6200] hover:!bg-[#ff6200]/5",
           )}
           title={busy ? "Зайнято" : ""}
         >

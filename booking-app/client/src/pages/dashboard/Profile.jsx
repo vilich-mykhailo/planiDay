@@ -449,6 +449,57 @@ function ChecklistRow({ complete, children }) {
 const heroImageClass =
   "h-full w-full object-contain object-right";
 
+  function isoToDisplayDate(value) {
+  if (!value) return "";
+
+  const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+  if (!match) return value;
+
+  const [, year, month, day] = match;
+
+  return `${day}.${month}.${year}`;
+}
+
+function displayDateToIso(value) {
+  const match = String(value || "")
+    .trim()
+    .match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+
+  if (!match) return "";
+
+  const [, day, month, year] = match;
+
+  const date = new Date(
+    Number(year),
+    Number(month) - 1,
+    Number(day),
+  );
+
+  const isValid =
+    date.getFullYear() === Number(year) &&
+    date.getMonth() === Number(month) - 1 &&
+    date.getDate() === Number(day);
+
+  if (!isValid) return "";
+
+  return `${year}-${month}-${day}`;
+}
+
+function formatDateWhileTyping(value) {
+  const digits = value.replace(/\D/g, "").slice(0, 8);
+
+  if (digits.length <= 2) {
+    return digits;
+  }
+
+  if (digits.length <= 4) {
+    return `${digits.slice(0, 2)}.${digits.slice(2)}`;
+  }
+
+  return `${digits.slice(0, 2)}.${digits.slice(2, 4)}.${digits.slice(4)}`;
+}
+
 export default function Profile() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -622,7 +673,10 @@ const [isProOpen, setIsProOpen] = useState(false);
       lastName: profile.lastName || "",
       phone: profile.phone || "",
       email: profile.email || "",
-      birthDate: profile.birthDate || "",
+      birthDate:
+  type === "birthDate"
+    ? isoToDisplayDate(profile.birthDate)
+    : profile.birthDate || "",
       gender: profile.gender || "unknown",
       photoUrl: profile.photoUrl || "",
     });
@@ -690,9 +744,21 @@ async function saveModalChanges() {
       body.lastName = draft.lastName;
     }
 
-    if (modal.type === "birthDate") {
-      body.birthDate = draft.birthDate || null;
-    }
+if (modal.type === "birthDate") {
+  const convertedBirthDate = displayDateToIso(draft.birthDate);
+
+  if (!convertedBirthDate) {
+    showToast({
+      type: "error",
+      title: "Невірна дата",
+      text: "Введіть дату у форматі ДД.ММ.РРРР",
+    });
+
+    return;
+  }
+
+  body.birthDate = convertedBirthDate;
+}
 
     if (modal.type === "gender") {
       body.gender = draft.gender;
@@ -1357,6 +1423,45 @@ await patchProfile({
     />
 
 <EditModal
+  open={modal.open && modal.type === "name"}
+  title="Змінити ім’я та прізвище"
+  onClose={closeEditModal}
+  onSave={saveModalChanges}
+  saveDisabled={!draft.firstName.trim() || !draft.lastName.trim()}
+  saving={saving}
+>
+  <div className="space-y-4">
+    <FormField label="Ім’я">
+      <Input
+        value={draft.firstName}
+        onChange={(event) =>
+          setDraft((prev) => ({
+            ...prev,
+            firstName: event.target.value,
+          }))
+        }
+        placeholder="Введіть ім’я"
+        autoComplete="given-name"
+      />
+    </FormField>
+
+    <FormField label="Прізвище">
+      <Input
+        value={draft.lastName}
+        onChange={(event) =>
+          setDraft((prev) => ({
+            ...prev,
+            lastName: event.target.value,
+          }))
+        }
+        placeholder="Введіть прізвище"
+        autoComplete="family-name"
+      />
+    </FormField>
+  </div>
+</EditModal>
+
+<EditModal
   open={modal.open && modal.type === "phone"}
   title="Змінити номер телефону"
   onClose={closeEditModal}
@@ -1404,24 +1509,30 @@ await patchProfile({
         </FormField>
       </EditModal>
 
-      <EditModal
-        open={modal.open && modal.type === "birthDate"}
-        title="Змінити дату народження"
-        onClose={closeEditModal}
-        onSave={saveModalChanges}
-        saveDisabled={!draft.birthDate}
-        saving={saving}
-      >
-        <FormField label="Дата народження">
-          <Input
-            type="date"
-            value={draft.birthDate}
-            onChange={(event) =>
-              setDraft((prev) => ({ ...prev, birthDate: event.target.value }))
-            }
-          />
-        </FormField>
-      </EditModal>
+<EditModal
+  open={modal.open && modal.type === "birthDate"}
+  title="Змінити дату народження"
+  onClose={closeEditModal}
+  onSave={saveModalChanges}
+  saveDisabled={!displayDateToIso(draft.birthDate)}
+  saving={saving}
+>
+  <FormField label="Дата народження">
+    <Input
+      type="text"
+      inputMode="numeric"
+      maxLength={10}
+      value={draft.birthDate}
+      placeholder="дд.мм.рррр"
+      onChange={(event) =>
+        setDraft((prev) => ({
+          ...prev,
+          birthDate: formatDateWhileTyping(event.target.value),
+        }))
+      }
+    />
+  </FormField>
+</EditModal>
 
 <EditModal
   open={modal.open && modal.type === "email"}

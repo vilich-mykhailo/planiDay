@@ -37,6 +37,8 @@ function SectionCard({
   badge,
   children,
   className = "",
+  headerClassName = "",
+  contentClassName = "",
 }) {
   return (
     <section
@@ -48,7 +50,12 @@ function SectionCard({
       <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#ff7a18] via-[#ff6200] to-[#ff8c42]" />
 
       {(title || subtitle || badge) && (
-        <div className="flex flex-col gap-3 border-b border-[#f1ece5] px-4 py-5 sm:px-5">
+        <div
+  className={cn(
+    "flex flex-col gap-3 border-b border-[#f1ece5] px-4 py-5 sm:px-5",
+    headerClassName,
+  )}
+>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-black tracking-[-0.03em] text-[#202020]">
@@ -71,7 +78,9 @@ function SectionCard({
         </div>
       )}
 
-      <div className="p-4 sm:p-5">{children}</div>
+      <div className={cn("p-4 sm:p-5", contentClassName)}>
+  {children}
+</div>
     </section>
   );
 }
@@ -417,9 +426,9 @@ const openStatus = getStudioOpenStatus(studio);
   return (
     <Link
       to={`/${studio.slug}`}
-      className="group grid border border-[#f0e7da] grid-cols-[112px_1fr_auto] gap-3 rounded-[24px] bg-white p-3 shadow-[0_14px_36px_rgba(15,23,42,0.06)] transition active:scale-[0.99] sm:grid-cols-[150px_1fr_auto] sm:p-4 lg:hover:-translate-y-1"
+      className="group grid grid-cols-[88px_1fr_auto] gap-3 rounded-[24px] border border-[#f0e7da] bg-white p-3 shadow-[0_14px_36px_rgba(15,23,42,0.06)] transition active:scale-[0.99] sm:grid-cols-[150px_1fr_auto] sm:p-4 lg:hover:-translate-y-1"
     >
-      <div className="my-auto h-[112px] overflow-hidden rounded-[20px] bg-[#f4f0ea] sm:h-[132px]">
+      <div className="my-auto h-[88px] overflow-hidden rounded-[16px] bg-[#f4f0ea] sm:h-[132px] sm:rounded-[20px]">
         {coverUrl ? (
           <img
             src={coverUrl}
@@ -656,8 +665,19 @@ const hasActiveFilters = hasSearch || hasCategoryFilter;
   </section>
 
 <SectionCard
+  className="
+    max-[639px]:overflow-visible
+    max-[639px]:rounded-none
+    max-[639px]:border-0
+    max-[639px]:bg-transparent
+    max-[639px]:shadow-none
+    max-[639px]:hover:shadow-none
+    max-[639px]:[&>div:first-child]:hidden
+  "
+  headerClassName="max-[639px]:hidden"
+  contentClassName="max-[639px]:p-0"
   title={
-    <div className="flex items-center gap-3">
+    <div className="hidden items-center gap-3 sm:flex">
       <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#ff6200] text-white">
         <Heart className="h-5 w-5 fill-white" />
       </div>
@@ -680,68 +700,9 @@ const hasActiveFilters = hasSearch || hasCategoryFilter;
     </div>
   }
 >
-  <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-    <div className="relative w-full sm:max-w-[360px]">
-      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8a847d]" />
-
-      <input
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder="Пошук улюблених студій..."
-        className="
-          h-10 w-full
-          rounded-xl
-          border border-[#ebe7df]
-          bg-white
-          pl-9 pr-9
-          text-[13px]
-          font-semibold
-          text-[#202020]
-          outline-none
-          transition-all
-          placeholder:text-[#9b948c]
-
-          sm:h-12
-          sm:rounded-2xl
-          sm:pl-11
-          sm:pr-10
-          sm:text-[14px]
-
-          hover:border-[#ffd8c2]
-          hover:bg-white
-          focus:border-[#ff6200]
-          focus:ring-4
-          focus:ring-[#ff6200]/10
-        "
-      />
-
-      {query.trim() && (
-        <button
-          type="button"
-          onClick={() => setQuery("")}
-          className="absolute right-2 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-full text-[#8a847d] transition hover:bg-[#fff1e8] hover:text-[#ff6200] active:scale-95"
-          aria-label="Очистити пошук"
-        >
-          <X className="h-4 w-4" />
-        </button>
-      )}
-    </div>
-
-    <div className="w-full sm:w-[250px]">
-      <CategoryFilterSelect
-        label="Категорія"
-        value={activeCategory}
-        options={categoryOptions}
-        open={categoryFilterOpen}
-        setOpen={setCategoryFilterOpen}
-        selectRef={categoryFilterRef}
-        onChange={setActiveCategory}
-      />
-    </div>
-  </div>
-
   {hasCategoryFilter && (
-    <div className="mb-4 flex flex-wrap items-center gap-2">
+    <div className="mb-4 hidden flex-wrap items-center gap-2 sm:flex">
+
       <span className="inline-flex items-center gap-2 rounded-full border border-[#ffd6bd] bg-[#fffaf6] px-3 py-1.5 text-xs font-black text-[#ff6200]">
         <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[#fff1e8] text-[#ff6200]">
           {React.createElement(getCategoryIcon(activeCategory), {
@@ -824,7 +785,7 @@ const hasActiveFilters = hasSearch || hasCategoryFilter;
     </div>
   ) : (
     <>
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-3 sm:gap-4 lg:grid-cols-2">
         {filtered.map((studio) => (
           <FavouriteCard
             key={studio.slug}
@@ -834,7 +795,7 @@ const hasActiveFilters = hasSearch || hasCategoryFilter;
         ))}
       </div>
 
-      <p className="mt-6 mb-2 text-sm font-medium text-[#6b7280]">
+      <p className="mt-6 mb-2 hidden text-sm font-medium text-[#6b7280] sm:block">
         Показано {filtered.length} з {totalFavourites} улюблених студій
       </p>
     </>

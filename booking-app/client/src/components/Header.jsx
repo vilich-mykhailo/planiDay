@@ -690,7 +690,7 @@ if (isStudioPublicPage || hideHeader) {
     <div className="absolute right-[-46px] top-[-70px] h-[150px] w-[150px] rounded-full bg-[#ff6200]/10 blur-3xl" />
 
     <div className="relative flex items-center gap-3">
-      <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-2xl bg-[#111111] text-sm font-black text-white shadow-[0_12px_28px_rgba(15,23,42,0.16)]">
+      <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-2xl  text-sm font-black text-white shadow-[0_12px_28px_rgba(15,23,42,0.16)]">
         {role === "owner" && studioLogo ? (
           <img src={studioLogo} alt="" className="h-full w-full object-cover" />
         ) : role === "client" && clientPhoto ? (
@@ -699,7 +699,7 @@ if (isStudioPublicPage || hideHeader) {
           clientInitials
 ) : (
   <img
-    src="/aveliio_logo.png"
+    src="/Logo_aveliio_font.png"
     alt="Aveliio"
     className="h-full w-full object-contain"
   />
