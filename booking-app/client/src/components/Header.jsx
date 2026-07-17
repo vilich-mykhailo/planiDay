@@ -82,13 +82,13 @@ function useRole() {
 }
 
 const navLinkBase =
-  "inline-flex items-center gap-2 rounded-2xl px-3.5 py-2.5 text-sm font-semibold transition-all duration-200";
+  "inline-flex items-center gap-2 rounded-[10px] px-3.5 py-2.5 text-sm font-semibold transition-all duration-150 ease-out";
 
 const navLinkActive =
-  "bg-[#ff6200] text-white ";
+  "bg-[#fff5ee] text-[#ff6200] shadow-[0_6px_18px_rgba(255,98,0,0.12)] ring-1 ring-[#ff6200]/10";
 
 const navLinkIdle =
-  "text-[#77716b] hover:bg-[#fff3e9] hover:text-[#ff6200] active:scale-[0.99]";
+  "text-[#3f3f46] hover:text-[#ff6200] hover:scale-105 active:scale-[0.99]";
 
 function HeaderLink({ to, children, icon, onClick }) {
   return (
@@ -128,7 +128,7 @@ function ButtonLink({
       aria-disabled={disabled ? "true" : "false"}
       tabIndex={disabled ? -1 : 0}
       className={cx(
-        "inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-bold transition-all duration-200",
+        "inline-flex items-center justify-center gap-2 rounded-[10px] px-4 py-2.5 text-sm font-bold transition-all duration-200",
         styles,
         disabled ? disabledStyles : "",
         className,
@@ -425,14 +425,15 @@ useEffect(() => {
         ],
         actions: (
           <div className="hidden items-center gap-2 lg:flex">
-            <ButtonLink
-              to="/"
-              variant="secondary"
-              onClick={handleLogout}
-              icon={<LogOut className="h-4 w-4" />}
-            >
-              Вийти
-            </ButtonLink>
+<ButtonLink
+  to="/"
+  variant="secondary"
+  onClick={handleLogout}
+  icon={<LogOut className="h-4 w-4" />}
+  className="transition-all duration-150 hover:scale-105 hover:shadow-[0_6px_18px_rgba(15,23,42,0.08)]"
+>
+  Вийти
+</ButtonLink>
           </div>
         ),
       };
@@ -619,7 +620,7 @@ if (isStudioPublicPage || hideHeader) {
     <div className="flex h-[58px] items-center justify-between rounded-[20px] border border-[#eadfce] bg-white/90 px-3  backdrop-blur-2xl sm:h-[64px] sm:px-4 lg:h-[66px]">
       <Link
         to="/"
-        className="flex min-w-0 items-center gap-2 rounded-2xl px-1.5 py-1 transition active:scale-[0.98]"
+        className="flex min-w-0 items-center gap-2 rounded-2xl px-1.5 py-1 transition-transform duration-200 hover:scale-105 active:scale-[0.98]"
         aria-label="Aveliio"
       >
 <span className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden shadow-[0_10px_24px_rgba(15,23,42,0.14)]">
@@ -630,9 +631,9 @@ if (isStudioPublicPage || hideHeader) {
   />
 </span>
 
-        <span className="truncate text-[15px] font-black tracking-[-0.04em] text-[#202020] sm:text-[16px]">
-         Avel<span className="text-[#ff6200]">ii</span>o
-        </span>
+<span className="truncate text-[15px] font-black tracking-[-0.04em] text-zinc-700 transition-colors duration-300 group-hover:text-[#ff6200] sm:text-[16px]">
+  Aveliio
+</span>
       </Link>
 
       <nav className="hidden items-center gap-1 lg:flex">
@@ -738,7 +739,7 @@ if (isStudioPublicPage || hideHeader) {
         setOpen(false);
         handleLogout();
       }}
-      className="flex h-[54px] w-full items-center gap-3 rounded-[18px] px-3 text-[#ef4444] transition-all duration-200 hover:bg-[#fff1f1] active:scale-[0.99]"
+      className="group flex h-[54px] w-full items-center gap-3 rounded-[18px] px-3 text-[#ef4444] transition-all duration-300 ease-out hover:scale-[1.02] hover:shadow-[0_6px_18px_rgba(239,68,68,0.10)] active:scale-[0.98]"
     >
       <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[#fff1f1] text-[#ef4444]">
         {i.icon}
@@ -758,14 +759,14 @@ if (isStudioPublicPage || hideHeader) {
   onClick={() => {
     setOpen(false);
   }}
-  className={({ isActive }) =>
-    cx(
-      "group flex h-[54px] items-center gap-3 rounded-[18px] px-3 transition-all duration-200 active:scale-[0.99]",
-      isActive
-        ? "bg-[#fff4ec] text-[#ff6200] shadow-[inset_0_0_0_1px_rgba(255,98,0,0.10)]"
-        : "text-[#151515] hover:bg-[#fbfaf8]",
-    )
-  }
+className={({ isActive }) =>
+  cx(
+    "group flex h-[54px] items-center gap-3 rounded-[18px] px-3 transition-all duration-300 ease-out active:scale-[0.98]",
+    isActive
+      ? "bg-[#fff5ee] text-[#ff6200] shadow-[0_6px_18px_rgba(255,98,0,0.12)] ring-1 ring-[#ff6200]/10"
+      : "text-[#3f3f46] hover:scale-[1.02] hover:text-[#ff6200] hover:shadow-[0_6px_18px_rgba(15,23,42,0.08)]",
+  )
+}
 >
       {({ isActive }) => (
         <>
@@ -789,12 +790,12 @@ if (isStudioPublicPage || hideHeader) {
               {badge}
             </span>
           ) : (
-            <ChevronRight
-              className={cx(
-                "h-4 w-4 shrink-0 transition-colors",
-                isActive ? "text-[#ff6200]" : "text-[#b0afb7]",
-              )}
-            />
+<ChevronRight
+  className={cx(
+    "h-4 w-4 shrink-0 transition-all duration-300 group-hover:translate-x-[2px]",
+    isActive ? "text-[#ff6200]" : "text-[#b0afb7]",
+  )}
+/>
           )}
         </>
       )}

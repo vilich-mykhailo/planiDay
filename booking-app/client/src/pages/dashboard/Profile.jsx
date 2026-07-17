@@ -1,3 +1,4 @@
+// Profile.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import profileHero from "../../assets/profileHero.png";
@@ -498,6 +499,57 @@ function formatDateWhileTyping(value) {
   }
 
   return `${digits.slice(0, 2)}.${digits.slice(2, 4)}.${digits.slice(4)}`;
+}
+
+
+function initialsFromName(name) {
+  const value = String(name || "").trim();
+
+  if (!value) return "U";
+
+  return (
+    value
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((word) => word[0]?.toUpperCase())
+      .join("") || "U"
+  );
+}
+
+function ProfileFallbackAvatar({
+  name,
+  className = "",
+  textClassName = "",
+}) {
+  const fallbackInitials = initialsFromName(name || "Користувач");
+
+  return (
+    <div
+      className={cn(
+        "relative flex shrink-0 items-center justify-center overflow-hidden border border-[#e6ddd3] bg-[#f6f3ee]",
+        "shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_10px_26px_rgba(15,23,42,0.05)]",
+        className,
+      )}
+    >
+      <div className="absolute inset-0 bg-[linear-gradient(135deg,#fbfaf8_0%,#f2ede7_45%,#e7ddd3_100%)]" />
+
+      <div className="absolute left-[-22%] top-[-24%] h-[76%] w-[76%] rounded-full bg-white/75 blur-xl" />
+
+      <div className="absolute bottom-[-30%] right-[-26%] h-[80%] w-[80%] rounded-full bg-[#d5cabf]/45 blur-2xl" />
+
+      <div className="absolute inset-x-0 top-0 h-px bg-white/90" />
+
+      <span
+        className={cn(
+          "relative z-10 font-black tracking-[-0.06em] text-[#756d66]",
+          textClassName || "text-[30px]",
+        )}
+      >
+        {fallbackInitials}
+      </span>
+    </div>
+  );
 }
 
 export default function Profile() {
@@ -1069,15 +1121,19 @@ await patchProfile({
       transition active:scale-[0.98]
     "
   >
-    {photoSrc ? (
-      <img
-        src={photoSrc}
-        alt="avatar"
-        className="h-full w-full object-cover"
-      />
-    ) : (
-      initials
-    )}
+{photoSrc ? (
+  <img
+    src={photoSrc}
+    alt={fullName || "Користувач"}
+    className="h-full w-full object-cover"
+  />
+) : (
+  <ProfileFallbackAvatar
+    name={fullName}
+    className="h-full w-full rounded-full"
+    textClassName="text-[30px]"
+  />
+)}
 
     <span className="absolute inset-0 grid place-items-center bg-black/40 text-white opacity-0 transition group-hover:opacity-100">
       <Camera className="h-5 w-5" />
@@ -1100,11 +1156,19 @@ await patchProfile({
           disabled={saving}
           className="group relative grid h-[92px] w-[92px] place-items-center overflow-hidden rounded-full border-[3px] border-white bg-white text-2xl font-black shadow-[0_16px_34px_rgba(255,98,0,0.14)] transition active:scale-[0.98] sm:h-[142px] sm:w-[142px]"
         >
-          {photoSrc ? (
-            <img src={photoSrc} alt="avatar" className="h-full w-full object-cover" />
-          ) : (
-            initials
-          )}
+{photoSrc ? (
+  <img
+    src={photoSrc}
+    alt={fullName || "Користувач"}
+    className="h-full w-full object-cover"
+  />
+) : (
+  <ProfileFallbackAvatar
+    name={fullName}
+    className="h-full w-full rounded-full"
+    textClassName="text-[30px]"
+  />
+)}
 
           <span className="absolute inset-0 grid place-items-center bg-black/40 text-white opacity-0 transition group-hover:opacity-100">
             <Camera className="h-5 w-5" />
@@ -1133,10 +1197,6 @@ await patchProfile({
             <span className="truncate">{profile.phone || "Телефон не вказано"}</span>
           </div>
 
-          <div className="flex items-center gap-2">
-            <MapPin className="h-3.5 w-3.5 shrink-0" />
-            <span className="truncate">Україна, Київ</span>
-          </div>
         </div>
       </div>
     </div>

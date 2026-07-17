@@ -408,10 +408,14 @@ function FeaturePill({ active, icon: Icon, children, onClick, className = "" }) 
       type="button"
       onClick={onClick}
 className={cn(
- "group inline-flex h-[32px] min-w-max shrink-0 select-none items-center justify-center gap-1 rounded-[11px] border border-[#f0e7da] bg-white px-2.5 text-[10px] font-bold text-[#77716b] shadow-[0_4px_12px_rgba(15,23,42,0.025)] transition-all duration-200 active:scale-[0.97]",
+  "group inline-flex h-[25px] min-w-max shrink-0 select-none items-center justify-center gap-1 rounded-[8px] border border-transparent bg-white px-2.5 text-[10px] font-bold text-[#3f3f46] transition-all duration-300 ease-out active:scale-[0.97]",
   "snap-start whitespace-nowrap",
-  "sm:h-[34px] sm:gap-1.5 sm:rounded-[12px] sm:px-3 sm:text-[11px]",
-  active && "bg-[#fff3e9] text-[#ff6200]",
+  "sm:h-[28px] sm:gap-1.5 sm:rounded-[8px] sm:px-3 sm:text-[11px]",
+
+  active
+    ? "bg-[#fff5ee] text-[#ff6200] shadow-[0_6px_18px_rgba(255,98,0,0.12)] ring-1 ring-[#ff6200]/10"
+    : "hover:scale-105 hover:text-[#ff6200] hover:shadow-[0_6px_18px_rgba(15,23,42,0.08)]",
+
   className,
 )}
     >
@@ -1372,7 +1376,7 @@ className={cn(
     type="button"
     onClick={() => scrollCategories(-1)}
     aria-label="Попередні категорії"
-    className="absolute left-0 top-1/2 z-20 hidden h-9 w-9 -translate-y-[65%] place-items-center rounded-full border border-[#eadfce] bg-white text-[#6f6a65] shadow-[0_8px_22px_rgba(15,23,42,0.10)] transition hover:border-[#ffceb0] hover:text-[#ff6200] active:scale-95 lg:grid"
+    className="absolute left-0 top-1/2 z-20 hidden h-9 w-9 -translate-y-[65%] place-items-center rounded-full bg-white text-[#6f6a65] shadow-[0_6px_18px_rgba(15,23,42,0.08)] transition-all duration-150 ease-out hover:scale-108 hover:text-[#ff6200] hover:shadow-[0_8px_24px_rgba(15,23,42,0.12)] active:scale-95 lg:grid"
   >
     <ChevronLeft className="h-5 w-5" />
   </button>
@@ -1381,7 +1385,7 @@ className={cn(
     ref={categoryScrollRef}
     className="-mx-5 overflow-x-auto overflow-y-hidden px-5 pb-3 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] sm:-mx-6 sm:px-6 lg:mx-11 lg:px-1 [&::-webkit-scrollbar]:hidden"
   >
-    <div className="flex w-max min-w-full touch-pan-x snap-x snap-mandatory flex-nowrap gap-2.5 sm:gap-4">
+    <div className="pt-2 pb-3 flex w-max min-w-full touch-pan-x snap-x snap-mandatory flex-nowrap gap-2.5 sm:gap-4">
       <FeaturePill
         active={!category}
         icon={Grid2X2}
@@ -1407,7 +1411,7 @@ className={cn(
     type="button"
     onClick={() => scrollCategories(1)}
     aria-label="Наступні категорії"
-    className="absolute right-0 top-1/2 z-20 hidden h-9 w-9 -translate-y-[65%] place-items-center rounded-full border border-[#eadfce] bg-white text-[#6f6a65] shadow-[0_8px_22px_rgba(15,23,42,0.10)] transition hover:border-[#ffceb0] hover:text-[#ff6200] active:scale-95 lg:grid"
+    className="absolute right-0 top-1/2 z-20 hidden h-9 w-9 -translate-y-[65%] place-items-center rounded-full bg-white text-[#6f6a65] shadow-[0_6px_18px_rgba(15,23,42,0.08)] transition-all duration-150 ease-out hover:scale-108 hover:text-[#ff6200] hover:shadow-[0_8px_24px_rgba(15,23,42,0.12)] active:scale-95 lg:grid"
   >
     <ChevronRight className="h-5 w-5" />
   </button>
@@ -1532,7 +1536,7 @@ className={cn(
       </div>
     </section> */}
 
-    <section className="mt-9 sm:mt-7">
+    <section className="mt-6 sm:mt-5">
       <div className="mb-5 flex items-end justify-between gap-4 sm:mb-4">
         <div>
           <h2 className="text-[30px] font-black tracking-[-0.05em] sm:text-xl">

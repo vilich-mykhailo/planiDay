@@ -28,10 +28,10 @@ function cn(...classes) {
 
 const linkClass = ({ isActive }) =>
   [
-    "group relative flex h-[52px] items-center gap-3 overflow-hidden rounded-[16px] text-[14px] font-semibold transition-all duration-300 ease-in-out",
+    "group relative flex h-[52px] items-center gap-3 overflow-hidden rounded-[16px] text-[14px] font-semibold transition-all duration-300 ease-out active:scale-[0.98]",
     isActive
-      ? "bg-[#fff3ed] text-[#ff4f12]"
-      : "text-[#5f6673] hover:bg-[#f8f8f8] hover:text-[#111827]",
+      ? "bg-[#fff5ee] text-[#ff6200] shadow-[0_6px_18px_rgba(255,98,0,0.12)] ring-1 ring-[#ff6200]/10"
+      : "text-[#3f3f46] hover:scale-[1.02] hover:text-[#ff6200] hover:shadow-[0_6px_18px_rgba(15,23,42,0.08)]",
   ].join(" ");
 
 function SidebarText({ children, collapsed, className = "" }) {
@@ -360,9 +360,9 @@ sidebarCollapsed
 >
   {sidebarCollapsed && (
     <img
-      src="/avellio_logo.png"
+      src="/aveliio_logo.png"
       alt="Aveliio"
-      className="mb-3 h-[44px] w-[74px] object-contain transition-all duration-300"
+      className="mt-2 h-[44px] w-[74px] object-contain transition-all duration-300"
     />
   )}
 
@@ -380,15 +380,12 @@ sidebarCollapsed
     className="flex flex-col items-center"
   >
 <img
-  src="/avellio_logo.png"
+  src="/Logo_aveliio_text_font.png"
   alt="Aveliio"
-  className="h-[40px] w-auto shrink-0 object-contain select-none"
+  className="h-[90px] w-auto shrink-0 object-contain select-none"
   draggable={false}
 />
 
-    <span className="whitespace-nowrap text-[25px] font-black leading-tight tracking-[-0.06em] text-[#111827]">
-      Avel<span className="text-[#fc511e]">ii</span>o
-    </span>
   </button>
 </div>
 
@@ -542,10 +539,10 @@ sidebarCollapsed
           <button
             type="button"
             onClick={handleLogout}
-            className={cn(
-              "mt-4 flex h-11 w-full items-center justify-center gap-2 overflow-hidden rounded-[16px] text-[14px] font-bold text-[#5f6673] transition-all duration-300 ease-in-out hover:bg-[#f8f8f8] active:scale-[0.98]",
-              sidebarCollapsed ? "px-0" : "px-4",
-            )}
+className={cn(
+  "mt-4 flex h-11 w-full items-center justify-center gap-2 overflow-hidden rounded-[16px] text-[14px] font-bold text-[#5f6673] transition-all duration-300 ease-out hover:scale-[1.02] hover:text-[#ff6200] hover:shadow-[0_6px_18px_rgba(15,23,42,0.08)] active:scale-[0.98]",
+  sidebarCollapsed ? "px-0" : "px-4",
+)}
             title="Вихід"
           >
             <LogOut className="h-4 w-4 shrink-0" />
