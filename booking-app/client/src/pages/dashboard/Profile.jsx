@@ -1056,10 +1056,10 @@ await patchProfile({
 
  return (
     <main className="min-h-screen m:pb-10">
-      <div className="mx-auto max-w-6xl px-4 pt-5 sm:px-6 sm:pt-8 lg:px-8">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 sm:pt-18 lg:px-8">
 
 
-<section className="relative border border-[#eadfce]  mb-5 mt-15 overflow-hidden max-[639px]:rounded-[26px] bg-white px-5 py-7 sm:rounded-[34px] sm:px-8 sm:py-9 lg:px-10">
+<section className="relative border border-[#eadfce]  mb-5 mt-3 overflow-hidden max-[639px]:rounded-[26px] bg-white px-5 py-7 sm:rounded-[34px] sm:px-8 sm:py-9 lg:px-10">
  <div className={cn(heroImageBoxClass, "mask-hero-image hidden sm:block")}>
     <img
       src={profileHero}

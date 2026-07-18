@@ -1359,7 +1359,7 @@ function schedulePalette(booking, nowTs) {
     return {
       bg: "bg-[#f2f4f7]",
       border: "border-[#d0d5dd]",
-      accent: "bg-[#667085]",
+      accent: "bg-[#7b766f]",
       text: "text-[#475467]",
       shadow: "shadow-none",
     };
@@ -1478,10 +1478,10 @@ function BookingHoverCard({ preview, nowTs, formatPrice }) {
 />
               {statusLabel}
             </span>
-            <p className="mt-2 truncate text-[16px] font-black text-[#15171d]">
+            <p className="mt-2 truncate text-[16px] font-black text-[#202020]">
               {booking.clientName}
             </p>
-            <p className="mt-0.5 text-[12px] font-semibold text-[#59616d]">
+            <p className="mt-0.5 text-[12px] font-semibold text-[#7b766f]">
               {booking.serviceName}
             </p>
           </div>
@@ -1493,7 +1493,7 @@ function BookingHoverCard({ preview, nowTs, formatPrice }) {
           )}
         </div>
 
-        <div className="mt-4 grid gap-2 rounded-[13px] bg-[#f7f8fa] p-3 text-[11px] font-bold text-[#59616d]">
+        <div className="mt-4 grid gap-2 rounded-[13px] bg-[#f7f8fa] p-3 text-[11px] font-bold text-[#7b766f]">
           <span className="flex items-center gap-2">
             <CalendarDays className="h-4 w-4 shrink-0 text-[#89919b]" />
             {formatDateLongUA(booking.dateKey)}
@@ -1533,7 +1533,7 @@ function BookingHoverCard({ preview, nowTs, formatPrice }) {
               {services.map((service, index) => (
                 <p
                   key={service?.id || service?._id || `${service?.name || "service"}-${index}`}
-                  className="text-[11px] font-semibold text-[#59616d]"
+                  className="text-[11px] font-semibold text-[#7b766f]"
                 >
                   {service?.name || service?.title || service?.serviceName || "Послуга"}
                 </p>
@@ -1547,7 +1547,7 @@ function BookingHoverCard({ preview, nowTs, formatPrice }) {
             <p className="text-[10px] font-black uppercase tracking-[0.08em] text-[#969da8]">
               Коментар
             </p>
-            <p className="mt-1 whitespace-pre-wrap break-words text-[11px] font-medium leading-relaxed text-[#59616d]">
+            <p className="mt-1 whitespace-pre-wrap break-words text-[11px] font-medium leading-relaxed text-[#7b766f]">
               {notes}
             </p>
           </div>
@@ -1599,10 +1599,10 @@ function ScheduleActionConfirmModal({
       }}
     >
       <div
-        className="flex h-dvh w-full max-w-sm flex-col overflow-hidden rounded-none border-0 bg-white shadow-[0_24px_64px_rgba(15,23,42,0.20)] sm:h-auto sm:max-h-[80vh] sm:rounded-2xl sm:border sm:border-[#e4e7ec]"
+        className="flex h-dvh w-full max-w-sm flex-col overflow-hidden rounded-none border-0 bg-white shadow-[0_24px_64px_rgba(15,23,42,0.20)] sm:h-auto sm:max-h-[80vh] sm:rounded-2xl sm:border sm:border-[#ebe7df]"
         onMouseDown={(event) => event.stopPropagation()}
       >
-        <div className="relative shrink-0 overflow-hidden border-b border-[#eef1f5] bg-white px-4 py-4 sm:px-5">
+        <div className="relative shrink-0 overflow-hidden border-b border-[#f1ebe5] bg-white px-4 py-4 sm:px-5">
           <div className="relative z-10 flex items-start justify-between gap-4">
             <div className="min-w-0">
               <span className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[#ffe1d2] bg-[#fff7f2] px-2.5 text-[10px] font-black uppercase tracking-[0.08em] text-[#ff6200]">
@@ -1624,7 +1624,7 @@ function ScheduleActionConfirmModal({
             <button
               type="button"
               onClick={onClose}
-              className="grid h-8 w-8 shrink-0 place-items-center rounded-md border border-[#e4e7ec] bg-white text-[#77716b] transition hover:bg-[#f8fafc] hover:text-[#202020] active:scale-[0.96]"
+              className="grid h-8 w-8 shrink-0 place-items-center rounded-xl border border-[#ebe7df] bg-white text-[#77716b] transition hover:bg-[#fff7f0] hover:text-[#202020] active:scale-[0.96]"
               aria-label="Закрити"
             >
               <X className="h-5 w-5" />
@@ -1662,12 +1662,12 @@ function ScheduleActionConfirmModal({
           </div>
         </div>
 
-        <div className="sticky bottom-0 shrink-0 border-t border-[#eef1f5] bg-white px-4 py-3 sm:px-5">
+        <div className="sticky bottom-0 shrink-0 border-t border-[#f1ebe5] bg-white px-4 py-3 sm:px-5">
           <div className="flex flex-col justify-end gap-2 sm:flex-row">
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-[#d0d5dd] bg-white px-4 py-2 text-[13px] font-black text-[#202020] transition hover:bg-[#f8fafc] active:scale-[0.98] sm:w-auto"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-[#d0d5dd] bg-white px-4 py-2 text-[13px] font-black text-[#202020] transition hover:bg-[#fff7f0] active:scale-[0.98] sm:w-auto"
             >
               Назад
             </button>
@@ -1709,13 +1709,13 @@ const SCHEDULE_CARD_TONES = {
   archived: {
     bg: "#f2f4f7",
     border: "#d0d5dd",
-    accent: "#667085",
+    accent: "#7b766f",
     soft: "#eaecf0",
   },
   default: {
     bg: "#f2f4f7",
     border: "#d0d5dd",
-    accent: "#667085",
+    accent: "#7b766f",
     soft: "#eaecf0",
   },
 };
@@ -2900,7 +2900,7 @@ const timeBounds = useMemo(() => {
       <div className={cn("min-w-0 bg-white", compact && "flex min-h-0 flex-1 flex-col")}>
         <div
           ref={compact ? null : headerScrollRef}
-          className="calendar-day-scroll shrink-0 touch-pan-x overflow-x-auto overflow-y-hidden overscroll-x-contain border-b border-[#e4e7ec] bg-[#fbfcfe] [scrollbar-gutter:stable]"
+          className="calendar-day-scroll shrink-0 touch-pan-x overflow-x-auto overflow-y-hidden overscroll-x-contain border-b border-[#ebe7df] bg-[#fffaf6] [scrollbar-gutter:stable]"
           onScroll={
             compact
               ? undefined
@@ -2912,12 +2912,12 @@ const timeBounds = useMemo(() => {
         >
           <div className="min-w-full" style={{ minWidth: scheduleWidth }}>
             <div
-              className="grid bg-[#fbfcfe]"
+              className="grid bg-[#fffaf6]"
               style={{ gridTemplateColumns: templateColumns }}
             >
               <div
                 className={cn(
-                  "sticky z-40 flex items-center border-[#e4e7ec] bg-[#fbfcfe] text-[10px] font-bold uppercase text-[#98a2b3]",
+                  "sticky z-40 flex items-center border-[#ebe7df] bg-[#fffaf6] text-[10px] font-bold uppercase text-[#aaa19a]",
                   compact
                     ? "right-0 justify-start border-l px-2"
                     : "left-0 justify-end border-r px-2",
@@ -2948,7 +2948,7 @@ const timeBounds = useMemo(() => {
                   <div
                     key={column.key}
                     className={cn(
-                      "relative min-w-0 border-r border-[#e4e7ec] bg-[#fbfcfe]",
+                      "relative min-w-0 border-r border-[#ebe7df] bg-[#fffaf6]",
                       compact ? "px-2.5 py-2" : "px-3 py-2.5",
                     )}
                     style={{ height: headerHeight }}
@@ -2957,7 +2957,7 @@ const timeBounds = useMemo(() => {
                       {column.type === "date" ? (
                         <div
                           className={cn(
-                            "flex shrink-0 flex-col items-center justify-center rounded-lg border border-[#ffd5df] bg-white text-[#ff3369]",
+                            "flex shrink-0 flex-col items-center justify-center rounded-lg border border-[#ffd6bd] bg-white text-[#ff6200]",
                             compact ? "h-8 w-8" : "h-9 w-9",
                           )}
                         >
@@ -2984,7 +2984,7 @@ const timeBounds = useMemo(() => {
                       <div className="min-w-0">
                         <p
                           className={cn(
-                            "truncate font-black leading-tight text-[#1f2329]",
+                            "truncate font-black leading-tight text-[#202020]",
                             compact ? "text-[12px]" : "text-[12px]",
                           )}
                         >
@@ -3001,7 +3001,7 @@ const timeBounds = useMemo(() => {
                     {!compact && (
                       <div className="absolute inset-x-3 bottom-1.5 flex items-center gap-1.5 text-[9px] font-black">
                         <span
-                          className="flex items-center gap-1 text-[#667085]"
+                          className="flex items-center gap-1 text-[#7b766f]"
                           title={`Усього записів: ${totalCount}`}
                         >
                           <CalendarDays className="h-3 w-3" />
@@ -3029,7 +3029,7 @@ const timeBounds = useMemo(() => {
                           {summaryCounts.canceled}
                         </span>
                         <span
-                          className="flex items-center gap-1 text-[#667085]"
+                          className="flex items-center gap-1 text-[#7b766f]"
                           title={`Завершені: ${summaryCounts.archived}`}
                         >
                           <CheckCheck className="h-3 w-3" />
@@ -3069,13 +3069,13 @@ const timeBounds = useMemo(() => {
                 className="flex items-center justify-center px-3"
                 style={{ height: Math.min(gridHeight, 520) }}
               >
-                <div className="pointer-events-auto w-[min(240px,calc(100%-24px))] rounded-lg border border-dashed border-[#cfd6df] bg-white/95 p-3 text-center shadow-sm">
+                <div className="pointer-events-auto w-[min(240px,calc(100%-24px))] rounded-lg border border-dashed border-[#eadbc9] bg-white/95 p-3 text-center shadow-sm">
                   <div
                     className={cn(
                       "mx-auto flex h-10 w-10 items-center justify-center rounded-full",
                       studioClosedForSelectedDay
-                        ? "bg-[#eaecf0] text-[#667085]"
-                        : "bg-[#ffe1e8] text-[#ff3369]",
+                        ? "bg-[#eaecf0] text-[#7b766f]"
+                        : "bg-[#fff1e8] text-[#ff6200]",
                     )}
                   >
                     {loading ? (
@@ -3086,7 +3086,7 @@ const timeBounds = useMemo(() => {
                       <CalendarDays className="h-4 w-4" />
                     )}
                   </div>
-                  <p className="mt-2 text-[12px] font-black text-[#1f2329]">
+                  <p className="mt-2 text-[12px] font-black text-[#202020]">
                     {loading
                       ? "Завантажуємо записи"
                       : studioClosedForSelectedDay
@@ -3094,7 +3094,7 @@ const timeBounds = useMemo(() => {
                         : "Записів немає"}
                   </p>
                   {!loading && studioClosedForSelectedDay && (
-                    <p className="mt-1 text-[10px] font-semibold text-[#667085]">
+                    <p className="mt-1 text-[10px] font-semibold text-[#7b766f]">
                       {studioClosedHelper}
                     </p>
                   )}
@@ -3110,7 +3110,7 @@ const timeBounds = useMemo(() => {
             >
               <div
                 className={cn(
-                  "sticky z-40 border-[#e4e7ec]",
+                  "sticky z-40 border-[#ebe7df]",
                   compact ? "right-0 border-l" : "left-0 border-r",
                   studioClosedForSelectedDay
                     ? "bg-[repeating-linear-gradient(135deg,rgba(148,163,184,0.10)_0,rgba(148,163,184,0.10)_8px,rgba(255,255,255,0.42)_8px,rgba(255,255,255,0.42)_16px)]"
@@ -3125,7 +3125,7 @@ const timeBounds = useMemo(() => {
                   <div
                     key={hour}
                     className={cn(
-                      "absolute -translate-y-2 font-medium text-[#8f98a3]",
+                      "absolute -translate-y-2 font-medium text-[#9a9189]",
                       compact ? "left-2 text-[11px]" : "right-2 text-[10px]",
                     )}
                     style={{ top: topForMinute(hour * 60) }}
@@ -3153,12 +3153,12 @@ const timeBounds = useMemo(() => {
                   !studioClosedForSelectedDay &&
                   visibleDateKeys.has(todayKey) && (
                     <div
-                      className="absolute inset-x-0 z-30 border-t border-[#ff245d]"
+                      className="absolute inset-x-0 z-30 border-t border-[#ff6200]"
                       style={{ top: topForMinute(nowMinute) }}
                     >
                       <span
                         className={cn(
-                          "absolute -top-[5px] h-2.5 w-2.5 rounded-full bg-[#ff245d]",
+                          "absolute -top-[5px] h-2.5 w-2.5 rounded-full bg-[#ff6200]",
                           compact ? "-left-1" : "-right-1",
                         )}
                       />
@@ -3195,7 +3195,7 @@ const timeBounds = useMemo(() => {
                 return (
                   <div
                     key={column.key}
-                    className="relative border-r border-[#e4e7ec] bg-white"
+                    className="relative border-r border-[#ebe7df] bg-white"
                     style={{ height: gridHeight }}
                   >
                     {quarterMarks.map((mark) => (
@@ -3219,7 +3219,7 @@ const timeBounds = useMemo(() => {
                           height: gridBodyHeight,
                         }}
                       >
-                        <span className="rounded-full border border-[#dfe4ea] bg-white/90 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.08em] text-[#8b94a0] shadow-sm">
+                        <span className="rounded-full border border-[#dfe4ea] bg-white/90 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.08em] text-[#9a9189] shadow-sm">
                           Студія не працює
                         </span>
                       </div>
@@ -3235,7 +3235,7 @@ const timeBounds = useMemo(() => {
                             height: gridBodyHeight,
                           }}
                         >
-                          <span className="rounded-full border border-[#dfe4ea] bg-white/90 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.08em] text-[#8b94a0] shadow-sm">
+                          <span className="rounded-full border border-[#dfe4ea] bg-white/90 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.08em] text-[#9a9189] shadow-sm">
                             Майстер не працює
                           </span>
                         </div>
@@ -3267,10 +3267,10 @@ const timeBounds = useMemo(() => {
 
                     {showNowLine && !isStudioClosed && isTodayColumn && (
                       <div
-                        className="absolute inset-x-0 z-20 border-t border-[#ff245d]"
+                        className="absolute inset-x-0 z-20 border-t border-[#ff6200]"
                         style={{ top: topForMinute(nowMinute) }}
                       >
-                        <span className="absolute -left-1 -top-[5px] h-2.5 w-2.5 rounded-full bg-[#ff245d]" />
+                        <span className="absolute -left-1 -top-[5px] h-2.5 w-2.5 rounded-full bg-[#ff6200]" />
                       </div>
                     )}
 
@@ -3309,7 +3309,7 @@ const timeBounds = useMemo(() => {
                           onFocus={(event) => showBookingPreview(event, booking)}
                           onBlur={hideBookingPreview}
                           className={cn(
-                            "group absolute z-10 overflow-hidden rounded-md border text-left transition-colors hover:z-30 hover:ring-1 hover:ring-[#cfd6df] focus:outline-none focus:ring-2 focus:ring-[#ff245d]/25",
+                            "group absolute z-10 overflow-hidden rounded-md border text-left transition-colors hover:z-30 hover:ring-1 hover:ring-[#eadbc9] focus:outline-none focus:ring-2 focus:ring-[#ff6200]/25",
                             visualStatus === "canceled" && "opacity-70",
                           )}
                           style={{
@@ -3490,14 +3490,14 @@ const timeBounds = useMemo(() => {
           className={cn(
             "relative flex w-full flex-col overflow-hidden bg-white",
             "h-[100dvh] rounded-none border-0 shadow-none",
-            "sm:h-auto sm:max-h-[86vh] sm:max-w-[560px] sm:rounded-2xl sm:border sm:border-[#e4e7ec] sm:shadow-[0_24px_70px_rgba(27,27,27,0.18)]",
+            "sm:h-auto sm:max-h-[86vh] sm:max-w-[560px] sm:rounded-2xl sm:border sm:border-[#ebe7df] sm:shadow-[0_24px_70px_rgba(27,27,27,0.18)]",
           )}
           onMouseDown={(event) => event.stopPropagation()}
           onClick={(event) => event.stopPropagation()}
         >
           <div
             className={cn(
-              "relative overflow-hidden border-b border-[#eef1f5] px-4 pb-4 pt-[max(14px,env(safe-area-inset-top))] sm:px-5 sm:pt-5",
+              "relative overflow-hidden border-b border-[#f1ebe5] px-4 pb-4 pt-[max(14px,env(safe-area-inset-top))] sm:px-5 sm:pt-5",
               "bg-gradient-to-b",
               statusMeta.top,
             )}
@@ -3513,7 +3513,7 @@ const timeBounds = useMemo(() => {
               <button
                 type="button"
                 onClick={closeBookingDetails}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#e4e7ec] bg-white text-[#202020] transition hover:bg-[#f8fafc] active:scale-[0.98]"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-[#ebe7df] bg-white text-[#202020] transition hover:bg-[#fff7f0] active:scale-[0.98]"
                 aria-label="Закрити"
               >
                 <X className="h-5 w-5" />
@@ -3570,9 +3570,9 @@ const timeBounds = useMemo(() => {
           <div className="relative flex min-h-0 flex-1 flex-col bg-white px-4 pt-3 sm:px-5">
             <div className="calendar-day-scroll min-h-0 flex-1 overflow-y-auto pb-24 sm:pb-20">
               <div className="grid gap-2 sm:grid-cols-2">
-                <div className="rounded-xl border border-[#e4e7ec] bg-white p-3 sm:col-span-2">
+                <div className="rounded-xl border border-[#ebe7df] bg-white p-3 sm:col-span-2">
                   <div className="flex items-center gap-3">
-                    <div className="h-[52px] w-[52px] shrink-0 overflow-hidden rounded-full border border-[#e4e7ec] bg-white p-0.5">
+                    <div className="h-[52px] w-[52px] shrink-0 overflow-hidden rounded-full border border-[#ebe7df] bg-white p-0.5">
                       {clientPhoto ? (
                         <img
                           src={clientPhoto}
@@ -3603,7 +3603,7 @@ const timeBounds = useMemo(() => {
                         <button
                           type="button"
                           onClick={() => handleCopyPhone(phone)}
-                          className="flex h-9 w-9 items-center justify-center rounded-md border border-[#d0d5dd] bg-white text-[#77716b] transition-all duration-200 hover:bg-[#f8fafc] hover:text-[#202020] active:scale-[0.95]"
+                          className="flex h-9 w-9 items-center justify-center rounded-md border border-[#d0d5dd] bg-white text-[#77716b] transition-all duration-200 hover:bg-[#fff7f0] hover:text-[#202020] active:scale-[0.95]"
                           title="Скопіювати номер"
                         >
                           {copiedPhone ? (
@@ -3625,9 +3625,9 @@ const timeBounds = useMemo(() => {
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-[#e4e7ec] bg-white p-3 sm:col-span-2">
+                <div className="rounded-xl border border-[#ebe7df] bg-white p-3 sm:col-span-2">
                   <div className="flex items-center gap-3">
-                    <div className="h-[46px] w-[46px] shrink-0 overflow-hidden rounded-full border border-[#e4e7ec] bg-white p-0.5">
+                    <div className="h-[46px] w-[46px] shrink-0 overflow-hidden rounded-full border border-[#ebe7df] bg-white p-0.5">
                       {masterPhoto ? (
                         <img
                           src={masterPhoto}
@@ -3658,7 +3658,7 @@ const timeBounds = useMemo(() => {
             </div>
 
             {!isArchived && !isDeleted && (
-              <div className="absolute inset-x-0 bottom-0 border-t border-[#eef1f5] bg-white/94 px-4 pb-[max(14px,env(safe-area-inset-bottom))] pt-3 backdrop-blur sm:px-5 sm:pb-4">
+              <div className="absolute inset-x-0 bottom-0 border-t border-[#f1ebe5] bg-white/94 px-4 pb-[max(14px,env(safe-area-inset-bottom))] pt-3 backdrop-blur sm:px-5 sm:pb-4">
                 <div className="grid gap-2 sm:grid-cols-2">
                   {!isConfirmed && !isCanceled && (
                     <button
@@ -3714,20 +3714,21 @@ const timeBounds = useMemo(() => {
     return (
       <>
         <div
-          className="hidden h-[min(860px,calc(100dvh-12px))] min-h-[620px] overflow-hidden border border-[#d8dde5] bg-white shadow-[0_18px_54px_rgba(15,23,42,0.12)] md:grid"
+          className="relative hidden h-[min(860px,calc(100dvh-12px))] min-h-[620px] overflow-hidden rounded-[15px] border border-[#ebe7df] bg-white/95 shadow-[0_18px_60px_rgba(15,23,42,0.06)] backdrop-blur-xl md:grid"
           style={{
             gridTemplateColumns: agendaCollapsed
               ? "minmax(0,1fr) 46px"
               : "minmax(0,1fr) clamp(286px,22vw,312px)",
           }}
         >
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-[90] h-[3px] bg-gradient-to-r from-[#ff7a18] via-[#ff6200] to-[#ff8c42]" />
           <main className="min-w-0 bg-white">
-            <div className="flex min-h-[48px] flex-wrap items-center justify-between gap-1.5 border-b border-[#e6e9ef] px-3 py-1.5 xl:px-4">
+            <div className="flex min-h-[48px] flex-wrap items-center justify-between gap-1.5 border-b border-[#ebe7df] px-3 py-1.5 xl:px-4">
               <div className="flex min-w-0 flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={() => navigateRange(-1)}
-                  className="flex h-7 w-7 items-center justify-center rounded-md border border-[#e1e5eb] bg-white text-[#59616d] transition hover:bg-[#f8fafc]"
+                  className="flex h-7 w-7 items-center justify-center rounded-xl border border-[#eadbc9] bg-white text-[#7b766f] transition hover:bg-[#fff7f0]"
                   aria-label="Попередній період"
                 >
                   <ChevronLeft className="h-3.5 w-3.5" />
@@ -3735,23 +3736,23 @@ const timeBounds = useMemo(() => {
                 <button
                   type="button"
                   onClick={() => setCalendarOpen(true)}
-                  className="flex h-7 min-w-[168px] items-center gap-2 rounded-md border border-[#e1e5eb] bg-white px-2.5 text-[10px] font-black text-[#15171d] transition hover:bg-[#f8fafc] xl:min-w-[200px]"
+                  className="flex h-7 min-w-[168px] items-center gap-2 rounded-xl border border-[#eadbc9] bg-white px-2.5 text-[10px] font-black text-[#202020] transition hover:bg-[#fff7f0] xl:min-w-[200px]"
                   aria-label="Відкрити календар"
                 >
-                  <CalendarDays className="h-3.5 w-3.5 text-[#ff3369]" />
+                  <CalendarDays className="h-3.5 w-3.5 text-[#ff6200]" />
                   <span className="truncate">{formatDateLongUA(toISODateKey(viewDate))}</span>
-                  <ChevronDown className="ml-auto h-3.5 w-3.5 text-[#8b94a0]" />
+                  <ChevronDown className="ml-auto h-3.5 w-3.5 text-[#9a9189]" />
                 </button>
                 <button
                   type="button"
                   onClick={() => navigateRange(1)}
-                  className="flex h-7 w-7 items-center justify-center rounded-md border border-[#e1e5eb] bg-white text-[#59616d] transition hover:bg-[#f8fafc]"
+                  className="flex h-7 w-7 items-center justify-center rounded-xl border border-[#eadbc9] bg-white text-[#7b766f] transition hover:bg-[#fff7f0]"
                   aria-label="Наступний період"
                 >
                   <ChevronRight className="h-3.5 w-3.5" />
                 </button>
 
-                <div className="ml-1 flex h-7 rounded-md border border-[#e1e5eb] bg-[#fafbfc] p-0.5">
+                <div className="ml-1 flex h-7 rounded-md border border-[#eadbc9] bg-[#fff7f0] p-0.5">
                   {rangeModeItems.map((item) => {
                     const active = rangeMode === item.key;
 
@@ -3763,8 +3764,8 @@ const timeBounds = useMemo(() => {
                         className={cn(
                           "rounded px-2 text-[10px] font-black transition",
                           active
-                            ? "bg-white text-[#15171d] shadow-sm"
-                            : "text-[#8b94a0] hover:text-[#15171d]",
+                            ? "bg-white text-[#202020] shadow-sm"
+                            : "text-[#9a9189] hover:text-[#202020]",
                         )}
                       >
                         {item.label}
@@ -3791,7 +3792,7 @@ const timeBounds = useMemo(() => {
                 <select
                   value={statusFilter}
                   onChange={(event) => setStatusFilter(event.target.value)}
-                  className="h-7 max-w-[140px] rounded-md border border-[#e1e5eb] bg-white px-2 text-[10px] font-black text-[#15171d] outline-none"
+                  className="h-7 max-w-[140px] rounded-xl border border-[#eadbc9] bg-white px-2 text-[10px] font-black text-[#202020] outline-none"
                   aria-label="Фільтр статусу"
                 >
                   {SCHEDULE_STATUS_FILTERS.map((item) => (
@@ -3803,7 +3804,7 @@ const timeBounds = useMemo(() => {
                 <select
                   value={selectedGroup}
                   onChange={(event) => handleSelectedGroupChange(event.target.value)}
-                  className="h-7 max-w-[160px] rounded-md border border-[#e1e5eb] bg-white px-2 text-[10px] font-black text-[#15171d] outline-none"
+                  className="h-7 max-w-[160px] rounded-xl border border-[#eadbc9] bg-white px-2 text-[10px] font-black text-[#202020] outline-none"
                   aria-label="Фільтр майстрів"
                 >
                   <option value="all">Усі майстри</option>
@@ -3819,45 +3820,45 @@ const timeBounds = useMemo(() => {
             {renderScheduleGrid({ compact: false })}
           </main>
 
-          <aside className="border-l border-[#e6e9ef] bg-white">
+          <aside className="border-l border-[#ebe7df] bg-white">
             {agendaCollapsed ? (
-              <div className="flex h-full flex-col items-center gap-3 bg-[#fbfcfe] px-1 py-3">
+              <div className="flex h-full flex-col items-center gap-3 bg-[#fffaf6] px-1 py-3">
                 <button
                   type="button"
                   onClick={() => setAgendaCollapsed(false)}
-                  className="flex h-7 w-7 items-center justify-center rounded-md border border-[#e1e5eb] bg-white text-[#59616d] shadow-sm"
+                  className="flex h-7 w-7 items-center justify-center rounded-xl border border-[#eadbc9] bg-white text-[#7b766f] shadow-sm"
                   aria-label="Розгорнути список записів"
                   title="Розгорнути список записів"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </button>
-                <span className="mt-2 rotate-90 whitespace-nowrap text-[10px] font-black uppercase tracking-[0.12em] text-[#8b94a0]">
+                <span className="mt-2 rotate-90 whitespace-nowrap text-[10px] font-black uppercase tracking-[0.12em] text-[#9a9189]">
                   записи
                 </span>
               </div>
             ) : (
               <>
-                <div className="flex h-[42px] items-center justify-between border-b border-[#e6e9ef] px-3">
+                <div className="flex h-[42px] items-center justify-between border-b border-[#ebe7df] px-3">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setAgendaCollapsed(true)}
-                  className="flex h-7 w-7 items-center justify-center rounded-md text-[#59616d] hover:bg-[#f2f4f7]"
+                  className="flex h-7 w-7 items-center justify-center rounded-md text-[#7b766f] hover:bg-[#f2f4f7]"
                   aria-label="Згорнути список записів"
                   title="Згорнути список записів"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </button>
-                <p className="text-[12px] font-black text-[#15171d]">
+                <p className="text-[12px] font-black text-[#202020]">
                   Список записів
                 </p>
               </div>
-              <MoreHorizontal className="h-4 w-4 text-[#8c95a1]" />
+              <MoreHorizontal className="h-4 w-4 text-[#9a9189]" />
             </div>
 
                 <div className="calendar-day-scroll h-[calc(100%-42px)] overflow-y-auto px-3 py-3">
-              <div className="mb-3 rounded-md border border-[#e5e9ef] bg-[#fbfcfe] px-3 py-2">
-                <div className="flex items-center justify-between text-[10px] font-black uppercase text-[#8f98a3]">
+              <div className="mb-3 rounded-md border border-[#ebe7df] bg-[#fffaf6] px-3 py-2">
+                <div className="flex items-center justify-between text-[10px] font-black uppercase text-[#9a9189]">
                   <span>Today</span>
                   <span>
                     {scheduleTimeLabel(timeBounds.start)} - {scheduleTimeLabel(timeBounds.end)}
@@ -3865,26 +3866,26 @@ const timeBounds = useMemo(() => {
                 </div>
                 <div className="mt-2 grid grid-cols-3 gap-2 text-center">
                   <div>
-                    <p className="text-[14px] font-black text-[#15171d]">
+                    <p className="text-[14px] font-black text-[#202020]">
                       ₴{formatPrice(agendaTotalPrice)}
                     </p>
-                    <p className="text-[9px] font-bold uppercase text-[#9aa2ad]">
+                    <p className="text-[9px] font-bold uppercase text-[#aaa19a]">
                       дохід
                     </p>
                   </div>
                   <div>
-                    <p className="text-[14px] font-black text-[#15171d]">
+                    <p className="text-[14px] font-black text-[#202020]">
                       {agendaTotalCount}
                     </p>
-                    <p className="text-[9px] font-bold uppercase text-[#9aa2ad]">
+                    <p className="text-[9px] font-bold uppercase text-[#aaa19a]">
                       записи
                     </p>
                   </div>
                   <div>
-                    <p className="text-[14px] font-black text-[#15171d]">
+                    <p className="text-[14px] font-black text-[#202020]">
                       {columns.length}
                     </p>
-                    <p className="text-[9px] font-bold uppercase text-[#9aa2ad]">
+                    <p className="text-[9px] font-bold uppercase text-[#aaa19a]">
                       майстри
                     </p>
                   </div>
@@ -3892,19 +3893,19 @@ const timeBounds = useMemo(() => {
               </div>
 
               {agendaGroups.length === 0 ? (
-                <div className="rounded-md border border-dashed border-[#d7dee8] p-5 text-center">
+                <div className="rounded-2xl border-2 border-dashed border-[#eadbc9] bg-[#fff7f0] p-5 text-center">
                   {studioClosedForSelectedDay ? (
-                    <Store className="mx-auto h-6 w-6 text-[#667085]" />
+                    <Store className="mx-auto h-6 w-6 text-[#7b766f]" />
                   ) : (
-                    <CalendarDays className="mx-auto h-6 w-6 text-[#a1aab5]" />
+                    <CalendarDays className="mx-auto h-6 w-6 text-[#aaa19a]" />
                   )}
-                  <p className="mt-3 text-[13px] font-black text-[#15171d]">
+                  <p className="mt-3 text-[13px] font-black text-[#202020]">
                     {studioClosedForSelectedDay
                       ? "Студія не працює"
                       : "Записів немає"}
                   </p>
                   {studioClosedForSelectedDay && (
-                    <p className="mt-1 text-[10px] font-semibold text-[#667085]">
+                    <p className="mt-1 text-[10px] font-semibold text-[#7b766f]">
                       {studioClosedHelper}
                     </p>
                   )}
@@ -3920,7 +3921,7 @@ const timeBounds = useMemo(() => {
                           month: "short",
                         })}
                       </span>
-                      <span className="rounded-full border border-[#e4e8ee] px-2 py-0.5 text-[9px] uppercase text-[#8b94a0]">
+                      <span className="rounded-full border border-[#eadbc9] px-2 py-0.5 text-[9px] uppercase text-[#9a9189]">
                         {group.items.length}{" "}
                         {pluralUa(group.items.length, "запис", "записи", "записів")}
                       </span>
@@ -3940,16 +3941,16 @@ const timeBounds = useMemo(() => {
                             key={`agenda-${booking.id}-${booking.dateKey}-${booking.startMin}`}
                             type="button"
                             onClick={() => openBookingDetails(booking.id)}
-                            className="grid grid-cols-[38px_1fr_auto] gap-2 rounded-md border border-transparent bg-white px-2 py-2 text-left transition hover:border-[#e4e7ec] hover:bg-[#fafbfc]"
+                            className="grid grid-cols-[38px_1fr_auto] gap-2 rounded-md border border-transparent bg-white px-2 py-2 text-left transition hover:border-[#ebe7df] hover:bg-[#fff7f0]"
                           >
-                            <div className="pt-0.5 text-[10px] font-bold text-[#8b94a0]">
+                            <div className="pt-0.5 text-[10px] font-bold text-[#9a9189]">
                               {startLabel}
                             </div>
                             <div className="min-w-0 border-l-2 pl-2.5" style={{ borderColor: tone.accent }}>
-                              <p className="truncate text-[12px] font-extrabold text-[#15171d]">
+                              <p className="truncate text-[12px] font-extrabold text-[#202020]">
                                 {booking.clientName}
                               </p>
-                              <p className="mt-0.5 truncate text-[10px] font-medium text-[#8b94a0]">
+                              <p className="mt-0.5 truncate text-[10px] font-medium text-[#9a9189]">
                                 {booking.serviceName} · {endLabel}
                               </p>
                             </div>
@@ -3979,8 +3980,8 @@ const timeBounds = useMemo(() => {
           </aside>
         </div>
 
-        <div className="relative left-1/2 flex h-[100dvh] min-h-[100dvh] w-screen -translate-x-1/2 flex-col overflow-hidden bg-white text-[#15171d] md:hidden">
-          <div className="sticky top-0 z-[120] shrink-0 border-b border-[#e8ebf0] bg-white">
+        <div className="relative left-1/2 flex h-[100dvh] min-h-[100dvh] w-screen -translate-x-1/2 flex-col overflow-hidden bg-[#fffaf6] text-[#202020] md:hidden">
+          <div className="sticky top-0 z-[120] shrink-0 border-b border-[#ebe7df] bg-white/95 shadow-[0_8px_24px_rgba(15,23,42,0.05)] backdrop-blur-xl">
             <div className="grid grid-cols-[1fr_40px_34px] items-center px-4 pb-2.5 pt-3">
               <button
                 type="button"
@@ -3995,7 +3996,7 @@ const timeBounds = useMemo(() => {
                   })}
                   <ChevronDown className="h-4 w-4" />
                 </span>
-                <span className="mt-0.5 block text-[12px] font-semibold text-[#59616d]">
+                <span className="mt-0.5 block text-[12px] font-semibold text-[#7b766f]">
                   {scheduleTimeLabel(timeBounds.start)} - {scheduleTimeLabel(timeBounds.end)}
                 </span>
               </button>
@@ -4035,7 +4036,7 @@ const timeBounds = useMemo(() => {
                     <span
                       className={cn(
                         "mt-1 flex h-7 w-7 items-center justify-center rounded-full text-[14px] font-bold",
-                        active ? "bg-[#ffe1e8] text-[#ff3369]" : "text-[#15171d]",
+                        active ? "bg-[#fff1e8] text-[#ff6200]" : "text-[#202020]",
                       )}
                     >
                       {date.getDate()}
@@ -4047,14 +4048,14 @@ const timeBounds = useMemo(() => {
 
             <div
               className={cn(
-                "grid-cols-2 gap-2 border-t border-[#eef1f5] px-4 py-2.5",
+                "grid-cols-2 gap-2 border-t border-[#f1ebe5] px-4 py-2.5",
                 mobileFiltersOpen ? "grid" : "hidden",
               )}
             >
               <select
                 value={statusFilter}
                 onChange={(event) => setStatusFilter(event.target.value)}
-                className="h-9 rounded-md border border-[#e0e5ec] bg-white px-2.5 text-[12px] font-black outline-none"
+                className="h-9 rounded-xl border border-[#eadbc9] bg-white px-2.5 text-[12px] font-black outline-none"
               >
                 {SCHEDULE_STATUS_FILTERS.map((item) => (
                   <option key={item.key} value={item.key}>
@@ -4065,7 +4066,7 @@ const timeBounds = useMemo(() => {
               <select
                 value={selectedGroup}
                 onChange={(event) => handleSelectedGroupChange(event.target.value)}
-                className="h-9 rounded-md border border-[#e0e5ec] bg-white px-2.5 text-[12px] font-black outline-none"
+                className="h-9 rounded-xl border border-[#eadbc9] bg-white px-2.5 text-[12px] font-black outline-none"
               >
                 <option value="all">Усі майстри</option>
                 {groupOptions.map((option) => (
@@ -4081,7 +4082,7 @@ const timeBounds = useMemo(() => {
 
           <button
             type="button"
-            className="fixed bottom-5 right-4 z-[140] flex h-12 w-12 items-center justify-center rounded-full bg-[#111318] text-white shadow-[0_10px_24px_rgba(15,23,42,0.28)]"
+            className="fixed bottom-5 right-4 z-[140] flex h-12 w-12 items-center justify-center rounded-2xl bg-[#ff6200] text-white shadow-[0_12px_28px_rgba(255,98,0,0.28)] transition hover:bg-[#e95800] active:scale-95"
             aria-label="Додати запис"
           >
             <Plus className="h-6 w-6" />
@@ -4124,7 +4125,7 @@ const timeBounds = useMemo(() => {
 
         {calendarOpen && (
           <div
-            className="fixed inset-0 z-[240] flex items-center justify-center bg-[#111318]/35 p-4 backdrop-blur-[4px]"
+            className="fixed inset-0 z-[240] flex items-center justify-center bg-[#202020]/35 p-4 backdrop-blur-[4px]"
             onMouseDown={(event) => {
               if (event.target === event.currentTarget) {
                 setCalendarOpen(false);

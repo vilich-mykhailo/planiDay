@@ -32,12 +32,13 @@ import { useClientBookings } from "../context/bookings/useClientBookings";
 
 function formatUA(dateStr) {
   if (!dateStr) return "";
+
   const [y, m, d] = dateStr.split("-").map(Number);
   const dt = new Date(y, (m || 1) - 1, d || 1);
+
   return dt.toLocaleDateString("uk-UA", {
     day: "numeric",
     month: "long",
-    year: "numeric",
   });
 }
 
@@ -181,9 +182,9 @@ function getStatusUi(status, canceledBy = null) {
   }
 
   return {
-    text: "Очікує підтвердження",
+    text: "Очікує підтвердження студії",
     icon: Clock,
-    badge: "border-[var(--color-pending-light)] text-[#ffb020]",
+    badge: "border-[#fed7aa] text-[#ff6200]",
     side: "border-[var(--color-pending-light)]",
     time: "text-[#ffb020]",
   };
@@ -782,8 +783,8 @@ const activeMasterPhoto = toPublicUrl(
 
   return (
     <div className="min-h-screen pb-[calc(env(safe-area-inset-bottom)+88px)] sm:pb-10">
-      <div className="mx-auto max-w-6xl px-4 pt-9 sm:px-6 sm:pt-8 lg:px-8">
-        <div className="space-y-3 mb-5 mt-9  px-0 pt-2 sm:space-y-3 sm:pt-8 lg:pt-6">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 sm:pt-11 lg:px-8">
+        <div className="space-y-3 mb-5 mt-2  px-0 pt-2 sm:space-y-3 sm:pt-8 lg:pt-6">
           <section className="relative mb-5 overflow-hidden rounded-[30px] border border-[#eadfce] bg-white px-5 py-7 shadow-[0_14px_36px_rgba(15,23,42,0.06)] sm:rounded-[34px] sm:px-8 sm:py-9 lg:px-10">
             <div className="pointer-events-none absolute right-0 top-0 z-0 h-[150px] w-[240px] sm:h-[180px] sm:w-[320px] lg:h-[220px] lg:w-[380px]">
               <img
@@ -843,13 +844,14 @@ const activeMasterPhoto = toPublicUrl(
                     type="button"
                     onClick={() => setTab(item.key)}
 className={cn(
-  "inline-flex h-11 shrink-0 items-center gap-2 rounded-[16px] px-4 text-[13px] font-black transition active:scale-[0.97] max-[639px]:h-8 max-[639px]:gap-1 max-[639px]:rounded-[11px] max-[639px]:px-1.5 max-[639px]:text-[12px]",
+  "inline-flex h-11 shrink-0 items-center gap-2 rounded-[16px] px-4 text-[13px] font-black transition-all duration-200 active:scale-[0.97]",
+  "max-[639px]:h-7 max-[639px]:gap-[3px] max-[639px]:rounded-[9px] max-[639px]:px-1.5 max-[639px]:text-[10px]",
   active
-    ? "text-white bg-[#ff6200]"
-    : "bg-white text-[#77716b] hover:bg-[#fbfaf8] hover:text-[#ff6200]",
+    ? "bg-[#ff6200] text-white"
+    : "bg-white text-[#77716b] hover:text-[#ff6200]",
 )}
                   >
-                    <Icon className="h-4 w-4 max-[639px]:h-[14px] max-[639px]:w-[14px]" />
+                    <Icon className="h-4 w-4 max-[639px]:h-3 max-[639px]:w-3" /> 
 
                     {item.label}
                   </button>
@@ -997,7 +999,7 @@ className={cn(
     statusUi.badge,
   )}
 >
-  <StatusIcon className="h-3.5 w-3.5" />
+  <StatusIcon className="h-3.5 w-3.5 shrink-0 max-[639px]:h-3 max-[639px]:w-3" />
   {statusUi.text}
 </div>
   </div>
@@ -1175,7 +1177,76 @@ const statusMeta = {
           const masterLabel = isAnyMasterSelected
             ? "Будь-який майстер"
             : activeMasterName || "Не вказано";
+const quickDetails = [
+  {
+    icon: CalendarDays,
+    label: "Дата",
+    value: formatUA(activeBooking.date) || "—",
+  },
+  {
+    icon: Clock3,
+    label: "Час",
+    value: activeBooking.time || "—",
+  },
+  {
+    icon: Timer,
+    label: "Тривалість",
+    value:
+      activeDuration != null
+        ? `${activeDuration} хв`
+        : "Не вказано",
+  },
+  {
+    icon: Banknote,
+    label: "Ціна",
+    value:
+      activePrice != null
+        ? `${activePrice} грн`
+        : "Не вказано",
+  },
+];
 
+const additionalDetails = [
+  {
+    icon: FilePenLine,
+    label: "Послуга",
+    value: activeService || "Послуга",
+  },
+  {
+    icon: UserRound,
+    label: "Майстер",
+    value: masterLabel,
+    photo: !isAnyMasterSelected ? activeMasterPhoto : "",
+  },
+];
+const StatusIcon = statusMeta.Icon;
+const modalTheme =
+  activeStatus === "confirmed"
+    ? {
+        modal: "bg-[#f0fdf4] sm:border-[#bbf7d0]",
+        header: "bg-[#dcfce7]",
+        content: "bg-[#f0fdf4]",
+        footer: "border-[#bbf7d0] bg-[#dcfce7]",
+        glow: "bg-[#22c55e]/15",
+        shadow: "shadow-[0_35px_100px_rgba(22,101,52,0.20)]",
+      }
+    : activeStatus === "canceled"
+      ? {
+          modal: "bg-[#fff1f2] sm:border-[#fecdd3]",
+          header: "bg-[#ffe4e6]",
+          content: "bg-[#fff1f2]",
+          footer: "border-[#fecdd3] bg-[#ffe4e6]",
+          glow: "bg-[#ef4444]/15",
+          shadow: "shadow-[0_35px_100px_rgba(185,28,28,0.18)]",
+        }
+      : {
+          modal: "bg-[#fdfcfb] sm:border-[#eadfce]",
+          header: "bg-[#f3eee7]",
+          content: "bg-[#fdfcfb]",
+          footer: "border-[#eadfce] bg-[#fbfaf8]",
+          glow: "bg-[#ff6200]/10",
+          shadow: "shadow-[0_35px_100px_rgba(15,23,42,0.22)]",
+        };
           return (
             <div
               className="fixed inset-0 z-[220] flex items-end justify-center bg-[#202020]/45 p-0 backdrop-blur-[7px] sm:items-center sm:p-5"
@@ -1187,10 +1258,20 @@ const statusMeta = {
               }}
             >
               <div
-                className="relative flex h-[100dvh] w-full flex-col overflow-hidden rounded-none bg-[#fdfcfb] shadow-[0_35px_100px_rgba(15,23,42,0.22)] sm:h-auto sm:max-h-[90dvh] sm:max-w-[590px] sm:rounded-[34px] sm:border sm:border-[#eadfce]"
+                className={cn(
+  "relative flex h-[100dvh] w-full flex-col overflow-hidden rounded-none",
+  "sm:h-auto sm:max-h-[90dvh] sm:max-w-[590px] sm:rounded-[34px] sm:border",
+  modalTheme.modal,
+  modalTheme.shadow,
+)}
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="relative overflow-hidden bg-[#f3eee7] px-5 pb-4 pt-[max(16px,env(safe-area-inset-top))] sm:px-6 sm:pb-4 sm:pt-5">
+                <div
+  className={cn(
+    "relative overflow-hidden px-5 pb-4 pt-[max(16px,env(safe-area-inset-top))] sm:px-6 sm:pb-4 sm:pt-5",
+    modalTheme.header,
+  )}
+>
                   <div className="absolute right-[-70px] top-[-90px] h-[220px] w-[220px] rounded-full bg-[#ff6200]/10 blur-3xl" />
 
                   <div className="relative z-10 flex items-start justify-between gap-4">
@@ -1223,7 +1304,26 @@ const statusMeta = {
                   </div>
                 </div>
 
-                <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-4 pt-4 sm:px-6 sm:pb-4 sm:pt-4">
+                <div
+  className={cn(
+    "min-h-0 flex-1 overflow-y-auto px-5 pb-4 pt-4 sm:px-6 sm:pb-4 sm:pt-4",
+    modalTheme.content,
+  )}
+>
+                  {/* Статус запису */}
+<div className="mb-3 flex justify-center">
+  <span
+    className={cn(
+"inline-flex min-h-9 items-center justify-center gap-2 rounded-full border bg-white px-5 py-2 text-center text-[12px] font-black leading-tight shadow-[0_8px_20px_rgba(15,23,42,0.06)]",
+"max-[639px]:min-h-8 max-[639px]:gap-1.5 max-[639px]:px-4 max-[639px]:py-1.5 max-[639px]:text-[10px]",
+      statusMeta.className,
+    )}
+  >
+    <statusMeta.Icon className="h-3.5 w-3.5 shrink-0 max-[639px]:h-3 max-[639px]:w-3" />
+
+    {statusMeta.label}
+  </span>
+</div>
                   <div className="rounded-[24px] border border-[#eadfce] bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.05)] max-[639px]:rounded-[18px] max-[639px]:p-3">
                     <div className="flex items-center gap-5 max-[639px]:gap-3">
                       <div
@@ -1280,105 +1380,92 @@ const statusMeta = {
                       </div>
                     </div>
                   </div>
-                  <div className="mt-4 overflow-hidden rounded-[20px] border border-[#eadfce] bg-white shadow-[0_14px_34px_rgba(15,23,42,0.06)] max-[639px]:mt-5 max-[639px]:rounded-[20px]">
-                    {[
-                      {
-                        icon: statusMeta.Icon,
-                        label: "Статус",
-                        value: statusMeta.label,
-                        badge: true,
-                      },
-                      {
-                        icon: FilePenLine,
-                        label: "Послуга",
-                        value: activeService || "Послуга",
-                      },
+{/* Дата, час, тривалість і ціна */}
+<div className="mt-4 grid grid-cols-4 gap-2 max-[639px]:gap-1.5">
+  {quickDetails.map((item) => {
+    const Icon = item.icon;
 
-                      {
-                        icon: CalendarDays,
-                        label: "Дата",
-                        value: formatUA(activeBooking.date) || "—",
-                      },
-                      {
-                        icon: Clock3,
-                        label: "Час",
-                        value: activeBooking.time || "—",
-                      },
-                      {
-                        icon: UserRound,
-                        label: "Майстер",
-                        value: masterLabel,
-                        photo: !isAnyMasterSelected ? activeMasterPhoto : "",
-                      },
-                                            {
-                        icon: Banknote,
-                        label: "Ціна",
-                        value:
-                          activePrice != null
-                            ? `${activePrice} грн`
-                            : "Не вказано",
-                      },
-                    ].map((item) => {
-                      const Icon = item.icon;
+    return (
+      <div
+        key={item.label}
+className="
+  flex min-h-[94px] flex-col items-center justify-center
+  rounded-[18px] border border-[#eadfce] bg-white
+  px-2 py-2 text-center
+  shadow-[0_10px_26px_rgba(15,23,42,0.05)]
 
-                      return (
-                        <div
-                          key={item.label}
-                          className="flex min-h-[48px] items-center gap-3 border-b border-[#eee8df] px-4 last:border-b-0 max-[639px]:min-h-[52px] max-[639px]:gap-3 max-[639px]:px-4"
-                        >
-<div
-  className={cn(
-    "flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden max-[639px]:h-8 max-[639px]:w-8",
-    item.photo
-      ? "rounded-full border border-[#eadfce] bg-white p-0.5 shadow-sm"
-      : item.badge
-        ? cn(
-            "rounded-[14px] border bg-white shadow-sm",
-            statusMeta.className,
-          )
-        : "rounded-[14px] bg-[#f8f5f1] text-[#77716b]",
-  )}
->
-  {item.photo ? (
-    <img
-      src={item.photo}
-      alt={item.value}
-      className="block h-full w-full rounded-full object-cover object-center"
-    />
-  ) : (
-    <Icon className="h-4.5 w-4.5 max-[639px]:h-4 max-[639px]:w-4" />
-  )}
-</div>
+  max-[639px]:min-h-[78px]
+  max-[639px]:rounded-[14px]
+  max-[639px]:px-1
+  max-[639px]:py-1.5
+"
+      >
+<Icon className="h-5 w-5 text-[#ff6200] max-[639px]:h-4 max-[639px]:w-4" />
 
-                          <span className="min-w-0 flex-1 text-[15px] font-bold text-[#77716b] max-[639px]:text-[13px]">
-                            {item.label}
-                          </span>
+<span className="mt-1.5 text-[12px] font-semibold text-[#77716b] max-[639px]:mt-1 max-[639px]:text-[10px]">
+  {item.label}
+</span>
 
-                          <div className="flex min-w-0 items-center justify-end gap-2">
-                            {item.badge ? (
- <span
-  className={cn(
-    "inline-flex h-8 items-center gap-1.5 rounded-full border bg-white px-3.5 text-[12px] font-black shadow-sm max-[639px]:h-7 max-[639px]:px-3 max-[639px]:text-[10px]",
-    statusMeta.className,
-  )}
->
-  <Icon className="h-3.5 w-3.5 max-[639px]:h-3 max-[639px]:w-3" />
+<span className="mt-0.5 line-clamp-2 text-[13px] font-black leading-[1.1] text-[#202020] max-[639px]:text-[10px]">
   {item.value}
 </span>
-                            ) : (
-                              <>
-                                <span className="text-right text-[15px] font-black leading-tight text-[#202020] max-[639px]:max-w-[165px] max-[639px]:text-[12px] sm:max-w-[260px]">
-                                  {item.value}
-                                </span>
+      </div>
+    );
+  })}
+</div>
 
-  
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+{/* Статус, послуга і майстер */}
+<div className="mt-3 overflow-hidden rounded-[20px] border border-[#eadfce] bg-white shadow-[0_14px_34px_rgba(15,23,42,0.06)]">
+  {additionalDetails.map((item) => {
+    const Icon = item.icon;
+
+    return (
+      <div
+        key={item.label}
+        className="flex min-h-[48px] items-center gap-3 border-b border-[#eee8df] px-4 last:border-b-0 max-[639px]:min-h-[52px]"
+      >
+<div
+  className={cn(
+    "flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden text-[#ff6200] max-[639px]:h-8 max-[639px]:w-8",
+    item.photo &&
+      "rounded-full border border-[#eadfce] bg-white p-0.5 shadow-sm",
+  )}
+>
+{item.photo ? (
+  <img
+    src={item.photo}
+    alt={item.value}
+    className="block h-full w-full rounded-full object-cover object-center"
+  />
+) : (
+  <Icon className="h-5 w-5 max-[639px]:h-4 max-[639px]:w-4" />
+)}
+        </div>
+
+        <span className="min-w-0 flex-1 text-[15px] font-bold text-[#77716b] max-[639px]:text-[13px]">
+          {item.label}
+        </span>
+
+        {item.badge ? (
+          <span
+            className={cn(
+              "inline-flex h-8 max-w-[58%] items-center gap-1.5 rounded-full border bg-white px-3.5 text-right text-[12px] font-black leading-tight shadow-sm",
+              "max-[639px]:h-7 max-[639px]:gap-1 max-[639px]:px-2 max-[639px]:text-[9px]",
+              statusMeta.className,
+            )}
+          >
+            <Icon className="h-3.5 w-3.5 shrink-0 max-[639px]:h-3 max-[639px]:w-3" />
+            {item.value}
+          </span>
+        ) : (
+          <span className="max-w-[58%] text-right text-[15px] font-black leading-tight text-[#202020] max-[639px]:text-[12px]">
+            {item.value}
+          </span>
+        )}
+      </div>
+    );
+  })}
+</div>
                 </div>
 
 <div

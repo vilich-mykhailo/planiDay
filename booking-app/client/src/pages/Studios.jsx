@@ -1247,10 +1247,10 @@ const heroImageClass =
   return (
     
 <main className="min-h-screen overflow-x-hidden bg-[#fbfaf8] pb-[calc(env(safe-area-inset-bottom)+92px)] text-[#111111]">
-  <div className="mx-auto max-w-[1260px] px-4 pt-5 max-[639px]:px-5 max-[639px]:pt-4 sm:px-6 sm:pt-8 lg:px-10 lg:pt-10">
-        <BrandBar />
+  <div className="mx-auto max-w-[1260px] mt-8 px-4 max-[639px]:px-5 max-[639px]:pt-4 sm:px-6 sm:pt-12 lg:px-10 lg:pt-13">
+      
 
-        <section className="relative mt-8 max-[639px]:mt-6 sm:mt-12 lg:mt-10">
+        <section className="relative mt-2 max-[639px]:mt-0 sm:mt-12 lg:mt-10">
 <div className={cn(heroImageBoxClass, "mask-hero-image")}>
                 <img
               src={calendarHero}
@@ -1260,7 +1260,8 @@ const heroImageClass =
             />
           </div>
 
-          <div className="relative z-10 mt-8 max-w-[720px] sm:mt-12 lg:mt-16">
+          <div className="relative z-10 mt-2 max-w-[720px] max-[639px]:mt-0 sm:mt-12 lg:mt-16">
+            
 <h1 className="max-w-[360px] text-[44px] font-black leading-[1.02] tracking-[-0.06em] text-[#202020] max-[639px]:max-w-[260px] max-[639px]:text-[38px] max-[639px]:leading-[0.98] sm:max-w-[520px] sm:text-[46px] sm:leading-[0.98] md:text-[52px] lg:max-w-[720px] lg:text-[54px]">
   <span className="block">Обирай та</span>
 
