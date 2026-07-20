@@ -115,10 +115,24 @@ function ButtonLink({
   className = "",
   icon,
 }) {
-  const styles =
-    variant === "primary"
-      ? "bg-[var(--color-ink)] text-white  hover:bg-[var(--color-ink-soft)]"
-      : "border border-[var(--color-cream)] bg-white text-[var(--color-ink)] hover:bg-[#ff6200]/5";
+const styles =
+  variant === "primary"
+    ? `
+        bg-[#202020] text-white
+        shadow-[0_12px_26px_rgba(15,15,15,0.18)]
+        hover:scale-[1.015]
+        hover:bg-[#ff6200]
+        hover:shadow-[0_14px_30px_rgba(255,98,0,0.24)]
+        active:scale-[0.98]
+      `
+    : `
+        border border-[var(--color-cream)]
+        bg-white text-[var(--color-ink)]
+        hover:border-[#ffd2b3]
+        hover:bg-[#fff7f2]
+        hover:text-[#ff6200]
+        active:scale-[0.98]
+      `;
 
   const disabledStyles = "pointer-events-none cursor-not-allowed opacity-50";
 
@@ -1049,7 +1063,7 @@ className={cx(
 <nav
   className={cx(
     `
-      fixed bottom-[max(14px,env(safe-area-inset-bottom))]
+      fixed bottom-[max(10px,env(safe-area-inset-bottom))]
       left-1/2 z-[90]
       flex 
       -translate-x-1/2 items-center

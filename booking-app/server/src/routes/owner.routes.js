@@ -35,6 +35,73 @@ function hideManualEmail(email) {
   return value;
 }
 
+function manualDateKey(value) {
+  return new Date(value).toISOString().slice(0, 10);
+}
+
+function manualDayEnum(date) {
+  const [year, month, day] = String(date).split("-").map(Number);
+  const value = new Date(year, (month || 1) - 1, day || 1);
+  return ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"][
+    value.getDay()
+  ];
+}
+
+function manualScheduleForDate(date, days = [], exceptions = []) {
+  const exception = exceptions.find(
+    (item) => manualDateKey(item.date) === date,
+  );
+
+  if (exception) {
+    if (!exception.enabled) return null;
+
+    return {
+      startMin: exception.startMin,
+      endMin: exception.endMin,
+      breakStartMin: exception.breakStartMin,
+      breakEndMin: exception.breakEndMin,
+    };
+  }
+
+  const day = days.find((item) => item.day === manualDayEnum(date));
+  if (!day?.enabled) return null;
+
+  return {
+    startMin: day.startMin,
+    endMin: day.endMin,
+    breakStartMin: day.breakStartMin,
+    breakEndMin: day.breakEndMin,
+  };
+}
+
+function intersectManualSchedules(studioDay, masterDay) {
+  if (!studioDay || !masterDay) return null;
+
+  const startMin = Math.max(studioDay.startMin, masterDay.startMin);
+  const endMin = Math.min(studioDay.endMin, masterDay.endMin);
+  if (endMin <= startMin) return null;
+
+  return { startMin, endMin };
+}
+
+function overlapsManualBreak(startMin, endMin, schedule) {
+  if (
+    schedule?.breakStartMin == null ||
+    schedule?.breakEndMin == null
+  ) {
+    return false;
+  }
+
+  const breakStart = Number(schedule?.breakStartMin);
+  const breakEnd = Number(schedule?.breakEndMin);
+
+  if (!Number.isFinite(breakStart) || !Number.isFinite(breakEnd)) {
+    return false;
+  }
+
+  return startMin < breakEnd && endMin > breakStart;
+}
+
 // ✅ LIST my studios
 ownerRouter.get("/", requireAuth, requireOwner, async (req, res) => {
   const studios = await prisma.studio.findMany({
@@ -270,6 +337,7 @@ master: {
         if (!map.has(client.id)) {
 map.set(client.id, {
   id: client.id,
+  accountId: client.id,
 
   firstName: client.firstName || "",
   lastName: client.lastName || "",
@@ -877,10 +945,18 @@ ownerRouter.get(
           duration: true,
           price: true,
           allMasters: true,
+          masters: {
+            select: { masterId: true },
+          },
         },
       });
 
-      res.json({ services });
+      res.json({
+        services: services.map((service) => ({
+          ...service,
+          masters: service.masters.map((item) => item.masterId),
+        })),
+      });
     } catch (e) {
       console.error(e);
       res.status(500).json({
@@ -901,7 +977,12 @@ ownerRouter.get(
 
       const studio = await prisma.studio.findFirst({
         where: { id: studioId, ownerId },
-        select: { id: true },
+        select: {
+          id: true,
+          slotDuration: true,
+          scheduleDays: true,
+          scheduleExceptions: true,
+        },
       });
 
       if (!studio) {
@@ -917,29 +998,38 @@ ownerRouter.get(
           role: true,
           photoUrl: true,
           scheduleDays: {
-  select: {
-    day: true,
-    enabled: true,
-    startMin: true,
-    endMin: true,
-  },
-},
-scheduleExceptions: {
-  orderBy: { date: "asc" },
-  select: {
-    id: true,
-    date: true,
-    enabled: true,
-    startMin: true,
-    endMin: true,
-    createdAt: true,
-    updatedAt: true,
-  },
-},
+            select: {
+              day: true,
+              enabled: true,
+              startMin: true,
+              endMin: true,
+              breakStartMin: true,
+              breakEndMin: true,
+            },
+          },
+          scheduleExceptions: {
+            orderBy: { date: "asc" },
+            select: {
+              id: true,
+              date: true,
+              enabled: true,
+              startMin: true,
+              endMin: true,
+              breakStartMin: true,
+              breakEndMin: true,
+              createdAt: true,
+              updatedAt: true,
+            },
+          },
         },
       });
 
-      res.json({ masters });
+      res.json({
+        masters,
+        slotDuration: studio.slotDuration ?? 15,
+        scheduleDays: studio.scheduleDays,
+        scheduleExceptions: studio.scheduleExceptions,
+      });
     } catch (e) {
       console.error(e);
       res.status(500).json({
@@ -960,7 +1050,7 @@ ownerRouter.post(
 
       const { studioClientId, serviceId, masterId, date, time } = req.body;
 
-      if (!studioClientId || !serviceId || !masterId || !date || !time) {
+      if (!studioClientId || !serviceId || !date || !time) {
         return res.status(400).json({
           message: "Заповніть клієнта, послугу, майстра, дату і час.",
         });
@@ -971,23 +1061,64 @@ ownerRouter.post(
           id: studioId,
           ownerId,
         },
-        select: { id: true },
+        select: {
+          id: true,
+          scheduleDays: true,
+          scheduleExceptions: true,
+        },
       });
 
       if (!studio) {
         return res.status(404).json({ message: "Studio not found" });
       }
 
-      const studioClient = await prisma.studioClient.findFirst({
+      let studioClient = await prisma.studioClient.findFirst({
         where: {
-          id: studioClientId,
           studioId,
+          OR: [{ id: studioClientId }, { accountId: studioClientId }],
         },
       });
 
       if (!studioClient) {
-        return res.status(404).json({
-          message: "Клієнта не знайдено.",
+        const clientAccount = await prisma.clientAccount.findUnique({
+          where: { id: studioClientId },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            name: true,
+            phone: true,
+            email: true,
+            birthDate: true,
+            photoUrl: true,
+          },
+        });
+
+        if (!clientAccount) {
+          return res.status(404).json({
+            message: "Клієнта не знайдено.",
+          });
+        }
+
+        const nameParts = String(clientAccount.name || "")
+          .trim()
+          .split(/\s+/)
+          .filter(Boolean);
+
+        studioClient = await prisma.studioClient.create({
+          data: {
+            studioId,
+            accountId: clientAccount.id,
+            firstName:
+              clientAccount.firstName || nameParts[0] || "Клієнт",
+            lastName:
+              clientAccount.lastName || nameParts.slice(1).join(" ") || "",
+            phone: clientAccount.phone || null,
+            email: clientAccount.email || null,
+            birthDate: clientAccount.birthDate || null,
+            photoUrl: clientAccount.photoUrl || "",
+            source: "BOOKING",
+          },
         });
       }
 
@@ -999,6 +1130,10 @@ ownerRouter.post(
         select: {
           id: true,
           duration: true,
+          allMasters: true,
+          masters: {
+            select: { masterId: true },
+          },
         },
       });
 
@@ -1008,19 +1143,42 @@ ownerRouter.post(
         });
       }
 
-      const master = await prisma.master.findFirst({
+      const allowedMasterIds = service.masters.map((item) => item.masterId);
+
+      if (
+        masterId &&
+        !service.allMasters &&
+        !allowedMasterIds.includes(masterId)
+      ) {
+        return res.status(400).json({
+          message: "Обраний майстер не виконує цю послугу.",
+        });
+      }
+
+      const candidateMasters = await prisma.master.findMany({
         where: {
-          id: masterId,
           studioId,
+          ...(masterId
+            ? { id: masterId }
+            : service.allMasters
+              ? {}
+              : { id: { in: allowedMasterIds } }),
         },
         select: {
           id: true,
+          name: true,
+          photoUrl: true,
+          scheduleDays: true,
+          scheduleExceptions: true,
         },
+        orderBy: { createdAt: "asc" },
       });
 
-      if (!master) {
-        return res.status(404).json({
-          message: "Майстра не знайдено.",
+      if (!candidateMasters.length) {
+        return res.status(masterId ? 404 : 409).json({
+          message: masterId
+            ? "Майстра не знайдено."
+            : "Для цієї послуги немає доступних майстрів.",
         });
       }
 
@@ -1035,10 +1193,24 @@ ownerRouter.post(
       const durationMin = Number(service.duration || 60);
       const endAt = new Date(startAt.getTime() + durationMin * 60_000);
 
-      const busy = await prisma.booking.findFirst({
+      const studioDay = manualScheduleForDate(
+        date,
+        studio.scheduleDays,
+        studio.scheduleExceptions,
+      );
+
+      if (!studioDay) {
+        return res.status(409).json({
+          message: "У вибрану дату студія не працює.",
+        });
+      }
+
+      const requestedStartMin = startAt.getHours() * 60 + startAt.getMinutes();
+      const requestedEndMin = requestedStartMin + durationMin;
+      const conflictingBookings = await prisma.booking.findMany({
         where: {
           studioId,
-          masterId,
+          masterId: { in: candidateMasters.map((item) => item.id) },
           status: {
             not: "CANCELED",
           },
@@ -1049,12 +1221,43 @@ ownerRouter.post(
             gt: startAt,
           },
         },
-        select: { id: true },
+        select: { id: true, masterId: true },
       });
 
-      if (busy) {
+      const assignedMaster = candidateMasters.find((candidate) => {
+        const hasOwnSchedule = candidate.scheduleDays.length > 0;
+        const masterDay = hasOwnSchedule
+          ? manualScheduleForDate(
+              date,
+              candidate.scheduleDays,
+              candidate.scheduleExceptions,
+            )
+          : studioDay;
+        const effectiveDay = intersectManualSchedules(studioDay, masterDay);
+
+        if (!effectiveDay) return false;
+        if (requestedStartMin < effectiveDay.startMin) return false;
+        if (requestedEndMin > effectiveDay.endMin) return false;
+        if (overlapsManualBreak(requestedStartMin, requestedEndMin, studioDay)) {
+          return false;
+        }
+        if (
+          masterDay !== studioDay &&
+          overlapsManualBreak(requestedStartMin, requestedEndMin, masterDay)
+        ) {
+          return false;
+        }
+
+        return !conflictingBookings.some(
+          (booking) => String(booking.masterId) === String(candidate.id),
+        );
+      });
+
+      if (!assignedMaster) {
         return res.status(409).json({
-          message: "У цього майстра вже є запис на цей час.",
+          message: masterId
+            ? "Майстер недоступний у вибраний час."
+            : "На цей час немає вільного майстра.",
         });
       }
 
@@ -1112,7 +1315,7 @@ ownerRouter.post(
           clientId: clientAccountId,
           studioClientId: studioClient.id,
           serviceId,
-          masterId,
+          masterId: assignedMaster.id,
           startAt,
           endAt,
           status: "CONFIRMED",
@@ -1136,7 +1339,14 @@ ownerRouter.post(
         status: "confirmed",
       });
 
-      res.status(201).json({ booking });
+      res.status(201).json({
+        booking,
+        assignedMaster: {
+          id: assignedMaster.id,
+          name: assignedMaster.name,
+          photoUrl: assignedMaster.photoUrl || "",
+        },
+      });
     } catch (e) {
       console.error(e);
       res.status(500).json({

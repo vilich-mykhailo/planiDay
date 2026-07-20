@@ -398,19 +398,19 @@ lg:w-[860px]
                         key={option.value}
                         type="button"
                         onClick={() => handleSelect(option)}
-                        className={cn(
-                          "relative min-h-[92px] rounded-[18px] border p-2 text-center transition active:scale-[0.98]",
-                          active
-                            ? "border-[#ffb26b] bg-[#fff3e9] text-[#ff6200] shadow-[0_12px_28px_rgba(255,98,0,0.12)]"
-                            : "border-[#eee7dc] bg-white text-[#5f5a54] shadow-[0_8px_20px_rgba(15,23,42,0.035)] hover:bg-[#faf8f4]",
-                        )}
+className={cn(
+  "group relative min-h-[92px] rounded-[18px] border p-2 text-center transition-all duration-200 active:scale-[0.98]",
+  active
+    ? "border-[#ffb26b] bg-[#fff3e9] text-[#ff6200] shadow-[0_12px_28px_rgba(255,98,0,0.12)]"
+    : "border-[#eee7dc] bg-white text-[#5f5a54] shadow-[0_8px_20px_rgba(15,23,42,0.035)] hover:border-[#ffd2b3] hover:bg-[#fff8f3] hover:text-[#ff6200]",
+)}
                       >
                         <div
                           className={cn(
                             "mx-auto grid h-9 w-9 place-items-center rounded-[14px] transition",
-                            active
-                              ? "bg-white text-[#ff6200]"
-                              : "text-[#8a8580]",
+active
+  ? "bg-white text-[#ff6200]"
+  : "text-[#8a8580] group-hover:text-[#ff6200]",
                           )}
                         >
                           <CategoryIcon className="h-5 w-5" />
@@ -571,10 +571,10 @@ lg:w-[860px]
                         type="button"
                         onClick={() => handleSelect(option)}
 className={cn(
-  "relative flex min-h-[46px] w-full items-center justify-between gap-3 rounded-[16px] border px-4 py-2 text-left transition active:scale-[0.98]",
+  "group relative flex min-h-[46px] w-full items-center justify-between gap-3 rounded-[16px] border px-4 py-2 text-left transition-all duration-200 active:scale-[0.98]",
   active
     ? "border-[#ffb26b] bg-[#fff3e9] text-[#ff6200]"
-    : "border-[#eee7dc] bg-white text-[#5f5a54] hover:bg-[#faf8f4]",
+    : "border-[#eee7dc] bg-white text-[#5f5a54] hover:border-[#ffd2b3] hover:bg-[#fff8f3] hover:text-[#ff6200]",
 )}
                       >
 <div className="min-w-0">

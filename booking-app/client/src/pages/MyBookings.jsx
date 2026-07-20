@@ -1491,21 +1491,74 @@ className="
                         type="button"
                         onClick={() => handleRescheduleClick(activeBooking)}
                         disabled={!canRescheduleBooking(activeBooking)}
-                        className="inline-flex h-14 w-full items-center justify-center gap-2 rounded-[12px] bg-[#ff6200] text-[15px] font-black text-white  transition hover:bg-[#f25c00] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 max-[639px]:h-11 max-[639px]:rounded-[16px] max-[639px]:gap-1.5 max-[639px]:text-[12px] sm:h-10 sm:w-auto sm:min-w-[160px] sm:px-4 sm:text-[13px]"
+                        className="
+  inline-flex h-14 w-full items-center justify-center gap-2
+  rounded-[12px]
+  bg-[#202020]
+  text-[15px] font-black text-white
+  shadow-[0_12px_26px_rgba(15,15,15,0.18)]
+  transition-all duration-300
+  hover:scale-[1.015]
+  hover:bg-[#ff6200]
+  active:scale-[0.98]
+  disabled:pointer-events-none
+  disabled:bg-[#f1ebe4]
+  disabled:text-[#aaa19a]
+  disabled:shadow-none
+  disabled:opacity-100
+  max-[639px]:h-11
+  max-[639px]:rounded-[16px]
+  max-[639px]:gap-1.5
+  max-[639px]:text-[12px]
+  sm:h-10
+  sm:w-auto
+  sm:min-w-[160px]
+  sm:px-4
+  sm:text-[13px]
+"
                       >
                         <CalendarDays className="h-5 w-5" />
                         Перенести запис
                       </button>
 
-                      <button
-                        type="button"
-                        onClick={() => setCancelConfirmId(activeBooking.id)}
-                        disabled={!canRescheduleBooking(activeBooking)}
-                        className="inline-flex h-14 w-full items-center justify-center gap-2 rounded-[12px] border border-[#ef4444]/55 bg-white text-[15px] font-black text-[#ef4444] transition hover:bg-[#fff1f1] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 max-[639px]:h-11 max-[639px]:rounded-[16px] max-[639px]:gap-1.5 max-[639px]:text-[12px] sm:h-10 sm:w-auto sm:min-w-[150px] sm:px-4 sm:text-[13px]"
-                      >
-                        <XCircle className="h-5 w-5" />
-                        Скасувати запис
-                      </button>
+<button
+  type="button"
+  onClick={() => setCancelConfirmId(activeBooking.id)}
+  disabled={!canRescheduleBooking(activeBooking)}
+  className="
+    inline-flex h-14 w-full items-center justify-center gap-2
+    rounded-[12px]
+    border border-[#ef4444]/45
+    bg-white
+    text-[15px] font-black text-[#ef4444]
+    shadow-[0_10px_22px_rgba(239,68,68,0.08)]
+    transition-all duration-300
+    hover:scale-[1.015]
+    hover:border-[#ef4444]
+    hover:bg-[#ef4444]
+    hover:text-white
+    hover:shadow-[0_12px_26px_rgba(239,68,68,0.22)]
+    active:scale-[0.98]
+    disabled:pointer-events-none
+    disabled:border-[#eadfce]
+    disabled:bg-[#f1ebe4]
+    disabled:text-[#aaa19a]
+    disabled:shadow-none
+    disabled:opacity-100
+    max-[639px]:h-11
+    max-[639px]:rounded-[16px]
+    max-[639px]:gap-1.5
+    max-[639px]:text-[12px]
+    sm:h-10
+    sm:w-auto
+    sm:min-w-[150px]
+    sm:px-4
+    sm:text-[13px]
+  "
+>
+  <XCircle className="h-5 w-5" />
+  Скасувати запис
+</button>
                     </>
                   )}
                 </div>

@@ -115,13 +115,12 @@ const bookingsQuery = useQuery({
   queryFn: () => fetchBookings(studioId),
   enabled: Boolean(studioId),
 
-  // не тягнути щоразу заново
-  staleTime: 1000 * 60 * 10, // 10 хв
-  gcTime: 1000 * 60 * 30, // кеш 30 хв
+  staleTime: 0,
+  gcTime: 1000 * 60 * 30,
 
-  refetchOnMount: false,
-  refetchOnWindowFocus: false,
-  refetchOnReconnect: false,
+  refetchOnMount: "always",
+  refetchOnWindowFocus: true,
+  refetchOnReconnect: true,
 });
 
   // ================= SOCKET JOIN =================

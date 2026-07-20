@@ -195,10 +195,21 @@ function PrimaryButton({ children, className, ...props }) {
     <button
       {...props}
       className={cx(
-        "inline-flex h-12 items-center justify-center gap-2 rounded-[18px] px-5 text-sm font-black transition active:scale-[0.98]",
+        `
+          inline-flex h-12 items-center justify-center gap-2
+          rounded-[18px] px-5
+          text-sm font-black
+          transition-all duration-300
+        `,
         props.disabled
           ? "cursor-not-allowed bg-[#f1ebe4] text-[#aaa19a]"
-          : "bg-[#ff6200] text-white hover:bg-[#f25c00]",
+          : `
+              bg-[#202020] text-white
+              shadow-[0_12px_26px_rgba(15,15,15,0.18)]
+              hover:scale-[1.015]
+              hover:bg-[#ff6200]
+              active:scale-[0.98]
+            `,
         className,
       )}
     >
@@ -1232,151 +1243,198 @@ await patchProfile({
   <section className="mt-5 mb-8 grid items-center gap-5 lg:grid-cols-[380px_minmax(0,1fr)]">
         {/* SIDE MENU */}
 <aside
-  onClick={() => {
-    if (window.innerWidth < 640 && !isProOpen) {
-      setIsProOpen(true);
-    }
-  }}
-  className={cn(
-    "relative overflow-hidden rounded-[28px] border border-[#eadfce] bg-white p-4 shadow-[0_14px_36px_rgba(15,23,42,0.06)] sm:rounded-[15px] sm:p-5",
-    !isProOpen && "max-[639px]:cursor-pointer",
-  )}
+  className="
+    relative overflow-hidden rounded-[28px]
+    border border-[#eadfce] bg-white p-4
+    shadow-[0_14px_36px_rgba(15,23,42,0.06)]
+    sm:rounded-[15px] sm:p-5
+  "
 >
-  <div className="absolute right-[-50px] top-[-60px] h-[220px] w-[220px] rounded-full " />
+  <div
+  aria-hidden="true"
+  className="
+    pointer-events-none absolute
+    right-[-50px] top-[-60px]
+    h-[220px] w-[220px]
+    rounded-full
+  "
+/>
 
   {/* MOBILE TOGGLE */}
-  <button
-    type="button"
-    onClick={(event) => {
-  event.stopPropagation();
-  setIsProOpen((prev) => !prev);
-}}
-    className="
-      mb-3 hidden w-full items-center justify-between
-      rounded-[18px] bg-white px-4 py-3
-      border border-[#ffe2cf]
-      shadow-[0_10px_24px_rgba(15,23,42,0.05)]
-      max-[639px]:flex
-    "
-  >
-    <div className="flex items-center gap-3">
-      <div className="grid h-10 w-10 place-items-center rounded-[14px] bg-[#fff1e8]">
-        <Crown className="h-5 w-5 fill-[#ff6200] text-[#ff6200]" />
-      </div>
-
-      <div className="text-left">
-        <p className="text-[13px] font-black text-[#202020]">
-          Статус Pro
-        </p>
-
-        <p className="text-[10px] font-semibold text-[#8a847d]">
-          Преміальний акаунт
-        </p>
-      </div>
+<button
+  type="button"
+  onClick={() => setIsProOpen((prev) => !prev)}
+  aria-expanded={isProOpen}
+  className="
+    hidden w-full items-center justify-between
+    rounded-[18px] border border-[#ffe2cf]
+    bg-white px-4 py-3
+    shadow-[0_10px_24px_rgba(15,23,42,0.05)]
+    transition active:scale-[0.98]
+    max-[639px]:flex
+  "
+>
+  <div className="flex items-center gap-3">
+    <div className="grid h-10 w-10 place-items-center rounded-[14px] bg-[#fff1e8]">
+      <Crown className="h-5 w-5 fill-[#ff6200] text-[#ff6200]" />
     </div>
 
-    <ChevronDown
-      className={cn(
-        "h-5 w-5 text-[#7b766f] transition duration-300",
-        isProOpen && "rotate-180",
-      )}
-    />
-  </button>
+    <div className="text-left">
+      <p className="text-[13px] font-black text-[#202020]">
+        Статус Pro
+      </p>
+
+      <p className="text-[10px] font-semibold text-[#8a847d]">
+        Преміальний акаунт
+      </p>
+    </div>
+  </div>
+
+  <ChevronDown
+    className={cn(
+      "h-5 w-5 text-[#7b766f] transition-transform duration-300",
+      isProOpen && "rotate-180",
+    )}
+  />
+</button>
 
   {/* CONTENT */}
-  <div
-    className={cn(
-      "relative z-10",
-      !isProOpen && "max-[639px]:hidden",
-    )}
-  >
+<div
+  className={cn(
+    `
+      relative overflow-hidden rounded-[28px]
+      border border-[#eadfce]
+      bg-[#fbfaf8]
+      shadow-[0_18px_46px_rgba(15,23,42,0.08)]
+    `,
+    "max-[639px]:mt-3",
+    !isProOpen && "max-[639px]:hidden",
+  )}
+>
 
-<div className="mt-2 flex flex-wrap items-center gap-2">
-  <h2 className="text-[36px] font-black leading-[0.92] tracking-[-0.06em] text-[#202020]">
-    Статус <span className="text-[#ff6200]">Pro</span>
-  </h2>
 
-  <span className="inline-flex h-7 items-center gap-1 rounded-full border border-[#ffe2cf] bg-white px-2.5 text-[10px] font-black uppercase tracking-[0.05em] text-[#ff6200] sm:h-8 sm:px-3 sm:text-xs">
-    <BadgeCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-    Pro
-  </span>
-</div>
+  {/* Ціна */}
+  <div className="flex items-center justify-between gap-4 bg-white px-5 py-4">
+    <div>
+      <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#9b948d]">
+        Щомісячна підписка
+      </p>
 
-    <p className="mt-1 max-w-[260px] text-[13px] font-medium leading-6 text-[#77716b]">
-      Преміальний статус клієнта.
+      <div className="mt-1 flex items-end gap-2">
+        <span className="text-[34px] font-black leading-none tracking-[-0.06em] text-[#202020]">
+          19 zł
+        </span>
+
+        <span className="pb-[3px] text-[11px] font-bold text-[#9b948d]">
+          на місяць
+        </span>
+      </div>
+    </div>
+
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-[#fff1e8] px-3 py-1.5 text-[10px] font-black text-[#ff6200]">
+      <Sparkles className="h-3.5 w-3.5" />
+      Premium
+    </span>
+  </div>
+
+  {/* Переваги */}
+  <div className="border-t border-[#f0e7da] px-5 py-4">
+    <p className="mb-3 text-[10px] font-black uppercase tracking-[0.12em] text-[#9b948d]">
+      Що входить
     </p>
 
-    <div className="mt-2 flex items-start gap-3 rounded-[20px] border border-[#ffe2cf] bg-[#fff7f2] p-3">
-      <div>
-        <p className="mt-1 text-[11px] font-medium leading-5 text-[#8a847d]">
-          Значок <span className="font-black text-[#ff6200]">Pro</span> будуть бачити усі, тому студії та майстри розуміють,
-          що це преміальний клієнт із вищим статусом та довірою на платформі.
-        </p>
-      </div>
-    </div>
-
-    <div className="mt-2 rounded-[24px] border border-[#ffe2cf] bg-[#fff7f2] p-4 shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="text-[11px] font-black uppercase tracking-[0.12em] text-[#9b948d]">
-            Підписка
-          </div>
-
-          <div className="mt-1 text-[32px] font-black tracking-[-0.05em] text-[#202020]">
-            19 zł {"  "}
-            <span className="text-[12px] font-bold text-[#9b948d]"> / місяць</span>
-          </div>
-
-        </div>
-
-        <div className="grid h-14 w-14 place-items-center bg-white rounded-[20px] bg-[#fff1e8]">
-          <Crown className="h-6 w-6 fill-[#ff6200] text-[#ff6200]" />
-        </div>
-      </div>
-
-      <div className="mt-3 space-y-3">
-        {[
-          "Більше довіри від студій",
-          "Преміальний вигляд акаунта",
-          "Пріоритет при записі",
-          "Вищий статус на платформі",
-        ].map((item) => (
-          <div
-            key={item}
-            className="flex items-center gap-3 text-[13px] font-bold text-[#5f5a55]"
-          >
-            <span className="grid h-6 w-6 bg-white place-items-center rounded-full">
-              <Check className="h-3.5 w-3.5 text-[#ff6200]" />
+    <div className="grid grid-cols-2 gap-2">
+      {[
+        {
+          title: "Помітний профіль",
+          text: "Преміальне оформлення",
+        },
+        {
+          title: "Більше довіри",
+          text: "Для студій і майстрів",
+        },
+        {
+          title: "Pro-відмітка",
+          text: "Видима у вашому профілі",
+        },
+        {
+          title: "Вищий статус",
+          text: "На платформі Aveliio",
+        },
+      ].map((item) => (
+        <div
+          key={item.title}
+          className="
+            rounded-[16px]
+            border border-[#eee7dc]
+            bg-white
+            px-3 py-3
+            transition-all duration-200
+            hover:border-[#ffd1b3]
+            hover:bg-[#fff9f5]
+          "
+        >
+          <div className="flex items-center gap-2">
+            <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[#fff1e8] text-[#ff6200]">
+              <Check className="h-3.5 w-3.5" strokeWidth={3} />
             </span>
 
-            {item}
+            <p className="text-[11px] font-black leading-4 text-[#202020]">
+              {item.title}
+            </p>
           </div>
-        ))}
-      </div>
-    </div>
 
+          <p className="mt-1.5 text-[9px] font-semibold leading-3.5 text-[#8a847d]">
+            {item.text}
+          </p>
+        </div>
+      ))}
+    </div>
+  </div>
+
+  {/* Кнопка */}
+  <div className="border-t border-[#eadfce] bg-white px-5 py-4">
     <button
       type="button"
       className="
-        mt-2 flex h-[56px] w-full items-center justify-center gap-2
-        rounded-[20px]
-        bg-[#ff6200]
-        text-[14px] font-black text-white
-              transition-all duration-300
-        hover:bg-[#f25c00]
+        flex h-[52px] w-full items-center justify-between
+        rounded-[17px]
+        bg-[#202020]
+        px-4
+        text-white
+        shadow-[0_12px_26px_rgba(15,15,15,0.18)]
+        transition-all duration-250
+        hover:scale-[1.015]
+        hover:bg-[#ff6200]
         active:scale-[0.98]
       "
     >
-      <Sparkles className="h-4 w-4" />
-      Отримати статус Pro
+      <span className="flex items-center gap-2">
+        <Crown className="h-4 w-4" />
+
+        <span className="text-[13px] font-black">
+          Підключити Premium
+        </span>
+      </span>
+
+      <ChevronRight className="h-4 w-4" />
     </button>
+
+    <div className="mt-3 flex items-center justify-center gap-1.5 text-[#aaa29b]">
+      <ShieldCheck className="h-3.5 w-3.5" />
+
+      <span className="text-[9px] font-bold">
+        Підписку можна скасувати в будь-який момент
+      </span>
+    </div>
   </div>
+</div>
 </aside>
 
         {/* PERSONAL DATA */}
         <section
   ref={personalDataRef}
- className="overflow-hidden rounded-[30px] border border-[#eadfce] bg-white shadow-[0_14px_36px_rgba(15,23,42,0.06)]"
+ className="overflow-hidden rounded-[15px] border border-[#eadfce] bg-white shadow-[0_14px_36px_rgba(15,23,42,0.06)]"
 >
 <div className="flex items-center justify-between gap-3 border-b border-[#eee8df] px-5 py-4 sm:px-7">
 <h3 className="text-[24px] font-black tracking-[-0.05em] text-[#202020]">

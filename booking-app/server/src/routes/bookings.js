@@ -291,12 +291,13 @@ return {
 
   masterId: b.masterId,
 
-  clientName:
-    b.client?.name ||
-    [b.client?.firstName, b.client?.lastName]
-      .filter(Boolean)
-      .join(" ") ||
-    "—",
+clientName:
+  [b.client?.firstName, b.client?.lastName]
+    .filter(Boolean)
+    .join(" ")
+    .trim() ||
+  b.client?.name ||
+  "—",
 
   clientPhone: b.client?.phone || "—",
   clientPhotoUrl: b.client?.photoUrl || "",

@@ -13,6 +13,7 @@ import {
   Timer,
   MapPin,
   Sparkles,
+  Phone,
 } from "lucide-react";
 
 function cn(...classes) {
@@ -51,6 +52,8 @@ export default function BookingCustomerForm({
   bookingDetails,
   onSubmit,
   onBack,
+  submitting = false,
+  submitLabel = "Підтвердити",
 }) {
   const [addressCopied, setAddressCopied] = useState(false);
 
@@ -91,6 +94,25 @@ export default function BookingCustomerForm({
   }
 
   const details = [
+    ...(bookingDetails?.clientName
+      ? [
+          {
+            icon: UserRound,
+            label: "Клієнт",
+            value: bookingDetails.clientName,
+            photo: bookingDetails?.clientPhoto || "",
+          },
+        ]
+      : []),
+    ...(bookingDetails?.clientPhone
+      ? [
+          {
+            icon: Phone,
+            label: "Телефон",
+            value: bookingDetails.clientPhone,
+          },
+        ]
+      : []),
     {
       icon: FilePenLine,
       label: "Послуга",
@@ -160,7 +182,8 @@ const additionalDetails = details.filter(
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.2 }}
-        onClick={onBack}
+        onClick={submitting ? undefined : onBack}
+        disabled={submitting}
         className="fixed inset-0 z-50 bg-[#202020]/45 backdrop-blur-[7px]"
         aria-label="Закрити вікно підтвердження"
         data-testid="booking-form-backdrop"
@@ -207,6 +230,7 @@ const additionalDetails = details.filter(
               <button
                 type="button"
                 onClick={onBack}
+                disabled={submitting}
                 className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white text-[#77716b] shadow-[0_10px_24px_rgba(15,23,42,0.06)] transition hover:bg-[#fff3e9] hover:text-[#ff6200] active:scale-[0.96]"
                 aria-label="Закрити"
               >
@@ -356,23 +380,45 @@ className="
           </div>
 
           {/* Кнопки */}
-          <div className="grid shrink-0 grid-cols-2 gap-2 border-t border-[#eadfce] bg-[#fbfaf8] px-5 pb-[max(18px,env(safe-area-inset-bottom))] pt-4 sm:px-6 sm:pb-5">
-            <button
-              type="submit"
-              data-testid="booking-form-submit-btn"
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-[16px] border border-[#2C2C2C] bg-[#2C2C2C] px-4 text-sm font-black text-white transition hover:bg-[#1f1f1f] active:scale-[0.98]"
-            >
-              <CheckCheck className="h-4.5 w-4.5" />
-              Підтвердити
-            </button>
+         <div className="grid shrink-0 grid-cols-[0.8fr_1.2fr] gap-2 border-t border-[#eadfce] bg-[#fbfaf8] px-5 pb-[max(18px,env(safe-area-inset-bottom))] pt-4 sm:px-6 sm:pb-5">
 
             <button
               type="button"
               onClick={onBack}
+              disabled={submitting}
               className="inline-flex h-12 items-center justify-center rounded-[16px] border border-[#eadfce] bg-white px-4 text-sm font-black text-[#2C2C2C] transition hover:border-[#ffd6bd] hover:bg-[#fff7f0] active:scale-[0.98]"
             >
               Назад
-            </button>
+            </button><button
+  type="submit"
+  disabled={submitting}
+  data-testid="booking-form-submit-btn"
+  className="
+    inline-flex h-12 items-center justify-center gap-2
+    rounded-[16px]
+    border border-[#202020]
+    bg-[#202020]
+    px-4
+    text-sm font-black text-white
+    shadow-[0_12px_26px_rgba(15,15,15,0.18)]
+    transition-all duration-300
+    hover:scale-[1.015]
+    hover:border-[#ff6200]
+    hover:bg-[#ff6200]
+    hover:shadow-[0_14px_30px_rgba(255,98,0,0.24)]
+    active:scale-[0.98]
+    disabled:pointer-events-none
+    disabled:border-[#eadfce]
+    disabled:bg-[#f1ebe4]
+    disabled:text-[#aaa19a]
+    disabled:shadow-none
+  "
+>
+  <CheckCheck className="h-4.5 w-4.5" />
+  {submitting ? "Створюємо..." : submitLabel}
+</button>
+
+
           </div>
         </motion.form>
       </div>

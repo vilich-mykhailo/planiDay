@@ -424,11 +424,45 @@ studios: studios.map((s) => ({
 clientRouter.patch("/me", requireAuth, requireClient, async (req, res) => {
   const { firstName, lastName, phone, birthDate, gender, photoUrl } = req.body;
 
+  const currentClient = await prisma.clientAccount.findUnique({
+    where: { id: req.auth.sub },
+    select: {
+      firstName: true,
+      lastName: true,
+    },
+  });
+
+  if (!currentClient) {
+    return res.status(404).json({ message: "Client not found" });
+  }
+
+  const nextFirstName =
+    firstName !== undefined
+      ? String(firstName || "").trim() || null
+      : currentClient.firstName;
+
+  const nextLastName =
+    lastName !== undefined
+      ? String(lastName || "").trim() || null
+      : currentClient.lastName;
+
+  const fullName = [nextFirstName, nextLastName]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+
   const updated = await prisma.clientAccount.update({
     where: { id: req.auth.sub },
     data: {
-      ...(firstName !== undefined ? { firstName: firstName || null } : {}),
-      ...(lastName !== undefined ? { lastName: lastName || null } : {}),
+      ...(firstName !== undefined ? { firstName: nextFirstName } : {}),
+      ...(lastName !== undefined ? { lastName: nextLastName } : {}),
+
+      ...(
+        firstName !== undefined || lastName !== undefined
+          ? { name: fullName || null }
+          : {}
+      ),
+
       ...(phone !== undefined ? { phone: phone || null } : {}),
       ...(gender !== undefined ? { gender: gender || null } : {}),
       ...(photoUrl !== undefined ? { photoUrl: photoUrl || null } : {}),

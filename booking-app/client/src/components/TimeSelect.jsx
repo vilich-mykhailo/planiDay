@@ -247,12 +247,29 @@ export default function TimeSelect({
             type="button"
             onClick={handleDone}
             disabled={!isChanged || submitting}
-            className={cn(
-              "inline-flex h-11 min-w-[155px] items-center justify-center rounded-2xl px-6 text-sm font-black transition active:scale-[0.98]",
-              isChanged && !submitting
-                ? "bg-[var(--color-primary-buttom)] text-white hover:bg-[#4a4a4a]"
-                : "cursor-not-allowed bg-[#f0e7da] text-[#9b9186]",
-            )}
+className={cn(
+  `
+    inline-flex h-11 min-w-[155px] items-center justify-center
+    rounded-2xl px-6
+    text-sm font-black
+    transition-all duration-300
+    active:scale-[0.98]
+  `,
+  isChanged && !submitting
+    ? `
+        bg-[#202020] text-white
+        shadow-[0_12px_26px_rgba(15,15,15,0.18)]
+        hover:scale-[1.015]
+        hover:bg-[#ff6200]
+        hover:shadow-[0_14px_30px_rgba(255,98,0,0.24)]
+      `
+    : `
+        cursor-not-allowed
+        bg-[#f1ebe4]
+        text-[#aaa19a]
+        shadow-none
+      `,
+)}
           >
             {submitting ? "Збереження..." : "Готово"}
           </button>

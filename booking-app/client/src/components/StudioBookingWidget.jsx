@@ -12,6 +12,8 @@ import {
   Users,
   Banknote,
   CalendarX2,
+  Phone,
+  Search,
 } from "lucide-react";
 import Calendar from "./Calendar";
 import BookingCustomerForm from "./BookingCustomerForm";
@@ -374,6 +376,8 @@ export default function StudioBookingWidget({
   rescheduleBookingId = null,
   preselectedDate = null,
   preselectedTime = null,
+  bookingMode = "client",
+  clients = [],
   onCancel,
   onSuccess,
 }) {
@@ -411,8 +415,11 @@ const remountKey = useMemo(() => {
   const rescheduleKey = isReschedule ? `reschedule-${rescheduleBookingId || "no-id"}` : "create";
   const dateKey = preselectedDate || "no-date";
   const timeKey = preselectedTime || "no-time";
+  const clientKey = Array.isArray(clients)
+    ? clients.map((client) => client.id).join("|")
+    : "no-clients";
 
-  return `${studioKey}::${masterKey}::${preKey}::${servicesKey}::${rescheduleKey}::${dateKey}::${timeKey}`;
+  return `${studioKey}::${masterKey}::${preKey}::${servicesKey}::${rescheduleKey}::${dateKey}::${timeKey}::${bookingMode}::${clientKey}`;
 }, [
   studio?.id,
   studio?.slug,
@@ -423,6 +430,8 @@ const remountKey = useMemo(() => {
   rescheduleBookingId,
   preselectedDate,
   preselectedTime,
+  bookingMode,
+  clients,
 ]);
 
   if (!studio) return null;
@@ -443,6 +452,8 @@ const remountKey = useMemo(() => {
   rescheduleBookingId={rescheduleBookingId}
   preselectedDate={preselectedDate}
   preselectedTime={preselectedTime}
+  bookingMode={bookingMode}
+  clients={clients}
   onCancel={onCancel}
   onSuccess={onSuccess}
 />
@@ -464,10 +475,13 @@ function StudioBookingWidgetInner({
   rescheduleBookingId,
   preselectedDate,
   preselectedTime,
+  bookingMode,
+  clients,
   onCancel,
   onSuccess,
 }) {
   const queryClient = useQueryClient();
+  const ownerMode = bookingMode === "owner";
   const slotDuration =
     typeof slotDurationProp === "number" && slotDurationProp > 0
       ? slotDurationProp
@@ -534,15 +548,47 @@ function StudioBookingWidgetInner({
   }, [visibleServices, preselectedService?.serviceId]);
   const [selectedDate, setSelectedDate] = useState(null);
   const [step, setStep] = useState("pick");
+  const [selectedClientId, setSelectedClientId] = useState("");
+  const [clientSearch, setClientSearch] = useState("");
   const [selectedServiceId, setSelectedServiceId] = useState(
     () => defaultServiceId,
   );
   const [selectedTime, setSelectedTime] = useState(null);
   
   const [form, setForm] = useState({ name: "", phone: "" });
+  const [submitting, setSubmitting] = useState(false);
   const [busyTimes, setBusyTimes] = useState(() => new Set());
   const [busyLoading, setBusyLoading] = useState(false);
 const [currentTimeTick, setCurrentTimeTick] = useState(() => Date.now());
+
+  const visibleClients = useMemo(() => {
+    const query = clientSearch.trim().toLowerCase();
+    const list = Array.isArray(clients) ? clients : [];
+
+    if (!query) return list;
+
+    return list.filter((client) =>
+      [
+        client?.name,
+        client?.firstName,
+        client?.lastName,
+        client?.phone,
+        client?.email,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(query),
+    );
+  }, [clients, clientSearch]);
+
+  const selectedClient = useMemo(
+    () =>
+      (Array.isArray(clients) ? clients : []).find(
+        (client) => String(client.id) === String(selectedClientId),
+      ) || null,
+    [clients, selectedClientId],
+  );
 
 useEffect(() => {
   const intervalId = window.setInterval(() => {
@@ -1020,7 +1066,7 @@ const res = await fetch(busyUrl, {
   }, [defaultServiceId]);
 
   async function handleSubmit(e) {
-    e.preventDefault();
+    e?.preventDefault?.();
 
     if (!studio?.id || !selectedDateStr || !dayKey || !isDayEnabled) return;
     if (!selectedTime) return;
@@ -1028,25 +1074,40 @@ const res = await fetch(busyUrl, {
     const service = selectedService || visibleServices?.[0] || null;
     if (!service?.id) return;
 
+    if (ownerMode && !selectedClient?.id) {
+      alert("Оберіть клієнта");
+      return;
+    }
+
     if (masterPickMode === MASTER_PICK_MODE.SPECIFIC && !selectedMaster?.id) {
       alert("Оберіть майстра");
       return;
     }
 
     try {
+      setSubmitting(true);
       const token = localStorage.getItem("token");
       const role = localStorage.getItem("role");
 
-      if (!token || role !== "client") {
+      const normalizedRole = String(role || "").toLowerCase();
+
+      if (!token || (!ownerMode && normalizedRole !== "client")) {
         alert("Щоб записатися, потрібно увійти як клієнт");
         return;
       }
 
-const url = isReschedule
-  ? `${import.meta.env.VITE_API_URL}/client/bookings/${rescheduleBookingId}/reschedule`
-  : `${import.meta.env.VITE_API_URL}/bookings/studio/${studio.id}`;
+      if (ownerMode && normalizedRole !== "owner") {
+        alert("Щоб створити запис, потрібно увійти як власник");
+        return;
+      }
 
-const method = isReschedule ? "PATCH" : "POST";
+const url = ownerMode
+  ? `${import.meta.env.VITE_API_URL}/owner/studio/${studio.id}/manual-booking`
+  : isReschedule
+    ? `${import.meta.env.VITE_API_URL}/client/bookings/${rescheduleBookingId}/reschedule`
+    : `${import.meta.env.VITE_API_URL}/bookings/studio/${studio.id}`;
+
+const method = !ownerMode && isReschedule ? "PATCH" : "POST";
 
 const res = await fetch(url, {
   method,
@@ -1055,6 +1116,7 @@ const res = await fetch(url, {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   },
   body: JSON.stringify({
+    ...(ownerMode ? { studioClientId: selectedClient.id } : {}),
     serviceId: service.id,
     masterId: selectedMaster?.id || null,
     date: selectedDateStr,
@@ -1071,7 +1133,9 @@ if (!res.ok) {
 }
 
 await queryClient.invalidateQueries({
-  queryKey: ["client-bookings"],
+  queryKey: ownerMode
+    ? ["owner-bookings", studio.id]
+    : ["client-bookings"],
 });
 
 if (onSuccess) {
@@ -1097,17 +1161,21 @@ if (onSuccess) {
     serviceName: service?.name || "",
 
     masterName:
-      masterPickMode === MASTER_PICK_MODE.ANY
-        ? "Буде призначено автоматично"
-        : selectedMaster?.name || "—",
+      ownerMode && data?.assignedMaster?.name
+        ? data.assignedMaster.name
+        : masterPickMode === MASTER_PICK_MODE.ANY
+          ? "Буде призначено автоматично"
+          : selectedMaster?.name || "—",
 
     masterPhoto:
-      masterPickMode === MASTER_PICK_MODE.ANY
-        ? ""
-        : selectedMaster?.photoUrl ||
-          selectedMaster?.photo ||
-          selectedMaster?.avatar ||
-          "",
+      ownerMode && data?.assignedMaster?.photoUrl
+        ? data.assignedMaster.photoUrl
+        : masterPickMode === MASTER_PICK_MODE.ANY
+          ? ""
+          : selectedMaster?.photoUrl ||
+            selectedMaster?.photo ||
+            selectedMaster?.avatar ||
+            "",
 
     date: selectedDateStr,
     time: selectedTime,
@@ -1120,6 +1188,14 @@ if (onSuccess) {
     duration: service?.duration
       ? `${service.duration} хв`
       : `${slotDuration} хв`,
+
+    clientName: ownerMode
+      ? selectedClient?.name ||
+        [selectedClient?.firstName, selectedClient?.lastName]
+          .filter(Boolean)
+          .join(" ") ||
+        "Клієнт"
+      : "",
   });
 }
 
@@ -1134,10 +1210,13 @@ onCancel?.();
         : "Не вдалося створити запис"),
   ),
 );
+    } finally {
+      setSubmitting(false);
     }
   }
 
   const canGoNext =
+    (!ownerMode || Boolean(selectedClientId)) &&
     Boolean(selectedServiceId) &&
     Boolean(selectedDateStr) &&
     Boolean(selectedTime) &&
@@ -1145,6 +1224,8 @@ onCancel?.();
     isDayEnabled;
 
   const timeRowRef = useRef(null);
+const clientsSectionRef = useRef(null);
+const servicesSectionRef = useRef(null);
 const mastersSectionRef = useRef(null);
 const calendarSectionRef = useRef(null);
 const timeSectionRef = useRef(null);
@@ -1187,14 +1268,124 @@ function scrollTimeRow(direction) {
 
   return (
     <div
-  className="flex h-full min-h-0 flex-col"
+  className="relative flex h-full min-h-0 flex-col"
   data-testid="booking-widget"
 >
    <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-5 pb-6 sm:px-6">
-        <section data-testid="booking-services-section">
+        {ownerMode && (
+          <section
+            ref={clientsSectionRef}
+            data-testid="booking-clients-section"
+          >
+            <div className="mb-4">
+              <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.25em] text-amber-600">
+                Крок 1
+              </p>
+              <h2 className="text-lg font-bold text-stone-800">
+                Оберіть клієнта
+              </h2>
+            </div>
+
+            <div className="relative mb-3">
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+              <input
+                type="search"
+                value={clientSearch}
+                onChange={(event) => setClientSearch(event.target.value)}
+                placeholder="Пошук за ім’ям або телефоном"
+                className="h-12 w-full rounded-2xl border border-stone-200 bg-white pl-11 pr-4 text-sm font-semibold text-stone-800 outline-none transition focus:border-[#ff6200] focus:ring-2 focus:ring-[#ff6200]/15"
+              />
+            </div>
+
+            {visibleClients.length === 0 ? (
+              <div className="rounded-2xl border border-stone-200 bg-stone-100 p-5 text-sm text-stone-500">
+                {clients.length
+                  ? "Клієнтів за запитом не знайдено."
+                  : "Клієнти ще не додані."}
+              </div>
+            ) : (
+              <div className="grid max-h-[310px] grid-cols-1 gap-2.5 overflow-y-auto pr-1 sm:grid-cols-2">
+                {visibleClients.map((client) => {
+                  const active =
+                    String(client.id) === String(selectedClientId);
+                  const clientName =
+                    client.name ||
+                    [client.firstName, client.lastName]
+                      .filter(Boolean)
+                      .join(" ") ||
+                    "Клієнт";
+                  const photo =
+                    client.photoUrl || client.photo || client.avatar || "";
+
+                  return (
+                    <button
+                      key={client.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedClientId(String(client.id));
+                        scrollToSection(servicesSectionRef);
+                      }}
+                      className={cn(
+                        "flex min-h-[76px] items-center gap-3 rounded-2xl border p-3 text-left transition active:scale-[0.99]",
+                        active
+                          ? "border-[#ff6200] bg-[#ff6200]/5 ring-2 ring-[#ff6200]/15"
+                          : "border-stone-200 bg-white hover:border-[#ff6200]/30 hover:bg-[#ff6200]/5",
+                      )}
+                    >
+                      <div
+                        className={cn(
+                          "flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border",
+                          active
+                            ? "border-[#ff6200] bg-white text-[#ff6200]"
+                            : "border-stone-200 bg-stone-100 text-stone-500",
+                        )}
+                      >
+                        {photo ? (
+                          <img
+                            src={photo}
+                            alt={clientName}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <UserRound className="h-5 w-5" />
+                        )}
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold text-stone-800">
+                          {clientName}
+                        </p>
+                        <p className="mt-1 flex items-center gap-1 truncate text-xs text-stone-500">
+                          <Phone className="h-3 w-3 shrink-0" />
+                          {client.phone || "Телефон не вказано"}
+                        </p>
+                      </div>
+
+                      <div
+                        className={cn(
+                          "flex h-6 w-6 shrink-0 items-center justify-center rounded-full border",
+                          active
+                            ? "border-[#ff6200] bg-[#ff6200] text-white"
+                            : "border-stone-300 bg-white text-transparent",
+                        )}
+                      >
+                        <Check className="h-3.5 w-3.5" />
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        )}
+
+        <section
+          ref={servicesSectionRef}
+          data-testid="booking-services-section"
+        >
           <div className="mb-4">
             <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.25em] text-amber-600">
-              Крок 1
+              Крок {ownerMode ? 2 : 1}
             </p>
             <h2 className="text-lg font-bold text-stone-800">
               Оберіть послугу
@@ -1283,7 +1474,7 @@ active
 <section ref={mastersSectionRef} data-testid="booking-masters-section">
           <div className="mb-4">
             <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.25em] text-amber-600">
-              Крок 2
+              Крок {ownerMode ? 3 : 2}
             </p>
             <h2 className="text-lg font-bold text-stone-800">
               Оберіть майстра
@@ -1513,7 +1704,7 @@ active
       <section ref={calendarSectionRef} data-testid="booking-calendar-section">
           <div className="mb-4">
             <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.25em] text-amber-600">
-              Крок 3
+              Крок {ownerMode ? 4 : 3}
             </p>
             <h2 className="text-lg font-bold text-stone-800">Дата та час</h2>
           </div>
@@ -1671,32 +1862,70 @@ onSelect={(d) => {
 
      <div className="z-20 shrink-0 border-t border-stone-200 bg-white px-5 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 shadow-[0_-10px_30px_rgba(15,23,42,0.06)] sm:px-6 sm:pb-4 sm:pt-4">
         {selectedService && selectedTime && (
-          <div className="mb-3 flex items-center justify-between text-xs text-stone-500">
-            <span>{selectedService.name}</span>
-            <span className="font-bold text-stone-800">
+          <div className="mb-3 flex items-center justify-between gap-3 text-xs text-stone-500">
+            <span className="min-w-0 truncate">
+              {ownerMode && selectedClient
+                ? `${selectedClient.name || [selectedClient.firstName, selectedClient.lastName].filter(Boolean).join(" ")} · `
+                : ""}
+              {selectedService.name}
+            </span>
+            <span className="shrink-0 font-bold text-stone-800">
               {selectedService.price} грн
             </span>
           </div>
         )}
 
         <div className="flex gap-1">
-          <button
-            type="button"
-            disabled={!canGoNext}
-            onClick={() => setStep("details")}
-            data-testid="booking-next-btn"
-className={cn(
-  "flex-1 inline-flex items-center justify-center rounded-[12px] py-3 text-sm font-semibold active:scale-[0.98]",
-canGoNext
-  ? "border border-[#2C2C2C] bg-[#2C2C2C] text-white hover:bg-[#1f1f1f]"
-  : "cursor-not-allowed border border-stone-200 bg-white text-stone-400"
-)}
-          >
-            <span className="inline-flex items-center gap-2">
-             {isReschedule ? "Перенести запис" : "Продовжити"}
-              <Sparkles className="h-4 w-4 opacity-80" />
-            </span>
-          </button>
+<button
+  type="button"
+  disabled={!canGoNext || submitting}
+  onClick={(event) => {
+    if (ownerMode) {
+      setStep("confirm");
+      return;
+    }
+
+    setStep("details");
+  }}
+  data-testid="booking-next-btn"
+  className={cn(
+    `
+      flex-1 inline-flex items-center justify-center
+      rounded-[12px] py-3
+      text-sm font-semibold
+      transition-all duration-300
+      active:scale-[0.98]
+    `,
+    canGoNext && !submitting
+      ? `
+          border border-[#202020]
+          bg-[#202020] text-white
+          shadow-[0_12px_26px_rgba(15,15,15,0.18)]
+          hover:scale-[1.015]
+          hover:border-[#ff6200]
+          hover:bg-[#ff6200]
+          hover:shadow-[0_14px_30px_rgba(255,98,0,0.24)]
+        `
+      : `
+          cursor-not-allowed
+          border border-[#eadfce]
+          bg-[#f1ebe4]
+          text-[#aaa19a]
+          shadow-none
+        `,
+  )}
+>
+  <span className="inline-flex items-center gap-2">
+    {ownerMode
+      ? submitting
+        ? "Створюємо..."
+        : "Створити запис"
+      : isReschedule
+        ? "Перенести запис"
+        : "Продовжити"}
+    <Sparkles className="h-4 w-4 opacity-80" />
+  </span>
+</button>
 
           <button
             type="button"
@@ -1710,7 +1939,7 @@ canGoNext
       </div>
 
       <AnimatePresence>
-        {step === "details" && (
+        {!ownerMode && step === "details" && (
 <BookingCustomerForm
   bookingDetails={{
     studioName: studio?.name || "Студія",
@@ -1769,7 +1998,63 @@ canGoNext
   }}
 />
         )}
+
+        {ownerMode && step === "confirm" && (
+          <BookingCustomerForm
+            bookingDetails={{
+              studioName: studio?.name || "Студія",
+              studioLogo: studio?.logoUrl || studio?.logo || "",
+              address: [
+                studio?.street,
+                studio?.building,
+                studio?.apartment,
+                studio?.city,
+              ]
+                .filter(Boolean)
+                .join(", "),
+              clientName:
+                selectedClient?.name ||
+                [selectedClient?.firstName, selectedClient?.lastName]
+                  .filter(Boolean)
+                  .join(" ") ||
+                "Клієнт",
+              clientPhone: selectedClient?.phone || "",
+              clientPhoto:
+                selectedClient?.photoUrl ||
+                selectedClient?.photo ||
+                selectedClient?.avatar ||
+                "",
+              serviceName: selectedService?.name || "—",
+              masterName:
+                masterPickMode === MASTER_PICK_MODE.ANY
+                  ? "Буде призначено автоматично"
+                  : selectedMaster?.name || "—",
+              masterPhoto:
+                masterPickMode === MASTER_PICK_MODE.ANY
+                  ? ""
+                  : selectedMaster?.photoUrl ||
+                    selectedMaster?.photo ||
+                    selectedMaster?.avatar ||
+                    "",
+              date: selectedDateStr || "—",
+              time: selectedTime || "—",
+              price:
+                selectedService?.price != null
+                  ? `${selectedService.price} грн`
+                  : "—",
+              duration: selectedService?.duration
+                ? `${selectedService.duration} хв`
+                : `${slotDuration} хв`,
+            }}
+            submitting={submitting}
+            submitLabel="Підтвердити запис"
+            onSubmit={handleSubmit}
+            onBack={() => setStep("pick")}
+          />
+        )}
       </AnimatePresence>
+
+
     </div>
   );
 }

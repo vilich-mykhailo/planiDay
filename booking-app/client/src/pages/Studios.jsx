@@ -123,7 +123,7 @@ const QUERY_EXPAND = {
 ],
   перукар: ["стриж", "уклад", "фарб", "перукарня"],
   барбер: ["стриж", "barber", "barbershop"],
-  манік: ["нігт", "гель", "лак", "покрит", "shellac", "шелак", "френч"],
+  манік: ["нігт", "гель", "лак", "покрит", "shellac", "шелак", "френч", "салон краси", "нейл"],
   педик: ["нігт", "стоп", "покрит", "педикюр"],
   масаж: ["спин", "шия", "комірц", "ноги", "стоп", "релакс", "massage"],
   спин: ["масаж", "спина"],
@@ -137,6 +137,24 @@ const QUERY_EXPAND = {
   чистк: ["косметолог", "догляд"],
   спа: ["spa", "wellness", "обгорт", "хамам", "сауна", "релакс"],
   spa: ["спа", "wellness", "обгорт", "хамам", "сауна", "релакс"],
+  уклад: ["зачіска", "волосся", "перукар", "стайлінг"],
+  фарб: ["волосся", "колорист", "тонування", "балаяж", "мелірування"],
+  зачіск: ["укладка", "волосся", "перукар", "стрижка"],
+  нігт: ["манікюр", "педикюр", "нейл", "покриття", "салон краси"],
+  нейл: ["манікюр", "педикюр", "нігті", "nails", "салон краси"],
+  макіяж: ["візаж", "мейкап", "makeup", "салон краси"],
+  візаж: ["макіяж", "мейкап", "makeup", "салон краси"],
+  депіл: ["епіляція", "шугаринг", "віск", "лазер"],
+  епіл: ["депіляція", "шугаринг", "віск", "лазер"],
+  шугар: ["депіляція", "епіляція", "віск"],
+  тату: ["татуювання", "пірсинг", "tattoo"],
+  стомат: ["зуби", "зубний", "дантист", "лікування зубів"],
+  зуб: ["стоматологія", "дантист", "гігієна", "відбілювання"],
+  психолог: ["психотерапія", "терапія", "консультація", "ментальне здоров'я"],
+  реабіліт: ["фізіотерапія", "відновлення", "масаж"],
+  тренув: ["фітнес", "спорт", "тренер", "зал"],
+  фітнес: ["тренування", "спорт", "тренер", "зал"],
+  ветеринар: ["тварини", "ветклініка", "кіт", "собака"],
 };
 
 const STOP_TOKENS = new Set(["салон", "студ", "послуг", "процедур"]);
@@ -279,8 +297,12 @@ function expandQueryTokens(rawQuery) {
 
   for (const t of base) {
     if (STOP_TOKENS.has(t)) continue;
-    const arr = QUERY_EXPAND[t];
-    if (arr) extras.push(...arr.flatMap((x) => tokenizeAndStem(x)));
+    const matchingEntries = Object.entries(QUERY_EXPAND).filter(
+      ([key]) => key.includes(t) || t.includes(key),
+    );
+    for (const [, arr] of matchingEntries) {
+      extras.push(...arr.flatMap((x) => tokenizeAndStem(x)));
+    }
   }
 
   return Array.from(new Set([...base, ...extras])).filter(
@@ -499,7 +521,6 @@ function StudioCard({ studio, onOpen, mode = "carousel" }) {
   studio?.schedule || {},
   studio?.scheduleExceptions || [],
 );
-console.log("studio schedule:", studio.name, studio.schedule, studio.scheduleExceptions);
   const { rating, reviewsCount } = generateFakeRating(studio.id || studio.slug || name);
   const address = [studio?.street, studio?.building, studio?.apartment]
     .filter(Boolean)
@@ -529,7 +550,7 @@ console.log("studio schedule:", studio.name, studio.schedule, studio.scheduleExc
     }
   }}
   className={cn(
-    "group relative shrink-0 cursor-pointer outline-none transition hover:-translate-y-1",
+    "group relative shrink-0 cursor-pointer outline-none transition-transform duration-300 ease-out hover:scale-[1.02]",
     isGrid
       ? "w-full max-w-none"
       : "w-[84%] shrink-0 sm:w-[48%] lg:w-[32%]",
@@ -781,6 +802,8 @@ export default function Studios() {
     () => searchParams.get("sort") || "recommended",
   );
   const [activeSlide, setActiveSlide] = useState(0);
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [activeSuggestion, setActiveSuggestion] = useState(-1);
   const [applied, setApplied] = useState(() => ({
     q,
     city,
@@ -792,6 +815,7 @@ export default function Studios() {
   
  const recommendedScrollRef = useRef(null);
 const categoryScrollRef = useRef(null);
+const searchBoxRef = useRef(null);
 
   useEffect(() => {
     if (!shouldRestoreScroll) return;
@@ -896,6 +920,100 @@ const categoryScrollRef = useRef(null);
       .map((value) => ({ value, label: getCategoryLabel(value) }))
       .sort((a, b) => a.label.localeCompare(b.label, "uk"));
   }, [studios]);
+
+  const searchSuggestions = useMemo(() => {
+    const query = normalizeUa(q);
+    const queryTokens = tokenizeAndStem(query).filter((token) => token.length >= 2);
+    if (query.length < 2 || queryTokens.length === 0) {
+      return { terms: [], studios: [] };
+    }
+
+    const expandedTokens = expandQueryTokens(query);
+    const termMap = new Map();
+
+    function addTerm(label, type, studioCategory = "") {
+      const cleanLabel = safeText(label);
+      if (!cleanLabel || cleanLabel.length < 2) return;
+      const normalizedLabel = normalizeUa(cleanLabel);
+      const labelTokens = tokenizeAndStem(cleanLabel);
+      const directHits = countTokenHits(labelTokens, queryTokens);
+      const semanticHits = countTokenHits(labelTokens, expandedTokens);
+      const containsPhrase = normalizedLabel.includes(query) ? 1 : 0;
+      if (!directHits && !semanticHits && !containsPhrase) return;
+
+      const score = containsPhrase * 20 + directHits * 12 + semanticHits * 4;
+      const key = normalizedLabel;
+      const previous = termMap.get(key);
+      if (!previous || previous.score < score) {
+        termMap.set(key, { label: cleanLabel, type, category: studioCategory, score });
+      }
+    }
+
+    categories.forEach((item) => {
+      addTerm(item.label, "Категорія", item.value);
+      (CATEGORY_SERVICE_TERMS[item.value] || []).forEach((term) =>
+        addTerm(term, "Категорія", item.value),
+      );
+    });
+
+    studios.forEach((studio) => {
+      (Array.isArray(studio.services) ? studio.services : []).forEach((service) => {
+        addTerm(service?.name, "Послуга");
+        addTerm(service?.category?.name, "Категорія");
+        addTerm(service?.serviceCategory?.name, "Категорія");
+      });
+      (Array.isArray(studio.serviceCategories) ? studio.serviceCategories : []).forEach(
+        (serviceCategory) => {
+          addTerm(serviceCategory?.name, "Категорія");
+          (Array.isArray(serviceCategory?.services) ? serviceCategory.services : []).forEach(
+            (service) => addTerm(service?.name, "Послуга"),
+          );
+        },
+      );
+    });
+
+    const matchedStudios = studios
+      .map((studio) => {
+        const categoryLabel = getCategoryLabel(studio.category);
+        const searchText = [
+          studio.name,
+          categoryLabel,
+          studio.description,
+          getStudioServicesSearchText(studio),
+          ...(CATEGORY_SERVICE_TERMS[studio.category] || []),
+        ].filter(Boolean).join(" ");
+        const tokens = tokenizeAndStem(searchText);
+        const directHits = countTokenHits(tokens, queryTokens);
+        const semanticHits = countTokenHits(tokens, expandedTokens);
+        const nameMatch = normalizeUa(studio.name).includes(query) ? 1 : 0;
+        return {
+          studio,
+          score: nameMatch * 30 + directHits * 10 + semanticHits * 3,
+          reason: directHits ? categoryLabel : `Пов’язано із запитом «${q.trim()}»`,
+        };
+      })
+      .filter((item) => item.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 4);
+
+    return {
+      terms: Array.from(termMap.values())
+        .sort((a, b) => b.score - a.score || a.label.localeCompare(b.label, "uk"))
+        .slice(0, 6),
+      studios: matchedStudios,
+    };
+  }, [q, categories, studios]);
+
+  const flatSuggestions = useMemo(
+    () => [
+      ...searchSuggestions.terms.map((item) => ({ ...item, kind: "term" })),
+      ...searchSuggestions.studios.map((item) => ({ ...item, kind: "studio" })),
+    ],
+    [searchSuggestions],
+  );
+
+  const showSearchSuggestions =
+    searchFocused && q.trim().length >= 2 && flatSuggestions.length > 0;
 
 useEffect(() => {
   const container = categoryScrollRef.current;
@@ -1158,6 +1276,56 @@ function handleApply() {
   });
 }
 
+function selectSearchTerm(label) {
+  const nextQuery = safeText(label);
+  setQ(nextQuery);
+  setCategory("");
+  setApplied((prev) => ({
+    ...prev,
+    q: nextQuery,
+    category: "",
+  }));
+  setSearchFocused(false);
+  setActiveSuggestion(-1);
+}
+
+function handleSearchKeyDown(event) {
+  if (event.key === "ArrowDown" && flatSuggestions.length) {
+    event.preventDefault();
+    setSearchFocused(true);
+    setActiveSuggestion((current) =>
+      current >= flatSuggestions.length - 1 ? 0 : current + 1,
+    );
+    return;
+  }
+
+  if (event.key === "ArrowUp" && flatSuggestions.length) {
+    event.preventDefault();
+    setActiveSuggestion((current) =>
+      current <= 0 ? flatSuggestions.length - 1 : current - 1,
+    );
+    return;
+  }
+
+  if (event.key === "Escape") {
+    setSearchFocused(false);
+    setActiveSuggestion(-1);
+    return;
+  }
+
+  if (event.key === "Enter") {
+    event.preventDefault();
+    const selected = flatSuggestions[activeSuggestion];
+    if (showSearchSuggestions && selected) {
+      if (selected.kind === "studio") openStudio(selected.studio);
+      else selectSearchTerm(selected.label);
+      return;
+    }
+    handleApply();
+    setSearchFocused(false);
+  }
+}
+
 function handleCategorySelect(nextCategory) {
   setCategory(nextCategory);
 
@@ -1281,19 +1449,24 @@ const heroImageClass =
         </section>
 
         <section className="relative mt-10 sm:mt-8">
-<div className="flex h-[56px] items-center rounded-[15px] border border-[#eadfce] bg-white pl-5 pr-3 shadow-[0_10px_30px_rgba(15,23,42,0.04)] transition-all duration-200 hover:border-[#f1dfbf] hover:ring-4 hover:ring-orange-200/20 sm:max-w-[450px] md:max-w-[500px] lg:max-w-[660px]">
+<div ref={searchBoxRef} className="relative z-30 flex h-[56px] items-center rounded-[15px] border border-[#eadfce] bg-white pl-5 pr-3 shadow-[0_10px_30px_rgba(15,23,42,0.04)] transition-all duration-200 hover:border-[#f1dfbf] hover:ring-4 hover:ring-orange-200/20 sm:max-w-[450px] md:max-w-[500px] lg:max-w-[660px]">
   <Search className="h-5 w-5 shrink-0 text-[#8b8794] sm:h-6 sm:w-6" />
 
 <div className="flex min-w-0 flex-1 items-center">
 <input
   value={q}
-  onChange={(event) => setQ(event.target.value)}
-  onKeyDown={(event) => {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      handleApply();
-    }
+  onChange={(event) => {
+    setQ(event.target.value);
+    setSearchFocused(true);
+    setActiveSuggestion(-1);
   }}
+  onFocus={() => setSearchFocused(true)}
+  onBlur={() => window.setTimeout(() => setSearchFocused(false), 120)}
+  onKeyDown={handleSearchKeyDown}
+  role="combobox"
+  aria-autocomplete="list"
+  aria-expanded={showSearchSuggestions}
+  aria-controls="service-search-suggestions"
   placeholder="Пошук послуг"
   className="min-w-0 flex-1 bg-transparent px-4 text-[15px] font-semibold text-[#111111] outline-none placeholder:font-semibold placeholder:text-[#8b8794] sm:text-[18px]"
 />
@@ -1323,6 +1496,85 @@ className={cn(
     Знайти
   </button>
 </div>
+
+{showSearchSuggestions ? (
+  <div
+    id="service-search-suggestions"
+    role="listbox"
+    onMouseDown={(event) => event.preventDefault()}
+    className="absolute left-0 right-0 top-[64px] z-50 max-h-[440px] overflow-y-auto rounded-[18px] border border-[#eee5da] bg-white p-2.5 shadow-[0_24px_70px_rgba(39,31,24,0.18)] sm:right-auto sm:w-[min(660px,calc(100vw-3rem))]"
+  >
+    {searchSuggestions.terms.length ? (
+      <div>
+        <p className="px-3 pb-1.5 pt-1 text-[10px] font-black uppercase tracking-[0.14em] text-[#aaa29a]">
+          Послуги та категорії
+        </p>
+        {searchSuggestions.terms.map((item, index) => (
+          <button
+            key={`${item.type}-${item.label}`}
+            type="button"
+            role="option"
+            aria-selected={activeSuggestion === index}
+            onMouseEnter={() => setActiveSuggestion(index)}
+            onClick={() => selectSearchTerm(item.label)}
+            className={cn(
+              "flex w-full items-center gap-3 rounded-[13px] px-3 py-2.5 text-left transition",
+              activeSuggestion === index ? "bg-[#fff3e9]" : "hover:bg-[#faf7f3]",
+            )}
+          >
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#fff3e9] text-[#ff6200]">
+              {React.createElement(item.type === "Послуга" ? Scissors : Grid2X2, { className: "h-4 w-4" })}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-[14px] font-extrabold text-[#24211f]">{item.label}</span>
+              <span className="block text-[11px] font-semibold text-[#938b84]">{item.type}</span>
+            </span>
+            <Search className="h-4 w-4 text-[#c5bdb6]" />
+          </button>
+        ))}
+      </div>
+    ) : null}
+
+    {searchSuggestions.studios.length ? (
+      <div className={cn(searchSuggestions.terms.length && "mt-2 border-t border-[#f0e9e2] pt-2")}>
+        <p className="px-3 pb-1.5 pt-1 text-[10px] font-black uppercase tracking-[0.14em] text-[#aaa29a]">
+          Студії з такими послугами
+        </p>
+        {searchSuggestions.studios.map((item, studioIndex) => {
+          const index = searchSuggestions.terms.length + studioIndex;
+          const studio = item.studio;
+          return (
+            <button
+              key={studio.slug || studio.id}
+              type="button"
+              role="option"
+              aria-selected={activeSuggestion === index}
+              onMouseEnter={() => setActiveSuggestion(index)}
+              onClick={() => openStudio(studio)}
+              className={cn(
+                "flex w-full items-center gap-3 rounded-[13px] px-3 py-2.5 text-left transition",
+                activeSuggestion === index ? "bg-[#fff3e9]" : "hover:bg-[#faf7f3]",
+              )}
+            >
+              <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-xl bg-[#f4efe9] text-[#ff6200]">
+                {studio.logoUrl ? (
+                  <img src={studio.logoUrl} alt="" className="h-full w-full object-cover" />
+                ) : React.createElement(getCategoryIcon(studio.category), { className: "h-5 w-5" })}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[14px] font-extrabold text-[#24211f]">{studio.name}</span>
+                <span className="block truncate text-[11px] font-semibold text-[#938b84]">
+                  {item.reason}{studio.city ? ` · ${studio.city}` : ""}
+                </span>
+              </span>
+              <ChevronRight className="h-4 w-4 text-[#b9b1aa]" />
+            </button>
+          );
+        })}
+      </div>
+    ) : null}
+  </div>
+) : null}
 
       <div className="mt-5 grid grid-cols-2 gap-3 sm:mt-5 sm:grid-cols-[1fr_1fr_auto] lg:max-w-[900px]">
 <AnimatedDropdown

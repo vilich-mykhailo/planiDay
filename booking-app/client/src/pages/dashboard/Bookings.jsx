@@ -1,9 +1,11 @@
 // Bookings.jsx
-import { forwardRef, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useStudio } from "../../context/studio/useStudio";
-import TimeSelect from "../../components/TimeSelect";
+import Calendar from "../../components/Calendar";
+import StudioBookingWidget from "../../components/StudioBookingWidget";
+import BookingSuccessModal from "../../components/BookingSuccessModal";
 import { uk } from "date-fns/locale/uk";
 import {
   Sparkles,
@@ -156,6 +158,242 @@ function parseTimeToHHMM(timeStr) {
   const hh = Math.min(23, Math.max(0, Number(m[1])));
   const mm = Math.min(59, Math.max(0, Number(m[2])));
   return `${pad2(hh)}:${pad2(mm)}`;
+}
+
+function timeToMinutes(value) {
+  const match = String(value || "")
+    .trim()
+    .replace(".", ":")
+    .match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return null;
+
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  if (
+    hours < 0 ||
+    hours > 24 ||
+    minutes < 0 ||
+    minutes > 59 ||
+    (hours === 24 && minutes !== 0)
+  ) {
+    return null;
+  }
+
+  return hours * 60 + minutes;
+}
+
+function minutesToTime(total) {
+  const value = Number(total);
+  if (!Number.isFinite(value)) return "";
+  return `${pad2(Math.floor(value / 60))}:${pad2(value % 60)}`;
+}
+
+function normalizeScheduleTime(value) {
+  if (typeof value === "string" && value.includes(":")) {
+    const minutes = timeToMinutes(value);
+    return minutes == null ? "" : minutesToTime(minutes);
+  }
+
+  const minutes = Number(value);
+  return Number.isFinite(minutes) ? minutesToTime(minutes) : "";
+}
+
+function getScheduleBreaks(...sources) {
+  return sources.flatMap((source) => {
+    if (!source) return [];
+
+    if (Array.isArray(source.breaks)) {
+      return source.breaks
+        .map((item) => ({
+          start: normalizeScheduleTime(
+            item?.start ?? item?.from ?? item?.breakStart ?? item?.startMin,
+          ),
+          end: normalizeScheduleTime(
+            item?.end ?? item?.to ?? item?.breakEnd ?? item?.endMin,
+          ),
+        }))
+        .filter((item) => item.start && item.end);
+    }
+
+    const start = normalizeScheduleTime(
+      source.breakStart ??
+        source.breakStartTime ??
+        source.breakFrom ??
+        source.pauseStart ??
+        source.lunchStart ??
+        source.breakStartMin,
+    );
+    const end = normalizeScheduleTime(
+      source.breakEnd ??
+        source.breakEndTime ??
+        source.breakTo ??
+        source.pauseEnd ??
+        source.lunchEnd ??
+        source.breakEndMin,
+    );
+
+    return start && end ? [{ start, end }] : [];
+  });
+}
+
+function normalizeScheduleDay(entry) {
+  if (!entry || typeof entry !== "object" || entry.enabled === false) {
+    return null;
+  }
+
+  const start = normalizeScheduleTime(
+    entry.start ??
+      entry.startTime ??
+      entry.from ??
+      entry.openTime ??
+      entry.startMin,
+  );
+  const end = normalizeScheduleTime(
+    entry.end ??
+      entry.endTime ??
+      entry.to ??
+      entry.closeTime ??
+      entry.endMin,
+  );
+
+  if (!start || !end || timeToMinutes(end) <= timeToMinutes(start)) {
+    return null;
+  }
+
+  return {
+    enabled: true,
+    start,
+    end,
+    breaks: getScheduleBreaks(entry),
+  };
+}
+
+function weekdayEnumToKey(value) {
+  const keys = {
+    MON: "mon",
+    TUE: "tue",
+    WED: "wed",
+    THU: "thu",
+    FRI: "fri",
+    SAT: "sat",
+    SUN: "sun",
+  };
+  return keys[String(value || "").toUpperCase()] || null;
+}
+
+function normalizeSchedule(schedule, scheduleDays = []) {
+  if (
+    schedule &&
+    typeof schedule === "object" &&
+    !Array.isArray(schedule) &&
+    Object.keys(schedule).length
+  ) {
+    return schedule;
+  }
+
+  return (Array.isArray(scheduleDays) ? scheduleDays : []).reduce(
+    (result, item) => {
+      const key = weekdayEnumToKey(item?.weekday || item?.day);
+      if (key) result[key] = item;
+      return result;
+    },
+    {},
+  );
+}
+
+function getScheduleForDate(date, schedule, exceptions = []) {
+  if (!date) return null;
+
+  const dateKey = toISODateKey(date);
+  const exception = (Array.isArray(exceptions) ? exceptions : []).find(
+    (item) => String(item?.date || "").slice(0, 10) === dateKey,
+  );
+
+  if (exception) return normalizeScheduleDay(exception);
+
+  const dayKey = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][
+    date.getDay()
+  ];
+  return normalizeScheduleDay(schedule?.[dayKey]);
+}
+
+function resolveMasterScheduleForDate(date, master) {
+  if (!date || !master) return null;
+
+  const exceptions = Array.isArray(master.scheduleExceptions)
+    ? master.scheduleExceptions
+    : [];
+  const dateKey = toISODateKey(date);
+  const exception = exceptions.find(
+    (item) => String(item?.date || "").slice(0, 10) === dateKey,
+  );
+
+  if (exception) return normalizeScheduleDay(exception);
+
+  const schedule = normalizeSchedule(master.schedule, master.scheduleDays);
+  if (!Object.keys(schedule).length) return "__USE_STUDIO_SCHEDULE__";
+
+  return getScheduleForDate(date, schedule, []);
+}
+
+function intersectScheduleDays(studioDay, masterDay) {
+  if (!studioDay?.enabled || !masterDay?.enabled) return null;
+
+  const start = Math.max(
+    timeToMinutes(studioDay.start),
+    timeToMinutes(masterDay.start),
+  );
+  const end = Math.min(
+    timeToMinutes(studioDay.end),
+    timeToMinutes(masterDay.end),
+  );
+
+  if (end <= start) return null;
+
+  return {
+    enabled: true,
+    start: minutesToTime(start),
+    end: minutesToTime(end),
+    breaks: getScheduleBreaks(studioDay, masterDay),
+  };
+}
+
+function buildAvailableSlots(day, stepMinutes, durationMinutes) {
+  if (!day?.enabled) return [];
+
+  const start = timeToMinutes(day.start);
+  const end = timeToMinutes(day.end);
+  const step = Number(stepMinutes) > 0 ? Number(stepMinutes) : 15;
+  const duration = Number(durationMinutes) > 0 ? Number(durationMinutes) : step;
+  const breaks = getScheduleBreaks(day)
+    .map((item) => ({
+      start: timeToMinutes(item.start),
+      end: timeToMinutes(item.end),
+    }))
+    .filter((item) => item.start != null && item.end != null);
+
+  if (start == null || end == null || end <= start) return [];
+
+  const result = [];
+  for (let cursor = start; cursor + duration <= end; cursor += step) {
+    const slotEnd = cursor + duration;
+    const overlapsBreak = breaks.some(
+      (item) => cursor < item.end && slotEnd > item.start,
+    );
+    if (!overlapsBreak) result.push(minutesToTime(cursor));
+  }
+
+  return result;
+}
+
+function filterPastManualSlots(slots, selectedDate, timestamp) {
+  if (!selectedDate) return slots;
+
+  const now = new Date(timestamp);
+  if (toISODateKey(selectedDate) !== toISODateKey(now)) return slots;
+
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  return slots.filter((time) => timeToMinutes(time) > currentMinutes);
 }
 
 function getBookingDateTime(b) {
@@ -569,6 +807,7 @@ function Modal({
   children,
   footer,
   size = "md",
+  contentClassName = "",
 }) {
   const sizeClasses = {
     sm: "max-w-md",
@@ -643,7 +882,12 @@ function Modal({
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto bg-white px-5 py-5 pb-[110px] sm:px-6 sm:pb-5">
+        <div
+          className={cn(
+            "min-h-0 flex-1 overflow-y-auto bg-white px-5 py-5 pb-[110px] sm:px-6 sm:pb-5",
+            contentClassName,
+          )}
+        >
           {children}
         </div>
 
@@ -707,6 +951,33 @@ function toPublicUrl(v) {
   return PUBLIC ? `${PUBLIC}/${s}` : s;
 }
 
+function getCurrentClientName(booking) {
+  const clientFullName = [
+    booking?.client?.firstName,
+    booking?.client?.lastName,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+
+  const clientAccountFullName = [
+    booking?.clientAccount?.firstName,
+    booking?.clientAccount?.lastName,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+
+  return (
+    clientFullName ||
+    booking?.client?.name ||
+    clientAccountFullName ||
+    booking?.clientAccount?.name ||
+    booking?.clientName ||
+    "Клієнт"
+  );
+}
+
 function getOwnerBookingStatus(booking) {
   const raw = booking?.status || "new";
 
@@ -721,7 +992,7 @@ function AppointmentCard({ item, nowTs, onOpen }) {
   const key = item.date ? String(item.date) : "";
   const status = getOwnerBookingStatus(item);
 
-  const clientName = item.clientName || item.client?.name || "Клієнт";
+  const clientName = getCurrentClientName(item);
   const service = item.serviceName || item.service?.name || "Послуга";
   const masterName =
     item.masterName ||
@@ -1175,29 +1446,6 @@ function dateToDateString(date) {
   return `${year}-${month}-${day}`;
 }
 
-const DatePickerButton = forwardRef(function DatePickerButton(
-  { value, onClick, placeholder = "дд.мм.рррр" },
-  ref,
-) {
-  return (
-    <button
-      type="button"
-      ref={ref}
-      onClick={onClick}
-      className="flex h-14 min-w-0 w-full items-center rounded-2xl border border-[#eadbc9] bg-white px-4 text-left text-sm font-semibold text-[#aaa19a] outline-none transition hover:border-[#ffd6bd] hover:bg-[#fff7f0] focus:border-[#ff6200] focus:ring-4 focus:ring-[#ff6200]/10"
-    >
-      <span
-        className={cn(
-          "block min-w-0 truncate",
-          value ? "text-[#202020]" : "text-sm font-semibold text-[#aaa19a]",
-        )}
-      >
-        {value || placeholder}
-      </span>
-    </button>
-  );
-});
-
 function TwoLineName({ value, fallback = "—" }) {
   const text = String(value || fallback).trim();
   const parts = text.split(/\s+/);
@@ -1227,6 +1475,7 @@ export default function Bookings() {
   const [cancelConfirmId, setCancelConfirmId] = useState(null);
   const [detailsId, setDetailsId] = useState(null);
   const [manualBookingOpen, setManualBookingOpen] = useState(false);
+  const [manualSuccessData, setManualSuccessData] = useState(null);
   const [tab, setTab] = useState(() => {
     return localStorage.getItem("bookings-tab") || "list";
   });
@@ -1258,9 +1507,17 @@ export default function Bookings() {
   const [manualMasterId, setManualMasterId] = useState("");
   const [manualDate, setManualDate] = useState("");
   const [manualTime, setManualTime] = useState("");
+  const [manualBusyTimes, setManualBusyTimes] = useState(() => new Set());
+  const [manualBusyLoading, setManualBusyLoading] = useState(false);
+  const [manualTimeTick, setManualTimeTick] = useState(() => Date.now());
   const [services, setServices] = useState([]);
   const [masters, setMasters] = useState([]);
   const [clients, setClients] = useState([]);
+  const [manualStudioSettings, setManualStudioSettings] = useState({
+    scheduleDays: [],
+    scheduleExceptions: [],
+    slotDuration: null,
+  });
   useEffect(() => {
     localStorage.setItem("bookings-tab", tab);
   }, [tab]);
@@ -1298,9 +1555,32 @@ export default function Bookings() {
         const servicesData = await servicesRes.json();
         const mastersData = await mastersRes.json();
 
-        setClients(clientsData.clients || []);
+        setClients(
+          (clientsData.clients || []).map((client) => ({
+            ...client,
+            accountId:
+              client.accountId ||
+              (client.studioClientId &&
+              String(client.studioClientId) === String(client.id)
+                ? null
+                : client.id || null),
+            id: client.studioClientId || client.id,
+          })),
+        );
         setServices(servicesData.services || servicesData || []);
         setMasters(mastersData.masters || mastersData || []);
+        setManualStudioSettings({
+          scheduleDays: Array.isArray(mastersData.scheduleDays)
+            ? mastersData.scheduleDays
+            : [],
+          scheduleExceptions: Array.isArray(mastersData.scheduleExceptions)
+            ? mastersData.scheduleExceptions
+            : [],
+          slotDuration:
+            Number(mastersData.slotDuration) > 0
+              ? Number(mastersData.slotDuration)
+              : null,
+        });
       } catch (e) {
         console.error(e);
       }
@@ -1308,6 +1588,258 @@ export default function Bookings() {
 
     loadManualBookingData();
   }, [manualBookingOpen, studioId]);
+
+  const selectedManualService = useMemo(
+    () =>
+      services.find(
+        (item) => String(item.id) === String(manualServiceId),
+      ) || null,
+    [services, manualServiceId],
+  );
+
+  const manualAvailableMasters = useMemo(() => {
+    if (!selectedManualService) return [];
+    if (selectedManualService.allMasters) return masters;
+
+    const allowedIds = Array.isArray(selectedManualService.masters)
+      ? selectedManualService.masters
+          .map((item) =>
+            String(
+              typeof item === "string" || typeof item === "number"
+                ? item
+                : item?.id || item?.masterId || item?.master?.id || "",
+            ),
+          )
+          .filter(Boolean)
+      : [];
+
+    return masters.filter((item) => allowedIds.includes(String(item.id)));
+  }, [masters, selectedManualService]);
+
+  const selectedManualMaster = useMemo(
+    () =>
+      manualAvailableMasters.find(
+        (item) => String(item.id) === String(manualMasterId),
+      ) || null,
+    [manualAvailableMasters, manualMasterId],
+  );
+
+  const manualSelectedDate = useMemo(
+    () => dateStringToDate(manualDate),
+    [manualDate],
+  );
+
+  const manualStudioSchedule = useMemo(
+    () =>
+      manualStudioSettings.scheduleDays.length
+        ? normalizeSchedule(null, manualStudioSettings.scheduleDays)
+        : normalizeSchedule(studio?.schedule, studio?.scheduleDays),
+    [
+      studio?.schedule,
+      studio?.scheduleDays,
+      manualStudioSettings.scheduleDays,
+    ],
+  );
+
+  const manualStudioExceptions = useMemo(
+    () =>
+      manualStudioSettings.scheduleExceptions.length
+        ? manualStudioSettings.scheduleExceptions
+        : Array.isArray(studio?.scheduleExceptions)
+          ? studio.scheduleExceptions
+          : [],
+    [studio?.scheduleExceptions, manualStudioSettings.scheduleExceptions],
+  );
+
+  const manualDayConfig = useMemo(() => {
+    if (!manualSelectedDate || !selectedManualMaster) return null;
+
+    const studioDay = getScheduleForDate(
+      manualSelectedDate,
+      manualStudioSchedule,
+      manualStudioExceptions,
+    );
+    if (!studioDay) return null;
+
+    const masterDay = resolveMasterScheduleForDate(
+      manualSelectedDate,
+      selectedManualMaster,
+    );
+    if (!masterDay) return null;
+
+    return masterDay === "__USE_STUDIO_SCHEDULE__"
+      ? studioDay
+      : intersectScheduleDays(studioDay, masterDay);
+  }, [
+    manualSelectedDate,
+    manualStudioSchedule,
+    manualStudioExceptions,
+    selectedManualMaster,
+  ]);
+
+  const manualSlots = useMemo(() => {
+    const duration = Number(selectedManualService?.duration);
+    const slotDuration =
+      Number(manualStudioSettings.slotDuration) ||
+      Number(studio?.slotDuration) ||
+      15;
+
+    return filterPastManualSlots(
+      buildAvailableSlots(
+        manualDayConfig,
+        slotDuration,
+        duration > 0 ? duration : slotDuration,
+      ),
+      manualSelectedDate,
+      manualTimeTick,
+    );
+  }, [
+    manualDayConfig,
+    manualSelectedDate,
+    manualTimeTick,
+    selectedManualService?.duration,
+    studio?.slotDuration,
+    manualStudioSettings.slotDuration,
+  ]);
+
+  const manualDisabledDays = useMemo(
+    () => (date) => {
+      const candidate = startOfDay(new Date(date));
+      if (candidate < startOfDay(new Date())) return true;
+      if (!selectedManualMaster) return true;
+
+      const studioDay = getScheduleForDate(
+        candidate,
+        manualStudioSchedule,
+        manualStudioExceptions,
+      );
+      if (!studioDay) return true;
+
+      const masterDay = resolveMasterScheduleForDate(
+        candidate,
+        selectedManualMaster,
+      );
+      if (!masterDay) return true;
+      if (masterDay === "__USE_STUDIO_SCHEDULE__") return false;
+
+      return !intersectScheduleDays(studioDay, masterDay);
+    },
+    [
+      manualStudioSchedule,
+      manualStudioExceptions,
+      selectedManualMaster,
+    ],
+  );
+
+  useEffect(() => {
+    if (!manualBookingOpen) return undefined;
+
+    const intervalId = window.setInterval(() => {
+      setManualTimeTick(Date.now());
+    }, 30_000);
+
+    return () => window.clearInterval(intervalId);
+  }, [manualBookingOpen]);
+
+  useEffect(() => {
+    if (
+      manualMasterId &&
+      !manualAvailableMasters.some(
+        (item) => String(item.id) === String(manualMasterId),
+      )
+    ) {
+      setManualMasterId("");
+      setManualDate("");
+      setManualTime("");
+    }
+  }, [manualAvailableMasters, manualMasterId]);
+
+  useEffect(() => {
+    if (!manualTime || manualSlots.includes(manualTime)) return;
+    setManualTime("");
+  }, [manualSlots, manualTime]);
+
+  useEffect(() => {
+    if (!manualTime || !manualBusyTimes.has(manualTime)) return;
+    setManualTime("");
+    setManualBookingError("Цей час уже зайнятий. Оберіть інший слот.");
+  }, [manualBusyTimes, manualTime]);
+
+  useEffect(() => {
+    let alive = true;
+
+    async function loadManualBusyTimes() {
+      if (
+        !manualBookingOpen ||
+        !studioId ||
+        !manualDate ||
+        !manualMasterId ||
+        !manualServiceId
+      ) {
+        setManualBusyTimes(new Set());
+        setManualBusyLoading(false);
+        return;
+      }
+
+      setManualBusyLoading(true);
+
+      try {
+        const token = localStorage.getItem("token");
+        const params = new URLSearchParams({
+          date: manualDate,
+          masterId: String(manualMasterId),
+          serviceId: String(manualServiceId),
+        });
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL}/bookings/studio/${studioId}/busy?${params.toString()}`,
+          {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          },
+        );
+        const data = await res.json().catch(() => null);
+
+        if (!res.ok) {
+          throw new Error(
+            data?.message || "Не вдалося перевірити доступність часу.",
+          );
+        }
+
+        const busy = (Array.isArray(data?.busy) ? data.busy : [])
+          .map((item) =>
+            parseTimeToHHMM(
+              typeof item === "string" ? item : item?.time || item?.start,
+            ),
+          )
+          .filter(Boolean);
+
+        if (alive) {
+          setManualBusyTimes(new Set(busy));
+          setManualBookingError("");
+        }
+      } catch (error) {
+        if (alive) {
+          setManualBusyTimes(new Set());
+          setManualBookingError(
+            error?.message || "Не вдалося перевірити доступність часу.",
+          );
+        }
+      } finally {
+        if (alive) setManualBusyLoading(false);
+      }
+    }
+
+    loadManualBusyTimes();
+
+    return () => {
+      alive = false;
+    };
+  }, [
+    manualBookingOpen,
+    studioId,
+    manualDate,
+    manualMasterId,
+    manualServiceId,
+  ]);
 
   useEffect(() => {
     const timer = window.setTimeout(
@@ -1321,7 +1853,7 @@ export default function Bookings() {
   }, [loading]);
   const calendarScrollRef = useRef(null);
   const datePickerFromRef = useRef(null);
-  const manualDatePickerRef = useRef(null);
+  const manualTimeRowRef = useRef(null);
   const datePickerToRef = useRef(null);
   const bookingFilterRef = useRef(null);
   const bookingDateFilterRef = useRef(null);
@@ -1832,14 +2364,71 @@ export default function Bookings() {
 
   async function handleCreateManualBooking() {
     try {
-      setManualBookingSaving(true);
       setManualBookingError("");
 
+      if (
+        !manualClientId ||
+        !manualServiceId ||
+        !manualMasterId ||
+        !manualDate ||
+        !manualTime
+      ) {
+        throw new Error("Оберіть клієнта, послугу, майстра, дату та час.");
+      }
+
+      if (!manualDayConfig || !manualSlots.includes(manualTime)) {
+        setManualTime("");
+        throw new Error("Обраний час не входить у робочий графік.");
+      }
+
+      if (manualBusyTimes.has(manualTime)) {
+        setManualTime("");
+        throw new Error("Цей час уже зайнятий. Оберіть інший слот.");
+      }
+
+      setManualBookingSaving(true);
+
       const token = localStorage.getItem("token");
-      const studioId = localStorage.getItem("studioId");
+      const targetStudioId = studioId || localStorage.getItem("studioId");
+      const busyParams = new URLSearchParams({
+        date: manualDate,
+        masterId: String(manualMasterId),
+        serviceId: String(manualServiceId),
+      });
+      const busyRes = await fetch(
+        `${import.meta.env.VITE_API_URL}/bookings/studio/${targetStudioId}/busy?${busyParams.toString()}`,
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        },
+      );
+      const busyData = await busyRes.json().catch(() => null);
+
+      if (!busyRes.ok) {
+        throw new Error(
+          busyData?.message || "Не вдалося перевірити доступність часу.",
+        );
+      }
+
+      const latestBusyTimes = new Set(
+        (Array.isArray(busyData?.busy) ? busyData.busy : [])
+          .map((item) =>
+            parseTimeToHHMM(
+              typeof item === "string" ? item : item?.time || item?.start,
+            ),
+          )
+          .filter(Boolean),
+      );
+      setManualBusyTimes(latestBusyTimes);
+
+      if (latestBusyTimes.has(manualTime)) {
+        setManualTime("");
+        throw new Error(
+          "Слот щойно зайняли. Дані оновлено — оберіть інший час.",
+        );
+      }
 
       const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/owner/studio/${studioId}/manual-booking`,
+        `${import.meta.env.VITE_API_URL}/owner/studio/${targetStudioId}/manual-booking`,
         {
           method: "POST",
           headers: {
@@ -1868,11 +2457,22 @@ export default function Bookings() {
       setManualMasterId("");
       setManualDate("");
       setManualTime("");
+      setManualBusyTimes(new Set());
     } catch (e) {
       setManualBookingError(e?.message || "Не вдалося створити запис.");
     } finally {
       setManualBookingSaving(false);
     }
+  }
+
+  function scrollManualTimeRow(direction) {
+    const container = manualTimeRowRef.current;
+    if (!container) return;
+
+    container.scrollBy({
+      left: direction * Math.max(220, container.clientWidth * 0.75),
+      behavior: "smooth",
+    });
   }
 
   return (
@@ -1975,15 +2575,39 @@ export default function Bookings() {
             }
             actions={
               <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
-                <Button
-                  variant="primary"
-                  size="md"
-                  onClick={() => setManualBookingOpen(true)}
-                  className="h-11 w-full rounded-2xl px-4 sm:w-auto bg-[var(--color-primary-buttom)] text-white hover:!bg-[#4a4a4a]"
-                >
-                  <UserPlus className="h-4 w-4" />
-                  Додати запис вручну
-                </Button>
+<Button
+  variant="primary"
+  size="md"
+  onClick={() => setManualBookingOpen(true)}
+  className="
+    inline-flex h-14 w-full items-center justify-center gap-2
+    rounded-[12px]
+    !bg-[#202020]
+    text-[15px] font-black text-white
+    shadow-[0_12px_26px_rgba(15,15,15,0.18)]
+    transition-all duration-300
+    hover:scale-[1.015]
+    hover:!bg-[#ff6200]
+    active:scale-[0.98]
+    disabled:pointer-events-none
+    disabled:!bg-[#f1ebe4]
+    disabled:text-[#aaa19a]
+    disabled:shadow-none
+    disabled:opacity-100
+    max-[639px]:h-11
+    max-[639px]:rounded-[16px]
+    max-[639px]:gap-1.5
+    max-[639px]:text-[12px]
+    sm:h-10
+    sm:w-auto
+    sm:min-w-[160px]
+    sm:px-4
+    sm:text-[13px]
+  "
+>
+  <UserPlus className="h-4 w-4" />
+  Додати запис вручну
+</Button>
 
                 <div
                   className={cn(
@@ -2687,8 +3311,13 @@ export default function Bookings() {
                     };
 
             const StatusIcon = statusMeta.Icon;
-            const clientName = selectedBooking.clientName || "—";
-            const phone = selectedBooking.clientPhone || "";
+            const clientName = getCurrentClientName(selectedBooking);
+            const rawPhone = String(selectedBooking.clientPhone || "").trim();
+
+const phone =
+  rawPhone && rawPhone !== "—" && rawPhone !== "null"
+    ? rawPhone
+    : "";
             const service = selectedBooking.serviceName || "Послуга";
             const time = selectedBooking.time || "—";
             const price =
@@ -2868,42 +3497,64 @@ export default function Bookings() {
                               )}
                             </div>
 
-                            <div className="min-w-0 flex-1">
-                              <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#aaa19a]">
-                                Клієнт
-                              </p>
-                              <p className="truncate text-[20px] font-black text-[#202020]">
-                                {clientName}
-                              </p>
-                              <p className="mt-1 truncate text-sm font-bold text-[#77716b]">
-                                {phone || "Телефон не вказано"}
-                              </p>
-                            </div>
+<div className="min-w-0 flex-1">
+  <p className="text-[10px] font-black uppercase leading-none tracking-[0.14em] text-[#aaa19a]">
+    Клієнт
+  </p>
 
-                            {phone && (
-                              <div className="flex shrink-0 items-center gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => handleCopyPhone(phone)}
-                                  className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#eadfce] bg-white text-[#77716b] transition-all duration-200 hover:bg-[#fff7f0] hover:text-[#202020] active:scale-[0.95]"
-                                  title="Скопіювати номер"
-                                >
-                                  {copiedPhone ? (
-                                    <CheckCheck className="h-4 w-4 text-emerald-600" />
-                                  ) : (
-                                    <Copy className="h-4 w-4" />
-                                  )}
-                                </button>
+  <p className="mt-0.5 truncate text-[20px] font-black leading-tight text-[#202020]">
+    {clientName}
+  </p>
 
-                                <a
-                                  href={`tel:${phone}`}
-                                  className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#ff6200] text-white transition-all duration-200 hover:bg-[#ef4f00] active:scale-[0.95]"
-                                  title="Подзвонити"
-                                >
-                                  <PhoneCall className="h-4 w-4" />
-                                </a>
-                              </div>
-                            )}
+  <div className="mt-0.5 flex min-w-0 items-center gap-2">
+    <p className="min-w-0 truncate text-sm font-bold leading-tight text-[#77716b]">
+      {phone || "Номер телефона не вказано"}
+    </p>
+
+    {phone && (
+      <button
+        type="button"
+        onClick={() => handleCopyPhone(phone)}
+        className="
+          flex h-7 w-7 shrink-0 items-center justify-center
+          rounded-lg text-[#aaa19a]
+          transition-all duration-200
+          hover:bg-[#fff1e8]
+          hover:text-[#ff6200]
+          active:scale-[0.92]
+        "
+        title={copiedPhone ? "Скопійовано" : "Скопіювати номер"}
+        aria-label={copiedPhone ? "Номер скопійовано" : "Скопіювати номер"}
+      >
+        {copiedPhone ? (
+          <CheckCheck className="h-4 w-4 text-emerald-600" />
+        ) : (
+          <Copy className="h-4 w-4" />
+        )}
+      </button>
+    )}
+  </div>
+</div>
+
+{phone && (
+<a
+  href={`tel:${phone}`}
+  className="
+    mr-2
+    flex h-12 w-12 shrink-0 items-center justify-center
+    text-[#77716b]
+    transition-all duration-200
+    hover:scale-[1.06]
+    hover:text-[#ff6200]
+    active:scale-[0.94]
+  "
+  title="Подзвонити"
+  aria-label="Подзвонити"
+>
+  <PhoneCall className="h-7 w-7" strokeWidth={2.2} />
+</a>
+)}
+
                           </div>
                         </div>
 
@@ -2945,34 +3596,67 @@ export default function Bookings() {
                       <div className="absolute inset-x-0 bottom-0 border-[#eadfce] bg-white/92 px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 backdrop-blur sm:px-6 sm:pb-5">
                         <div className="grid gap-3 sm:grid-cols-2">
                           {!isConfirmed && !isCanceled && (
-                            <button
-                              type="button"
-                              onClick={async () => {
-                                await confirmBooking(selectedBooking.id);
-                                closeDetails();
-                              }}
-                              className="inline-flex h-12 items-center justify-center gap-2 rounded-[22px] bg-[var(--color-primary-buttom)] text-sm font-black text-white transition-all duration-200 hover:bg-[#4a4a4a] active:scale-[0.98]"
-                            >
-                              <CheckCheck className="h-4 w-4" />
-                              Підтвердити
-                            </button>
+<button
+  type="button"
+  onClick={async () => {
+    await confirmBooking(selectedBooking.id);
+    closeDetails();
+  }}
+  className="
+    inline-flex h-12 items-center justify-center gap-2
+    rounded-[15px] px-4
+    bg-[#202020]
+    text-sm font-black text-white
+    shadow-[0_12px_26px_rgba(15,15,15,0.18)]
+    transition-all duration-300
+    hover:scale-[1.015]
+    hover:bg-[#ff6200]
+    hover:shadow-[0_14px_30px_rgba(255,98,0,0.24)]
+    active:scale-[0.98]
+    disabled:pointer-events-none
+    disabled:bg-[#f1ebe4]
+    disabled:text-[#aaa19a]
+    disabled:shadow-none
+  "
+>
+  <CheckCheck className="h-4 w-4" />
+  Підтвердити
+</button>
                           )}
 
                           {!isCanceled && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                closeDetails();
-                                setCancelConfirmId(selectedBooking.id);
-                              }}
-                              className={cn(
-                                "inline-flex h-12 items-center justify-center gap-2 rounded-[22px] border border-[#fecaca] bg-[#fff5f5] px-4 text-sm font-black text-[#ef4444] transition-all duration-200 hover:border-[#fca5a5] hover:bg-[#ffecec] active:scale-[0.98]",
-                                isConfirmed && "sm:col-span-2",
-                              )}
-                            >
-                              <XCircle className="h-4 w-4" />
-                              Скасувати запис
-                            </button>
+<button
+  type="button"
+  onClick={() => {
+    closeDetails();
+    setCancelConfirmId(selectedBooking.id);
+  }}
+  className={cn(
+    `
+      inline-flex h-12 items-center justify-center gap-2
+      rounded-[15px] border border-[#ef4444]/45
+      bg-white px-4
+      text-sm font-black text-[#ef4444]
+      shadow-[0_10px_22px_rgba(239,68,68,0.08)]
+      transition-all duration-300
+      hover:scale-[1.015]
+      hover:border-[#ef4444]
+      hover:bg-[#ef4444]
+      hover:text-white
+      hover:shadow-[0_12px_26px_rgba(239,68,68,0.22)]
+      active:scale-[0.98]
+      disabled:pointer-events-none
+      disabled:border-[#eadfce]
+      disabled:bg-[#f1ebe4]
+      disabled:text-[#aaa19a]
+      disabled:shadow-none
+    `,
+    isConfirmed && "sm:col-span-2",
+  )}
+>
+  <XCircle className="h-4 w-4" />
+  Скасувати запис
+</button>
                           )}
                         </div>
                       </div>
@@ -3132,7 +3816,7 @@ const statusBadge = {
 
 const StatusIcon = statusBadge.icon;
 
-const clientName = b.clientName || b.client?.name || "Клієнт";
+const clientName = getCurrentClientName(b);
 
 const masterName =
   b.masterName ||
@@ -3454,153 +4138,48 @@ const masterPhoto = toPublicUrl(
         open={manualBookingOpen}
         onClose={() => setManualBookingOpen(false)}
         title="Новий запис"
-        badge="Запис"
-        icon={UserPlus}
-        subtitle="Створіть запис вручну для існуючого клієнта."
+        badge="Онлайн запис"
+        icon={Sparkles}
+        subtitle="Оберіть клієнта, послугу, майстра, дату та час."
         size="lg"
-        footer={
-          <div className="grid grid-cols-2 gap-2">
-            <Button
-              variant="secondary"
-              onClick={() => setManualBookingOpen(false)}
-              className="h-12 w-full rounded-2xl px-2 text-sm"
-            >
-              Скасувати
-            </Button>
-
-            <Button
-              variant="primary"
-              disabled={
-                manualBookingSaving ||
-                !manualClientId ||
-                !manualServiceId ||
-                !manualMasterId ||
-                !manualDate ||
-                !manualTime
-              }
-              onClick={handleCreateManualBooking}
-              className="h-12 w-full rounded-2xl px-2 text-sm"
-            >
-              <Check className="h-4 w-4" />
-              <span className="truncate">
-                {manualBookingSaving ? "Створюємо..." : "Створити запис"}
-              </span>
-            </Button>
-          </div>
-        }
+        contentClassName="!overflow-hidden !p-0 sm:!p-0"
       >
-        <div className="space-y-4">
-          <div className="space-y-4 rounded-2xl border border-[#eadbc9] bg-white p-4">
-            <div>
-              <label className="mb-2 flex items-center gap-2 text-sm font-black text-[#202020]">
-                <UserRound className="h-4 w-4 text-[#ff6200]" />
-                Клієнт
-              </label>
-
-              <ManualSelect
-                label=""
-                value={manualClientId}
-                onChange={setManualClientId}
-                options={clients}
-                placeholder="Оберіть клієнта"
-                type="client"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 gap-3">
-              <div>
-                <label className="mb-2 flex items-center gap-2 text-sm font-black text-[#202020]">
-                  <FilePenLine className="h-4 w-4 text-[#ff6200]" />
-                  Послуга
-                </label>
-
-                <ManualSelect
-                  label=""
-                  value={manualServiceId}
-                  onChange={setManualServiceId}
-                  options={services}
-                  placeholder="Оберіть послугу"
-                  type="service"
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 flex items-center gap-2 text-sm font-black text-[#202020]">
-                  <UserStar className="h-4 w-4 text-[#ff6200]" />
-                  Майстер
-                </label>
-
-                <ManualSelect
-                  label=""
-                  value={manualMasterId}
-                  onChange={setManualMasterId}
-                  options={masters}
-                  placeholder="Оберіть майстра"
-                  type="master"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <label className="block min-w-0">
-                  <span className="mb-2 flex items-center gap-2 text-sm font-black text-[#202020]">
-                    <CalendarDays className="h-4 w-4 text-[#ff6200]" />
-                    Дата
-                  </span>
-
-                  <div className="relative min-w-0">
-                    <DatePicker
-                      ref={manualDatePickerRef}
-                      selected={dateStringToDate(manualDate)}
-                      onChange={(date) => {
-                        setManualDate(dateToDateString(date));
-
-                        setTimeout(() => {
-                          manualDatePickerRef.current?.setOpen(false);
-                        }, 0);
-                      }}
-                      locale={uk}
-                      dateFormat="dd.MM.yyyy"
-                      calendarStartDay={1}
-                      shouldCloseOnSelect={true}
-                      popperPlacement="top-start"
-                      popperClassName="z-[9999] datepicker-popper-mobile"
-                      wrapperClassName="w-full"
-                      customInput={<DatePickerButton />}
-                    />
-                  </div>
-                </label>
-
-                <label className="block min-w-0">
-                  <span className="mb-2 flex items-center gap-2 text-sm font-black text-[#202020]">
-                    <Clock3 className="h-4 w-4 text-[#ff6200]" />
-                    Час
-                  </span>
-
-                  <div className="flex h-14 min-w-0 items-center overflow-hidden rounded-2xl border border-[#eadbc9] bg-white px-2 transition-all hover:border-[#ffd6bd] hover:bg-[#fff7f0] focus-within:ring-4 focus-within:ring-[#ff6200]/10">
-                    <TimeSelect
-                      value={manualTime}
-                      placeholder="--:--"
-                      label="Час запису"
-                      dayLabel={
-                        manualDate ? formatDateUA(manualDate) : "Новий запис"
-                      }
-                      onChange={(value) => setManualTime(value)}
-                      onCommit={(value) => setManualTime(value)}
-                      className="h-10 rounded-[14px]"
-                    />
-                  </div>
-                </label>
-              </div>
-
-              {manualBookingError && (
-                <div className="rounded-2xl border border-[#ffd8d8] bg-[#fff7f7] px-4 py-3 text-sm font-bold text-[#e5484d]">
-                  {manualBookingError}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        <StudioBookingWidget
+          bookingMode="owner"
+          clients={clients}
+          studio={{
+            ...studio,
+            id: studioId,
+            services,
+            masters,
+            schedule: manualStudioSchedule,
+            scheduleDays: manualStudioSettings.scheduleDays,
+            scheduleExceptions: manualStudioExceptions,
+            slotDuration:
+              manualStudioSettings.slotDuration || studio?.slotDuration || 15,
+          }}
+          schedule={manualStudioSchedule}
+          scheduleExceptions={manualStudioExceptions}
+          slotDuration={
+            manualStudioSettings.slotDuration || studio?.slotDuration || 15
+          }
+          onCancel={() => setManualBookingOpen(false)}
+          onSuccess={(data) => {
+            setManualBookingOpen(false);
+            setManualSuccessData(data);
+          }}
+        />
       </Modal>
+
+      {manualSuccessData && (
+        <BookingSuccessModal
+          bookingDetails={manualSuccessData}
+          onClose={() => setManualSuccessData(null)}
+          onViewBookings={() => setManualSuccessData(null)}
+        />
+      )}
+
+
     </div>
   );
 }

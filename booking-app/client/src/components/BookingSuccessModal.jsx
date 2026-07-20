@@ -457,16 +457,7 @@ className="
             </div>
 
             {/* Кнопки */}
-            <div className="grid shrink-0 grid-cols-2 gap-2 border-t border-[#bbf7d0] bg-[#dcfce7] px-5 pb-[max(18px,env(safe-area-inset-bottom))] pt-4 sm:px-6 sm:pb-5">
-              <button
-                type="button"
-                onClick={onViewBookings}
-                className="group inline-flex h-12 items-center justify-center gap-2 rounded-[16px] border border-[#2C2C2C] bg-[#2C2C2C] px-4 text-sm font-black text-white transition hover:bg-[#1f1f1f] active:scale-[0.98]"
-              >
-                Мої записи
-
-                <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-              </button>
+           <div className="grid shrink-0 grid-cols-[0.8fr_1.2fr] gap-2 border-t border-[#bbf7d0] bg-[#dcfce7] px-5 pb-[max(18px,env(safe-area-inset-bottom))] pt-4 sm:px-6 sm:pb-5">
 
               <button
                 type="button"
@@ -475,6 +466,29 @@ className="
               >
                 Закрити
               </button>
+              <button
+  type="button"
+  onClick={onViewBookings}
+  className="
+    group inline-flex h-12 items-center justify-center gap-2
+    rounded-[16px]
+    border border-[#202020]
+    bg-[#202020]
+    px-4
+    text-sm font-black text-white
+    shadow-[0_12px_26px_rgba(15,15,15,0.18)]
+    transition-all duration-300
+    hover:scale-[1.015]
+    hover:border-[#ff6200]
+    hover:bg-[#ff6200]
+    hover:shadow-[0_14px_30px_rgba(255,98,0,0.24)]
+    active:scale-[0.98]
+  "
+>
+  Мої записи
+
+  <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+</button>
             </div>
           </motion.div>
         </div>

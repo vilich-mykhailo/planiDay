@@ -49,6 +49,137 @@ body.menu-open {
   touch-action: none;
 }
 
+/* Календар дати народження — Aveliio */
+
+.aveliio-birth-calendar.react-datepicker {
+  overflow: hidden;
+  border: 1px solid #eadbc9;
+  border-radius: 24px;
+  background: #ffffff;
+  font-family: inherit;
+  box-shadow: 0 24px 60px rgba(32, 32, 32, 0.16);
+}
+
+.aveliio-birth-calendar .react-datepicker__header {
+  border-bottom: 1px solid #f0e7da;
+  background: linear-gradient(180deg, #fffaf6 0%, #ffffff 100%);
+  padding: 14px 10px 10px;
+}
+
+.aveliio-birth-calendar .react-datepicker__current-month {
+  display: none;
+}
+
+.aveliio-birth-calendar .react-datepicker__navigation {
+  display: none;
+}
+
+.aveliio-birth-calendar .react-datepicker__month-container {
+  float: none;
+}
+
+.aveliio-birth-calendar .react-datepicker__month {
+  margin: 10px 12px 14px;
+}
+
+.aveliio-birth-calendar .react-datepicker__day-names {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin: 0;
+  padding: 0 12px;
+}
+
+.aveliio-birth-calendar .react-datepicker__week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.aveliio-birth-calendar .react-datepicker__day-name {
+  width: 36px;
+  height: 30px;
+  margin: 2px;
+  color: #aaa19a;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 30px;
+  text-transform: uppercase;
+}
+
+.aveliio-birth-calendar .react-datepicker__day {
+  display: inline-flex;
+  width: 36px;
+  height: 36px;
+  margin: 2px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  color: #202020;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.aveliio-birth-calendar .react-datepicker__day:hover {
+  background: #fff1e8;
+  color: #ff6200;
+  transform: translateY(-1px);
+}
+
+.aveliio-birth-calendar .react-datepicker__day--selected,
+.aveliio-birth-calendar .react-datepicker__day--keyboard-selected {
+  background: #ff6200;
+  color: #ffffff;
+  box-shadow: 0 8px 18px rgba(255, 98, 0, 0.25);
+}
+
+.aveliio-birth-calendar .react-datepicker__day--selected:hover,
+.aveliio-birth-calendar
+  .react-datepicker__day--keyboard-selected:hover {
+  background: #ef5c00;
+  color: #ffffff;
+}
+
+.aveliio-birth-calendar .react-datepicker__day--today {
+  border: 1px solid #ff6200;
+  background: #fffaf6;
+  color: #ff6200;
+}
+
+.aveliio-birth-calendar
+  .react-datepicker__day--today.react-datepicker__day--selected {
+  background: #ff6200;
+  color: #ffffff;
+}
+
+.aveliio-birth-calendar .react-datepicker__day--outside-month {
+  color: #d0c8c0;
+}
+
+.aveliio-birth-calendar .react-datepicker__day--disabled {
+  cursor: not-allowed;
+  background: transparent;
+  color: #ded8d2;
+  opacity: 0.65;
+}
+
+.aveliio-birth-calendar .react-datepicker__day--disabled:hover {
+  background: transparent;
+  color: #ded8d2;
+  transform: none;
+}
+
+.aveliio-birth-calendar .react-datepicker__triangle {
+  display: none;
+}
+
+.datepicker-popper-mobile {
+  z-index: 10050 !important;
+}
 
 
 button:not(:disabled),

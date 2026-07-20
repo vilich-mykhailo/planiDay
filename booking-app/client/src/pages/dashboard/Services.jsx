@@ -467,8 +467,21 @@ function Button({
   ...props
 }) {
   const variants = {
-    primary:
-      "bg-[var(--color-primary-buttom)] text-white hover:bg-[#4a4a4a]",
+primary:
+  `
+    bg-[#202020] text-white
+    shadow-[0_12px_26px_rgba(15,15,15,0.18)]
+    transition-all duration-300
+    hover:scale-[1.015]
+    hover:bg-[#ff6200]
+    hover:shadow-[0_14px_30px_rgba(255,98,0,0.24)]
+    active:scale-[0.98]
+    disabled:pointer-events-none
+    disabled:bg-[#f1ebe4]
+    disabled:text-[#aaa19a]
+    disabled:shadow-none
+    disabled:opacity-100
+  `,
     secondary:
       "bg-white border border-[#eadbc9] text-[#202020] hover:bg-[#fff7f0] hover:border-[#ffd6bd]",
     danger:
@@ -1252,14 +1265,31 @@ title={
                     actions={{
                       desktop: (
                         <>
-                          <Button
-                            variant="primary"
-                            size="md"
-                            onClick={() => openAddService(cat.id)}
-                          >
-                            <Plus className="h-4 w-4" />
-                            Додати послугу
-                          </Button>
+ <Button
+  variant="primary"
+  size="md"
+  onClick={() => openAddService(cat.id)}
+  className="
+    inline-flex h-11 items-center justify-center gap-2
+    rounded-[16px] px-4
+    !bg-[#202020]
+    text-sm font-black text-white
+    shadow-[0_12px_26px_rgba(15,15,15,0.18)]
+    transition-all duration-300
+    hover:scale-[1.015]
+    hover:!bg-[#ff6200]
+    hover:shadow-[0_14px_30px_rgba(255,98,0,0.24)]
+    active:scale-[0.98]
+    disabled:pointer-events-none
+    disabled:!bg-[#f1ebe4]
+    disabled:text-[#aaa19a]
+    disabled:shadow-none
+    disabled:opacity-100
+  "
+>
+  <Plus className="h-4 w-4" />
+  Додати послугу
+</Button>
 
                           {!isUnc && (
                             <>

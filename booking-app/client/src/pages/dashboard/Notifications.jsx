@@ -175,7 +175,7 @@ function getRescheduleInfo(item) {
     return {
       text: "змінив(ла) дату та час запису",
       type: "datetime",
-      modalTitle: "Нові дата та час оновлені",
+      modalTitle: "Нова дата та час запису",
     };
   }
 

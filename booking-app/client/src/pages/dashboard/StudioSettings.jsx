@@ -197,8 +197,8 @@ function Button({
   ...props
 }) {
   const variants = {
-    primary:
-       "bg-[var(--color-primary-buttom)] text-white hover:bg-[#4a4a4a]",
+primary:
+  "bg-[#202020] text-white shadow-[0_12px_26px_rgba(15,15,15,0.18)] transition-all duration-300 hover:scale-[1.015] hover:bg-[#ff6200] hover:shadow-[0_14px_30px_rgba(255,98,0,0.24)] active:scale-[0.98] disabled:pointer-events-none disabled:bg-[#f1ebe4] disabled:text-[#aaa19a] disabled:shadow-none disabled:opacity-100",
     secondary:
       "border border-[#eadbc9] bg-white text-[#202020] hover:border-[#ffd6bd] hover:bg-[#fff7f0]",
     danger:
@@ -2426,14 +2426,26 @@ onClick={() => openStudioEditModal(item.field)}
                           hint={`${portfolioCount}/${MAX_PORTFOLIO}`}
                         >
                           <div className="flex flex-wrap items-center gap-2">
-                            <label
-                              id="studio-field-portfolio-add"
-                              className={cn(
-                                "inline-flex cursor-pointer items-center justify-center gap-2 rounded-2xl bg-[var(--color-primary-buttom)] px-4 py-2.5 text-sm font-black text-white transition hover:bg-[#4a4a4a] active:scale-[0.98]",
-                                highlightId === "studio-field-portfolio-add" &&
-                                  highlightClass,
-                              )}
-                            >
+<label
+  id="studio-field-portfolio-add"
+  className={cn(
+    `
+      inline-flex cursor-pointer items-center justify-center gap-2
+      rounded-2xl
+      bg-[#202020]
+      px-4 py-2.5
+      text-sm font-black text-white
+      shadow-[0_12px_26px_rgba(15,15,15,0.18)]
+      transition-all duration-300
+      hover:scale-[1.015]
+      hover:bg-[#ff6200]
+      hover:shadow-[0_14px_30px_rgba(255,98,0,0.24)]
+      active:scale-[0.98]
+    `,
+    highlightId === "studio-field-portfolio-add" &&
+      highlightClass,
+  )}
+>
                               <Plus className="h-4 w-4" />
                               Додати фото
                               <input

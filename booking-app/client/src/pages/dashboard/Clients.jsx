@@ -496,8 +496,8 @@ function Avatar({ name, photoUrl, className = "" }) {
 
 function Button({ variant = "secondary", className = "", children, ...props }) {
   const variants = {
-    primary:
-      "bg-[var(--color-primary-buttom)] text-white hover:bg-[#4a4a4a]",
+primary:
+  "bg-[#202020] text-white shadow-[0_12px_26px_rgba(15,15,15,0.18)] transition-all duration-300 hover:scale-[1.015] hover:bg-[#ff6200] hover:shadow-[0_14px_30px_rgba(255,98,0,0.24)] active:scale-[0.98] disabled:pointer-events-none disabled:bg-[#f1ebe4] disabled:text-[#aaa19a] disabled:shadow-none disabled:opacity-100",
     secondary:
       "border border-[#eadbc9] bg-white text-[#202020] shadow-sm hover:border-[#ffd6bd] hover:bg-[#fff7f0]",
     danger:
@@ -517,6 +517,246 @@ function Button({ variant = "secondary", className = "", children, ...props }) {
     >
       {children}
     </button>
+  );
+}
+
+const BIRTHDAY_MONTHS = [
+  "Січень",
+  "Лютий",
+  "Березень",
+  "Квітень",
+  "Травень",
+  "Червень",
+  "Липень",
+  "Серпень",
+  "Вересень",
+  "Жовтень",
+  "Листопад",
+  "Грудень",
+];
+
+const BIRTHDAY_WEEKDAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"];
+
+function parseCalendarDate(value) {
+  const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return null;
+
+  const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function toCalendarValue(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
+    date.getDate(),
+  ).padStart(2, "0")}`;
+}
+
+function BirthdayDatePicker({ value, onChange }) {
+  const rootRef = useRef(null);
+  const today = useMemo(() => new Date(), []);
+  const selectedDate = useMemo(() => parseCalendarDate(value), [value]);
+  const [open, setOpen] = useState(false);
+  const [visibleMonth, setVisibleMonth] = useState(
+    () => selectedDate || new Date(today.getFullYear() - 25, today.getMonth(), 1),
+  );
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    const handlePointerDown = (event) => {
+      if (!rootRef.current?.contains(event.target)) setOpen(false);
+    };
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open]);
+
+
+  const yearOptions = useMemo(
+    () => Array.from({ length: 121 }, (_, index) => today.getFullYear() - index),
+    [today],
+  );
+  const firstDayOffset = (new Date(
+    visibleMonth.getFullYear(),
+    visibleMonth.getMonth(),
+    1,
+  ).getDay() + 6) % 7;
+  const daysInMonth = new Date(
+    visibleMonth.getFullYear(),
+    visibleMonth.getMonth() + 1,
+    0,
+  ).getDate();
+  const calendarDays = Array.from({ length: 42 }, (_, index) => {
+    const day = index - firstDayOffset + 1;
+    return new Date(visibleMonth.getFullYear(), visibleMonth.getMonth(), day);
+  });
+  const displayValue = selectedDate
+    ? selectedDate.toLocaleDateString("uk-UA", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+      })
+    : "Оберіть дату";
+
+
+  const changeMonth = (offset) => {
+  setVisibleMonth(
+    (current) =>
+      new Date(current.getFullYear(), current.getMonth() + offset, 1),
+  );
+};
+
+const handleToggleCalendar = () => {
+  if (!open && selectedDate) {
+    setVisibleMonth(
+      new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1),
+    );
+  }
+
+  setOpen((current) => !current);
+};
+
+  return (
+    <div ref={rootRef} className="relative">
+      <input type="hidden" name="birthDate" value={value} />
+<button
+  type="button"
+  aria-haspopup="dialog"
+  aria-expanded={open}
+  onClick={handleToggleCalendar}
+  className={cn(
+    "flex w-full items-center justify-between rounded-2xl border bg-white px-4 py-3 text-left text-sm font-medium outline-none transition-all",
+    open
+      ? "border-[#ff5a00] ring-4 ring-[#ff5a00]/10"
+      : "border-[#eadbc9] hover:border-[#ffd6bd] hover:bg-[#fff7f0]",
+  )}
+>
+  <span className={selectedDate ? "text-[#202020]" : "text-[#77716b]"}>
+    {displayValue}
+  </span>
+
+  <CalendarDays className="h-5 w-5 shrink-0 text-[#ff6200]" />
+</button>
+
+      {open && (
+        <div
+          role="dialog"
+          aria-label="Календар дати народження"
+          className="absolute left-0 top-[calc(100%+8px)] z-50 w-[min(286px,calc(100vw-40px))] rounded-[20px] border border-[#eadbc9] bg-white p-3 shadow-[0_20px_55px_rgba(32,32,32,0.15)]"
+        >
+          <div className="mb-2.5 flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => changeMonth(-1)}
+              className="grid h-8 w-8 shrink-0 place-items-center rounded-[10px] border border-[#eadbc9] text-[#202020] transition hover:border-[#ffd6bd] hover:bg-[#fff7f0] hover:text-[#ff6200]"
+              aria-label="Попередній місяць"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+
+            <div className="grid min-w-0 flex-1 grid-cols-[1fr_68px] gap-1.5">
+              <select
+                value={visibleMonth.getMonth()}
+                onChange={(event) =>
+                  setVisibleMonth(
+                    new Date(visibleMonth.getFullYear(), Number(event.target.value), 1),
+                  )
+                }
+                className="min-w-0 appearance-none rounded-[10px] bg-[#fff7f0] px-2 py-1.5 text-xs font-black text-[#202020] outline-none ring-[#ff6200]/10 focus:ring-4"
+                aria-label="Місяць"
+              >
+                {BIRTHDAY_MONTHS.map((month, index) => (
+                  <option
+                    key={month}
+                    value={index}
+                    disabled={
+                      visibleMonth.getFullYear() === today.getFullYear() &&
+                      index > today.getMonth()
+                    }
+                  >
+                    {month}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={visibleMonth.getFullYear()}
+                onChange={(event) => {
+                  const nextYear = Number(event.target.value);
+                  const nextMonth =
+                    nextYear === today.getFullYear()
+                      ? Math.min(visibleMonth.getMonth(), today.getMonth())
+                      : visibleMonth.getMonth();
+                  setVisibleMonth(new Date(nextYear, nextMonth, 1));
+                }}
+                className="appearance-none rounded-[10px] bg-[#fff7f0] px-2 py-1.5 text-xs font-black text-[#202020] outline-none ring-[#ff6200]/10 focus:ring-4"
+                aria-label="Рік"
+              >
+                {yearOptions.map((year) => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
+              </select>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => changeMonth(1)}
+              disabled={
+                visibleMonth.getFullYear() === today.getFullYear() &&
+                visibleMonth.getMonth() === today.getMonth()
+              }
+              className="grid h-8 w-8 shrink-0 place-items-center rounded-[10px] border border-[#eadbc9] text-[#202020] transition hover:border-[#ffd6bd] hover:bg-[#fff7f0] hover:text-[#ff6200] disabled:pointer-events-none disabled:opacity-30"
+              aria-label="Наступний місяць"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-7 gap-0.5">
+            {BIRTHDAY_WEEKDAYS.map((day) => (
+              <span key={day} className="py-0.5 text-center text-[9px] font-black uppercase text-[#aaa19a]">
+                {day}
+              </span>
+            ))}
+            {calendarDays.map((date) => {
+              const dateValue = toCalendarValue(date);
+              const isSelected = dateValue === value;
+              const isOutsideMonth = date.getMonth() !== visibleMonth.getMonth();
+              const isFuture = date > today;
+
+              return (
+                <button
+                  key={dateValue}
+                  type="button"
+                  disabled={isFuture}
+                  onClick={() => {
+                    onChange(dateValue);
+                    setOpen(false);
+                  }}
+                  className={cn(
+                    "grid aspect-square place-items-center rounded-[9px] text-[11px] font-bold transition",
+                    isSelected
+                      ? "bg-[#ff6200] text-white shadow-[0_7px_16px_rgba(255,98,0,0.28)]"
+                      : "text-[#202020] hover:bg-[#fff1e8] hover:text-[#ff6200]",
+                    isOutsideMonth && !isSelected && "text-[#c8c0b8]",
+                    isFuture && "pointer-events-none opacity-25",
+                  )}
+                >
+                  {date.getDate()}
+                </button>
+              );
+            })}
+          </div>
+
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -3289,20 +3529,17 @@ const statusMeta = isCanceled
               />
             </label>
 
-            <label className="block">
+            <div className="block">
               <span className="mb-2 block text-sm font-black text-[#202020]">
                 Дата народження
               </span>
-              <input
-                name="birthDate"
-                type="date"
+              <BirthdayDatePicker
                 value={createClientForm.birthDate}
-                onChange={(e) =>
-                  updateCreateClientField("birthDate", e.target.value)
+                onChange={(value) =>
+                  updateCreateClientField("birthDate", value)
                 }
-                className="w-full rounded-2xl border border-[#eadbc9] bg-white px-4 py-3 text-sm font-medium text-[#202020] outline-none transition-all hover:bg-[#fff7f0] focus:border-[#ff5a00] focus:ring-4 focus:ring-[#ff5a00]/10"
               />
-            </label>
+            </div>
 
             <label className="block">
               <span className="mb-2 block text-sm font-black text-[#202020]">
