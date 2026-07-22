@@ -149,21 +149,42 @@ export default function LoginClient() {
                     {error}
                   </div>
                 )}
+<button
+  type="submit"
+  disabled={loading}
+  className="
+    group inline-flex h-11 w-full items-center justify-center gap-2
+    rounded-xl
+    bg-[#202020]
+    px-4
+    text-sm font-black text-white
+    shadow-[0_12px_26px_rgba(15,15,15,0.18)]
+    transition-all duration-300
+    hover:scale-[1.015]
+    hover:bg-[#ff6200]
+    hover:shadow-[0_14px_30px_rgba(255,98,0,0.24)]
+    active:scale-[0.98]
+    disabled:pointer-events-none
+    disabled:bg-[#f1ebe4]
+    disabled:text-[#aaa19a]
+    disabled:shadow-none
+    disabled:opacity-100
+    sm:h-auto
+    sm:rounded-2xl
+    sm:px-5
+    sm:py-3.5
+  "
+>
+  {loading ? (
+    "Вхід..."
+  ) : (
+    <>
+      Увійти
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 px-4 text-sm font-bold text-white shadow-lg shadow-emerald-500/20 transition-all hover:from-emerald-700 hover:to-emerald-800 disabled:opacity-50 sm:h-auto sm:rounded-2xl sm:px-5 sm:py-3.5"
-                >
-                  {loading ? (
-                    "Вхід..."
-                  ) : (
-                    <>
-                      Увійти
-                      <ArrowRight className="h-4 w-4" />
-                    </>
-                  )}
-                </button>
+      <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+    </>
+  )}
+</button>
               </form>
 
               <div className="mt-5 border-t border-stone-100 pt-4 text-center sm:mt-6 sm:pt-5">

@@ -145,13 +145,25 @@ export default function TermsClient() {
           </Section>
 
           <div className="mt-8 flex flex-col items-center justify-center gap-2 sm:flex-row">
-            <button
-              type="button"
-              onClick={() => navigate(location.state?.from || -1)}
-              className="inline-flex items-center justify-center rounded-2xl bg-black px-5 py-3 text-sm font-extrabold text-white transition hover:bg-gray-900"
-            >
-              Повернутися назад
-            </button>
+<button
+  type="button"
+  onClick={() => navigate(location.state?.from || -1)}
+  className="
+    inline-flex items-center justify-center
+    rounded-2xl
+    bg-[#202020]
+    px-5 py-3
+    text-sm font-black text-white
+    shadow-[0_12px_26px_rgba(15,15,15,0.18)]
+    transition-all duration-300
+    hover:scale-[1.015]
+    hover:bg-[#ff6200]
+    hover:shadow-[0_14px_30px_rgba(255,98,0,0.24)]
+    active:scale-[0.98]
+  "
+>
+  Повернутися назад
+</button>
           </div>
         </div>
       </div>

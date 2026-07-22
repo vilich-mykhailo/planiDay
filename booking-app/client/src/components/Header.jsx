@@ -789,13 +789,44 @@ className={cx(
 )}
 >
   <div className="mx-auto max-w-[1260px] px-4 max-[639px]:px-5 sm:px-6 lg:px-10">
-    <div className="flex h-[58px] items-center justify-between rounded-[20px] border border-[#eadfce] bg-white/90 px-3  backdrop-blur-2xl sm:h-[64px] sm:px-4 lg:h-[66px]">
+  <div
+  className="
+    relative flex h-[58px] items-center justify-between
+    rounded-[20px]
+    border border-[#ffb987]
+    bg-[#fff3eb]/70
+    px-3
+    shadow-[0_18px_48px_rgba(255,98,0,0.14)]
+    backdrop-blur-[8px]
+    backdrop-saturate-150
+    sm:h-[64px]
+    sm:px-4
+    lg:h-[66px]
+  "
+>
 <Link
   to="/"
-  className="flex items-center rounded-2xl px-1.5 py-1 transition-transform duration-200 hover:scale-105 active:scale-[0.98]"
+  className="
+    flex items-center rounded-2xl px-1.5 py-1
+    transition-transform duration-200
+    hover:scale-105
+    active:scale-[0.98]
+
+    max-[1023px]:absolute
+    max-[1023px]:left-1/2
+    max-[1023px]:top-1/2
+    max-[1023px]:-translate-x-1/2
+    max-[1023px]:-translate-y-1/2
+  "
   aria-label="Aveliio"
 >
- <span className="grid h-26 w-26 shrink-0 place-items-center overflow-hidden">
+  <span
+    className="
+      grid h-32 w-32 shrink-0 place-items-center overflow-hidden
+      max-[1023px]:h-28
+      max-[1023px]:w-28
+    "
+  >
     <img
       src="/Logo_aveliio_text.png"
       alt="Aveliio"
@@ -814,19 +845,27 @@ className={cx(
 
       <div className="hidden lg:block">{desktopItems.actions}</div>
 
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="grid h-12 w-12 translate-x-[5px] place-items-center rounded-[18px] border border-[#eadfce] bg-white text-[#111111] shadow-[0_10px_28px_rgba(15,23,42,0.06)] transition hover:border-[#f1dfbf] hover:text-[#ff6200] hover:ring-4 hover:ring-orange-200/20 active:scale-95 lg:hidden"
-        aria-label="Menu"
-        aria-expanded={open}
-      >
-        {open ? (
-          <X className="h-6 w-6" />
-        ) : (
-         <Menu className="h-6 w-6" />
-        )}
-      </button>
+<button
+  type="button"
+  onClick={() => setOpen((v) => !v)}
+  className="
+    ml-auto
+    grid h-12 w-12 translate-x-[5px] place-items-center
+    text-[#111111]
+    transition
+    hover:text-[#ff6200]
+    active:scale-95
+    lg:hidden
+  "
+  aria-label="Menu"
+  aria-expanded={open}
+>
+  {open ? (
+    <X className="h-6 w-6" />
+  ) : (
+    <Menu className="h-6 w-6" />
+  )}
+</button>
     </div>
   </div>
 </header>

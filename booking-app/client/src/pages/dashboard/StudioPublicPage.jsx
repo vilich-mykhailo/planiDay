@@ -2770,22 +2770,38 @@ onClick={openGeneralBooking}
 
             <div className="relative px-3 pb-[calc(env(safe-area-inset-bottom)+12px)]">
               <div className="mx-auto max-w-md rounded-[28px] border border-white/60 backdrop-blur-2xl">
-                <button
-                  type="button"
-onClick={openGeneralBooking}
-                  className={cn(
-                    "flex h-12 w-full items-center justify-center gap-2.5",
-                    "rounded-[22px] bg-[#ff5a00] px-5 text-sm font-black text-white shadow-sm",
-                    "transition-all duration-200 active:scale-[0.985]",
-                    "hover:bg-[#ef4f00]",
-                  )}
-                >
-                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/10">
-                    <Sparkles className="h-4 w-4 opacity-90" />
-                  </span>
+<button
+  type="button"
+  onClick={openGeneralBooking}
+  className={cn(
+    `
+      flex h-12 w-full items-center justify-center gap-2.5
+      rounded-[22px]
+      bg-[#202020]
+      px-5
+      text-sm font-black text-white
+      shadow-[0_12px_26px_rgba(15,15,15,0.18)]
+      transition-all duration-300
+      hover:scale-[1.015]
+      hover:bg-[#ff6200]
+      hover:shadow-[0_14px_30px_rgba(255,98,0,0.24)]
+      active:scale-[0.98]
+    `,
+  )}
+>
+  <span
+    className="
+      flex h-8 w-8 items-center justify-center
+      rounded-xl bg-white/10
+      transition-colors duration-300
+      group-hover:bg-white/15
+    "
+  >
+    <Sparkles className="h-4 w-4 opacity-90" />
+  </span>
 
-                  <span>Обрати послугу</span>
-                </button>
+  <span>Обрати послугу</span>
+</button>
               </div>
             </div>
           </div>

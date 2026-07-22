@@ -343,7 +343,7 @@ useEffect(() => {
   }
 
   return (
-    <div className="min-h-screen bg-[#fbfaf8] text-[#111827]">
+    <div className="min-h-screen text-[#111827]">
       <aside
         className={cn(
           "fixed left-0 top-0 z-40 hidden h-screen border-r border-[#ececec] bg-white transition-all duration-300 ease-in-out lg:flex lg:flex-col",

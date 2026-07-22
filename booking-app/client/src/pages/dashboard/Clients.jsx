@@ -2519,7 +2519,7 @@ const clientToDeleteBookingsCount = getClientBookingsCount(clientToDelete);
 const deleteClientBlockReason = getDeleteClientBlockReason(clientToDelete);
 const canDeleteClient = Boolean(clientToDelete) && !deleteClientBlockReason;
   return (
-    <div className="min-h-screen bg-[#fbfaf8] pb-8">
+    <div className="min-h-screen pb-8">
       <div className="mx-auto max-w-6xl space-y-6 ">
 
 <div className="relative mb-6 overflow-hidden rounded-[15px] border border-[#ebe7df] bg-white/95 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.06)] backdrop-blur-xl sm:p-7">
@@ -2537,14 +2537,7 @@ const canDeleteClient = Boolean(clientToDelete) && !deleteClientBlockReason;
     </div>
 
     <div className="flex shrink-0 items-center">
-      <button
-        type="button"
-        onClick={() => setInfoOpen(true)}
-        className="grid h-10 w-10 place-items-center rounded-full text-[#ff6200] transition-all hover:bg-[#fff7f0] active:scale-95"
-        title="Інформація"
-      >
-        <CircleAlert className="h-5 w-5" />
-      </button>
+
 
       <div className="hidden sm:block">
         <Button
@@ -3763,71 +3756,6 @@ const statusMeta = isCanceled
               />
             </label>
           ))}
-        </div>
-      </Modal>
-      <Modal
-        open={infoOpen}
-        onClose={() => setInfoOpen(false)}
-        title="Інструкція сторінки"
-        badge="Клієнти"
-        icon={CircleAlert}
-        size="lg"
-      >
-        <div className="space-y-5 text-sm font-medium leading-6 text-[#77716b]">
-          <div>
-            <h4 className="text-base font-black text-[#202020]">
-              Що показує ця сторінка
-            </h4>
-            <p className="mt-1">
-              Тут зібрані всі клієнти студії, які мали записи. Клієнти додаються
-              автоматично після бронювання.
-            </p>
-          </div>
-
-          <div>
-            <h4 className="text-base font-black text-[#202020]">
-              Статуси клієнтів
-            </h4>
-
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              {statusInfoItems.map((item) => (
-                <div
-                  key={item.value}
-                  className="rounded-[18px] border border-[#eadbc9] bg-[#fbfaf8] p-4"
-                >
-                  <div className="mb-2">
-                    <StatusBadge status={item.value} />
-                  </div>
-
-                  <p className="text-[13px] font-semibold leading-5 text-[#77716b]">
-                    {item.description}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <h4 className="text-base font-black text-[#202020]">
-              Можливості сторінки
-            </h4>
-
-            <ul className="mt-2 list-disc space-y-1 pl-5">
-              <li>Пошук клієнтів за іменем, прізвищем, телефоном або email.</li>
-              <li>
-                Фільтрація за статусами: нові, постійні, активні, неактивні,
-                VIP.
-              </li>
-              <li>
-                Сортування за алфавітом, датою додавання, останнім візитом,
-                бронюваннями та витратами.
-              </li>
-              <li>
-                Перегляд історії записів, фінансів, статусів і нотаток клієнта.
-              </li>
-              <li>Експорт клієнтів у Excel з вибором потрібних колонок.</li>
-            </ul>
-          </div>
         </div>
       </Modal>
       <Modal

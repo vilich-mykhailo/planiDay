@@ -1,4 +1,4 @@
-//Masters.jsx
+// Masters.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import XLSX from "xlsx-js-style";
@@ -11,8 +11,9 @@ import {
   Pencil,
   Trash2,
   X,
-  FilePenLine,
-  UserStar,
+FilePenLine,
+PartyPopper,
+UserStar,
   Timer,
   Copy,
   PhoneCall,
@@ -226,15 +227,28 @@ function formatDateFullUA(dateStr) {
 }
 
 function getBookingClientName(booking) {
+  const clientFullName = [
+    booking?.client?.firstName,
+    booking?.client?.lastName,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+
+  const clientAccountFullName = [
+    booking?.clientAccount?.firstName,
+    booking?.clientAccount?.lastName,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+
   return (
-    booking?.clientName ||
+    clientFullName ||
     booking?.client?.name ||
-    [booking?.client?.firstName, booking?.client?.lastName]
-      .filter(Boolean)
-      .join(" ") ||
-    [booking?.clientAccount?.firstName, booking?.clientAccount?.lastName]
-      .filter(Boolean)
-      .join(" ") ||
+    clientAccountFullName ||
+    booking?.clientAccount?.name ||
+    booking?.clientName ||
     "Клієнт"
   );
 }
@@ -745,7 +759,7 @@ function MasterBookingCard({ booking, master, nowTs, onClick }) {
                   {clientName}
                 </h2>
 
-                <div className="mt-2 flex items-center gap-1.5 text-[10px] font-semibold text-[#77716b] max-[767px]:mt-1 max-[767px]:text-[8px] lg:text-[10px]">
+                <div className="mt-2 flex items-center gap-1.5 text-[10px] font-semibold text-[#77716b] max-[767px]:mt-1 max-[767px]:text-12px] lg:text-[10px]">
                   <ClipboardPen className="h-4 w-4 shrink-0 text-[#77716b] max-[767px]:h-3 max-[767px]:w-3" />
 
                   <span className="line-clamp-2">{service}</span>
@@ -1049,9 +1063,10 @@ async function handleConfirmMasterBooking(booking) {
       queryKey: ["bookings", studioId],
       exact: true,
     });
-  } catch (error) {
-    alert(error?.message || "Не вдалося підтвердити запис");
-  } finally {
+} catch (error) {
+  alert(error?.message || "Не вдалося підтвердити запис");
+  return false;
+} finally {
     setMasterBookingActionLoading(false);
   }
 }
@@ -3180,7 +3195,7 @@ function quickSelectWorkdays(monthDays) {
   }
 
   return (
-    <div className="min-h-screen bg-[#fbfaf8]">
+    <div className="min-h-screen">
       <div className="mx-auto max-w-6xl space-y-6">
         <div className="relative mb-6 overflow-hidden rounded-[15px] border border-[#ebe7df] bg-white/95 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.06)] backdrop-blur-xl sm:p-7">
           <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#ff7a18] via-[#ff6200] to-[#ff8c42]" />
@@ -3198,15 +3213,6 @@ function quickSelectWorkdays(monthDays) {
             </div>
 
             <div className="flex shrink-0 items-center">
-              <button
-                type="button"
-                onClick={() => setInfoOpen(true)}
-                className="grid !px-0 h-10 w-10 place-items-center rounded-full text-[#ff6200] transition-all  hover:!bg-[#fff7f0] active:scale-95 "
-                title="Інформація"
-              >
-                <CircleAlert className="h-5 w-5" />
-              </button>
-
               <div className="hidden sm:block">
                 <Button
                   variant="ghost"
@@ -4420,7 +4426,6 @@ isSelected
               {[
                 ["all", "Усі"],
                 ["today", "Сьогодні"],
-                ["week", "Тиждень"],
                 ["month", "Місяць"],
                 ["completed", "Завершені"],
               ].map(([value, label]) => (
@@ -4688,32 +4693,6 @@ isSelected
         </div>
       </Modal>
 
-      <Modal
-        open={infoOpen}
-        onClose={() => setInfoOpen(false)}
-        title="Інформація про майстрів"
-        badge="Інформація"
-        icon={CircleAlert}
-        subtitle="Ця сторінка відповідає за майстрів студії, їхні профілі, записи та особливі дати."
-        size="lg"
-      >
-        <div className="space-y-5 text-sm font-medium leading-6 text-[#77716b]">
-          <div>
-            <h4 className="text-base font-black text-[#202020]">
-              Можливості сторінки
-            </h4>
-
-            <ul className="mt-2 list-disc space-y-1 pl-5">
-              <li>Додавання нових майстрів.</li>
-              <li>Редагування фото, імені, спеціалізації та опису.</li>
-              <li>Перегляд записів конкретного майстра.</li>
-              <li>Додавання особливих дат або вихідних.</li>
-              <li>Видалення майстрів із підтвердженням.</li>
-              <li>Експорт списку майстрів у Excel.</li>
-            </ul>
-          </div>
-        </div>
-      </Modal>
 <Modal
   open={scheduleErrorModal.open}
   onClose={closeScheduleError}
@@ -4762,11 +4741,11 @@ isSelected
           const dt = getBookingDateTime(booking);
           const isArchived = dt ? dt.getTime() < nowTs : false;
 
-          const statusMeta = isArchived
-            ? {
-                label: "Завершено",
-                top: "from-[var(--color-archived-light)] to-white",
-                Icon: CalendarCheck,
+const statusMeta = isArchived
+  ? {
+      label: "Сеанс завершено",
+      top: "from-[var(--color-archived-light)] to-white",
+      Icon: PartyPopper,
                 iconColor: "text-[var(--color-archived-dark)]",
                 pillText: "text-[var(--color-archived-dark)]",
                 accent: "text-[var(--color-archived)]",
@@ -4782,7 +4761,10 @@ isSelected
                 }
               : isCanceled
                 ? {
-                    label: getCanceledBookingLabel(booking),
+  label:
+  booking.canceledBy === "client"
+    ? "Скасовано клієнтом"
+    : "Скасовано вами",
                     top: "from-[var(--color-canceled-light)] to-white",
                     Icon: XCircle,
                     iconColor: "text-[var(--color-canceled-dark)]",
@@ -4801,7 +4783,12 @@ isSelected
           const StatusIcon = statusMeta.Icon;
 
           const clientName = getBookingClientName(booking);
-          const phone = getBookingClientPhone(booking);
+          const rawPhone = String(getBookingClientPhone(booking) || "").trim();
+
+const phone =
+  rawPhone && rawPhone !== "—" && rawPhone !== "null"
+    ? rawPhone
+    : "";
           const service = getBookingServiceName(booking);
           const masterName = getBookingMasterName(booking, bookingsMaster);
 
@@ -4913,7 +4900,7 @@ isSelected
                       />
 
                       <p className="mt-2 text-[11px] font-black uppercase tracking-[0.12em] text-[#aaa19a]">
-                        Сума
+                        Вартість
                       </p>
 
                       <p className="mt-1 text-sm font-black text-[#202020]">
@@ -4937,139 +4924,175 @@ isSelected
 
                 <div className="relative flex min-h-0 flex-1 flex-col bg-white px-4 pt-4 sm:px-6">
                   <div className="calendar-day-scroll min-h-0 flex-1 overflow-y-auto pb-28 sm:pb-24">
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div className="rounded-[28px] border border-[#eadfce] bg-white p-4 sm:col-span-2">
-                        <div className="flex items-center gap-4">
-                          <div className="h-[72px] w-[72px] shrink-0 overflow-hidden rounded-full border border-[#eadfce] bg-white p-1">
-                            {clientPhoto ? (
-                              <img
-                                src={clientPhoto}
-                                alt={clientName}
-                                className="h-full w-full rounded-full object-cover"
-                              />
-                            ) : (
-                              <div className="flex h-full w-full items-center justify-center rounded-full bg-[#fff1e8] text-[#ff6200]">
-                                <UserRound className="h-5 w-5" />
-                              </div>
-                            )}
-                          </div>
+<div className="grid gap-3 sm:grid-cols-2">
+  {/* Клієнт */}
+  <div className="min-h-[90px] rounded-[24px] border border-[#eadfce] bg-white p-3 max-[639px]:min-h-[66px] max-[639px]:rounded-[20px] max-[639px]:p-2.5 sm:col-span-2">
+    <div className="flex h-full items-center gap-3 max-[639px]:gap-2.5">
+      <div className="h-[62px] w-[62px] shrink-0 overflow-hidden rounded-full border border-[#eadfce] bg-white p-1 max-[639px]:h-[46px] max-[639px]:w-[46px] max-[639px]:p-0.5">
+        {clientPhoto ? (
+          <img
+            src={clientPhoto}
+            alt={clientName}
+            className="h-full w-full rounded-full object-cover"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center rounded-full bg-[#fff1e8] text-[#ff6200]">
+            <UserRound className="h-5 w-5 max-[639px]:h-4 max-[639px]:w-4" />
+          </div>
+        )}
+      </div>
 
-                          <div className="min-w-0 flex-1">
-                            <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#aaa19a]">
-                              Клієнт
-                            </p>
+      <div className="min-w-0 flex-1">
+        <p className="text-[9px] font-black uppercase leading-none tracking-[0.12em] text-[#aaa19a] max-[639px]:text-[8px]">
+          Клієнт
+        </p>
 
-                            <p className="truncate text-[20px] font-black text-[#202020]">
-                              {clientName}
-                            </p>
+        <p className="mt-1 truncate text-[15px] font-black leading-tight text-[#202020] max-[639px]:text-[18px]">
+          {clientName}
+        </p>
 
-                            <p className="mt-1 truncate text-sm font-bold text-[#77716b]">
-                              {phone || "Телефон не вказано"}
-                            </p>
-                          </div>
+        <div className="mt-0.5 flex min-w-0 items-center gap-1.5 max-[639px]:gap-1">
+          <p className="min-w-0 truncate text-[12px] font-semibold leading-tight text-[#77716b] max-[639px]:text-[12px]">
+            {phone || "Номер телефона не вказано"}
+          </p>
 
-                          {phone && (
-                            <div className="flex shrink-0 items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() => handleCopyPhone(phone)}
-                                className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#eadfce] bg-white text-[#77716b] transition-all duration-200 hover:!bg-[#fff7f0] hover:text-[#202020] active:scale-[0.95]"
-                                title="Скопіювати номер"
-                              >
-                                {copiedPhone ? (
-                                  <CheckCheck className="h-4 w-4 text-emerald-600" />
-                                ) : (
-                                  <Copy className="h-4 w-4" />
-                                )}
-                              </button>
+          {phone && (
+            <button
+              type="button"
+              onClick={() => handleCopyPhone(phone)}
+              className="
+                flex h-7 w-7 shrink-0 items-center justify-center
+                rounded-lg text-[#aaa19a]
+                transition-all duration-200
+                hover:bg-[#fff1e8]
+                hover:text-[#ff6200]
+                active:scale-[0.92]
+                max-[639px]:h-6
+                max-[639px]:w-6
+              "
+              title={copiedPhone ? "Скопійовано" : "Скопіювати номер"}
+              aria-label={
+                copiedPhone
+                  ? "Номер скопійовано"
+                  : "Скопіювати номер"
+              }
+            >
+              {copiedPhone ? (
+                <CheckCheck className="h-4 w-4 text-emerald-600 max-[639px]:h-3.5 max-[639px]:w-3.5" />
+              ) : (
+                <Copy className="h-4 w-4 max-[639px]:h-3.5 max-[639px]:w-3.5" />
+              )}
+            </button>
+          )}
+        </div>
+      </div>
 
-                              <a
-                                href={`tel:${phone}`}
-                                className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#ff6200] text-white transition-all duration-200 hover:bg-[#ef4f00] active:scale-[0.95]"
-                                title="Подзвонити"
-                              >
-                                <PhoneCall className="h-4 w-4" />
-                              </a>
-                            </div>
-                          )}
-                        </div>
-                      </div>
+      {phone && (
+        <a
+          href={`tel:${phone}`}
+          className="
+            flex h-10 w-10 shrink-0 items-center justify-center
+            text-[#77716b]
+            transition-all duration-200
+            hover:scale-[1.06]
+            hover:text-[#ff6200]
+            active:scale-[0.94]
+            max-[639px]:h-8
+            max-[639px]:w-8
+          "
+          title="Подзвонити"
+          aria-label="Подзвонити"
+        >
+          <PhoneCall
+            className="h-6 w-6 max-[639px]:h-5 max-[639px]:w-5"
+            strokeWidth={2.2}
+          />
+        </a>
+      )}
+    </div>
+  </div>
 
-                      <div className="rounded-[24px] border border-[#eadfce] bg-white p-3 sm:col-span-2">
-                        <div className="ml-2 flex items-center gap-3">
-                          <div className="h-[62px] w-[62px] shrink-0 overflow-hidden rounded-full border border-[#eadfce] bg-white p-1">
-                            {masterPhoto ? (
-                              <img
-                                src={masterPhoto}
-                                alt={masterName}
-                                className="h-full w-full rounded-full object-cover"
-                              />
-                            ) : (
-                              <div className="flex h-full w-full items-center justify-center rounded-full bg-[#fff1e8] text-[#ff6200]">
-                                <UserRound className="h-5 w-5" />
-                              </div>
-                            )}
-                          </div>
+  {/* Майстер */}
+  <div className="min-h-[90px] rounded-[24px] border border-[#eadfce] bg-white p-3 max-[639px]:min-h-[66px] max-[639px]:rounded-[20px] max-[639px]:p-2.5 sm:col-span-2">
+    <div className="flex h-full items-center gap-3 max-[639px]:gap-2.5">
+      <div className="h-[62px] w-[62px] shrink-0 overflow-hidden rounded-full border border-[#eadfce] bg-white p-1 max-[639px]:h-[46px] max-[639px]:w-[46px] max-[639px]:p-0.5">
+        {masterPhoto ? (
+          <img
+            src={masterPhoto}
+            alt={masterName}
+            className="h-full w-full rounded-full object-cover"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center rounded-full bg-[#fff1e8] text-[#ff6200]">
+            <UserRound className="h-5 w-5 max-[639px]:h-4 max-[639px]:w-4" />
+          </div>
+        )}
+      </div>
 
-                          <div className="ml-2 min-w-0 flex-1">
-                            <p className="text-[9px] font-black uppercase tracking-[0.12em] text-[#aaa19a]">
-                              Майстер
-                            </p>
+      <div className="min-w-0 flex-1">
+        <p className="text-[9px] font-black uppercase leading-none tracking-[0.12em] text-[#aaa19a] max-[639px]:text-[8px]">
+          Майстер
+        </p>
 
-                            <p className="mt-0.5 truncate text-[15px] font-black text-[#202020]">
-                              {masterName}
-                            </p>
+        <p className="mt-1 truncate text-[15px] font-black leading-tight text-[#202020] max-[639px]:text-[18px]">
+          {masterName}
+        </p>
 
-                            <p className="truncate text-[12px] font-semibold text-[#77716b]">
-                              Виконавець послуги
-                            </p>
-                          </div>
-                        </div>
-                      </div>
+        <p className="mt-0.5 truncate text-[12px] font-semibold leading-tight text-[#77716b] max-[639px]:text-[10px]">
+          Виконавець послуги
+        </p>
+      </div>
 
-                      {(booking.comment || booking.note) && (
-                        <div className="rounded-[24px] border border-[#eadfce] bg-white p-4 sm:col-span-2">
-                          <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#aaa19a]">
-                            Коментар
-                          </p>
-
-                          <p className="mt-2 text-sm font-semibold leading-6 text-[#202020]">
-                            {booking.comment || booking.note}
-                          </p>
-                        </div>
-                      )}
-                    </div>
+      <div className="h-10 w-10 shrink-0 max-[639px]:h-8 max-[639px]:w-8" />
+    </div>
+  </div>
+</div>
                   </div>
 
 {!isArchived && !isCanceled && (
   <div className="absolute inset-x-0 bottom-0 border-[#eadfce] bg-white/92 px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 backdrop-blur sm:px-6 sm:pb-5">
-    <div
-      className={cn(
-        "grid gap-3",
-        !isConfirmed ? "sm:grid-cols-2" : "sm:grid-cols-1",
-      )}
-    >
-      {!isConfirmed && (
+    <div className="grid grid-cols-2 gap-3">
+      {!isCanceled && (
         <button
           type="button"
           disabled={masterBookingActionLoading}
-          onClick={() => handleConfirmMasterBooking(booking)}
-          className="inline-flex h-12 items-center justify-center gap-2 rounded-[22px] bg-[var(--color-primary-buttom)] px-4 text-sm font-black text-white transition-all duration-200 hover:bg-[#4a4a4a] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50"
+          onClick={() => {
+            closeDetails();
+            setCancelMasterBookingConfirm(booking);
+          }}
+          className={cn(
+            "inline-flex h-12 min-w-0 items-center justify-center gap-2 rounded-[15px] border border-[#ef4444]/45 bg-white px-3 text-sm font-black text-[#ef4444] shadow-[0_10px_22px_rgba(239,68,68,0.08)] transition-all duration-300 hover:scale-[1.015] hover:border-[#ef4444] hover:bg-[#ef4444] hover:text-white hover:shadow-[0_12px_26px_rgba(239,68,68,0.22)] active:scale-[0.98] disabled:pointer-events-none disabled:border-[#eadfce] disabled:bg-[#f1ebe4] disabled:text-[#aaa19a] disabled:shadow-none",
+            isConfirmed && "col-span-2",
+          )}
         >
-          <CheckCheck className="h-4 w-4" />
-          {masterBookingActionLoading ? "Підтверджуємо..." : "Підтвердити"}
+          <XCircle className="h-4 w-4 shrink-0" />
+          <span className="truncate">Скасувати запис</span>
         </button>
       )}
 
-      <button
-        type="button"
-        disabled={masterBookingActionLoading}
-        onClick={() => setCancelMasterBookingConfirm(booking)}
-        className="inline-flex h-12 items-center justify-center gap-2 rounded-[22px] border border-[#fecaca] bg-[#fff5f5] px-4 text-sm font-black text-[#ef4444] transition-all duration-200 hover:border-[#fca5a5] hover:bg-[#ffecec] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50"
-      >
-        <XCircle className="h-4 w-4" />
-        Скасувати запис
-      </button>
+      {!isConfirmed && !isCanceled && (
+        <button
+          type="button"
+          disabled={masterBookingActionLoading}
+          onClick={async () => {
+            const confirmed =
+              await handleConfirmMasterBooking(booking);
+
+            if (confirmed) {
+              closeDetails();
+            }
+          }}
+          className="inline-flex h-12 min-w-0 items-center justify-center gap-2 rounded-[15px] bg-[#202020] px-3 text-sm font-black text-white shadow-[0_12px_26px_rgba(15,15,15,0.18)] transition-all duration-300 hover:scale-[1.015] hover:bg-[#ff6200] hover:shadow-[0_14px_30px_rgba(255,98,0,0.24)] active:scale-[0.98] disabled:pointer-events-none disabled:bg-[#f1ebe4] disabled:text-[#aaa19a] disabled:shadow-none"
+        >
+          <CheckCheck className="h-4 w-4 shrink-0" />
+
+          <span className="truncate">
+            {masterBookingActionLoading
+              ? "Підтверджуємо..."
+              : "Підтвердити"}
+          </span>
+        </button>
+      )}
     </div>
   </div>
 )}

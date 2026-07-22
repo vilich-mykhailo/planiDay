@@ -20,6 +20,8 @@ CircleAlert,
   Banknote,
   BriefcaseBusiness,
   FilePenLine,
+PartyPopper,
+UserStar,
   ArrowDownToLine,
 } from "lucide-react";
 
@@ -1169,14 +1171,6 @@ function handleExportServices() {
   </div>
 
 <div className="flex shrink-0 items-center">
-  <button
-    type="button"
-    onClick={() => setInfoOpen(true)}
-    className="grid !px-0 h-10 w-10 place-items-center rounded-full text-[#ff6200] transition-all  hover:bg-[#fff7f0] active:scale-95 "
-    title="Інформація"
-  >
-    <CircleAlert className="h-5 w-5" />
-  </button>
 
 <div className="hidden sm:block">
   <Button
@@ -1825,30 +1819,6 @@ onClick={() => {
   </div>
 </Modal>
 
-<Modal
-  open={infoOpen}
-  onClose={() => setInfoOpen(false)}
-  title="Інформація про послуги"
-  subtitle="Ця сторінка відповідає за послуги, категорії, ціни, тривалість і майстрів."
-  size="lg"
->
-  <div className="space-y-5 text-sm font-medium leading-6 text-[#77716b]">
-    <div>
-      <h4 className="text-base font-black text-[#202020]">
-        Можливості сторінки
-      </h4>
-
-      <ul className="mt-2 list-disc space-y-1 pl-5">
-        <li>Створення категорій для групування послуг.</li>
-        <li>Додавання, редагування та видалення послуг.</li>
-        <li>Налаштування назви, тривалості та вартості послуги.</li>
-        <li>Привʼязка послуги до всіх майстрів або до конкретних майстрів.</li>
-        <li>Фільтрація послуг за категоріями.</li>
-        <li>Експорт послуг у Excel з вибором потрібних колонок.</li>
-      </ul>
-    </div>
-  </div>
-</Modal>
 <Modal
   open={deleteConfirm.open}
   onClose={() =>

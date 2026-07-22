@@ -1485,7 +1485,7 @@ useEffect(() => {
   };
 
   return (
-    <div className="min-h-screen space-y-6 bg-[#faf8f4] pb-10">
+    <div className="min-h-screen space-y-6 pb-10">
       <div className="mx-auto max-w-6xl space-y-6">
 <div className="relative overflow-hidden rounded-[15px] border border-[#ebe7df] bg-white/95 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.06)] backdrop-blur-xl sm:p-7">
   <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#ff7a18] via-[#ff6200] to-[#ff8c42]" />

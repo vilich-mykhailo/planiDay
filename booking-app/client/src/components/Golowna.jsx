@@ -3548,7 +3548,7 @@ const timeBounds = useMemo(() => {
               <div className="flex min-h-[64px] flex-col items-center justify-center rounded-lg border border-white/80 bg-white/90 p-2 text-center shadow-sm backdrop-blur">
                 <Banknote className={cn("h-4 w-4", statusMeta.iconColor)} />
                 <p className="mt-1.5 text-[9px] font-black uppercase tracking-[0.08em] text-[#aaa19a]">
-                  Сума
+                  Вартість
                 </p>
                 <p className="mt-1 text-sm font-black text-[#202020]">
                   {price != null ? `${formatPrice(price)} грн` : "—"}

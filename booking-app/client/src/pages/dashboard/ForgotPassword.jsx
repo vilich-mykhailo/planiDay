@@ -37,13 +37,17 @@ export default function ForgotPassword() {
   }
 
   return (
-<main className="min-h-[100svh] flex items-center justify-center bg-gradient-to-br from-stone-50 via-amber-50/30 to-orange-50/20">
+<main className="min-h-[100svh] flex items-center justify-center ">
       <div className="mx-auto max-w-6xl px-4 py-10 sm:py-14">
         <div className="mx-auto max-w-md">
           <div className="text-center">
-                        <div className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-700 font-extrabold text-white shadow-[0_8px_20px_rgba(74,93,78,0.22)]">
-              P
-            </div>
+<div className="mx-auto mb-2 h-12 w-12 sm:mb-2 sm:h-16 sm:w-16">
+  <img
+    src="/aveliio_logo.png"
+    alt="Aveliio"
+    className="h-full w-full object-contain"
+  />
+</div>
             <h1 className="text-3xl font-black tracking-tight text-stone-800 sm:text-4xl">
               Відновлення пароля
             </h1>
@@ -79,18 +83,32 @@ export default function ForgotPassword() {
                     onChange={(e) => setEmail(e.target.value)}
                   />
 
-                  <button
-                    type="submit"
-                    className={cn(
-                      "inline-flex w-full items-center justify-center gap-2 rounded-2xl",
-                      "bg-gradient-to-r from-emerald-600 to-emerald-700 px-5 py-3.5",
-                      "text-sm font-bold text-white shadow-lg shadow-emerald-500/20",
-                      "transition-all hover:from-emerald-700 hover:to-emerald-800",
-                    )}
-                  >
-                    Надіслати інструкцію
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
+<button
+  type="submit"
+  className={cn(
+    `
+      group inline-flex w-full items-center justify-center gap-2
+      rounded-2xl
+      bg-[#202020]
+      px-5 py-3.5
+      text-sm font-black text-white
+      shadow-[0_12px_26px_rgba(15,15,15,0.18)]
+      transition-all duration-300
+      hover:scale-[1.015]
+      hover:bg-[#ff6200]
+      hover:shadow-[0_14px_30px_rgba(255,98,0,0.24)]
+      active:scale-[0.98]
+      disabled:pointer-events-none
+      disabled:bg-[#f1ebe4]
+      disabled:text-[#aaa19a]
+      disabled:shadow-none
+    `,
+  )}
+>
+  Надіслати інструкцію
+
+  <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+</button>
                 </form>
               )}
 
@@ -99,9 +117,9 @@ export default function ForgotPassword() {
                   Повернутися до{" "}
                   <Link
                     to="/login"
-                    className="font-bold text-stone-800 transition hover:text-emerald-700 hover:underline"
+                    className="font-bold text-[#ff6200] transition hover:text-[#ff6200] hover:underline"
                   >
-                    входу
+                    ВХОДУ
                   </Link>
                 </p>
               </div>

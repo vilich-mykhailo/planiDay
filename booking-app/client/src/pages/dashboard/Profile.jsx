@@ -1070,7 +1070,7 @@ await patchProfile({
       <div className="mx-auto max-w-6xl px-4 sm:px-6 sm:pt-18 lg:px-8">
 
 
-<section className="relative border border-[#eadfce]  mb-5 mt-3 overflow-hidden max-[639px]:rounded-[26px] bg-white px-5 py-7 sm:rounded-[34px] sm:px-8 sm:py-9 lg:px-10">
+<section className="relative border border-[#eadfce]  mb-2 mt-3 overflow-hidden max-[639px]:rounded-[26px] bg-white px-5 py-7 sm:rounded-[34px] sm:px-8 sm:py-9 lg:px-10">
  <div className={cn(heroImageBoxClass, "mask-hero-image hidden sm:block")}>
     <img
       src={profileHero}
@@ -1434,7 +1434,7 @@ await patchProfile({
         {/* PERSONAL DATA */}
         <section
   ref={personalDataRef}
- className="overflow-hidden rounded-[15px] border border-[#eadfce] bg-white shadow-[0_14px_36px_rgba(15,23,42,0.06)]"
+ className="overflow-hidden mb-16 rounded-[15px] border border-[#eadfce] bg-white shadow-[0_14px_36px_rgba(15,23,42,0.06)]"
 >
 <div className="flex items-center justify-between gap-3 border-b border-[#eee8df] px-5 py-4 sm:px-7">
 <h3 className="text-[24px] font-black tracking-[-0.05em] text-[#202020]">

@@ -149,8 +149,8 @@ export default function RegisterOwner() {
   }
 
   return (
-    <main className="min-h-[100dvh] bg-[#f8f5f1] p-0 sm:p-3 lg:p-5">
-      <div className="mx-auto grid min-h-[100dvh] max-w-[1700px] overflow-hidden bg-[#fcfbf9] sm:min-h-[calc(100dvh-24px)] sm:rounded-[30px] sm:border sm:border-[#eadfce] sm:shadow-[0_30px_90px_rgba(15,23,42,0.08)] lg:grid-cols-[520px_1fr] lg:rounded-[36px]">
+    <main className="min-h-[100dvh] p-0 sm:p-3 lg:p-5">
+      <div className="mx-auto grid min-h-[100dvh] max-w-[1700px] overflow-hidden sm:min-h-[calc(100dvh-24px)] sm:rounded-[30px] sm:border sm:border-[#eadfce] sm:shadow-[0_30px_90px_rgba(15,23,42,0.08)] lg:grid-cols-[520px_1fr] lg:rounded-[36px]">
         <aside className="relative hidden overflow-hidden lg:block">
           <img
             src={salonHero}
@@ -161,16 +161,57 @@ export default function RegisterOwner() {
           <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/15 to-black/65" />
 
           <div className="relative flex h-full flex-col px-12 pb-20 pt-[31%] text-white">
-            <div className="flex flex-col items-center text-center">
-              <p className="text-[88px] font-black leading-none tracking-[-0.065em]">
-               Avel<span className="text-[#fc511e]">ii</span>o
-              </p>
+<div className="relative flex flex-col items-center text-center">
+  <div
+    aria-hidden="true"
+    className="
+      pointer-events-none absolute left-1/2 top-1/2
+      h-[340px] w-[430px]
+      -translate-x-1/2 -translate-y-1/2
+      rounded-full
+      bg-black/25
+      blur-[65px]
+    "
+  />
 
-              <p className="mt-9 max-w-[320px] text-[18px] font-semibold leading-[1.6] text-white/95">
-                Керуйте студією
-                <br />у кілька кліків
-              </p>
-            </div>
+  <div className="relative z-10 mx-auto mb-4 h-18 w-18 sm:h-25 sm:w-25">
+    <img
+      src="/aveliio_logo.png"
+      alt="Aveliio"
+      className="
+        h-full w-full object-contain
+        drop-shadow-[0_4px_5px_rgba(0,0,0,0.9)]
+        drop-shadow-[0_12px_24px_rgba(0,0,0,0.55)]
+      "
+    />
+  </div>
+
+  <p
+    className="
+      relative z-10
+      text-[88px] font-black leading-none tracking-[-0.065em]
+      text-white
+      [text-shadow:0_3px_4px_rgba(0,0,0,0.95),0_12px_28px_rgba(0,0,0,0.65)]
+    "
+  >
+    Avel
+    <span className="text-[#fc511e]">ii</span>
+    o
+  </p>
+
+  <p
+    className="
+      relative z-10
+      mt-9 max-w-[320px]
+      text-[18px] font-semibold leading-[1.6] text-white
+      [text-shadow:0_2px_3px_rgba(0,0,0,0.95),0_8px_20px_rgba(0,0,0,0.7)]
+    "
+  >
+    Керуйте студією
+    <br />
+    у кілька кліків
+  </p>
+</div>
 
             <div className="mt-auto space-y-8 text-[15px] font-medium leading-6">
               <div className="flex items-start gap-5">
@@ -215,9 +256,13 @@ export default function RegisterOwner() {
         <section className="flex items-start justify-center px-3 py-3 sm:items-center sm:px-6 sm:py-10 lg:px-8">
           <div className="w-full max-w-[560px] pb-3 max-[639px]:pb-[calc(env(safe-area-inset-bottom)+10px)]">
             <div className="text-center max-[639px]:mb-1">
-              <div className="mx-auto mb-3 grid h-10 w-10 place-items-center rounded-full bg-[#202020] text-[13px] font-black text-white shadow-[0_10px_24px_rgba(15,23,42,0.12)] sm:mb-5 sm:h-12 sm:w-12 sm:text-[15px]">
-                P
-              </div>
+<div className="mx-auto mb-2 h-12 w-12 sm:mb-2 sm:h-16 sm:w-16">
+  <img
+    src="/aveliio_logo.png"
+    alt="Aveliio"
+    className="h-full w-full object-contain"
+  />
+</div>
 
               <h1 className="text-[22px] font-black leading-[1] tracking-[-0.06em] text-[#202020] sm:text-[42px]">
                 Створити салон
@@ -301,17 +346,20 @@ export default function RegisterOwner() {
                   <p className="text-[10px] leading-4 text-[#8a8a8a] sm:text-[12px]">
                     • Лише латинські літери
                   </p>
-                  <p className="text-[10px] leading-4 text-[#8a8a8a] sm:text-[12px]">
-                    • Без пробілів
-                  </p>
                 </div>
 
                 <label className="flex items-start gap-2 pt-0.5">
-                  <input
-                    type="checkbox"
-                    required
-                    className="mt-[2px] h-4 w-4 rounded border-[#d9d9d9] text-[#ff6200] focus:ring-[#ff6200]"
-                  />
+<input
+  type="checkbox"
+  required
+  className="
+    mt-[2px] h-4 w-4
+     cursor-pointer
+    rounded border-[#d9d9d9]
+    accent-[#ff6200]
+    focus:ring-[#ff6200]
+  "
+/>
 
                   <span className="text-[10px] leading-4 text-[#7a7a7a] sm:text-[12px] sm:leading-5">
                     Я погоджуюся з{" "}
@@ -345,23 +393,42 @@ export default function RegisterOwner() {
                   </div>
                 )}
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="mt-0 inline-flex h-[44px] w-full items-center justify-center gap-2 rounded-[12px] bg-[#ff5a00] text-[14px] font-bold text-white transition hover:bg-[#f25500] active:scale-[0.99] disabled:opacity-50 sm:h-[52px] sm:text-[15px]"
-                >
-                  {loading ? (
-                    "Створення..."
-                  ) : (
-                    <>
-                      Створити салон
-                      <ArrowRight className="h-4 w-4" />
-                    </>
-                  )}
-                </button>
+<button
+  type="submit"
+  disabled={loading}
+  className="
+    group mt-0 inline-flex h-[44px] w-full items-center justify-center gap-2
+    rounded-[12px]
+    bg-[#202020]
+    text-[14px] font-black text-white
+    shadow-[0_12px_26px_rgba(15,15,15,0.18)]
+    transition-all duration-300
+    hover:scale-[1.015]
+    hover:bg-[#ff6200]
+    hover:shadow-[0_14px_30px_rgba(255,98,0,0.24)]
+    active:scale-[0.98]
+    disabled:pointer-events-none
+    disabled:bg-[#f1ebe4]
+    disabled:text-[#aaa19a]
+    disabled:shadow-none
+    disabled:opacity-100
+    sm:h-[52px]
+    sm:text-[15px]
+  "
+>
+  {loading ? (
+    "Створення..."
+  ) : (
+    <>
+      Створити салон
+
+      <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+    </>
+  )}
+</button>
               </form>
 
-              <div className="mt-4 flex items-center gap-2 sm:mt-6 sm:gap-4">
+              <div className="mt- flex items-center gap-2 sm:mt-4 sm:gap-4">
                 <div className="h-px flex-1 bg-[#ece5dc]" />
 
                 <span className="whitespace-nowrap text-[11px] font-semibold text-[#8a847d] sm:text-[14px]">
@@ -371,37 +438,83 @@ export default function RegisterOwner() {
                 <div className="h-px flex-1 bg-[#ece5dc]" />
               </div>
 
-              <div className="mt-3 grid grid-cols-2 gap-2 sm:mt-5 sm:gap-3">
-                <button
-                  type="button"
-                  className="flex h-[40px] items-center justify-center rounded-[12px] border border-[#eadfce] bg-white text-[11px] font-black text-[#202020] transition hover:bg-[#faf7f3] sm:h-14 sm:rounded-[18px] sm:text-[15px]"
-                >
-                  Google
-                </button>
+<div className="mt-2 sm:mt-4">
+  <button
+    type="button"
+    className="
+      flex h-12 w-full items-center justify-center gap-3
+      rounded-[16px]
+      border border-[#ded8d1]
+      bg-transparent
+      px-4
+      text-[13px] font-black text-[#202020]
+      transition-all duration-300
+      hover:border-[#ff6200]
+      hover:text-[#ff6200]
+      hover:shadow-[0_8px_22px_rgba(255,98,0,0.10)]
+      active:scale-[0.98]
+      sm:h-14
+      sm:rounded-[18px]
+      sm:text-[15px]
+    "
+  >
+    <svg
+      viewBox="0 0 24 24"
+      className="h-5 w-5 shrink-0"
+      aria-hidden="true"
+    >
+      <path
+        fill="#4285F4"
+        d="M21.6 12.23c0-.71-.06-1.4-.18-2.07H12v3.92h5.38a4.6 4.6 0 0 1-1.99 3.02v2.54h3.22c1.88-1.73 2.99-4.29 2.99-7.41Z"
+      />
+      <path
+        fill="#34A853"
+        d="M12 22c2.7 0 4.96-.89 6.61-2.36l-3.22-2.54c-.89.6-2.03.95-3.39.95-2.6 0-4.81-1.76-5.6-4.13H3.08v2.62A10 10 0 0 0 12 22Z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M6.4 13.92A6 6 0 0 1 6.08 12c0-.67.12-1.32.32-1.92V7.46H3.08A10 10 0 0 0 2 12c0 1.61.38 3.14 1.08 4.54l3.32-2.62Z"
+      />
+      <path
+        fill="#EA4335"
+        d="M12 5.95c1.47 0 2.79.51 3.83 1.5l2.87-2.87C16.96 2.96 14.7 2 12 2a10 10 0 0 0-8.92 5.46l3.32 2.62C7.19 7.71 9.4 5.95 12 5.95Z"
+      />
+    </svg>
 
-                <button
-                  type="button"
-                  className="flex h-[40px] items-center justify-center rounded-[12px] border border-[#eadfce] bg-white text-[11px] font-black text-[#202020] transition hover:bg-[#faf7f3] sm:h-14 sm:rounded-[18px] sm:text-[15px]"
-                >
-                  Apple
-                </button>
-              </div>
+    <span>Продовжити через Google</span>
+  </button>
+</div>
 
-              <div className="mt-3 text-center text-[11px] font-semibold text-[#77716b] sm:mt-5 sm:text-[15px]">
+              <div className="mt-3 text-center text-[11px] font-semibold text-[#77716b] sm:mt-3 sm:text-[15px]">
                 Вже є акаунт?{" "}
-                <Link
-                  to="/login-owner"
-                  className="font-black text-[#ff6200] transition hover:opacity-70"
-                >
-                  Увійти
-                </Link>
+<Link
+  to="/login-owner"
+  className="
+    relative  ml-2 inline-flex
+    origin-center
+    font-black text-[#ff6200]
+    transition-all duration-300
+    active:scale-[0.98]
+
+    after:absolute
+    after:-bottom-1
+    after:left-0
+    after:h-[2px]
+    after:w-full
+    after:origin-left
+    after:scale-x-0
+    after:rounded-full
+    after:bg-current
+    after:transition-transform
+    after:duration-300
+
+    hover:after:scale-x-100
+  "
+>
+  Увійти
+</Link>
               </div>
             </div>
-
-            <p className="mt-2 text-center text-[10px] leading-4 text-[#8a847d] sm:mt-4 sm:text-xs sm:leading-5">
-              Після реєстрації ви зможете налаштувати профіль студії, послуги,
-              графік роботи та прийом онлайн-записів.
-            </p>
           </div>
         </section>
       </div>

@@ -1477,14 +1477,29 @@ className="
   )}
 >
                   {showBookAgain ? (
-                    <button
-                      type="button"
-                      onClick={() => handleBookAgainClick(activeBooking)}
-                      className="inline-flex h-14 w-full items-center justify-center gap-2 rounded-[20px] bg-[#ff6200] text-[15px] font-black text-white shadow-[0_16px_34px_rgba(255,98,0,0.24)] transition hover:bg-[#f25c00] active:scale-[0.98] max-[639px]:h-11 max-[639px]:rounded-[16px] max-[639px]:gap-1.5 max-[639px]:text-[12px]"
-                    >
-                      <RefreshCw className="h-5 w-5" />
-                      Записатись ще раз
-                    </button>
+  <button
+  type="button"
+  onClick={() => handleBookAgainClick(activeBooking)}
+  className="
+    inline-flex h-14 w-full items-center justify-center gap-2
+    rounded-[20px]
+    bg-[#202020]
+    text-[15px] font-black text-white
+    shadow-[0_12px_26px_rgba(15,15,15,0.18)]
+    transition-all duration-300
+    hover:scale-[1.015]
+    hover:bg-[#ff6200]
+    hover:shadow-[0_14px_30px_rgba(255,98,0,0.24)]
+    active:scale-[0.98]
+    max-[639px]:h-11
+    max-[639px]:rounded-[16px]
+    max-[639px]:gap-1.5
+    max-[639px]:text-[12px]
+  "
+>
+  <RefreshCw className="h-5 w-5" />
+  Записатись ще раз
+</button>
                   ) : (
                     <>
                       <button
