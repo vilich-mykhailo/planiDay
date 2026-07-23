@@ -803,8 +803,8 @@ async function saveModalChanges() {
     };
 
     if (modal.type === "name") {
-      body.firstName = draft.firstName;
-      body.lastName = draft.lastName;
+body.firstName = draft.firstName.trim();
+body.lastName = draft.lastName.trim() || null;
     }
 
 if (modal.type === "birthDate") {
@@ -1420,13 +1420,6 @@ await patchProfile({
       <ChevronRight className="h-4 w-4" />
     </button>
 
-    <div className="mt-3 flex items-center justify-center gap-1.5 text-[#aaa29b]">
-      <ShieldCheck className="h-3.5 w-3.5" />
-
-      <span className="text-[9px] font-bold">
-        Підписку можна скасувати в будь-який момент
-      </span>
-    </div>
   </div>
 </div>
 </aside>
@@ -1522,7 +1515,17 @@ await patchProfile({
 <button
   type="button"
   onClick={() => setLogoutModalOpen(true)}
-  className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[18px] border border-[#ffd8d8] bg-white px-5 text-sm font-black text-[#e5484d] transition hover:bg-[#fff1f1] active:scale-[0.98] sm:hidden"
+  className="
+    inline-flex h-12 w-full items-center justify-center gap-2
+    rounded-[18px]
+    border border-[#ffd8d8]
+    bg-white px-5
+    text-sm font-black text-[#e5484d]
+    transition
+    hover:bg-[#fff1f1]
+    active:scale-[0.98]
+    lg:hidden
+  "
 >
   <LogOut className="h-4 w-4" />
   Вийти з акаунта
@@ -1545,7 +1548,7 @@ await patchProfile({
   title="Змінити ім’я та прізвище"
   onClose={closeEditModal}
   onSave={saveModalChanges}
-  saveDisabled={!draft.firstName.trim() || !draft.lastName.trim()}
+  saveDisabled={!draft.firstName.trim()}
   saving={saving}
 >
   <div className="space-y-4">
@@ -1563,7 +1566,7 @@ await patchProfile({
       />
     </FormField>
 
-    <FormField label="Прізвище">
+  <FormField label="Прізвище" hint="Необов’язково">
       <Input
         value={draft.lastName}
         onChange={(event) =>

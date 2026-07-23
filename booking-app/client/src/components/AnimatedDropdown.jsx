@@ -290,7 +290,7 @@ if (isCategory && filled) {
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") handleClear(e);
             }}
-            className="absolute right-4 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full text-[#8a8580] transition hover:bg-stone-100 hover:text-[#c56b5f] active:scale-95 sm:right-3"
+            className="absolute right-0 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full text-[#8a8580] transition hover:bg-stone-100 hover:text-[#c56b5f] active:scale-95 sm:right-3"
             aria-label="Очистити"
           >
             <X className="h-3.5 w-3.5 text-[#c56b5f] sm:h-4 sm:w-4" />

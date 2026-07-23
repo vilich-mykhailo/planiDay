@@ -308,7 +308,6 @@ export default function Header() {
   const location = useLocation();
   const [nowTs, setNowTs] = useState(() => Date.now());
   const isLogin = location.pathname === "/login";
-  const isOwnerLogin = location.pathname === "/login-owner";
   const hideHeader =
   location.pathname === "/login" ||
   location.pathname === "/login-owner" ||
@@ -628,25 +627,22 @@ useEffect(() => {
       };
     }
 
-    return {
-      links: [],
-      actions: (
-        <div className="hidden items-center gap-2 lg:flex">
-          <ButtonLink to="/login" variant="primary" disabled={isLogin}>
-            Увійти як клієнт
-          </ButtonLink>
-
-          <ButtonLink
-            to="/login-owner"
-            variant="secondary"
-            disabled={isOwnerLogin}
-          >
-            Увійти як власник
-          </ButtonLink>
-        </div>
-      ),
-    };
-  }, [role, isLogin, isOwnerLogin, handleLogout]);
+return {
+  links: [],
+  actions: (
+    <div className="flex w-full min-w-0 justify-end sm:w-auto">
+      <ButtonLink
+        to="/login"
+        variant="primary"
+        disabled={isLogin}
+        className="w-[100px] flex-none whitespace-nowrap px-1 py-2 text-[12px] sm:w-[100px] sm:px-3 sm:text-xs lg:px-4 lg:py-2.5 lg:text-sm"
+      >
+        Увійти
+      </ButtonLink>
+    </div>
+  ),
+};
+  }, [role, isLogin, handleLogout]);
 
   const mobileItems = useMemo(() => {
     if (role === "client") {
@@ -790,49 +786,61 @@ className={cx(
 >
   <div className="mx-auto max-w-[1260px] px-4 max-[639px]:px-5 sm:px-6 lg:px-10">
   <div
-  className="
-    relative flex h-[58px] items-center justify-between
-    rounded-[20px]
-    border border-[#ffb987]
-    bg-[#fff3eb]/70
-    px-3
-    shadow-[0_18px_48px_rgba(255,98,0,0.14)]
-    backdrop-blur-[8px]
-    backdrop-saturate-150
-    sm:h-[64px]
-    sm:px-4
-    lg:h-[66px]
-  "
+  className={cx(
+    `
+      relative flex items-center justify-between
+      rounded-[20px]
+      border border-[#ffb987]
+      bg-[#fff3eb]/70
+      px-3
+      shadow-[0_18px_48px_rgba(255,98,0,0.14)]
+      backdrop-blur-[8px]
+      backdrop-saturate-150
+      sm:px-4
+      lg:h-[66px]
+    `,
+    role === "guest"
+      ? "h-[58px] min-h-0 flex-nowrap py-0 sm:h-[64px]"
+      : "h-[58px] sm:h-[64px]",
+  )}
 >
 <Link
   to="/"
-  className="
-    flex items-center rounded-2xl px-1.5 py-1
-    transition-transform duration-200
-    hover:scale-105
-    active:scale-[0.98]
-
-    max-[1023px]:absolute
-    max-[1023px]:left-1/2
-    max-[1023px]:top-1/2
-    max-[1023px]:-translate-x-1/2
-    max-[1023px]:-translate-y-1/2
-  "
+  className={cx(
+    `
+      flex items-center rounded-2xl px-1.5 py-1
+      transition-transform duration-200
+      hover:scale-105
+      active:scale-[0.98]
+    `,
+    role !== "guest" &&
+      `
+        sm:absolute
+        sm:left-1/2
+        sm:top-1/2
+        sm:-translate-x-1/2
+        sm:-translate-y-1/2
+        lg:static
+        lg:translate-x-0
+        lg:translate-y-0
+      `,
+  )}
   aria-label="Aveliio"
 >
-  <span
-    className="
-      grid h-32 w-32 shrink-0 place-items-center overflow-hidden
-      max-[1023px]:h-28
-      max-[1023px]:w-28
-    "
-  >
-    <img
-      src="/Logo_aveliio_text.png"
-      alt="Aveliio"
-      className="h-full w-full object-contain"
-    />
-  </span>
+<span
+  className={cx(
+    "grid shrink-0 place-items-center overflow-hidden",
+    role === "guest"
+      ? "h-12 w-24 min-[360px]:h-14 min-[360px]:w-28 min-[400px]:h-16 min-[400px]:w-32 sm:h-24 sm:w-24 lg:h-32 lg:w-32"
+      : "h-28 w-28 lg:h-32 lg:w-32",
+  )}
+>
+  <img
+    src="/Logo_aveliio_text.png"
+    alt="Aveliio"
+    className="h-full w-full object-contain"
+  />
+</span>
 </Link>
 
       <nav className="hidden items-center gap-1 lg:flex">
@@ -843,8 +851,17 @@ className={cx(
         ))}
       </nav>
 
-      <div className="hidden lg:block">{desktopItems.actions}</div>
+      <div
+        className={cx(
+          role === "guest"
+            ? "ml-auto min-w-0 flex-1 pl-1 sm:flex-none sm:pl-0"
+            : "hidden lg:block",
+        )}
+      >
+        {desktopItems.actions}
+      </div>
 
+{role !== "guest" && (
 <button
   type="button"
   onClick={() => setOpen((v) => !v)}
@@ -866,6 +883,7 @@ className={cx(
     <Menu className="h-6 w-6" />
   )}
 </button>
+)}
     </div>
   </div>
 </header>

@@ -615,12 +615,12 @@ function StudioCard({ studio, onOpen, mode = "carousel" }) {
           {name}
         </h2>
 
-        {fullAddress ? (
-         <p className="mt-2 flex items-center gap-1 truncate leading-none text-[10px] font-medium text-white sm:mt-2.5 sm:text-[10px] md:text-[10px] lg:text-[11px]">
-            <MapPin className="-mt-[1px] h-3 w-3 shrink-0 text-[#ff6200] sm:h-3 sm:w-3" />
-            {fullAddress}
-          </p>
-        ) : null}
+{fullAddress ? (
+  <p className="mt-2 flex items-center gap-1 truncate text-[10px] font-medium leading-[1.3] text-white sm:mt-1 sm:text-[10px] md:text-[10px] lg:text-[11px]">
+    <MapPin className="h-3 w-3 shrink-0 text-[#ff6200] sm:h-3 sm:w-3" />
+    {fullAddress}
+  </p>
+) : null}
 
 <p
   className={cn(
@@ -769,7 +769,11 @@ export default function Studios() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
+const token = localStorage.getItem("token");
+const role = localStorage.getItem("role");
 
+const isGuest =
+  !token || (role !== "client" && role !== "owner");
   const studiosQuery = useQuery({
     queryKey: ["studios"],
     queryFn: fetchStudios,
@@ -1428,7 +1432,14 @@ const heroImageClass =
             />
           </div>
 
-          <div className="relative z-10 mt-2 max-w-[720px] max-[639px]:mt-0 sm:mt-12 lg:mt-16">
+        <div
+  className={cn(
+    "relative z-10 max-w-[720px]",
+    isGuest
+      ? "mt-12"
+      : "mt-2 max-[639px]:mt-0 sm:mt-12 lg:mt-16",
+  )}
+>
             
 <h1 className="max-w-[360px] text-[44px] font-black leading-[1.02] tracking-[-0.06em] text-[#202020] max-[639px]:max-w-[260px] max-[639px]:text-[38px] max-[639px]:leading-[0.98] sm:max-w-[520px] sm:text-[46px] sm:leading-[0.98] md:text-[52px] lg:max-w-[720px] lg:text-[54px]">
   <span className="block">Обирай та</span>
@@ -1673,123 +1684,9 @@ className={cn(
 
 {allStudios.length > 0 ? (
   <>
-    {/* <section className="mt-8 max-[639px]:mt-7 sm:mt-8">
-      <div className="mb-6 flex items-center justify-between gap-4 sm:mb-4">
-        <h2 className="text-[18px] font-black tracking-[-0.05em] sm:!text-xl">
-          Рекомендовані
-        </h2>
 
-        <div className="hidden items-center gap-3 sm:flex">
-          <button
-            type="button"
-            onClick={() => scrollRecommended(-1)}
-            className="group grid h-11 w-11 place-items-center text-[#5f5b57] transition-all duration-300 hover:text-[#ff6200] active:scale-[0.96] sm:h-10 sm:w-10 lg:h-11 lg:w-11"
-          >
-            <ChevronLeft className="h-5 w-5 transition-transform duration-300 group-hover:-translate-x-[1px]" />
-          </button>
 
-          <button
-            type="button"
-            onClick={() => scrollRecommended(1)}
-            className="group grid h-11 w-11 place-items-center text-[#5f5b57] transition-all duration-300 hover:text-[#ff6200] active:scale-[0.96] sm:h-10 sm:w-10 lg:h-11 lg:w-11"
-          >
-            <ChevronRight className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-[1px]" />
-          </button>
-        </div>
-      </div>
-
-      <div
-        id="recommended-scroll"
-        ref={recommendedScrollRef}
-        className="-mx-5 overflow-x-auto px-5 pb-3 pr-12 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        onScroll={(e) => {
-          const container = e.currentTarget;
-          const card = container.querySelector("article");
-
-          if (!card) return;
-
-          const gap = 16;
-          const cardStep = card.offsetWidth + gap;
-
-          const maxScroll =
-            container.scrollWidth - container.clientWidth;
-
-          const lastIndex =
-            window.innerWidth >= 1024
-              ? Math.max(0, recommended.length - 3)
-              : window.innerWidth >= 640
-                ? Math.max(0, recommended.length - 2)
-                : Math.max(0, recommended.length - 1);
-
-          if (container.scrollLeft >= maxScroll - 8) {
-            setActiveSlide(lastIndex);
-            return;
-          }
-
-          const index = Math.round(
-            container.scrollLeft / cardStep,
-          );
-
-          setActiveSlide(Math.min(index, lastIndex));
-        }}
-      >
-        <div className="flex gap-4">
-          {recommended.slice(0, 6).map((studio) => (
-            <StudioCard
-              key={studio.slug}
-              studio={studio}
-              onOpen={openStudio}
-            />
-          ))}
-        </div>
-      </div>
-
-      <div className="mt-7 flex justify-center gap-2 sm:mt-4">
-        {Array.from({
-          length:
-            window.innerWidth >= 1024
-              ? Math.max(1, recommended.length - 2)
-              : window.innerWidth >= 640
-                ? Math.max(1, recommended.length - 1)
-                : recommended.length,
-        }).map((_, index) => (
-          <button
-            key={index}
-            type="button"
-            onClick={() => {
-              const container =
-                document.getElementById(
-                  "recommended-scroll",
-                );
-
-              if (!container) return;
-
-              const card =
-                container.querySelector("article");
-
-              if (!card) return;
-
-              const gap = 16;
-              const cardStep =
-                card.offsetWidth + gap;
-
-              container.scrollTo({
-                left: cardStep * index,
-                behavior: "smooth",
-              });
-            }}
-            className={cn(
-              "h-2 rounded-full transition-all duration-300",
-              activeSlide === index
-                ? "w-6 bg-[#ff6200]"
-                : "w-2 bg-[#dedede]",
-            )}
-          />
-        ))}
-      </div>
-    </section> */}
-
-    <section className="mt-6 sm:mt-5">
+    <section className="mt-1 sm:mt-5">
       <div className="mb-5 flex items-end justify-between gap-4 sm:mb-4">
         <div>
           <h2 className="text-[30px] font-black tracking-[-0.05em] sm:text-xl">
@@ -1825,8 +1722,8 @@ className={cn(
     </section>
   </>
 ) : (
-<section className="mt-8">
-  <div className=" px-6 py-12 text-center">
+<section >
+  <div className="px-5 py-2 sm:py-12 lg:py-12 text-center">
     <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-[#ff6200] shadow-sm">
       <Search className="h-7 w-7" />
     </div>
@@ -1836,7 +1733,7 @@ className={cn(
     </h2>
 
     <p className="mx-auto mt-2 max-w-sm text-sm text-[#77716b]">
-      Спробуйте змінити фільтри або ввести інший пошуковий запит.
+      Спробуйте змінити фільтри.
     </p>
 
     <button

@@ -431,7 +431,7 @@ export default function RegisterOwner() {
               <div className="mt- flex items-center gap-2 sm:mt-4 sm:gap-4">
                 <div className="h-px flex-1 bg-[#ece5dc]" />
 
-                <span className="whitespace-nowrap text-[11px] font-semibold text-[#8a847d] sm:text-[14px]">
+                <span className="mt-2 whitespace-nowrap text-[11px] font-semibold text-[#8a847d] sm:text-[14px]">
                   або продовжити з
                 </span>
 

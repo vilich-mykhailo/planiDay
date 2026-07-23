@@ -24,6 +24,7 @@ import Privacy from "./pages/dashboard/PrivacyOwner";
 import LoginOwner from "./components/LoginOwner";
 import RegisterOwner from "./components/RegisterOwner";
 import ProtectedRoute from "./routes/ProtectedRoute";
+import ClientProtectedRoute from "./routes/ClientProtectedRoute";
 import MyBookings from "./pages/MyBookings";
 import Favourites from "./pages/Favourites";
 import { FavouritesProvider } from "./context/FavouritesContext";
@@ -54,10 +55,41 @@ export default function App() {
 
           <Routes>
             <Route path="/" element={<Studios />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/bookings" element={<MyBookings />} />
-            <Route path="/favourites" element={<Favourites />} />
-            <Route path="/security-client" element={<MessagesClient />} />
+<Route
+  path="/profile"
+  element={
+    <ClientProtectedRoute>
+      <Profile />
+    </ClientProtectedRoute>
+  }
+/>
+
+<Route
+  path="/bookings"
+  element={
+    <ClientProtectedRoute>
+      <MyBookings />
+    </ClientProtectedRoute>
+  }
+/>
+
+<Route
+  path="/favourites"
+  element={
+    <ClientProtectedRoute>
+      <Favourites />
+    </ClientProtectedRoute>
+  }
+/>
+
+<Route
+  path="/security-client"
+  element={
+    <ClientProtectedRoute>
+      <MessagesClient />
+    </ClientProtectedRoute>
+  }
+/>
             <Route path="/termsowner" element={<TermsOwner />} />
             <Route path="/termsclient" element={<TermsClient />} />
             <Route path="/privacyowner" element={<PrivacyOwner />} />
