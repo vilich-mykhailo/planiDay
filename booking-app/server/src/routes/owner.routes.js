@@ -6,21 +6,71 @@ import { io } from "../index.js";
 export const ownerRouter = Router();
 
 // CREATE studio
+// CREATE studio
 ownerRouter.post("/", requireAuth, requireOwner, async (req, res) => {
-  const { name, address, city } = req.body;
-  if (!name)
-    return res.status(400).json({ message: "Studio name is required" });
+  try {
+const ownerId = req.auth.sub;
 
-  const studio = await prisma.studio.create({
-    data: {
-      ownerId: req.auth.sub,
-      name,
-      address: address || null,
-      city: city || null,
-    },
-  });
+const name = String(
+  req.body?.name || "",
+).trim();
 
-  res.status(201).json(studio);
+const phone = String(
+  req.body?.phone || "",
+).trim();
+
+    if (name.length < 2) {
+      return res.status(400).json({
+        message: "Вкажіть назву студії.",
+      });
+    }
+
+    const existingStudio = await prisma.studio.findUnique({
+      where: {
+        ownerId,
+      },
+    });
+
+    if (existingStudio) {
+      return res.status(409).json({
+        message: "Студія для цього акаунта вже створена.",
+        studio: existingStudio,
+      });
+    }
+
+    const owner = await prisma.ownerAccount.findUnique({
+      where: {
+        id: ownerId,
+      },
+      select: {
+        email: true,
+        phone: true,
+      },
+    });
+
+const studio = await prisma.studio.create({
+  data: {
+    ownerId,
+    name,
+    email: owner?.email || "",
+    phone: phone || owner?.phone || "",
+  },
+});
+
+    return res.status(201).json(studio);
+  } catch (error) {
+    console.error("Create studio error:", error);
+
+    if (error?.code === "P2002") {
+      return res.status(409).json({
+        message: "Студія для цього акаунта вже створена.",
+      });
+    }
+
+    return res.status(500).json({
+      message: "Не вдалося створити студію.",
+    });
+  }
 });
 
 function hideManualEmail(email) {
@@ -1693,24 +1743,78 @@ ownerRouter.delete(
 
 // ✅ UPDATE my studio
 ownerRouter.patch("/:id", requireAuth, requireOwner, async (req, res) => {
-  const { id } = req.params;
-  const { name, address, city } = req.body;
+  try {
+    const ownerId = req.auth.sub;
+    const id = String(req.params?.id || "").trim();
+    const body = req.body || {};
 
-  // перевіряємо, що студія належить owner
-  const studio = await prisma.studio.findFirst({
-    where: { id, ownerId: req.auth.sub },
-  });
+    const studio = await prisma.studio.findFirst({
+      where: {
+        id,
+        ownerId,
+      },
+      select: {
+        id: true,
+      },
+    });
 
-  if (!studio) return res.status(404).json({ message: "Studio not found" });
+    if (!studio) {
+      return res.status(404).json({
+        message: "Студію не знайдено.",
+      });
+    }
 
-  const updated = await prisma.studio.update({
-    where: { id },
-    data: {
-      ...(name !== undefined ? { name } : {}),
-      ...(address !== undefined ? { address: address || null } : {}),
-      ...(city !== undefined ? { city: city || null } : {}),
-    },
-  });
+    const data = {};
 
-  res.json(updated);
+    const stringFields = [
+      "name",
+      "category",
+      "phone",
+      "email",
+      "description",
+      "city",
+      "street",
+      "building",
+      "apartment",
+      "coverUrl",
+      "logoUrl",
+    ];
+
+    for (const field of stringFields) {
+      if (body[field] !== undefined) {
+        data[field] = String(body[field] || "").trim();
+      }
+    }
+
+    if (body.name !== undefined && !data.name) {
+      return res.status(400).json({
+        message: "Назва студії не може бути порожньою.",
+      });
+    }
+
+    if (body.portfolioUrls !== undefined) {
+      if (!Array.isArray(body.portfolioUrls)) {
+        return res.status(400).json({
+          message: "Некоректний список фотографій.",
+        });
+      }
+
+      data.portfolioUrls = body.portfolioUrls;
+    }
+
+    const updatedStudio = await prisma.studio.update({
+      where: {
+        id,
+      },
+      data,
+    });
+
+    return res.json(updatedStudio);
+  } catch (error) {
+    console.error("Update studio error:", error);
+
+    return res.status(500).json({
+      message: "Не вдалося оновити студію.",
+    });
+  }
 });

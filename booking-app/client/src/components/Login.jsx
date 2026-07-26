@@ -56,17 +56,39 @@ export default function Login() {
       ? location.state.from
       : null;
 
-  const requiredRole = location.state?.requiredRole;
-  const [role, setRole] = useState("client");
-  useEffect(() => {
+const requiredRole = location.state?.requiredRole;
+
+const [role, setRole] = useState(() => {
+  if (requiredRole === "owner") {
+    return "owner";
+  }
+
+  if (requiredRole === "client") {
+    return "client";
+  }
+
+  return location.pathname === "/login-owner"
+    ? "owner"
+    : "client";
+});
+
+useEffect(() => {
   if (requiredRole === "owner") {
     setRole("owner");
+    return;
   }
 
   if (requiredRole === "client") {
     setRole("client");
+    return;
   }
-}, [requiredRole]);
+
+  setRole(
+    location.pathname === "/login-owner"
+      ? "owner"
+      : "client",
+  );
+}, [location.pathname, requiredRole]);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     email: "",
@@ -75,12 +97,6 @@ export default function Login() {
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const isOwner = role === "owner";
-
-  const heroTitle = useMemo(() => {
-    return isOwner
-      ? "Керуйте своєю студією"
-      : "Онлайн-запис у вашу улюблену студію краси";
-  }, [isOwner]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -105,26 +121,43 @@ export default function Login() {
 
         localStorage.setItem("token", data.token);
         localStorage.setItem("role", "owner");
+const studios = await api("/owner", {
+  token: data.token,
+});
 
-        const studios = await api("/owner", {
-          token: data.token,
-        });
+if (!Array.isArray(studios) || studios.length === 0) {
+  localStorage.removeItem("studioId");
 
-        if (!Array.isArray(studios) || studios.length === 0) {
-          localStorage.removeItem("studioId");
-          throw new Error("Не знайдено студій");
-        }
+  window.dispatchEvent(
+    new Event("auth-changed"),
+  );
 
-        localStorage.setItem("studioId", studios[0].id);
+  navigate("/dashboard/studio", {
+    replace: true,
+  });
 
-window.dispatchEvent(new Event("auth-changed"));
+  return;
+}
+
+localStorage.setItem(
+  "studioId",
+  studios[0].id,
+);
+
+window.dispatchEvent(
+  new Event("auth-changed"),
+);
 
 const ownerRedirect =
-  requiredRole === "owner" && redirectTo?.startsWith("/dashboard")
+  requiredRole === "owner" &&
+  redirectTo?.startsWith("/dashboard")
     ? redirectTo
     : "/dashboard";
 
-navigate(ownerRedirect, { replace: true });
+navigate(ownerRedirect, {
+  replace: true,
+});
+
 return;
       }
 
@@ -276,22 +309,34 @@ if (requiredRole === "client" && redirectTo) {
                 />
               </div>
 
-              <h1 className="text-[28px] font-black leading-[1] tracking-[-0.06em] text-[#202020] sm:text-[42px]">
-                Вітаємо у Aveliio !
-              </h1>
+<h1 className="text-[28px] font-black leading-[1] tracking-[-0.06em] text-[#202020] sm:text-[42px]">
+  {isOwner
+    ? "Вхід для власника"
+    : "Вітаємо у Aveliio!"}
+</h1>
 
-              <p className="mt-1 text-[13px] font-semibold text-[#77716b] sm:mt-3 sm:text-[16px]">
-                Увійдіть у свій акаунт, щоб продовжити
-              </p>
+<p className="mt-1 text-[13px] font-semibold text-[#77716b] sm:mt-3 sm:text-[16px]">
+  {isOwner
+    ? "Увійдіть, щоб керувати своєю студією"
+    : "Увійдіть у свій акаунт, щоб продовжити"}
+</p>
             </div>
 
             <div className="mt-4 grid grid-cols-2 gap-2 sm:mt-8 sm:gap-3">
               <button
                 type="button"
-                onClick={() => {
-                  setRole("client");
-                  setError("");
-                }}
+onClick={() => {
+  setRole("client");
+  setError("");
+  setForm({
+    email: "",
+    password: "",
+  });
+
+  navigate("/login", {
+    replace: true,
+  });
+}}
                 className={cn(
                   `
       flex h-[54px] items-center justify-center gap-2
@@ -324,10 +369,18 @@ if (requiredRole === "client" && redirectTo) {
 
               <button
                 type="button"
-                onClick={() => {
-                  setRole("owner");
-                  setError("");
-                }}
+onClick={() => {
+  setRole("owner");
+  setError("");
+  setForm({
+    email: "",
+    password: "",
+  });
+
+  navigate("/login-owner", {
+    replace: true,
+  });
+}}
                 className={cn(
                   `
       flex h-[54px] items-center justify-center gap-2
@@ -420,35 +473,39 @@ if (requiredRole === "client" && redirectTo) {
                   </div>
                 </label>
 
-                <div className="flex justify-end">
-                  <Link
-                    to="/forgot-password"
-                    className="
-    relative inline-flex
-    origin-center
-    text-[13px] font-black text-[#ff6200]
-    transition-all duration-300
-    active:scale-[0.98]
-    sm:text-[14px]
+<div className="flex justify-end">
+  <Link
+    to={
+      isOwner
+        ? "/forgot-password-owner"
+        : "/forgot-password"
+    }
+    className="
+      relative inline-flex
+      origin-center
+      text-[13px] font-black text-[#ff6200]
+      transition-all duration-300
+      active:scale-[0.98]
+      sm:text-[14px]
 
-    after:absolute
-    after:-bottom-1
-    after:left-0
-    after:h-[2px]
-    after:w-full
-    after:origin-left
-    after:scale-x-0
-    after:rounded-full
-    after:bg-current
-    after:transition-transform
-    after:duration-300
+      after:absolute
+      after:-bottom-1
+      after:left-0
+      after:h-[2px]
+      after:w-full
+      after:origin-left
+      after:scale-x-0
+      after:rounded-full
+      after:bg-current
+      after:transition-transform
+      after:duration-300
 
-    hover:after:scale-x-100
-  "
-                  >
-                    Забули пароль?
-                  </Link>
-                </div>
+      hover:after:scale-x-100
+    "
+  >
+    Забули пароль?
+  </Link>
+</div>
 
                 {error && (
                   <div className="rounded-[16px] border border-[#ef4444]/30 bg-[#fff1f1] px-4 py-3 text-[12px] font-bold text-[#ef4444] sm:rounded-[18px] sm:text-[13px]">
@@ -484,7 +541,9 @@ if (requiredRole === "client" && redirectTo) {
                     "Вхід..."
                   ) : (
                     <>
-                      Увійти
+                     {isOwner
+  ? "Увійти як власник"
+  : "Увійти як клієнт"}
                       <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1 sm:h-5 sm:w-5" />
                     </>
                   )}

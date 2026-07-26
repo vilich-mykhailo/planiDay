@@ -50,12 +50,11 @@ authRouter.post("/owner/register/request-code", async (req, res) => {
     const phone = String(req.body?.phone || "").trim();
     const email = normalizeEmail(req.body?.email);
     const password = String(req.body?.password || "");
-
-    if (!name || !email || !password) {
-      return res.status(400).json({
-        message: "Заповніть усі обов’язкові поля.",
-      });
-    }
+if (!email || !password) {
+  return res.status(400).json({
+    message: "Заповніть усі обов’язкові поля.",
+  });
+}
 
     const passwordRegex =
       /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d\S]{8,}$/;
@@ -73,16 +72,18 @@ authRouter.post("/owner/register/request-code", async (req, res) => {
       });
     }
 
-    const existingOwner = await prisma.ownerAccount.findUnique({
-      where: { email },
-      select: { id: true },
-    });
+const existingOwner =
+  await prisma.ownerAccount.findUnique({
+    where: { email },
+    select: { id: true },
+  });
 
-    if (existingOwner) {
-      return res.status(409).json({
-        message: "Акаунт власника з таким email уже існує.",
-      });
-    }
+if (existingOwner) {
+  return res.status(409).json({
+    message:
+      "Акаунт власника з такою електронною поштою вже існує.",
+  });
+}
 
     const previousVerification =
       await prisma.ownerRegistrationVerification.findUnique({
@@ -676,17 +677,45 @@ authRouter.post(
 authRouter.post("/owner/login", async (req, res) => {
   const email = normalizeEmail(req.body?.email);
   const password = String(req.body?.password || "");
+
   const err = validateEmailPassword(email, password);
-  if (err) return res.status(400).json({ message: err });
 
-  const owner = await prisma.ownerAccount.findUnique({ where: { email } });
-  if (!owner) return res.status(401).json({ message: "Invalid credentials" });
+  if (err) {
+    return res.status(400).json({
+      message: err,
+    });
+  }
 
-  const ok = await verifyPassword(password, owner.passwordHash);
-  if (!ok) return res.status(401).json({ message: "Invalid credentials" });
+  const owner = await prisma.ownerAccount.findUnique({
+    where: { email },
+  });
 
-  const token = signToken({ sub: owner.id, kind: "owner" });
-  res.json({ token, kind: "owner" });
+  if (!owner) {
+    return res.status(401).json({
+      message: "Власника з такою електронною поштою не знайдено.",
+    });
+  }
+
+  const passwordIsCorrect = await verifyPassword(
+    password,
+    owner.passwordHash,
+  );
+
+  if (!passwordIsCorrect) {
+    return res.status(401).json({
+      message: "Неправильний пароль.",
+    });
+  }
+
+  const token = signToken({
+    sub: owner.id,
+    kind: "owner",
+  });
+
+  return res.json({
+    token,
+    kind: "owner",
+  });
 });
 
 authRouter.post("/client/register/request-code", async (req, res) => {
@@ -717,16 +746,18 @@ authRouter.post("/client/register/request-code", async (req, res) => {
       });
     }
 
-    const existingClient = await prisma.clientAccount.findUnique({
-      where: { email },
-      select: { id: true },
-    });
+const existingClient =
+  await prisma.clientAccount.findUnique({
+    where: { email },
+    select: { id: true },
+  });
 
-    if (existingClient) {
-      return res.status(409).json({
-        message: "Акаунт з таким email уже існує.",
-      });
-    }
+if (existingClient) {
+  return res.status(409).json({
+    message:
+      "Акаунт клієнта з такою електронною поштою вже існує.",
+  });
+}
 
     const now = new Date();
 
@@ -1263,18 +1294,44 @@ authRouter.post(
 
 // CLIENT login
 authRouter.post("/client/login", async (req, res) => {
-  const { email, password } = req.body;
+  const email = normalizeEmail(req.body?.email);
+  const password = String(req.body?.password || "");
   const err = validateEmailPassword(email, password);
-  if (err) return res.status(400).json({ message: err });
 
-  const client = await prisma.clientAccount.findUnique({ where: { email } });
-  if (!client) return res.status(401).json({ message: "Invalid credentials" });
+  if (err) {
+    return res.status(400).json({ message: err });
+  }
 
-  const ok = await verifyPassword(password, client.passwordHash);
-  if (!ok) return res.status(401).json({ message: "Invalid credentials" });
+  const client = await prisma.clientAccount.findUnique({
+    where: { email },
+  });
 
-  const token = signToken({ sub: client.id, kind: "client" });
-  res.json({ token, kind: "client" });
+  if (!client) {
+    return res.status(401).json({
+      message: "Користувача з такою електронною поштою не знайдено.",
+    });
+  }
+
+  const ok = await verifyPassword(
+    password,
+    client.passwordHash,
+  );
+
+  if (!ok) {
+    return res.status(401).json({
+      message: "Неправильний пароль.",
+    });
+  }
+
+  const token = signToken({
+    sub: client.id,
+    kind: "client",
+  });
+
+  return res.json({
+    token,
+    kind: "client",
+  });
 });
 
 // ME

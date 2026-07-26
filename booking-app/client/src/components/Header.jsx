@@ -308,11 +308,12 @@ export default function Header() {
   const location = useLocation();
   const [nowTs, setNowTs] = useState(() => Date.now());
   const isLogin = location.pathname === "/login";
-  const hideHeader =
+const hideHeader =
   location.pathname === "/login" ||
   location.pathname === "/login-owner" ||
   location.pathname === "/register" ||
   location.pathname === "/register-owner" ||
+  location.pathname === "/create-studio" ||
   location.pathname === "/forgot-password";
   const role = useRole();
   const { bookings = [] } = useBookings();

@@ -23,7 +23,6 @@ import ForgotPasswordOwner from "./components/ForgotPasswordOwner";
 import Terms from "./pages/dashboard/TermsOwner";
 import ResetPasswordOwner from "./components/ResetPasswordOwner.jsx";
 import Privacy from "./pages/dashboard/PrivacyOwner";
-import LoginOwner from "./components/LoginOwner";
 import RegisterOwner from "./components/RegisterOwner";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import ClientProtectedRoute from "./routes/ClientProtectedRoute";
@@ -39,6 +38,7 @@ import TermsOwner from "./pages/dashboard/TermsOwner";
 import MessagesClient from "./pages/MessagesClient";
 import Clients from "./pages/dashboard/Clients";
 import Login from "./components/Login";
+import CreateStudio from "../src/components/CreateStudio.jsx";
 import BillingPlans from "./pages/dashboard/BillingPlans";
 import ResetPasswordClient from "./components/ResetPasswordClient";
 
@@ -66,7 +66,10 @@ export default function App() {
     </ClientProtectedRoute>
   }
 />
-
+<Route
+  path="/create-studio"
+  element={<CreateStudio />}
+/>
 <Route
   path="/bookings"
   element={
@@ -119,10 +122,7 @@ export default function App() {
 />
 
 {/* Авторизація власника */}
-<Route
-  path="/login-owner"
-  element={<LoginOwner />}
-/>
+<Route path="/login-owner" element={<Login />} />
 
 <Route
   path="/register-owner"

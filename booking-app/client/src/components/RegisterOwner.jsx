@@ -3,8 +3,6 @@ import { useEffect, useState } from "react";
 import {
   Mail,
   Lock,
-  Phone,
-  Building2,
   ArrowRight,
   Eye,
   EyeOff,
@@ -23,9 +21,7 @@ function cn(...classes) {
 const STORAGE_KEY = "registerOwnerForm";
 
 const INITIAL_FORM = {
-  name: "",
   email: "",
-  phone: "",
   password: "",
 };
 
@@ -132,12 +128,7 @@ export default function RegisterOwner() {
 
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d\S]{8,}$/;
 
-    if (
-      !form.name.trim() ||
-      !form.email.trim() ||
-      !form.phone.trim() ||
-      !form.password.trim()
-    ) {
+    if (!form.email.trim() || !form.password.trim()) {
       setError("Заповни всі поля.");
       return;
     }
@@ -160,8 +151,6 @@ export default function RegisterOwner() {
       const data = await api("/auth/owner/register/request-code", {
         method: "POST",
         body: {
-          name: form.name.trim(),
-          phone: form.phone.trim(),
           email: form.email.trim(),
           password: form.password,
         },
@@ -181,118 +170,100 @@ export default function RegisterOwner() {
   }
 
   async function handleVerifyCode(e) {
-  e.preventDefault();
+    e.preventDefault();
 
-  setVerificationError("");
+    setVerificationError("");
 
-  const normalizedCode = verificationCode
-    .replace(/\D/g, "")
-    .slice(0, 6);
+    const normalizedCode = verificationCode.replace(/\D/g, "").slice(0, 6);
 
-  if (normalizedCode.length !== 6) {
-    setVerificationError("Введи 6-значний код.");
-    return;
-  }
+    if (normalizedCode.length !== 6) {
+      setVerificationError("Введи 6-значний код.");
+      return;
+    }
 
-  try {
-    setVerificationLoading(true);
+    try {
+      setVerificationLoading(true);
 
-    const data = await api(
-      "/auth/owner/register/verify-code",
-      {
+      const data = await api("/auth/owner/register/verify-code", {
         method: "POST",
         body: {
           verificationId,
           code: normalizedCode,
         },
-      },
-    );
+      });
 
-    if (!data?.token) {
-      throw new Error(
-        "Акаунт створено, але сервер не повернув токен.",
-      );
+      if (!data?.token) {
+        throw new Error("Акаунт створено, але сервер не повернув токен.");
+      }
+
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("role", "owner");
+      localStorage.removeItem("studioId");
+
+      sessionStorage.removeItem(STORAGE_KEY);
+
+      setVerificationOpen(false);
+      setVerificationCode("");
+      setVerificationId("");
+
+      window.dispatchEvent(new Event("auth-changed"));
+
+navigate("/create-studio", {
+  replace: true,
+});
+    } catch (err) {
+      setVerificationError(err?.message || "Не вдалося підтвердити код.");
+    } finally {
+      setVerificationLoading(false);
+    }
+  }
+
+  async function handleResendCode() {
+    if (resendLoading || resendSeconds > 0 || !verificationId) {
+      return;
     }
 
-    localStorage.setItem("token", data.token);
-    localStorage.setItem("role", "owner");
-    localStorage.removeItem("studioId");
+    setVerificationError("");
 
-    sessionStorage.removeItem(STORAGE_KEY);
+    try {
+      setResendLoading(true);
 
-    setVerificationOpen(false);
-    setVerificationCode("");
-    setVerificationId("");
-
-    window.dispatchEvent(new Event("auth-changed"));
-
-    navigate("/dashboard/studio", {
-      replace: true,
-    });
-  } catch (err) {
-    setVerificationError(
-      err?.message ||
-        "Не вдалося підтвердити код.",
-    );
-  } finally {
-    setVerificationLoading(false);
-  }
-}
-
-async function handleResendCode() {
-  if (
-    resendLoading ||
-    resendSeconds > 0 ||
-    !verificationId
-  ) {
-    return;
-  }
-
-  setVerificationError("");
-
-  try {
-    setResendLoading(true);
-
-    const data = await api(
-      "/auth/owner/register/resend-code",
-      {
+      const data = await api("/auth/owner/register/resend-code", {
         method: "POST",
         body: {
           verificationId,
         },
-      },
-    );
+      });
 
-    setVerificationCode("");
-    setResendSeconds(data.resendAfter || 60);
-  } catch (err) {
-    setVerificationError(
-      err?.message ||
-        "Не вдалося повторно надіслати код.",
-    );
-  } finally {
-    setResendLoading(false);
+      setVerificationCode("");
+      setResendSeconds(data.resendAfter || 60);
+    } catch (err) {
+      setVerificationError(
+        err?.message || "Не вдалося повторно надіслати код.",
+      );
+    } finally {
+      setResendLoading(false);
+    }
   }
-}
 
-return (
-  <>
-    <main className="min-h-[100dvh] p-0 sm:p-3 lg:p-5">
-      <div className="mx-auto grid min-h-[100dvh] max-w-[1700px] overflow-hidden sm:min-h-[calc(100dvh-24px)] sm:rounded-[30px] sm:border sm:border-[#eadfce] sm:shadow-[0_30px_90px_rgba(15,23,42,0.08)] lg:grid-cols-[520px_1fr] lg:rounded-[36px]">
-        <aside className="relative hidden overflow-hidden lg:block">
-          <img
-            src={salonHero}
-            alt=""
-            className="absolute inset-0 h-full w-full object-cover"
-          />
+  return (
+    <>
+      <main className="min-h-[100dvh] p-0 sm:p-3 lg:p-5">
+        <div className="mx-auto grid min-h-[100dvh] max-w-[1700px] overflow-hidden sm:min-h-[calc(100dvh-24px)] sm:rounded-[30px] sm:border sm:border-[#eadfce] sm:shadow-[0_30px_90px_rgba(15,23,42,0.08)] lg:grid-cols-[520px_1fr] lg:rounded-[36px]">
+          <aside className="relative hidden overflow-hidden lg:block">
+            <img
+              src={salonHero}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover"
+            />
 
-          <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/15 to-black/65" />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/15 to-black/65" />
 
-          <div className="relative flex h-full flex-col px-12 pb-20 pt-[31%] text-white">
-            <div className="relative flex flex-col items-center text-center">
-              <div
-                aria-hidden="true"
-                className="
+            <div className="relative flex h-full flex-col px-12 pb-20 pt-[31%] text-white">
+              <div className="relative flex flex-col items-center text-center">
+                <div
+                  aria-hidden="true"
+                  className="
       pointer-events-none absolute left-1/2 top-1/2
       h-[340px] w-[430px]
       -translate-x-1/2 -translate-y-1/2
@@ -300,232 +271,189 @@ return (
       bg-black/25
       blur-[65px]
     "
-              />
+                />
 
-              <div className="relative z-10 mx-auto mb-4 h-18 w-18 sm:h-25 sm:w-25">
-                <img
-                  src="/aveliio_logo.png"
-                  alt="Aveliio"
-                  className="
+                <div className="relative z-10 mx-auto mb-4 h-18 w-18 sm:h-25 sm:w-25">
+                  <img
+                    src="/aveliio_logo.png"
+                    alt="Aveliio"
+                    className="
         h-full w-full object-contain
         drop-shadow-[0_4px_5px_rgba(0,0,0,0.9)]
         drop-shadow-[0_12px_24px_rgba(0,0,0,0.55)]
       "
-                />
-              </div>
+                  />
+                </div>
 
-              <p
-                className="
+                <p
+                  className="
       relative z-10
       text-[88px] font-black leading-none tracking-[-0.065em]
       text-white
       [text-shadow:0_3px_4px_rgba(0,0,0,0.95),0_12px_28px_rgba(0,0,0,0.65)]
     "
-              >
-                Avel
-                <span className="text-[#fc511e]">ii</span>o
-              </p>
+                >
+                  Avel
+                  <span className="text-[#fc511e]">ii</span>o
+                </p>
 
-              <p
-                className="
+                <p
+                  className="
       relative z-10
       mt-9 max-w-[320px]
       text-[18px] font-semibold leading-[1.6] text-white
       [text-shadow:0_2px_3px_rgba(0,0,0,0.95),0_8px_20px_rgba(0,0,0,0.7)]
     "
-              >
-                Керуйте студією
-                <br />у кілька кліків
-              </p>
-            </div>
-
-            <div className="mt-auto space-y-8 text-[15px] font-medium leading-6">
-              <div className="flex items-start gap-5">
-                <CalendarDays
-                  className="mt-1 h-8 w-8 shrink-0 text-[#f8783b]"
-                  strokeWidth={1.8}
-                />
-                <p>
-                  Приймайте онлайн-записи
-                  <br />
-                  24/7 без зайвих дзвінків
+                >
+                  Керуйте студією
+                  <br />у кілька кліків
                 </p>
               </div>
 
-              <div className="flex items-start gap-5">
-                <PhoneOff
-                  className="mt-1 h-8 w-8 shrink-0 text-[#f8783b]"
-                  strokeWidth={1.8}
-                />
-                <p>
-                  Менше ручної роботи
-                  <br />
-                  більше контролю над записами
-                </p>
-              </div>
-
-              <div className="flex items-start gap-5">
-                <ShieldCheck
-                  className="mt-1 h-8 w-8 shrink-0 text-[#f8783b]"
-                  strokeWidth={1.8}
-                />
-                <p>
-                  Безпечно та надійно
-                  <br />
-                  Дані студії під захистом
-                </p>
-              </div>
-            </div>
-          </div>
-        </aside>
-
-        <section className="flex items-start justify-center px-3 py-3 sm:items-center sm:px-6 sm:py-10 lg:px-8">
-          <div className="w-full max-w-[560px] pb-3 max-[639px]:pb-[calc(env(safe-area-inset-bottom)+10px)]">
-            <div className="text-center max-[639px]:mb-1">
-              <div className="mx-auto mb-2 h-12 w-12 sm:mb-2 sm:h-16 sm:w-16">
-                <img
-                  src="/aveliio_logo.png"
-                  alt="Aveliio"
-                  className="h-full w-full object-contain"
-                />
-              </div>
-
-              <h1 className="text-[22px] font-black leading-[1] tracking-[-0.06em] text-[#202020] sm:text-[42px]">
-                Створити салон
-              </h1>
-
-              <p className="mt-1 text-[11px] leading-4 text-[#77716b] sm:mt-3 sm:text-[16px] sm:leading-6">
-                Почніть приймати онлайн-записи вже сьогодні
-              </p>
-            </div>
-
-            <div className="mt-3 rounded-[22px] border border-[#eadfce] bg-white p-3.5 shadow-[0_10px_30px_rgba(15,23,42,0.05)] sm:mt-7 sm:rounded-[15px] sm:p-7 sm:shadow-[0_16px_44px_rgba(15,23,42,0.05)]">
-              <form
-                onSubmit={handleSubmit}
-                className="space-y-2.5 sm:space-y-5"
-              >
-                <Input
-                  label="Назва салону"
-                  placeholder="Beauty Studio"
-                  autoComplete="organization"
-                  icon={<Building2 />}
-                  error={!!error}
-                  value={form.name}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, name: e.target.value }))
-                  }
-                />
-
-                <Input
-                  label="Телефон"
-                  type="tel"
-                  autoComplete="tel"
-                  placeholder="+380 99 123 45 67"
-                  icon={<Phone />}
-                  error={!!error}
-                  value={form.phone}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, phone: e.target.value }))
-                  }
-                />
-
-                <Input
-                  label="Email"
-                  type="email"
-                  autoComplete="email"
-                  placeholder="studio@email.com"
-                  icon={<Mail />}
-                  error={!!error}
-                  value={form.email}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, email: e.target.value }))
-                  }
-                />
-
-                <Input
-                  label="Пароль"
-                  type={showPassword ? "text" : "password"}
-                  autoComplete="new-password"
-                  placeholder="Мінімум 8 символів"
-                  icon={<Lock />}
-                  error={!!error}
-                  value={form.password}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, password: e.target.value }))
-                  }
-                  rightElement={
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword((p) => !p)}
-                      className="text-[#9f9f9f] transition hover:text-[#ff6200]"
-                    >
-                      {showPassword ? (
-                        <Eye className="h-4 w-4" />
-                      ) : (
-                        <EyeOff className="h-4 w-4" />
-                      )}
-                    </button>
-                  }
-                />
-
-                <div className="space-y-[1px] pl-1">
-                  <p className="text-[10px] leading-4 text-[#8a8a8a] sm:text-[12px]">
-                    • Мінімум 8 символів
-                  </p>
-                  <p className="text-[10px] leading-4 text-[#8a8a8a] sm:text-[12px]">
-                    • Лише латинські літери
+              <div className="mt-auto space-y-8 text-[15px] font-medium leading-6">
+                <div className="flex items-start gap-5">
+                  <CalendarDays
+                    className="mt-1 h-8 w-8 shrink-0 text-[#f8783b]"
+                    strokeWidth={1.8}
+                  />
+                  <p>
+                    Приймайте онлайн-записи
+                    <br />
+                    24/7 без зайвих дзвінків
                   </p>
                 </div>
 
-                <label className="flex items-start gap-2 pt-0.5">
-                  <input
-                    type="checkbox"
-                    required
-                    className="
-    mt-[2px] h-4 w-4
-     cursor-pointer
-    rounded border-[#d9d9d9]
-    accent-[#ff6200]
-    focus:ring-[#ff6200]
-  "
+                <div className="flex items-start gap-5">
+                  <PhoneOff
+                    className="mt-1 h-8 w-8 shrink-0 text-[#f8783b]"
+                    strokeWidth={1.8}
+                  />
+                  <p>
+                    Менше ручної роботи
+                    <br />
+                    більше контролю над записами
+                  </p>
+                </div>
+
+                <div className="flex items-start gap-5">
+                  <ShieldCheck
+                    className="mt-1 h-8 w-8 shrink-0 text-[#f8783b]"
+                    strokeWidth={1.8}
+                  />
+                  <p>
+                    Безпечно та надійно
+                    <br />
+                    Дані студії під захистом
+                  </p>
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          <section className="flex items-start justify-center px-3 py-3 sm:items-center sm:px-6 sm:py-10 lg:px-8">
+            <div className="w-full max-w-[560px] pb-3 max-[639px]:pb-[calc(env(safe-area-inset-bottom)+10px)]">
+              <div className="text-center max-[639px]:mb-1">
+                <div className="mx-auto mb-2 h-12 w-12 sm:mb-2 sm:h-16 sm:w-16">
+                  <img
+                    src="/aveliio_logo.png"
+                    alt="Aveliio"
+                    className="h-full w-full object-contain"
+                  />
+                </div>
+
+                <h1 className="text-[22px] font-black leading-[1] tracking-[-0.06em] text-[#202020] sm:text-[42px]">
+                  Створити салон
+                </h1>
+
+                <p className="mt-1 text-[11px] leading-4 text-[#77716b] sm:mt-3 sm:text-[16px] sm:leading-6">
+                  Почніть приймати онлайн-записи вже сьогодні
+                </p>
+              </div>
+
+              <div className="mt-3 rounded-[22px] border border-[#eadfce] bg-white p-3.5 shadow-[0_10px_30px_rgba(15,23,42,0.05)] sm:mt-7 sm:rounded-[15px] sm:p-7 sm:shadow-[0_16px_44px_rgba(15,23,42,0.05)]">
+                <form
+                  onSubmit={handleSubmit}
+                  className="space-y-2.5 sm:space-y-5"
+                >
+                  <Input
+                    label="Email"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="studio@email.com"
+                    icon={<Mail />}
+                    error={!!error}
+                    value={form.email}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, email: e.target.value }))
+                    }
                   />
 
-                  <span className="text-[10px] leading-4 text-[#7a7a7a] sm:text-[12px] sm:leading-5">
-                    Я погоджуюся з{" "}
-                    <Link
-                      to="/termsowner"
-                      state={{
-                        from: location.pathname,
-                        preserveForm: true,
-                      }}
-                      className="font-semibold text-[#ff6200]"
-                    >
-                      умовами
-                    </Link>{" "}
-                    та{" "}
-                    <Link
-                      to="/privacyowner"
-                      state={{
-                        from: location.pathname,
-                        preserveForm: true,
-                      }}
-                      className="font-semibold text-[#ff6200]"
-                    >
-                      політикою конфіденційності
-                    </Link>
-                  </span>
-                </label>
+                  <Input
+                    label="Пароль"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="new-password"
+                    placeholder="Мінімум 8 символів"
+                    icon={<Lock />}
+                    error={!!error}
+                    value={form.password}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, password: e.target.value }))
+                    }
+                    rightElement={
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((p) => !p)}
+                        className="text-[#9f9f9f] transition hover:text-[#ff6200]"
+                      >
+                        {showPassword ? (
+                          <Eye className="h-4 w-4" />
+                        ) : (
+                          <EyeOff className="h-4 w-4" />
+                        )}
+                      </button>
+                    }
+                  />
 
-                {error && (
-                  <div className="rounded-[14px] border border-[#ef4444]/20 bg-[#fff1f1] px-4 py-3 text-[12px] font-semibold text-[#ef4444]">
-                    {error}
+                  <div className="space-y-[1px] pl-1">
+                    <p className="text-[10px] leading-4 text-[#8a8a8a] sm:text-[12px]">
+                      • Мінімум 8 символів
+                    </p>
+                    <p className="text-[10px] leading-4 text-[#8a8a8a] sm:text-[12px]">
+                      • Лише латинські літери
+                    </p>
                   </div>
-                )}
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="
+                  <label className="flex items-start gap-2 pt-0.5">
+                    <span className="text-[10px] leading-4 text-[#7a7a7a] sm:text-[12px] sm:leading-5">
+                      Реєструючи обліковий запис, ви приймаєте{" "}
+                      <Link
+                        to="/termsclient"
+                        state={{ from: location.pathname }}
+                        className="font-semibold text-black"
+                      >
+                        Умови використання
+                      </Link>{" "}
+                      та{" "}
+                      <Link
+                        to="/privacyclient"
+                        state={{ from: location.pathname }}
+                        className="font-semibold text-black"
+                      >
+                        Політику конфіденційності
+                      </Link>
+                    </span>
+                  </label>
+
+                  {error && (
+                    <div className="rounded-[14px] border border-[#ef4444]/20 bg-[#fff1f1] px-4 py-3 text-[12px] font-semibold text-[#ef4444]">
+                      {error}
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="
     group mt-0 inline-flex h-[44px] w-full items-center justify-center gap-2
     rounded-[12px]
     bg-[#202020]
@@ -544,32 +472,32 @@ return (
     sm:h-[52px]
     sm:text-[15px]
   "
-                >
-{loading ? (
-  "Надсилання коду..."
-) : (
-                    <>
-                      Створити салон
-                      <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-                    </>
-                  )}
-                </button>
-              </form>
+                  >
+                    {loading ? (
+                      "Надсилання коду..."
+                    ) : (
+                      <>
+                        Створити салон
+                        <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                      </>
+                    )}
+                  </button>
+                </form>
 
-              <div className="mt- flex items-center gap-2 sm:mt-4 sm:gap-4">
-                <div className="h-px flex-1 bg-[#ece5dc]" />
+                <div className="mt- flex items-center gap-2 sm:mt-4 sm:gap-4">
+                  <div className="h-px flex-1 bg-[#ece5dc]" />
 
-                <span className="mt-2 whitespace-nowrap text-[11px] font-semibold text-[#8a847d] sm:text-[14px]">
-                  або продовжити з
-                </span>
+                  <span className="mt-2 whitespace-nowrap text-[11px] font-semibold text-[#8a847d] sm:text-[14px]">
+                    або продовжити з
+                  </span>
 
-                <div className="h-px flex-1 bg-[#ece5dc]" />
-              </div>
+                  <div className="h-px flex-1 bg-[#ece5dc]" />
+                </div>
 
-              <div className="mt-2 sm:mt-4">
-                <button
-                  type="button"
-                  className="
+                <div className="mt-2 sm:mt-4">
+                  <button
+                    type="button"
+                    className="
       flex h-12 w-full items-center justify-center gap-3
       rounded-[16px]
       border border-[#ded8d1]
@@ -585,39 +513,39 @@ return (
       sm:rounded-[18px]
       sm:text-[15px]
     "
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    className="h-5 w-5 shrink-0"
-                    aria-hidden="true"
                   >
-                    <path
-                      fill="#4285F4"
-                      d="M21.6 12.23c0-.71-.06-1.4-.18-2.07H12v3.92h5.38a4.6 4.6 0 0 1-1.99 3.02v2.54h3.22c1.88-1.73 2.99-4.29 2.99-7.41Z"
-                    />
-                    <path
-                      fill="#34A853"
-                      d="M12 22c2.7 0 4.96-.89 6.61-2.36l-3.22-2.54c-.89.6-2.03.95-3.39.95-2.6 0-4.81-1.76-5.6-4.13H3.08v2.62A10 10 0 0 0 12 22Z"
-                    />
-                    <path
-                      fill="#FBBC05"
-                      d="M6.4 13.92A6 6 0 0 1 6.08 12c0-.67.12-1.32.32-1.92V7.46H3.08A10 10 0 0 0 2 12c0 1.61.38 3.14 1.08 4.54l3.32-2.62Z"
-                    />
-                    <path
-                      fill="#EA4335"
-                      d="M12 5.95c1.47 0 2.79.51 3.83 1.5l2.87-2.87C16.96 2.96 14.7 2 12 2a10 10 0 0 0-8.92 5.46l3.32 2.62C7.19 7.71 9.4 5.95 12 5.95Z"
-                    />
-                  </svg>
+                    <svg
+                      viewBox="0 0 24 24"
+                      className="h-5 w-5 shrink-0"
+                      aria-hidden="true"
+                    >
+                      <path
+                        fill="#4285F4"
+                        d="M21.6 12.23c0-.71-.06-1.4-.18-2.07H12v3.92h5.38a4.6 4.6 0 0 1-1.99 3.02v2.54h3.22c1.88-1.73 2.99-4.29 2.99-7.41Z"
+                      />
+                      <path
+                        fill="#34A853"
+                        d="M12 22c2.7 0 4.96-.89 6.61-2.36l-3.22-2.54c-.89.6-2.03.95-3.39.95-2.6 0-4.81-1.76-5.6-4.13H3.08v2.62A10 10 0 0 0 12 22Z"
+                      />
+                      <path
+                        fill="#FBBC05"
+                        d="M6.4 13.92A6 6 0 0 1 6.08 12c0-.67.12-1.32.32-1.92V7.46H3.08A10 10 0 0 0 2 12c0 1.61.38 3.14 1.08 4.54l3.32-2.62Z"
+                      />
+                      <path
+                        fill="#EA4335"
+                        d="M12 5.95c1.47 0 2.79.51 3.83 1.5l2.87-2.87C16.96 2.96 14.7 2 12 2a10 10 0 0 0-8.92 5.46l3.32 2.62C7.19 7.71 9.4 5.95 12 5.95Z"
+                      />
+                    </svg>
 
-                  <span>Продовжити через Google</span>
-                </button>
-              </div>
+                    <span>Продовжити через Google</span>
+                  </button>
+                </div>
 
-              <div className="mt-3 text-center text-[11px] font-semibold text-[#77716b] sm:mt-3 sm:text-[15px]">
-                Вже є акаунт?{" "}
-                <Link
-                  to="/login-owner"
-                  className="
+                <div className="mt-3 text-center text-[11px] font-semibold text-[#77716b] sm:mt-3 sm:text-[15px]">
+                  Вже є акаунт?{" "}
+                  <Link
+                    to="/login-owner"
+                    className="
     relative  ml-2 inline-flex
     origin-center
     font-black text-[#ff6200]
@@ -638,30 +566,30 @@ return (
 
     hover:after:scale-x-100
   "
-                >
-                  Увійти
-                </Link>
+                  >
+                    Увійти
+                  </Link>
+                </div>
               </div>
             </div>
-          </div>
-        </section>
-      </div>
-    </main>
+          </section>
+        </div>
+      </main>
 
-    {verificationOpen && (
-      <div
-        className="
+      {verificationOpen && (
+        <div
+          className="
           fixed inset-0 z-[200]
           flex items-center justify-center
           bg-black/45 px-3
           backdrop-blur-[5px]
         "
-      >
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="owner-registration-code-title"
-          className="
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="owner-registration-code-title"
+            className="
             relative w-full max-w-[440px]
             rounded-[26px]
             border border-[#eadfce]
@@ -671,22 +599,19 @@ return (
             sm:rounded-[32px]
             sm:p-8
           "
-        >
-          <button
-            type="button"
-            onClick={() => {
-              if (
-                verificationLoading ||
-                resendLoading
-              ) {
-                return;
-              }
+          >
+            <button
+              type="button"
+              onClick={() => {
+                if (verificationLoading || resendLoading) {
+                  return;
+                }
 
-              setVerificationOpen(false);
-              setVerificationError("");
-              setVerificationCode("");
-            }}
-            className="
+                setVerificationOpen(false);
+                setVerificationError("");
+                setVerificationCode("");
+              }}
+              className="
               absolute right-4 top-4
               grid h-9 w-9 place-items-center
               rounded-full
@@ -696,71 +621,68 @@ return (
               hover:bg-[#202020]
               hover:text-white
             "
-            aria-label="Закрити"
-          >
-            ×
-          </button>
+              aria-label="Закрити"
+            >
+              ×
+            </button>
 
-          <div
-            className="
+            <div
+              className="
               mx-auto grid h-16 w-16
               place-items-center
               rounded-full
               bg-[#fff2e9]
               text-[#ff6200]
             "
-          >
-            <Mail className="h-7 w-7" />
-          </div>
+            >
+              <Mail className="h-7 w-7" />
+            </div>
 
-          <div className="mt-5 text-center">
-            <h2
-              id="owner-registration-code-title"
-              className="
+            <div className="mt-5 text-center">
+              <h2
+                id="owner-registration-code-title"
+                className="
                 text-[23px] font-black
                 leading-tight tracking-[-0.04em]
                 text-[#202020]
                 sm:text-[28px]
               "
-            >
-              Перевірте вашу пошту
-            </h2>
+              >
+                Перевірте вашу пошту
+              </h2>
 
-            <p className="mt-3 text-[13px] leading-5 text-[#77716b] sm:text-[15px] sm:leading-6">
-              Код для реєстрації відправлено на
-            </p>
+              <p className="mt-3 text-[13px] leading-5 text-[#77716b] sm:text-[15px] sm:leading-6">
+                Код для реєстрації відправлено на
+              </p>
 
-            <p className="mt-1 break-all text-[13px] font-black text-[#202020] sm:text-[15px]">
-              {verificationEmail}
-            </p>
-          </div>
+              <p className="mt-1 break-all text-[13px] font-black text-[#202020] sm:text-[15px]">
+                {verificationEmail}
+              </p>
+            </div>
 
-          <form
-            onSubmit={handleVerifyCode}
-            className="mt-6"
-          >
-            <label className="block">
-              <span className="block text-center text-[12px] font-black text-[#202020] sm:text-[14px]">
-                Код підтвердження
-              </span>
+            <form onSubmit={handleVerifyCode} className="mt-6">
+              <label className="block">
+                <span className="block text-center text-[12px] font-black text-[#202020] sm:text-[14px]">
+                  Код підтвердження
+                </span>
 
-              <input
-                type="text"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                autoFocus
-                maxLength={6}
-                value={verificationCode}
-                onChange={(event) => {
-                  const value = event.target.value
-                    .replace(/\D/g, "")
-                    .slice(0, 6);
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  autoFocus
+                  maxLength={6}
+                  value={verificationCode}
+                  onChange={(event) => {
+                    const value = event.target.value
+                      .replace(/\D/g, "")
+                      .slice(0, 6);
 
-                  setVerificationCode(value);
-                  setVerificationError("");
-                }}
-                placeholder="000000"
-                className="
+                    setVerificationCode(value);
+                    setVerificationError("");
+                  }}
+                  placeholder="000000"
+                  className="
                   mt-3 h-[62px] w-full
                   rounded-[18px]
                   border border-[#ded8d1]
@@ -780,12 +702,12 @@ return (
                   sm:h-[70px]
                   sm:text-[32px]
                 "
-              />
-            </label>
+                />
+              </label>
 
-            {verificationError && (
-              <div
-                className="
+              {verificationError && (
+                <div
+                  className="
                   mt-3 rounded-[14px]
                   border border-[#ef4444]/20
                   bg-[#fff1f1]
@@ -794,18 +716,15 @@ return (
                   text-[12px] font-semibold
                   text-[#ef4444]
                 "
-              >
-                {verificationError}
-              </div>
-            )}
+                >
+                  {verificationError}
+                </div>
+              )}
 
-            <button
-              type="submit"
-              disabled={
-                verificationLoading ||
-                verificationCode.length !== 6
-              }
-              className="
+              <button
+                type="submit"
+                disabled={verificationLoading || verificationCode.length !== 6}
+                className="
                 mt-4 inline-flex h-[50px]
                 w-full items-center
                 justify-center
@@ -825,23 +744,17 @@ return (
                 sm:h-[54px]
                 sm:text-[15px]
               "
-            >
-              {verificationLoading
-                ? "Перевірка..."
-                : "Підтвердити код"}
-            </button>
+              >
+                {verificationLoading ? "Перевірка..." : "Підтвердити код"}
+              </button>
 
-            <div className="mt-5 text-center text-[12px] font-semibold text-[#77716b] sm:text-[13px]">
-              Не отримали код?
-
-              <button
-                type="button"
-                disabled={
-                  resendLoading ||
-                  resendSeconds > 0
-                }
-                onClick={handleResendCode}
-                className="
+              <div className="mt-5 text-center text-[12px] font-semibold text-[#77716b] sm:text-[13px]">
+                Не отримали код?
+                <button
+                  type="button"
+                  disabled={resendLoading || resendSeconds > 0}
+                  onClick={handleResendCode}
+                  className="
                   ml-1.5 font-black
                   text-[#ff6200]
                   transition
@@ -850,22 +763,22 @@ return (
                   disabled:text-[#aaa19a]
                   disabled:no-underline
                 "
-              >
-                {resendLoading
-                  ? "Надсилання..."
-                  : resendSeconds > 0
-                    ? `Надіслати повторно через ${resendSeconds} с`
-                    : "Надіслати повторно"}
-              </button>
-            </div>
+                >
+                  {resendLoading
+                    ? "Надсилання..."
+                    : resendSeconds > 0
+                      ? `Надіслати повторно через ${resendSeconds} с`
+                      : "Надіслати повторно"}
+                </button>
+              </div>
 
-            <p className="mt-4 text-center text-[11px] leading-4 text-[#aaa19a]">
-              Код дійсний протягом 10 хвилин
-            </p>
-          </form>
+              <p className="mt-4 text-center text-[11px] leading-4 text-[#aaa19a]">
+                Код дійсний протягом 10 хвилин
+              </p>
+            </form>
+          </div>
         </div>
-      </div>
-    )}
-  </>
-);
+      )}
+    </>
+  );
 }
