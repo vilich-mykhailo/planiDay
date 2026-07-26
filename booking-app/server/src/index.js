@@ -4,7 +4,7 @@ import express from "express";
 import cors from "cors";
 import http from "http";
 import { Server } from "socket.io";
-
+import { verifyMailerConnection } from "./lib/mailer.js";
 import { authRouter } from "./routes/auth.routes.js";
 import { ownerRouter } from "./routes/owner.routes.js";
 import { clientRouter } from "./routes/client.routes.js";

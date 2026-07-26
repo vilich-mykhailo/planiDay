@@ -17,6 +17,26 @@ import {
 } from "lucide-react";
 import Calendar from "./Calendar";
 import BookingCustomerForm from "./BookingCustomerForm";
+const PUBLIC = import.meta.env.VITE_R2_PUBLIC_BASE_URL;
+
+function toPublicUrl(value) {
+  const photo = String(value || "").trim();
+
+  if (!photo) return "";
+
+  if (
+    photo.startsWith("http://") ||
+    photo.startsWith("https://") ||
+    photo.startsWith("blob:") ||
+    photo.startsWith("data:")
+  ) {
+    return photo;
+  }
+
+  if (!PUBLIC) return photo;
+
+  return `${PUBLIC.replace(/\/$/, "")}/${photo.replace(/^\//, "")}`;
+}
 function cn(...classes) {
   return classes.filter(Boolean).join(" ");
 }
@@ -1314,8 +1334,13 @@ function scrollTimeRow(direction) {
                       .filter(Boolean)
                       .join(" ") ||
                     "Клієнт";
-                  const photo =
-                    client.photoUrl || client.photo || client.avatar || "";
+                 const photo = toPublicUrl(
+  client.photoUrl ||
+    client.photo ||
+    client.avatar ||
+    client.photoKey ||
+    "",
+);
 
                   return (
                     <button
@@ -1653,13 +1678,13 @@ active
   : "border-stone-200 bg-stone-100 text-stone-600"
   )}
 >
-  {item.photoUrl ? (
-    <img
-      src={item.photoUrl}
-      alt={item.name}
-      className="h-full w-full object-cover"
-    />
-  ) : (
+{toPublicUrl(item.photoUrl || item.photo || item.avatar) ? (
+  <img
+    src={toPublicUrl(item.photoUrl || item.photo || item.avatar)}
+    alt={item.name}
+    className="h-full w-full object-cover"
+  />
+) : (
     <UserRound className="h-5 w-5" />
   )}
 </div>
@@ -2019,11 +2044,13 @@ onSelect={(d) => {
                   .join(" ") ||
                 "Клієнт",
               clientPhone: selectedClient?.phone || "",
-              clientPhoto:
-                selectedClient?.photoUrl ||
-                selectedClient?.photo ||
-                selectedClient?.avatar ||
-                "",
+clientPhoto: toPublicUrl(
+  selectedClient?.photoUrl ||
+    selectedClient?.photo ||
+    selectedClient?.avatar ||
+    selectedClient?.photoKey ||
+    "",
+),
               serviceName: selectedService?.name || "—",
               masterName:
                 masterPickMode === MASTER_PICK_MODE.ANY

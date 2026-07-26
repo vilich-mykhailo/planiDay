@@ -76,7 +76,17 @@ export default function RegisterOwner() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [verificationOpen, setVerificationOpen] = useState(false);
+  const [verificationId, setVerificationId] = useState("");
+  const [verificationEmail, setVerificationEmail] = useState("");
+  const [verificationCode, setVerificationCode] = useState("");
 
+  const [verificationLoading, setVerificationLoading] = useState(false);
+
+  const [verificationError, setVerificationError] = useState("");
+
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendSeconds, setResendSeconds] = useState(0);
   const [form, setForm] = useState(() => {
     const shouldPreserve = location.state?.preserveForm === true;
 
@@ -101,10 +111,26 @@ export default function RegisterOwner() {
   useEffect(() => {
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(form));
   }, [form]);
+  useEffect(() => {
+    if (!verificationOpen || resendSeconds <= 0) {
+      return;
+    }
 
+    const timer = window.setInterval(() => {
+      setResendSeconds((previous) => (previous > 0 ? previous - 1 : 0));
+    }, 1000);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [verificationOpen, resendSeconds]);
   async function handleSubmit(e) {
     e.preventDefault();
+
     setError("");
+    setVerificationError("");
+
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d\S]{8,}$/;
 
     if (
       !form.name.trim() ||
@@ -116,15 +142,22 @@ export default function RegisterOwner() {
       return;
     }
 
-    if (form.password.trim().length < 8) {
-      setError("Пароль має бути мінімум 8 символів.");
+    if (!passwordRegex.test(form.password)) {
+      setError(
+        "Пароль має містити мінімум 8 символів, латинську літеру та цифру.",
+      );
+      return;
+    }
+
+    if (/\s/.test(form.password)) {
+      setError("Пароль не може містити пробіли.");
       return;
     }
 
     try {
       setLoading(true);
 
-      const data = await api("/auth/owner/register", {
+      const data = await api("/auth/owner/register/request-code", {
         method: "POST",
         body: {
           name: form.name.trim(),
@@ -134,21 +167,116 @@ export default function RegisterOwner() {
         },
       });
 
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("role", data.kind);
-
-      window.dispatchEvent(new Event("auth-changed"));
-
-      sessionStorage.removeItem(STORAGE_KEY);
-      navigate("/dashboard/studio");
+      setVerificationId(data.verificationId);
+      setVerificationEmail(data.email || form.email.trim());
+      setVerificationCode("");
+      setVerificationError("");
+      setResendSeconds(data.resendAfter || 60);
+      setVerificationOpen(true);
     } catch (err) {
-      setError(err?.message || "Не вдалося створити акаунт. Спробуй ще раз.");
+      setError(err?.message || "Не вдалося надіслати код. Спробуй ще раз.");
     } finally {
       setLoading(false);
     }
   }
 
-  return (
+  async function handleVerifyCode(e) {
+  e.preventDefault();
+
+  setVerificationError("");
+
+  const normalizedCode = verificationCode
+    .replace(/\D/g, "")
+    .slice(0, 6);
+
+  if (normalizedCode.length !== 6) {
+    setVerificationError("Введи 6-значний код.");
+    return;
+  }
+
+  try {
+    setVerificationLoading(true);
+
+    const data = await api(
+      "/auth/owner/register/verify-code",
+      {
+        method: "POST",
+        body: {
+          verificationId,
+          code: normalizedCode,
+        },
+      },
+    );
+
+    if (!data?.token) {
+      throw new Error(
+        "Акаунт створено, але сервер не повернув токен.",
+      );
+    }
+
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("role", "owner");
+    localStorage.removeItem("studioId");
+
+    sessionStorage.removeItem(STORAGE_KEY);
+
+    setVerificationOpen(false);
+    setVerificationCode("");
+    setVerificationId("");
+
+    window.dispatchEvent(new Event("auth-changed"));
+
+    navigate("/dashboard/studio", {
+      replace: true,
+    });
+  } catch (err) {
+    setVerificationError(
+      err?.message ||
+        "Не вдалося підтвердити код.",
+    );
+  } finally {
+    setVerificationLoading(false);
+  }
+}
+
+async function handleResendCode() {
+  if (
+    resendLoading ||
+    resendSeconds > 0 ||
+    !verificationId
+  ) {
+    return;
+  }
+
+  setVerificationError("");
+
+  try {
+    setResendLoading(true);
+
+    const data = await api(
+      "/auth/owner/register/resend-code",
+      {
+        method: "POST",
+        body: {
+          verificationId,
+        },
+      },
+    );
+
+    setVerificationCode("");
+    setResendSeconds(data.resendAfter || 60);
+  } catch (err) {
+    setVerificationError(
+      err?.message ||
+        "Не вдалося повторно надіслати код.",
+    );
+  } finally {
+    setResendLoading(false);
+  }
+}
+
+return (
+  <>
     <main className="min-h-[100dvh] p-0 sm:p-3 lg:p-5">
       <div className="mx-auto grid min-h-[100dvh] max-w-[1700px] overflow-hidden sm:min-h-[calc(100dvh-24px)] sm:rounded-[30px] sm:border sm:border-[#eadfce] sm:shadow-[0_30px_90px_rgba(15,23,42,0.08)] lg:grid-cols-[520px_1fr] lg:rounded-[36px]">
         <aside className="relative hidden overflow-hidden lg:block">
@@ -161,10 +289,10 @@ export default function RegisterOwner() {
           <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/15 to-black/65" />
 
           <div className="relative flex h-full flex-col px-12 pb-20 pt-[31%] text-white">
-<div className="relative flex flex-col items-center text-center">
-  <div
-    aria-hidden="true"
-    className="
+            <div className="relative flex flex-col items-center text-center">
+              <div
+                aria-hidden="true"
+                className="
       pointer-events-none absolute left-1/2 top-1/2
       h-[340px] w-[430px]
       -translate-x-1/2 -translate-y-1/2
@@ -172,46 +300,44 @@ export default function RegisterOwner() {
       bg-black/25
       blur-[65px]
     "
-  />
+              />
 
-  <div className="relative z-10 mx-auto mb-4 h-18 w-18 sm:h-25 sm:w-25">
-    <img
-      src="/aveliio_logo.png"
-      alt="Aveliio"
-      className="
+              <div className="relative z-10 mx-auto mb-4 h-18 w-18 sm:h-25 sm:w-25">
+                <img
+                  src="/aveliio_logo.png"
+                  alt="Aveliio"
+                  className="
         h-full w-full object-contain
         drop-shadow-[0_4px_5px_rgba(0,0,0,0.9)]
         drop-shadow-[0_12px_24px_rgba(0,0,0,0.55)]
       "
-    />
-  </div>
+                />
+              </div>
 
-  <p
-    className="
+              <p
+                className="
       relative z-10
       text-[88px] font-black leading-none tracking-[-0.065em]
       text-white
       [text-shadow:0_3px_4px_rgba(0,0,0,0.95),0_12px_28px_rgba(0,0,0,0.65)]
     "
-  >
-    Avel
-    <span className="text-[#fc511e]">ii</span>
-    o
-  </p>
+              >
+                Avel
+                <span className="text-[#fc511e]">ii</span>o
+              </p>
 
-  <p
-    className="
+              <p
+                className="
       relative z-10
       mt-9 max-w-[320px]
       text-[18px] font-semibold leading-[1.6] text-white
       [text-shadow:0_2px_3px_rgba(0,0,0,0.95),0_8px_20px_rgba(0,0,0,0.7)]
     "
-  >
-    Керуйте студією
-    <br />
-    у кілька кліків
-  </p>
-</div>
+              >
+                Керуйте студією
+                <br />у кілька кліків
+              </p>
+            </div>
 
             <div className="mt-auto space-y-8 text-[15px] font-medium leading-6">
               <div className="flex items-start gap-5">
@@ -256,13 +382,13 @@ export default function RegisterOwner() {
         <section className="flex items-start justify-center px-3 py-3 sm:items-center sm:px-6 sm:py-10 lg:px-8">
           <div className="w-full max-w-[560px] pb-3 max-[639px]:pb-[calc(env(safe-area-inset-bottom)+10px)]">
             <div className="text-center max-[639px]:mb-1">
-<div className="mx-auto mb-2 h-12 w-12 sm:mb-2 sm:h-16 sm:w-16">
-  <img
-    src="/aveliio_logo.png"
-    alt="Aveliio"
-    className="h-full w-full object-contain"
-  />
-</div>
+              <div className="mx-auto mb-2 h-12 w-12 sm:mb-2 sm:h-16 sm:w-16">
+                <img
+                  src="/aveliio_logo.png"
+                  alt="Aveliio"
+                  className="h-full w-full object-contain"
+                />
+              </div>
 
               <h1 className="text-[22px] font-black leading-[1] tracking-[-0.06em] text-[#202020] sm:text-[42px]">
                 Створити салон
@@ -274,7 +400,10 @@ export default function RegisterOwner() {
             </div>
 
             <div className="mt-3 rounded-[22px] border border-[#eadfce] bg-white p-3.5 shadow-[0_10px_30px_rgba(15,23,42,0.05)] sm:mt-7 sm:rounded-[15px] sm:p-7 sm:shadow-[0_16px_44px_rgba(15,23,42,0.05)]">
-              <form onSubmit={handleSubmit} className="space-y-2.5 sm:space-y-5">
+              <form
+                onSubmit={handleSubmit}
+                className="space-y-2.5 sm:space-y-5"
+              >
                 <Input
                   label="Назва салону"
                   placeholder="Beauty Studio"
@@ -349,17 +478,17 @@ export default function RegisterOwner() {
                 </div>
 
                 <label className="flex items-start gap-2 pt-0.5">
-<input
-  type="checkbox"
-  required
-  className="
+                  <input
+                    type="checkbox"
+                    required
+                    className="
     mt-[2px] h-4 w-4
      cursor-pointer
     rounded border-[#d9d9d9]
     accent-[#ff6200]
     focus:ring-[#ff6200]
   "
-/>
+                  />
 
                   <span className="text-[10px] leading-4 text-[#7a7a7a] sm:text-[12px] sm:leading-5">
                     Я погоджуюся з{" "}
@@ -393,10 +522,10 @@ export default function RegisterOwner() {
                   </div>
                 )}
 
-<button
-  type="submit"
-  disabled={loading}
-  className="
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="
     group mt-0 inline-flex h-[44px] w-full items-center justify-center gap-2
     rounded-[12px]
     bg-[#202020]
@@ -415,17 +544,16 @@ export default function RegisterOwner() {
     sm:h-[52px]
     sm:text-[15px]
   "
->
-  {loading ? (
-    "Створення..."
-  ) : (
-    <>
-      Створити салон
-
-      <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-    </>
-  )}
-</button>
+                >
+{loading ? (
+  "Надсилання коду..."
+) : (
+                    <>
+                      Створити салон
+                      <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                    </>
+                  )}
+                </button>
               </form>
 
               <div className="mt- flex items-center gap-2 sm:mt-4 sm:gap-4">
@@ -438,10 +566,10 @@ export default function RegisterOwner() {
                 <div className="h-px flex-1 bg-[#ece5dc]" />
               </div>
 
-<div className="mt-2 sm:mt-4">
-  <button
-    type="button"
-    className="
+              <div className="mt-2 sm:mt-4">
+                <button
+                  type="button"
+                  className="
       flex h-12 w-full items-center justify-center gap-3
       rounded-[16px]
       border border-[#ded8d1]
@@ -457,39 +585,39 @@ export default function RegisterOwner() {
       sm:rounded-[18px]
       sm:text-[15px]
     "
-  >
-    <svg
-      viewBox="0 0 24 24"
-      className="h-5 w-5 shrink-0"
-      aria-hidden="true"
-    >
-      <path
-        fill="#4285F4"
-        d="M21.6 12.23c0-.71-.06-1.4-.18-2.07H12v3.92h5.38a4.6 4.6 0 0 1-1.99 3.02v2.54h3.22c1.88-1.73 2.99-4.29 2.99-7.41Z"
-      />
-      <path
-        fill="#34A853"
-        d="M12 22c2.7 0 4.96-.89 6.61-2.36l-3.22-2.54c-.89.6-2.03.95-3.39.95-2.6 0-4.81-1.76-5.6-4.13H3.08v2.62A10 10 0 0 0 12 22Z"
-      />
-      <path
-        fill="#FBBC05"
-        d="M6.4 13.92A6 6 0 0 1 6.08 12c0-.67.12-1.32.32-1.92V7.46H3.08A10 10 0 0 0 2 12c0 1.61.38 3.14 1.08 4.54l3.32-2.62Z"
-      />
-      <path
-        fill="#EA4335"
-        d="M12 5.95c1.47 0 2.79.51 3.83 1.5l2.87-2.87C16.96 2.96 14.7 2 12 2a10 10 0 0 0-8.92 5.46l3.32 2.62C7.19 7.71 9.4 5.95 12 5.95Z"
-      />
-    </svg>
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    className="h-5 w-5 shrink-0"
+                    aria-hidden="true"
+                  >
+                    <path
+                      fill="#4285F4"
+                      d="M21.6 12.23c0-.71-.06-1.4-.18-2.07H12v3.92h5.38a4.6 4.6 0 0 1-1.99 3.02v2.54h3.22c1.88-1.73 2.99-4.29 2.99-7.41Z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M12 22c2.7 0 4.96-.89 6.61-2.36l-3.22-2.54c-.89.6-2.03.95-3.39.95-2.6 0-4.81-1.76-5.6-4.13H3.08v2.62A10 10 0 0 0 12 22Z"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M6.4 13.92A6 6 0 0 1 6.08 12c0-.67.12-1.32.32-1.92V7.46H3.08A10 10 0 0 0 2 12c0 1.61.38 3.14 1.08 4.54l3.32-2.62Z"
+                    />
+                    <path
+                      fill="#EA4335"
+                      d="M12 5.95c1.47 0 2.79.51 3.83 1.5l2.87-2.87C16.96 2.96 14.7 2 12 2a10 10 0 0 0-8.92 5.46l3.32 2.62C7.19 7.71 9.4 5.95 12 5.95Z"
+                    />
+                  </svg>
 
-    <span>Продовжити через Google</span>
-  </button>
-</div>
+                  <span>Продовжити через Google</span>
+                </button>
+              </div>
 
               <div className="mt-3 text-center text-[11px] font-semibold text-[#77716b] sm:mt-3 sm:text-[15px]">
                 Вже є акаунт?{" "}
-<Link
-  to="/login-owner"
-  className="
+                <Link
+                  to="/login-owner"
+                  className="
     relative  ml-2 inline-flex
     origin-center
     font-black text-[#ff6200]
@@ -510,14 +638,234 @@ export default function RegisterOwner() {
 
     hover:after:scale-x-100
   "
->
-  Увійти
-</Link>
+                >
+                  Увійти
+                </Link>
               </div>
             </div>
           </div>
         </section>
       </div>
     </main>
-  );
+
+    {verificationOpen && (
+      <div
+        className="
+          fixed inset-0 z-[200]
+          flex items-center justify-center
+          bg-black/45 px-3
+          backdrop-blur-[5px]
+        "
+      >
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="owner-registration-code-title"
+          className="
+            relative w-full max-w-[440px]
+            rounded-[26px]
+            border border-[#eadfce]
+            bg-white
+            p-5
+            shadow-[0_30px_90px_rgba(15,15,15,0.25)]
+            sm:rounded-[32px]
+            sm:p-8
+          "
+        >
+          <button
+            type="button"
+            onClick={() => {
+              if (
+                verificationLoading ||
+                resendLoading
+              ) {
+                return;
+              }
+
+              setVerificationOpen(false);
+              setVerificationError("");
+              setVerificationCode("");
+            }}
+            className="
+              absolute right-4 top-4
+              grid h-9 w-9 place-items-center
+              rounded-full
+              bg-[#f6f3ef]
+              text-[#77716b]
+              transition
+              hover:bg-[#202020]
+              hover:text-white
+            "
+            aria-label="Закрити"
+          >
+            ×
+          </button>
+
+          <div
+            className="
+              mx-auto grid h-16 w-16
+              place-items-center
+              rounded-full
+              bg-[#fff2e9]
+              text-[#ff6200]
+            "
+          >
+            <Mail className="h-7 w-7" />
+          </div>
+
+          <div className="mt-5 text-center">
+            <h2
+              id="owner-registration-code-title"
+              className="
+                text-[23px] font-black
+                leading-tight tracking-[-0.04em]
+                text-[#202020]
+                sm:text-[28px]
+              "
+            >
+              Перевірте вашу пошту
+            </h2>
+
+            <p className="mt-3 text-[13px] leading-5 text-[#77716b] sm:text-[15px] sm:leading-6">
+              Код для реєстрації відправлено на
+            </p>
+
+            <p className="mt-1 break-all text-[13px] font-black text-[#202020] sm:text-[15px]">
+              {verificationEmail}
+            </p>
+          </div>
+
+          <form
+            onSubmit={handleVerifyCode}
+            className="mt-6"
+          >
+            <label className="block">
+              <span className="block text-center text-[12px] font-black text-[#202020] sm:text-[14px]">
+                Код підтвердження
+              </span>
+
+              <input
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                autoFocus
+                maxLength={6}
+                value={verificationCode}
+                onChange={(event) => {
+                  const value = event.target.value
+                    .replace(/\D/g, "")
+                    .slice(0, 6);
+
+                  setVerificationCode(value);
+                  setVerificationError("");
+                }}
+                placeholder="000000"
+                className="
+                  mt-3 h-[62px] w-full
+                  rounded-[18px]
+                  border border-[#ded8d1]
+                  bg-[#faf9f7]
+                  px-4
+                  text-center
+                  text-[27px] font-black
+                  tracking-[0.35em]
+                  text-[#202020]
+                  outline-none
+                  transition
+                  placeholder:text-[#d2ccc5]
+                  focus:border-[#ff6200]
+                  focus:bg-white
+                  focus:ring-4
+                  focus:ring-[#ff6200]/10
+                  sm:h-[70px]
+                  sm:text-[32px]
+                "
+              />
+            </label>
+
+            {verificationError && (
+              <div
+                className="
+                  mt-3 rounded-[14px]
+                  border border-[#ef4444]/20
+                  bg-[#fff1f1]
+                  px-4 py-3
+                  text-center
+                  text-[12px] font-semibold
+                  text-[#ef4444]
+                "
+              >
+                {verificationError}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={
+                verificationLoading ||
+                verificationCode.length !== 6
+              }
+              className="
+                mt-4 inline-flex h-[50px]
+                w-full items-center
+                justify-center
+                rounded-[15px]
+                bg-[#202020]
+                text-[14px] font-black
+                text-white
+                shadow-[0_12px_26px_rgba(15,15,15,0.18)]
+                transition-all
+                hover:scale-[1.015]
+                hover:bg-[#ff6200]
+                active:scale-[0.98]
+                disabled:pointer-events-none
+                disabled:bg-[#eee9e3]
+                disabled:text-[#aaa19a]
+                disabled:shadow-none
+                sm:h-[54px]
+                sm:text-[15px]
+              "
+            >
+              {verificationLoading
+                ? "Перевірка..."
+                : "Підтвердити код"}
+            </button>
+
+            <div className="mt-5 text-center text-[12px] font-semibold text-[#77716b] sm:text-[13px]">
+              Не отримали код?
+
+              <button
+                type="button"
+                disabled={
+                  resendLoading ||
+                  resendSeconds > 0
+                }
+                onClick={handleResendCode}
+                className="
+                  ml-1.5 font-black
+                  text-[#ff6200]
+                  transition
+                  hover:underline
+                  disabled:cursor-default
+                  disabled:text-[#aaa19a]
+                  disabled:no-underline
+                "
+              >
+                {resendLoading
+                  ? "Надсилання..."
+                  : resendSeconds > 0
+                    ? `Надіслати повторно через ${resendSeconds} с`
+                    : "Надіслати повторно"}
+              </button>
+            </div>
+
+            <p className="mt-4 text-center text-[11px] leading-4 text-[#aaa19a]">
+              Код дійсний протягом 10 хвилин
+            </p>
+          </form>
+        </div>
+      </div>
+    )}
+  </>
+);
 }

@@ -11,7 +11,6 @@ import {
   Pencil,
   Trash2,
   X,
-FilePenLine,
 PartyPopper,
 UserStar,
   Timer,
@@ -38,7 +37,6 @@ UserStar,
   ChevronRight,
   ArrowDownToLine,
   Save,
-  Building2,
 } from "lucide-react";
 import { useStudio } from "../../context/studio/useStudio";
 import TimeSelect from "../../components/TimeSelect";
@@ -392,7 +390,20 @@ function Button({
 }) {
   const variants = {
 primary:
-  "bg-[#202020] text-white shadow-[0_12px_26px_rgba(15,15,15,0.18)] transition-all duration-300 hover:scale-[1.015] hover:bg-[#ff6200] hover:shadow-[0_14px_30px_rgba(255,98,0,0.24)] active:scale-[0.98] disabled:pointer-events-none disabled:bg-[#f1ebe4] disabled:text-[#aaa19a] disabled:shadow-none disabled:opacity-100",
+  `
+    bg-[#202020] text-white
+    
+    transition-all duration-300
+    hover:scale-[1.015]
+    hover:bg-[#ff6200]
+    
+    active:scale-[0.98]
+    disabled:pointer-events-none
+    disabled:bg-[#f1ebe4]
+    disabled:text-[#aaa19a]
+    disabled:shadow-none
+    disabled:opacity-100
+  `,
     secondary:
       "bg-white border border-[#eadbc9] text-[#202020] hover:!bg-[#fff7f0] hover:!border-[#ffd6bd]",
     danger:
@@ -432,7 +443,21 @@ function IconButton({
   ...props
 }) {
   const variants = {
-    primary: "bg-[#ff5a00] text-white hover:bg-[#ef4f00]",
+    primary:
+  `
+    bg-[#202020] text-white
+    
+    transition-all duration-300
+    hover:scale-[1.015]
+    hover:bg-[#ff6200]
+    
+    active:scale-[0.98]
+    disabled:pointer-events-none
+    disabled:bg-[#f1ebe4]
+    disabled:text-[#aaa19a]
+    disabled:shadow-none
+    disabled:opacity-100
+  `,
     secondary:
       "bg-white border border-[#eadbc9] text-[#202020] hover:!bg-[#fff7f0] hover:!border-[#ffd6bd]",
     danger:
@@ -889,17 +914,16 @@ const { confirmBooking, cancelBooking } = useBookings();
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
-  const [scheduleMultiSelect, setScheduleMultiSelect] = useState(false);
-  const [selectedScheduleDates, setSelectedScheduleDates] = useState([]);
+  const [selectedScheduleDate, setSelectedScheduleDate] = useState("");
   const [scheduleEditorOpen, setScheduleEditorOpen] = useState(false);
-  const [bulkScheduleDraft, setBulkScheduleDraft] = useState({
+  const [scheduleDraft, setScheduleDraft] = useState({
     enabled: true,
     start: "09:00",
     end: "18:00",
     breakStart: "12:00",
     breakEnd: "13:00",
   });
-  const [bulkSaving, setBulkSaving] = useState(false);
+  const [scheduleSaving, setScheduleSaving] = useState(false);
   const studioScheduleQuery = useQuery({
     queryKey: ["studioScheduleWithExceptions", studioId],
     queryFn: () => fetchStudioScheduleFromDb(),
@@ -1300,14 +1324,12 @@ async function handleCancelMasterBooking(booking) {
   const [exportFields, setExportFields] = useState({
     name: true,
     role: true,
-    bio: false,
     status: true,
     exceptionsCount: true,
   });
   const [form, setForm] = useState({
     name: "",
     role: "",
-    bio: "",
     photoUrl: "",
     photoKey: null,
     photoFile: null,
@@ -1318,7 +1340,6 @@ async function handleCancelMasterBooking(booking) {
     id: "",
     name: "",
     role: "",
-    bio: "",
     photoUrl: "",
     photoKey: null,
     photoFile: null,
@@ -1387,7 +1408,6 @@ async function handleCancelMasterBooking(booking) {
           body: JSON.stringify({
             name,
             role: form.role,
-            bio: form.bio,
             photoUrl,
             photoKey,
           }),
@@ -1435,7 +1455,6 @@ async function handleCancelMasterBooking(booking) {
       setForm({
         name: "",
         role: "",
-        bio: "",
         photoUrl: "",
         photoKey: null,
         photoFile: null,
@@ -1570,7 +1589,7 @@ function isPastDateKey(dateKey) {
     }).format(date);
   }
 
-  function getBulkDraftFromItem(item) {
+  function getScheduleDraftFromItem(item) {
     const enabled = item?.enabled !== false;
     const breakStart = getExceptionBreakStart(item);
     const breakEnd = getExceptionBreakEnd(item);
@@ -1670,136 +1689,52 @@ return {
     });
   }
 
-  function updateExceptionByDate(dateKey, field, value) {
-    const applyScheduleChange = (item) => {
-      const updated = { ...item, [field]: value };
-
-      if (field === "enabled" && value) {
-        return {
-          ...updated,
-          start: updated.start || "09:00",
-          end: updated.end || "18:00",
-          breakStart: getExceptionBreakStart(updated) || "12:00",
-          breakEnd: getExceptionBreakEnd(updated) || "13:00",
-        };
-      }
-
-      return updated;
-    };
-
-    setMasterExceptions((prev) => {
-      const existingIndex = prev.findIndex(
-        (item) => getExceptionDateValue(item) === dateKey,
-      );
-
-      if (existingIndex >= 0) {
-        return prev.map((item, index) =>
-          index === existingIndex ? applyScheduleChange(item) : item,
-        );
-      }
-
-      const newItem = applyScheduleChange({
-        ...createEmptyException(),
-        date: dateKey,
-      });
-
-      return sortExceptions([...prev, newItem]);
-    });
-  }
-
-  function closeScheduleSelection() {
-    setScheduleMultiSelect(false);
-    setSelectedScheduleDates([]);
-    setScheduleEditorOpen(false);
-  }
-
   function closeScheduleEditorWindow() {
     setScheduleEditorOpen(false);
   }
 
   function shiftScheduleMonth(amount) {
-    setScheduleMonthDate((prev) => addMonths(prev, amount));
-    closeScheduleSelection();
+    setScheduleMonthDate((prev) => {
+      const nextMonth = addMonths(prev, amount);
+      const firstDayKey = dateToInputValue(nextMonth);
+      const todayKey = getTodayDateKey();
+      const selectedDateKey =
+        nextMonth.getFullYear() === new Date().getFullYear() &&
+        nextMonth.getMonth() === new Date().getMonth()
+          ? todayKey
+          : firstDayKey >= todayKey
+            ? firstDayKey
+            : "";
+
+      setSelectedScheduleDate(selectedDateKey);
+      return nextMonth;
+    });
+    setScheduleEditorOpen(false);
   }
 
   function resetScheduleMonthToToday() {
     const now = new Date();
     setScheduleMonthDate(new Date(now.getFullYear(), now.getMonth(), 1));
-    closeScheduleSelection();
+    setSelectedScheduleDate(getTodayDateKey());
+    setScheduleEditorOpen(false);
   }
 
-function toggleScheduleDate(dateKey) {
-  if (isPastDateKey(dateKey)) {
-    return;
-  }
+  function toggleScheduleDate(dateKey) {
+    if (isPastDateKey(dateKey)) return;
 
-  if (!scheduleMultiSelect) {
     const current = getScheduleItemForDate(dateKey);
 
-    setBulkScheduleDraft(getBulkDraftFromItem(current.item));
-    setSelectedScheduleDates([dateKey]);
-    setScheduleEditorOpen(true);
-    return;
+    setScheduleDraft(getScheduleDraftFromItem(current.item));
+    setSelectedScheduleDate(dateKey);
+    setScheduleEditorOpen(false);
   }
 
-  setScheduleEditorOpen(false);
+  function openScheduleEditor() {
+    if (!selectedScheduleDate) return;
 
-  setSelectedScheduleDates((prev) =>
-    prev.includes(dateKey)
-      ? prev.filter((key) => key !== dateKey)
-      : [...prev, dateKey],
-  );
-}
+    const current = getScheduleItemForDate(selectedScheduleDate);
 
-function toggleScheduleWeekday(monthDays, weekdayIndex) {
-  const keys = monthDays
-    .filter(
-      (day) =>
-        day.isCurrentMonth &&
-        day.weekdayIndex === weekdayIndex &&
-        !day.isPast,
-    )
-    .map((day) => day.dateKey);
-
-  if (!keys.length) return;
-
-  setScheduleMultiSelect(true);
-  setScheduleEditorOpen(false);
-
-  setSelectedScheduleDates((prev) => {
-    const allSelected = keys.every((key) => prev.includes(key));
-
-    if (allSelected) {
-      return prev.filter((key) => !keys.includes(key));
-    }
-
-    return [...new Set([...prev, ...keys])];
-  });
-}
-
-function quickSelectWorkdays(monthDays) {
-  const keys = monthDays
-    .filter(
-      (day) =>
-        day.isCurrentMonth &&
-        day.weekdayIndex < 5 &&
-        !day.isPast,
-    )
-    .map((day) => day.dateKey);
-
-  if (!keys.length) return;
-
-  setScheduleMultiSelect(true);
-  setScheduleEditorOpen(false);
-  setSelectedScheduleDates(keys);
-}
-
-  function openScheduleEditorForSelectedDates() {
-    if (!selectedScheduleDates.length) return;
-
-    const current = getScheduleItemForDate(selectedScheduleDates[0]);
-
-    setBulkScheduleDraft(getBulkDraftFromItem(current.item));
+    setScheduleDraft(getScheduleDraftFromItem(current.item));
     setScheduleEditorOpen(true);
   }
 
@@ -1826,29 +1761,29 @@ function quickSelectWorkdays(monthDays) {
     return lines;
   }
 
-  function buildBulkScheduleItem(dateKey, enabled) {
+  function buildScheduleItem(dateKey, enabled) {
     const current = getScheduleItemForDate(dateKey);
 
     return {
       ...current.item,
       date: dateKey,
       enabled,
-      start: enabled ? bulkScheduleDraft.start : current.item.start,
-      end: enabled ? bulkScheduleDraft.end : current.item.end,
-      breakStart: enabled ? bulkScheduleDraft.breakStart : "",
-      breakEnd: enabled ? bulkScheduleDraft.breakEnd : "",
+      start: enabled ? scheduleDraft.start : current.item.start,
+      end: enabled ? scheduleDraft.end : current.item.end,
+      breakStart: enabled ? scheduleDraft.breakStart : "",
+      breakEnd: enabled ? scheduleDraft.breakEnd : "",
     };
   }
 
-  function updateBulkScheduleField(field, value) {
-    setBulkScheduleDraft((prev) => ({
+  function updateScheduleField(field, value) {
+    setScheduleDraft((prev) => ({
       ...prev,
       [field]: value,
     }));
   }
 
-  function updateBulkScheduleBreak(enabled) {
-    setBulkScheduleDraft((prev) => ({
+  function updateScheduleBreak(enabled) {
+    setScheduleDraft((prev) => ({
       ...prev,
       breakStart: enabled ? prev.breakStart || "12:00" : "",
       breakEnd: enabled ? prev.breakEnd || "13:00" : "",
@@ -2373,85 +2308,6 @@ function quickSelectWorkdays(monthDays) {
     return studioTodaySchedule.enabled !== false;
   }
 
-  async function applyStudioScheduleToMonth(monthDays) {
-    if (bulkSaving) return;
-
-    if (scheduleMultiSelect && selectedScheduleDates.length === 0) {
-      openScheduleError({
-        title: "Дати не вибрано",
-        message: "Оберіть дати, для яких потрібно застосувати графік студії",
-        hint: "У режимі множинного вибору спочатку натисніть на потрібні дні в календарі.",
-      });
-
-      return;
-    }
-
-    setBulkSaving(true);
-
-    try {
-      const studioFromDb = await fetchStudioScheduleFromDb();
-      setStudioSchedulePreview(studioFromDb);
-
-      const shouldUseSelectedDates =
-        scheduleMultiSelect && selectedScheduleDates.length > 0;
-
-      const selectedDatesSet = new Set(selectedScheduleDates);
-
-      const targetDays = monthDays.filter((day) => {
-        if (!day.isCurrentMonth) return false;
-
-        if (shouldUseSelectedDates) {
-          return selectedDatesSet.has(day.dateKey);
-        }
-
-        return true;
-      });
-
-      const items = targetDays.map((day) => {
-        const current = getScheduleItemForDate(day.dateKey);
-        const studioSchedule = getStudioScheduleForDay(day, studioFromDb);
-
-        if (!studioSchedule) {
-          throw new Error(
-            `Не знайдено графік студії для ${getScheduleDayTitle(day.date)}`,
-          );
-        }
-
-        return {
-          index: current.index,
-          item: {
-            ...current.item,
-            date: day.dateKey,
-            ...studioSchedule,
-          },
-        };
-      });
-
-      const invalidItem = items.find(({ item }) => !isExceptionValid(item));
-
-      if (invalidItem) {
-        throw new Error(
-          "Перевірте графік студії: години або перерва заповнені некоректно",
-        );
-      }
-
-      for (const { item, index } of items) {
-        await persistScheduleException(item, index, studioFromDb);
-      }
-
-      await syncScheduleAfterSave();
-      closeScheduleSelection();
-    } catch (error) {
-      openScheduleError({
-        title: "Не вдалося застосувати графік студії",
-        message: error?.message || "Не вдалося застосувати графік студії",
-        hint: "Перевірте, чи для студії збережено графік на ці дні.",
-      });
-    } finally {
-      setBulkSaving(false);
-    }
-  }
-
   function getBookingClientName(booking) {
     return (
       booking?.clientName ||
@@ -2520,8 +2376,7 @@ function quickSelectWorkdays(monthDays) {
     setExceptionsMaster(master);
     setExceptionsModalOpen(true);
     setExceptionsLoading(true);
-    setScheduleMultiSelect(false);
-    setSelectedScheduleDates([]);
+    setSelectedScheduleDate(getTodayDateKey());
     setScheduleEditorOpen(false);
     setMasterExceptions([]);
     setStudioSchedulePreview(null);
@@ -2733,100 +2588,55 @@ function quickSelectWorkdays(monthDays) {
     await mastersQuery.refetch();
   }
 
-  async function saveException(item, index) {
-    try {
-      await persistScheduleException(item, index);
-      await syncScheduleAfterSave();
-    } catch (error) {
-      openScheduleError({
-        title: "Не вдалося зберегти графік",
-        message: error?.message || "Не вдалося зберегти графік майстра",
-        hint: "Перевірте, щоб години майстра не виходили за межі графіка студії.",
-      });
-    }
-  }
+  async function applySchedule(enabled = scheduleDraft.enabled) {
+    if (!selectedScheduleDate || scheduleSaving) return;
 
-  async function applyBulkSchedule(enabled = bulkScheduleDraft.enabled) {
-    if (!selectedScheduleDates.length || bulkSaving) return;
-
-    setBulkSaving(true);
+    setScheduleSaving(true);
 
     try {
       const studioFromDb = await fetchStudioScheduleFromDb();
       setStudioSchedulePreview(studioFromDb);
-      const items = selectedScheduleDates.map((dateKey) => {
-        const current = getScheduleItemForDate(dateKey);
-        return {
-          item: buildBulkScheduleItem(dateKey, enabled),
-          index: current.index,
-        };
-      });
 
-      const invalidItem = items.find(({ item }) => {
-        const dateKey = getExceptionDateValue(item);
+      const current = getScheduleItemForDate(selectedScheduleDate);
+      const item = buildScheduleItem(selectedScheduleDate, enabled);
+      const studioSchedule = getStudioScheduleForDay(
+        getScheduleDayMeta(selectedScheduleDate),
+        studioFromDb,
+      );
 
-        const studioSchedule = getStudioScheduleForDay(
-          getScheduleDayMeta(dateKey),
-          studioFromDb,
-        );
-
-        if (!isExceptionValid(item)) {
-          return true;
-        }
-
-        try {
-          validateMasterScheduleInsideStudio(item, studioSchedule);
-          return false;
-        } catch {
-          return true;
-        }
-      });
-
-      if (invalidItem) {
-        const dateKey = getExceptionDateValue(invalidItem.item);
-
-        const studioSchedule = getStudioScheduleForDay(
-          getScheduleDayMeta(dateKey),
-          studioFromDb,
-        );
-
-        try {
-          validateMasterScheduleInsideStudio(invalidItem.item, studioSchedule);
-        } catch (error) {
-          openScheduleError({
-            title: "Графік поза межами студії",
-            message:
-              error?.message ||
-              "Графік майстра має бути в межах графіка студії",
-            hint: "Наприклад, якщо студія працює 07:00–20:00, майстер не може працювати 06:00–20:05.",
-          });
-
-          return;
-        }
-
+      if (!isExceptionValid(item)) {
         openScheduleError({
           title: "Некоректний графік",
           message: "Перевірте години роботи та перерви",
           hint: "Початок має бути раніше кінця, а перерва має бути всередині робочого часу.",
         });
-
         return;
       }
 
-      for (const { item, index } of items) {
-        await persistScheduleException(item, index, studioFromDb);
+      try {
+        validateMasterScheduleInsideStudio(item, studioSchedule);
+      } catch (error) {
+        openScheduleError({
+          title: "Графік поза межами студії",
+          message:
+            error?.message ||
+            "Графік майстра має бути в межах графіка студії",
+          hint: "Наприклад, якщо студія працює 07:00–20:00, майстер не може працювати 06:00–20:05.",
+        });
+        return;
       }
 
+      await persistScheduleException(item, current.index, studioFromDb);
       await syncScheduleAfterSave();
-      closeScheduleSelection();
+      setScheduleEditorOpen(false);
     } catch (error) {
       openScheduleError({
-        title: "Не вдалося застосувати графік",
-        message: error?.message || "Не вдалося застосувати графік",
-        hint: "Перевірте вибрані дати та графік студії.",
+        title: "Не вдалося зберегти графік",
+        message: error?.message || "Не вдалося зберегти графік",
+        hint: "Перевірте вибрану дату та графік студії.",
       });
     } finally {
-      setBulkSaving(false);
+      setScheduleSaving(false);
     }
   }
 
@@ -2842,7 +2652,6 @@ function quickSelectWorkdays(monthDays) {
       id: master.id,
       name: master.name || "",
       role: master.role || "",
-      bio: master.bio || "",
       photoUrl: master.photoUrl || "",
       photoKey: master.photoKey ?? null,
       photoFile: null,
@@ -2868,7 +2677,6 @@ function quickSelectWorkdays(monthDays) {
       id: "",
       name: "",
       role: "",
-      bio: "",
       photoUrl: "",
       photoKey: null,
       photoFile: null,
@@ -2991,7 +2799,6 @@ function quickSelectWorkdays(monthDays) {
         body: JSON.stringify({
           name,
           role: editDraft.role,
-          bio: editDraft.bio,
           photoUrl: nextUrl,
           photoKey: nextKey,
         }),
@@ -3049,7 +2856,7 @@ function quickSelectWorkdays(monthDays) {
     if (!q) return masters;
 
     return masters.filter((master) =>
-      `${master.name || ""} ${master.role || ""} ${master.bio || ""}`
+      `${master.name || ""} ${master.role || ""}`
         .toLowerCase()
         .includes(q),
     );
@@ -3139,10 +2946,6 @@ function quickSelectWorkdays(monthDays) {
           hpt: Math.max(28, lines * 22),
         };
       });
-      if (key === "Опис") {
-        return { wch: 40 };
-      }
-
       if (key === "Особливі дати") {
         return { wch: 32 };
       }
@@ -3385,27 +3188,21 @@ function quickSelectWorkdays(monthDays) {
                                 {m.name || "Майстер"}
                               </h3>
 
-                              <p className="mt-1 line-clamp-2 text-[12px] font-bold text-[#77716b]">
-                                {m.role || "Спеціалізація не вказана"}
-                              </p>
+<p
+  className={cn(
+    "mt-1 line-clamp-2 text-[12px] font-bold",
+    m.role ? "text-[#77716b]" : "text-[#c9c4be]",
+  )}
+>
+  {m.role || "Спеціалізація не вказана"}
+</p>
                             </div>
                           </div>
 
-                          {m.bio ? (
-                            <p className="mt-2.5 mb-2.5 min-h-[36px] line-clamp-2 text-[11px] font-medium leading-4 text-[#77716b]">
-                              {m.bio}
-                            </p>
-                          ) : (
-                            <div className="mt-2.5 mb-2.5 flex min-h-[36px] items-center justify-center px-2 text-center">
-                              <p className="text-[11px] font-semibold italic text-[#b8afa5] leading-4">
-                                Додайте опис майстра
-                              </p>
-                            </div>
-                          )}
                         </button>
                       </div>
 
-                      <div className="grid grid-cols-4 border-t border-[#edf0f4] bg-[#fbfcfd]">
+                      <div className="grid mt-3 grid-cols-4 border-t border-[#edf0f4] bg-[#fbfcfd]">
                         <button
                           type="button"
                           onClick={() => openMasterExceptions(m)}
@@ -3480,7 +3277,7 @@ function quickSelectWorkdays(monthDays) {
           title="Додати майстра"
           badge="Майстер"
           icon={Plus}
-          subtitle="Заповніть фото, імʼя, спеціалізацію та короткий опис."
+          subtitle="Заповніть фото, імʼя та спеціалізацію."
           size="md"
           footer={
             <div className="flex flex-row gap-2 sm:justify-end">
@@ -3561,19 +3358,6 @@ function quickSelectWorkdays(monthDays) {
               />
             </div>
 
-            <div>
-              <label className="mb-2 block text-sm font-black text-[#202020]">
-                Опис
-              </label>
-              <textarea
-                name="bio"
-                placeholder="Напр. 6 років досвіду, спеціалізація: фарбування, укладки..."
-                value={form.bio}
-                onChange={handleChange}
-                rows={4}
-                className={cn(inputBaseClass, "resize-none")}
-              />
-            </div>
           </form>
         </Modal>
 
@@ -3581,7 +3365,7 @@ function quickSelectWorkdays(monthDays) {
           open={Boolean(editMaster)}
           onClose={closeEdit}
           title="Редагування майстра"
-          subtitle="Онови фото, імʼя або опис для майстра."
+          subtitle="Оновіть фото, імʼя або спеціалізацію майстра."
           size="md"
           footer={
             <div className="flex items-center justify-end gap-2">
@@ -3678,20 +3462,6 @@ function quickSelectWorkdays(monthDays) {
               />
             </div>
 
-            <div>
-              <label className="mb-2 block text-sm font-black text-[#202020]">
-                Опис
-              </label>
-              <textarea
-                value={editDraft.bio}
-                onChange={(e) =>
-                  setEditDraft((p) => ({ ...p, bio: e.target.value }))
-                }
-                rows={4}
-                className={cn(inputBaseClass, "resize-none")}
-                placeholder="Коротко про досвід та спеціалізацію…"
-              />
-            </div>
           </div>
         </Modal>
 
@@ -3701,13 +3471,14 @@ function quickSelectWorkdays(monthDays) {
             setExceptionsModalOpen(false);
             setExceptionsMaster(null);
             setMasterExceptions([]);
-            closeScheduleSelection();
+            setSelectedScheduleDate("");
+            setScheduleEditorOpen(false);
           }}
-          title={`Особливі дати — ${exceptionsMaster?.name || ""}`}
+          title={`Календар годин роботи — ${exceptionsMaster?.name || ""}`}
           subtitle="Налаштовуйте графік майстра на місяць."
           badge="Графік"
           icon={CalendarDays}
-          size="xl"
+          size="lg"
         >
           {exceptionsLoading ? (
             <div className="space-y-3">
@@ -3736,23 +3507,21 @@ function quickSelectWorkdays(monthDays) {
                 (sum, day) => sum + day.bookingsCount,
                 0,
               );
-              const selectedCount = selectedScheduleDates.length;
-              const selectedDays = selectedScheduleDates
-                .map((dateKey) =>
-                  monthDays.find((day) => day.dateKey === dateKey),
-                )
-                .filter(Boolean);
-              const selectedLabel =
-                selectedCount === 1 && selectedDays[0]
-                  ? getScheduleDayTitle(selectedDays[0].date)
-                  : `${selectedCount} днів`;
-              const bulkHasBreak = Boolean(
-                bulkScheduleDraft.breakStart && bulkScheduleDraft.breakEnd,
+              const selectedDay = selectedScheduleDate
+                ? monthDays.find(
+                    (day) => day.dateKey === selectedScheduleDate,
+                  ) || null
+                : null;
+              const selectedLabel = selectedDay
+                ? getScheduleDayTitle(selectedDay.date)
+                : "";
+              const scheduleHasBreak = Boolean(
+                scheduleDraft.breakStart && scheduleDraft.breakEnd,
               );
               const getVisibleScheduleItemForDay = (day) => {
                 const shouldUseDraft =
                   scheduleEditorOpen &&
-                  selectedScheduleDates.includes(day.dateKey) &&
+                  selectedScheduleDate === day.dateKey &&
                   day.isCurrentMonth;
 
                 if (!shouldUseDraft) {
@@ -3761,430 +3530,261 @@ function quickSelectWorkdays(monthDays) {
 
                 return {
                   ...day.item,
-                  enabled: bulkScheduleDraft.enabled,
-                  start: bulkScheduleDraft.enabled
-                    ? bulkScheduleDraft.start
+                  enabled: scheduleDraft.enabled,
+                  start: scheduleDraft.enabled
+                    ? scheduleDraft.start
                     : day.item.start,
-                  end: bulkScheduleDraft.enabled
-                    ? bulkScheduleDraft.end
+                  end: scheduleDraft.enabled
+                    ? scheduleDraft.end
                     : day.item.end,
-                  breakStart: bulkScheduleDraft.enabled
-                    ? bulkScheduleDraft.breakStart || ""
+                  breakStart: scheduleDraft.enabled
+                    ? scheduleDraft.breakStart || ""
                     : "",
-                  breakEnd: bulkScheduleDraft.enabled
-                    ? bulkScheduleDraft.breakEnd || ""
+                  breakEnd: scheduleDraft.enabled
+                    ? scheduleDraft.breakEnd || ""
                     : "",
                 };
               };
+              const selectedScheduleItem = selectedDay
+                ? getVisibleScheduleItemForDay(selectedDay)
+                : null;
+              const selectedScheduleLines = selectedScheduleItem
+                ? getScheduleTimeLines(selectedScheduleItem)
+                : [];
               return (
                 <div className="relative text-[#202020] ">
-                  <div className="mt-0 grid w-full gap-4 lg:grid-cols-[minmax(0,455px)_minmax(320px,450px)] lg:items-start lg:justify-center lg:gap-x-2">
+                  <div className="mx-auto mt-0 w-full max-w-[455px]">
                     {/* Ліва колонка: статистика + дата */}
                     <div className="min-w-0">
-                      <div className="grid grid-cols-3 gap-2">
-                        <div className="flex h-12 items-center justify-center rounded-2xl bg-white px-3 text-center text-sm font-black text-[#77716b]">
-                          {workingDays} робочих
-                        </div>
+<div className="grid grid-cols-3 gap-0 sm:gap-2">
+  <div className="flex h-8 items-center justify-center whitespace-nowrap px-0.5 text-center text-[12px] font-black text-[#77716b] sm:h-12 sm:px-3 sm:text-sm">
+    {workingDays} робочих
+  </div>
 
-                        <div className="flex h-12 items-center justify-center rounded-2xl bg-[#fff1e8] px-3 text-center text-sm font-black text-[#ff5a00]">
-                          {daysOff} вихідних
-                        </div>
+  <div className="flex h-8 items-center justify-center whitespace-nowrap px-0.5 text-center text-[12px] font-black text-[#ff5a00] sm:h-12 sm:px-3 sm:text-sm">
+    {daysOff} вихідних
+  </div>
 
-                        <div className="flex h-12 items-center justify-center rounded-2xl bg-white px-3 text-center text-sm font-black text-[#77716b]">
-                          {totalBookings} записів
-                        </div>
-                      </div>
+  <div className="flex h-8 items-center justify-center whitespace-nowrap px-0.5 text-center text-[12px] font-black text-[#77716b] sm:h-12 sm:px-3 sm:text-sm">
+    {totalBookings} записів
+  </div>
+</div>
 
-                      <div className="mt-4 grid grid-cols-[64px_minmax(0,1fr)_64px] items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => shiftScheduleMonth(-1)}
-                          className="grid h-[60px] place-items-center rounded-2xl border border-[#eadbc9] bg-white text-[#202020] transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] hover:text-[#ff6200]"
-                          aria-label="Попередній місяць"
-                        >
-                          <ChevronRight className="h-5 w-5 rotate-180" />
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={resetScheduleMonthToToday}
-                          className="flex h-[60px] min-w-0 items-center justify-center gap-3 rounded-2xl border border-[#eadbc9] bg-white px-4 text-center transition "
-                        >
-                          <CalendarDays className="h-5 w-5 shrink-0 text-[#ff6200]" />
-
-                          <span className="truncate text-[18px] font-black capitalize tracking-[-0.03em] text-[#202020]">
-                            {getMonthTitle(scheduleMonthDate)}
-                          </span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => shiftScheduleMonth(1)}
-                          className="grid h-[60px] place-items-center rounded-2xl border border-[#eadbc9] bg-white text-[#202020] transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] hover:text-[#ff6200]"
-                          aria-label="Наступний місяць"
-                        >
-                          <ChevronRight className="h-5 w-5" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Права колонка: кнопки */}
-                    <div
-                      className={cn(
-                        "grid gap-3 lg:pt-0",
-                        scheduleMultiSelect
-                          ? "grid-cols-2 md:grid-cols-[1.35fr_0.85fr_0.85fr] lg:grid-cols-2"
-                          : "grid-cols-1 md:grid-cols-2 lg:grid-cols-1",
-                      )}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => applyStudioScheduleToMonth(monthDays)}
-                        disabled={bulkSaving}
-                        className={cn(
-                          "inline-flex min-h-[60px] w-full items-center justify-center gap-3 rounded-2xl border border-[#eadbc9] bg-white px-5 text-center text-[16px] font-black leading-tight text-[#202020] transition hover:border-[#ffd6bd] hover:bg-[#fff7f0] hover:text-[#ff6200] disabled:opacity-60",
-                          scheduleMultiSelect &&
-                            "col-span-2 md:col-span-1 lg:col-span-2",
-                        )}
-                      >
-                        <Building2 className="h-5 w-5 shrink-0" />
-
-                        <span>
-                          Автоматично заповнити
-                          <br />
-                          за графіком студії
-                        </span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!scheduleMultiSelect) {
-                            setScheduleMultiSelect(true);
-                            setSelectedScheduleDates([]);
-                            setScheduleEditorOpen(false);
-                          }
-                        }}
-                        className={cn(
-                          "inline-flex h-[56px] w-full items-center justify-center gap-2 rounded-2xl border px-3 text-[14px] font-black transition sm:h-[60px] sm:px-4 sm:text-[15px]",
-                          scheduleMultiSelect
-                            ? "border-[#ff6200] bg-[#fff1e8] text-[#ff6200]"
-                            : "border-[#eadbc9] bg-white text-[#202020] hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] hover:text-[#ff6200]",
-                        )}
-                      >
-                        <ClipboardPen className="h-4 w-4 shrink-0" />
-                        <span className="truncate">Множинний вибір</span>
-                      </button>
-
-                      {scheduleMultiSelect && (
-                        <button
-                          type="button"
-                          onClick={closeScheduleSelection}
-                          className="inline-flex h-[56px] w-full items-center justify-center gap-2 rounded-2xl border border-[#eadbc9] bg-white px-3 text-[14px] font-black text-[#202020] transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] hover:text-[#ff6200] sm:h-[60px] sm:px-4 sm:text-[15px]"
-                        >
-                          <X className="h-4 w-4 shrink-0" />
-                          <span className="truncate">Скасувати</span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="mt-5 hidden grid-cols-7 gap-3 lg:grid">
-                    {weekdayLabels.map((label, index) => {
-                      const weekdayKeys = currentMonthDays
-                        .filter((day) => day.weekdayIndex === index)
-                        .map((day) => day.dateKey);
-                      const allSelected =
-                        weekdayKeys.length > 0 &&
-                        weekdayKeys.every((key) =>
-                          selectedScheduleDates.includes(key),
-                        );
-
-                      return (
-                        <button
-                          key={label}
-                          type="button"
-                          onClick={() =>
-                            scheduleMultiSelect &&
-                            toggleScheduleWeekday(monthDays, index)
-                          }
-                          className={cn(
-                            "flex h-9 items-center justify-center gap-2 rounded-xl text-xs font-bold text-[#77716b]",
-                            scheduleMultiSelect && "hover:!bg-[#fff7f0]",
-                          )}
-                        >
-                          {scheduleMultiSelect && (
-                            <span
-                              className={cn(
-                                "grid h-7 w-7 place-items-center rounded-lg border transition",
-allSelected
-  ? "border-[#ff6200] bg-[#fff1e8] text-[#ff6200]"
-  : "border-[#eadbc9] bg-white text-transparent",
-                              )}
-                            >
-                              <Check className="h-4 w-4" />
-                            </span>
-                          )}
-                          {label}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  <div
-                    className={cn(
-                      "mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:hidden",
-                      scheduleMultiSelect &&
-                        selectedCount > 0 &&
-                        !scheduleEditorOpen
-                        ? "pb-28"
-                        : "pb-4 sm:pb-5",
-                    )}
-                  >
-{currentMonthDays.map((day) => {
-  const item = getVisibleScheduleItemForDay(day);
-  const isSelected = selectedScheduleDates.includes(day.dateKey);
-  const isPastDay = day.isPast;
-  const lines = getScheduleTimeLines(item);
-                      const isDayOff = !item.enabled;
-                      const isSpecialDay =
-                        day.isCurrentMonth &&
-                        day.item.isStudioDefault === false;
-                      return (
+                      <div className="grid grid-cols-[52px_minmax(0,1fr)_52px] items-center gap-2 sm:mt-4 sm:grid-cols-[64px_minmax(0,1fr)_64px]">
 <button
-  key={day.dateKey}
   type="button"
-  disabled={isPastDay}
-  onClick={() => toggleScheduleDate(day.dateKey)}
-className={cn(
-  "flex min-h-[74px] w-full items-center justify-between gap-3 rounded-[14px] border px-4 py-3 text-left transition-all duration-200",
-  isDayOff
-    ? "border-[#ffd6bd] bg-[#fff1e8] text-[#ff5a00]"
-    : "border-[#eadbc9] bg-white text-[#202020]",
-  isSelected &&
-    (scheduleMultiSelect
-      ? "border-[#ff6200] bg-[#fff1e8] text-[#ff6200] shadow-[0_0_0_2px_rgba(255,98,0,0.16)]"
-      : "border-[#ff6200] shadow-[0_0_0_2px_rgba(255,98,0,0.16)]"),
-  isPastDay &&
-    "pointer-events-none cursor-not-allowed border-[#e5e7eb] bg-[#f3f4f6] text-[#9ca3af] opacity-55 shadow-none",
-)}
-                        >
-                          <div className="flex min-w-0 items-center gap-3">
-                            {scheduleMultiSelect && (
+  onClick={() => shiftScheduleMonth(-1)}
+  className="
+    group grid h-[52px] place-items-center
+    text-[#202020] transition
+    hover:text-[#ff6200]
+    sm:h-[60px]
+  "
+  aria-label="Попередній місяць"
+>
+  <ChevronRight
+    className="
+      h-8 w-8 rotate-180
+      transition-transform duration-200 ease-out
+      group-hover:-translate-x-1
+      group-hover:scale-125
+      sm:h-7 sm:w-7
+    "
+  />
+</button>
+
+<button
+  type="button"
+  onClick={resetScheduleMonthToToday}
+  className="flex h-[52px] min-w-0 items-center justify-center gap-2 px-2 text-center transition sm:h-[60px] sm:gap-3 sm:px-4"
+>
+  <CalendarDays className="h-5 w-5 shrink-0 text-[#ff6200]" />
+
+  <span className="truncate text-[18px] font-black capitalize tracking-[-0.03em] text-[#202020] sm:text-[22px]">
+    {getMonthTitle(scheduleMonthDate)}
+  </span>
+</button>
+
+<button
+  type="button"
+  onClick={() => shiftScheduleMonth(1)}
+  className="
+    group grid h-[52px] place-items-center
+    rounded-full text-[#202020]
+    transition
+    hover:text-[#ff6200]
+    sm:h-[60px]
+  "
+  aria-label="Наступний місяць"
+>
+  <ChevronRight
+    className="
+      h-8 w-8
+      transition-transform duration-200 ease-out
+      group-hover:translate-x-1
+      group-hover:scale-125
+      sm:h-7 sm:w-7
+    "
+  />
+</button>
+                      </div>
+                    </div>
+
+                  </div>
+
+                  <div className="mx-auto mt-5 w-full overflow-hidden rounded-[26px] border border-[#eadbc9] bg-white shadow-[0_18px_50px_rgba(32,32,32,0.06)] sm:mt-3 sm:max-w-[600px] sm:rounded-[22px] lg:max-w-[640px]">
+                    <div className="px-2 pb-4 pt-4 sm:px-3 sm:pb-4 sm:pt-3">
+                      <div className="grid grid-cols-7 gap-1 sm:gap-1">
+                        {weekdayLabels.map((label) => (
+                          <div
+                            key={label}
+                            className="flex h-8 items-center justify-center rounded-xl text-[10px] font-black uppercase tracking-[0.08em] text-[#9b948d] sm:h-8 sm:text-[11px]"
+                          >
+                            {label}
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="mt-1 grid grid-cols-7 gap-x-1 gap-y-1.5 sm:mt-1 sm:gap-x-1 sm:gap-y-1">
+                        {monthDays.map((day) => {
+                          const item = getVisibleScheduleItemForDay(day);
+                          const isSelected = selectedScheduleDate === day.dateKey;
+                          const isDayOff = !item.enabled;
+                          const isSpecialDay =
+                            day.isCurrentMonth &&
+                            day.item.isStudioDefault === false;
+                          const isUnavailable =
+                            !day.isCurrentMonth || day.isPast;
+
+                          return (
+                            <button
+                              key={day.dateKey}
+                              type="button"
+                              disabled={isUnavailable}
+                              onClick={() => toggleScheduleDate(day.dateKey)}
+                              className={cn(
+                                "group relative flex h-11 items-center justify-center rounded-2xl text-center transition-all duration-200 sm:h-11 lg:h-12",
+                                !isUnavailable &&
+                                  "hover:bg-[#fff7f0] active:scale-95",
+                                isUnavailable && "cursor-default",
+                              )}
+                              aria-label={`${getScheduleDayTitle(day.date)}${
+                                isDayOff ? ", вихідний" : ""
+                              }`}
+                            >
                               <span
                                 className={cn(
-                                  "grid h-9 w-9 shrink-0 place-items-center rounded-xl border transition",
-isSelected
-  ? "border-[#ff6200] bg-[#fff1e8] text-[#ff6200]"
-  : "border-[#eadbc9] bg-white text-transparent",
+                                  "relative grid h-9 w-9 place-items-center rounded-full text-[14px] font-black transition-all duration-200 sm:h-9 sm:w-9 sm:text-[14px] lg:h-10 lg:w-10",
+                                  day.isCurrentMonth &&
+                                    !day.isPast &&
+                                    !isSelected &&
+                                    "text-[#202020] group-hover:text-[#ff6200]",
+                                  !day.isCurrentMonth && "text-[#d1cbc4]",
+                                  day.isPast &&
+                                    day.isCurrentMonth &&
+                                    "text-[#c2bbb4]",
+                                  day.isToday &&
+                                    !isSelected &&
+                                    "ring-2 ring-[#ff6200]/35 text-[#ff6200]",
+                                  isSelected &&
+                                    "bg-[#ff6200] text-white",
                                 )}
                               >
-                                <Check className="h-5 w-5" />
+                                {day.dayNumber}
+
                               </span>
-                            )}
 
-                            <div className="min-w-0">
-                              <p
-                                className={cn(
-                                  "flex items-center gap-1.5 text-xs font-black capitalize",
-                                  isDayOff
-                                    ? "text-[#ff5a00]"
-                                    : "text-[#77716b]",
+                              {isSpecialDay && !isSelected && !day.isPast && (
+                                <span className="absolute bottom-0.5 h-1.5 w-1.5 rounded-full bg-[#ff6200] sm:bottom-1" />
+                              )}
+
+                              {day.bookingsCount > 0 &&
+                                !isSelected &&
+                                !day.isPast && (
+                                  <span className="absolute right-0 top-0 grid h-4 min-w-4 place-items-center rounded-full bg-[#202020] px-1 text-[8px] font-black text-white sm:right-1 sm:top-0.5">
+                                    {day.bookingsCount}
+                                  </span>
                                 )}
-                              >
-                                <CalendarDays className="h-3.5 w-3.5" />
-                                {day.weekday}
-                              </p>
-                              <p className="mt-1 text-sm font-black">
-                                {day.dayNumber}{" "}
-                                {new Intl.DateTimeFormat("uk-UA", {
-                                  month: "long",
-                                }).format(day.date)}
-                              </p>
-                            </div>
-                          </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
 
-                          <div
-                            className={cn(
-                              "shrink-0 text-right text-xs font-black leading-5",
-                              isDayOff ? "text-[#ff5a00]" : "text-[#202020]",
+                    <div className="border-t border-[#eee8e0] bg-[#fbfaf8] px-3 py-4 sm:px-4 sm:py-3">
+<div className="mb-3 hidden items-center gap-2 text-xs font-bold text-[#9b948d] sm:flex sm:text-sm">
+  <Clock className="h-4 w-4 shrink-0 text-[#ff6200]" />
+
+  <span>
+    Оберіть день, а потім натисніть на години для налаштування.
+  </span>
+</div>
+
+                      {selectedDay ? (
+                        <button
+                          type="button"
+                          onClick={openScheduleEditor}
+                          className="group flex w-full items-center gap-3 rounded-[18px] border border-[#eadbc9] bg-white px-3 py-3 text-left transition hover:border-[#ffb784] hover:bg-[#fff7f0] active:scale-[0.99] sm:gap-5 sm:px-5 sm:py-4"
+                          aria-label={`Налаштувати графік: ${selectedLabel}`}
+                        >
+                          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#fff1e8] text-[#ff6200] sm:h-12 sm:w-12">
+                            {selectedScheduleItem?.enabled ? (
+                              <Clock className="h-5 w-5" />
+                            ) : (
+                              <Coffee className="h-5 w-5" />
                             )}
-                          >
-                            {lines.map((line, lineIndex) => {
-                              const LineIcon = isDayOff
-                                ? XCircle
-                                : lineIndex === 1
-                                  ? Coffee
-                                  : Clock;
+                          </span>
+<span className="min-w-0 flex-1">
+  <span className="block truncate text-sm font-black capitalize text-[#202020] sm:text-base">
+    {new Intl.DateTimeFormat("uk-UA", {
+      weekday: "long",
+    }).format(selectedDay.date)}
+    , {selectedDay.dayNumber}
+  </span>
 
-                              return (
-                                <p
-                                  key={line}
-                                  className="flex items-center justify-end gap-1.5"
-                                >
-                                  <LineIcon className="h-3.5 w-3.5" />
-                                  {line}
-                                </p>
-                              );
-                            })}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-<div className="mt-3 hidden grid-cols-7 gap-1 lg:grid">
-  {monthDays.map((day) => {
-    const item = getVisibleScheduleItemForDay(day);
-    const isSelected = selectedScheduleDates.includes(
-      day.dateKey,
-    );
-    const lines = getScheduleTimeLines(item);
-    const isDayOff = !item.enabled;
-    const isSpecialDay = item.isStudioDefault === false;
-    const isPastDay = day.isPast;
-
-    return (
-      <button
-        key={day.dateKey}
-        type="button"
-        disabled={!day.isCurrentMonth || isPastDay}
-        onClick={() =>
-          day.isCurrentMonth &&
-          !isPastDay &&
-          toggleScheduleDate(day.dateKey)
-        }
-        className={cn(
-          "relative flex min-h-[118px] flex-col items-center justify-start overflow-hidden rounded-[12px] border p-3 text-center transition-all duration-200",
-
-          day.isCurrentMonth && !isPastDay
-            ? "hover:-translate-y-0.5 hover:border-[#ffb784]"
-            : "cursor-default border-[#eadbc9] bg-transparent opacity-45",
-
-          day.isCurrentMonth &&
-            !isPastDay &&
-            (isDayOff
-              ? "border-[#ffd6bd] bg-[#fff1e8] text-[#ff5a00]"
-              : "border-[#eadbc9] bg-white text-[#202020]"),
-
-          isSpecialDay &&
-            !isPastDay &&
-            "border-[#ff6200] bg-[#fff7f0] shadow-[0_0_0_2px_rgba(255,98,0,0.12)]",
-
-          isSelected &&
-            !isPastDay &&
-            (scheduleMultiSelect
-              ? "border-[#ff6200] bg-[#fff1e8] text-[#ff6200] shadow-[0_0_0_2px_rgba(255,98,0,0.16)]"
-              : "border-[#ff6200] bg-[#fff7f0] shadow-[0_0_0_2px_rgba(255,98,0,0.18)]"),
-
-          isPastDay &&
-            "pointer-events-none cursor-not-allowed border-[#e5e7eb] bg-[#f3f4f6] text-[#9ca3af] opacity-55 shadow-none",
-        )}
-      >
-                        <span
-  className={cn(
-    "grid h-6 min-w-6 place-items-center rounded-full px-1 text-sm font-black",
-    day.isToday && !isPastDay && "bg-[#ff6200] text-white",
-    !day.isToday &&
-      !isPastDay &&
-      (isDayOff
-        ? "text-[#ff5a00]"
-        : "text-[#202020]"),
-    !day.isCurrentMonth && "text-[#aaa19a]",
-    isPastDay && "text-[#9ca3af] line-through",
-  )}
->
-  {day.dayNumber}
+  <span className="mt-1 block text-xs font-bold text-[#9b948d]">
+    {selectedDay.isToday
+      ? "Сьогодні"
+      : selectedDay.item.isStudioDefault === false
+        ? "Індивідуальний графік"
+        : "Графік майстра"}
+  </span>
 </span>
 
-                          {isSpecialDay && (
-                            <span className="mt-1 inline-flex items-center justify-center rounded-full bg-[#ff6200] px-1.5 py-0.5 text-[9px] font-black uppercase leading-none tracking-wide text-white shadow-sm">
-                              Індивідуально
+                          <span
+                            className={cn(
+                              "shrink-0 text-right font-black",
+                              selectedScheduleItem?.enabled
+                                ? "text-[#202020]"
+                                : "text-[#ff6200]",
+                            )}
+                          >
+                            <span className="block text-sm sm:text-base">
+                              {selectedScheduleLines[0]}
                             </span>
-                          )}
+                            {selectedScheduleItem?.enabled &&
+                              selectedScheduleLines[1] && (
+                                <span className="mt-0.5 hidden text-[11px] font-bold text-[#9b948d] min-[380px]:block">
+                                  {selectedScheduleLines[1]}
+                                </span>
+                              )}
+                          </span>
 
-                          {!isSpecialDay && (
-                            <span className="mt-2 h-px w-14 bg-[#eadbc9]" />
-                          )}
-
-                          <div className="mt-auto space-y-1 pb-2 text-[12px] font-black leading-tight">
-                            {lines.map((line, lineIndex) => {
-                              const LineIcon = isDayOff
-                                ? XCircle
-                                : lineIndex === 1
-                                  ? Coffee
-                                  : Clock;
-
-                              return (
-                                <p
-                                  key={line}
-                                  className="flex items-center justify-center gap-1.5"
-                                >
-                                  <LineIcon className="h-3.5 w-3.5" />
-                                  {line}
-                                </p>
-                              );
-                            })}
-                          </div>
-
-                          {day.bookingsCount > 0 && (
-                            <span className="absolute right-2 top-2 rounded-full bg-[#41a85f] px-1.5 py-0.5 text-[10px] font-black text-white shadow-sm">
-                              {day.bookingsCount}
-                            </span>
-                          )}
+                          <ChevronRight className="h-5 w-5 shrink-0 text-[#c2bbb4] transition group-hover:translate-x-0.5 group-hover:text-[#ff6200]" />
                         </button>
-                      );
-                    })}
+                      ) : (
+                        <div className="rounded-[18px] border border-dashed border-[#e1d8cd] bg-white px-4 py-5 text-center text-sm font-bold text-[#9b948d]">
+                          У цьому місяці немає доступного дня для редагування.
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  {scheduleMultiSelect &&
-                    selectedCount > 0 &&
-                    !scheduleEditorOpen && (
-                      <div className="fixed inset-x-0 bottom-0 z-[10060] border-t border-[#eadbc9] bg-[#fbfaf8]/95 px-3 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_34px_rgba(15,23,42,0.12)] backdrop-blur sm:sticky sm:inset-x-auto sm:bottom-0 sm:mt-5 sm:rounded-[18px] sm:border sm:bg-white/95 sm:p-3">
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                          <div className="flex items-center gap-3">
-                            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#41a85f] text-white">
-                              <Check className="h-5 w-5" />
-                            </span>
-                            <div className="min-w-0">
-                              <p className="text-sm font-black text-[#202020]">
-                                {"\u0412\u0438\u0431\u0440\u0430\u043d\u043e"}{" "}
-                                {selectedCount} {"\u0434\u043d\u0456\u0432"}
-                              </p>
-                              <p className="truncate text-xs font-bold text-[#77716b]">
-                                {selectedLabel}
-                              </p>
-                            </div>
-                          </div>
-
-                          <Button
-                            variant="primary"
-                            onClick={openScheduleEditorForSelectedDates}
-                            className="h-12 w-full sm:w-auto sm:px-5"
-                          >
-                            <Clock className="h-4 w-4" />
-                            {
-                              "\u0412\u0441\u0442\u0430\u043d\u043e\u0432\u0438\u0442\u0438 \u0433\u0440\u0430\u0444\u0456\u043a"
-                            }
-                            <span className="hidden min-[390px]:inline">
-                              {
-                                "\u043d\u0430 \u0432\u0438\u0431\u0440\u0430\u043d\u0456 \u0434\u0430\u0442\u0438"
-                              }
-                            </span>
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-
-                  {scheduleEditorOpen && selectedCount > 0 && (
+                  {scheduleEditorOpen && selectedDay && (
                     <Modal
-                      open={scheduleEditorOpen && selectedCount > 0}
+                      open={scheduleEditorOpen && Boolean(selectedDay)}
                       onClose={closeScheduleEditorWindow}
-                      title={
-                        selectedCount === 1
-                          ? "Налаштування дня"
-                          : `Вибрано ${selectedCount} днів`
-                      }
+                      title="Налаштування дня"
                       subtitle={selectedLabel}
                       badge="Графік"
                       icon={Clock}
@@ -4192,27 +3792,28 @@ isSelected
                       zIndexClass="z-[10020]"
                       footer={
                         <div className="grid grid-cols-2 gap-3">
-                          <Button
-                            variant="primary"
-                            onClick={() =>
-                              applyBulkSchedule(bulkScheduleDraft.enabled)
-                            }
-                            disabled={bulkSaving}
-                            className="h-[54px] w-full"
-                          >
-                            <Save className="h-4 w-4" />
-                            {bulkSaving ? "Зберігаємо" : "Зберегти"}
-                          </Button>
-
-                          <Button
+                                                    <Button
                             variant="secondary"
                             onClick={closeScheduleEditorWindow}
-                            disabled={bulkSaving}
+                            disabled={scheduleSaving}
                             className="h-[54px] w-full"
                           >
                             <X className="h-4 w-4" />
                             Скасувати
                           </Button>
+                          <Button
+                            variant="primary"
+                            onClick={() =>
+                              applySchedule(scheduleDraft.enabled)
+                            }
+                            disabled={scheduleSaving}
+                            className="h-[54px] w-full"
+                          >
+                            <Save className="h-4 w-4" />
+                            {scheduleSaving ? "Зберігаємо" : "Зберегти"}
+                          </Button>
+
+
                         </div>
                       }
                     >
@@ -4222,14 +3823,14 @@ isSelected
                             <div
                               className={cn(
                                 "grid grid-cols-2 gap-2 sm:items-end",
-                                bulkScheduleDraft.enabled &&
+                                scheduleDraft.enabled &&
                                   "sm:grid-cols-[1.35fr_0.82fr_0.82fr]",
                               )}
                             >
                               <button
                                 type="button"
                                 onClick={() =>
-                                  setBulkScheduleDraft((prev) => ({
+                                  setScheduleDraft((prev) => ({
                                     ...prev,
                                     enabled: !prev.enabled,
                                   }))
@@ -4237,14 +3838,14 @@ isSelected
                                 className="col-span-2 flex h-[52px] w-full items-center justify-between gap-3 rounded-xl border border-[#eadbc9] bg-white px-4 text-sm font-black text-[#202020] transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] sm:col-span-1"
                               >
                                 <span className="flex items-center gap-2">
-                                  {bulkScheduleDraft.enabled ? (
-                                    <CalendarCheck className="h-4 w-4 shrink-0 text-[#41a85f]" />
+                                  {scheduleDraft.enabled ? (
+                                    <CalendarCheck className="h-4 w-4 shrink-0 text-[#ff6200]" />
                                   ) : (
                                     <XCircle className="h-4 w-4 shrink-0 text-[#8d8177]" />
                                   )}
 
                                   <span>
-                                    {bulkScheduleDraft.enabled
+                                    {scheduleDraft.enabled
                                       ? "Робочий"
                                       : "Вихідний"}
                                   </span>
@@ -4253,15 +3854,15 @@ isSelected
                                 <span
                                   className={cn(
                                     "relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-all duration-300",
-                                    bulkScheduleDraft.enabled
-                                      ? "bg-[#41a85f]"
-                                      : "bg-[#c9c2b9]",
+scheduleDraft.enabled
+  ? "bg-[#22c55e]"
+  : "bg-[#c9c2b9]",
                                   )}
                                 >
                                   <span
                                     className={cn(
                                       "inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-300",
-                                      bulkScheduleDraft.enabled
+                                      scheduleDraft.enabled
                                         ? "translate-x-6"
                                         : "translate-x-1",
                                     )}
@@ -4269,7 +3870,7 @@ isSelected
                                 </span>
                               </button>
 
-                              {bulkScheduleDraft.enabled &&
+                              {scheduleDraft.enabled &&
                                 [
                                   ["start", "Початок", Clock],
                                   ["end", "Кінець", Timer],
@@ -4282,15 +3883,15 @@ isSelected
 
                                     <div className="flex h-[52px] items-center overflow-hidden rounded-xl border border-[#eadbc9] bg-white px-2 transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0]">
                                       <TimeSelect
-                                        value={bulkScheduleDraft[field]}
+                                        value={scheduleDraft[field]}
                                         label={label}
                                         dayLabel={selectedLabel}
                                         placeholder="--:--"
                                         onChange={(value) =>
-                                          updateBulkScheduleField(field, value)
+                                          updateScheduleField(field, value)
                                         }
                                         onCommit={(value) =>
-                                          updateBulkScheduleField(field, value)
+                                          updateScheduleField(field, value)
                                         }
                                         className="h-full justify-center text-base"
                                       />
@@ -4299,43 +3900,44 @@ isSelected
                                 ))}
                             </div>
 
-                            {bulkScheduleDraft.enabled && (
+                            {scheduleDraft.enabled && (
                               <div
                                 className={cn(
                                   "grid grid-cols-2 gap-2 sm:items-end",
-                                  bulkHasBreak &&
+                                  scheduleHasBreak &&
                                     "sm:grid-cols-[1.35fr_0.82fr_0.82fr]",
                                 )}
                               >
                                 <button
                                   type="button"
                                   onClick={() =>
-                                    updateBulkScheduleBreak(!bulkHasBreak)
+                                    updateScheduleBreak(!scheduleHasBreak)
                                   }
                                   className="col-span-2 flex h-[52px] w-full items-center justify-between gap-3 rounded-xl border border-[#eadbc9] bg-white px-4 text-sm font-black text-[#202020] transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] sm:col-span-1"
                                 >
                                   <span className="flex items-center gap-2">
-                                    {bulkHasBreak ? (
-                                      <Coffee className="h-4 w-4 text-[#41a85f]" />
+                                    {scheduleHasBreak ? (
+                                      <Coffee className="h-4 w-4 text-[#ff6200]" />
                                     ) : (
                                       <Coffee className="h-4 w-4 text-[#8d8177]" />
                                     )}
 
-                                    {bulkHasBreak ? "Перерва" : "Без перерви"}
+                                    {scheduleHasBreak ? "Перерва" : "Без перерви"}
                                   </span>
 
                                   <span
                                     className={cn(
                                       "relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-all duration-300",
-                                      bulkHasBreak
-                                        ? "bg-[#41a85f]"
-                                        : "bg-[#c9c2b9]",
+                                      scheduleHasBreak
+                    
+  ? "bg-[#22c55e]"
+  : "bg-[#c9c2b9]",
                                     )}
                                   >
                                     <span
                                       className={cn(
                                         "inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-300",
-                                        bulkHasBreak
+                                        scheduleHasBreak
                                           ? "translate-x-6"
                                           : "translate-x-1",
                                       )}
@@ -4343,7 +3945,7 @@ isSelected
                                   </span>
                                 </button>
 
-                                {bulkHasBreak &&
+                                {scheduleHasBreak &&
                                   [
                                     ["breakStart", "Перерва з", Coffee],
                                     ["breakEnd", "Перерва до", Coffee],
@@ -4356,18 +3958,18 @@ isSelected
 
                                       <div className="flex h-[52px] items-center overflow-hidden rounded-xl border border-[#eadbc9] bg-white px-2 transition hover:!border-[#ffd6bd] hover:!bg-[#fff7f0]">
                                         <TimeSelect
-                                          value={bulkScheduleDraft[field]}
+                                          value={scheduleDraft[field]}
                                           label={label}
                                           dayLabel={selectedLabel}
                                           placeholder="--:--"
                                           onChange={(value) =>
-                                            updateBulkScheduleField(
+                                            updateScheduleField(
                                               field,
                                               value,
                                             )
                                           }
                                           onCommit={(value) =>
-                                            updateBulkScheduleField(
+                                            updateScheduleField(
                                               field,
                                               value,
                                             )

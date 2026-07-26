@@ -1,12 +1,9 @@
 // Bookings.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
 import { useStudio } from "../../context/studio/useStudio";
 import Calendar from "../../components/Calendar";
 import StudioBookingWidget from "../../components/StudioBookingWidget";
 import BookingSuccessModal from "../../components/BookingSuccessModal";
-import { uk } from "date-fns/locale/uk";
 import {
   Sparkles,
   List,
@@ -39,7 +36,6 @@ import {
   CircleCheck,
   CopyCheck,
   ListTodo,
-  CalendarCheck,
   ClipboardPen,
   PhoneCall,
   Briefcase,
@@ -129,24 +125,6 @@ function addDays(d, n) {
 
 function startOfDay(d) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
-}
-
-function endOfDay(d) {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
-}
-
-function startOfWeekMonday(d) {
-  const x = startOfDay(d);
-  const day = x.getDay();
-  const mondayIndex = (day + 6) % 7;
-  x.setDate(x.getDate() - mondayIndex);
-  return x;
-}
-
-function isDateInRange(dateStr, from, to) {
-  const d = new Date(`${dateStr}T00:00:00`);
-  if (Number.isNaN(d.getTime())) return false;
-  return d >= from && d <= to;
 }
 
 function parseTimeToHHMM(timeStr) {
@@ -513,7 +491,21 @@ function Button({
   ...props
 }) {
   const variants = {
-    primary: "bg-[#ff5a00] text-white hover:bg-[#ef4f00]",
+ primary:
+  `
+    bg-[#202020] text-white
+    
+    transition-all duration-300
+    hover:scale-[1.015]
+    hover:bg-[#ff6200]
+    
+    active:scale-[0.98]
+    disabled:pointer-events-none
+    disabled:bg-[#f1ebe4]
+    disabled:text-[#aaa19a]
+    disabled:shadow-none
+    disabled:opacity-100
+  `,
     secondary:
       "border border-[#eadbc9] bg-white text-[#202020] hover:border-[#ffd6bd] hover:bg-[#fff7f0]",
     danger:
@@ -640,7 +632,7 @@ function BookingFilterSelect({
     dropDirection === "top" ? "bottom-full mb-2" : "top-full mt-2";
 
   return (
-    <div ref={selectRef} className="relative min-w-0 w-full">
+    <div ref={selectRef} className="relative w-full min-w-0">
       <button
         type="button"
         onClick={handleToggle}
@@ -1485,11 +1477,7 @@ export default function Bookings() {
   const [showScrollHint, setShowScrollHint] = useState(true);
   const [calendarDayKey, setCalendarDayKey] = useState(null);
   const [filter, setFilter] = useState("all");
-  const [dateFilter, setDateFilter] = useState("all");
   const [bookingFilterOpen, setBookingFilterOpen] = useState(false);
-  const [bookingDateFilterOpen, setBookingDateFilterOpen] = useState(false);
-  const [customDateFrom, setCustomDateFrom] = useState(null);
-  const [customDateTo, setCustomDateTo] = useState(null);
   const [manualBookingError, setManualBookingError] = useState("");
   const [manualBookingSaving, setManualBookingSaving] = useState(false);
   const [socketState, setSocketState] = useState(
@@ -1852,11 +1840,8 @@ export default function Bookings() {
     return () => window.clearTimeout(timer);
   }, [loading]);
   const calendarScrollRef = useRef(null);
-  const datePickerFromRef = useRef(null);
   const manualTimeRowRef = useRef(null);
-  const datePickerToRef = useRef(null);
   const bookingFilterRef = useRef(null);
-  const bookingDateFilterRef = useRef(null);
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -1865,13 +1850,6 @@ export default function Bookings() {
         !bookingFilterRef.current.contains(e.target)
       ) {
         setBookingFilterOpen(false);
-      }
-
-      if (
-        bookingDateFilterRef.current &&
-        !bookingDateFilterRef.current.contains(e.target)
-      ) {
-        setBookingDateFilterOpen(false);
       }
     }
 
@@ -2055,58 +2033,8 @@ export default function Bookings() {
       }
     }
 
-    const today = startOfDay(new Date());
-
-    if (dateFilter === "today") {
-      const from = startOfDay(today);
-      const to = endOfDay(today);
-
-      return result.filter((b) => isDateInRange(b.date, from, to));
-    }
-
-    if (dateFilter === "week") {
-      const from = startOfWeekMonday(today);
-      const to = endOfDay(addDays(from, 6));
-
-      return result.filter((b) => isDateInRange(b.date, from, to));
-    }
-
-    if (dateFilter === "nextWeek") {
-      const from = addDays(startOfWeekMonday(today), 7);
-      const to = endOfDay(addDays(from, 6));
-
-      return result.filter((b) => isDateInRange(b.date, from, to));
-    }
-
-    if (dateFilter === "month") {
-      const from = new Date(today.getFullYear(), today.getMonth(), 1);
-      const to = endOfDay(
-        new Date(today.getFullYear(), today.getMonth() + 1, 0),
-      );
-
-      return result.filter((b) => isDateInRange(b.date, from, to));
-    }
-
-    if (dateFilter === "custom") {
-      const from = customDateFrom ? startOfDay(customDateFrom) : null;
-
-      const to = customDateTo ? endOfDay(customDateTo) : null;
-
-      return result.filter((b) => {
-        if (!b.date) return false;
-
-        const d = new Date(`${b.date}T00:00:00`);
-        if (Number.isNaN(d.getTime())) return false;
-
-        if (from && d < from) return false;
-        if (to && d > to) return false;
-
-        return true;
-      });
-    }
-
     return result;
-  }, [filter, split, dateFilter, customDateFrom, customDateTo]);
+  }, [filter, split]);
 
   const [collapsedGroupsByFilter, setCollapsedGroupsByFilter] = useState({});
 
@@ -2280,42 +2208,16 @@ export default function Bookings() {
     [filterCounts],
   );
 
-  const bookingDateOptions = [
-    { key: "all", label: "Увесь період", icon: CalendarDays },
-    { key: "today", label: "Сьогодні", icon: CalendarCheck },
-    { key: "week", label: "Цей тиждень", icon: CalendarDays },
-    { key: "nextWeek", label: "Наступний тиждень", icon: ChevronRight },
-    { key: "month", label: "Цей місяць", icon: CalendarDays },
-    { key: "custom", label: "Період", icon: CalendarDays },
-  ];
-
   const selectedStatusFilter =
     bookingStatusOptions.find((item) => item.key === filter) ||
     bookingStatusOptions[0];
 
-  const selectedDateFilter =
-    bookingDateOptions.find((item) => item.key === dateFilter) ||
-    bookingDateOptions[0];
-
-  const selectedDateFilterLabel =
-    dateFilter === "custom"
-      ? `${customDateFrom ? `від ${formatDateUA(customDateFrom)}` : "від не вибрано"} ${
-          customDateTo ? `до ${formatDateUA(customDateTo)}` : "до не вибрано"
-        }`
-      : selectedDateFilter?.label || "Увесь період";
   const SelectedStatusHintIcon = selectedStatusFilter?.icon || ListTodo;
-  const SelectedDateHintIcon = selectedDateFilter?.icon || CalendarDays;
   function resetStatusFilter() {
     setFilter("all");
     setVisibleBookingCount(10);
   }
 
-  function resetDateFilter() {
-    setDateFilter("all");
-    setCustomDateFrom(null);
-    setCustomDateTo(null);
-    setVisibleBookingCount(10);
-  }
   const liveStatusUi = useMemo(() => {
     const base =
       "inline-flex items-center gap-2 rounded-full border border-[var(--border-soft)] bg-white px-3 py-1.5 text-[13px] font-semibold shadow-[var(--shadow-card)]";
@@ -2568,7 +2470,7 @@ export default function Bookings() {
                   </h2>
 
                   <p className="mt-1 max-w-[620px] text-[13px] font-medium leading-5 text-[var(--color-caramel)] sm:text-sm sm:leading-6">
-                    Переглядайте записи за статусами, датою та типом бронювання.
+                    Переглядайте записи за статусами та типом бронювання.
                   </p>
                 </div>
               </div>
@@ -2626,137 +2528,38 @@ export default function Bookings() {
               </div>
             }
           >
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <BookingFilterSelect
-                label="Статус"
-                value={filter}
-                options={bookingStatusOptions}
-                open={bookingFilterOpen}
-                setOpen={(value) => {
-                  setBookingFilterOpen(value);
-                  setBookingDateFilterOpen(false);
-                }}
-                selectRef={bookingFilterRef}
-                onChange={(nextValue) => {
-                  setFilter(nextValue);
-                  setVisibleBookingCount(10);
-                }}
-              />
-
-              <BookingFilterSelect
-                label="Дата"
-                value={dateFilter}
-                options={bookingDateOptions}
-                open={bookingDateFilterOpen}
-                setOpen={(value) => {
-                  setBookingDateFilterOpen(value);
-                  setBookingFilterOpen(false);
-                }}
-                selectRef={bookingDateFilterRef}
-                onChange={(nextValue) => {
-                  setDateFilter(nextValue);
-                  setVisibleBookingCount(10);
-                }}
-              />
-            </div>
-            {(filter !== "all" || dateFilter !== "all") && (
+<div className="mx-auto w-[320px] max-w-full sm:mx-0">
+  <BookingFilterSelect
+    label="Статус"
+    value={filter}
+    options={bookingStatusOptions}
+    open={bookingFilterOpen}
+    setOpen={setBookingFilterOpen}
+    selectRef={bookingFilterRef}
+    onChange={(nextValue) => {
+      setFilter(nextValue);
+      setVisibleBookingCount(10);
+    }}
+  />
+</div>
+            {filter !== "all" && (
               <div className="mt-3 flex flex-wrap items-center gap-2">
-                {filter !== "all" && (
-                  <span className="inline-flex items-center gap-1 rounded-full border border-[#ffd6bd] bg-[#fffaf6] px-3 py-1.5 text-xs font-black text-[#ff6200] shadow-sm">
-                    <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[#fff1e8] text-[#ff6200]">
-                      <SelectedStatusHintIcon className="h-3.5 w-3.5" />
-                    </span>
-
-                    {selectedStatusFilter?.label}
-
-                    <button
-                      type="button"
-                      onClick={resetStatusFilter}
-                      className="-mr-1 grid h-5 w-5 place-items-center rounded-full text-[#ff6200] transition hover:bg-[#fff1e8] active:scale-95"
-                      aria-label="Очистити фільтр статусу"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
+                <span className="inline-flex items-center gap-1 rounded-full border border-[#ffd6bd] bg-[#fffaf6] px-3 py-1.5 text-xs font-black text-[#ff6200] shadow-sm">
+                  <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[#fff1e8] text-[#ff6200]">
+                    <SelectedStatusHintIcon className="h-3.5 w-3.5" />
                   </span>
-                )}
 
-                {dateFilter !== "all" && (
-                  <span className="inline-flex items-center gap-2 rounded-full border border-[#ffd6bd] bg-[#fffaf6] px-3 py-1.5 text-xs font-black text-[#ff6200] shadow-sm">
-                    <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[#fff1e8] text-[#ff6200]">
-                      <SelectedDateHintIcon className="h-3.5 w-3.5" />
-                    </span>
+                  {selectedStatusFilter?.label}
 
-                    {selectedDateFilterLabel}
-
-                    <button
-                      type="button"
-                      onClick={resetDateFilter}
-                      className="-mr-1 grid h-5 w-5 place-items-center rounded-full text-[#ff6200] transition hover:bg-[#fff1e8] active:scale-95"
-                      aria-label="Очистити фільтр дати"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  </span>
-                )}
-              </div>
-            )}
-
-            {dateFilter === "custom" && (
-              <div className="mt-4 border-t border-[#eadbc9] pt-4">
-                <div className="flex justify-center">
-                  <div className="w-full max-w-[320px] rounded-[24px] border border-[#eadbc9] bg-[#fffaf6] p-3 shadow-[0_10px_28px_rgba(15,23,42,0.05)]">
-                    <div className="flex gap-2 max-[639px]:items-end">
-                      {[
-                        {
-                          label: "Дата від",
-                          value: customDateFrom,
-                          onChange: setCustomDateFrom,
-                          ref: datePickerFromRef,
-                        },
-                        {
-                          label: "Дата до",
-                          value: customDateTo,
-                          onChange: setCustomDateTo,
-                          ref: datePickerToRef,
-                        },
-                      ].map((item) => (
-                        <label key={item.label} className="group block">
-                          <span className="mb-0.5 block text-[9px] font-bold uppercase tracking-[0.1em] text-[#aaa19a]">
-                            {item.label}
-                          </span>
-
-                          <div className="relative">
-                            <CalendarDays className="pointer-events-none absolute left-2.5 top-1/2 z-10 h-3.5 w-3.5 -translate-y-1/2 text-[#ff6200]" />
-
-                            <DatePicker
-                              ref={item.ref}
-                              selected={item.value}
-                              onChange={(date) => {
-                                item.onChange(date);
-                                setVisibleBookingCount(10);
-
-                                setTimeout(() => {
-                                  item.ref.current?.setOpen(false);
-                                }, 0);
-                              }}
-                              locale={uk}
-                              dateFormat="dd.MM.yyyy"
-                              calendarStartDay={1}
-                              shouldCloseOnSelect={true}
-                              placeholderText="Оберіть дату"
-                              readOnly
-                              inputMode="none"
-                              onKeyDown={(e) => e.preventDefault()}
-                              popperPlacement="top-start"
-                              popperClassName="z-[9999] datepicker-popper-mobile"
-                              className="h-9 w-full rounded-xl border border-[#eadbc9] bg-white pl-8 pr-2 text-[12px] font-bold text-[#202020] shadow-sm outline-none transition-all duration-200 hover:border-[#ffd6bd] focus:border-[#ff6200] focus:ring-4 focus:ring-[#ff6200]/10"
-                            />
-                          </div>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+                  <button
+                    type="button"
+                    onClick={resetStatusFilter}
+                    className="-mr-1 grid h-5 w-5 place-items-center rounded-full text-[#ff6200] transition hover:bg-[#fff1e8] active:scale-95"
+                    aria-label="Очистити фільтр статусу"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </span>
               </div>
             )}
           </SectionCard>
@@ -3621,13 +3424,12 @@ const phone =
               rounded-[15px] border border-[#ef4444]/45
               bg-white px-3
               text-sm font-black text-[#ef4444]
-              shadow-[0_10px_22px_rgba(239,68,68,0.08)]
+      
               transition-all duration-300
               hover:scale-[1.015]
               hover:border-[#ef4444]
-              hover:bg-[#ef4444]
-              hover:text-white
-              hover:shadow-[0_12px_26px_rgba(239,68,68,0.22)]
+              
+             
               active:scale-[0.98]
               disabled:pointer-events-none
               disabled:border-[#eadfce]
@@ -3657,11 +3459,11 @@ const phone =
             inline-flex h-12 min-w-0 items-center justify-center gap-2
             rounded-[15px] bg-[#202020] px-3
             text-sm font-black text-white
-            shadow-[0_12px_26px_rgba(15,15,15,0.18)]
+          
             transition-all duration-300
             hover:scale-[1.015]
             hover:bg-[#ff6200]
-            hover:shadow-[0_14px_30px_rgba(255,98,0,0.24)]
+           
             active:scale-[0.98]
             disabled:pointer-events-none
             disabled:bg-[#f1ebe4]

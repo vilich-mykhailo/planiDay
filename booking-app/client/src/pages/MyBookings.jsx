@@ -198,8 +198,21 @@ function Button({
   ...props
 }) {
   const variants = {
-    primary:
-      "bg-[var(--color-ink)] text-white hover:bg-[var(--color-ink-soft)] shadow-[var(--shadow-button)]",
+primary:
+  `
+    bg-[#202020] text-white
+    
+    transition-all duration-300
+    hover:scale-[1.015]
+    hover:bg-[#ff6200]
+    
+    active:scale-[0.98]
+    disabled:pointer-events-none
+    disabled:bg-[#f1ebe4]
+    disabled:text-[#aaa19a]
+    disabled:shadow-none
+    disabled:opacity-100
+  `,
     secondary:
       "bg-white border border-[var(--color-cream)] text-[var(--color-ink)] hover:bg-[var(--color-cream)] hover:border-[var(--color-mist)]",
     danger:

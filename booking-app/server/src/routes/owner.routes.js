@@ -446,10 +446,33 @@ item.allBookings.push({
 const manualClients = await prisma.studioClient.findMany({
   where: { studioId },
   orderBy: { createdAt: "desc" },
+
+  include: {
+    account: {
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        name: true,
+        phone: true,
+        email: true,
+        birthDate: true,
+        photoUrl: true,
+        createdAt: true,
+        isVip: true,
+        vipSince: true,
+      },
+    },
+  },
 });
 
 for (const client of manualClients) {
   const accountId = client.accountId || null;
+
+  const resolvedPhotoUrl =
+    client.source === "MANUAL"
+      ? client.photoUrl || client.account?.photoUrl || ""
+      : client.account?.photoUrl || client.photoUrl || "";
 
 if (accountId && map.has(accountId)) {
   const existing = map.get(accountId);
@@ -457,13 +480,44 @@ if (accountId && map.has(accountId)) {
   map.set(accountId, {
     ...existing,
 
-    firstName: existing.firstName || client.firstName || "",
-    lastName: existing.lastName || client.lastName || "",
-    phone: existing.phone || client.phone || null,
-    email: hideManualEmail(existing.email) || hideManualEmail(client.email),
-    birthDate: existing.birthDate || client.birthDate || null,
-    photoUrl: existing.photoUrl || client.photoUrl || "",
-    registeredAt: existing.registeredAt || client.createdAt,
+    firstName:
+      existing.firstName ||
+      client.firstName ||
+      client.account?.firstName ||
+      "",
+
+    lastName:
+      existing.lastName ||
+      client.lastName ||
+      client.account?.lastName ||
+      "",
+
+    phone:
+      existing.phone ||
+      client.phone ||
+      client.account?.phone ||
+      null,
+
+    email:
+      hideManualEmail(existing.email) ||
+      hideManualEmail(client.email) ||
+      hideManualEmail(client.account?.email),
+
+    birthDate:
+      existing.birthDate ||
+      client.birthDate ||
+      client.account?.birthDate ||
+      null,
+
+photoUrl:
+  resolvedPhotoUrl ||
+  existing.photoUrl ||
+  "",
+
+    registeredAt:
+      existing.registeredAt ||
+      client.account?.createdAt ||
+      client.createdAt,
 
     studioClientId: client.id,
     source: client.source || "MANUAL",
@@ -484,35 +538,59 @@ map.set(client.id, {
   source: client.source || "MANUAL",
   isManual: client.source === "MANUAL",
 
-  firstName: client.firstName || "",
-  lastName: client.lastName || "",
+  firstName:
+    client.firstName ||
+    client.account?.firstName ||
+    "",
 
-    name:
-      [client.firstName, client.lastName]
-        .filter(Boolean)
-        .join(" ")
-        .trim() || "Клієнт",
+  lastName:
+    client.lastName ||
+    client.account?.lastName ||
+    "",
 
-    phone: client.phone || null,
-    email: hideManualEmail(client.email),
-    birthDate: client.birthDate || null,
+  name:
+    [
+      client.firstName || client.account?.firstName,
+      client.lastName || client.account?.lastName,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .trim() ||
+    client.account?.name ||
+    "Клієнт",
 
-    photoUrl: client.photoUrl || "",
+  phone:
+    client.phone ||
+    client.account?.phone ||
+    null,
 
-    registeredAt: client.createdAt,
+  email:
+    hideManualEmail(client.email) ||
+    hideManualEmail(client.account?.email),
 
-    isVip: false,
-    vipSince: null,
+  birthDate:
+    client.birthDate ||
+    client.account?.birthDate ||
+    null,
 
-    bookings: 0,
-    cancellations: 0,
-    noShows: 0,
-    spent: 0,
+  photoUrl: resolvedPhotoUrl,
 
-    servicesCount: {},
-    mastersCount: {},
-    allBookings: [],
-  });
+  registeredAt:
+    client.account?.createdAt ||
+    client.createdAt,
+
+  isVip: client.account?.isVip || false,
+  vipSince: client.account?.vipSince || null,
+
+  bookings: 0,
+  cancellations: 0,
+  noShows: 0,
+  spent: 0,
+
+  servicesCount: {},
+  mastersCount: {},
+  allBookings: [],
+});
 }
 
       const clientIds = Array.from(map.keys());

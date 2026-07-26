@@ -12,8 +12,8 @@ import {
   PhoneOff,
   ShieldCheck,
 } from "lucide-react";
-import { api } from "../../api/http";
-import salonHero from "../../assets/salon-login-hero.png";
+import { api } from "../api/http";
+import salonHero from "../assets/salon-login-hero.png";
 function cn(...classes) {
   return classes.filter(Boolean).join(" ");
 }
@@ -26,7 +26,6 @@ const INITIAL_FORM = {
   email: "",
   password: "",
   lastName: "",
-confirmPassword: "",
 };
 
 function Input({ label, hint, icon, error, rightElement, ...props }) {
@@ -76,7 +75,19 @@ export default function RegisterClient() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+const [verificationOpen, setVerificationOpen] = useState(false);
+const [verificationId, setVerificationId] = useState("");
+const [verificationEmail, setVerificationEmail] = useState("");
+const [verificationCode, setVerificationCode] = useState("");
 
+const [verificationLoading, setVerificationLoading] =
+  useState(false);
+
+const [resendLoading, setResendLoading] = useState(false);
+const [verificationError, setVerificationError] =
+  useState("");
+
+const [resendSeconds, setResendSeconds] = useState(0);
   const [form, setForm] = useState(() => {
     const saved = sessionStorage.getItem(STORAGE_KEY);
 
@@ -107,25 +118,44 @@ export default function RegisterClient() {
     };
   }, []);
 
+  useEffect(() => {
+  if (!verificationOpen || resendSeconds <= 0) {
+    return;
+  }
+
+  const timer = window.setInterval(() => {
+    setResendSeconds((previous) =>
+      previous > 0 ? previous - 1 : 0,
+    );
+  }, 1000);
+
+  return () => {
+    window.clearInterval(timer);
+  };
+}, [verificationOpen, resendSeconds]);
+
 async function handleSubmit(e) {
   e.preventDefault();
-  setError("");
 
-  const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d\S]{8,}$/;
+  setError("");
+  setVerificationError("");
+
+  const passwordRegex =
+    /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d\S]{8,}$/;
 
   if (
     !form.name.trim() ||
-    !form.lastName.trim() ||
     !form.email.trim() ||
-    !form.password.trim() ||
-    !form.confirmPassword.trim()
+    !form.password.trim()
   ) {
-    setError("Заповни всі поля.");
+    setError("Заповни всі обов’язкові поля.");
     return;
   }
 
   if (!passwordRegex.test(form.password)) {
-    setError("Пароль має містити мінімум 8 символів, латинську літеру та цифру.");
+    setError(
+      "Пароль має містити мінімум 8 символів, латинську літеру та цифру.",
+    );
     return;
   }
 
@@ -134,40 +164,142 @@ async function handleSubmit(e) {
     return;
   }
 
-  if (form.password !== form.confirmPassword) {
-    setError("Паролі не співпадають.");
-    return;
-  }
+  const fullName = [
+    form.name.trim(),
+    form.lastName.trim(),
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   try {
     setLoading(true);
 
-    const data = await api("/auth/client/register", {
-      method: "POST",
-      body: {
-        name: `${form.name.trim()} ${form.lastName.trim()}`,
-        phone: form.phone.trim(),
-        email: form.email.trim(),
-        password: form.password,
+    const data = await api(
+      "/auth/client/register/request-code",
+      {
+        method: "POST",
+        body: {
+          name: fullName,
+          phone: form.phone.trim(),
+          email: form.email.trim(),
+          password: form.password,
+        },
       },
-    });
+    );
 
-localStorage.removeItem("token");
-localStorage.removeItem("role");
-localStorage.removeItem("studioId");
-
-window.dispatchEvent(new Event("auth-changed"));
-
-sessionStorage.removeItem(STORAGE_KEY);
-navigate("/login");
+    setVerificationId(data.verificationId);
+    setVerificationEmail(data.email || form.email.trim());
+    setVerificationCode("");
+    setVerificationError("");
+    setResendSeconds(data.resendAfter || 60);
+    setVerificationOpen(true);
   } catch (err) {
-    setError(err?.message || "Не вдалося створити акаунт. Спробуй ще раз.");
+    setError(
+      err?.message ||
+        "Не вдалося надіслати код. Спробуй ще раз.",
+    );
   } finally {
     setLoading(false);
   }
 }
 
-  return (
+async function handleVerifyCode(e) {
+  e.preventDefault();
+
+  setVerificationError("");
+
+  const normalizedCode = verificationCode
+    .replace(/\D/g, "")
+    .slice(0, 6);
+
+  if (normalizedCode.length !== 6) {
+    setVerificationError("Введи 6-значний код.");
+    return;
+  }
+
+  try {
+    setVerificationLoading(true);
+
+    const data = await api(
+      "/auth/client/register/verify-code",
+      {
+        method: "POST",
+        body: {
+          verificationId,
+          code: normalizedCode,
+        },
+      },
+    );
+
+    if (!data?.token) {
+      throw new Error(
+        "Акаунт створено, але сервер не повернув токен авторизації.",
+      );
+    }
+
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("role", "client");
+    localStorage.removeItem("studioId");
+
+    sessionStorage.removeItem(STORAGE_KEY);
+
+    setVerificationOpen(false);
+    setVerificationCode("");
+    setVerificationId("");
+
+    window.dispatchEvent(new Event("auth-changed"));
+
+    navigate("/", {
+      replace: true,
+    });
+  } catch (err) {
+    setVerificationError(
+      err?.message || "Не вдалося підтвердити код.",
+    );
+  } finally {
+    setVerificationLoading(false);
+  }
+}
+
+async function handleResendCode() {
+  if (
+    resendLoading ||
+    resendSeconds > 0 ||
+    !verificationId
+  ) {
+    return;
+  }
+
+  setVerificationError("");
+
+  try {
+    setResendLoading(true);
+
+    const data = await api(
+      "/auth/client/register/resend-code",
+      {
+        method: "POST",
+        body: {
+          verificationId,
+        },
+      },
+    );
+
+    setVerificationCode("");
+    setResendSeconds(data.resendAfter || 60);
+  } catch (err) {
+    setVerificationError(
+      err?.message ||
+        "Не вдалося повторно надіслати код.",
+    );
+  } finally {
+    setResendLoading(false);
+  }
+}
+
+return (
+  <>
+
      <main className="min-h-[100dvh] p-0 sm:p-3 lg:p-5">
        <div className="mx-auto grid min-h-[100dvh] max-w-[1700px] overflow-hidden sm:min-h-[calc(100dvh-24px)] sm:rounded-[30px] sm:border sm:border-[#eadfce] sm:shadow-[0_30px_90px_rgba(15,23,42,0.08)] lg:grid-cols-[520px_1fr] lg:rounded-[36px]">
          <aside className="relative hidden overflow-hidden lg:block">
@@ -342,63 +474,26 @@ navigate("/login");
 
         </div>
 
-        <Input
-          label="Підтвердіть пароль"
-          type={showPassword ? "text" : "password"}
-          placeholder="Повторіть пароль"
-          icon={<Lock className="h-4 w-4" />}
-          error={!!error}
-          value={form.confirmPassword}
-          onChange={(e) =>
-            setForm((prev) => ({
-              ...prev,
-              confirmPassword: e.target.value,
-            }))
-          }
-          rightElement={
-            <button
-              type="button"
-              onClick={() => setShowPassword((p) => !p)}
-              className="text-[#9f9f9f] transition hover:text-[#ff6200]"
-            >
-              {showPassword ? (
-                <Eye className="h-4 w-4" />
-              ) : (
-                <EyeOff className="h-4 w-4" />
-              )}
-            </button>
-          }
-        />
+
 
 <label className="flex items-start gap-2 pt-0.5">
-<input
-  type="checkbox"
-  required
-  className="
-    mt-[2px] h-4 w-4
-    cursor-pointer
-    rounded border-[#d9d9d9]
-    accent-[#ff6200]
-    focus:ring-[#ff6200]
-  "
-/>
 
   <span className="text-[10px] leading-4 text-[#7a7a7a] sm:text-[12px] sm:leading-5">
-    Я погоджуюсь з{" "}
+    Реєструючи обліковий запис, ви приймаєте {" "}
     <Link
       to="/termsclient"
       state={{ from: location.pathname }}
-      className="font-semibold text-[#ff6200]"
+      className="font-semibold text-black"
     >
-      Умовами використання
+      Умови використання
     </Link>{" "}
     та{" "}
     <Link
       to="/privacyclient"
       state={{ from: location.pathname }}
-      className="font-semibold text-[#ff6200]"
+      className="font-semibold text-black"
     >
-      Політикою конфіденційності
+      Політику конфіденційності
     </Link>
   </span>
 </label>
@@ -432,7 +527,7 @@ navigate("/login");
     sm:text-[15px]
   "
 >
-  {loading ? "Створення..." : "Зареєструватися"}
+  {loading ? "Надсилання коду..." : "Зареєструватися"}
 </button>
       </form>
 <div className="mt-4 flex items-center gap-2 sm:mt-6 sm:gap-4">
@@ -527,5 +622,259 @@ navigate("/login");
 </section>
       </div>
     </main>
-  );
+
+    {verificationOpen && (
+      <div
+        className="
+          fixed inset-0 z-[200]
+          flex items-center justify-center
+          bg-black/45 px-3
+          backdrop-blur-[5px]
+        "
+      >
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="registration-code-title"
+          className="
+            relative w-full max-w-[440px]
+            rounded-[26px]
+            border border-[#eadfce]
+            bg-white
+            p-5
+            shadow-[0_30px_90px_rgba(15,15,15,0.25)]
+            sm:rounded-[32px]
+            sm:p-8
+          "
+        >
+          <button
+            type="button"
+            onClick={() => {
+              if (
+                verificationLoading ||
+                resendLoading
+              ) {
+                return;
+              }
+
+              setVerificationOpen(false);
+              setVerificationError("");
+              setVerificationCode("");
+            }}
+            className="
+              absolute right-4 top-4
+              grid h-9 w-9 place-items-center
+              rounded-full
+              bg-[#f6f3ef]
+              text-[#77716b]
+              transition
+              hover:bg-[#202020]
+              hover:text-white
+            "
+            aria-label="Закрити"
+          >
+            ×
+          </button>
+
+          <div
+            className="
+              mx-auto grid h-16 w-16
+              place-items-center
+              rounded-full
+              bg-[#fff2e9]
+              text-[#ff6200]
+            "
+          >
+            <Mail className="h-7 w-7" />
+          </div>
+
+          <div className="mt-5 text-center">
+            <h2
+              id="registration-code-title"
+              className="
+                text-[23px] font-black
+                leading-tight tracking-[-0.04em]
+                text-[#202020]
+                sm:text-[28px]
+              "
+            >
+              Перевірте вашу пошту
+            </h2>
+
+            <p
+              className="
+                mt-3 text-[13px]
+                leading-5 text-[#77716b]
+                sm:text-[15px]
+                sm:leading-6
+              "
+            >
+              Код для реєстрації відправлено на
+            </p>
+
+            <p
+              className="
+                mt-1 break-all
+                text-[13px] font-black
+                text-[#202020]
+                sm:text-[15px]
+              "
+            >
+              {verificationEmail}
+            </p>
+          </div>
+
+          <form
+            onSubmit={handleVerifyCode}
+            className="mt-6"
+          >
+            <label className="block">
+              <span
+                className="
+                  block text-center
+                  text-[12px] font-black
+                  text-[#202020]
+                  sm:text-[14px]
+                "
+              >
+                Код підтвердження
+              </span>
+
+              <input
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                autoFocus
+                maxLength={6}
+                value={verificationCode}
+                onChange={(event) => {
+                  const value = event.target.value
+                    .replace(/\D/g, "")
+                    .slice(0, 6);
+
+                  setVerificationCode(value);
+                  setVerificationError("");
+                }}
+                placeholder="000000"
+                className="
+                  mt-3 h-[62px] w-full
+                  rounded-[18px]
+                  border border-[#ded8d1]
+                  bg-[#faf9f7]
+                  px-4
+                  text-center
+                  text-[27px] font-black
+                  tracking-[0.35em]
+                  text-[#202020]
+                  outline-none
+                  transition
+                  placeholder:text-[#d2ccc5]
+                  focus:border-[#ff6200]
+                  focus:bg-white
+                  focus:ring-4
+                  focus:ring-[#ff6200]/10
+                  sm:h-[70px]
+                  sm:text-[32px]
+                "
+              />
+            </label>
+
+            {verificationError && (
+              <div
+                className="
+                  mt-3 rounded-[14px]
+                  border border-[#ef4444]/20
+                  bg-[#fff1f1]
+                  px-4 py-3
+                  text-center
+                  text-[12px] font-semibold
+                  text-[#ef4444]
+                "
+              >
+                {verificationError}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={
+                verificationLoading ||
+                verificationCode.length !== 6
+              }
+              className="
+                mt-4 inline-flex h-[50px]
+                w-full items-center
+                justify-center
+                rounded-[15px]
+                bg-[#202020]
+                text-[14px] font-black
+                text-white
+                shadow-[0_12px_26px_rgba(15,15,15,0.18)]
+                transition-all
+                hover:scale-[1.015]
+                hover:bg-[#ff6200]
+                active:scale-[0.98]
+                disabled:pointer-events-none
+                disabled:bg-[#eee9e3]
+                disabled:text-[#aaa19a]
+                disabled:shadow-none
+                sm:h-[54px]
+                sm:text-[15px]
+              "
+            >
+              {verificationLoading
+                ? "Перевірка..."
+                : "Підтвердити код"}
+            </button>
+
+            <div
+              className="
+                mt-5 text-center
+                text-[12px] font-semibold
+                text-[#77716b]
+                sm:text-[13px]
+              "
+            >
+              Не отримали код?
+
+              <button
+                type="button"
+                disabled={
+                  resendLoading ||
+                  resendSeconds > 0
+                }
+                onClick={handleResendCode}
+                className="
+                  ml-1.5 font-black
+                  text-[#ff6200]
+                  transition
+                  hover:underline
+                  disabled:cursor-default
+                  disabled:text-[#aaa19a]
+                  disabled:no-underline
+                "
+              >
+                {resendLoading
+                  ? "Надсилання..."
+                  : resendSeconds > 0
+                    ? `Надіслати повторно через ${resendSeconds} с`
+                    : "Надіслати повторно"}
+              </button>
+            </div>
+
+            <p
+              className="
+                mt-4 text-center
+                text-[11px] leading-4
+                text-[#aaa19a]
+              "
+            >
+              Код дійсний протягом 10 хвилин
+            </p>
+          </form>
+        </div>
+      </div>
+    )}
+  </>
+);
 }

@@ -2,7 +2,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { Sparkles, Mail, Lock, ArrowRight } from "lucide-react";
-import { api } from "../../api/http";
+import { api } from "../api/http";
 
 function cn(...classes) {
   return classes.filter(Boolean).join(" ");

@@ -583,20 +583,73 @@ let studioClient = await prisma.studioClient.findFirst({
   },
 });
 
-if (!studioClient) {
-  const fallbackName = String(client.name || "").trim();
-  const fallbackParts = fallbackName.split(" ").filter(Boolean);
+const fallbackName = String(client.name || "").trim();
+const fallbackParts = fallbackName.split(" ").filter(Boolean);
 
+if (!studioClient) {
   studioClient = await prisma.studioClient.create({
     data: {
       studioId,
       accountId: client.id,
-      firstName: client.firstName || fallbackParts[0] || "Клієнт",
-      lastName: client.lastName || fallbackParts.slice(1).join(" ") || "",
+
+      firstName:
+        client.firstName ||
+        fallbackParts[0] ||
+        "Клієнт",
+
+      lastName:
+        client.lastName ||
+        fallbackParts.slice(1).join(" ") ||
+        "",
+
       phone: client.phone || null,
       email: client.email || null,
       birthDate: client.birthDate || null,
       photoUrl: client.photoUrl || null,
+      source: "BOOKING",
+    },
+  });
+} else {
+  studioClient = await prisma.studioClient.update({
+    where: {
+      id: studioClient.id,
+    },
+
+    data: {
+      accountId: client.id,
+
+      firstName:
+        client.firstName ||
+        fallbackParts[0] ||
+        studioClient.firstName ||
+        "Клієнт",
+
+      lastName:
+        client.lastName ||
+        fallbackParts.slice(1).join(" ") ||
+        studioClient.lastName ||
+        "",
+
+      phone:
+        client.phone ||
+        studioClient.phone ||
+        null,
+
+      email:
+        client.email ||
+        studioClient.email ||
+        null,
+
+      birthDate:
+        client.birthDate ||
+        studioClient.birthDate ||
+        null,
+
+      photoUrl:
+        client.photoUrl ||
+        studioClient.photoUrl ||
+        null,
+
       source: "BOOKING",
     },
   });

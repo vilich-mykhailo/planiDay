@@ -497,7 +497,20 @@ function Avatar({ name, photoUrl, className = "" }) {
 function Button({ variant = "secondary", className = "", children, ...props }) {
   const variants = {
 primary:
-  "bg-[#202020] text-white shadow-[0_12px_26px_rgba(15,15,15,0.18)] transition-all duration-300 hover:scale-[1.015] hover:bg-[#ff6200] hover:shadow-[0_14px_30px_rgba(255,98,0,0.24)] active:scale-[0.98] disabled:pointer-events-none disabled:bg-[#f1ebe4] disabled:text-[#aaa19a] disabled:shadow-none disabled:opacity-100",
+  `
+    bg-[#202020] text-white
+    
+    transition-all duration-300
+    hover:scale-[1.015]
+    hover:bg-[#ff6200]
+    
+    active:scale-[0.98]
+    disabled:pointer-events-none
+    disabled:bg-[#f1ebe4]
+    disabled:text-[#aaa19a]
+    disabled:shadow-none
+    disabled:opacity-100
+  `,
     secondary:
       "border border-[#eadbc9] bg-white text-[#202020] shadow-sm hover:border-[#ffd6bd] hover:bg-[#fff7f0]",
     danger:
@@ -555,7 +568,8 @@ function BirthdayDatePicker({ value, onChange }) {
   const rootRef = useRef(null);
   const today = useMemo(() => new Date(), []);
   const selectedDate = useMemo(() => parseCalendarDate(value), [value]);
-  const [open, setOpen] = useState(false);
+const [open, setOpen] = useState(false);
+const [yearOpen, setYearOpen] = useState(false);
   const [visibleMonth, setVisibleMonth] = useState(
     () => selectedDate || new Date(today.getFullYear() - 25, today.getMonth(), 1),
   );
@@ -649,7 +663,15 @@ const handleToggleCalendar = () => {
         <div
           role="dialog"
           aria-label="Календар дати народження"
-          className="absolute left-0 top-[calc(100%+8px)] z-50 w-[min(286px,calc(100vw-40px))] rounded-[20px] border border-[#eadbc9] bg-white p-3 shadow-[0_20px_55px_rgba(32,32,32,0.15)]"
+         className="
+  fixed left-1/2 top-1/2 z-[10000]
+  w-[min(286px,calc(100vw-32px))]
+  -translate-x-1/2 -translate-y-1/2
+  rounded-[20px]
+  border border-[#eadbc9]
+  bg-white p-3
+  shadow-[0_20px_55px_rgba(32,32,32,0.20)]
+"
         >
           <div className="mb-2.5 flex items-center gap-1.5">
             <button
@@ -685,23 +707,68 @@ const handleToggleCalendar = () => {
                   </option>
                 ))}
               </select>
-              <select
-                value={visibleMonth.getFullYear()}
-                onChange={(event) => {
-                  const nextYear = Number(event.target.value);
-                  const nextMonth =
-                    nextYear === today.getFullYear()
-                      ? Math.min(visibleMonth.getMonth(), today.getMonth())
-                      : visibleMonth.getMonth();
-                  setVisibleMonth(new Date(nextYear, nextMonth, 1));
-                }}
-                className="appearance-none rounded-[10px] bg-[#fff7f0] px-2 py-1.5 text-xs font-black text-[#202020] outline-none ring-[#ff6200]/10 focus:ring-4"
-                aria-label="Рік"
-              >
-                {yearOptions.map((year) => (
-                  <option key={year} value={year}>{year}</option>
-                ))}
-              </select>
+<div className="relative">
+  <button
+    type="button"
+    onClick={() => setYearOpen((current) => !current)}
+    className={cn(
+      "flex h-full w-full items-center justify-between rounded-[10px]",
+      "bg-[#fff7f0] px-2 py-1.5 text-xs font-black text-[#202020]",
+      "outline-none transition focus:ring-4 focus:ring-[#ff6200]/10",
+    )}
+    aria-label="Оберіть рік"
+    aria-expanded={yearOpen}
+  >
+    <span>{visibleMonth.getFullYear()}</span>
+
+    <ChevronDown
+      className={cn(
+        "h-3.5 w-3.5 transition-transform",
+        yearOpen && "rotate-180",
+      )}
+    />
+  </button>
+
+  {yearOpen && (
+    <div
+      className={cn(
+        "absolute right-0 top-[calc(100%+4px)] z-30",
+        "max-h-45 w-full min-w-[76px] overflow-y-auto",
+        "rounded-[10px] border border-[#eadbc9] bg-white p-1",
+        "shadow-[0_12px_30px_rgba(32,32,32,0.16)]",
+      )}
+    >
+      {yearOptions.map((year) => {
+        const isActive = year === visibleMonth.getFullYear();
+
+        return (
+          <button
+            key={year}
+            type="button"
+            onClick={() => {
+              const nextMonth =
+                year === today.getFullYear()
+                  ? Math.min(visibleMonth.getMonth(), today.getMonth())
+                  : visibleMonth.getMonth();
+
+              setVisibleMonth(new Date(year, nextMonth, 1));
+              setYearOpen(false);
+            }}
+            className={cn(
+              "flex h-7 w-full items-center justify-center rounded-[7px]",
+              "text-[11px] font-bold transition",
+              isActive
+                ? "bg-[#ff6200] text-white"
+                : "text-[#202020] hover:bg-[#fff1e8] hover:text-[#ff6200]",
+            )}
+          >
+            {year}
+          </button>
+        );
+      })}
+    </div>
+  )}
+</div>
             </div>
 
             <button
@@ -1139,7 +1206,12 @@ className={cn(
 )}
 
       >
-     <Icon className="h-2 w-2 sm:h-3 sm:w-3" />
+   <Icon
+  className={cn(
+    "h-2 w-2 sm:h-3 sm:w-3",
+    meta.iconClassName,
+  )}
+/>
         {meta.label}
       </span>
     </div>
@@ -1750,8 +1822,8 @@ setNoteDraft("");
       phone: createClientForm.phone.trim(),
     };
 
-if (!payload.firstName || !payload.lastName) {
-  setCreateClientError("Вкажіть імʼя та прізвище клієнта.");
+if (!payload.firstName) {
+  setCreateClientError("Вкажіть імʼя клієнта.");
   return;
 }
 
@@ -3443,11 +3515,10 @@ const statusMeta = isCanceled
               type="submit"
               form="add-client-form"
               variant="primary"
-              disabled={
-                creatingClient ||
-                !createClientForm.firstName.trim() ||
-                !createClientForm.lastName.trim()
-              }
+disabled={
+  creatingClient ||
+  !createClientForm.firstName.trim()
+}
               className="flex-1 sm:flex-none"
             >
               <Check className="h-4 w-4" />
@@ -3508,9 +3579,15 @@ const statusMeta = isCanceled
             </label>
 
             <label className="block">
-              <span className="mb-2 block text-sm font-black text-[#202020]">
-                Прізвище
-              </span>
+<span className="mb-2 flex items-center justify-between gap-2">
+  <span className="text-sm font-black text-[#202020]">
+    Прізвище
+  </span>
+
+  <span className="text-[11px] font-medium text-[#aaa19a]">
+    Не обов’язково
+  </span>
+</span>
               <input
                 name="lastName"
                 value={createClientForm.lastName}
@@ -4067,13 +4144,13 @@ const statusInfoItems = [
   },
   {
     value: "attention",
-    title: "Потребує уваги",
+    title: "Активний",
     description:
       "Останній нескасований запис був більше 30 днів тому, але не більше 60 днів.",
   },
   {
     value: "risk",
-    title: "Ризик втрати",
+    title: "Неактивний",
     description:
       "Клієнт не був у студії більше 60 днів. Варто нагадати про себе або запропонувати повернутись.",
   },
@@ -4191,7 +4268,7 @@ async function handleCopyClientPhone(value) {
                 .filter(Boolean)
                 .join(" ")}
               photoUrl={client.photoUrl}
-              className="h-20 w-20 rounded-full border-[#eef1f5] shadow-[0_10px_26px_rgba(15,23,42,0.10)]"
+              className="h-20 w-20 rounded-full border-[#eef1f5]"
             />
 
             <div className="min-w-0 flex-1">

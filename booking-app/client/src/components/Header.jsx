@@ -791,9 +791,8 @@ className={cx(
       relative flex items-center justify-between
       rounded-[20px]
       border border-[#ffb987]
-      bg-[#fff3eb]/70
+      bg-white/70
       px-3
-      shadow-[0_18px_48px_rgba(255,98,0,0.14)]
       backdrop-blur-[8px]
       backdrop-saturate-150
       sm:px-4

@@ -127,11 +127,14 @@ const studios = await api("/owner", {
                   onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
                 />
 
-                <div className="flex justify-between text-xs sm:text-sm">
-                  <Link to="/forgot-password" className="font-semibold text-stone-800 hover:text-emerald-700 hover:underline">
-                    Забули пароль?
-                  </Link>
-                </div>
+<div className="flex justify-between text-xs sm:text-sm">
+  <Link
+    to="/forgot-password-owner"
+    className="font-semibold text-stone-800 hover:text-[#ff6200] hover:underline"
+  >
+    Забули пароль?
+  </Link>
+</div>
 
                 {error && (
                   <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-xs font-semibold text-red-700 sm:rounded-2xl sm:px-4 sm:py-3 sm:text-sm">

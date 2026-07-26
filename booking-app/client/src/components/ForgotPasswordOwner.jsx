@@ -1,7 +1,8 @@
-// ForgotPassword.jsx
+// ForgotPasswordOwner.jsx
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import { Sparkles, Mail, ArrowRight, CheckCircle2 } from "lucide-react";
+import { api } from "../api/http";
 
 function cn(...classes) {
   return classes.filter(Boolean).join(" ");
@@ -24,30 +25,55 @@ function Input({ label, icon, ...props }) {
   );
 }
 
-export default function ForgotPassword() {
+export default function ForgotPasswordOwner() {
   const [email, setEmail] = useState("");
-  const [sent, setSent] = useState(false);
+const [sent, setSent] = useState(false);
+const [loading, setLoading] = useState(false);
+const [error, setError] = useState("");
 
-  function submit(e) {
-    e.preventDefault();
-    if (!email.trim()) return;
+async function submit(e) {
+  e.preventDefault();
 
-    // TODO: api call
-    setSent(true);
+  setError("");
+
+  if (!email.trim()) {
+    setError("Вкажи email.");
+    return;
   }
 
+  try {
+    setLoading(true);
+
+await api("/auth/owner/forgot-password", {
+  method: "POST",
+  body: {
+    email: email.trim(),
+  },
+});
+
+    setSent(true);
+  } catch (err) {
+    setError(
+      err?.message ||
+        "Не вдалося надіслати інструкцію.",
+    );
+  } finally {
+    setLoading(false);
+  }
+}
+
   return (
-<main className="min-h-[100svh] flex items-center justify-center ">
+    <main className="min-h-[100svh] flex items-center justify-center ">
       <div className="mx-auto max-w-6xl px-4 py-10 sm:py-14">
         <div className="mx-auto max-w-md">
           <div className="text-center">
-<div className="mx-auto mb-2 h-12 w-12 sm:mb-2 sm:h-16 sm:w-16">
-  <img
-    src="/aveliio_logo.png"
-    alt="Aveliio"
-    className="h-full w-full object-contain"
-  />
-</div>
+            <div className="mx-auto mb-2 h-12 w-12 sm:mb-2 sm:h-16 sm:w-16">
+              <img
+                src="/aveliio_logo.png"
+                alt="Aveliio"
+                className="h-full w-full object-contain"
+              />
+            </div>
             <h1 className="text-3xl font-black tracking-tight text-stone-800 sm:text-4xl">
               Відновлення пароля
             </h1>
@@ -82,11 +108,16 @@ export default function ForgotPassword() {
                     icon={<Mail className="h-4 w-4" />}
                     onChange={(e) => setEmail(e.target.value)}
                   />
-
-<button
-  type="submit"
-  className={cn(
-    `
+{error && (
+  <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
+    {error}
+  </div>
+)}
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className={cn(
+                      `
       group inline-flex w-full items-center justify-center gap-2
       rounded-2xl
       bg-[#202020]
@@ -103,20 +134,19 @@ export default function ForgotPassword() {
       disabled:text-[#aaa19a]
       disabled:shadow-none
     `,
-  )}
->
-  Надіслати інструкцію
-
-  <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-</button>
+                    )}
+                  >
+                    Надіслати інструкцію
+                    <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                  </button>
                 </form>
               )}
 
               <div className="mt-6 border-t border-stone-100 pt-5 text-center">
                 <p className="text-sm text-stone-600">
                   Повернутися до{" "}
-                  <Link
-                    to="/login"
+<Link
+  to="/login-owner"
                     className="font-bold text-[#ff6200] transition hover:text-[#ff6200] hover:underline"
                   >
                     ВХОДУ

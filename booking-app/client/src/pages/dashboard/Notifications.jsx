@@ -1549,16 +1549,6 @@ useEffect(() => {
     withClientPhotos
   />
 
-  <FilterSelect
-    label="Період"
-    value={dateFilter}
-    onChange={(value) => {
-      setDateFilter(value);
-      resetNotificationsVisibleCount();
-    }}
-    options={dateFilterOptions}
-    placeholder="Увесь період"
-  />
 </div>
 
 {dateFilter === "custom" && (

@@ -28,8 +28,6 @@ import {
   ClockAlert,
   ChartColumn,
   LayoutGrid,
-  MoreHorizontal,
-  MoreVertical,
   SlidersHorizontal,
   Plus,
   Store,
@@ -2196,6 +2194,7 @@ export default function Rozklad({
   studio: studioProp,
   loading: loadingProp,
   onOpenBooking,
+  onCreateBooking,
   viewSwitcher = null,
 } = {}) {
   const bookingsContext = useBookings();
@@ -2231,6 +2230,7 @@ const studio = studioProp ?? studioContext?.studio ?? null;
   const [statusFilter, setStatusFilter] = useState("all");
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [mobileView, setMobileView] = useState("agenda");
   const [bookingPreview, setBookingPreview] = useState(null);
   const [agendaCollapsed, setAgendaCollapsed] = useState(false);
   const [detailsId, setDetailsId] = useState(null);
@@ -2240,6 +2240,8 @@ const studio = studioProp ?? studioContext?.studio ?? null;
   const hourHeight = SCHEDULE_HOUR_HEIGHT;
   const scrollRef = useRef(null);
   const headerScrollRef = useRef(null);
+  const mobileScrollRef = useRef(null);
+  const mobileHeaderScrollRef = useRef(null);
 const handleViewDateChange = (nextDate) => {
   setViewDate(nextDate);
 };
@@ -2775,7 +2777,7 @@ const timeBounds = useMemo(() => {
   const gridScheduleEnd = SCHEDULE_GRID_TOP_PADDING + gridBodyHeight;
   const gridHeight = gridScheduleEnd + SCHEDULE_GRID_BOTTOM_PADDING;
   const desktopTimeColumnWidth = 48;
-  const mobileTimeColumnWidth = 34;
+  const mobileTimeColumnWidth = 46;
   const desktopColumnWidth = SCHEDULE_DESKTOP_COLUMN_WIDTH;
   const mobileColumnMinWidth = SCHEDULE_MOBILE_COLUMN_MIN_WIDTH;
   const desktopScheduleWidth =
@@ -2783,7 +2785,7 @@ const timeBounds = useMemo(() => {
   const mobileScheduleWidth =
     mobileTimeColumnWidth + columns.length * mobileColumnMinWidth;
   const desktopTemplateColumns = `${desktopTimeColumnWidth}px repeat(${columns.length}, ${desktopColumnWidth}px)`;
-  const mobileTemplateColumns = `repeat(${columns.length}, minmax(${mobileColumnMinWidth}px, 1fr)) ${mobileTimeColumnWidth}px`;
+  const mobileTemplateColumns = `${mobileTimeColumnWidth}px repeat(${columns.length}, minmax(${mobileColumnMinWidth}px, 1fr))`;
   const quarterMarks = useMemo(() => {
     const marks = [];
 
@@ -2796,6 +2798,19 @@ const timeBounds = useMemo(() => {
 
     return marks;
   }, [timeBounds.start, timeBounds.end]);
+  const emptySlotStarts = useMemo(() => {
+    const slots = [];
+
+    for (
+      let minute = timeBounds.start;
+      minute + 30 <= timeBounds.end;
+      minute += 30
+    ) {
+      slots.push(minute);
+    }
+
+    return slots;
+  }, [timeBounds.end, timeBounds.start]);
   const topForMinute = (minute) =>
     SCHEDULE_GRID_TOP_PADDING +
     ((minute - timeBounds.start) / 60) * hourHeight;
@@ -2807,11 +2822,6 @@ const timeBounds = useMemo(() => {
     nowMinute >= timeBounds.start &&
     nowMinute <= timeBounds.end;
   const moveDays = rangeMode === "week" ? 7 : 1;
-  const rangeModeItems = [
-    { key: "day", label: "День" },
-    { key: "week", label: "Тиждень" },
-    { key: "month", label: "Місяць" },
-  ];
   const weekdayLabel = viewDate.toLocaleDateString("uk-UA", {
     weekday: "long",
   });
@@ -2893,22 +2903,20 @@ const timeBounds = useMemo(() => {
   const renderScheduleGrid = ({ compact = false } = {}) => {
     const scheduleWidth = compact ? mobileScheduleWidth : desktopScheduleWidth;
     const templateColumns = compact ? mobileTemplateColumns : desktopTemplateColumns;
-    const headerHeight = compact ? "64px" : "78px";
-    const bodyHeight = "clamp(500px, calc(100dvh - 142px), 760px)";
+    const bodyScrollRef = compact ? mobileScrollRef : scrollRef;
+    const gridHeaderScrollRef = compact ? mobileHeaderScrollRef : headerScrollRef;
+    const headerHeight = compact ? "50px" : "55px";
+    const bodyHeight = "clamp(420px, calc(100dvh - 220px), 700px)";
 
     return (
       <div className={cn("min-w-0 bg-white", compact && "flex min-h-0 flex-1 flex-col")}>
         <div
-          ref={compact ? null : headerScrollRef}
+          ref={gridHeaderScrollRef}
           className="calendar-day-scroll shrink-0 touch-pan-x overflow-x-auto overflow-y-hidden overscroll-x-contain border-b border-[#ebe7df] bg-[#fffaf6] [scrollbar-gutter:stable]"
-          onScroll={
-            compact
-              ? undefined
-              : (event) => {
-                  hideBookingPreview();
-                  syncHorizontalScroll(event.currentTarget, scrollRef);
-                }
-          }
+          onScroll={(event) => {
+            hideBookingPreview();
+            syncHorizontalScroll(event.currentTarget, bodyScrollRef);
+          }}
         >
           <div className="min-w-full" style={{ minWidth: scheduleWidth }}>
             <div
@@ -2916,16 +2924,8 @@ const timeBounds = useMemo(() => {
               style={{ gridTemplateColumns: templateColumns }}
             >
               <div
-                className={cn(
-                  "sticky z-40 flex items-center border-[#ebe7df] bg-[#fffaf6] text-[10px] font-bold uppercase text-[#aaa19a]",
-                  compact
-                    ? "right-0 justify-start border-l px-2"
-                    : "left-0 justify-end border-r px-2",
-                )}
-                style={{
-                  height: headerHeight,
-                  gridColumn: compact ? `${columns.length + 1}` : undefined,
-                }}
+                className="sticky left-0 z-40 flex items-center justify-end border-r border-[#ebe7df] bg-[#fffaf6] px-2 text-[10px] font-bold uppercase text-[#aaa19a]"
+                style={{ height: headerHeight }}
               >
                 <span>час</span>
               </div>
@@ -2997,46 +2997,6 @@ const timeBounds = useMemo(() => {
                         </p>
                       </div>
                     </div>
-
-                    {!compact && (
-                      <div className="absolute inset-x-3 bottom-1.5 flex items-center gap-1.5 text-[9px] font-black">
-                        <span
-                          className="flex items-center gap-1 text-[#7b766f]"
-                          title={`Усього записів: ${totalCount}`}
-                        >
-                          <CalendarDays className="h-3 w-3" />
-                          {totalCount}
-                        </span>
-                        <span
-                          className="flex items-center gap-1 text-[#dc6803]"
-                          title={`Очікують: ${summaryCounts.pending}`}
-                        >
-                          <ClockAlert className="h-3 w-3" />
-                          {summaryCounts.pending}
-                        </span>
-                        <span
-                          className="flex items-center gap-1 text-[#039855]"
-                          title={`Підтверджені: ${summaryCounts.confirmed}`}
-                        >
-                          <CircleCheckBig className="h-3 w-3" />
-                          {summaryCounts.confirmed}
-                        </span>
-                        <span
-                          className="flex items-center gap-1 text-[#d92d20]"
-                          title={`Скасовані: ${summaryCounts.canceled}`}
-                        >
-                          <XCircle className="h-3 w-3" />
-                          {summaryCounts.canceled}
-                        </span>
-                        <span
-                          className="flex items-center gap-1 text-[#7b766f]"
-                          title={`Завершені: ${summaryCounts.archived}`}
-                        >
-                          <CheckCheck className="h-3 w-3" />
-                          {summaryCounts.archived}
-                        </span>
-                      </div>
-                    )}
                   </div>
                 );
               })}
@@ -3045,7 +3005,7 @@ const timeBounds = useMemo(() => {
         </div>
 
         <div
-          ref={compact ? null : scrollRef}
+          ref={bodyScrollRef}
           className={cn(
             "calendar-day-scroll relative touch-pan-x overflow-auto overscroll-x-contain [scrollbar-gutter:stable]",
             compact && "min-h-0 flex-1",
@@ -3054,22 +3014,18 @@ const timeBounds = useMemo(() => {
               : "bg-white",
           )}
           style={compact ? undefined : { height: bodyHeight }}
-          onScroll={
-            compact
-              ? undefined
-              : (event) => {
-                  hideBookingPreview();
-                  syncHorizontalScroll(event.currentTarget, headerScrollRef);
-                }
-          }
+          onScroll={(event) => {
+            hideBookingPreview();
+            syncHorizontalScroll(event.currentTarget, gridHeaderScrollRef);
+          }}
         >
           {!anyBookings && (
-            <div className="pointer-events-none sticky left-0 top-0 z-50 h-0 w-full">
+            <div className="pointer-events-none sticky left-0 top-0 z-[3] h-0 w-full">
               <div
                 className="flex items-center justify-center px-3"
                 style={{ height: Math.min(gridHeight, 520) }}
               >
-                <div className="pointer-events-auto w-[min(240px,calc(100%-24px))] rounded-lg border border-dashed border-[#eadbc9] bg-white/95 p-3 text-center shadow-sm">
+                <div className="w-[min(240px,calc(100%-24px))] rounded-lg border border-dashed border-[#eadbc9] bg-white/95 p-3 text-center shadow-sm">
                   <div
                     className={cn(
                       "mx-auto flex h-10 w-10 items-center justify-center rounded-full",
@@ -3098,6 +3054,11 @@ const timeBounds = useMemo(() => {
                       {studioClosedHelper}
                     </p>
                   )}
+                  {!loading && !studioClosedForSelectedDay && (
+                    <p className="mt-1 text-[10px] font-semibold text-[#7b766f]">
+                      Наведіть на вільний час, щоб додати запис
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -3110,23 +3071,19 @@ const timeBounds = useMemo(() => {
             >
               <div
                 className={cn(
-                  "sticky z-40 border-[#ebe7df]",
-                  compact ? "right-0 border-l" : "left-0 border-r",
+                  "sticky left-0 z-40 border-r border-[#ebe7df]",
                   studioClosedForSelectedDay
                     ? "bg-[repeating-linear-gradient(135deg,rgba(148,163,184,0.10)_0,rgba(148,163,184,0.10)_8px,rgba(255,255,255,0.42)_8px,rgba(255,255,255,0.42)_16px)]"
                     : "bg-white",
                 )}
-                style={{
-                  height: gridHeight,
-                  gridColumn: compact ? `${columns.length + 1}` : undefined,
-                }}
+                style={{ height: gridHeight }}
               >
                 {hours.map((hour) => (
                   <div
                     key={hour}
                     className={cn(
-                      "absolute -translate-y-2 font-medium text-[#9a9189]",
-                      compact ? "left-2 text-[11px]" : "right-2 text-[10px]",
+                      "absolute right-2 -translate-y-2 font-medium text-[#9a9189]",
+                      compact ? "text-[11px]" : "text-[10px]",
                     )}
                     style={{ top: topForMinute(hour * 60) }}
                   >
@@ -3139,10 +3096,7 @@ const timeBounds = useMemo(() => {
                   .map((mark) => (
                     <div
                       key={`label-${mark.minute}`}
-                      className={cn(
-                        "absolute -translate-y-1/2 text-[10px] font-medium text-[#b6bdc5]",
-                        compact ? "left-2" : "right-2",
-                      )}
+                      className="absolute right-2 -translate-y-1/2 text-[10px] font-medium text-[#b6bdc5]"
                       style={{ top: topForMinute(mark.minute) }}
                     >
                       {pad2(mark.minute % 60)}
@@ -3156,18 +3110,20 @@ const timeBounds = useMemo(() => {
                       className="absolute inset-x-0 z-30 border-t border-[#ff6200]"
                       style={{ top: topForMinute(nowMinute) }}
                     >
-                      <span
-                        className={cn(
-                          "absolute -top-[5px] h-2.5 w-2.5 rounded-full bg-[#ff6200]",
-                          compact ? "-left-1" : "-right-1",
-                        )}
-                      />
+                      <span className="absolute -right-1 -top-[5px] h-2.5 w-2.5 rounded-full bg-[#ff6200]" />
                     </div>
                   )}
               </div>
 
               {columns.map((column) => {
                 const columnBookings = bookingsByColumn[column.key] || [];
+                const allColumnBookings = baseFilteredBookings.filter(
+                  (booking) =>
+                    (rangeMode === "day"
+                      ? booking[groupKey] === column.key
+                      : booking.dateKey === column.key) &&
+                    scheduleVisualStatus(booking, nowTs) !== "canceled",
+                );
                 const columnDate =
                   column.type === "date" ? column.date : viewDate;
                 const columnStudioWindow = getStudioScheduleWindow(
@@ -3191,6 +3147,23 @@ const timeBounds = useMemo(() => {
                       Math.min(columnWorkWindow.endMin, timeBounds.end),
                     )
                   : gridScheduleEnd;
+                const availableSlotStarts =
+                  !isStudioClosed && columnWorkWindow?.isWorking !== false
+                    ? emptySlotStarts.filter((slotStart) => {
+                        const slotEnd = slotStart + 30;
+                        const insideWorkHours =
+                          !columnWorkWindow ||
+                          (slotStart >= columnWorkWindow.startMin &&
+                            slotEnd <= columnWorkWindow.endMin);
+                        const overlapsBooking = allColumnBookings.some(
+                          (booking) =>
+                            booking.startMin < slotEnd &&
+                            booking.endMin > slotStart,
+                        );
+
+                        return insideWorkHours && !overlapsBooking;
+                      })
+                    : [];
 
                 return (
                   <div
@@ -3210,6 +3183,50 @@ const timeBounds = useMemo(() => {
                         style={{ top: topForMinute(mark.minute) }}
                       />
                     ))}
+
+                    {availableSlotStarts.map((slotStart) => {
+                      const slotLabel = scheduleTimeLabel(slotStart);
+                      const slotEnd = slotStart + 30;
+
+                      return (
+                        <button
+                          key={`empty-${column.key}-${slotStart}`}
+                          type="button"
+                          onClick={() =>
+                            onCreateBooking?.({
+                              date: toISODateKey(columnDate),
+                              time: slotLabel,
+                              startMin: slotStart,
+                              endMin: slotEnd,
+                              duration: 30,
+                              staffId:
+                                column.type === "staff"
+                                  ? column.id || null
+                                  : selectedMaster?.id || null,
+                              staffKey:
+                                column.type === "staff"
+                                  ? column.key
+                                  : selectedMaster?.key || null,
+                              staffName:
+                                column.type === "staff"
+                                  ? column.name
+                                  : selectedMaster?.name || "",
+                            })
+                          }
+                          className="group absolute inset-x-1 z-[4] flex items-center justify-center rounded-lg transition-colors hover:bg-[#fff4ef] focus:outline-none focus-visible:bg-[#fff4ef] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#ff6b2c]/25"
+                          style={{
+                            top: topForMinute(slotStart) + 1,
+                            height: (30 / 60) * hourHeight - 2,
+                          }}
+                          aria-label={`Додати запис на ${slotLabel}${column.name ? `, ${column.name}` : ""}`}
+                          title={`Додати запис на ${slotLabel}`}
+                        >
+                          <span className="flex h-7 w-7 scale-90 items-center justify-center rounded-full border border-[#ffd6c2] bg-white text-[#ff6b2c] opacity-0 shadow-[0_6px_16px_rgba(255,107,44,0.16)] transition group-hover:scale-100 group-hover:opacity-100 group-focus-visible:scale-100 group-focus-visible:opacity-100">
+                            <Plus className="h-4 w-4" />
+                          </span>
+                        </button>
+                      );
+                    })}
 
                     {isStudioClosed && (
                       <div
@@ -3710,383 +3727,635 @@ const timeBounds = useMemo(() => {
     );
   };
 
+  const periodLabel =
+    rangeMode === "month"
+      ? viewDate.toLocaleDateString("uk-UA", {
+          month: "long",
+          year: "numeric",
+        })
+      : rangeMode === "week"
+        ? `${addDays(weekStart, 0).toLocaleDateString("uk-UA", {
+            day: "numeric",
+            month: "short",
+          })} — ${addDays(weekStart, 6).toLocaleDateString("uk-UA", {
+            day: "numeric",
+            month: "short",
+          })}`
+        : formatDateLongUA(toISODateKey(viewDate));
+  const studioName =
+    studioForSchedule?.name ||
+    studioForSchedule?.title ||
+    studio?.name ||
+    "Студія";
+
+  const renderAgendaList = ({ mobile = false } = {}) => {
+    if (agendaGroups.length === 0) {
+      return (
+        <div
+          className={cn(
+            "flex flex-col items-center justify-center rounded-2xl border border-dashed border-[#d8dde7] bg-white px-5 text-center",
+            mobile ? "min-h-[220px]" : "min-h-[180px]",
+          )}
+        >
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f1f3f7] text-[#667085]">
+            {studioClosedForSelectedDay ? (
+              <Store className="h-5 w-5" />
+            ) : (
+              <CalendarDays className="h-5 w-5" />
+            )}
+          </div>
+          <p className="mt-3 text-sm font-extrabold text-[#182230]">
+            {studioClosedForSelectedDay
+              ? "Студія сьогодні не працює"
+              : "На цей період записів немає"}
+          </p>
+          <p className="mt-1 max-w-[240px] text-xs leading-5 text-[#667085]">
+            {studioClosedForSelectedDay
+              ? studioClosedHelper
+              : "Оберіть іншу дату або змініть активні фільтри."}
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div className={cn("space-y-5", mobile && "pb-24")}>
+        {agendaGroups.map((group) => (
+          <section key={group.dateKey}>
+            <div className="mb-2.5 flex items-center justify-between">
+              <div>
+                <p className="text-[13px] font-extrabold capitalize text-[#182230]">
+                  {group.date.toLocaleDateString("uk-UA", {
+                    weekday: "long",
+                    day: "numeric",
+                    month: "long",
+                  })}
+                </p>
+                {rangeMode !== "day" && (
+                  <p className="mt-0.5 text-[11px] font-medium text-[#98a2b3]">
+                    ₴{formatPrice(group.totalPrice)} за день
+                  </p>
+                )}
+              </div>
+              <span className="rounded-full bg-[#f1f3f7] px-2.5 py-1 text-[10px] font-bold text-[#667085]">
+                {group.items.length}{" "}
+                {pluralUa(group.items.length, "запис", "записи", "записів")}
+              </span>
+            </div>
+
+            <div className="space-y-2">
+              {group.items.map((booking) => {
+                const tone = scheduleCardTone(booking, nowTs);
+                const startLabel =
+                  parseTimeToHHMM(booking.raw.time) ||
+                  scheduleTimeLabel(booking.startMin);
+                const endLabel = scheduleTimeLabel(booking.endMin);
+
+                return (
+                  <button
+                    key={`agenda-${booking.id}-${booking.dateKey}-${booking.startMin}`}
+                    type="button"
+                    onClick={() => openBookingDetails(booking.id)}
+                    className={cn(
+                      "group relative grid w-full grid-cols-[50px_minmax(0,1fr)_auto] items-center gap-3 overflow-hidden rounded-2xl border border-[#e4e7ec] bg-white text-left transition",
+                      "hover:border-[#cfd4dc] hover:shadow-[0_8px_24px_rgba(16,24,40,0.06)] focus:outline-none focus:ring-2 focus:ring-[#ff6b2c]/25",
+                      mobile ? "min-h-[78px] px-3 py-2.5" : "min-h-[70px] px-3 py-2",
+                    )}
+                  >
+                    <span
+                      className="absolute inset-y-3 left-0 w-[3px] rounded-r-full"
+                      style={{ backgroundColor: tone.accent }}
+                    />
+                    <div className="text-center">
+                      <p className="text-[13px] font-extrabold tabular-nums text-[#182230]">
+                        {startLabel}
+                      </p>
+                      <p className="mt-0.5 text-[10px] font-semibold tabular-nums text-[#98a2b3]">
+                        {endLabel}
+                      </p>
+                    </div>
+                    <div className="min-w-0 border-l border-[#eef0f3] pl-3">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <p className="truncate text-[13px] font-extrabold text-[#182230]">
+                          {booking.clientName}
+                        </p>
+                        <ScheduleStatusIcon
+                          booking={booking}
+                          nowTs={nowTs}
+                          className="h-3.5 w-3.5 shrink-0"
+                          style={{ color: tone.accent }}
+                        />
+                      </div>
+                      <p className="mt-1 truncate text-[11px] font-medium text-[#667085]">
+                        {booking.serviceName}
+                      </p>
+                      <p className="mt-0.5 truncate text-[10px] text-[#98a2b3]">
+                        {booking.staffName}
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-end gap-2">
+                      {booking.price != null && (
+                        <span className="text-[11px] font-extrabold text-[#344054]">
+                          ₴{formatPrice(booking.price)}
+                        </span>
+                      )}
+                      <Avatar
+                        name={booking.staffName || booking.clientName}
+                        photoUrl={booking.staffPhotoUrl}
+                        className="h-7 w-7 rounded-full"
+                      />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        ))}
+      </div>
+    );
+  };
+
+  const rangeControls = viewSwitcher || (
+    <div className="inline-flex rounded-xl bg-[#f1f3f7] p-1">
+      {[
+        { key: "day", label: "День" },
+        { key: "week", label: "Тиждень" },
+        { key: "month", label: "Місяць" },
+      ].map((item) => (
+        <button
+          key={item.key}
+          type="button"
+          onClick={() => handleRangeModeChange(item.key)}
+          className={cn(
+            "h-8 rounded-lg px-3 text-[11px] font-bold transition",
+            rangeMode === item.key
+              ? "bg-white text-[#182230] shadow-[0_1px_3px_rgba(16,24,40,0.10)]"
+              : "text-[#667085] hover:text-[#344054]",
+          )}
+        >
+          {item.label}
+        </button>
+      ))}
+    </div>
+  );
+
   const renderFullDesign = () => {
     return (
       <>
-        <div
-          className="relative hidden h-[min(860px,calc(100dvh-12px))] min-h-[620px] overflow-hidden rounded-[15px] border border-[#ebe7df] bg-white/95 shadow-[0_18px_60px_rgba(15,23,42,0.06)] backdrop-blur-xl md:grid"
-          style={{
-            gridTemplateColumns: agendaCollapsed
-              ? "minmax(0,1fr) 46px"
-              : "minmax(0,1fr) clamp(286px,22vw,312px)",
-          }}
-        >
-          <div className="pointer-events-none absolute inset-x-0 top-0 z-[90] h-[3px] bg-gradient-to-r from-[#ff7a18] via-[#ff6200] to-[#ff8c42]" />
-          <main className="min-w-0 bg-white">
-            <div className="flex min-h-[48px] flex-wrap items-center justify-between gap-1.5 border-b border-[#ebe7df] px-3 py-1.5 xl:px-4">
-              <div className="flex min-w-0 flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => navigateRange(-1)}
-                  className="flex h-7 w-7 items-center justify-center rounded-xl border border-[#eadbc9] bg-white text-[#7b766f] transition hover:bg-[#fff7f0]"
-                  aria-label="Попередній період"
-                >
-                  <ChevronLeft className="h-3.5 w-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCalendarOpen(true)}
-                  className="flex h-7 min-w-[168px] items-center gap-2 rounded-xl border border-[#eadbc9] bg-white px-2.5 text-[10px] font-black text-[#202020] transition hover:bg-[#fff7f0] xl:min-w-[200px]"
-                  aria-label="Відкрити календар"
-                >
-                  <CalendarDays className="h-3.5 w-3.5 text-[#ff6200]" />
-                  <span className="truncate">{formatDateLongUA(toISODateKey(viewDate))}</span>
-                  <ChevronDown className="ml-auto h-3.5 w-3.5 text-[#9a9189]" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => navigateRange(1)}
-                  className="flex h-7 w-7 items-center justify-center rounded-xl border border-[#eadbc9] bg-white text-[#7b766f] transition hover:bg-[#fff7f0]"
-                  aria-label="Наступний період"
-                >
-                  <ChevronRight className="h-3.5 w-3.5" />
-                </button>
-
-                <div className="ml-1 flex h-7 rounded-md border border-[#eadbc9] bg-[#fff7f0] p-0.5">
-                  {rangeModeItems.map((item) => {
-                    const active = rangeMode === item.key;
-
-                    return (
-                      <button
-                        key={item.key}
-                        type="button"
-                        onClick={() => handleRangeModeChange(item.key)}
-                        className={cn(
-                          "rounded px-2 text-[10px] font-black transition",
-                          active
-                            ? "bg-white text-[#202020] shadow-sm"
-                            : "text-[#9a9189] hover:text-[#202020]",
-                        )}
-                      >
-                        {item.label}
-                      </button>
-                    );
-                  })}
+        <div className="relative hidden h-[min(900px,calc(100dvh-12px))] min-h-[620px] flex-col overflow-hidden rounded-[22px] border border-[#e4e7ec] bg-[#f6f7f9] text-[#182230] shadow-[0_20px_70px_rgba(16,24,40,0.08)] md:flex">
+          <header className="flex min-h-[72px] shrink-0 items-center justify-between gap-4 border-b border-[#e4e7ec] bg-white px-5">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#182230] text-white">
+                <CalendarDays className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <h1 className="truncate text-lg font-extrabold tracking-[-0.02em]">
+                    Розклад
+                  </h1>
+                  {(scheduleDataLoading || scheduleDataError) && (
+                    <span
+                      className={cn(
+                        "h-2 w-2 shrink-0 rounded-full",
+                        scheduleDataError ? "bg-[#f04438]" : "animate-pulse bg-[#12b76a]",
+                      )}
+                      title={
+                        scheduleDataError
+                          ? "Використовуються останні збережені дані"
+                          : "Оновлення даних"
+                      }
+                    />
+                  )}
                 </div>
-              </div>
-
-              <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
-                {(scheduleDataLoading || scheduleDataError) && (
-                  <span
-                    className={cn(
-                      "max-w-[170px] truncate rounded-md px-2 py-1 text-[9px] font-black",
-                      scheduleDataError
-                        ? "bg-[#fff0f0] text-[#b42318]"
-                        : "bg-[#eef8ff] text-[#1261a0]",
-                    )}
-                    title={scheduleDataError || "Оновлюємо графік із бази даних"}
-                  >
-                    {scheduleDataError ? "Дані БД: використано кеш" : "Синхронізація з БД…"}
-                  </span>
-                )}
-                <select
-                  value={statusFilter}
-                  onChange={(event) => setStatusFilter(event.target.value)}
-                  className="h-7 max-w-[140px] rounded-xl border border-[#eadbc9] bg-white px-2 text-[10px] font-black text-[#202020] outline-none"
-                  aria-label="Фільтр статусу"
-                >
-                  {SCHEDULE_STATUS_FILTERS.map((item) => (
-                    <option key={item.key} value={item.key}>
-                      {item.label} ({statusCounts[item.key] || 0})
-                    </option>
-                  ))}
-                </select>
-                <select
-                  value={selectedGroup}
-                  onChange={(event) => handleSelectedGroupChange(event.target.value)}
-                  className="h-7 max-w-[160px] rounded-xl border border-[#eadbc9] bg-white px-2 text-[10px] font-black text-[#202020] outline-none"
-                  aria-label="Фільтр майстрів"
-                >
-                  <option value="all">Усі майстри</option>
-                  {groupOptions.map((option) => (
-                    <option key={option.key} value={option.key}>
-                      {option.name}
-                    </option>
-                  ))}
-                </select>
-                {viewSwitcher}
-              </div>
-            </div>
-            {renderScheduleGrid({ compact: false })}
-          </main>
-
-          <aside className="border-l border-[#ebe7df] bg-white">
-            {agendaCollapsed ? (
-              <div className="flex h-full flex-col items-center gap-3 bg-[#fffaf6] px-1 py-3">
-                <button
-                  type="button"
-                  onClick={() => setAgendaCollapsed(false)}
-                  className="flex h-7 w-7 items-center justify-center rounded-xl border border-[#eadbc9] bg-white text-[#7b766f] shadow-sm"
-                  aria-label="Розгорнути список записів"
-                  title="Розгорнути список записів"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
-                <span className="mt-2 rotate-90 whitespace-nowrap text-[10px] font-black uppercase tracking-[0.12em] text-[#9a9189]">
-                  записи
-                </span>
-              </div>
-            ) : (
-              <>
-                <div className="flex h-[42px] items-center justify-between border-b border-[#ebe7df] px-3">
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setAgendaCollapsed(true)}
-                  className="flex h-7 w-7 items-center justify-center rounded-md text-[#7b766f] hover:bg-[#f2f4f7]"
-                  aria-label="Згорнути список записів"
-                  title="Згорнути список записів"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-                <p className="text-[12px] font-black text-[#202020]">
-                  Список записів
+                <p className="truncate text-[11px] font-medium text-[#667085]">
+                  {studioName} · {agendaTotalCount}{" "}
+                  {pluralUa(agendaTotalCount, "запис", "записи", "записів")}
                 </p>
               </div>
-              <MoreHorizontal className="h-4 w-4 text-[#9a9189]" />
             </div>
 
-                <div className="calendar-day-scroll h-[calc(100%-42px)] overflow-y-auto px-3 py-3">
-              <div className="mb-3 rounded-md border border-[#ebe7df] bg-[#fffaf6] px-3 py-2">
-                <div className="flex items-center justify-between text-[10px] font-black uppercase text-[#9a9189]">
-                  <span>Today</span>
-                  <span>
-                    {scheduleTimeLabel(timeBounds.start)} - {scheduleTimeLabel(timeBounds.end)}
+            <div className="flex items-center gap-3">
+              {rangeControls}
+              <button
+                type="button"
+                onClick={() =>
+                  onCreateBooking?.({
+                    date: selectedDateKey,
+                    staffId: selectedMaster?.id || null,
+                    staffKey: selectedMaster?.key || null,
+                    staffName: selectedMaster?.name || "",
+                  })
+                }
+                className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#ff6b2c] px-4 text-xs font-extrabold text-white shadow-[0_8px_18px_rgba(255,107,44,0.22)] transition hover:bg-[#ed5c20] active:scale-[0.98]"
+              >
+                <Plus className="h-4 w-4" />
+                Новий запис
+              </button>
+            </div>
+          </header>
+
+          <div
+            className="grid min-h-0 flex-1"
+            style={{
+              gridTemplateColumns: agendaCollapsed
+                ? "52px minmax(0,1fr)"
+                : "clamp(270px,23vw,324px) minmax(0,1fr)",
+            }}
+          >
+            <aside className="min-h-0 border-r border-[#e4e7ec] bg-[#f8f9fb]">
+              {agendaCollapsed ? (
+                <div className="flex h-full flex-col items-center gap-4 py-4">
+                  <button
+                    type="button"
+                    onClick={() => setAgendaCollapsed(false)}
+                    className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#e4e7ec] bg-white text-[#667085] transition hover:text-[#182230]"
+                    aria-label="Розгорнути список записів"
+                    title="Розгорнути список записів"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                  <span className="mt-2 rotate-90 whitespace-nowrap text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#98a2b3]">
+                    Записи
                   </span>
                 </div>
-                <div className="mt-2 grid grid-cols-3 gap-2 text-center">
-                  <div>
-                    <p className="text-[14px] font-black text-[#202020]">
-                      ₴{formatPrice(agendaTotalPrice)}
-                    </p>
-                    <p className="text-[9px] font-bold uppercase text-[#aaa19a]">
-                      дохід
-                    </p>
+              ) : (
+                <div className="flex h-full min-h-0 flex-col">
+                  <div className="shrink-0 border-b border-[#e4e7ec] p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#98a2b3]">
+                          Огляд періоду
+                        </p>
+                        <p className="mt-1 text-sm font-extrabold capitalize text-[#182230]">
+                          {periodLabel}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setAgendaCollapsed(true)}
+                        className="flex h-8 w-8 items-center justify-center rounded-xl text-[#667085] transition hover:bg-white hover:text-[#182230]"
+                        aria-label="Згорнути список записів"
+                        title="Згорнути список записів"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-3 divide-x divide-[#e4e7ec] rounded-2xl border border-[#e4e7ec] bg-white py-3">
+                      <div className="px-2 text-center">
+                        <p className="text-sm font-extrabold tabular-nums text-[#182230]">
+                          {agendaTotalCount}
+                        </p>
+                        <p className="mt-0.5 text-[9px] font-bold uppercase text-[#98a2b3]">
+                          записів
+                        </p>
+                      </div>
+                      <div className="px-2 text-center">
+                        <p className="text-sm font-extrabold tabular-nums text-[#182230]">
+                          ₴{formatPrice(agendaTotalPrice)}
+                        </p>
+                        <p className="mt-0.5 text-[9px] font-bold uppercase text-[#98a2b3]">
+                          сума
+                        </p>
+                      </div>
+                      <div className="px-2 text-center">
+                        <p className="text-sm font-extrabold tabular-nums text-[#f79009]">
+                          {statusCounts.pending || 0}
+                        </p>
+                        <p className="mt-0.5 text-[9px] font-bold uppercase text-[#98a2b3]">
+                          очікують
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-[14px] font-black text-[#202020]">
-                      {agendaTotalCount}
-                    </p>
-                    <p className="text-[9px] font-bold uppercase text-[#aaa19a]">
-                      записи
-                    </p>
+
+                  <div className="calendar-day-scroll min-h-0 flex-1 overflow-y-auto p-4">
+                    {renderAgendaList()}
                   </div>
-                  <div>
-                    <p className="text-[14px] font-black text-[#202020]">
-                      {columns.length}
-                    </p>
-                    <p className="text-[9px] font-bold uppercase text-[#aaa19a]">
-                      майстри
-                    </p>
+                </div>
+              )}
+            </aside>
+
+            <main className="flex min-w-0 flex-col bg-white">
+              <div className="flex min-h-[64px] shrink-0 flex-wrap items-center justify-between gap-3 border-b border-[#e4e7ec] px-4 py-2.5 xl:px-5">
+                <div className="flex min-w-0 items-center gap-2">
+                  <div className="inline-flex items-center rounded-xl border border-[#e4e7ec] bg-white p-1">
+                    <button
+                      type="button"
+                      onClick={() => navigateRange(-1)}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-[#667085] transition hover:bg-[#f2f4f7] hover:text-[#182230]"
+                      aria-label="Попередній період"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCalendarOpen(true)}
+                      className="flex h-8 min-w-[180px] items-center justify-center gap-2 rounded-lg px-2 text-[12px] font-extrabold capitalize text-[#182230] transition hover:bg-[#f2f4f7]"
+                      aria-label="Відкрити календар"
+                    >
+                      <span className="truncate">{periodLabel}</span>
+                      <ChevronDown className="h-3.5 w-3.5 text-[#98a2b3]" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => navigateRange(1)}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-[#667085] transition hover:bg-[#f2f4f7] hover:text-[#182230]"
+                      aria-label="Наступний період"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => handleViewDateChange(new Date())}
+                    className="h-10 rounded-xl px-3 text-[11px] font-bold text-[#667085] transition hover:bg-[#f2f4f7] hover:text-[#182230]"
+                  >
+                    Сьогодні
+                  </button>
+                </div>
+
+                <div className="flex min-w-0 items-center gap-2">
+                  <label className="relative">
+                    <span className="sr-only">Фільтр статусу</span>
+                    <select
+                      value={statusFilter}
+                      onChange={(event) => setStatusFilter(event.target.value)}
+                      className="h-10 max-w-[150px] appearance-none rounded-xl border border-[#e4e7ec] bg-white py-0 pl-3 pr-8 text-[11px] font-bold text-[#344054] outline-none transition focus:border-[#ff6b2c] focus:ring-2 focus:ring-[#ff6b2c]/15"
+                    >
+                      {SCHEDULE_STATUS_FILTERS.map((item) => (
+                        <option key={item.key} value={item.key}>
+                          {item.label} ({statusCounts[item.key] || 0})
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#98a2b3]" />
+                  </label>
+                  <label className="relative">
+                    <span className="sr-only">Фільтр майстрів</span>
+                    <select
+                      value={selectedGroup}
+                      onChange={(event) =>
+                        handleSelectedGroupChange(event.target.value)
+                      }
+                      className="h-10 max-w-[170px] appearance-none rounded-xl border border-[#e4e7ec] bg-white py-0 pl-3 pr-8 text-[11px] font-bold text-[#344054] outline-none transition focus:border-[#ff6b2c] focus:ring-2 focus:ring-[#ff6b2c]/15"
+                    >
+                      <option value="all">Усі майстри</option>
+                      {groupOptions.map((option) => (
+                        <option key={option.key} value={option.key}>
+                          {option.name}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#98a2b3]" />
+                  </label>
                 </div>
               </div>
 
-              {agendaGroups.length === 0 ? (
-                <div className="rounded-2xl border-2 border-dashed border-[#eadbc9] bg-[#fff7f0] p-5 text-center">
-                  {studioClosedForSelectedDay ? (
-                    <Store className="mx-auto h-6 w-6 text-[#7b766f]" />
-                  ) : (
-                    <CalendarDays className="mx-auto h-6 w-6 text-[#aaa19a]" />
-                  )}
-                  <p className="mt-3 text-[13px] font-black text-[#202020]">
-                    {studioClosedForSelectedDay
-                      ? "Студія не працює"
-                      : "Записів немає"}
-                  </p>
-                  {studioClosedForSelectedDay && (
-                    <p className="mt-1 text-[10px] font-semibold text-[#7b766f]">
-                      {studioClosedHelper}
-                    </p>
-                  )}
-                </div>
-              ) : (
-                agendaGroups.map((group) => (
-                  <div key={group.dateKey} className="mb-4">
-                    <div className="mb-2 flex items-center justify-between text-[11px] font-black text-[#5f6875]">
-                      <span className="capitalize">
-                        {group.date.toLocaleDateString("uk-UA", {
-                          weekday: "short",
-                          day: "numeric",
-                          month: "short",
-                        })}
-                      </span>
-                      <span className="rounded-full border border-[#eadbc9] px-2 py-0.5 text-[9px] uppercase text-[#9a9189]">
-                        {group.items.length}{" "}
-                        {pluralUa(group.items.length, "запис", "записи", "записів")}
-                      </span>
-                    </div>
-
-                    <div className="grid gap-1.5">
-                      {group.items.map((booking) => {
-                        const tone = scheduleCardTone(booking, nowTs);
-                        const startLabel =
-                          parseTimeToHHMM(booking.raw.time) ||
-                          scheduleTimeLabel(booking.startMin);
-                        const endLabel = scheduleTimeLabel(booking.endMin);
-                      
-
-                        return (
-                          <button
-                            key={`agenda-${booking.id}-${booking.dateKey}-${booking.startMin}`}
-                            type="button"
-                            onClick={() => openBookingDetails(booking.id)}
-                            className="grid grid-cols-[38px_1fr_auto] gap-2 rounded-md border border-transparent bg-white px-2 py-2 text-left transition hover:border-[#ebe7df] hover:bg-[#fff7f0]"
-                          >
-                            <div className="pt-0.5 text-[10px] font-bold text-[#9a9189]">
-                              {startLabel}
-                            </div>
-                            <div className="min-w-0 border-l-2 pl-2.5" style={{ borderColor: tone.accent }}>
-                              <p className="truncate text-[12px] font-extrabold text-[#202020]">
-                                {booking.clientName}
-                              </p>
-                              <p className="mt-0.5 truncate text-[10px] font-medium text-[#9a9189]">
-                                {booking.serviceName} · {endLabel}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <ScheduleStatusIcon
-                                booking={booking}
-                                nowTs={nowTs}
-                                className="h-4 w-4"
-                                style={{ color: tone.accent }}
-                              />
-                              <Avatar
-                                name={booking.staffName || booking.clientName}
-                                photoUrl={booking.staffPhotoUrl}
-                                className="h-6 w-6 rounded-full"
-                              />
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))
-              )}
-                </div>
-              </>
-            )}
-          </aside>
+              <div className="min-h-0 flex-1 overflow-hidden">
+                {renderScheduleGrid({ compact: false })}
+              </div>
+            </main>
+          </div>
         </div>
 
-        <div className="relative left-1/2 flex h-[100dvh] min-h-[100dvh] w-screen -translate-x-1/2 flex-col overflow-hidden bg-[#fffaf6] text-[#202020] md:hidden">
-          <div className="sticky top-0 z-[120] shrink-0 border-b border-[#ebe7df] bg-white/95 shadow-[0_8px_24px_rgba(15,23,42,0.05)] backdrop-blur-xl">
-            <div className="grid grid-cols-[1fr_40px_34px] items-center px-4 pb-2.5 pt-3">
+        <div className="relative flex h-[100dvh] min-h-[100dvh] w-full flex-col overflow-hidden bg-[#f6f7f9] text-[#182230] md:hidden">
+          <header className="z-[10] shrink-0 border-b border-[#e4e7ec] bg-white">
+            <div className="flex items-center justify-between px-4 pb-2 pt-[max(12px,env(safe-area-inset-top))]">
+              <div className="min-w-0">
+                <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#98a2b3]">
+                  {studioName}
+                </p>
+                <h1 className="mt-0.5 text-lg font-extrabold tracking-[-0.02em]">
+                  Розклад
+                </h1>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMobileFiltersOpen((value) => !value)}
+                className={cn(
+                  "relative flex h-10 w-10 items-center justify-center rounded-xl border transition",
+                  mobileFiltersOpen
+                    ? "border-[#ff6b2c] bg-[#fff4ef] text-[#ff6b2c]"
+                    : "border-[#e4e7ec] bg-white text-[#475467]",
+                )}
+                aria-label="Фільтри"
+                aria-expanded={mobileFiltersOpen}
+              >
+                <SlidersHorizontal className="h-5 w-5" />
+                {(statusFilter !== "all" || selectedGroup !== "all") && (
+                  <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full border-2 border-white bg-[#ff6b2c]" />
+                )}
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2 px-4 pb-3">
+              <button
+                type="button"
+                onClick={() => navigateRange(-1)}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#e4e7ec] text-[#667085]"
+                aria-label="Попередній день"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
               <button
                 type="button"
                 onClick={() => setCalendarOpen(true)}
-                className="min-w-0 text-left"
+                className="flex h-10 min-w-0 flex-1 items-center justify-center gap-2 rounded-xl border border-[#e4e7ec] px-3 text-[12px] font-extrabold capitalize"
               >
-                <span className="flex items-center gap-2 text-[18px] font-black leading-tight">
-                  {viewDate.toLocaleDateString("uk-UA", {
-                    weekday: "short",
-                    day: "numeric",
-                    month: "short",
-                  })}
-                  <ChevronDown className="h-4 w-4" />
-                </span>
-                <span className="mt-0.5 block text-[12px] font-semibold text-[#7b766f]">
-                  {scheduleTimeLabel(timeBounds.start)} - {scheduleTimeLabel(timeBounds.end)}
-                </span>
+                <CalendarDays className="h-4 w-4 text-[#ff6b2c]" />
+                <span className="truncate">{periodLabel}</span>
+                <ChevronDown className="h-3.5 w-3.5 shrink-0 text-[#98a2b3]" />
               </button>
               <button
                 type="button"
-                onClick={() => setMobileFiltersOpen((value) => !value)}
-                className="flex h-9 w-9 items-center justify-center rounded-md hover:bg-[#f2f4f7]"
-                aria-label="Фільтри"
+                onClick={() => navigateRange(1)}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#e4e7ec] text-[#667085]"
+                aria-label="Наступний день"
               >
-                <SlidersHorizontal className="h-5 w-5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setMobileFiltersOpen((value) => !value)}
-                className="flex h-9 w-8 items-center justify-center rounded-md hover:bg-[#f2f4f7]"
-                aria-label="Меню"
-              >
-                <MoreVertical className="h-5 w-5" />
+                <ChevronRight className="h-4 w-4" />
               </button>
             </div>
 
-            <div className="grid grid-cols-7 px-3 pb-2 text-center">
+            <div className="grid grid-cols-7 gap-1 px-3 pb-3">
               {weekStripDays.map((date) => {
                 const key = toISODateKey(date);
                 const active = key === selectedDateKey;
+                const isToday = key === toISODateKey(new Date());
+                const count = countsByDate[key] || 0;
 
                 return (
                   <button
                     key={key}
                     type="button"
-                    onClick={() => handleViewDateChange(date)}
-                    className="flex h-[50px] flex-col items-center justify-center"
+                    onClick={() => {
+                      handleRangeModeChange("day");
+                      handleViewDateChange(date);
+                    }}
+                    className={cn(
+                      "relative flex h-[54px] flex-col items-center justify-center rounded-xl transition",
+                      active ? "bg-[#182230] text-white" : "text-[#475467]",
+                    )}
                   >
-                    <span className="text-[10px] font-semibold uppercase text-[#858b94]">
-                      {date.toLocaleDateString("uk-UA", { weekday: "short" }).slice(0, 3)}
-                    </span>
                     <span
                       className={cn(
-                        "mt-1 flex h-7 w-7 items-center justify-center rounded-full text-[14px] font-bold",
-                        active ? "bg-[#fff1e8] text-[#ff6200]" : "text-[#202020]",
+                        "text-[9px] font-bold uppercase",
+                        active ? "text-white/60" : "text-[#98a2b3]",
                       )}
                     >
+                      {date
+                        .toLocaleDateString("uk-UA", { weekday: "short" })
+                        .slice(0, 2)}
+                    </span>
+                    <span className="mt-1 text-[14px] font-extrabold">
                       {date.getDate()}
                     </span>
+                    {(count > 0 || isToday) && (
+                      <span
+                        className={cn(
+                          "absolute bottom-1.5 h-1 w-1 rounded-full",
+                          active
+                            ? "bg-[#ff8a55]"
+                            : isToday
+                              ? "bg-[#ff6b2c]"
+                              : "bg-[#c8cdd5]",
+                        )}
+                      />
+                    )}
                   </button>
                 );
               })}
             </div>
 
-            <div
-              className={cn(
-                "grid-cols-2 gap-2 border-t border-[#f1ebe5] px-4 py-2.5",
-                mobileFiltersOpen ? "grid" : "hidden",
-              )}
-            >
-              <select
-                value={statusFilter}
-                onChange={(event) => setStatusFilter(event.target.value)}
-                className="h-9 rounded-xl border border-[#eadbc9] bg-white px-2.5 text-[12px] font-black outline-none"
+            {mobileFiltersOpen && (
+              <div className="grid grid-cols-2 gap-2 border-t border-[#eef0f3] bg-[#f8f9fb] px-4 py-3">
+                <label className="relative">
+                  <span className="mb-1.5 block text-[9px] font-extrabold uppercase tracking-[0.1em] text-[#98a2b3]">
+                    Статус
+                  </span>
+                  <select
+                    value={statusFilter}
+                    onChange={(event) => setStatusFilter(event.target.value)}
+                    className="h-10 w-full appearance-none rounded-xl border border-[#e4e7ec] bg-white px-3 pr-8 text-[11px] font-bold outline-none"
+                  >
+                    {SCHEDULE_STATUS_FILTERS.map((item) => (
+                      <option key={item.key} value={item.key}>
+                        {item.label} ({statusCounts[item.key] || 0})
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute bottom-3 right-2.5 h-3.5 w-3.5 text-[#98a2b3]" />
+                </label>
+                <label className="relative">
+                  <span className="mb-1.5 block text-[9px] font-extrabold uppercase tracking-[0.1em] text-[#98a2b3]">
+                    Майстер
+                  </span>
+                  <select
+                    value={selectedGroup}
+                    onChange={(event) =>
+                      handleSelectedGroupChange(event.target.value)
+                    }
+                    className="h-10 w-full appearance-none rounded-xl border border-[#e4e7ec] bg-white px-3 pr-8 text-[11px] font-bold outline-none"
+                  >
+                    <option value="all">Усі майстри</option>
+                    {groupOptions.map((option) => (
+                      <option key={option.key} value={option.key}>
+                        {option.name}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute bottom-3 right-2.5 h-3.5 w-3.5 text-[#98a2b3]" />
+                </label>
+              </div>
+            )}
+          </header>
+
+          <div className="shrink-0 border-b border-[#e4e7ec] bg-white px-4 py-3">
+            <div className="grid grid-cols-3 divide-x divide-[#e4e7ec] rounded-2xl bg-[#f6f7f9] py-2.5">
+              <div className="px-2 text-center">
+                <p className="text-sm font-extrabold tabular-nums">
+                  {agendaTotalCount}
+                </p>
+                <p className="text-[9px] font-bold uppercase text-[#98a2b3]">
+                  записів
+                </p>
+              </div>
+              <div className="px-2 text-center">
+                <p className="text-sm font-extrabold tabular-nums">
+                  ₴{formatPrice(agendaTotalPrice)}
+                </p>
+                <p className="text-[9px] font-bold uppercase text-[#98a2b3]">
+                  сума
+                </p>
+              </div>
+              <div className="px-2 text-center">
+                <p className="text-sm font-extrabold tabular-nums text-[#f79009]">
+                  {statusCounts.pending || 0}
+                </p>
+                <p className="text-[9px] font-bold uppercase text-[#98a2b3]">
+                  очікують
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-3 grid grid-cols-2 rounded-xl bg-[#f1f3f7] p-1">
+              <button
+                type="button"
+                onClick={() => setMobileView("agenda")}
+                className={cn(
+                  "flex h-9 items-center justify-center gap-2 rounded-lg text-[11px] font-extrabold transition",
+                  mobileView === "agenda"
+                    ? "bg-white text-[#182230] shadow-[0_1px_3px_rgba(16,24,40,0.10)]"
+                    : "text-[#667085]",
+                )}
               >
-                {SCHEDULE_STATUS_FILTERS.map((item) => (
-                  <option key={item.key} value={item.key}>
-                    {item.label}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={selectedGroup}
-                onChange={(event) => handleSelectedGroupChange(event.target.value)}
-                className="h-9 rounded-xl border border-[#eadbc9] bg-white px-2.5 text-[12px] font-black outline-none"
+                <LayoutGrid className="h-4 w-4" />
+                Список
+              </button>
+              <button
+                type="button"
+                onClick={() => setMobileView("timeline")}
+                className={cn(
+                  "flex h-9 items-center justify-center gap-2 rounded-lg text-[11px] font-extrabold transition",
+                  mobileView === "timeline"
+                    ? "bg-white text-[#182230] shadow-[0_1px_3px_rgba(16,24,40,0.10)]"
+                    : "text-[#667085]",
+                )}
               >
-                <option value="all">Усі майстри</option>
-                {groupOptions.map((option) => (
-                  <option key={option.key} value={option.key}>
-                    {option.name}
-                  </option>
-                ))}
-              </select>
+                <ChartColumn className="h-4 w-4" />
+                Таймлайн
+              </button>
             </div>
           </div>
 
-          {renderScheduleGrid({ compact: true })}
+          {mobileView === "agenda" ? (
+            <main className="calendar-day-scroll min-h-0 flex-1 overflow-y-auto px-4 py-4">
+              {renderAgendaList({ mobile: true })}
+            </main>
+          ) : (
+            <main className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
+              {renderScheduleGrid({ compact: true })}
+            </main>
+          )}
 
-          <button
-            type="button"
-            className="fixed bottom-5 right-4 z-[140] flex h-12 w-12 items-center justify-center rounded-2xl bg-[#ff6200] text-white shadow-[0_12px_28px_rgba(255,98,0,0.28)] transition hover:bg-[#e95800] active:scale-95"
-            aria-label="Додати запис"
-          >
-            <Plus className="h-6 w-6" />
-          </button>
+          <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[50] bg-gradient-to-t from-white via-white/95 to-transparent px-4 pb-[max(14px,env(safe-area-inset-bottom))] pt-6 md:hidden">
+            <button
+              type="button"
+              onClick={() =>
+                onCreateBooking?.({
+                  date: selectedDateKey,
+                  staffId: selectedMaster?.id || null,
+                  staffKey: selectedMaster?.key || null,
+                  staffName: selectedMaster?.name || "",
+                })
+              }
+              className="pointer-events-auto flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#ff6b2c] text-[13px] font-extrabold text-white shadow-[0_12px_28px_rgba(255,107,44,0.26)] transition active:scale-[0.99]"
+              aria-label="Додати запис"
+            >
+              <Plus className="h-5 w-5" />
+              Додати запис
+            </button>
+          </div>
         </div>
 
         <BookingHoverCard
@@ -4125,7 +4394,7 @@ const timeBounds = useMemo(() => {
 
         {calendarOpen && (
           <div
-            className="fixed inset-0 z-[240] flex items-center justify-center bg-[#202020]/35 p-4 backdrop-blur-[4px]"
+            className="fixed inset-0 z-[240] flex items-end justify-center bg-[#101828]/40 p-3 backdrop-blur-[4px] sm:items-center sm:p-4"
             onMouseDown={(event) => {
               if (event.target === event.currentTarget) {
                 setCalendarOpen(false);
@@ -4141,6 +4410,7 @@ const timeBounds = useMemo(() => {
                 countsByDate={countsByDate}
                 onNavigateMonth={setViewDate}
                 onSelectDate={(date) => {
+                  handleRangeModeChange("day");
                   handleViewDateChange(date);
                   setCalendarOpen(false);
                 }}

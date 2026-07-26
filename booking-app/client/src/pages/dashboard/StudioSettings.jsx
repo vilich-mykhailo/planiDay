@@ -36,6 +36,21 @@ const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 const MAX_DESC = 400;
 const MAX_PORTFOLIO = 6;
 const PUBLIC = import.meta.env.VITE_R2_PUBLIC_BASE_URL;
+const PHOTON_API_URL =
+  import.meta.env.VITE_PHOTON_API_URL || "https://photon.komoot.io/api/";
+const LOCATION_SEARCH_DEBOUNCE_MS = 350;
+
+const SETTLEMENT_KIND_LABELS = {
+  city: "Місто",
+  town: "Місто",
+  village: "Село",
+  hamlet: "Селище",
+  locality: "Населений пункт",
+  isolated_dwelling: "Населений пункт",
+};
+
+const LATIN_KEYBOARD_KEYS = "qwertyuiop[]asdfghjkl;'zxcvbnm,.`";
+const UKRAINIAN_KEYBOARD_KEYS = "йцукенгшщзхїфівапролджєячсмитьбюґ";
 
 const STUDIO_CATEGORIES = [
   { value: "hair", label: "Перукарня" },
@@ -161,24 +176,30 @@ function SectionCard({
 }) {
   return (
     <section
-className={cn(
-  "group relative overflow-hidden rounded-[15px] border border-[#ebe7df] bg-white shadow-[0_14px_44px_rgba(15,23,42,0.05)] transition-all duration-300 hover:shadow-[0_20px_60px_rgba(15,23,42,0.08)]",
-  className,
-)}
+      className={cn(
+        "group relative overflow-hidden rounded-[15px] border border-[#ebe7df] bg-white shadow-[0_14px_44px_rgba(15,23,42,0.05)] transition-all duration-300 hover:shadow-[0_20px_60px_rgba(15,23,42,0.08)]",
+        className,
+      )}
     >
       <div className="absolute inset-x-0 top-0 h-[3px] bg-[#ff5a00]" />
 
       <div className="flex flex-col gap-3 border-b border-[#eadbc9] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <h2 className="text-lg font-black tracking-tight text-[#202020]">{title}</h2>
+            <h2 className="text-lg font-black tracking-tight text-[#202020]">
+              {title}
+            </h2>
             {badge && (
               <span className="inline-flex items-center rounded-full border border-[#ffd6bd] bg-[#fff1e8] px-2.5 py-0.5 text-xs font-black text-[#ff5a00]">
                 {badge}
               </span>
             )}
           </div>
-          {subtitle && <p className="mt-0.5 text-sm font-medium text-[#77716b]">{subtitle}</p>}
+          {subtitle && (
+            <p className="mt-0.5 text-sm font-medium text-[#77716b]">
+              {subtitle}
+            </p>
+          )}
         </div>
 
         {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
@@ -197,8 +218,21 @@ function Button({
   ...props
 }) {
   const variants = {
-primary:
-  "bg-[#202020] text-white shadow-[0_12px_26px_rgba(15,15,15,0.18)] transition-all duration-300 hover:scale-[1.015] hover:bg-[#ff6200] hover:shadow-[0_14px_30px_rgba(255,98,0,0.24)] active:scale-[0.98] disabled:pointer-events-none disabled:bg-[#f1ebe4] disabled:text-[#aaa19a] disabled:shadow-none disabled:opacity-100",
+  primary:
+  `
+    bg-[#202020] text-white
+    
+    transition-all duration-300
+    hover:scale-[1.015]
+    hover:bg-[#ff6200]
+    
+    active:scale-[0.98]
+    disabled:pointer-events-none
+    disabled:bg-[#f1ebe4]
+    disabled:text-[#aaa19a]
+    disabled:shadow-none
+    disabled:opacity-100
+  `,
     secondary:
       "border border-[#eadbc9] bg-white text-[#202020] hover:border-[#ffd6bd] hover:bg-[#fff7f0]",
     danger:
@@ -289,9 +323,7 @@ function CustomSelect({
 
     if (!q) return sortedOptions;
 
-    return sortedOptions.filter((opt) =>
-      opt.label.toLowerCase().includes(q),
-    );
+    return sortedOptions.filter((opt) => opt.label.toLowerCase().includes(q));
   }, [search, sortedOptions]);
 
   function updateMenuPosition() {
@@ -468,12 +500,1026 @@ function CustomSelect({
   );
 }
 
+function cleanPlacePart(value) {
+  return String(value || "").trim();
+}
+
+function createSavedCitySelection(value) {
+  const name = cleanPlacePart(value);
+
+  return name
+    ? {
+        id: `saved-${normalizeCityMatch(name)}`,
+        name,
+        state: "",
+        county: "",
+        district: "",
+      }
+    : null;
+}
+
+function normalizeCityMatch(value) {
+  return cleanPlacePart(value)
+    .toLocaleLowerCase("uk")
+    .replace(/[ії]/g, "и")
+    .replace(/[ы]/g, "и")
+    .replace(/[єэ]/g, "е")
+    .replace(/[ґ]/g, "г")
+    .replace(/[ё]/g, "о")
+    .replace(/[ьъ’'`\s-]/g, "");
+}
+
+function cityEditDistance(first, second) {
+  if (!first) return second.length;
+  if (!second) return first.length;
+
+  const row = Array.from({ length: second.length + 1 }, (_, index) => index);
+
+  for (let firstIndex = 1; firstIndex <= first.length; firstIndex += 1) {
+    let diagonal = row[0];
+    row[0] = firstIndex;
+
+    for (
+      let secondIndex = 1;
+      secondIndex <= second.length;
+      secondIndex += 1
+    ) {
+      const above = row[secondIndex];
+      const left = row[secondIndex - 1];
+      const substitution =
+        diagonal +
+        (first[firstIndex - 1] === second[secondIndex - 1] ? 0 : 1);
+
+      row[secondIndex] = Math.min(above + 1, left + 1, substitution);
+      diagonal = above;
+    }
+  }
+
+  return row[second.length];
+}
+
+function getCityMatchScore(search, candidate) {
+  const normalizedSearch = normalizeCityMatch(search);
+  const normalizedCandidate = normalizeCityMatch(candidate);
+
+  if (!normalizedSearch || !normalizedCandidate) return 0;
+  if (normalizedCandidate === normalizedSearch) return 100;
+  if (normalizedCandidate.startsWith(normalizedSearch)) {
+    return 90 - Math.min(normalizedCandidate.length - normalizedSearch.length, 20);
+  }
+  if (normalizedCandidate.includes(normalizedSearch)) return 75;
+
+  const distance = cityEditDistance(normalizedSearch, normalizedCandidate);
+  const similarity =
+    1 - distance / Math.max(normalizedSearch.length, normalizedCandidate.length);
+
+  return Math.max(0, similarity * 70);
+}
+
+function hasConfidentCityMatch(search, suggestions) {
+  return suggestions.some(
+    (suggestion) => getCityMatchScore(search, suggestion.name) >= 58,
+  );
+}
+
+function convertLatinKeyboardToUkrainian(value) {
+  return value
+    .toLocaleLowerCase("uk")
+    .split("")
+    .map((character) => {
+      const index = LATIN_KEYBOARD_KEYS.indexOf(character);
+      return index >= 0 ? UKRAINIAN_KEYBOARD_KEYS[index] : character;
+    })
+    .join("");
+}
+
+function buildCityFallbackQueries(value) {
+  const source = cleanPlacePart(value).toLocaleLowerCase("uk");
+  const variants = [];
+
+  if (/[а-яіїєґыэёъ]/i.test(source)) {
+    const simplified = source
+      .replace(/ы/g, "и")
+      .replace(/э/g, "е")
+      .replace(/ё/g, "о")
+      .replace(/ъ/g, "")
+      .replace(/[’'`]/g, "");
+
+    variants.push(
+      simplified.replace(/[ії]/g, "и").replace(/є/g, "е").replace(/ґ/g, "г"),
+      simplified.replace(/[иї]/g, "і").replace(/є/g, "е").replace(/ґ/g, "г"),
+    );
+  } else if (/^[a-z[\];',.`\s-]+$/i.test(source)) {
+    variants.push(convertLatinKeyboardToUkrainian(source));
+  }
+
+  return [...new Set(variants)]
+    .filter((variant) => variant && variant !== source)
+    .slice(0, 2);
+}
+
+function formatPhotonSettlement(feature, index) {
+  const properties = feature?.properties || {};
+  const name = cleanPlacePart(
+    properties.name || properties.city || properties.locality,
+  );
+
+  if (!name) return null;
+
+  const state = cleanPlacePart(properties.state);
+  const county = cleanPlacePart(properties.county);
+  const district = cleanPlacePart(properties.district);
+  const region = state || county || district;
+  const subregion =
+    [county, district].find(
+      (part) => part && part !== name && part !== region,
+    ) || "";
+  const kindKey = cleanPlacePart(
+    properties.osm_value || properties.type,
+  ).toLowerCase();
+  const kind = SETTLEMENT_KIND_LABELS[kindKey];
+
+  if (!kind) return null;
+
+  const valueParts = [name, subregion, region].filter(
+    (part, partIndex, parts) =>
+      part && parts.findIndex((item) => item === part) === partIndex,
+  );
+  const detailParts = [state, county, district].filter(
+    (part, partIndex, parts) =>
+      part &&
+      part !== name &&
+      parts.findIndex((item) => item === part) === partIndex,
+  );
+
+  return {
+    id: `${properties.osm_type || "place"}-${properties.osm_id || index}`,
+    name,
+    label: valueParts.join(", "),
+    kind,
+    details: detailParts.join(" · "),
+    state,
+    county,
+    district,
+  };
+}
+
+function rankCitySuggestions(search, suggestions) {
+  const seen = new Set();
+
+  return suggestions
+    .filter(Boolean)
+    .filter((item) => {
+      const key = `${item.label}|${item.details}`.toLocaleLowerCase("uk");
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .sort(
+      (first, second) =>
+        getCityMatchScore(search, second.name) -
+        getCityMatchScore(search, first.name),
+    )
+    .slice(0, 10);
+}
+
+function normalizeStreetMatch(value) {
+  const withoutType = cleanPlacePart(value)
+    .toLocaleLowerCase("uk")
+    .replace(
+      /^(?:вулиця|вул\.?|проспект|просп\.?|провулок|пров\.?|площа|майдан|бульвар|узвіз|шосе|набережна|алея|проїзд|дорога|тупик)\s+/iu,
+      "",
+    )
+    .replace(
+      /\s+(?:вулиця|вул\.?|проспект|просп\.?|провулок|пров\.?|площа|майдан|бульвар|узвіз|шосе|набережна|алея|проїзд|дорога|тупик)$/iu,
+      "",
+    );
+
+  return normalizeCityMatch(withoutType);
+}
+
+function getStreetMatchScore(search, candidate) {
+  const normalizedSearch = normalizeStreetMatch(search);
+  const normalizedCandidate = normalizeStreetMatch(candidate);
+
+  if (!normalizedSearch || !normalizedCandidate) return 0;
+  if (normalizedCandidate === normalizedSearch) return 100;
+  if (normalizedCandidate.startsWith(normalizedSearch)) {
+    return 90 - Math.min(normalizedCandidate.length - normalizedSearch.length, 20);
+  }
+  if (normalizedCandidate.includes(normalizedSearch)) return 75;
+
+  const distance = cityEditDistance(normalizedSearch, normalizedCandidate);
+  const similarity =
+    1 - distance / Math.max(normalizedSearch.length, normalizedCandidate.length);
+
+  return Math.max(0, similarity * 70);
+}
+
+function hasConfidentStreetMatch(search, suggestions) {
+  return suggestions.some(
+    (suggestion) => getStreetMatchScore(search, suggestion.name) >= 58,
+  );
+}
+
+function formatPhotonStreet(feature, index) {
+  const properties = feature?.properties || {};
+  const name = cleanPlacePart(properties.name || properties.street);
+
+  if (!name) return null;
+
+  const city = cleanPlacePart(
+    properties.city ||
+      properties.locality ||
+      properties.town ||
+      properties.village,
+  );
+  const district = cleanPlacePart(properties.district);
+  const county = cleanPlacePart(properties.county);
+  const state = cleanPlacePart(properties.state);
+  const detailParts = [city, district, county, state].filter(
+    (part, partIndex, parts) =>
+      part &&
+      part !== name &&
+      parts.findIndex((item) => item === part) === partIndex,
+  );
+  const identityParts = [name, city, state].filter(Boolean);
+
+  return {
+    id: `${properties.osm_type || "street"}-${properties.osm_id || index}`,
+    name,
+    identity: identityParts.join("|"),
+    details: detailParts.join(" · "),
+    city,
+    district,
+    county,
+    state,
+  };
+}
+
+function streetBelongsToSelectedCity(street, selectedCity) {
+  if (!selectedCity?.name || !street?.city) return false;
+
+  if (
+    normalizeCityMatch(street.city) !== normalizeCityMatch(selectedCity.name)
+  ) {
+    return false;
+  }
+
+  for (const part of ["state", "county"]) {
+    if (
+      selectedCity[part] &&
+      normalizeCityMatch(selectedCity[part]) !==
+        normalizeCityMatch(street[part])
+    ) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function rankStreetSuggestions(search, suggestions) {
+  const seen = new Set();
+
+  return suggestions
+    .filter(Boolean)
+    .filter((item) => {
+      const key = item.identity.toLocaleLowerCase("uk");
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .sort(
+      (first, second) =>
+        getStreetMatchScore(search, second.name) -
+        getStreetMatchScore(search, first.name),
+    )
+    .slice(0, 10);
+}
+
+function CityAutocomplete({
+  value,
+  onChange,
+  selectionValid,
+  className = "",
+}) {
+  const [query, setQuery] = useState(value || "");
+  const [suggestions, setSuggestions] = useState([]);
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [hasInteracted, setHasInteracted] = useState(false);
+  const requestRef = useRef(null);
+  const requestSequenceRef = useRef(0);
+  const blurTimerRef = useRef(null);
+  const listId = "studio-city-suggestions";
+
+  useEffect(() => {
+    const search = query.trim();
+    const requestId = ++requestSequenceRef.current;
+
+    requestRef.current?.abort();
+
+    if (!hasInteracted || search.length < 2) {
+      setSuggestions([]);
+      setLoading(false);
+      setError("");
+      setOpen(false);
+      return undefined;
+    }
+
+    const controller = new AbortController();
+    requestRef.current = controller;
+    setSuggestions([]);
+    setLoading(true);
+    setError("");
+    setOpen(true);
+
+    const timeoutId = window.setTimeout(async () => {
+      try {
+        async function loadSettlements(searchValue) {
+          const url = new URL(PHOTON_API_URL, window.location.origin);
+          url.searchParams.set("q", searchValue);
+          url.searchParams.set("lang", "default");
+          url.searchParams.set("limit", "10");
+          url.searchParams.set("countrycode", "UA");
+          url.searchParams.append("layer", "city");
+          url.searchParams.append("layer", "locality");
+
+          const response = await fetch(url.toString(), {
+            signal: controller.signal,
+            headers: { Accept: "application/json" },
+          });
+
+          if (!response.ok) {
+            throw new Error(`City search failed: ${response.status}`);
+          }
+
+          const payload = await response.json();
+          return (payload?.features || [])
+            .map(formatPhotonSettlement)
+            .filter(Boolean);
+        }
+
+        let nextSuggestions = await loadSettlements(search);
+
+        if (
+          !/^[a-z]/i.test(search) ||
+          nextSuggestions.length === 0
+        ) {
+          for (const fallbackQuery of buildCityFallbackQueries(search)) {
+            if (hasConfidentCityMatch(search, nextSuggestions)) break;
+
+            try {
+              const fallbackSuggestions =
+                await loadSettlements(fallbackQuery);
+              nextSuggestions = [
+                ...nextSuggestions,
+                ...fallbackSuggestions,
+              ];
+            } catch (fallbackError) {
+              if (fallbackError?.name === "AbortError") throw fallbackError;
+              if (!nextSuggestions.length) throw fallbackError;
+              break;
+            }
+          }
+        }
+
+        nextSuggestions = rankCitySuggestions(search, nextSuggestions);
+
+        if (requestId !== requestSequenceRef.current) return;
+
+        setSuggestions(nextSuggestions);
+        setActiveIndex(0);
+        setOpen(true);
+      } catch (searchError) {
+        if (
+          searchError?.name === "AbortError" ||
+          requestId !== requestSequenceRef.current
+        ) {
+          return;
+        }
+
+        setSuggestions([]);
+        setError(
+          "Не вдалося завантажити населені пункти. Перевірте інтернет і спробуйте ще раз.",
+        );
+        setOpen(true);
+      } finally {
+        if (requestId === requestSequenceRef.current) {
+          setLoading(false);
+        }
+      }
+    }, LOCATION_SEARCH_DEBOUNCE_MS);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [hasInteracted, query]);
+
+  useEffect(() => {
+    return () => {
+      requestRef.current?.abort();
+      if (blurTimerRef.current) {
+        window.clearTimeout(blurTimerRef.current);
+      }
+    };
+  }, []);
+
+  function selectSuggestion(suggestion) {
+    requestRef.current?.abort();
+    requestSequenceRef.current += 1;
+    setQuery(suggestion.name);
+    onChange(suggestion.name, suggestion);
+    setSuggestions([]);
+    setLoading(false);
+    setError("");
+    setOpen(false);
+    setHasInteracted(false);
+  }
+
+  function handleInputChange(event) {
+    const nextValue = event.target.value;
+    setQuery(nextValue);
+    onChange(nextValue, null);
+    setHasInteracted(true);
+    setActiveIndex(0);
+  }
+
+  function handleKeyDown(event) {
+    if (event.key === "Escape") {
+      setOpen(false);
+      return;
+    }
+
+    if (!suggestions.length) return;
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setOpen(true);
+      setActiveIndex((current) => (current + 1) % suggestions.length);
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setOpen(true);
+      setActiveIndex(
+        (current) => (current - 1 + suggestions.length) % suggestions.length,
+      );
+      return;
+    }
+
+    if (event.key === "Enter" && open) {
+      event.preventDefault();
+      selectSuggestion(suggestions[activeIndex] || suggestions[0]);
+    }
+  }
+
+  function clearQuery() {
+    requestRef.current?.abort();
+    requestSequenceRef.current += 1;
+    setQuery("");
+    onChange("", null);
+    setSuggestions([]);
+    setLoading(false);
+    setError("");
+    setOpen(false);
+    setHasInteracted(true);
+  }
+
+  const showResults = open && hasInteracted && query.trim().length >= 2;
+
+  return (
+    <div>
+      <div className="relative">
+        <MapPin className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-[#ff5a00]" />
+
+        <input
+          value={query}
+          onChange={handleInputChange}
+          onKeyDown={handleKeyDown}
+          onFocus={() => {
+            if (hasInteracted && query.trim().length >= 2) setOpen(true);
+          }}
+          onBlur={() => {
+            blurTimerRef.current = window.setTimeout(() => setOpen(false), 120);
+          }}
+          placeholder="Почніть вводити місто або село"
+          className={cn(className, "pl-11 pr-11")}
+          autoComplete="off"
+          autoCapitalize="words"
+          spellCheck
+          autoFocus
+          role="combobox"
+          aria-autocomplete="list"
+          aria-controls={listId}
+          aria-expanded={showResults}
+          aria-activedescendant={
+            showResults && suggestions[activeIndex]
+              ? `${listId}-${activeIndex}`
+              : undefined
+          }
+          aria-busy={loading}
+        />
+
+        {loading ? (
+          <span
+            className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 animate-spin rounded-full border-2 border-[#ffd6bd] border-t-[#ff5a00]"
+            aria-hidden="true"
+          />
+        ) : query ? (
+          <button
+            type="button"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={clearQuery}
+            className="absolute right-2.5 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full text-[#9b948c] transition hover:bg-[#fff1e8] hover:text-[#ff5a00]"
+            aria-label="Очистити місто"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        ) : null}
+      </div>
+
+      {query && selectionValid ? (
+        <p className="mt-2 flex items-center gap-1.5 text-xs font-bold text-[#218358]">
+          <Check className="h-3.5 w-3.5" />
+          Населений пункт вибрано зі списку.
+        </p>
+      ) : (
+        <p className="mt-2 text-xs font-medium text-[#77716b]">
+          Виберіть місто або село зі списку — введений вручну текст зберегти
+          не можна.
+        </p>
+      )}
+
+      {showResults && (
+        <div className="mt-2 overflow-hidden rounded-2xl border border-[#eadbc9] bg-white shadow-[0_18px_45px_rgba(17,17,17,0.12)]">
+          <div
+            id={listId}
+            role="listbox"
+            className="max-h-[min(16rem,38dvh)] overflow-y-auto py-1.5"
+          >
+            {loading ? (
+              <div className="flex items-center justify-center gap-2 px-4 py-6 text-sm font-bold text-[#77716b]">
+                <span
+                  className="h-5 w-5 animate-spin rounded-full border-2 border-[#ffd6bd] border-t-[#ff5a00]"
+                  aria-hidden="true"
+                />
+                Шукаємо населені пункти…
+              </div>
+            ) : error ? (
+              <div className="px-4 py-5 text-center text-sm font-semibold leading-5 text-[#e5484d]">
+                {error}
+              </div>
+            ) : suggestions.length ? (
+              suggestions.map((suggestion, index) => {
+                const isActive = index === activeIndex;
+
+                return (
+                  <button
+                    id={`${listId}-${index}`}
+                    key={suggestion.id}
+                    type="button"
+                    role="option"
+                    aria-selected={isActive}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onMouseEnter={() => setActiveIndex(index)}
+                    onClick={() => selectSuggestion(suggestion)}
+                    className={cn(
+                      "flex w-full items-start gap-3 px-4 py-3 text-left transition-colors",
+                      isActive ? "bg-[#fff1e8]" : "hover:bg-[#fff7f0]",
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl",
+                        isActive
+                          ? "bg-[#ff5a00] text-white"
+                          : "bg-[#fff1e8] text-[#ff5a00]",
+                      )}
+                    >
+                      <MapPinned className="h-4.5 w-4.5" />
+                    </span>
+
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center justify-between gap-2">
+                        <span className="truncate text-sm font-black text-[#202020]">
+                          {suggestion.name}
+                        </span>
+                        <span className="shrink-0 rounded-full bg-white px-2 py-1 text-[10px] font-black uppercase tracking-wide text-[#ff5a00]">
+                          {suggestion.kind}
+                        </span>
+                      </span>
+
+                      <span className="mt-0.5 block truncate text-xs font-medium text-[#77716b]">
+                        {suggestion.details || "Україна"}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })
+            ) : (
+              <div className="px-4 py-5 text-center">
+                <p className="text-sm font-black text-[#202020]">
+                  Нічого не знайдено
+                </p>
+                <p className="mt-1 text-xs font-medium text-[#77716b]">
+                  Спробуйте коротшу назву або інше написання.
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="border-t border-[#f0e7da] bg-[#fbfaf8] px-4 py-2 text-right">
+            <a
+              href="https://www.openstreetmap.org/copyright"
+              target="_blank"
+              rel="noreferrer"
+              onMouseDown={(event) => event.preventDefault()}
+              className="text-[10px] font-bold text-[#9b948c] hover:text-[#ff5a00]"
+            >
+              Дані © OpenStreetMap
+            </a>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StreetAutocomplete({
+  value,
+  city,
+  citySelection,
+  onChange,
+  className = "",
+}) {
+  const [query, setQuery] = useState(value || "");
+  const [suggestions, setSuggestions] = useState([]);
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [hasInteracted, setHasInteracted] = useState(false);
+  const requestRef = useRef(null);
+  const requestSequenceRef = useRef(0);
+  const blurTimerRef = useRef(null);
+  const listId = "studio-street-suggestions";
+  const cityContext = cleanPlacePart(citySelection?.name || city)
+    .split(",")[0]
+    .trim();
+  const hasVerifiedCity = Boolean(
+    citySelection?.name &&
+      normalizeCityMatch(citySelection.name) === normalizeCityMatch(city),
+  );
+
+  useEffect(() => {
+    const search = query.trim();
+    const requestId = ++requestSequenceRef.current;
+
+    requestRef.current?.abort();
+
+    if (!hasVerifiedCity || !hasInteracted || search.length < 2) {
+      setSuggestions([]);
+      setLoading(false);
+      setError("");
+      setOpen(false);
+      return undefined;
+    }
+
+    const controller = new AbortController();
+    requestRef.current = controller;
+    setSuggestions([]);
+    setLoading(true);
+    setError("");
+    setOpen(true);
+
+    const timeoutId = window.setTimeout(async () => {
+      try {
+        async function loadStreets(searchValue) {
+          const url = new URL(PHOTON_API_URL, window.location.origin);
+          const contextualQuery = cityContext
+            ? `${searchValue}, ${cityContext}`
+            : searchValue;
+
+          url.searchParams.set("q", contextualQuery);
+          url.searchParams.set("lang", "default");
+          url.searchParams.set("limit", "20");
+          url.searchParams.set("countrycode", "UA");
+          url.searchParams.append("layer", "street");
+
+          const response = await fetch(url.toString(), {
+            signal: controller.signal,
+            headers: { Accept: "application/json" },
+          });
+
+          if (!response.ok) {
+            throw new Error(`Street search failed: ${response.status}`);
+          }
+
+          const payload = await response.json();
+          return (payload?.features || [])
+            .map(formatPhotonStreet)
+            .filter(Boolean)
+            .filter((street) =>
+              streetBelongsToSelectedCity(street, citySelection),
+            );
+        }
+
+        let nextSuggestions = await loadStreets(search);
+
+        if (!/^[a-z]/i.test(search) || nextSuggestions.length === 0) {
+          for (const fallbackQuery of buildCityFallbackQueries(search)) {
+            if (hasConfidentStreetMatch(search, nextSuggestions)) break;
+
+            try {
+              const fallbackSuggestions = await loadStreets(fallbackQuery);
+              nextSuggestions = [
+                ...nextSuggestions,
+                ...fallbackSuggestions,
+              ];
+            } catch (fallbackError) {
+              if (fallbackError?.name === "AbortError") throw fallbackError;
+              if (!nextSuggestions.length) throw fallbackError;
+              break;
+            }
+          }
+        }
+
+        nextSuggestions = rankStreetSuggestions(search, nextSuggestions);
+
+        if (requestId !== requestSequenceRef.current) return;
+
+        setSuggestions(nextSuggestions);
+        setActiveIndex(0);
+        setOpen(true);
+      } catch (searchError) {
+        if (
+          searchError?.name === "AbortError" ||
+          requestId !== requestSequenceRef.current
+        ) {
+          return;
+        }
+
+        setSuggestions([]);
+        setError(
+          "Не вдалося завантажити вулиці. Перевірте інтернет і спробуйте ще раз.",
+        );
+        setOpen(true);
+      } finally {
+        if (requestId === requestSequenceRef.current) {
+          setLoading(false);
+        }
+      }
+    }, LOCATION_SEARCH_DEBOUNCE_MS);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [cityContext, citySelection, hasInteracted, hasVerifiedCity, query]);
+
+  useEffect(() => {
+    return () => {
+      requestRef.current?.abort();
+      if (blurTimerRef.current) {
+        window.clearTimeout(blurTimerRef.current);
+      }
+    };
+  }, []);
+
+  function selectSuggestion(suggestion) {
+    requestRef.current?.abort();
+    requestSequenceRef.current += 1;
+    setQuery(suggestion.name);
+    onChange(suggestion.name);
+    setSuggestions([]);
+    setLoading(false);
+    setError("");
+    setOpen(false);
+    setHasInteracted(false);
+  }
+
+  function handleInputChange(event) {
+    const nextValue = event.target.value;
+    setQuery(nextValue);
+    onChange(nextValue);
+    setHasInteracted(true);
+    setActiveIndex(0);
+  }
+
+  function handleKeyDown(event) {
+    if (event.key === "Escape") {
+      setOpen(false);
+      return;
+    }
+
+    if (!suggestions.length) return;
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setOpen(true);
+      setActiveIndex((current) => (current + 1) % suggestions.length);
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setOpen(true);
+      setActiveIndex(
+        (current) => (current - 1 + suggestions.length) % suggestions.length,
+      );
+      return;
+    }
+
+    if (event.key === "Enter" && open) {
+      event.preventDefault();
+      selectSuggestion(suggestions[activeIndex] || suggestions[0]);
+    }
+  }
+
+  function clearQuery() {
+    requestRef.current?.abort();
+    requestSequenceRef.current += 1;
+    setQuery("");
+    onChange("");
+    setSuggestions([]);
+    setLoading(false);
+    setError("");
+    setOpen(false);
+    setHasInteracted(true);
+  }
+
+  const showResults = open && hasInteracted && query.trim().length >= 2;
+
+  return (
+    <div>
+      <div className="relative">
+        <Signpost className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-[#ff5a00]" />
+
+        <input
+          value={query}
+          onChange={handleInputChange}
+          onKeyDown={handleKeyDown}
+          onFocus={() => {
+            if (hasInteracted && query.trim().length >= 2) setOpen(true);
+          }}
+          onBlur={() => {
+            blurTimerRef.current = window.setTimeout(() => setOpen(false), 120);
+          }}
+          placeholder={
+            hasVerifiedCity
+              ? "Почніть вводити назву вулиці"
+              : "Спочатку виберіть місто або село"
+          }
+          className={cn(
+            className,
+            "pl-11 pr-11",
+            !hasVerifiedCity &&
+              "cursor-not-allowed border-[#e5dfd7] bg-[#f5f2ed] text-[#9b948c]",
+          )}
+          disabled={!hasVerifiedCity}
+          autoComplete="off"
+          autoCapitalize="words"
+          spellCheck
+          autoFocus
+          role="combobox"
+          aria-autocomplete="list"
+          aria-controls={listId}
+          aria-expanded={showResults}
+          aria-activedescendant={
+            showResults && suggestions[activeIndex]
+              ? `${listId}-${activeIndex}`
+              : undefined
+          }
+          aria-busy={loading}
+        />
+
+        {loading ? (
+          <span
+            className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 animate-spin rounded-full border-2 border-[#ffd6bd] border-t-[#ff5a00]"
+            aria-hidden="true"
+          />
+        ) : query ? (
+          <button
+            type="button"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={clearQuery}
+            className="absolute right-2.5 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full text-[#9b948c] transition hover:bg-[#fff1e8] hover:text-[#ff5a00]"
+            aria-label="Очистити вулицю"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        ) : null}
+      </div>
+
+      {showResults && (
+        <div className="mt-2 overflow-hidden rounded-2xl border border-[#eadbc9] bg-white shadow-[0_18px_45px_rgba(17,17,17,0.12)]">
+          <div
+            id={listId}
+            role="listbox"
+            className="max-h-[min(16rem,38dvh)] overflow-y-auto py-1.5"
+          >
+            {loading ? (
+              <div className="flex items-center justify-center gap-2 px-4 py-6 text-sm font-bold text-[#77716b]">
+                <span
+                  className="h-5 w-5 animate-spin rounded-full border-2 border-[#ffd6bd] border-t-[#ff5a00]"
+                  aria-hidden="true"
+                />
+                Шукаємо вулиці…
+              </div>
+            ) : error ? (
+              <div className="px-4 py-5 text-center text-sm font-semibold leading-5 text-[#e5484d]">
+                {error}
+              </div>
+            ) : suggestions.length ? (
+              suggestions.map((suggestion, index) => {
+                const isActive = index === activeIndex;
+
+                return (
+                  <button
+                    id={`${listId}-${index}`}
+                    key={suggestion.id}
+                    type="button"
+                    role="option"
+                    aria-selected={isActive}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onMouseEnter={() => setActiveIndex(index)}
+                    onClick={() => selectSuggestion(suggestion)}
+                    className={cn(
+                      "flex w-full items-start gap-3 px-4 py-3 text-left transition-colors",
+                      isActive ? "bg-[#fff1e8]" : "hover:bg-[#fff7f0]",
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl",
+                        isActive
+                          ? "bg-[#ff5a00] text-white"
+                          : "bg-[#fff1e8] text-[#ff5a00]",
+                      )}
+                    >
+                      <Signpost className="h-4.5 w-4.5" />
+                    </span>
+
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center justify-between gap-2">
+                        <span className="truncate text-sm font-black text-[#202020]">
+                          {suggestion.name}
+                        </span>
+                        <span className="shrink-0 rounded-full bg-white px-2 py-1 text-[10px] font-black uppercase tracking-wide text-[#ff5a00]">
+                          Вулиця
+                        </span>
+                      </span>
+
+                      <span className="mt-0.5 block truncate text-xs font-medium text-[#77716b]">
+                        {suggestion.details || cityContext || "Україна"}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })
+            ) : (
+              <div className="px-4 py-5 text-center">
+                <p className="text-sm font-black text-[#202020]">
+                  Вулицю не знайдено
+                </p>
+                <p className="mt-1 text-xs font-medium text-[#77716b]">
+                  Перевірте місто або спробуйте коротшу назву.
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="border-t border-[#f0e7da] bg-[#fbfaf8] px-4 py-2 text-right">
+            <a
+              href="https://www.openstreetmap.org/copyright"
+              target="_blank"
+              rel="noreferrer"
+              onMouseDown={(event) => event.preventDefault()}
+              className="text-[10px] font-bold text-[#9b948c] hover:text-[#ff5a00]"
+            >
+              Дані © OpenStreetMap
+            </a>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Field({ label, hint, error, children }) {
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between gap-3">
         <label className="text-sm font-black text-[#202020]">{label}</label>
-        {hint && <span className="text-xs font-medium text-[#77716b]">{hint}</span>}
+        {hint && (
+          <span className="text-xs font-medium text-[#77716b]">{hint}</span>
+        )}
       </div>
       {children}
       {error && <p className="text-xs font-semibold text-[#e5484d]">{error}</p>}
@@ -630,13 +1676,19 @@ function completeness(form) {
     { key: "category", label: "Категорія", ok: Boolean(form.category) },
     { key: "phone", label: "Номер телефону", ok: Boolean(form.phone?.trim()) },
     { key: "email", label: "Пошта", ok: Boolean(form.email?.trim()) },
-    { key: "description", label: "Опис", ok: Boolean(form.description?.trim()) },
+    {
+      key: "description",
+      label: "Опис",
+      ok: Boolean(form.description?.trim()),
+    },
     { key: "coverUrl", label: "Обкладинка", ok: hasCover },
     { key: "logoUrl", label: "Логотип", ok: hasLogo },
     {
       key: "address",
       label: "Адреса",
-      ok: Boolean(form.city?.trim() && form.street?.trim() && form.building?.trim()),
+      ok: Boolean(
+        form.city?.trim() && form.street?.trim() && form.building?.trim(),
+      ),
     },
     { key: "portfolio", label: "Портфоліо", ok: portfolioCount >= 1 },
   ];
@@ -649,6 +1701,56 @@ function completeness(form) {
   return { items, done, total, percent, next };
 }
 
+function formatStreetForDisplay(value) {
+  const street = String(value || "")
+    .trim()
+    .replace(/\s+/g, " ");
+
+  if (!street) return "";
+
+  const prefixRules = [
+    [/^(?:вулиця|вул\.?)\s*/iu, "вул. "],
+    [/^(?:проспект|просп\.?|пр-т)\s*/iu, "просп. "],
+    [/^(?:провулок|пров\.?)\s*/iu, "пров. "],
+    [/^(?:бульвар|бул\.?)\s*/iu, "бул. "],
+    [/^(?:площа|пл\.?)\s*/iu, "пл. "],
+    [/^(?:набережна|наб\.?)\s*/iu, "наб. "],
+    [/^(?:узвіз|узв\.?)\s*/iu, "узв. "],
+    [/^(?:проїзд|пр-д)\s*/iu, "пр-д "],
+    [/^(?:шосе)\s*/iu, "шосе "],
+    [/^(?:алея|ал\.?)\s*/iu, "ал. "],
+    [/^(?:майдан)\s*/iu, "майдан "],
+    [/^(?:дорога)\s*/iu, "дорога "],
+    [/^(?:тупик)\s*/iu, "тупик "],
+  ];
+
+  for (const [pattern, replacement] of prefixRules) {
+    if (pattern.test(street)) {
+      return street.replace(pattern, replacement).trim();
+    }
+  }
+
+  const suffixRules = [
+    [/^(.+?)\s+(?:вулиця|вул\.?)$/iu, "вул. $1"],
+    [/^(.+?)\s+(?:проспект|просп\.?|пр-т)$/iu, "просп. $1"],
+    [/^(.+?)\s+(?:провулок|пров\.?)$/iu, "пров. $1"],
+    [/^(.+?)\s+(?:бульвар|бул\.?)$/iu, "бул. $1"],
+    [/^(.+?)\s+(?:площа|пл\.?)$/iu, "пл. $1"],
+    [/^(.+?)\s+(?:набережна|наб\.?)$/iu, "наб. $1"],
+    [/^(.+?)\s+(?:узвіз|узв\.?)$/iu, "узв. $1"],
+    [/^(.+?)\s+(?:проїзд|пр-д)$/iu, "пр-д $1"],
+    [/^(.+?)\s+(?:алея|ал\.?)$/iu, "ал. $1"],
+  ];
+
+  for (const [pattern, replacement] of suffixRules) {
+    if (pattern.test(street)) {
+      return street.replace(pattern, replacement).trim();
+    }
+  }
+
+  return street;
+}
+
 export default function StudioSettings() {
   const { studio, updateStudio } = useStudio();
   const [initialLoading, setInitialLoading] = useState(true);
@@ -659,22 +1761,24 @@ export default function StudioSettings() {
     ? tabFromUrl
     : "profile";
   const [menuOpen, setMenuOpen] = useState(false);
-const [editModal, setEditModal] = useState({
-  open: false,
-  field: "",
-  title: "",
-  value: "",
-});
+  const [editModal, setEditModal] = useState({
+    open: false,
+    field: "",
+    title: "",
+    value: "",
+    selectionValid: false,
+    selectedLocation: null,
+  });
   const [tab, setTab] = useState(initialTab);
-const [cropModal, setCropModal] = useState({
-  open: false,
-  imageUrl: "",
-  target: "",
-});
+  const [cropModal, setCropModal] = useState({
+    open: false,
+    imageUrl: "",
+    target: "",
+  });
 
-const [crop, setCrop] = useState({ x: 0, y: 0 });
-const [zoom, setZoom] = useState(1);
-const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
   function setTabUrl(nextTab) {
     setTab(nextTab);
     setSearchParams(
@@ -704,6 +1808,7 @@ const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
     logoFile: null,
     portfolioFiles: [],
   });
+  const [selectedCity, setSelectedCity] = useState(null);
 
   const [highlightId, setHighlightId] = useState("");
   const [highlightAddress, setHighlightAddress] = useState(false);
@@ -711,8 +1816,6 @@ const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
   const [logoPreviewUrl, setLogoPreviewUrl] = useState("");
   const [portfolioPreviewUrls, setPortfolioPreviewUrls] = useState([]);
   const [highlightTone, setHighlightTone] = useState("green");
-
-
 
   const highlightClass =
     highlightTone === "green"
@@ -778,50 +1881,49 @@ const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
     message: "",
   });
 
-const hasCover = Boolean(form.coverFile || form.coverUrl?.trim());
-const hasLogo = Boolean(form.logoFile || form.logoUrl?.trim());
-const coverSrc = coverPreviewUrl || toPublicUrl(form.coverUrl);
-const logoSrc = logoPreviewUrl || toPublicUrl(form.logoUrl);
+  const hasCover = Boolean(form.coverFile || form.coverUrl?.trim());
+  const hasLogo = Boolean(form.logoFile || form.logoUrl?.trim());
+  const coverSrc = coverPreviewUrl || toPublicUrl(form.coverUrl);
+  const logoSrc = logoPreviewUrl || toPublicUrl(form.logoUrl);
 
-const addressPreview = [
-  form.city,
-  form.street,
-  form.building,
-  form.apartment,
-]
-  .filter(Boolean)
-  .join(", ") || "Адреса студії";
-const [portfolioPreview, setPortfolioPreview] = useState({
-  open: false,
-  index: 0,
-});
+const addressPreview =
+  [
+    form.city?.trim(),
+    [
+      formatStreetForDisplay(form.street),
+      form.building?.trim(),
+    ]
+      .filter(Boolean)
+      .join(" "),
+    form.apartment?.trim(),
+  ]
+    .filter(Boolean)
+    .join(", ") || "Адреса студії";
+  const [portfolioPreview, setPortfolioPreview] = useState({
+    open: false,
+    index: 0,
+  });
 
-  
   useEffect(() => {
-  const isAnyModalOpen =
-    editModal.open ||
-    cropModal.open ||
-    portfolioPreview.open ||
-    errorModal.open;
+    const isAnyModalOpen =
+      editModal.open ||
+      cropModal.open ||
+      portfolioPreview.open ||
+      errorModal.open;
 
-  if (isAnyModalOpen) {
-    document.body.style.overflow = "hidden";
-    document.body.style.touchAction = "none";
-  } else {
-    document.body.style.overflow = "";
-    document.body.style.touchAction = "";
-  }
+    if (isAnyModalOpen) {
+      document.body.style.overflow = "hidden";
+      document.body.style.touchAction = "none";
+    } else {
+      document.body.style.overflow = "";
+      document.body.style.touchAction = "";
+    }
 
-  return () => {
-    document.body.style.overflow = "";
-    document.body.style.touchAction = "";
-  };
-}, [
-  editModal.open,
-  cropModal.open,
-  portfolioPreview.open,
-  errorModal.open,
-]);
+    return () => {
+      document.body.style.overflow = "";
+      document.body.style.touchAction = "";
+    };
+  }, [editModal.open, cropModal.open, portfolioPreview.open, errorModal.open]);
 
   useEffect(() => {
     if (!form.coverFile) {
@@ -886,6 +1988,7 @@ const [portfolioPreview, setPortfolioPreview] = useState({
     }
 
     if (!studio) {
+      setSelectedCity(null);
       setInitialLoading(false);
       setHydrated(true);
       return;
@@ -909,6 +2012,20 @@ const [portfolioPreview, setPortfolioPreview] = useState({
       coverFile: null,
       logoFile: null,
       portfolioFiles: [],
+    });
+    setSelectedCity((current) => {
+      const savedSelection = createSavedCitySelection(studio?.city);
+
+      if (
+        current?.name &&
+        savedSelection?.name &&
+        normalizeCityMatch(current.name) ===
+          normalizeCityMatch(savedSelection.name)
+      ) {
+        return current;
+      }
+
+      return savedSelection;
     });
 
     setHydrated(true);
@@ -986,7 +2103,8 @@ const [portfolioPreview, setPortfolioPreview] = useState({
       (studio?.apartment || "") !== form.apartment ||
       (studio?.coverUrl || "") !== form.coverUrl ||
       (studio?.logoUrl || "") !== form.logoUrl ||
-      JSON.stringify(currentPortfolio) !== JSON.stringify(form.portfolioUrls || []) ||
+      JSON.stringify(currentPortfolio) !==
+        JSON.stringify(form.portfolioUrls || []) ||
       Boolean(form.coverFile) ||
       Boolean(form.logoFile) ||
       (form.portfolioFiles?.length || 0) > 0
@@ -1009,15 +2127,18 @@ const [portfolioPreview, setPortfolioPreview] = useState({
       apartment: studio?.apartment || "",
       coverUrl: studio?.coverUrl || "",
       logoUrl: studio?.logoUrl || "",
-      portfolioUrls: Array.isArray(studio?.portfolioUrls) ? studio.portfolioUrls : [],
+      portfolioUrls: Array.isArray(studio?.portfolioUrls)
+        ? studio.portfolioUrls
+        : [],
       coverFile: null,
       logoFile: null,
       portfolioFiles: [],
     });
+    setSelectedCity(createSavedCitySelection(studio?.city));
   }
 
   const dirty = hydrated ? rawDirty : false;
-const hasPendingChanges = false;
+  const hasPendingChanges = false;
   const canSave = dirty && Object.keys(errors).length === 0 && !saving;
   const [clearingPortfolio, setClearingPortfolio] = useState(false);
 
@@ -1044,62 +2165,62 @@ const hasPendingChanges = false;
     return data;
   }
 
-async function getCroppedImage(imageSrc, cropPixels) {
-  const image = new window.Image();
+  async function getCroppedImage(imageSrc, cropPixels) {
+    const image = new window.Image();
 
-  image.src = imageSrc;
+    image.src = imageSrc;
 
-  await new Promise((resolve, reject) => {
-    image.onload = resolve;
-    image.onerror = reject;
-  });
+    await new Promise((resolve, reject) => {
+      image.onload = resolve;
+      image.onerror = reject;
+    });
 
-  const safeCrop = cropPixels || {
-    x: 0,
-    y: 0,
-    width: image.naturalWidth || image.width,
-    height: image.naturalHeight || image.height,
-  };
+    const safeCrop = cropPixels || {
+      x: 0,
+      y: 0,
+      width: image.naturalWidth || image.width,
+      height: image.naturalHeight || image.height,
+    };
 
-  const canvas = document.createElement("canvas");
-  canvas.width = 900;
-  canvas.height = 900;
+    const canvas = document.createElement("canvas");
+    canvas.width = 900;
+    canvas.height = 900;
 
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Canvas error");
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Canvas error");
 
-  ctx.drawImage(
-    image,
-    safeCrop.x,
-    safeCrop.y,
-    safeCrop.width,
-    safeCrop.height,
-    0,
-    0,
-    900,
-    900,
-  );
-
-  return new Promise((resolve, reject) => {
-    canvas.toBlob(
-      (blob) => {
-        if (!blob) {
-          reject(new Error("Crop failed"));
-          return;
-        }
-
-        resolve(
-          new File([blob], "studio-logo.jpg", {
-            type: "image/jpeg",
-            lastModified: Date.now(),
-          }),
-        );
-      },
-      "image/jpeg",
-      0.82,
+    ctx.drawImage(
+      image,
+      safeCrop.x,
+      safeCrop.y,
+      safeCrop.width,
+      safeCrop.height,
+      0,
+      0,
+      900,
+      900,
     );
-  });
-}
+
+    return new Promise((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            reject(new Error("Crop failed"));
+            return;
+          }
+
+          resolve(
+            new File([blob], "studio-logo.jpg", {
+              type: "image/jpeg",
+              lastModified: Date.now(),
+            }),
+          );
+        },
+        "image/jpeg",
+        0.82,
+      );
+    });
+  }
 
   async function uploadMany(studioId, files, token) {
     const fd = new FormData();
@@ -1119,39 +2240,92 @@ async function getCroppedImage(imageSrc, cropPixels) {
     return data;
   }
 
-async function pickImage(e, fieldKey) {
-  const file = e.target.files?.[0];
-  e.target.value = "";
-  if (!file) return;
+  async function pickImage(e, fieldKey) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
 
-  if (file.size > MAX_IMAGE_SIZE) {
-    setErrorModal({
+    if (file.size > MAX_IMAGE_SIZE) {
+      setErrorModal({
+        open: true,
+        title: "Файл завеликий",
+        message: "До 10 MB.",
+      });
+      return;
+    }
+
+    if (!file.type?.startsWith("image/")) {
+      setErrorModal({
+        open: true,
+        title: "Невірний формат",
+        message: "Обери зображення.",
+      });
+      return;
+    }
+
+    if (fieldKey === "coverUrl") {
+      const compressed = await compressImage(file, {
+        maxWidth: 1920,
+        maxHeight: 1080,
+        quality: 0.82,
+      });
+
+      const nextForm = {
+        ...form,
+        coverFile: compressed,
+      };
+
+      setForm(nextForm);
+
+      setTimeout(() => {
+        save({ preventDefault: () => {} }, nextForm);
+      }, 0);
+
+      return;
+    }
+
+    const imageUrl = URL.createObjectURL(file);
+
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+    setCroppedAreaPixels(null);
+
+    setCropModal({
       open: true,
-      title: "Файл завеликий",
-      message: "До 10 MB.",
+      imageUrl,
+      target: fieldKey,
     });
-    return;
   }
 
-  if (!file.type?.startsWith("image/")) {
-    setErrorModal({
-      open: true,
-      title: "Невірний формат",
-      message: "Обери зображення.",
-    });
-    return;
-  }
+  async function confirmCrop() {
+    if (!cropModal.imageUrl) return;
 
-  if (fieldKey === "coverUrl") {
-    const compressed = await compressImage(file, {
-      maxWidth: 1920,
-      maxHeight: 1080,
-      quality: 0.82,
+    const cropPixels = croppedAreaPixels || {
+      x: 0,
+      y: 0,
+      width: 900,
+      height: 900,
+    };
+
+    const croppedFile = await getCroppedImage(cropModal.imageUrl, cropPixels);
+
+    const target = cropModal.target;
+
+    URL.revokeObjectURL(cropModal.imageUrl);
+
+    setCropModal({
+      open: false,
+      imageUrl: "",
+      target: "",
     });
+
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+    setCroppedAreaPixels(null);
 
     const nextForm = {
       ...form,
-      coverFile: compressed,
+      ...(target === "logoUrl" ? { logoFile: croppedFile } : {}),
     };
 
     setForm(nextForm);
@@ -1159,89 +2333,36 @@ async function pickImage(e, fieldKey) {
     setTimeout(() => {
       save({ preventDefault: () => {} }, nextForm);
     }, 0);
-
-    return;
   }
 
-  const imageUrl = URL.createObjectURL(file);
+  async function pickPortfolioImages(e) {
+    const files = Array.from(e.target.files || []);
+    e.target.value = "";
+    if (!files.length) return;
 
-  setCrop({ x: 0, y: 0 });
-  setZoom(1);
-  setCroppedAreaPixels(null);
+    const left =
+      MAX_PORTFOLIO -
+      ((form.portfolioUrls?.length || 0) + (form.portfolioFiles?.length || 0));
 
-  setCropModal({
-    open: true,
-    imageUrl,
-    target: fieldKey,
-  });
-}
+    const take = files.slice(0, Math.max(0, left));
 
-async function confirmCrop() {
-  if (!cropModal.imageUrl) return;
+    const okFiles = [];
+    let skipped = 0;
 
-  const cropPixels = croppedAreaPixels || {
-    x: 0,
-    y: 0,
-    width: 900,
-    height: 900,
-  };
+    for (const f of take) {
+      if (!f.type?.startsWith("image/") || f.size > MAX_IMAGE_SIZE) {
+        skipped++;
+        continue;
+      }
 
-  const croppedFile = await getCroppedImage(cropModal.imageUrl, cropPixels);
+      const compressed = await compressImage(f, {
+        maxWidth: 1600,
+        maxHeight: 1600,
+        quality: 0.82,
+      });
 
-  const target = cropModal.target;
-
-  URL.revokeObjectURL(cropModal.imageUrl);
-
-  setCropModal({
-    open: false,
-    imageUrl: "",
-    target: "",
-  });
-
-  setCrop({ x: 0, y: 0 });
-  setZoom(1);
-  setCroppedAreaPixels(null);
-
-  const nextForm = {
-    ...form,
-    ...(target === "logoUrl" ? { logoFile: croppedFile } : {}),
-  };
-
-  setForm(nextForm);
-
-  setTimeout(() => {
-    save({ preventDefault: () => {} }, nextForm);
-  }, 0);
-}
-
-async function pickPortfolioImages(e) {
-  const files = Array.from(e.target.files || []);
-  e.target.value = "";
-  if (!files.length) return;
-
-  const left =
-    MAX_PORTFOLIO -
-    ((form.portfolioUrls?.length || 0) + (form.portfolioFiles?.length || 0));
-
-  const take = files.slice(0, Math.max(0, left));
-
-  const okFiles = [];
-  let skipped = 0;
-
-  for (const f of take) {
-    if (!f.type?.startsWith("image/") || f.size > MAX_IMAGE_SIZE) {
-      skipped++;
-      continue;
+      okFiles.push(compressed);
     }
-
-    const compressed = await compressImage(f, {
-      maxWidth: 1600,
-      maxHeight: 1600,
-      quality: 0.82,
-    });
-
-    okFiles.push(compressed);
-  }
 
     if (!okFiles.length) {
       setErrorModal({
@@ -1252,19 +2373,19 @@ async function pickPortfolioImages(e) {
       return;
     }
 
-const nextForm = {
-  ...form,
-  portfolioFiles: [...(form.portfolioFiles || []), ...okFiles].slice(
-    0,
-    MAX_PORTFOLIO,
-  ),
-};
+    const nextForm = {
+      ...form,
+      portfolioFiles: [...(form.portfolioFiles || []), ...okFiles].slice(
+        0,
+        MAX_PORTFOLIO,
+      ),
+    };
 
-setForm(nextForm);
+    setForm(nextForm);
 
-setTimeout(() => {
-  save({ preventDefault: () => {} }, nextForm);
-}, 0);
+    setTimeout(() => {
+      save({ preventDefault: () => {} }, nextForm);
+    }, 0);
 
     if (skipped) {
       showToast({
@@ -1329,51 +2450,49 @@ setTimeout(() => {
       else nextFiles.push(form.portfolioFiles[x.i]);
     }
 
-const nextForm = {
-  ...form,
-  portfolioUrls: nextUrls.slice(0, MAX_PORTFOLIO),
-  portfolioFiles: nextFiles.slice(0, MAX_PORTFOLIO),
-};
-
-setForm(nextForm);
-
-setTimeout(() => {
-  save({ preventDefault: () => {} }, nextForm);
-}, 0);
-  }
-
-function removePortfolioMixed(idx) {
-  const remoteCount = form.portfolioUrls?.length || 0;
-
-  if (idx < remoteCount) {
-    const key = form.portfolioUrls[idx];
-    if (!key) return;
-
     const nextForm = {
       ...form,
-      portfolioUrls: (form.portfolioUrls || []).filter((_, i) => i !== idx),
+      portfolioUrls: nextUrls.slice(0, MAX_PORTFOLIO),
+      portfolioFiles: nextFiles.slice(0, MAX_PORTFOLIO),
     };
 
     setForm(nextForm);
 
     setTimeout(() => {
-      save(
-        { preventDefault: () => {} },
-        nextForm,
-        [key],
-      );
+      save({ preventDefault: () => {} }, nextForm);
     }, 0);
-
-    return;
   }
 
-  const localIndex = idx - remoteCount;
+  function removePortfolioMixed(idx) {
+    const remoteCount = form.portfolioUrls?.length || 0;
 
-  setForm((p) => ({
-    ...p,
-    portfolioFiles: (p.portfolioFiles || []).filter((_, i) => i !== localIndex),
-  }));
-}
+    if (idx < remoteCount) {
+      const key = form.portfolioUrls[idx];
+      if (!key) return;
+
+      const nextForm = {
+        ...form,
+        portfolioUrls: (form.portfolioUrls || []).filter((_, i) => i !== idx),
+      };
+
+      setForm(nextForm);
+
+      setTimeout(() => {
+        save({ preventDefault: () => {} }, nextForm, [key]);
+      }, 0);
+
+      return;
+    }
+
+    const localIndex = idx - remoteCount;
+
+    setForm((p) => ({
+      ...p,
+      portfolioFiles: (p.portfolioFiles || []).filter(
+        (_, i) => i !== localIndex,
+      ),
+    }));
+  }
 
   const portfolioCount =
     (form.portfolioUrls?.length || 0) + (form.portfolioFiles?.length || 0);
@@ -1444,115 +2563,135 @@ function removePortfolioMixed(idx) {
     });
   }
 
-async function save(e, overrideForm = null, extraDeletes = []) {
-  e?.preventDefault?.();
+  async function save(
+    e,
+    overrideForm = null,
+    extraDeletes = [],
+    overrideCitySelection = null,
+  ) {
+    e?.preventDefault?.();
 
-  const data = overrideForm || form;
-  if (!studio?.id) return;
+    const data = overrideForm || form;
+    const citySelectionForSave = overrideCitySelection || selectedCity;
+    if (!studio?.id) return;
 
-  const uploadedNewKeys = [];
+    if (
+      data.city?.trim() &&
+      (!citySelectionForSave?.name ||
+        normalizeCityMatch(citySelectionForSave.name) !==
+          normalizeCityMatch(data.city))
+    ) {
+      setErrorModal({
+        open: true,
+        title: "Оберіть місто зі списку",
+        message:
+          "Зберегти місто або село, введене вручну, не можна. Виберіть населений пункт із підказок пошуку.",
+      });
+      return;
+    }
 
-  setSaving(true);
+    const uploadedNewKeys = [];
 
-  try {
-    const token = localStorage.getItem("token");
+    setSaving(true);
 
-    const prevCoverKey = data.coverUrl || "";
-    const prevLogoKey = data.logoUrl || "";
+    try {
+      const token = localStorage.getItem("token");
 
-    let nextCoverKey = data.coverUrl || "";
-    let nextLogoKey = data.logoUrl || "";
-    let nextPortfolioKeys = Array.isArray(data.portfolioUrls)
-      ? [...data.portfolioUrls]
-      : [];
+      const prevCoverKey = data.coverUrl || "";
+      const prevLogoKey = data.logoUrl || "";
 
-    const deletesAfterSave = [...pendingDeletes, ...extraDeletes];
+      let nextCoverKey = data.coverUrl || "";
+      let nextLogoKey = data.logoUrl || "";
+      let nextPortfolioKeys = Array.isArray(data.portfolioUrls)
+        ? [...data.portfolioUrls]
+        : [];
 
-    if (data.coverFile) {
-      const out = await uploadOne(studio.id, data.coverFile, "cover", token);
-      nextCoverKey = out.key;
-      uploadedNewKeys.push(out.key);
+      const deletesAfterSave = [...pendingDeletes, ...extraDeletes];
 
-      if (prevCoverKey && prevCoverKey !== nextCoverKey) {
-        deletesAfterSave.push(prevCoverKey);
+      if (data.coverFile) {
+        const out = await uploadOne(studio.id, data.coverFile, "cover", token);
+        nextCoverKey = out.key;
+        uploadedNewKeys.push(out.key);
+
+        if (prevCoverKey && prevCoverKey !== nextCoverKey) {
+          deletesAfterSave.push(prevCoverKey);
+        }
       }
-    }
 
-    if (data.logoFile) {
-      const out = await uploadOne(studio.id, data.logoFile, "logo", token);
-      nextLogoKey = out.key;
-      uploadedNewKeys.push(out.key);
+      if (data.logoFile) {
+        const out = await uploadOne(studio.id, data.logoFile, "logo", token);
+        nextLogoKey = out.key;
+        uploadedNewKeys.push(out.key);
 
-      if (prevLogoKey && prevLogoKey !== nextLogoKey) {
-        deletesAfterSave.push(prevLogoKey);
+        if (prevLogoKey && prevLogoKey !== nextLogoKey) {
+          deletesAfterSave.push(prevLogoKey);
+        }
       }
+
+      if ((data.portfolioFiles?.length || 0) > 0) {
+        const out = await uploadMany(studio.id, data.portfolioFiles, token);
+        const newKeys = out.keys || [];
+
+        uploadedNewKeys.push(...newKeys);
+        nextPortfolioKeys = [...nextPortfolioKeys, ...newKeys].slice(
+          0,
+          MAX_PORTFOLIO,
+        );
+      }
+
+      await updateStudio({
+        name: data.name.trim(),
+        category: data.category,
+        phone: data.phone.trim(),
+        email: data.email.trim(),
+        description: data.description.trim(),
+        city: data.city.trim(),
+        street: data.street.trim(),
+        building: data.building.trim(),
+        apartment: data.apartment.trim(),
+        coverUrl: nextCoverKey,
+        logoUrl: nextLogoKey,
+        portfolioUrls: nextPortfolioKeys,
+      });
+
+      await deleteManyFromR2(deletesAfterSave);
+
+      setPendingDeletes([]);
+      setHighlightId("");
+      setHighlightAddress(false);
+
+      setForm((p) => ({
+        ...p,
+        ...data,
+        coverUrl: nextCoverKey,
+        logoUrl: nextLogoKey,
+        portfolioUrls: nextPortfolioKeys,
+        coverFile: null,
+        logoFile: null,
+        portfolioFiles: [],
+      }));
+
+      showToast({
+        type: "success",
+        title: "Збережено",
+        text: "Профіль оновлено",
+      });
+    } catch (error) {
+      console.error(error);
+
+      if (uploadedNewKeys.length) {
+        await deleteManyFromR2(uploadedNewKeys);
+      }
+
+      showToast({
+        type: "error",
+        title: "Помилка",
+        text: "Не вдалося зберегти зміни",
+      });
+    } finally {
+      setSaving(false);
     }
-
-    if ((data.portfolioFiles?.length || 0) > 0) {
-      const out = await uploadMany(studio.id, data.portfolioFiles, token);
-      const newKeys = out.keys || [];
-
-      uploadedNewKeys.push(...newKeys);
-      nextPortfolioKeys = [...nextPortfolioKeys, ...newKeys].slice(
-        0,
-        MAX_PORTFOLIO,
-      );
-    }
-
-    await updateStudio({
-      name: data.name.trim(),
-      category: data.category,
-      phone: data.phone.trim(),
-      email: data.email.trim(),
-      description: data.description.trim(),
-      city: data.city.trim(),
-      street: data.street.trim(),
-      building: data.building.trim(),
-      apartment: data.apartment.trim(),
-      coverUrl: nextCoverKey,
-      logoUrl: nextLogoKey,
-      portfolioUrls: nextPortfolioKeys,
-    });
-
-    await deleteManyFromR2(deletesAfterSave);
-
-    setPendingDeletes([]);
-    setHighlightId("");
-    setHighlightAddress(false);
-
-    setForm((p) => ({
-      ...p,
-      ...data,
-      coverUrl: nextCoverKey,
-      logoUrl: nextLogoKey,
-      portfolioUrls: nextPortfolioKeys,
-      coverFile: null,
-      logoFile: null,
-      portfolioFiles: [],
-    }));
-
-    showToast({
-      type: "success",
-      title: "Збережено",
-      text: "Профіль оновлено",
-    });
-  } catch (error) {
-    console.error(error);
-
-    if (uploadedNewKeys.length) {
-      await deleteManyFromR2(uploadedNewKeys);
-    }
-
-    showToast({
-      type: "error",
-      title: "Помилка",
-      text: "Не вдалося зберегти зміни",
-    });
-  } finally {
-    setSaving(false);
   }
-}
-
 
   const headerTriggerRef = useRef(null);
   const [showTopSave, setShowTopSave] = useState(false);
@@ -1605,34 +2744,37 @@ async function save(e, overrideForm = null, extraDeletes = []) {
     };
   }, []);
 
-  const AddressLine = useMemo(() => {
-    const parts = [
-      form.city?.trim(),
-      [form.street?.trim(), form.building?.trim()].filter(Boolean).join(" "),
-      form.apartment?.trim() ? `офіс/кв. ${form.apartment.trim()}` : "",
-    ].filter(Boolean);
-    return parts.length ? parts.join(", ") : "Адреса не заповнена";
-  }, [form]);
+const AddressLine = useMemo(() => {
+  const formattedStreet = formatStreetForDisplay(form.street);
+
+  const parts = [
+    form.city?.trim(),
+    [formattedStreet, form.building?.trim()].filter(Boolean).join(" "),
+    form.apartment?.trim() ? `офіс/кв. ${form.apartment.trim()}` : "",
+  ].filter(Boolean);
+
+  return parts.length ? parts.join(", ") : "Адреса не заповнена";
+}, [form.city, form.street, form.building, form.apartment]);
 
   const profile = useMemo(() => completeness(form), [form]);
 
-const FIELD_ID = {
-  name: "studio-field-name",
-  category: "studio-field-category",
-  phone: "studio-field-phone",
-  email: "studio-field-email",
-  description: "studio-field-description",
+  const FIELD_ID = {
+    name: "studio-field-name",
+    category: "studio-field-category",
+    phone: "studio-field-phone",
+    email: "studio-field-email",
+    description: "studio-field-description",
 
-  city: "studio-field-city",
-  street: "studio-field-street",
-  building: "studio-field-building",
-  apartment: "studio-field-apartment",
+    city: "studio-field-city",
+    street: "studio-field-street",
+    building: "studio-field-building",
+    apartment: "studio-field-apartment",
 
-  coverUrl: "studio-field-coverUrl",
-  logoUrl: "studio-field-logoUrl",
-  portfolio: "studio-field-portfolio-add",
-  address: "studio-field-city",
-};
+    coverUrl: "studio-field-coverUrl",
+    logoUrl: "studio-field-logoUrl",
+    portfolio: "studio-field-portfolio-add",
+    address: "studio-field-city",
+  };
 
   function highlightAddressFields() {
     setHighlightTone("green");
@@ -1656,43 +2798,42 @@ const FIELD_ID = {
     goToField(profile.next.key, { tone: "green" });
   }
 
-function goToField(key, opts = {}) {
-  const tone = opts.tone || "green";
-  setHighlightTone(tone);
+  function goToField(key, opts = {}) {
+    const tone = opts.tone || "green";
+    setHighlightTone(tone);
 
-  if (["name", "category", "phone", "email", "description"].includes(key)) {
-    setTabUrl("profile");
+    if (["name", "category", "phone", "email", "description"].includes(key)) {
+      setTabUrl("profile");
 
-    requestAnimationFrame(() => {
-      setTimeout(() => {
-        const id = FIELD_ID[key];
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          const id = FIELD_ID[key];
 
-        if (id) {
-          document.getElementById(id)?.scrollIntoView({
-            behavior: "smooth",
-            block: "center",
-          });
+          if (id) {
+            document.getElementById(id)?.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+            });
 
-          setHighlightId(id);
-          window.setTimeout(() => setHighlightId(""), 1800);
-        }
+            setHighlightId(id);
+            window.setTimeout(() => setHighlightId(""), 1800);
+          }
 
-        openStudioEditModal(key);
-      }, 180);
-    });
+          openStudioEditModal(key);
+        }, 180);
+      });
 
-    return;
-  }
+      return;
+    }
 
-  if (key === "address") {
-    setTabUrl("location");
+    if (key === "address") {
+      setTabUrl("location");
 
-    requestAnimationFrame(() => {
-      setTimeout(() => {
-        highlightAddressFields();
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          highlightAddressFields();
 
-        const firstEmpty =
-          !form.city?.trim()
+          const firstEmpty = !form.city?.trim()
             ? "city"
             : !form.street?.trim()
               ? "street"
@@ -1700,79 +2841,79 @@ function goToField(key, opts = {}) {
                 ? "building"
                 : "apartment";
 
-        const targetId = FIELD_ID[firstEmpty] || "studio-field-city";
+          const targetId = FIELD_ID[firstEmpty] || "studio-field-city";
 
-        document.getElementById(targetId)?.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-        });
+          document.getElementById(targetId)?.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
 
-        setHighlightId(targetId);
-        window.setTimeout(() => setHighlightId(""), 1800);
+          setHighlightId(targetId);
+          window.setTimeout(() => setHighlightId(""), 1800);
 
-        openStudioEditModal(firstEmpty);
-      }, 180);
-    });
+          openStudioEditModal(firstEmpty);
+        }, 180);
+      });
 
-    return;
+      return;
+    }
+
+    if (key === "coverUrl") {
+      setTabUrl("profile");
+
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          document.getElementById("studio-field-coverUrl")?.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+
+          setHighlightId("studio-field-coverUrl");
+          window.setTimeout(() => setHighlightId(""), 1800);
+
+          openCoverPicker();
+        }, 180);
+      });
+
+      return;
+    }
+
+    if (key === "logoUrl") {
+      setTabUrl("profile");
+
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          document.getElementById("studio-field-logoUrl")?.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+
+          setHighlightId("studio-field-logoUrl");
+          window.setTimeout(() => setHighlightId(""), 1800);
+
+          openLogoPicker();
+        }, 180);
+      });
+
+      return;
+    }
+
+    if (key === "portfolio") {
+      setTabUrl("links");
+
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          document.getElementById("studio-field-portfolio")?.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+
+          setHighlightId("studio-field-portfolio-add");
+          window.setTimeout(() => setHighlightId(""), 1800);
+        }, 180);
+      });
+    }
   }
-
-  if (key === "coverUrl") {
-    setTabUrl("profile");
-
-    requestAnimationFrame(() => {
-      setTimeout(() => {
-        document.getElementById("studio-field-coverUrl")?.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-        });
-
-        setHighlightId("studio-field-coverUrl");
-        window.setTimeout(() => setHighlightId(""), 1800);
-
-        openCoverPicker();
-      }, 180);
-    });
-
-    return;
-  }
-
-  if (key === "logoUrl") {
-    setTabUrl("profile");
-
-    requestAnimationFrame(() => {
-      setTimeout(() => {
-        document.getElementById("studio-field-logoUrl")?.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-        });
-
-        setHighlightId("studio-field-logoUrl");
-        window.setTimeout(() => setHighlightId(""), 1800);
-
-        openLogoPicker();
-      }, 180);
-    });
-
-    return;
-  }
-
-  if (key === "portfolio") {
-    setTabUrl("links");
-
-    requestAnimationFrame(() => {
-      setTimeout(() => {
-        document.getElementById("studio-field-portfolio")?.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-        });
-
-        setHighlightId("studio-field-portfolio-add");
-        window.setTimeout(() => setHighlightId(""), 1800);
-      }, 180);
-    });
-  }
-}
 
   const coverInputRef = useRef(null);
   const logoInputRef = useRef(null);
@@ -1818,35 +2959,32 @@ function goToField(key, opts = {}) {
   }, [form.portfolioUrls, form.portfolioFiles, portfolioPreviewUrls]);
 
   function openPortfolioPreview(index) {
-  setPortfolioPreview({
-    open: true,
-    index,
-  });
-}
+    setPortfolioPreview({
+      open: true,
+      index,
+    });
+  }
 
-function closePortfolioPreview() {
-  setPortfolioPreview({
-    open: false,
-    index: 0,
-  });
-}
+  function closePortfolioPreview() {
+    setPortfolioPreview({
+      open: false,
+      index: 0,
+    });
+  }
 
-function nextPortfolioPreview() {
-  setPortfolioPreview((prev) => ({
-    ...prev,
-    index: (prev.index + 1) % portfolioItems.length,
-  }));
-}
+  function nextPortfolioPreview() {
+    setPortfolioPreview((prev) => ({
+      ...prev,
+      index: (prev.index + 1) % portfolioItems.length,
+    }));
+  }
 
-function prevPortfolioPreview() {
-  setPortfolioPreview((prev) => ({
-    ...prev,
-    index:
-      prev.index === 0
-        ? portfolioItems.length - 1
-        : prev.index - 1,
-  }));
-}
+  function prevPortfolioPreview() {
+    setPortfolioPreview((prev) => ({
+      ...prev,
+      index: prev.index === 0 ? portfolioItems.length - 1 : prev.index - 1,
+    }));
+  }
 
   useEffect(() => {
     const syncMenuState = () => {
@@ -1867,86 +3005,129 @@ function prevPortfolioPreview() {
   const categoryLabel = form.category
     ? getCategoryLabel(form.category)
     : "Категорія";
+  const hasCurrentCitySelection = Boolean(
+    selectedCity?.name &&
+      normalizeCityMatch(selectedCity.name) === normalizeCityMatch(form.city),
+  );
 
-    function openStudioEditModal(field) {
-  const config = {
-    name: {
-      title: "Назва студії",
-      value: form.name,
-    },
-    category: {
-      title: "Категорія",
-      value: form.category,
-    },
-    phone: {
-      title: "Номер телефону",
-      value: form.phone,
-    },
-    email: {
-      title: "Електронна пошта",
-      value: form.email,
-    },
-    description: {
-      title: "Опис студії",
-      value: form.description,
-    },
-    city: {
-      title: "Місто",
-      value: form.city,
-    },
-    street: {
-      title: "Вулиця",
-      value: form.street,
-    },
-    building: {
-      title: "Будинок",
-      value: form.building,
-    },
-    apartment: {
-      title: "Квартира / Офіс",
-      value: form.apartment,
-    },
-  };
+  function openStudioEditModal(field) {
+    const config = {
+      name: {
+        title: "Назва студії",
+        value: form.name,
+      },
+      category: {
+        title: "Категорія",
+        value: form.category,
+      },
+      phone: {
+        title: "Номер телефону",
+        value: form.phone,
+      },
+      email: {
+        title: "Електронна пошта",
+        value: form.email,
+      },
+      description: {
+        title: "Опис студії",
+        value: form.description,
+      },
+      city: {
+        title: "Місто",
+        value: form.city,
+      },
+      street: {
+        title: "Вулиця",
+        value: form.street,
+      },
+      building: {
+        title: "Будинок",
+        value: form.building,
+      },
+      apartment: {
+        title: "Квартира / Офіс",
+        value: form.apartment,
+      },
+    };
 
-  setEditModal({
-    open: true,
-    field,
-    title: config[field]?.title || "Редагування",
-    value: config[field]?.value || "",
-  });
-}
+    setEditModal({
+      open: true,
+      field,
+      title: config[field]?.title || "Редагування",
+      value: config[field]?.value || "",
+      selectionValid: field === "city" ? hasCurrentCitySelection : true,
+      selectedLocation: field === "city" ? selectedCity : null,
+    });
+  }
 
-function closeStudioEditModal() {
-  setEditModal({
-    open: false,
-    field: "",
-    title: "",
-    value: "",
-  });
-}
+  function closeStudioEditModal() {
+    setEditModal({
+      open: false,
+      field: "",
+      title: "",
+      value: "",
+      selectionValid: false,
+      selectedLocation: null,
+    });
+  }
 
-async function saveStudioEditModal() {
-  if (!editModal.field) return;
+  async function saveStudioEditModal() {
+    if (!editModal.field) return;
 
-  const field = editModal.field;
-  const value = editModal.value;
+    const field = editModal.field;
+    const value = editModal.value;
 
-  closeStudioEditModal();
+    if (
+      field === "city" &&
+      (!editModal.selectionValid ||
+        !editModal.selectedLocation?.name ||
+        normalizeCityMatch(editModal.selectedLocation.name) !==
+          normalizeCityMatch(value))
+    ) {
+      setErrorModal({
+        open: true,
+        title: "Оберіть зі списку",
+        message:
+          "Місто або село не можна вводити вручну. Почніть пошук і виберіть потрібний населений пункт із підказок.",
+      });
+      return;
+    }
 
-  setForm((prev) => {
-    const next = { ...prev, [field]: value };
+    if (field === "street" && !hasCurrentCitySelection) {
+      setErrorModal({
+        open: true,
+        title: "Спочатку виберіть місто",
+        message:
+          "Пошук і збереження вулиці доступні лише після вибору міста або села зі списку.",
+      });
+      return;
+    }
 
-    setTimeout(() => {
-      save({ preventDefault: () => {} }, next);
-    }, 0);
+    if (field === "city") {
+      setSelectedCity(editModal.selectedLocation);
+    }
 
-    return next;
-  });
-}
+    closeStudioEditModal();
+
+    setForm((prev) => {
+      const next = { ...prev, [field]: value };
+
+      setTimeout(() => {
+        save(
+          { preventDefault: () => {} },
+          next,
+          [],
+          field === "city" ? editModal.selectedLocation : null,
+        );
+      }, 0);
+
+      return next;
+    });
+  }
 
   return (
     <div className="min-h-screen ">
-     <div className="mx-auto max-w-6xl space-y-6">
+      <div className="mx-auto max-w-6xl space-y-6">
         <input
           ref={coverInputRef}
           type="file"
@@ -1964,37 +3145,37 @@ async function saveStudioEditModal() {
         />
 
         <div className="mb-6">
-<div
-  ref={headerTriggerRef}
-  className="relative overflow-hidden rounded-[15px] border border-[#ebe7df] bg-white/95 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.06)] backdrop-blur-xl sm:p-7"
->
-  <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#ff7a18] via-[#ff6200] to-[#ff8c42]" />
+          <div
+            ref={headerTriggerRef}
+            className="relative overflow-hidden rounded-[15px] border border-[#ebe7df] bg-white/95 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.06)] backdrop-blur-xl sm:p-7"
+          >
+            <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#ff7a18] via-[#ff6200] to-[#ff8c42]" />
 
             <div className="absolute -right-7 -top-10 hidden h-28 w-28 rounded-full bg-white/40 sm:block" />
             <div className="absolute bottom-4 right-24 hidden h-5 w-5 rounded-full bg-[#ff5a00]/20 sm:block" />
-
 
             <div className="relative max-w-2xl">
               <h1 className="max-w-xl text-4xl font-black leading-[0.95] tracking-tight text-[#202020] sm:text-6xl">
                 Профіль <span className="text-[#ff5a00]">студії</span>
               </h1>
 
-  <p className="mt-3 max-w-[640px] text-[14px] leading-6 text-[#7b766f] sm:text-[16px]">
-  Налаштуйте профіль студії, контактні дані, адресу та портфоліо робіт.
-</p>
+              <p className="mt-3 max-w-[640px] text-[14px] leading-6 text-[#7b766f] sm:text-[16px]">
+                Налаштуйте профіль студії, контактні дані, адресу та портфоліо
+                робіт.
+              </p>
             </div>
           </div>
 
-         <div className="mt-4 rounded-[15px] border border-[#ebe7df] bg-white p-2 shadow-[0_10px_32px_rgba(15,23,42,0.04)]">
-          <div
-  className={cn(
-    "flex flex-col gap-3 md:flex-row md:items-center",
-    profile.percent === 100
-      ? "justify-center"
-      : "md:justify-between",
-  )}
->
-         <div
+          <div className="mt-4 rounded-[15px] border border-[#ebe7df] bg-white p-2 shadow-[0_10px_32px_rgba(15,23,42,0.04)]">
+            <div
+              className={cn(
+                "flex flex-col gap-3 md:flex-row md:items-center",
+                profile.percent === 100
+                  ? "justify-center"
+                  : "md:justify-between",
+              )}
+            >
+              <div
                 role="tablist"
                 aria-label="Розділи профілю студії"
                 className="relative grid w-full grid-cols-3 overflow-hidden rounded-2xl border border-[#eadbc9] bg-white p-1 shadow-[0_10px_28px_rgba(15,23,42,0.06)] md:w-auto"
@@ -2021,35 +3202,35 @@ async function saveStudioEditModal() {
                   const active = tab === t.id;
 
                   return (
-                  <button
-                    key={t.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={active}
-                    onClick={() => setTabUrl(t.id)}
-                    className={cn(
-                      "relative z-10 inline-flex min-w-[96px] items-center justify-center gap-2 whitespace-nowrap rounded-xl px-2.5 py-2 text-[12px] font-black transition-all duration-300 sm:min-w-[126px] sm:px-4 sm:py-2.5 sm:text-sm",
-                      active
-                        ? "text-white"
-                        : "text-[#77716b] hover:text-[#ff5a00] active:scale-[0.98]",
-                    )}
-                  >
-<span className="hidden sm:block">
-  <Icon
-    className={cn(
-      "h-4 w-4 shrink-0 transition-transform duration-300",
-      active ? "scale-110" : "scale-100",
-    )}
-  />
-</span>
-                    <span className="truncate">
-                      {t.id === "profile"
-                        ? "Профіль"
-                        : t.id === "location"
-                          ? "Локація"
-                          : "Портфоліо"}
-                    </span>
-                  </button>
+                    <button
+                      key={t.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={active}
+                      onClick={() => setTabUrl(t.id)}
+                      className={cn(
+                        "relative z-10 inline-flex min-w-[96px] items-center justify-center gap-2 whitespace-nowrap rounded-xl px-2.5 py-2 text-[12px] font-black transition-all duration-300 sm:min-w-[126px] sm:px-4 sm:py-2.5 sm:text-sm",
+                        active
+                          ? "text-white"
+                          : "text-[#77716b] hover:text-[#ff5a00] active:scale-[0.98]",
+                      )}
+                    >
+                      <span className="hidden sm:block">
+                        <Icon
+                          className={cn(
+                            "h-4 w-4 shrink-0 transition-transform duration-300",
+                            active ? "scale-110" : "scale-100",
+                          )}
+                        />
+                      </span>
+                      <span className="truncate">
+                        {t.id === "profile"
+                          ? "Профіль"
+                          : t.id === "location"
+                            ? "Локація"
+                            : "Портфоліо"}
+                      </span>
+                    </button>
                   );
                 })}
               </div>
@@ -2079,7 +3260,11 @@ async function saveStudioEditModal() {
                     </div>
                   </div>
 
-                  <Button variant="primary" size="sm" onClick={goToNextIncomplete}>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={goToNextIncomplete}
+                  >
                     Заповнити
                   </Button>
                 </div>
@@ -2094,129 +3279,134 @@ async function saveStudioEditModal() {
               {initialLoading ? (
                 <StudioPreviewSkeleton />
               ) : (
-<section className="overflow-hidden rounded-[30px] border border-[#eadbc9] bg-white p-3 shadow-[0_18px_50px_rgba(17,17,17,0.06)]">
-  <div className="relative h-[410px] overflow-hidden rounded-[30px] bg-[#202020] text-white shadow-[0_14px_34px_rgba(0,0,0,0.16)] max-[639px]:h-[200px] max-[639px]:rounded-[20px] sm:h-[215px] sm:rounded-[18px]">
-<button
-  id="studio-field-coverUrl"
-  type="button"
-  onClick={() => coverInputRef.current?.click()}
-  disabled={saving}
-  className="group absolute inset-0 z-0 block h-full w-full overflow-hidden"
->
+                <section className="overflow-hidden rounded-[30px] border border-[#eadbc9] bg-white p-3 shadow-[0_18px_50px_rgba(17,17,17,0.06)]">
+                  <div className="relative h-[410px] overflow-hidden rounded-[30px] bg-[#202020] text-white shadow-[0_14px_34px_rgba(0,0,0,0.16)] max-[639px]:h-[200px] max-[639px]:rounded-[20px] sm:h-[215px] sm:rounded-[18px]">
+                    <button
+                      id="studio-field-coverUrl"
+                      type="button"
+                      onClick={() => coverInputRef.current?.click()}
+                      disabled={saving}
+                      className="group absolute inset-0 z-0 block h-full w-full overflow-hidden"
+                    >
+                      {coverSrc ? (
+                        <>
+                          <img
+                            src={coverSrc}
+                            alt="Обкладинка"
+                            className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
+                            onError={(e) =>
+                              (e.currentTarget.style.display = "none")
+                            }
+                          />
 
-{coverSrc ? (
-  <>
-    <img
-      src={coverSrc}
-      alt="Обкладинка"
-      className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
-      onError={(e) => (e.currentTarget.style.display = "none")}
-    />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/15 to-transparent" />
+                        </>
+                      ) : (
+                        <div className="absolute inset-0 overflow-hidden bg-[#fff7f0]">
+                          <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(255,98,0,0.16),transparent_28%),radial-gradient(circle_at_82%_20%,rgba(255,255,255,0.9),transparent_30%),linear-gradient(135deg,#fffdfb_0%,#fff4ec_45%,#ffe4cf_100%)]" />
 
-  <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/15 to-transparent" />
-  </>
-) : (
-  <div className="absolute inset-0 overflow-hidden bg-[#fff7f0]">
-    <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(255,98,0,0.16),transparent_28%),radial-gradient(circle_at_82%_20%,rgba(255,255,255,0.9),transparent_30%),linear-gradient(135deg,#fffdfb_0%,#fff4ec_45%,#ffe4cf_100%)]" />
+                          <div className="absolute -left-12 -top-12 h-44 w-44 rounded-full bg-[#ff6200]/10 blur-3xl" />
+                          <div className="absolute -bottom-16 right-0 h-56 w-56 rounded-full bg-[#ffb37d]/25 blur-3xl" />
 
-    <div className="absolute -left-12 -top-12 h-44 w-44 rounded-full bg-[#ff6200]/10 blur-3xl" />
-    <div className="absolute -bottom-16 right-0 h-56 w-56 rounded-full bg-[#ffb37d]/25 blur-3xl" />
+                          <div className="absolute left-8 top-8 h-24 w-24 rounded-full border border-[#ff6200]/10" />
+                          <div className="absolute right-12 top-10 h-14 w-14 rounded-full border border-white/70" />
+                          <div className="absolute bottom-12 left-[42%] h-20 w-20 rounded-full border border-[#ff6200]/10" />
 
-    <div className="absolute left-8 top-8 h-24 w-24 rounded-full border border-[#ff6200]/10" />
-    <div className="absolute right-12 top-10 h-14 w-14 rounded-full border border-white/70" />
-    <div className="absolute bottom-12 left-[42%] h-20 w-20 rounded-full border border-[#ff6200]/10" />
+                          <div className="absolute inset-0 flex items-center justify-center px-6 pb-10 text-center">
+                            <div className="max-w-[320px]">
+                              <h3 className="mt-4 text-xl font-black tracking-[-0.04em] text-[#202020]">
+                                Додайте обкладинку
+                              </h3>
 
-    <div className="absolute inset-0 flex items-center justify-center px-6 pb-10 text-center">
-      <div className="max-w-[320px]">
-        <h3 className="mt-4 text-xl font-black tracking-[-0.04em] text-[#202020]">
-          Додайте обкладинку
-        </h3>
+                              <p className="mt-1.5 text-sm font-semibold leading-5 text-[#77716b]">
+                                Покажіть інтер'єр та атмосферу вашої студії
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
-        <p className="mt-1.5 text-sm font-semibold leading-5 text-[#77716b]">
-          Покажіть інтер'єр та атмосферу вашої студії
-        </p>
-      </div>
-    </div>
-  </div>
-)}
+                      <div
+                        className={cn(
+                          "absolute inset-0 z-20 grid place-items-center transition pointer-events-none",
+                          coverSrc
+                            ? "bg-black/25 opacity-0 group-hover:opacity-100"
+                            : "bg-[#202020]/0 opacity-0 group-hover:bg-[#202020]/5 group-hover:opacity-100",
+                        )}
+                      >
+                        <span className="inline-flex items-center gap-2 rounded-full bg-white/95 px-4 py-2 text-xs font-black text-[#202020] shadow-lg">
+                          <Camera className="h-4 w-4 text-[#ff5a00]" />
+                          {coverSrc
+                            ? "Змінити обкладинку"
+                            : "Додати обкладинку"}
+                        </span>
+                      </div>
+                    </button>
 
-<div
-  className={cn(
-    "absolute inset-0 z-20 grid place-items-center transition pointer-events-none",
-    coverSrc
-      ? "bg-black/25 opacity-0 group-hover:opacity-100"
-      : "bg-[#202020]/0 opacity-0 group-hover:bg-[#202020]/5 group-hover:opacity-100",
-  )}
->
-  <span className="inline-flex items-center gap-2 rounded-full bg-white/95 px-4 py-2 text-xs font-black text-[#202020] shadow-lg">
-    <Camera className="h-4 w-4 text-[#ff5a00]" />
-    {coverSrc ? "Змінити обкладинку" : "Додати обкладинку"}
-  </span>
-</div>
-    </button>
+                    <div className="absolute left-2.5 top-2.5 z-10 pointer-events-none inline-flex h-6 max-w-[58%] items-center gap-1 rounded-full border border-white/40 bg-white/92 px-2 shadow-[0_8px_18px_rgba(20,20,20,0.1)] backdrop-blur-md sm:left-4 sm:top-4 sm:h-7 sm:px-3">
+                      <span className="grid h-4 w-4 place-items-center rounded-full bg-[#fff3e9] text-[#ff6200] sm:h-5 sm:w-5">
+                        <Building2 className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
+                      </span>
 
-  <div className="absolute left-2.5 top-2.5 z-10 pointer-events-none inline-flex h-6 max-w-[58%] items-center gap-1 rounded-full border border-white/40 bg-white/92 px-2 shadow-[0_8px_18px_rgba(20,20,20,0.1)] backdrop-blur-md sm:left-4 sm:top-4 sm:h-7 sm:px-3">
-      <span className="grid h-4 w-4 place-items-center rounded-full bg-[#fff3e9] text-[#ff6200] sm:h-5 sm:w-5">
-        <Building2 className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
-      </span>
+                      <span className="truncate text-[9px] font-bold tracking-[-0.01em] text-[#1c1c1c] sm:text-[11px]">
+                        {categoryLabel}
+                      </span>
+                    </div>
 
-      <span className="truncate text-[9px] font-bold tracking-[-0.01em] text-[#1c1c1c] sm:text-[11px]">
-        {categoryLabel}
-      </span>
-    </div>
+                    <div className="absolute bottom-3 left-3 right-3 z-10 flex items-end gap-2 pointer-events-none sm:bottom-4 sm:left-4 sm:right-4 sm:gap-3">
+                      <button
+                        id="studio-field-logoUrl"
+                        type="button"
+                        onClick={() => logoInputRef.current?.click()}
+                        disabled={saving}
+                        className="pointer-events-auto group relative grid h-[72px] w-[72px] shrink-0 place-items-center overflow-hidden rounded-[18px] border border-white/70 bg-white text-black shadow-[0_0_18px_rgba(255,255,255,0.28),0_12px_28px_rgba(0,0,0,0.22)] transition active:scale-[0.98] sm:h-[58px] sm:w-[58px] sm:rounded-[15px]"
+                      >
+                        {logoSrc ? (
+                          <img
+                            src={logoSrc}
+                            alt="Лого"
+                            className="h-full w-full object-cover object-center"
+                            onError={(e) =>
+                              (e.currentTarget.style.display = "none")
+                            }
+                          />
+                        ) : (
+                          <Camera className="h-9 w-9 text-black sm:h-7 sm:w-7" />
+                        )}
 
- <div className="absolute bottom-3 left-3 right-3 z-10 flex items-end gap-2 pointer-events-none sm:bottom-4 sm:left-4 sm:right-4 sm:gap-3">
-<button
-  id="studio-field-logoUrl"
-  type="button"
-  onClick={() => logoInputRef.current?.click()}
-  disabled={saving}
-  className="pointer-events-auto group relative grid h-[72px] w-[72px] shrink-0 place-items-center overflow-hidden rounded-[18px] border border-white/70 bg-white text-black shadow-[0_0_18px_rgba(255,255,255,0.28),0_12px_28px_rgba(0,0,0,0.22)] transition active:scale-[0.98] sm:h-[58px] sm:w-[58px] sm:rounded-[15px]"
-      >
-        {logoSrc ? (
-          <img
-            src={logoSrc}
-            alt="Лого"
-            className="h-full w-full object-cover object-center"
-            onError={(e) => (e.currentTarget.style.display = "none")}
-          />
-        ) : (
-          <Camera className="h-9 w-9 text-black sm:h-7 sm:w-7" />
-        )}
+                        <span className="absolute inset-0 grid place-items-center bg-black/40 text-white opacity-0 transition group-hover:opacity-100">
+                          <Camera className="h-5 w-5" />
+                        </span>
+                      </button>
 
-        <span className="absolute inset-0 grid place-items-center bg-black/40 text-white opacity-0 transition group-hover:opacity-100">
-          <Camera className="h-5 w-5" />
-        </span>
-      </button>
+                      <div className="min-w-0 flex-1">
+                        <h2
+                          className={cn(
+                            "truncate pb-0.5 text-[16px] font-black leading-[1.15] tracking-[-0.04em] sm:text-[17px]",
+                            coverSrc ? "text-white" : "text-[#202020]",
+                          )}
+                        >
+                          {form.name.trim() || "Назва студії"}
+                        </h2>
 
-      <div className="min-w-0 flex-1">
-<h2
-  className={cn(
-    "truncate pb-0.5 text-[16px] font-black leading-[1.15] tracking-[-0.04em] sm:text-[17px]",
-    coverSrc ? "text-white" : "text-[#202020]",
-  )}
->
-  {form.name.trim() || "Назва студії"}
-</h2>
+                        <p
+                          className={cn(
+                            "mt-1 flex items-center gap-1 truncate leading-[1.25] text-[10px] font-medium sm:text-[10px] md:text-[10px] lg:text-[11px]",
+                            coverSrc ? "text-white" : "text-[#5f5b56]",
+                          )}
+                        >
+                          <MapPin className="-mt-[1px] h-3 w-3 shrink-0 text-[#ff6200]" />
+                          {addressPreview}
+                        </p>
 
-      <p
-  className={cn(
-    "mt-1 flex items-center gap-1 truncate leading-[1.25] text-[10px] font-medium sm:text-[10px] md:text-[10px] lg:text-[11px]",
-    coverSrc ? "text-white" : "text-[#5f5b56]",
-  )}
->
-          <MapPin className="-mt-[1px] h-3 w-3 shrink-0 text-[#ff6200]" />
-          {addressPreview}
-        </p>
-
-        <p className="mt-1 flex items-center gap-1 text-[10px] font-semibold text-[#13a044] sm:text-xs">
-          <span className="h-1.5 w-1.5 rounded-full bg-[#13a044] shadow-[0_0_0_3px_rgba(19,160,68,0.16)]" />
-          Попередній вигляд
-        </p>
-      </div>
-    </div>
-  </div>
-</section>
+                        <p className="mt-1 flex items-center gap-1 text-[10px] font-semibold text-[#13a044] sm:text-xs">
+                          <span className="h-1.5 w-1.5 rounded-full bg-[#13a044] shadow-[0_0_0_3px_rgba(19,160,68,0.16)]" />
+                          Попередній вигляд
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </section>
               )}
             </div>
           )}
@@ -2227,185 +3417,185 @@ async function saveStudioEditModal() {
                 (initialLoading ? (
                   <StudioProfileFormSkeleton />
                 ) : (
-<section className="relative overflow-hidden rounded-[15px] border border-[#eadfce] bg-white shadow-[0_14px_36px_rgba(15,23,42,0.06)]">
-  <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#ff7a18] via-[#ff6200] to-[#ff8c42]" />
-  <div className="flex items-center justify-between gap-3 border-b border-[#eee8df] px-5 py-4 sm:px-7">
-    <h3 className="text-[24px] font-black tracking-[-0.05em] text-[#202020]">
-      Дані студії
-    </h3>
-  </div>
+                  <section className="relative overflow-hidden rounded-[15px] border border-[#eadfce] bg-white shadow-[0_14px_36px_rgba(15,23,42,0.06)]">
+                    <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#ff7a18] via-[#ff6200] to-[#ff8c42]" />
+                    <div className="flex items-center justify-between gap-3 border-b border-[#eee8df] px-5 py-4 sm:px-7">
+                      <h3 className="text-[24px] font-black tracking-[-0.05em] text-[#202020]">
+                        Дані студії
+                      </h3>
+                    </div>
 
-  <div>
-    {[
-{
-  icon: <Building2 className="h-5 w-5" />,
-  label: "Назва студії",
-  value: form.name || "Не вказано",
-  id: "studio-field-name",
-  field: "name",
-},
-{
-  icon: <Sparkles className="h-5 w-5" />,
-  label: "Категорія",
-  value: getCategoryLabel(form.category) || "Не вказано",
-  id: "studio-field-category",
-  field: "category",
-},
-{
-  icon: <Phone className="h-5 w-5" />,
-  label: "Номер телефону",
-  value: form.phone || "Не вказано",
-  id: "studio-field-phone",
-  field: "phone",
-},
-{
-  icon: <Mail className="h-5 w-5" />,
-  label: "Електронна пошта",
-  value: form.email || "Не вказано",
-  id: "studio-field-email",
-  field: "email",
-},
-{
-  icon: <FileText className="h-5 w-5" />,
-  label: "Опис студії",
-  value: form.description || "Не вказано",
-  id: "studio-field-description",
-  field: "description",
-},
-    ].map((item) => (
-      <button
-        key={item.id}
-        type="button"
-onClick={() => openStudioEditModal(item.field)}
-        className={cn(
-  "group flex w-full items-center justify-between gap-4 border-b border-[#eee8df] px-5 py-4 text-left transition last:border-b-0 hover:bg-[#fbfaf8] sm:px-7",
-  highlightId === item.id &&
-    "bg-[#fff1e8] ring-2 ring-[#ff6200]/20"
-)}>
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[16px] bg-[#f7f5f1] text-[#77716b] transition group-hover:bg-[#fff1e8] group-hover:text-[#ff6200]">
-          {item.icon}
-        </div>
+                    <div>
+                      {[
+                        {
+                          icon: <Building2 className="h-5 w-5" />,
+                          label: "Назва студії",
+                          value: form.name || "Не вказано",
+                          id: "studio-field-name",
+                          field: "name",
+                        },
+                        {
+                          icon: <Sparkles className="h-5 w-5" />,
+                          label: "Категорія",
+                          value:
+                            getCategoryLabel(form.category) || "Не вказано",
+                          id: "studio-field-category",
+                          field: "category",
+                        },
+                        {
+                          icon: <Phone className="h-5 w-5" />,
+                          label: "Номер телефону",
+                          value: form.phone || "Не вказано",
+                          id: "studio-field-phone",
+                          field: "phone",
+                        },
+                        {
+                          icon: <Mail className="h-5 w-5" />,
+                          label: "Електронна пошта",
+                          value: form.email || "Не вказано",
+                          id: "studio-field-email",
+                          field: "email",
+                        },
+                        {
+                          icon: <FileText className="h-5 w-5" />,
+                          label: "Опис студії",
+                          value: form.description || "Не вказано",
+                          id: "studio-field-description",
+                          field: "description",
+                        },
+                      ].map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => openStudioEditModal(item.field)}
+                          className={cn(
+                            "group flex w-full items-center justify-between gap-4 border-b border-[#eee8df] px-5 py-4 text-left transition last:border-b-0 hover:bg-[#fbfaf8] sm:px-7",
+                            highlightId === item.id &&
+                              "bg-[#fff1e8] ring-2 ring-[#ff6200]/20",
+                          )}
+                        >
+                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[16px] bg-[#f7f5f1] text-[#77716b] transition group-hover:bg-[#fff1e8] group-hover:text-[#ff6200]">
+                            {item.icon}
+                          </div>
 
-        <div className="flex min-w-0 flex-1 items-center gap-4">
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold text-[#77716b]">
-              {item.label}
-            </p>
-<p
-  className={cn(
-    "mt-1 text-sm font-black text-[#202020]",
-    item.id === "studio-field-description"
-      ? "line-clamp-2"
-      : "truncate",
-  )}
->
-  {item.value}
-</p>
-          </div>
+                          <div className="flex min-w-0 flex-1 items-center gap-4">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-bold text-[#77716b]">
+                                {item.label}
+                              </p>
+                              <p
+                                className={cn(
+                                  "mt-1 text-sm font-black text-[#202020]",
+                                  item.id === "studio-field-description"
+                                    ? "line-clamp-2"
+                                    : "truncate",
+                                )}
+                              >
+                                {item.value}
+                              </p>
+                            </div>
 
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#fff3e9] text-[#ff6200] transition-all duration-200 group-hover:scale-105 group-hover:bg-[#ff6200] group-hover:text-white">
-            <PencilLine className="h-3.5 w-3.5" />
-          </div>
-        </div>
-        
-      </button>
-    ))}
-  </div>
-  
-</section>
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#fff3e9] text-[#ff6200] transition-all duration-200 group-hover:scale-105 group-hover:bg-[#ff6200] group-hover:text-white">
+                              <PencilLine className="h-3.5 w-3.5" />
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </section>
                 ))}
 
-{tab === "location" &&
-  (initialLoading ? (
-    <StudioLocationFormSkeleton />
-  ) : (
-    <>
-<section className="relative overflow-hidden rounded-[30px] border border-[#eadfce] bg-white shadow-[0_14px_36px_rgba(15,23,42,0.06)]">
-  <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#ff7a18] via-[#ff6200] to-[#ff8c42]" />
-        <div className="flex items-center justify-between gap-3 border-b border-[#eee8df] px-5 py-4 sm:px-7">
-          <h3 className="text-[24px] font-black tracking-[-0.05em] text-[#202020]">
-            Локація студії
-          </h3>
-        </div>
+              {tab === "location" &&
+                (initialLoading ? (
+                  <StudioLocationFormSkeleton />
+                ) : (
+                  <>
+                    <section className="relative overflow-hidden rounded-[30px] border border-[#eadfce] bg-white shadow-[0_14px_36px_rgba(15,23,42,0.06)]">
+                      <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#ff7a18] via-[#ff6200] to-[#ff8c42]" />
+                      <div className="flex items-center justify-between gap-3 border-b border-[#eee8df] px-5 py-4 sm:px-7">
+                        <h3 className="text-[24px] font-black tracking-[-0.05em] text-[#202020]">
+                          Локація студії
+                        </h3>
+                      </div>
 
-        <div>
-          {[
-          {
-  icon: <MapPinned className="h-5 w-5" />,
-  label: "Місто",
-  value: form.city || "Не вказано",
-  targetId: "studio-field-city",
-  field: "city",
-},
-{
-  icon: <Signpost className="h-5 w-5" />,
-  label: "Вулиця",
-  value: form.street || "Не вказано",
-  targetId: "studio-field-street",
-  field: "street",
-},
-{
-  icon: <House className="h-5 w-5" />,
-  label: "Будинок",
-  value: form.building || "Не вказано",
-  targetId: "studio-field-building",
-  field: "building",
-},
-{
-  icon: <DoorOpen className="h-5 w-5" />,
-  label: "Квартира / Офіс",
-  value: form.apartment || "Не вказано",
-  targetId: "studio-field-apartment",
-  field: "apartment",
-},
-          ].map((item) => (
-            <button
-              key={item.targetId}
-              type="button"
-onClick={() => openStudioEditModal(item.field)}
-              className={cn(
-                "group flex w-full items-center justify-between gap-4 border-b border-[#eee8df] px-5 py-4 text-left transition last:border-b-0 hover:bg-[#fbfaf8] sm:px-7",
-                highlightId === item.targetId &&
-                  "bg-[#fff1e8] ring-2 ring-[#ff6200]/20"
-              )}
-            >
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[16px] bg-[#f7f5f1] text-[#77716b] transition group-hover:bg-[#fff1e8] group-hover:text-[#ff6200]">
-                {item.icon}
-              </div>
+                      <div>
+                        {[
+                          {
+                            icon: <MapPinned className="h-5 w-5" />,
+                            label: "Місто",
+                            value: form.city || "Не вказано",
+                            targetId: "studio-field-city",
+                            field: "city",
+                          },
+                          {
+                            icon: <Signpost className="h-5 w-5" />,
+                            label: "Вулиця",
+                            value: form.street || "Не вказано",
+                            targetId: "studio-field-street",
+                            field: "street",
+                          },
+                          {
+                            icon: <House className="h-5 w-5" />,
+                            label: "Будинок",
+                            value: form.building || "Не вказано",
+                            targetId: "studio-field-building",
+                            field: "building",
+                          },
+                          {
+                            icon: <DoorOpen className="h-5 w-5" />,
+                            label: "Квартира / Офіс",
+                            value: form.apartment || "Не вказано",
+                            targetId: "studio-field-apartment",
+                            field: "apartment",
+                          },
+                        ].map((item) => (
+                          <button
+                            key={item.targetId}
+                            type="button"
+                            onClick={() => openStudioEditModal(item.field)}
+                            className={cn(
+                              "group flex w-full items-center justify-between gap-4 border-b border-[#eee8df] px-5 py-4 text-left transition last:border-b-0 hover:bg-[#fbfaf8] sm:px-7",
+                              highlightId === item.targetId &&
+                                "bg-[#fff1e8] ring-2 ring-[#ff6200]/20",
+                            )}
+                          >
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[16px] bg-[#f7f5f1] text-[#77716b] transition group-hover:bg-[#fff1e8] group-hover:text-[#ff6200]">
+                              {item.icon}
+                            </div>
 
-              <div className="flex min-w-0 flex-1 items-center gap-4">
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-bold text-[#77716b]">
-                    {item.label}
-                  </p>
+                            <div className="flex min-w-0 flex-1 items-center gap-4">
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-bold text-[#77716b]">
+                                  {item.label}
+                                </p>
 
-                  <p className="mt-1 truncate text-sm font-black text-[#202020]">
-                    {item.value}
-                  </p>
-                </div>
+                                <p className="mt-1 truncate text-sm font-black text-[#202020]">
+                                  {item.value}
+                                </p>
+                              </div>
 
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#fff3e9] text-[#ff6200] transition-all duration-200 group-hover:scale-105 group-hover:bg-[#ff6200] group-hover:text-white">
-                  <PencilLine className="h-3.5 w-3.5" />
-                </div>
-              </div>
-            </button>
-          ))}
-        </div>
+                              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#fff3e9] text-[#ff6200] transition-all duration-200 group-hover:scale-105 group-hover:bg-[#ff6200] group-hover:text-white">
+                                <PencilLine className="h-3.5 w-3.5" />
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
 
-        <div className="border-t border-[#eee8df] px-5 py-5 sm:px-7">
-          <div className="rounded-[22px] border border-[#eadbc9] bg-[#f8f5f1] p-4">
-            <p className="text-xs font-black uppercase tracking-[0.12em] text-[#ff6200]">
-              Повна адреса
-            </p>
+                      <div className="border-t border-[#eee8df] px-5 py-5 sm:px-7">
+                        <div className="rounded-[15px] border border-[#eadbc9] bg-[#f8f5f1] p-4">
+                          <p className="text-xs font-black uppercase tracking-[0.12em] text-[#ff6200]">
+                            Повна адреса
+                          </p>
 
-            <p className="mt-2 text-sm font-black text-[#202020]">
-              {AddressLine}
-            </p>
-          </div>
-        </div>
-      </section>
-    </>
-  ))}
+                          <p className="mt-2 text-sm font-black text-[#202020]">
+                            {AddressLine}
+                          </p>
+                        </div>
+                      </div>
+                    </section>
+                  </>
+                ))}
 
               {tab === "links" &&
                 (initialLoading ? (
@@ -2426,10 +3616,10 @@ onClick={() => openStudioEditModal(item.field)}
                           hint={`${portfolioCount}/${MAX_PORTFOLIO}`}
                         >
                           <div className="flex flex-wrap items-center gap-2">
-<label
-  id="studio-field-portfolio-add"
-  className={cn(
-    `
+                            <label
+                              id="studio-field-portfolio-add"
+                              className={cn(
+                                `
       inline-flex cursor-pointer items-center justify-center gap-2
       rounded-2xl
       bg-[#202020]
@@ -2442,10 +3632,10 @@ onClick={() => openStudioEditModal(item.field)}
       hover:shadow-[0_14px_30px_rgba(255,98,0,0.24)]
       active:scale-[0.98]
     `,
-    highlightId === "studio-field-portfolio-add" &&
-      highlightClass,
-  )}
->
+                                highlightId === "studio-field-portfolio-add" &&
+                                  highlightClass,
+                              )}
+                            >
                               <Plus className="h-4 w-4" />
                               Додати фото
                               <input
@@ -2461,7 +3651,9 @@ onClick={() => openStudioEditModal(item.field)}
                               <Button
                                 variant="danger"
                                 onClick={clearPortfolio}
-                                disabled={!portfolioCount || clearingPortfolio || saving}
+                                disabled={
+                                  !portfolioCount || clearingPortfolio || saving
+                                }
                               >
                                 <Trash2 className="h-4 w-4" />
                                 {clearingPortfolio ? "Очищення..." : "Очистити"}
@@ -2471,87 +3663,95 @@ onClick={() => openStudioEditModal(item.field)}
 
                           <div className="mt-4">
                             {!hasAnyPortfolio ? (
-<div className="rounded-[15px] border-2 border-dashed border-[#ffd6bd] bg-[#fff7f0] px-6 py-12 text-center">
-  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-[#ff6200] shadow-sm">
-    <ImageIcon className="h-7 w-7" />
-  </div>
+                              <div className="rounded-[15px] border-2 border-dashed border-[#ffd6bd] bg-[#fff7f0] px-6 py-12 text-center">
+                                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-[#ff6200] shadow-sm">
+                                  <ImageIcon className="h-7 w-7" />
+                                </div>
 
-  <h2 className="mt-4 text-xl font-black text-[#202020]">
-    Портфоліо поки що порожнє
-  </h2>
+                                <h2 className="mt-4 text-xl font-black text-[#202020]">
+                                  Портфоліо поки що порожнє
+                                </h2>
 
-  <p className="mt-2 text-sm text-[#77716b]">
-    Додайте перші фото робіт, щоб клієнти могли оцінити якість ваших послуг.
-  </p>
-</div>
+                                <p className="mt-2 text-sm text-[#77716b]">
+                                  Додайте перші фото робіт, щоб клієнти могли
+                                  оцінити якість ваших послуг.
+                                </p>
+                              </div>
                             ) : (
                               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-[repeat(auto-fill,minmax(180px,1fr))]">
                                 {portfolioItems.map((item, idx) => {
                                   const src = item.src;
                                   const isFirst = idx === 0;
-                                  const isLast = idx === portfolioItems.length - 1;
+                                  const isLast =
+                                    idx === portfolioItems.length - 1;
 
                                   return (
                                     <div key={item.key} className="relative">
                                       <button
                                         type="button"
-                                        onClick={() => openPortfolioPreview(idx)}
+                                        onClick={() =>
+                                          openPortfolioPreview(idx)
+                                        }
                                         className="group block w-full overflow-hidden rounded-[22px] border border-[#eadbc9] bg-[#fff7f0] transition hover:shadow-[0_10px_24px_rgba(27,27,27,0.10)]"
                                         style={{ aspectRatio: "1 / 1" }}
                                       >
-<img
-  src={src}
-  alt={`work ${idx + 1}`}
-  className="h-full w-full object-cover"
-/>
+                                        <img
+                                          src={src}
+                                          alt={`work ${idx + 1}`}
+                                          className="h-full w-full object-cover"
+                                        />
 
-<button
-  type="button"
-  onClick={(e) => {
-    e.stopPropagation();
-    removePortfolioMixed(idx);
-  }}
-  className="absolute right-2 top-2 z-20 flex h-9 w-9 items-center justify-center rounded-xl bg-[#e5484d] text-white opacity-100 shadow-[0_8px_20px_rgba(229,72,77,0.35)] transition-all duration-300 active:scale-95 sm:right-3 sm:top-3 sm:h-10 sm:w-10 sm:bg-black/70 sm:opacity-0 sm:backdrop-blur-xl sm:hover:scale-105 sm:hover:bg-[#e5484d] sm:group-hover:opacity-100"
-  title="Видалити"
-  aria-label="Remove"
->
-  <Trash2 className="h-4 w-4 sm:h-5 sm:w-5" />
-</button>
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            removePortfolioMixed(idx);
+                                          }}
+                                          className="absolute right-2 top-2 z-20 flex h-9 w-9 items-center justify-center rounded-xl bg-[#e5484d] text-white opacity-100 shadow-[0_8px_20px_rgba(229,72,77,0.35)] transition-all duration-300 active:scale-95 sm:right-3 sm:top-3 sm:h-10 sm:w-10 sm:bg-black/70 sm:opacity-0 sm:backdrop-blur-xl sm:hover:scale-105 sm:hover:bg-[#e5484d] sm:group-hover:opacity-100"
+                                          title="Видалити"
+                                          aria-label="Remove"
+                                        >
+                                          <Trash2 className="h-4 w-4 sm:h-5 sm:w-5" />
+                                        </button>
 
                                         <div className="pointer-events-none absolute inset-x-0 bottom-0 p-2">
                                           <div className="absolute inset-x-0 bottom-0 h-16 rounded-b-2xl bg-gradient-to-t from-black/60 via-black/25 to-transparent" />
 
                                           <div className="pointer-events-auto relative flex items-center justify-between">
                                             <div className="flex items-center gap-2">
-<button
-  type="button"
-  onClick={(e) => {
-    e.stopPropagation();
-    movePortfolioMixed(idx, idx - 1);
-  }}
-  disabled={isFirst}
-  className="group absolute bottom-1 left-1 sm:bottom-3 sm:left-3 z-20 flex h-9 w-9 sm:h-11 sm:w-11 items-center justify-center rounded-xl bg-white/80 text-black opacity-100 shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-all duration-300 sm:opacity-0 sm:hover:bg-white sm:group-hover:opacity-100 disabled:hidden"
->
-  <ChevronLeft className="h-4 w-4 transition-all duration-300 group-hover:scale-150 group-hover:text-[#ff6200]" />
-</button>
+                                              <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  movePortfolioMixed(
+                                                    idx,
+                                                    idx - 1,
+                                                  );
+                                                }}
+                                                disabled={isFirst}
+                                                className="group absolute bottom-1 left-1 sm:bottom-3 sm:left-3 z-20 flex h-9 w-9 sm:h-11 sm:w-11 items-center justify-center rounded-xl bg-white/80 text-black opacity-100 shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-all duration-300 sm:opacity-0 sm:hover:bg-white sm:group-hover:opacity-100 disabled:hidden"
+                                              >
+                                                <ChevronLeft className="h-4 w-4 transition-all duration-300 group-hover:scale-150 group-hover:text-[#ff6200]" />
+                                              </button>
 
-<button
-  type="button"
-  onClick={(e) => {
-    e.stopPropagation();
-    movePortfolioMixed(idx, idx + 1);
-  }}
-  disabled={isLast}
-  className="group absolute bottom-1 right-1 sm:bottom-3 sm:right-3 z-20 flex h-9 w-9 sm:h-11 sm:w-11 items-center justify-center rounded-xl bg-white/80 text-black opacity-100 shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-all duration-300 sm:opacity-0 sm:hover:bg-white sm:group-hover:opacity-100 disabled:hidden"
->
-  <ChevronRight className="h-4 w-4 transition-all duration-300 group-hover:scale-150 group-hover:text-[#ff6200]" />
-</button>
+                                              <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  movePortfolioMixed(
+                                                    idx,
+                                                    idx + 1,
+                                                  );
+                                                }}
+                                                disabled={isLast}
+                                                className="group absolute bottom-1 right-1 sm:bottom-3 sm:right-3 z-20 flex h-9 w-9 sm:h-11 sm:w-11 items-center justify-center rounded-xl bg-white/80 text-black opacity-100 shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-all duration-300 sm:opacity-0 sm:hover:bg-white sm:group-hover:opacity-100 disabled:hidden"
+                                              >
+                                                <ChevronRight className="h-4 w-4 transition-all duration-300 group-hover:scale-150 group-hover:text-[#ff6200]" />
+                                              </button>
                                             </div>
                                           </div>
                                         </div>
                                       </button>
-
-
                                     </div>
                                   );
                                 })}
@@ -2563,91 +3763,126 @@ onClick={() => openStudioEditModal(item.field)}
                     </div>
                   </SectionCard>
                 ))}
-                {editModal.open && (
-  <div className="fixed inset-0 z-[9999] flex items-end justify-center bg-[#202020]/45 px-3 pb-3 backdrop-blur-[6px] sm:items-center sm:p-6">
-    <div className="w-full max-w-lg overflow-hidden rounded-[30px] border border-[#f0e2d3] bg-[#f7f5f1] shadow-[0_30px_90px_rgba(15,23,42,0.24)]">
-      <div className="relative overflow-hidden bg-[#f3eee7] px-5 py-5 sm:px-6 sm:py-6">
-        <div className="absolute right-[-55px] top-[-70px] h-[180px] w-[180px] rounded-full bg-[#ff6200]/10 blur-3xl" />
+              {editModal.open && (
+                <div className="fixed inset-0 z-[9999] flex items-end justify-center bg-[#202020]/45 px-3 pb-3 backdrop-blur-[6px] sm:items-center sm:p-6">
+                  <div className="max-h-[calc(100dvh-24px)] w-full max-w-lg overflow-y-auto rounded-[30px] border border-[#f0e2d3] bg-[#f7f5f1] shadow-[0_30px_90px_rgba(15,23,42,0.24)]">
+                    <div className="relative overflow-hidden bg-[#f3eee7] px-5 py-5 sm:px-6 sm:py-6">
+                      <div className="absolute right-[-55px] top-[-70px] h-[180px] w-[180px] rounded-full bg-[#ff6200]/10 blur-3xl" />
 
-        <div className="relative z-10 flex items-start justify-between gap-4">
-          <div>
-            <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-white px-3 text-[11px] font-black uppercase tracking-[0.08em] text-[#ff6200] shadow-[0_8px_20px_rgba(255,98,0,0.08)]">
-              <PencilLine className="h-3.5 w-3.5" />
-              Редагування
-            </span>
+                      <div className="relative z-10 flex items-start justify-between gap-4">
+                        <div>
+                          <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-white px-3 text-[11px] font-black uppercase tracking-[0.08em] text-[#ff6200] shadow-[0_8px_20px_rgba(255,98,0,0.08)]">
+                            <PencilLine className="h-3.5 w-3.5" />
+                            Редагування
+                          </span>
 
-            <h3 className="mt-3 text-[26px] font-black leading-[0.95] tracking-[-0.05em] text-[#202020] sm:text-[32px]">
-              {editModal.title}
-            </h3>
-          </div>
+                          <h3 className="mt-3 text-[26px] font-black leading-[0.95] tracking-[-0.05em] text-[#202020] sm:text-[32px]">
+                            {editModal.title}
+                          </h3>
+                        </div>
 
-          <button
-            type="button"
-            onClick={closeStudioEditModal}
-            className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white text-[#77716b] shadow-[0_10px_24px_rgba(15,23,42,0.06)] transition hover:bg-[#fff3e9] hover:text-[#ff6200] active:scale-[0.96]"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-      </div>
+                        <button
+                          type="button"
+                          onClick={closeStudioEditModal}
+                          className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white text-[#77716b] shadow-[0_10px_24px_rgba(15,23,42,0.06)] transition hover:bg-[#fff3e9] hover:text-[#ff6200] active:scale-[0.96]"
+                        >
+                          <X className="h-5 w-5" />
+                        </button>
+                      </div>
+                    </div>
 
-      <div className="bg-white px-5 py-5 sm:px-6">
-        {editModal.field === "category" ? (
-          <CustomSelect
-            value={editModal.value}
-            onChange={(value) =>
-              setEditModal((prev) => ({ ...prev, value }))
-            }
-          options={SORTED_STUDIO_CATEGORIES}
-            placeholder="Оберіть категорію"
-          />
-        ) : editModal.field === "description" ? (
-          <textarea
-            value={editModal.value}
-            onChange={(e) =>
-              setEditModal((prev) => ({
-                ...prev,
-                value: e.target.value.slice(0, MAX_DESC),
-              }))
-            }
-            rows={5}
-            placeholder="Коротко опишіть студію"
-            className={baseFieldClass}
-          />
-        ) : (
-          <input
-            value={editModal.value}
-            onChange={(e) =>
-              setEditModal((prev) => ({ ...prev, value: e.target.value }))
-            }
-            placeholder={editModal.title}
-            className={baseFieldClass}
-          />
-        )}
-      </div>
+                    <div className="bg-white px-5 py-5 sm:px-6">
+                      {editModal.field === "category" ? (
+                        <CustomSelect
+                          value={editModal.value}
+                          onChange={(value) =>
+                            setEditModal((prev) => ({ ...prev, value }))
+                          }
+                          options={SORTED_STUDIO_CATEGORIES}
+                          placeholder="Оберіть категорію"
+                        />
+                      ) : editModal.field === "city" ? (
+                        <CityAutocomplete
+                          value={editModal.value}
+                          selectionValid={editModal.selectionValid}
+                          onChange={(value, selectedLocation) =>
+                            setEditModal((prev) => ({
+                              ...prev,
+                              value,
+                              selectionValid: Boolean(selectedLocation),
+                              selectedLocation,
+                            }))
+                          }
+                          className={baseFieldClass}
+                        />
+                      ) : editModal.field === "street" ? (
+                        <StreetAutocomplete
+                          value={editModal.value}
+                          city={form.city}
+                          citySelection={
+                            hasCurrentCitySelection ? selectedCity : null
+                          }
+                          onChange={(value) =>
+                            setEditModal((prev) => ({ ...prev, value }))
+                          }
+                          className={baseFieldClass}
+                        />
+                      ) : editModal.field === "description" ? (
+                        <textarea
+                          value={editModal.value}
+                          onChange={(e) =>
+                            setEditModal((prev) => ({
+                              ...prev,
+                              value: e.target.value.slice(0, MAX_DESC),
+                            }))
+                          }
+                          rows={5}
+                          placeholder="Коротко опишіть студію"
+                          className={baseFieldClass}
+                        />
+                      ) : (
+                        <input
+                          value={editModal.value}
+                          onChange={(e) =>
+                            setEditModal((prev) => ({
+                              ...prev,
+                              value: e.target.value,
+                            }))
+                          }
+                          placeholder={editModal.title}
+                          className={baseFieldClass}
+                        />
+                      )}
+                    </div>
 
-      <div className="flex flex-row gap-2 border-t border-[#f0e7da] bg-[#fbfaf8] px-5 py-4 sm:justify-end sm:px-6">
-        <Button
-          type="button"
-          variant="secondary"
-          className="flex-1 sm:flex-none"
-          onClick={closeStudioEditModal}
-        >
-          Скасувати
-        </Button>
+                    <div className="flex flex-row gap-2 border-t border-[#f0e7da] bg-[#fbfaf8] px-5 py-4 sm:justify-end sm:px-6">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        className="flex-1 sm:flex-none"
+                        onClick={closeStudioEditModal}
+                      >
+                        Скасувати
+                      </Button>
 
-        <Button
-          type="button"
-          variant="primary"
-          className="flex-1 sm:flex-none"
-          onClick={saveStudioEditModal}
-        >
-          Зберегти
-        </Button>
-      </div>
-    </div>
-  </div>
-)}
+                      <Button
+                        type="button"
+                        variant="primary"
+                        className="flex-1 sm:flex-none"
+                        onClick={saveStudioEditModal}
+                        disabled={
+                          (editModal.field === "city" &&
+                            !editModal.selectionValid) ||
+                          (editModal.field === "street" &&
+                            !hasCurrentCitySelection)
+                        }
+                      >
+                        Зберегти
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </form>
           </div>
         </div>
@@ -2684,7 +3919,9 @@ onClick={() => openStudioEditModal(item.field)}
                   <CheckCircle2 className="h-4.5 w-4.5" />
                 )}
                 {toast.type === "error" && <X className="h-4.5 w-4.5" />}
-                {toast.type === "warning" && <AlertTriangle className="h-4.5 w-4.5" />}
+                {toast.type === "warning" && (
+                  <AlertTriangle className="h-4.5 w-4.5" />
+                )}
               </div>
 
               <div className="min-w-0">
@@ -2709,12 +3946,12 @@ onClick={() => openStudioEditModal(item.field)}
             </div>
 
             <div
-                className={cn(
-                  "h-[2px] w-full",
-                  toast.type === "success" && "bg-[#fff1e8]",
-                  toast.type === "error" && "bg-[#fff1f1]",
-                  toast.type === "warning" && "bg-[#fff1e8]",
-                )}
+              className={cn(
+                "h-[2px] w-full",
+                toast.type === "success" && "bg-[#fff1e8]",
+                toast.type === "error" && "bg-[#fff1f1]",
+                toast.type === "warning" && "bg-[#fff1e8]",
+              )}
             >
               <div
                 key={toast.id}
@@ -2739,79 +3976,80 @@ onClick={() => openStudioEditModal(item.field)}
           `}</style>
         </div>
 
-{portfolioPreview.open && portfolioItems[portfolioPreview.index]?.src && (
-  <div
-    className="fixed left-0 top-0 z-[9999] flex h-[100dvh] w-screen items-center justify-center overflow-y-auto bg-[#202020]/45 p-3 backdrop-blur-[6px]"
-    onClick={closePortfolioPreview}
-  >
-    <div
-      className="relative flex max-h-[calc(100dvh-24px)] w-full max-w-3xl flex-col overflow-hidden rounded-[30px] border border-[#f0e2d3] bg-[#f7f5f1] shadow-[0_30px_90px_rgba(15,23,42,0.24)]"
-      onClick={(e) => e.stopPropagation()}
-    >
-      <div className="relative shrink-0 overflow-hidden bg-[#f3eee7] px-5 py-5 sm:px-6">
-        <div className="absolute right-[-55px] top-[-70px] h-[180px] w-[180px] rounded-full bg-[#ff6200]/10 blur-3xl" />
-
-        <div className="relative z-10 flex items-start justify-between gap-4">
-          <div>
-            <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-white px-3 text-[11px] font-black uppercase tracking-[0.08em] text-[#ff6200] shadow-[0_8px_20px_rgba(255,98,0,0.08)]">
-              <Camera className="h-3.5 w-3.5" />
-              Портфоліо
-            </span>
-
-            <h3 className="mt-3 text-[26px] font-black leading-[0.95] tracking-[-0.05em] text-[#202020] sm:text-[32px]">
-              Перегляд фото
-            </h3>
-          </div>
-
-          <button
-            type="button"
-            onClick={closePortfolioPreview}
-            className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white text-[#77716b] shadow-[0_10px_24px_rgba(15,23,42,0.06)] transition hover:bg-[#fff3e9] hover:text-[#ff6200] active:scale-[0.96]"
-            aria-label="Закрити"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-      </div>
-
-      <div className="relative min-h-0 flex-1 bg-white p-5 sm:p-6">
-        {portfolioItems.length > 1 && (
-          <>
-            <button
-              type="button"
-              onClick={prevPortfolioPreview}
-              className="absolute left-7 top-1/2 z-10 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/95 text-[#202020] shadow-[0_10px_30px_rgba(15,23,42,0.18)] transition hover:bg-[#fff3e9] hover:text-[#ff6200]"
+        {portfolioPreview.open &&
+          portfolioItems[portfolioPreview.index]?.src && (
+            <div
+              className="fixed left-0 top-0 z-[9999] flex h-[100dvh] w-screen items-center justify-center overflow-y-auto bg-[#202020]/45 p-3 backdrop-blur-[6px]"
+              onClick={closePortfolioPreview}
             >
-              <ChevronLeft className="h-6 w-6" />
-            </button>
+              <div
+                className="relative flex max-h-[calc(100dvh-24px)] w-full max-w-3xl flex-col overflow-hidden rounded-[30px] border border-[#f0e2d3] bg-[#f7f5f1] shadow-[0_30px_90px_rgba(15,23,42,0.24)]"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="relative shrink-0 overflow-hidden bg-[#f3eee7] px-5 py-5 sm:px-6">
+                  <div className="absolute right-[-55px] top-[-70px] h-[180px] w-[180px] rounded-full bg-[#ff6200]/10 blur-3xl" />
 
-            <button
-              type="button"
-              onClick={nextPortfolioPreview}
-              className="absolute right-7 top-1/2 z-10 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/95 text-[#202020] shadow-[0_10px_30px_rgba(15,23,42,0.18)] transition hover:bg-[#fff3e9] hover:text-[#ff6200]"
-            >
-              <ChevronRight className="h-6 w-6" />
-            </button>
-          </>
-        )}
+                  <div className="relative z-10 flex items-start justify-between gap-4">
+                    <div>
+                      <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-white px-3 text-[11px] font-black uppercase tracking-[0.08em] text-[#ff6200] shadow-[0_8px_20px_rgba(255,98,0,0.08)]">
+                        <Camera className="h-3.5 w-3.5" />
+                        Портфоліо
+                      </span>
 
-        <img
-          src={portfolioItems[portfolioPreview.index].src}
-          alt="Portfolio preview"
-          className="max-h-[62dvh] w-full rounded-[24px] bg-black object-contain"
-        />
+                      <h3 className="mt-3 text-[26px] font-black leading-[0.95] tracking-[-0.05em] text-[#202020] sm:text-[32px]">
+                        Перегляд фото
+                      </h3>
+                    </div>
 
-        {portfolioItems.length > 1 && (
-          <div className="mt-4 flex justify-center">
-            <span className="rounded-full bg-[#fff3e9] px-4 py-2 text-xs font-black text-[#ff6200]">
-              {portfolioPreview.index + 1} / {portfolioItems.length}
-            </span>
-          </div>
-        )}
-      </div>
-    </div>
-  </div>
-)}
+                    <button
+                      type="button"
+                      onClick={closePortfolioPreview}
+                      className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white text-[#77716b] shadow-[0_10px_24px_rgba(15,23,42,0.06)] transition hover:bg-[#fff3e9] hover:text-[#ff6200] active:scale-[0.96]"
+                      aria-label="Закрити"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="relative min-h-0 flex-1 bg-white p-5 sm:p-6">
+                  {portfolioItems.length > 1 && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={prevPortfolioPreview}
+                        className="absolute left-7 top-1/2 z-10 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/95 text-[#202020] shadow-[0_10px_30px_rgba(15,23,42,0.18)] transition hover:bg-[#fff3e9] hover:text-[#ff6200]"
+                      >
+                        <ChevronLeft className="h-6 w-6" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={nextPortfolioPreview}
+                        className="absolute right-7 top-1/2 z-10 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/95 text-[#202020] shadow-[0_10px_30px_rgba(15,23,42,0.18)] transition hover:bg-[#fff3e9] hover:text-[#ff6200]"
+                      >
+                        <ChevronRight className="h-6 w-6" />
+                      </button>
+                    </>
+                  )}
+
+                  <img
+                    src={portfolioItems[portfolioPreview.index].src}
+                    alt="Portfolio preview"
+                    className="max-h-[62dvh] w-full rounded-[24px] bg-black object-contain"
+                  />
+
+                  {portfolioItems.length > 1 && (
+                    <div className="mt-4 flex justify-center">
+                      <span className="rounded-full bg-[#fff3e9] px-4 py-2 text-xs font-black text-[#ff6200]">
+                        {portfolioPreview.index + 1} / {portfolioItems.length}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
         {errorModal.open && (
           <div className="fixed inset-0 z-[9999] flex items-end justify-center bg-[#202020]/45 px-3 pb-3 backdrop-blur-[6px] sm:items-center sm:p-6">
@@ -2831,7 +4069,9 @@ onClick={() => openStudioEditModal(item.field)}
 
                   <button
                     type="button"
-                    onClick={() => setErrorModal({ open: false, title: "", message: "" })}
+                    onClick={() =>
+                      setErrorModal({ open: false, title: "", message: "" })
+                    }
                     className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white text-[#77716b] shadow-[0_10px_24px_rgba(15,23,42,0.06)] transition hover:bg-[#fff3e9] hover:text-[#ff6200] active:scale-[0.96]"
                     aria-label="Закрити"
                   >
@@ -2849,7 +4089,9 @@ onClick={() => openStudioEditModal(item.field)}
               <div className="flex flex-row gap-2 border-t border-[#f0e7da] bg-[#fbfaf8] px-5 py-4 sm:justify-end sm:px-6">
                 <Button
                   variant="primary"
-                  onClick={() => setErrorModal({ open: false, title: "", message: "" })}
+                  onClick={() =>
+                    setErrorModal({ open: false, title: "", message: "" })
+                  }
                   className="flex-1 sm:flex-none"
                 >
                   Зрозуміло
@@ -2866,8 +4108,7 @@ onClick={() => openStudioEditModal(item.field)}
               ? "pointer-events-none translate-y-4 opacity-0"
               : "pointer-events-auto translate-y-0 opacity-100",
           )}
-        >
-        </div>
+        ></div>
         <div
           className={cn(
             "fixed right-4 top-4 z-[9999] transition-all duration-300",
@@ -2878,88 +4119,89 @@ onClick={() => openStudioEditModal(item.field)}
         />
       </div>
       {cropModal.open && (
-  <div className="fixed inset-0 z-[9999] flex items-end justify-center bg-[#202020]/45 px-3 pb-3 backdrop-blur-[6px] sm:items-center sm:p-6">
-    <div className="w-full max-w-lg overflow-hidden rounded-[30px] border border-[#f0e2d3] bg-white shadow-[0_30px_90px_rgba(15,23,42,0.24)]">
-      <div className="px-5 py-5 text-center">
-        <h3 className="text-[24px] font-black tracking-[-0.04em] text-[#202020]">
-          Обрізати фото
-        </h3>
+        <div className="fixed inset-0 z-[9999] flex items-end justify-center bg-[#202020]/45 px-3 pb-3 backdrop-blur-[6px] sm:items-center sm:p-6">
+          <div className="w-full max-w-lg overflow-hidden rounded-[30px] border border-[#f0e2d3] bg-white shadow-[0_30px_90px_rgba(15,23,42,0.24)]">
+            <div className="px-5 py-5 text-center">
+              <h3 className="text-[24px] font-black tracking-[-0.04em] text-[#202020]">
+                Обрізати фото
+              </h3>
 
-        <p className="mt-2 text-sm font-medium text-[#77716b]">
-          Виберіть область, яка буде видима у профілі студії.
-        </p>
-      </div>
+              <p className="mt-2 text-sm font-medium text-[#77716b]">
+                Виберіть область, яка буде видима у профілі студії.
+              </p>
+            </div>
 
-      <div className="mx-5 h-[340px] overflow-hidden rounded-[26px] bg-black">
-        <div className="relative h-full w-full">
-          <Cropper
-            image={cropModal.imageUrl}
-            crop={crop}
-            zoom={zoom}
-            aspect={1}
-            cropShape="round"
-            showGrid={false}
-            onCropChange={setCrop}
-            onZoomChange={setZoom}
-            onCropComplete={(_, croppedPixels) => {
-              setCroppedAreaPixels(croppedPixels);
-            }}
-          />
+            <div className="mx-5 h-[340px] overflow-hidden rounded-[26px] bg-black">
+              <div className="relative h-full w-full">
+                <Cropper
+                  image={cropModal.imageUrl}
+                  crop={crop}
+                  zoom={zoom}
+                  aspect={1}
+                  cropShape="round"
+                  showGrid={false}
+                  onCropChange={setCrop}
+                  onZoomChange={setZoom}
+                  onCropComplete={(_, croppedPixels) => {
+                    setCroppedAreaPixels(croppedPixels);
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="px-5 py-4">
+              <label className="mb-2 block text-sm font-black text-[#202020]">
+                Масштаб
+              </label>
+
+              <input
+                type="range"
+                min={1}
+                max={3}
+                step={0.1}
+                value={zoom}
+                onChange={(e) => setZoom(Number(e.target.value))}
+                className="w-full"
+              />
+            </div>
+
+            <div className="flex gap-2 border-t border-[#f0e7da] bg-[#fbfaf8] px-5 py-4">
+              <Button
+                type="button"
+                variant="secondary"
+                className="flex-1"
+                onClick={() => {
+                  if (cropModal.imageUrl)
+                    URL.revokeObjectURL(cropModal.imageUrl);
+
+                  setCropModal({
+                    open: false,
+                    imageUrl: "",
+                    target: "",
+                  });
+
+                  setCroppedAreaPixels(null);
+                  setCrop({ x: 0, y: 0 });
+                  setZoom(1);
+                }}
+              >
+                Скасувати
+              </Button>
+
+              <Button
+                type="button"
+                variant="primary"
+                className="flex-1"
+                disabled={saving}
+                onClick={confirmCrop}
+              >
+                <Check className="h-4 w-4" />
+                Застосувати
+              </Button>
+            </div>
+          </div>
         </div>
-      </div>
-
-      <div className="px-5 py-4">
-        <label className="mb-2 block text-sm font-black text-[#202020]">
-          Масштаб
-        </label>
-
-        <input
-          type="range"
-          min={1}
-          max={3}
-          step={0.1}
-          value={zoom}
-          onChange={(e) => setZoom(Number(e.target.value))}
-          className="w-full"
-        />
-      </div>
-
-      <div className="flex gap-2 border-t border-[#f0e7da] bg-[#fbfaf8] px-5 py-4">
-<Button
-  type="button"
-  variant="secondary"
-  className="flex-1"
-  onClick={() => {
-    if (cropModal.imageUrl) URL.revokeObjectURL(cropModal.imageUrl);
-
-    setCropModal({
-      open: false,
-      imageUrl: "",
-      target: "",
-    });
-
-    setCroppedAreaPixels(null);
-    setCrop({ x: 0, y: 0 });
-    setZoom(1);
-  }}
->
-  Скасувати
-</Button>
-
-<Button
-  type="button"
-  variant="primary"
-  className="flex-1"
-  disabled={saving}
-  onClick={confirmCrop}
->
-  <Check className="h-4 w-4" />
-  Застосувати
-</Button>
-      </div>
-    </div>
-  </div>
-)}
+      )}
     </div>
   );
 }

@@ -16,10 +16,12 @@ import Golowna from "./components/Golowna";
 import Masters from "./pages/dashboard/Masters";
 import StudioPublicPage from "./pages/dashboard/StudioPublicPage";
 import AppBackground from "./components/AppBackground";
-import LoginClient from "./pages/dashboard/LoginClient";
-import RegisterClient from "./pages/dashboard/RegisterClient";
-import ForgotPassword from "./pages/dashboard/ForgotPassword";
+import LoginClient from "./components/LoginClient";
+import RegisterClient from "./components/RegisterClient";
+import ForgotPassword from "./components/ForgotPasswordClient";
+import ForgotPasswordOwner from "./components/ForgotPasswordOwner";
 import Terms from "./pages/dashboard/TermsOwner";
+import ResetPasswordOwner from "./components/ResetPasswordOwner.jsx";
 import Privacy from "./pages/dashboard/PrivacyOwner";
 import LoginOwner from "./components/LoginOwner";
 import RegisterOwner from "./components/RegisterOwner";
@@ -38,6 +40,7 @@ import MessagesClient from "./pages/MessagesClient";
 import Clients from "./pages/dashboard/Clients";
 import Login from "./components/Login";
 import BillingPlans from "./pages/dashboard/BillingPlans";
+import ResetPasswordClient from "./components/ResetPasswordClient";
 
 function StudioDetailsKeyed() {
   const { slug } = useParams();
@@ -96,11 +99,45 @@ export default function App() {
             <Route path="/privacyclient" element={<PrivacyClient />} />
             <Route path="/booking/success" element={<BookingSuccess />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/register" element={<RegisterClient />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-           <Route path="/login" element={<Login />} />
-<Route path="/login-owner" element={<Login />} />
-            <Route path="/register-owner" element={<RegisterOwner />} />
+        
+{/* Авторизація клієнта */}
+<Route path="/login" element={<Login />} />
+
+<Route
+  path="/register"
+  element={<RegisterClient />}
+/>
+
+<Route
+  path="/forgot-password"
+  element={<ForgotPassword />}
+/>
+
+<Route
+  path="/reset-password"
+  element={<ResetPasswordClient />}
+/>
+
+{/* Авторизація власника */}
+<Route
+  path="/login-owner"
+  element={<LoginOwner />}
+/>
+
+<Route
+  path="/register-owner"
+  element={<RegisterOwner />}
+/>
+
+<Route
+  path="/forgot-password-owner"
+  element={<ForgotPasswordOwner />}
+/>
+
+<Route
+  path="/reset-password-owner"
+  element={<ResetPasswordOwner />}
+/>
 
             <Route
               path="/dashboard"

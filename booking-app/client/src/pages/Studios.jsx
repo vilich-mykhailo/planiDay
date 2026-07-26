@@ -24,7 +24,6 @@ import {
   Zap,
   X,
   Crown,
-
   Sparkles,
   Hand,
   Eye,
@@ -51,6 +50,56 @@ import FavouriteButton from "../components/FavouriteButton";
 
 function safeText(v) {
   return String(v ?? "").trim();
+}
+
+function formatStreetForDisplay(value) {
+  const street = String(value || "")
+    .trim()
+    .replace(/\s+/g, " ");
+
+  if (!street) return "";
+
+  const prefixRules = [
+    [/^(?:вулиця|вул\.?)\s*/iu, "вул. "],
+    [/^(?:проспект|просп\.?|пр-т)\s*/iu, "просп. "],
+    [/^(?:провулок|пров\.?)\s*/iu, "пров. "],
+    [/^(?:бульвар|бул\.?)\s*/iu, "бул. "],
+    [/^(?:площа|пл\.?)\s*/iu, "пл. "],
+    [/^(?:набережна|наб\.?)\s*/iu, "наб. "],
+    [/^(?:узвіз|узв\.?)\s*/iu, "узв. "],
+    [/^(?:проїзд|пр-д)\s*/iu, "пр-д "],
+    [/^(?:алея|ал\.?)\s*/iu, "ал. "],
+    [/^(?:шосе)\s*/iu, "шосе "],
+    [/^(?:майдан)\s*/iu, "майдан "],
+    [/^(?:дорога)\s*/iu, "дорога "],
+    [/^(?:тупик)\s*/iu, "тупик "],
+  ];
+
+  for (const [pattern, replacement] of prefixRules) {
+    if (pattern.test(street)) {
+      return street.replace(pattern, replacement).trim();
+    }
+  }
+
+  const suffixRules = [
+    [/^(.+?)\s+(?:вулиця|вул\.?)$/iu, "вул. $1"],
+    [/^(.+?)\s+(?:проспект|просп\.?|пр-т)$/iu, "просп. $1"],
+    [/^(.+?)\s+(?:провулок|пров\.?)$/iu, "пров. $1"],
+    [/^(.+?)\s+(?:бульвар|бул\.?)$/iu, "бул. $1"],
+    [/^(.+?)\s+(?:площа|пл\.?)$/iu, "пл. $1"],
+    [/^(.+?)\s+(?:набережна|наб\.?)$/iu, "наб. $1"],
+    [/^(.+?)\s+(?:узвіз|узв\.?)$/iu, "узв. $1"],
+    [/^(.+?)\s+(?:проїзд|пр-д)$/iu, "пр-д $1"],
+    [/^(.+?)\s+(?:алея|ал\.?)$/iu, "ал. $1"],
+  ];
+
+  for (const [pattern, replacement] of suffixRules) {
+    if (pattern.test(street)) {
+      return street.replace(pattern, replacement).trim();
+    }
+  }
+
+  return street;
 }
 
 const R2_PUBLIC = import.meta.env.VITE_R2_PUBLIC_BASE_URL;
@@ -112,18 +161,28 @@ const CITY_TO_REGION = {
 
 const QUERY_EXPAND = {
   стрижк: [
-  "стрижка",
-  "стрижки",
-  "перукар",
-  "перукарня",
-  "барбер",
-  "укладка",
-  "фарбування",
-  "haircut",
-],
+    "стрижка",
+    "стрижки",
+    "перукар",
+    "перукарня",
+    "барбер",
+    "укладка",
+    "фарбування",
+    "haircut",
+  ],
   перукар: ["стриж", "уклад", "фарб", "перукарня"],
   барбер: ["стриж", "barber", "barbershop"],
-  манік: ["нігт", "гель", "лак", "покрит", "shellac", "шелак", "френч", "салон краси", "нейл"],
+  манік: [
+    "нігт",
+    "гель",
+    "лак",
+    "покрит",
+    "shellac",
+    "шелак",
+    "френч",
+    "салон краси",
+    "нейл",
+  ],
   педик: ["нігт", "стоп", "покрит", "педикюр"],
   масаж: ["спин", "шия", "комірц", "ноги", "стоп", "релакс", "massage"],
   спин: ["масаж", "спина"],
@@ -201,50 +260,31 @@ function getCategoryLabel(value) {
 function getCategoryIcon(value) {
   const key = safeText(value).toLowerCase();
 
-  if (
-    key.includes("манік") ||
-    key.includes("nails")
-  ) {
+  if (key.includes("манік") || key.includes("nails")) {
     return Hand;
   }
 
-  if (
-    key.includes("масаж") ||
-    key.includes("massage")
-  ) {
+  if (key.includes("масаж") || key.includes("massage")) {
     return HandHeart;
   }
 
-  if (
-    key.includes("перук") ||
-    key.includes("hair")
-  ) {
+  if (key.includes("перук") || key.includes("hair")) {
     return Scissors;
   }
 
-  if (
-    key.includes("барбер") ||
-    key.includes("barber")
-  ) {
+  if (key.includes("барбер") || key.includes("barber")) {
     return Scissors;
   }
 
-  if (
-    key.includes("spa") ||
-    key.includes("wellness")
-  ) {
+  if (key.includes("spa") || key.includes("wellness")) {
     return Waves;
   }
 
-  if (
-    key.includes("стомат")
-  ) {
+  if (key.includes("стомат")) {
     return Smile;
   }
 
-  if (
-    key.includes("авто")
-  ) {
+  if (key.includes("авто")) {
     return Car;
   }
 
@@ -323,7 +363,9 @@ function countTokenHits(hayTokens, qTokens) {
 }
 
 function getCityRegion(city) {
-  const clean = safeText(city).replace(/^м\.\s*/i, "").trim();
+  const clean = safeText(city)
+    .replace(/^м\.\s*/i, "")
+    .trim();
   return CITY_TO_REGION[clean] || "";
 }
 
@@ -341,19 +383,19 @@ async function fetchStudios() {
 
   const list = Array.isArray(data?.studios) ? data.studios : [];
 
-return list.map((s) => ({
-  ...s,
-  slug: s.slug || s.id,
-  coverUrl: toPublicUrl(s.coverUrl),
-  logoUrl: toPublicUrl(s.logoUrl),
-  schedule: s.schedule || {},
-  scheduleExceptions: Array.isArray(s.scheduleExceptions)
-    ? s.scheduleExceptions.map((item) => ({
-        ...item,
-        date: String(item?.date || "").slice(0, 10),
-      }))
-    : [],
-}));
+  return list.map((s) => ({
+    ...s,
+    slug: s.slug || s.id,
+    coverUrl: toPublicUrl(s.coverUrl),
+    logoUrl: toPublicUrl(s.logoUrl),
+    schedule: s.schedule || {},
+    scheduleExceptions: Array.isArray(s.scheduleExceptions)
+      ? s.scheduleExceptions.map((item) => ({
+          ...item,
+          date: String(item?.date || "").slice(0, 10),
+        }))
+      : [],
+  }));
 }
 
 function generateFakeRating(seed) {
@@ -373,7 +415,9 @@ function generateFakeRating(seed) {
 }
 
 function SkeletonPulse({ className = "" }) {
-  return <div className={cn("animate-pulse rounded-[28px] bg-black/5", className)} />;
+  return (
+    <div className={cn("animate-pulse rounded-[28px] bg-black/5", className)} />
+  );
 }
 
 function StudiosSkeleton() {
@@ -418,37 +462,40 @@ function IconButton({ children, className = "", badge }) {
 }
 
 function BrandBar() {
-  return (
-    <div className="mt-12 flex items-center justify-between gap-4">
-    </div>
-  );
+  return <div className="mt-12 flex items-center justify-between gap-4"></div>;
 }
 
-function FeaturePill({ active, icon: Icon, children, onClick, className = "" }) {
+function FeaturePill({
+  active,
+  icon: Icon,
+  children,
+  onClick,
+  className = "",
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
-className={cn(
-  "group inline-flex h-[25px] min-w-max shrink-0 select-none items-center justify-center gap-1 rounded-[8px] border border-transparent bg-white px-2.5 text-[10px] font-bold text-[#3f3f46] transition-all duration-300 ease-out active:scale-[0.97]",
-  "snap-start whitespace-nowrap",
-  "sm:h-[28px] sm:gap-1.5 sm:rounded-[8px] sm:px-3 sm:text-[11px]",
+      className={cn(
+        "group inline-flex h-[25px] min-w-max shrink-0 select-none items-center justify-center gap-1 rounded-[8px] border border-transparent bg-white px-2.5 text-[10px] font-bold text-[#3f3f46] transition-all duration-300 ease-out active:scale-[0.97]",
+        "snap-start whitespace-nowrap",
+        "sm:h-[28px] sm:gap-1.5 sm:rounded-[8px] sm:px-3 sm:text-[11px]",
 
-  active
-    ? "bg-[#fff5ee] text-[#ff6200] shadow-[0_6px_18px_rgba(255,98,0,0.12)] ring-1 ring-[#ff6200]/10"
-    : "hover:scale-105 hover:text-[#ff6200] hover:shadow-[0_6px_18px_rgba(15,23,42,0.08)]",
+        active
+          ? "bg-[#fff5ee] text-[#ff6200] shadow-[0_6px_18px_rgba(255,98,0,0.12)] ring-1 ring-[#ff6200]/10"
+          : "hover:scale-105 hover:text-[#ff6200] hover:shadow-[0_6px_18px_rgba(15,23,42,0.08)]",
 
-  className,
-)}
+        className,
+      )}
     >
-   <Icon
-  className={cn(
-    "h-3.5 w-3.5 shrink-0 transition-colors duration-200 sm:h-[12px] sm:w-[12px]",
-    active
-      ? "text-[#ff6200]"
-      : "text-[#8b8794] group-hover:text-[#ff6200]",
-  )}
-/>
+      <Icon
+        className={cn(
+          "h-3.5 w-3.5 shrink-0 transition-colors duration-200 sm:h-[12px] sm:w-[12px]",
+          active
+            ? "text-[#ff6200]"
+            : "text-[#8b8794] group-hover:text-[#ff6200]",
+        )}
+      />
       {children}
     </button>
   );
@@ -498,8 +545,12 @@ function isStudioOpenNow(schedule, exceptions = []) {
   const today = getTodaySchedule(schedule, exceptions);
   if (!today?.enabled) return false;
 
-  const [sh, sm] = String(today.start || "00:00").split(":").map(Number);
-  const [eh, em] = String(today.end || "00:00").split(":").map(Number);
+  const [sh, sm] = String(today.start || "00:00")
+    .split(":")
+    .map(Number);
+  const [eh, em] = String(today.end || "00:00")
+    .split(":")
+    .map(Number);
 
   const startMin = sh * 60 + sm;
   const endMin = eh * 60 + em;
@@ -518,13 +569,23 @@ function StudioCard({ studio, onOpen, mode = "carousel" }) {
   const coverUrl = safeText(studio.coverUrl);
   const logoUrl = safeText(studio.logoUrl);
   const openNow = isStudioOpenNow(
-  studio?.schedule || {},
-  studio?.scheduleExceptions || [],
-);
-  const { rating, reviewsCount } = generateFakeRating(studio.id || studio.slug || name);
-  const address = [studio?.street, studio?.building, studio?.apartment]
+    studio?.schedule || {},
+    studio?.scheduleExceptions || [],
+  );
+  const { rating, reviewsCount } = generateFakeRating(
+    studio.id || studio.slug || name,
+  );
+const address = [
+  [
+    formatStreetForDisplay(studio?.street),
+    safeText(studio?.building),
+  ]
     .filter(Boolean)
-    .join(", ");
+    .join(" "),
+  safeText(studio?.apartment),
+]
+  .filter(Boolean)
+  .join(", ");
   const fullAddress = [cityLabel, address].filter(Boolean).join(", ");
   const services = Array.isArray(studio.services)
     ? studio.services.map((s) => safeText(s?.name)).filter(Boolean)
@@ -539,135 +600,132 @@ function StudioCard({ studio, onOpen, mode = "carousel" }) {
   const isPremium = studio.premium === true || studio.premium === "true";
 
   return (
-<div
-  role="button"
-  tabIndex={0}
-  onClick={() => onOpen(studio)}
-  onKeyDown={(event) => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      onOpen(studio);
-    }
-  }}
-  className={cn(
-    "group relative shrink-0 cursor-pointer outline-none transition-transform duration-300 ease-out hover:scale-[1.02]",
-    isGrid
-      ? "w-full max-w-none"
-      : "w-[84%] shrink-0 sm:w-[48%] lg:w-[32%]",
-  )}
->
-<article
-  className={cn(
-    "relative z-10 h-[200px] overflow-hidden rounded-[20px] bg-[#202020] text-white shadow-[0_14px_34px_rgba(0,0,0,0.16)] sm:h-[215px] sm:rounded-[18px]",
-  )}
->
-    {coverUrl ? (
-      <img
-        src={coverUrl}
-        alt={`${name} cover`}
-        className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
-        loading="lazy"
-        onError={(event) => {
-          event.currentTarget.style.display = "none";
-        }}
-      />
-    ) : (
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_15%,#5c5248,#191919_56%)]" />
-    )}
-
-    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-black/10" />
-
-    <div className="absolute left-2.5 top-2.5 z-10 inline-flex h-6 max-w-[58%] items-center gap-1 rounded-full border border-white/40 bg-white/92 px-2 shadow-[0_8px_18px_rgba(20,20,20,0.1)] backdrop-blur-md sm:left-4 sm:top-4 sm:h-7 sm:px-3">
-      <span className="grid h-4 w-4 place-items-center rounded-full bg-[#fff3e9] text-[#ff6200] sm:h-5 sm:w-5">
-        {React.createElement(CategoryIcon, {
-          className: "h-3.5 w-3.5 sm:h-3 sm:w-3",
-        })}
-      </span>
-
-      <span className="truncate text-[9px] font-bold tracking-[-0.01em] text-[#1c1c1c] sm:text-[11px]">
-        {cat}
-      </span>
-    </div>
-
-    <div className="absolute right-2.5 top-2.5 z-10 sm:right-4 sm:top-4">
-      <RatingBadge rating={rating} reviewsCount={reviewsCount} />
-    </div>
-
-    <div className="absolute bottom-3 left-3 right-3 z-10 flex items-end gap-2 sm:bottom-4 sm:left-4 sm:right-4 sm:gap-3">
-      <div className="grid h-[72px] w-[72px] shrink-0 place-items-center overflow-hidden rounded-[18px] bg-white shadow-[0_12px_28px_rgba(0,0,0,0.22)] sm:h-[58px] sm:w-[58px] sm:rounded-[15px]">
-        {logoUrl ? (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => onOpen(studio)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onOpen(studio);
+        }
+      }}
+      className={cn(
+        "group relative shrink-0 cursor-pointer outline-none transition-transform duration-300 ease-out hover:scale-[1.02]",
+        isGrid ? "w-full max-w-none" : "w-[84%] shrink-0 sm:w-[48%] lg:w-[32%]",
+      )}
+    >
+      <article
+        className={cn(
+          "relative z-10 h-[200px] overflow-hidden rounded-[20px] bg-[#202020] text-white shadow-[0_14px_34px_rgba(0,0,0,0.16)] sm:h-[215px] sm:rounded-[18px]",
+        )}
+      >
+        {coverUrl ? (
           <img
-            src={logoUrl}
-            alt={`${name} logo`}
-            className="h-full w-full object-cover object-center"
+            src={coverUrl}
+            alt={`${name} cover`}
+            className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
             loading="lazy"
             onError={(event) => {
               event.currentTarget.style.display = "none";
             }}
           />
         ) : (
-          <Scissors className="h-9 w-9 text-black sm:h-7 sm:w-7" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_15%,#5c5248,#191919_56%)]" />
         )}
-      </div>
 
-      <div className="min-w-0 flex-1">
-        <h2 className="truncate text-[16px] font-black leading-none tracking-[-0.04em] sm:text-[17px]">
-          {name}
-        </h2>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-black/10" />
 
-{fullAddress ? (
-  <p className="mt-2 flex items-center gap-1 truncate text-[10px] font-medium leading-[1.3] text-white sm:mt-1 sm:text-[10px] md:text-[10px] lg:text-[11px]">
-    <MapPin className="h-3 w-3 shrink-0 text-[#ff6200] sm:h-3 sm:w-3" />
-    {fullAddress}
-  </p>
-) : null}
+        <div className="absolute left-2.5 top-2.5 z-10 inline-flex h-6 max-w-[58%] items-center gap-1 rounded-full border border-white/40 bg-white/92 px-2 shadow-[0_8px_18px_rgba(20,20,20,0.1)] backdrop-blur-md sm:left-4 sm:top-4 sm:h-7 sm:px-3">
+          <span className="grid h-4 w-4 place-items-center rounded-full bg-[#fff3e9] text-[#ff6200] sm:h-5 sm:w-5">
+            {React.createElement(CategoryIcon, {
+              className: "h-3.5 w-3.5 sm:h-3 sm:w-3",
+            })}
+          </span>
 
-<p
-  className={cn(
-    "mt-1 flex items-center gap-1 text-[10px] font-semibold sm:text-xs",
-    openNow ? "text-[#13a044]" : "text-[#ef4444]",
-  )}
->
-  <span
-    className={cn(
-      "h-1.5 w-1.5 shrink-0 rounded-full sm:h-2 sm:w-2",
-      openNow
-        ? "bg-[#13a044] shadow-[0_0_0_3px_rgba(19,160,68,0.16)]"
-        : "bg-[#ef4444] shadow-[0_0_0_3px_rgba(239,68,68,0.16)]",
-    )}
-  />
+          <span className="truncate text-[9px] font-bold tracking-[-0.01em] text-[#1c1c1c] sm:text-[11px]">
+            {cat}
+          </span>
+        </div>
 
-  {openNow ? "Відкрито зараз" : "Зачинено зараз"}
-</p>
-      </div>
+        <div className="absolute right-2.5 top-2.5 z-10 sm:right-4 sm:top-4">
+          <RatingBadge rating={rating} reviewsCount={reviewsCount} />
+        </div>
 
-      <div
-        className="relative z-20"
-        onClick={(event) => event.stopPropagation()}
-        onMouseDown={(event) => event.stopPropagation()}
-      >
-        <FavouriteButton studio={studio} />
-      </div>
+        <div className="absolute bottom-3 left-3 right-3 z-10 flex items-end gap-2 sm:bottom-4 sm:left-4 sm:right-4 sm:gap-3">
+          <div className="grid h-[72px] w-[72px] shrink-0 place-items-center overflow-hidden rounded-[18px] bg-white shadow-[0_12px_28px_rgba(0,0,0,0.22)] sm:h-[58px] sm:w-[58px] sm:rounded-[15px]">
+            {logoUrl ? (
+              <img
+                src={logoUrl}
+                alt={`${name} logo`}
+                className="h-full w-full object-cover object-center"
+                loading="lazy"
+                onError={(event) => {
+                  event.currentTarget.style.display = "none";
+                }}
+              />
+            ) : (
+              <Scissors className="h-9 w-9 text-black sm:h-7 sm:w-7" />
+            )}
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <h2 className="truncate text-[16px] font-black leading-none tracking-[-0.04em] sm:text-[17px]">
+              {name}
+            </h2>
+
+            {fullAddress ? (
+              <p className="mt-2 flex items-center gap-1 truncate text-[10px] font-medium leading-[1.3] text-white sm:mt-1 sm:text-[10px] md:text-[10px] lg:text-[11px]">
+                <MapPin className="h-3 w-3 shrink-0 text-[#ff6200] sm:h-3 sm:w-3" />
+                {fullAddress}
+              </p>
+            ) : null}
+
+            <p
+              className={cn(
+                "mt-1 flex items-center gap-1 text-[10px] font-semibold sm:text-xs",
+                openNow ? "text-[#13a044]" : "text-[#ef4444]",
+              )}
+            >
+              <span
+                className={cn(
+                  "h-1.5 w-1.5 shrink-0 rounded-full sm:h-2 sm:w-2",
+                  openNow
+                    ? "bg-[#13a044] shadow-[0_0_0_3px_rgba(19,160,68,0.16)]"
+                    : "bg-[#ef4444] shadow-[0_0_0_3px_rgba(239,68,68,0.16)]",
+                )}
+              />
+
+              {openNow ? "Відкрито зараз" : "Зачинено зараз"}
+            </p>
+          </div>
+
+          <div
+            className="relative z-20"
+            onClick={(event) => event.stopPropagation()}
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <FavouriteButton studio={studio} />
+          </div>
+        </div>
+      </article>
+
+      {isPremium ? (
+        <div className="absolute left-2.5 top-[38px] z-10 sm:left-4 sm:top-[48px]">
+          <div className="inline-flex items-center gap-1 rounded-full border border-[#ffd7b5]/50 bg-[linear-gradient(90deg,#ff6200_0%,#ff8a00_18%,#ffc266_50%,#ff8a00_82%,#ff6200_100%)] px-2 py-[4px] shadow-[0_8px_20px_rgba(255,98,0,0.28)] backdrop-blur-md sm:px-2.5">
+            <Crown className="h-3 w-3 fill-white text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.22)]" />
+
+            <span className="text-[9px] font-black uppercase tracking-[0.08em] text-white">
+              Premium
+            </span>
+          </div>
+        </div>
+      ) : null}
     </div>
-  </article>
-
-{isPremium ? (
-  <div className="absolute left-2.5 top-[38px] z-10 sm:left-4 sm:top-[48px]">
-    <div className="inline-flex items-center gap-1 rounded-full border border-[#ffd7b5]/50 bg-[linear-gradient(90deg,#ff6200_0%,#ff8a00_18%,#ffc266_50%,#ff8a00_82%,#ff6200_100%)] px-2 py-[4px] shadow-[0_8px_20px_rgba(255,98,0,0.28)] backdrop-blur-md sm:px-2.5">
-      <Crown className="h-3 w-3 fill-white text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.22)]" />
-
-      <span className="text-[9px] font-black uppercase tracking-[0.08em] text-white">
-        Premium
-      </span>
-    </div>
-  </div>
-) : null}
-</div>
-    
   );
 }
 
-  const CATEGORY_SERVICE_TERMS = {
+const CATEGORY_SERVICE_TERMS = {
   nails: [
     "манікюр",
     "педикюр",
@@ -678,48 +736,24 @@ function StudioCard({ studio, onOpen, mode = "carousel" }) {
     "френч",
   ],
 
-  hair: [
-    "стрижка",
-    "зачіска",
-    "укладка",
-    "фарбування",
-    "волосся",
-  ],
+  hair: ["стрижка", "зачіска", "укладка", "фарбування", "волосся"],
 
-  barber: [
-    "чоловіча стрижка",
-    "борода",
-    "барбер",
-  ],
+  barber: ["чоловіча стрижка", "борода", "барбер"],
 
-  brows_lashes: [
-    "брови",
-    "вії",
-    "ламінування",
-    "нарощування вій",
-  ],
+  brows_lashes: ["брови", "вії", "ламінування", "нарощування вій"],
 
-  massage: [
-    "масаж",
-    "спина",
-    "шия",
-    "релакс",
-  ],
+  massage: ["масаж", "спина", "шия", "релакс"],
 };
 
 function getStudioServicesSearchText(studio) {
-  const directServices = Array.isArray(studio?.services)
-    ? studio.services
-    : [];
+  const directServices = Array.isArray(studio?.services) ? studio.services : [];
 
   const serviceCategories = [
     ...(Array.isArray(studio?.serviceCategories)
       ? studio.serviceCategories
       : []),
 
-    ...(Array.isArray(studio?.categories)
-      ? studio.categories
-      : []),
+    ...(Array.isArray(studio?.categories) ? studio.categories : []),
   ];
 
   const directServicesText = directServices.flatMap((service) => [
@@ -769,11 +803,10 @@ export default function Studios() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
-const token = localStorage.getItem("token");
-const role = localStorage.getItem("role");
+  const token = localStorage.getItem("token");
+  const role = localStorage.getItem("role");
 
-const isGuest =
-  !token || (role !== "client" && role !== "owner");
+  const isGuest = !token || (role !== "client" && role !== "owner");
   const studiosQuery = useQuery({
     queryKey: ["studios"],
     queryFn: fetchStudios,
@@ -816,10 +849,10 @@ const isGuest =
     maxPrice,
     sort,
   }));
-  
- const recommendedScrollRef = useRef(null);
-const categoryScrollRef = useRef(null);
-const searchBoxRef = useRef(null);
+
+  const recommendedScrollRef = useRef(null);
+  const categoryScrollRef = useRef(null);
+  const searchBoxRef = useRef(null);
 
   useEffect(() => {
     if (!shouldRestoreScroll) return;
@@ -889,7 +922,9 @@ const searchBoxRef = useRef(null);
   const regions = useMemo(() => {
     const set = new Set(
       studios
-        .map((s) => safeText(s.region || s.oblast || s.area || getCityRegion(s.city)))
+        .map((s) =>
+          safeText(s.region || s.oblast || s.area || getCityRegion(s.city)),
+        )
         .filter(Boolean),
     );
 
@@ -927,7 +962,9 @@ const searchBoxRef = useRef(null);
 
   const searchSuggestions = useMemo(() => {
     const query = normalizeUa(q);
-    const queryTokens = tokenizeAndStem(query).filter((token) => token.length >= 2);
+    const queryTokens = tokenizeAndStem(query).filter(
+      (token) => token.length >= 2,
+    );
     if (query.length < 2 || queryTokens.length === 0) {
       return { terms: [], studios: [] };
     }
@@ -949,7 +986,12 @@ const searchBoxRef = useRef(null);
       const key = normalizedLabel;
       const previous = termMap.get(key);
       if (!previous || previous.score < score) {
-        termMap.set(key, { label: cleanLabel, type, category: studioCategory, score });
+        termMap.set(key, {
+          label: cleanLabel,
+          type,
+          category: studioCategory,
+          score,
+        });
       }
     }
 
@@ -961,19 +1003,23 @@ const searchBoxRef = useRef(null);
     });
 
     studios.forEach((studio) => {
-      (Array.isArray(studio.services) ? studio.services : []).forEach((service) => {
-        addTerm(service?.name, "Послуга");
-        addTerm(service?.category?.name, "Категорія");
-        addTerm(service?.serviceCategory?.name, "Категорія");
-      });
-      (Array.isArray(studio.serviceCategories) ? studio.serviceCategories : []).forEach(
-        (serviceCategory) => {
-          addTerm(serviceCategory?.name, "Категорія");
-          (Array.isArray(serviceCategory?.services) ? serviceCategory.services : []).forEach(
-            (service) => addTerm(service?.name, "Послуга"),
-          );
+      (Array.isArray(studio.services) ? studio.services : []).forEach(
+        (service) => {
+          addTerm(service?.name, "Послуга");
+          addTerm(service?.category?.name, "Категорія");
+          addTerm(service?.serviceCategory?.name, "Категорія");
         },
       );
+      (Array.isArray(studio.serviceCategories)
+        ? studio.serviceCategories
+        : []
+      ).forEach((serviceCategory) => {
+        addTerm(serviceCategory?.name, "Категорія");
+        (Array.isArray(serviceCategory?.services)
+          ? serviceCategory.services
+          : []
+        ).forEach((service) => addTerm(service?.name, "Послуга"));
+      });
     });
 
     const matchedStudios = studios
@@ -985,7 +1031,9 @@ const searchBoxRef = useRef(null);
           studio.description,
           getStudioServicesSearchText(studio),
           ...(CATEGORY_SERVICE_TERMS[studio.category] || []),
-        ].filter(Boolean).join(" ");
+        ]
+          .filter(Boolean)
+          .join(" ");
         const tokens = tokenizeAndStem(searchText);
         const directHits = countTokenHits(tokens, queryTokens);
         const semanticHits = countTokenHits(tokens, expandedTokens);
@@ -993,7 +1041,9 @@ const searchBoxRef = useRef(null);
         return {
           studio,
           score: nameMatch * 30 + directHits * 10 + semanticHits * 3,
-          reason: directHits ? categoryLabel : `Пов’язано із запитом «${q.trim()}»`,
+          reason: directHits
+            ? categoryLabel
+            : `Пов’язано із запитом «${q.trim()}»`,
         };
       })
       .filter((item) => item.score > 0)
@@ -1002,7 +1052,9 @@ const searchBoxRef = useRef(null);
 
     return {
       terms: Array.from(termMap.values())
-        .sort((a, b) => b.score - a.score || a.label.localeCompare(b.label, "uk"))
+        .sort(
+          (a, b) => b.score - a.score || a.label.localeCompare(b.label, "uk"),
+        )
         .slice(0, 6),
       studios: matchedStudios,
     };
@@ -1019,51 +1071,42 @@ const searchBoxRef = useRef(null);
   const showSearchSuggestions =
     searchFocused && q.trim().length >= 2 && flatSuggestions.length > 0;
 
-useEffect(() => {
-  const container = categoryScrollRef.current;
-  if (!container) return undefined;
+  useEffect(() => {
+    const container = categoryScrollRef.current;
+    if (!container) return undefined;
 
-  function handleCategoryWheel(event) {
-    const maxScroll =
-      container.scrollWidth - container.clientWidth;
+    function handleCategoryWheel(event) {
+      const maxScroll = container.scrollWidth - container.clientWidth;
 
-    if (maxScroll <= 0) return;
+      if (maxScroll <= 0) return;
 
-    const delta =
-      Math.abs(event.deltaX) > Math.abs(event.deltaY)
-        ? event.deltaX
-        : event.deltaY;
+      const delta =
+        Math.abs(event.deltaX) > Math.abs(event.deltaY)
+          ? event.deltaX
+          : event.deltaY;
 
-    if (!delta) return;
+      if (!delta) return;
 
-    const canScrollLeft =
-      delta < 0 && container.scrollLeft > 0;
+      const canScrollLeft = delta < 0 && container.scrollLeft > 0;
 
-    const canScrollRight =
-      delta > 0 &&
-      container.scrollLeft < maxScroll;
+      const canScrollRight = delta > 0 && container.scrollLeft < maxScroll;
 
-    if (!canScrollLeft && !canScrollRight) {
-      return;
+      if (!canScrollLeft && !canScrollRight) {
+        return;
+      }
+
+      event.preventDefault();
+      container.scrollLeft += delta;
     }
 
-    event.preventDefault();
-    container.scrollLeft += delta;
-  }
+    container.addEventListener("wheel", handleCategoryWheel, {
+      passive: false,
+    });
 
-  container.addEventListener(
-    "wheel",
-    handleCategoryWheel,
-    { passive: false },
-  );
-
-  return () => {
-    container.removeEventListener(
-      "wheel",
-      handleCategoryWheel,
-    );
-  };
-}, [categories.length]);
+    return () => {
+      container.removeEventListener("wheel", handleCategoryWheel);
+    };
+  }, [categories.length]);
 
   const filtered = useMemo(() => {
     const cityN = normalize(applied.city);
@@ -1091,43 +1134,36 @@ useEffect(() => {
         const matchCity = !cityN || locationValues.includes(cityN);
 
         const servicesSearchText = getStudioServicesSearchText(s);
-        const normalizedServicesSearchText =
-          normalizeUa(servicesSearchText);
+        const normalizedServicesSearchText = normalizeUa(servicesSearchText);
         const servicesTokens = tokenizeAndStem(servicesSearchText).filter(
-  (token) => token.length >= 3,
-);
+          (token) => token.length >= 3,
+        );
 
-        const exactCategoryMatch =
-          Boolean(catN) && catNItem === catN;
+        const exactCategoryMatch = Boolean(catN) && catNItem === catN;
 
         const serviceCategoryMatch =
           Boolean(catN) &&
-          (
-            selectedCategoryTerms.some((term) =>
-              normalizedServicesSearchText.includes(term),
-            ) ||
-selectedCategoryTokens.some((categoryToken) =>
-  servicesTokens.some(
-    (serviceToken) =>
-      serviceToken === categoryToken ||
-      serviceToken.startsWith(categoryToken),
-  ),
-)
-          );
+          (selectedCategoryTerms.some((term) =>
+            normalizedServicesSearchText.includes(term),
+          ) ||
+            selectedCategoryTokens.some((categoryToken) =>
+              servicesTokens.some(
+                (serviceToken) =>
+                  serviceToken === categoryToken ||
+                  serviceToken.startsWith(categoryToken),
+              ),
+            ));
 
         const matchCategory =
           !catN || exactCategoryMatch || serviceCategoryMatch;
 
-        const categoryPriority =
-          !catN || exactCategoryMatch ? 0 : 1;
+        const categoryPriority = !catN || exactCategoryMatch ? 0 : 1;
 
         const priceFrom = toNumber(s.priceFrom);
 
-        const matchMin =
-          min == null || (priceFrom != null && priceFrom >= min);
+        const matchMin = min == null || (priceFrom != null && priceFrom >= min);
 
-        const matchMax =
-          max == null || (priceFrom != null && priceFrom <= max);
+        const matchMax = max == null || (priceFrom != null && priceFrom <= max);
 
         if (!matchCity || !matchCategory || !matchMin || !matchMax) {
           return {
@@ -1156,8 +1192,7 @@ selectedCategoryTokens.some((categoryToken) =>
         const descHits = countTokenHits(descTokens, qTokens);
         const servicesHits = countTokenHits(servicesTokens, qTokens);
 
-        const matchQuery =
-          nameHits + catHits + descHits + servicesHits > 0;
+        const matchQuery = nameHits + catHits + descHits + servicesHits > 0;
 
         if (!matchQuery) {
           return {
@@ -1201,11 +1236,9 @@ selectedCategoryTokens.some((categoryToken) =>
         return bPremium - aPremium;
       }
 
-      const aPrice =
-        toNumber(a.s.priceFrom) ?? Number.POSITIVE_INFINITY;
+      const aPrice = toNumber(a.s.priceFrom) ?? Number.POSITIVE_INFINITY;
 
-      const bPrice =
-        toNumber(b.s.priceFrom) ?? Number.POSITIVE_INFINITY;
+      const bPrice = toNumber(b.s.priceFrom) ?? Number.POSITIVE_INFINITY;
 
       if (applied.sort === "priceAsc") {
         return aPrice - bPrice;
@@ -1216,10 +1249,7 @@ selectedCategoryTokens.some((categoryToken) =>
       }
 
       if (applied.sort === "nameAsc") {
-        return safeText(a.s.name).localeCompare(
-          safeText(b.s.name),
-          "uk",
-        );
+        return safeText(a.s.name).localeCompare(safeText(b.s.name), "uk");
       }
 
       if (b.score !== a.score) {
@@ -1232,14 +1262,12 @@ selectedCategoryTokens.some((categoryToken) =>
     return sorted.map((item) => item.s);
   }, [applied, studios]);
 
-const premiumStudios = studios.filter(
-  (studio) => studio.premium === true,
-);
+  const premiumStudios = studios.filter((studio) => studio.premium === true);
 
-const recommended =
-  premiumStudios.length > 0
-    ? premiumStudios.slice(0, 6)
-    : studios.slice(0, 6);
+  const recommended =
+    premiumStudios.length > 0
+      ? premiumStudios.slice(0, 6)
+      : studios.slice(0, 6);
   const allStudios = filtered;
 
   function clearAll() {
@@ -1259,111 +1287,108 @@ const recommended =
     });
   }
 
-function handleApply() {
-  const searchQuery = q.trim();
+  function handleApply() {
+    const searchQuery = q.trim();
 
-  const nextCategory = searchQuery
-    ? ""
-    : category;
+    const nextCategory = searchQuery ? "" : category;
 
-  if (searchQuery) {
+    if (searchQuery) {
+      setCategory("");
+    }
+
+    setApplied({
+      q: searchQuery,
+      city,
+      category: nextCategory,
+      minPrice,
+      maxPrice,
+      sort,
+    });
+  }
+
+  function selectSearchTerm(label) {
+    const nextQuery = safeText(label);
+    setQ(nextQuery);
     setCategory("");
-  }
-
-  setApplied({
-    q: searchQuery,
-    city,
-    category: nextCategory,
-    minPrice,
-    maxPrice,
-    sort,
-  });
-}
-
-function selectSearchTerm(label) {
-  const nextQuery = safeText(label);
-  setQ(nextQuery);
-  setCategory("");
-  setApplied((prev) => ({
-    ...prev,
-    q: nextQuery,
-    category: "",
-  }));
-  setSearchFocused(false);
-  setActiveSuggestion(-1);
-}
-
-function handleSearchKeyDown(event) {
-  if (event.key === "ArrowDown" && flatSuggestions.length) {
-    event.preventDefault();
-    setSearchFocused(true);
-    setActiveSuggestion((current) =>
-      current >= flatSuggestions.length - 1 ? 0 : current + 1,
-    );
-    return;
-  }
-
-  if (event.key === "ArrowUp" && flatSuggestions.length) {
-    event.preventDefault();
-    setActiveSuggestion((current) =>
-      current <= 0 ? flatSuggestions.length - 1 : current - 1,
-    );
-    return;
-  }
-
-  if (event.key === "Escape") {
+    setApplied((prev) => ({
+      ...prev,
+      q: nextQuery,
+      category: "",
+    }));
     setSearchFocused(false);
     setActiveSuggestion(-1);
-    return;
   }
 
-  if (event.key === "Enter") {
-    event.preventDefault();
-    const selected = flatSuggestions[activeSuggestion];
-    if (showSearchSuggestions && selected) {
-      if (selected.kind === "studio") openStudio(selected.studio);
-      else selectSearchTerm(selected.label);
+  function handleSearchKeyDown(event) {
+    if (event.key === "ArrowDown" && flatSuggestions.length) {
+      event.preventDefault();
+      setSearchFocused(true);
+      setActiveSuggestion((current) =>
+        current >= flatSuggestions.length - 1 ? 0 : current + 1,
+      );
       return;
     }
-    handleApply();
-    setSearchFocused(false);
+
+    if (event.key === "ArrowUp" && flatSuggestions.length) {
+      event.preventDefault();
+      setActiveSuggestion((current) =>
+        current <= 0 ? flatSuggestions.length - 1 : current - 1,
+      );
+      return;
+    }
+
+    if (event.key === "Escape") {
+      setSearchFocused(false);
+      setActiveSuggestion(-1);
+      return;
+    }
+
+    if (event.key === "Enter") {
+      event.preventDefault();
+      const selected = flatSuggestions[activeSuggestion];
+      if (showSearchSuggestions && selected) {
+        if (selected.kind === "studio") openStudio(selected.studio);
+        else selectSearchTerm(selected.label);
+        return;
+      }
+      handleApply();
+      setSearchFocused(false);
+    }
   }
-}
 
-function handleCategorySelect(nextCategory) {
-  setCategory(nextCategory);
+  function handleCategorySelect(nextCategory) {
+    setCategory(nextCategory);
 
-  if (nextCategory) {
+    if (nextCategory) {
+      setQ("");
+    }
+
+    setApplied((prev) => ({
+      ...prev,
+      q: nextCategory ? "" : prev.q,
+      category: nextCategory,
+    }));
+  }
+
+  function handleCitySelect(nextCity) {
+    setCity(nextCity);
+
+    setApplied((prev) => ({
+      ...prev,
+      city: nextCity,
+    }));
+  }
+
+  function handleClearSearch() {
     setQ("");
+
+    setApplied((prev) => ({
+      ...prev,
+      q: "",
+    }));
   }
 
-  setApplied((prev) => ({
-    ...prev,
-    q: nextCategory ? "" : prev.q,
-    category: nextCategory,
-  }));
-}
-
-function handleCitySelect(nextCity) {
-  setCity(nextCity);
-
-  setApplied((prev) => ({
-    ...prev,
-    city: nextCity,
-  }));
-}
-
-
-function handleClearSearch() {
-  setQ("");
-
-  setApplied((prev) => ({
-    ...prev,
-    q: "",
-  }));
-}
-
-function openStudio(studio) {
+  function openStudio(studio) {
     if (location.pathname === "/") {
       sessionStorage.setItem("studios-scroll-y", String(window.scrollY));
       sessionStorage.setItem("restore-studios-scroll", "1");
@@ -1375,379 +1400,394 @@ function openStudio(studio) {
     return <StudiosSkeleton />;
   }
 
-const heroImageBoxClass =
-  "pointer-events-none absolute z-0 " +
-  "max-[639px]:right-[-55px] max-[639px]:top-[-120px] max-[639px]:h-[360px] max-[639px]:w-[620px] " +
-  "sm:right-[-50px] sm:top-[-120px] sm:h-[390px] sm:w-[680px] " +
-  "md:right-[-60px] md:top-[-170px] md:h-[500px] md:w-[820px] " +
-  "lg:right-[-80px] lg:top-[-240px] lg:h-[620px] lg:w-[1040px]";
-  
-const heroImageClass =
-  "h-full w-full object-contain object-right";
+  const heroImageBoxClass =
+    "pointer-events-none absolute z-0 " +
+    "max-[639px]:right-[-55px] max-[639px]:top-[-120px] max-[639px]:h-[360px] max-[639px]:w-[620px] " +
+    "sm:right-[-50px] sm:top-[-120px] sm:h-[390px] sm:w-[680px] " +
+    "md:right-[-60px] md:top-[-170px] md:h-[500px] md:w-[820px] " +
+    "lg:right-[-80px] lg:top-[-240px] lg:h-[620px] lg:w-[1040px]";
+
+  const heroImageClass = "h-full w-full object-contain object-right";
 
   function scrollCategories(direction) {
-  const container = categoryScrollRef.current;
-  if (!container) return;
+    const container = categoryScrollRef.current;
+    if (!container) return;
 
-  const scrollAmount = Math.max(
-    280,
-    container.clientWidth * 0.65,
-  );
+    const scrollAmount = Math.max(280, container.clientWidth * 0.65);
 
-  container.scrollBy({
-    left: direction * scrollAmount,
-    behavior: "smooth",
-  });
-}
+    container.scrollBy({
+      left: direction * scrollAmount,
+      behavior: "smooth",
+    });
+  }
 
   function scrollRecommended(direction) {
-  const container = recommendedScrollRef.current;
-  if (!container) return;
+    const container = recommendedScrollRef.current;
+    if (!container) return;
 
-  const card = container.querySelector("article");
-  if (!card) return;
+    const card = container.querySelector("article");
+    if (!card) return;
 
-  const gap = 16;
-  const scrollAmount = card.offsetWidth + gap;
+    const gap = 16;
+    const scrollAmount = card.offsetWidth + gap;
 
-  container.scrollBy({
-    left: direction * scrollAmount,
-    behavior: "smooth",
-  });
-}
+    container.scrollBy({
+      left: direction * scrollAmount,
+      behavior: "smooth",
+    });
+  }
 
   return (
-    
-<main className="min-h-screen overflow-x-hidden bg-[#fbfaf8] pb-[calc(env(safe-area-inset-bottom)+92px)] text-[#111111]">
-  <div className="mx-auto max-w-[1260px] mt-8 px-4 max-[639px]:px-5 max-[639px]:pt-4 sm:px-6 sm:pt-12 lg:px-10 lg:pt-13">
-      
-
+    <main className="min-h-screen overflow-x-hidden bg-[#fbfaf8] pb-[calc(env(safe-area-inset-bottom)+92px)] text-[#111111]">
+      <div className="mx-auto max-w-[1260px] mt-8 px-4 max-[639px]:px-5 max-[639px]:pt-4 sm:px-6 sm:pt-12 lg:px-10 lg:pt-13">
         <section className="relative mt-2 max-[639px]:mt-0 sm:mt-12 lg:mt-10">
-<div className={cn(heroImageBoxClass, "mask-hero-image")}>
-                <img
+          <div className={cn(heroImageBoxClass, "mask-hero-image")}>
+            <img
               src={calendarHero}
               alt=""
               aria-hidden="true"
-           className={heroImageClass}
+              className={heroImageClass}
             />
           </div>
 
-        <div
-  className={cn(
-    "relative z-10 max-w-[720px]",
-    isGuest
-      ? "mt-12"
-      : "mt-2 max-[639px]:mt-0 sm:mt-12 lg:mt-16",
-  )}
->
-            
-<h1 className="max-w-[360px] text-[44px] font-black leading-[1.02] tracking-[-0.06em] text-[#202020] max-[639px]:max-w-[260px] max-[639px]:text-[38px] max-[639px]:leading-[0.98] sm:max-w-[520px] sm:text-[46px] sm:leading-[0.98] md:text-[52px] lg:max-w-[720px] lg:text-[54px]">
-  <span className="block">Обирай та</span>
+          <div
+            className={cn(
+              "relative z-10 max-w-[720px]",
+              isGuest ? "mt-12" : "mt-2 max-[639px]:mt-0 sm:mt-12 lg:mt-16",
+            )}
+          >
+            <h1 className="max-w-[360px] text-[44px] font-black leading-[1.02] tracking-[-0.06em] text-[#202020] max-[639px]:max-w-[260px] max-[639px]:text-[38px] max-[639px]:leading-[0.98] sm:max-w-[520px] sm:text-[46px] sm:leading-[0.98] md:text-[52px] lg:max-w-[720px] lg:text-[54px]">
+              <span className="block">Обирай та</span>
 
-  <span className="block text-[#ff6200] sm:inline">
-    записуйся{" "}
-  </span>
+              <span className="block text-[#ff6200] sm:inline">записуйся </span>
 
-  <span className="block text-[#ff6200] sm:inline">
-    онлайн
-  </span>
-</h1>
-<p className="mb-14 mt-3 max-w-[250px] text-[13px] font-medium leading-5 text-[#7a7d87] max-[639px]:mb-7 max-[639px]:mt-2.5 max-[639px]:max-w-[210px] max-[639px]:text-[12px] max-[639px]:leading-4 sm:mt-3 sm:max-w-[360px] sm:text-[13px] sm:leading-5 md:max-w-[420px] md:text-[14px]">
-  Пошук послуг і закладів <br className="sm:hidden" />
-  у твоєму місті
-</p>
+              <span className="block text-[#ff6200] sm:inline">онлайн</span>
+            </h1>
+            <p className="mb-14 mt-3 max-w-[250px] text-[13px] font-medium leading-5 text-[#7a7d87] max-[639px]:mb-7 max-[639px]:mt-2.5 max-[639px]:max-w-[210px] max-[639px]:text-[12px] max-[639px]:leading-4 sm:mt-3 sm:max-w-[360px] sm:text-[13px] sm:leading-5 md:max-w-[420px] md:text-[14px]">
+              Пошук послуг і закладів <br className="sm:hidden" />у твоєму місті
+            </p>
           </div>
         </section>
 
         <section className="relative mt-10 sm:mt-8">
-<div ref={searchBoxRef} className="relative z-30 flex h-[56px] items-center rounded-[15px] border border-[#eadfce] bg-white pl-5 pr-3 shadow-[0_10px_30px_rgba(15,23,42,0.04)] transition-all duration-200 hover:border-[#f1dfbf] hover:ring-4 hover:ring-orange-200/20 sm:max-w-[450px] md:max-w-[500px] lg:max-w-[660px]">
-  <Search className="h-5 w-5 shrink-0 text-[#8b8794] sm:h-6 sm:w-6" />
-
-<div className="flex min-w-0 flex-1 items-center">
-<input
-  value={q}
-  onChange={(event) => {
-    setQ(event.target.value);
-    setSearchFocused(true);
-    setActiveSuggestion(-1);
-  }}
-  onFocus={() => setSearchFocused(true)}
-  onBlur={() => window.setTimeout(() => setSearchFocused(false), 120)}
-  onKeyDown={handleSearchKeyDown}
-  role="combobox"
-  aria-autocomplete="list"
-  aria-expanded={showSearchSuggestions}
-  aria-controls="service-search-suggestions"
-  placeholder="Пошук послуг"
-  className="min-w-0 flex-1 bg-transparent px-4 text-[15px] font-semibold text-[#111111] outline-none placeholder:font-semibold placeholder:text-[#8b8794] sm:text-[18px]"
-/>
-
-  {q ? (
-    <button
-      type="button"
-     onClick={handleClearSearch}
-      className="mr-2 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#f5f1eb] text-[#8b8794] transition hover:bg-[#fff1e7] hover:text-[#ff6200]"
-    >
-      <X className="h-4 w-4" />
-    </button>
-  ) : null}
-</div>
-
-  <button
-    type="button"
-    onClick={handleApply}
-    disabled={!hasPendingChanges}
-className={cn(
-  "flex h-[38px] items-center justify-center rounded-[11px] px-4 text-[14px] font-black text-white transition-all duration-300 active:scale-[0.98] sm:h-[38px] sm:px-5 sm:text-[13px]",
-  hasPendingChanges
-    ? "animate-[heartbeat_1.8s_ease-in-out_infinite] bg-[#ff6200] shadow-[0_12px_30px_rgba(255,98,0,0.24)] hover:bg-[#ff6f14]"
-    : "bg-[#ff6200] shadow-[0_10px_24px_rgba(255,98,0,0.18)] opacity-70",
-)}
-  >
-    Знайти
-  </button>
-</div>
-
-{showSearchSuggestions ? (
-  <div
-    id="service-search-suggestions"
-    role="listbox"
-    onMouseDown={(event) => event.preventDefault()}
-    className="absolute left-0 right-0 top-[64px] z-50 max-h-[440px] overflow-y-auto rounded-[18px] border border-[#eee5da] bg-white p-2.5 shadow-[0_24px_70px_rgba(39,31,24,0.18)] sm:right-auto sm:w-[min(660px,calc(100vw-3rem))]"
-  >
-    {searchSuggestions.terms.length ? (
-      <div>
-        <p className="px-3 pb-1.5 pt-1 text-[10px] font-black uppercase tracking-[0.14em] text-[#aaa29a]">
-          Послуги та категорії
-        </p>
-        {searchSuggestions.terms.map((item, index) => (
-          <button
-            key={`${item.type}-${item.label}`}
-            type="button"
-            role="option"
-            aria-selected={activeSuggestion === index}
-            onMouseEnter={() => setActiveSuggestion(index)}
-            onClick={() => selectSearchTerm(item.label)}
-            className={cn(
-              "flex w-full items-center gap-3 rounded-[13px] px-3 py-2.5 text-left transition",
-              activeSuggestion === index ? "bg-[#fff3e9]" : "hover:bg-[#faf7f3]",
-            )}
+          <div
+            ref={searchBoxRef}
+            className="relative z-30 flex h-[56px] items-center rounded-[15px] border border-[#eadfce] bg-white pl-5 pr-3 shadow-[0_10px_30px_rgba(15,23,42,0.04)] transition-all duration-200 hover:border-[#f1dfbf] hover:ring-4 hover:ring-orange-200/20 sm:max-w-[450px] md:max-w-[500px] lg:max-w-[660px]"
           >
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#fff3e9] text-[#ff6200]">
-              {React.createElement(item.type === "Послуга" ? Scissors : Grid2X2, { className: "h-4 w-4" })}
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-[14px] font-extrabold text-[#24211f]">{item.label}</span>
-              <span className="block text-[11px] font-semibold text-[#938b84]">{item.type}</span>
-            </span>
-            <Search className="h-4 w-4 text-[#c5bdb6]" />
-          </button>
-        ))}
-      </div>
-    ) : null}
+            <Search className="h-5 w-5 shrink-0 text-[#8b8794] sm:h-6 sm:w-6" />
 
-    {searchSuggestions.studios.length ? (
-      <div className={cn(searchSuggestions.terms.length && "mt-2 border-t border-[#f0e9e2] pt-2")}>
-        <p className="px-3 pb-1.5 pt-1 text-[10px] font-black uppercase tracking-[0.14em] text-[#aaa29a]">
-          Студії з такими послугами
-        </p>
-        {searchSuggestions.studios.map((item, studioIndex) => {
-          const index = searchSuggestions.terms.length + studioIndex;
-          const studio = item.studio;
-          return (
+            <div className="flex min-w-0 flex-1 items-center">
+              <input
+                value={q}
+                onChange={(event) => {
+                  setQ(event.target.value);
+                  setSearchFocused(true);
+                  setActiveSuggestion(-1);
+                }}
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() =>
+                  window.setTimeout(() => setSearchFocused(false), 120)
+                }
+                onKeyDown={handleSearchKeyDown}
+                role="combobox"
+                aria-autocomplete="list"
+                aria-expanded={showSearchSuggestions}
+                aria-controls="service-search-suggestions"
+                placeholder="Пошук послуг"
+                className="min-w-0 flex-1 bg-transparent px-4 text-[15px] font-semibold text-[#111111] outline-none placeholder:font-semibold placeholder:text-[#8b8794] sm:text-[18px]"
+              />
+
+              {q ? (
+                <button
+                  type="button"
+                  onClick={handleClearSearch}
+                  className="mr-2 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#f5f1eb] text-[#8b8794] transition hover:bg-[#fff1e7] hover:text-[#ff6200]"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              ) : null}
+            </div>
+
             <button
-              key={studio.slug || studio.id}
               type="button"
-              role="option"
-              aria-selected={activeSuggestion === index}
-              onMouseEnter={() => setActiveSuggestion(index)}
-              onClick={() => openStudio(studio)}
+              onClick={handleApply}
+              disabled={!hasPendingChanges}
               className={cn(
-                "flex w-full items-center gap-3 rounded-[13px] px-3 py-2.5 text-left transition",
-                activeSuggestion === index ? "bg-[#fff3e9]" : "hover:bg-[#faf7f3]",
+                "flex h-[38px] items-center justify-center rounded-[11px] px-4 text-[14px] font-black text-white transition-all duration-300 active:scale-[0.98] sm:h-[38px] sm:px-5 sm:text-[13px]",
+                hasPendingChanges
+                  ? "animate-[heartbeat_1.8s_ease-in-out_infinite] bg-[#ff6200] shadow-[0_12px_30px_rgba(255,98,0,0.24)] hover:bg-[#ff6f14]"
+                  : "bg-[#ff6200] shadow-[0_10px_24px_rgba(255,98,0,0.18)] opacity-70",
               )}
             >
-              <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-xl bg-[#f4efe9] text-[#ff6200]">
-                {studio.logoUrl ? (
-                  <img src={studio.logoUrl} alt="" className="h-full w-full object-cover" />
-                ) : React.createElement(getCategoryIcon(studio.category), { className: "h-5 w-5" })}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-[14px] font-extrabold text-[#24211f]">{studio.name}</span>
-                <span className="block truncate text-[11px] font-semibold text-[#938b84]">
-                  {item.reason}{studio.city ? ` · ${studio.city}` : ""}
-                </span>
-              </span>
-              <ChevronRight className="h-4 w-4 text-[#b9b1aa]" />
+              Знайти
             </button>
-          );
-        })}
-      </div>
-    ) : null}
-  </div>
-) : null}
-
-      <div className="mt-5 grid grid-cols-2 gap-3 sm:mt-5 sm:grid-cols-[1fr_1fr_auto] lg:max-w-[900px]">
-<AnimatedDropdown
-  size="compact"
-  icon={MapPin}
-  label="Місто"
-  value={city}
-  onChange={handleCitySelect}
-  placeholder="Локація"
-  options={cities.map((c) => ({
-    value: c,
-    label: c,
-  }))}
-  regionOptions={regions}
-  districtOptions={districts}
-  searchable
-  className="h-10 rounded-[16px] sm:h-[54px] sm:rounded-[20px]"
-/>
-<AnimatedDropdown
-  size="compact"
-  icon={Grid2X2}
-  label="Категорія"
-  value={category}
-  onChange={handleCategorySelect}
-  placeholder="Категорія"
-  options={categories}
-  searchable
-  className="h-[76px] rounded-full bg-white px-5 shadow-[0_18px_42px_rgba(20,20,20,0.08)] sm:h-[52px]"
-/>
-<button
-  type="button"
-  onClick={clearAll}
-  className={cn(
-    "hidden sm:flex",
-    "group relative h-10 w-full items-center justify-center gap-2 rounded-[15px] border border-[#eadfce] bg-white px-4 text-left transition-all duration-200",
-    "shadow-[0_8px_22px_rgba(15,23,42,0.035)]",
-    "sm:h-[50px] sm:min-w-[120px] sm:rounded-[13px]",
-    "active:scale-[0.99]",
-    "hover:border-[#f1dfbf] hover:ring-4 hover:ring-orange-200/20",
-  )}
->
-  <FunnelX className="h-6 w-6 text-[#8a8580] transition-colors duration-200 group-hover:text-[#ff6b00] sm:h-[14px] sm:w-[22px]" />
-
-  <span className="text-[12px] font-bold text-[#77716b] sm:text-[14px]">
-    Очистити фільтри
-  </span>
-</button>
           </div>
 
-<div className="relative mt-6 sm:mt-5">
-  <button
-    type="button"
-    onClick={() => scrollCategories(-1)}
-    aria-label="Попередні категорії"
-    className="absolute left-0 top-1/2 z-20 hidden h-9 w-9 -translate-y-[65%] place-items-center rounded-full bg-white text-[#6f6a65] shadow-[0_6px_18px_rgba(15,23,42,0.08)] transition-all duration-150 ease-out hover:scale-108 hover:text-[#ff6200] hover:shadow-[0_8px_24px_rgba(15,23,42,0.12)] active:scale-95 lg:grid"
-  >
-    <ChevronLeft className="h-5 w-5" />
-  </button>
+          {showSearchSuggestions ? (
+            <div
+              id="service-search-suggestions"
+              role="listbox"
+              onMouseDown={(event) => event.preventDefault()}
+              className="absolute left-0 right-0 top-[64px] z-50 max-h-[440px] overflow-y-auto rounded-[18px] border border-[#eee5da] bg-white p-2.5 shadow-[0_24px_70px_rgba(39,31,24,0.18)] sm:right-auto sm:w-[min(660px,calc(100vw-3rem))]"
+            >
+              {searchSuggestions.terms.length ? (
+                <div>
+                  <p className="px-3 pb-1.5 pt-1 text-[10px] font-black uppercase tracking-[0.14em] text-[#aaa29a]">
+                    Послуги та категорії
+                  </p>
+                  {searchSuggestions.terms.map((item, index) => (
+                    <button
+                      key={`${item.type}-${item.label}`}
+                      type="button"
+                      role="option"
+                      aria-selected={activeSuggestion === index}
+                      onMouseEnter={() => setActiveSuggestion(index)}
+                      onClick={() => selectSearchTerm(item.label)}
+                      className={cn(
+                        "flex w-full items-center gap-3 rounded-[13px] px-3 py-2.5 text-left transition",
+                        activeSuggestion === index
+                          ? "bg-[#fff3e9]"
+                          : "hover:bg-[#faf7f3]",
+                      )}
+                    >
+                      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#fff3e9] text-[#ff6200]">
+                        {React.createElement(
+                          item.type === "Послуга" ? Scissors : Grid2X2,
+                          { className: "h-4 w-4" },
+                        )}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[14px] font-extrabold text-[#24211f]">
+                          {item.label}
+                        </span>
+                        <span className="block text-[11px] font-semibold text-[#938b84]">
+                          {item.type}
+                        </span>
+                      </span>
+                      <Search className="h-4 w-4 text-[#c5bdb6]" />
+                    </button>
+                  ))}
+                </div>
+              ) : null}
 
-  <div
-    ref={categoryScrollRef}
-    className="-mx-5 overflow-x-auto overflow-y-hidden px-5 pb-3 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] sm:-mx-6 sm:px-6 lg:mx-11 lg:px-1 [&::-webkit-scrollbar]:hidden"
-  >
-    <div className="pt-2 pb-3 flex w-max min-w-full touch-pan-x snap-x snap-mandatory flex-nowrap gap-2.5 sm:gap-4">
-      <FeaturePill
-        active={!category}
-        icon={Grid2X2}
-        onClick={() => handleCategorySelect("")}
-      >
-        Усі категорії
-      </FeaturePill>
+              {searchSuggestions.studios.length ? (
+                <div
+                  className={cn(
+                    searchSuggestions.terms.length &&
+                      "mt-2 border-t border-[#f0e9e2] pt-2",
+                  )}
+                >
+                  <p className="px-3 pb-1.5 pt-1 text-[10px] font-black uppercase tracking-[0.14em] text-[#aaa29a]">
+                    Студії з такими послугами
+                  </p>
+                  {searchSuggestions.studios.map((item, studioIndex) => {
+                    const index = searchSuggestions.terms.length + studioIndex;
+                    const studio = item.studio;
+                    return (
+                      <button
+                        key={studio.slug || studio.id}
+                        type="button"
+                        role="option"
+                        aria-selected={activeSuggestion === index}
+                        onMouseEnter={() => setActiveSuggestion(index)}
+                        onClick={() => openStudio(studio)}
+                        className={cn(
+                          "flex w-full items-center gap-3 rounded-[13px] px-3 py-2.5 text-left transition",
+                          activeSuggestion === index
+                            ? "bg-[#fff3e9]"
+                            : "hover:bg-[#faf7f3]",
+                        )}
+                      >
+                        <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-xl bg-[#f4efe9] text-[#ff6200]">
+                          {studio.logoUrl ? (
+                            <img
+                              src={studio.logoUrl}
+                              alt=""
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            React.createElement(
+                              getCategoryIcon(studio.category),
+                              { className: "h-5 w-5" },
+                            )
+                          )}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[14px] font-extrabold text-[#24211f]">
+                            {studio.name}
+                          </span>
+                          <span className="block truncate text-[11px] font-semibold text-[#938b84]">
+                            {item.reason}
+                            {studio.city ? ` · ${studio.city}` : ""}
+                          </span>
+                        </span>
+                        <ChevronRight className="h-4 w-4 text-[#b9b1aa]" />
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
 
-      {categories.map((cat) => (
-        <FeaturePill
-          key={cat.value}
-          active={category === cat.value}
-          icon={getCategoryIcon(cat.value)}
-          onClick={() => handleCategorySelect(cat.value)}
-        >
-          {cat.label}
-        </FeaturePill>
-      ))}
-    </div>
-  </div>
+          <div className="mt-5 grid grid-cols-2 gap-3 sm:mt-5 sm:grid-cols-[1fr_1fr_auto] lg:max-w-[900px]">
+            <AnimatedDropdown
+              size="compact"
+              icon={MapPin}
+              label="Місто"
+              value={city}
+              onChange={handleCitySelect}
+              placeholder="Локація"
+              options={cities.map((c) => ({
+                value: c,
+                label: c,
+              }))}
+              regionOptions={regions}
+              districtOptions={districts}
+              searchable
+              className="h-10 rounded-[16px] sm:h-[54px] sm:rounded-[20px]"
+            />
+            <AnimatedDropdown
+              size="compact"
+              icon={Grid2X2}
+              label="Категорія"
+              value={category}
+              onChange={handleCategorySelect}
+              placeholder="Категорія"
+              options={categories}
+              searchable
+              className="h-[76px] rounded-full bg-white px-5 shadow-[0_18px_42px_rgba(20,20,20,0.08)] sm:h-[52px]"
+            />
+            <button
+              type="button"
+              onClick={clearAll}
+              className={cn(
+                "hidden sm:flex",
+                "group relative h-10 w-full items-center justify-center gap-2 rounded-[15px] border border-[#eadfce] bg-white px-4 text-left transition-all duration-200",
+                "shadow-[0_8px_22px_rgba(15,23,42,0.035)]",
+                "sm:h-[50px] sm:min-w-[120px] sm:rounded-[13px]",
+                "active:scale-[0.99]",
+                "hover:border-[#f1dfbf] hover:ring-4 hover:ring-orange-200/20",
+              )}
+            >
+              <FunnelX className="h-6 w-6 text-[#8a8580] transition-colors duration-200 group-hover:text-[#ff6b00] sm:h-[14px] sm:w-[22px]" />
 
-  <button
-    type="button"
-    onClick={() => scrollCategories(1)}
-    aria-label="Наступні категорії"
-    className="absolute right-0 top-1/2 z-20 hidden h-9 w-9 -translate-y-[65%] place-items-center rounded-full bg-white text-[#6f6a65] shadow-[0_6px_18px_rgba(15,23,42,0.08)] transition-all duration-150 ease-out hover:scale-108 hover:text-[#ff6200] hover:shadow-[0_8px_24px_rgba(15,23,42,0.12)] active:scale-95 lg:grid"
-  >
-    <ChevronRight className="h-5 w-5" />
-  </button>
-</div>
+              <span className="text-[12px] font-bold text-[#77716b] sm:text-[14px]">
+                Очистити фільтри
+              </span>
+            </button>
+          </div>
+
+          <div className="relative mt-6 sm:mt-5">
+            <button
+              type="button"
+              onClick={() => scrollCategories(-1)}
+              aria-label="Попередні категорії"
+              className="absolute left-0 top-1/2 z-20 hidden h-9 w-9 -translate-y-[65%] place-items-center rounded-full bg-white text-[#6f6a65] shadow-[0_6px_18px_rgba(15,23,42,0.08)] transition-all duration-150 ease-out hover:scale-108 hover:text-[#ff6200] hover:shadow-[0_8px_24px_rgba(15,23,42,0.12)] active:scale-95 lg:grid"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+
+            <div
+              ref={categoryScrollRef}
+              className="-mx-5 overflow-x-auto overflow-y-hidden px-5 pb-3 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] sm:-mx-6 sm:px-6 lg:mx-11 lg:px-1 [&::-webkit-scrollbar]:hidden"
+            >
+              <div className="pt-2 pb-3 flex w-max min-w-full touch-pan-x snap-x snap-mandatory flex-nowrap gap-2.5 sm:gap-4">
+                <FeaturePill
+                  active={!category}
+                  icon={Grid2X2}
+                  onClick={() => handleCategorySelect("")}
+                >
+                  Усі категорії
+                </FeaturePill>
+
+                {categories.map((cat) => (
+                  <FeaturePill
+                    key={cat.value}
+                    active={category === cat.value}
+                    icon={getCategoryIcon(cat.value)}
+                    onClick={() => handleCategorySelect(cat.value)}
+                  >
+                    {cat.label}
+                  </FeaturePill>
+                ))}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => scrollCategories(1)}
+              aria-label="Наступні категорії"
+              className="absolute right-0 top-1/2 z-20 hidden h-9 w-9 -translate-y-[65%] place-items-center rounded-full bg-white text-[#6f6a65] shadow-[0_6px_18px_rgba(15,23,42,0.08)] transition-all duration-150 ease-out hover:scale-108 hover:text-[#ff6200] hover:shadow-[0_8px_24px_rgba(15,23,42,0.12)] active:scale-95 lg:grid"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+          </div>
         </section>
 
-{allStudios.length > 0 ? (
-  <>
+        {allStudios.length > 0 ? (
+          <>
+            <section className="mt-1 sm:mt-5">
+              <div className="mb-5 flex items-end justify-between gap-4 sm:mb-4">
+                <div>
+                  <h2 className="text-[30px] font-black tracking-[-0.05em] sm:text-xl">
+                    Усі салони
+                  </h2>
 
+                  <p className="mt-1 text-sm font-medium text-[#6f7280]">
+                    {allStudios.length} закладів за вибраними фільтрами
+                  </p>
+                </div>
 
-    <section className="mt-1 sm:mt-5">
-      <div className="mb-5 flex items-end justify-between gap-4 sm:mb-4">
-        <div>
-          <h2 className="text-[30px] font-black tracking-[-0.05em] sm:text-xl">
-            Усі салони
-          </h2>
+                {hasPendingChanges ? (
+                  <button
+                    type="button"
+                    onClick={handleApply}
+                    className="hidden rounded-full bg-[#ff6200] px-5 py-3 text-sm font-black text-white shadow-[0_12px_26px_rgba(255,98,0,0.22)] sm:inline-flex"
+                  >
+                    Оновити
+                  </button>
+                ) : null}
+              </div>
 
-          <p className="mt-1 text-sm font-medium text-[#6f7280]">
-            {allStudios.length} закладів за вибраними фільтрами
-          </p>
-        </div>
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {allStudios.map((studio) => (
+                  <StudioCard
+                    key={studio.slug}
+                    studio={studio}
+                    onOpen={openStudio}
+                    mode="grid"
+                  />
+                ))}
+              </div>
+            </section>
+          </>
+        ) : (
+          <section>
+            <div className="px-5 py-2 sm:py-12 lg:py-12 text-center">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-[#ff6200] shadow-sm">
+                <Search className="h-7 w-7" />
+              </div>
 
-        {hasPendingChanges ? (
-          <button
-            type="button"
-            onClick={handleApply}
-            className="hidden rounded-full bg-[#ff6200] px-5 py-3 text-sm font-black text-white shadow-[0_12px_26px_rgba(255,98,0,0.22)] sm:inline-flex"
-          >
-            Оновити
-          </button>
-        ) : null}
+              <h2 className="mt-4 text-xl font-black text-[#202020]">
+                Нічого не знайдено
+              </h2>
+
+              <p className="mx-auto mt-2 max-w-sm text-sm text-[#77716b]">
+                Спробуйте змінити фільтри.
+              </p>
+
+              <button
+                type="button"
+                onClick={clearAll}
+                className="mt-6 inline-flex h-11 items-center justify-center rounded-2xl bg-[#ff6200] px-5 text-sm font-black text-white shadow-[0_12px_28px_rgba(255,98,0,0.22)] transition-all hover:bg-[#ef5700] active:scale-[0.98]"
+              >
+                Очистити фільтри
+              </button>
+            </div>
+          </section>
+        )}
       </div>
-
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {allStudios.map((studio) => (
-          <StudioCard
-            key={studio.slug}
-            studio={studio}
-            onOpen={openStudio}
-            mode="grid"
-          />
-        ))}
-      </div>
-    </section>
-  </>
-) : (
-<section >
-  <div className="px-5 py-2 sm:py-12 lg:py-12 text-center">
-    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-[#ff6200] shadow-sm">
-      <Search className="h-7 w-7" />
-    </div>
-
-    <h2 className="mt-4 text-xl font-black text-[#202020]">
-      Нічого не знайдено
-    </h2>
-
-    <p className="mx-auto mt-2 max-w-sm text-sm text-[#77716b]">
-      Спробуйте змінити фільтри.
-    </p>
-
-    <button
-      type="button"
-      onClick={clearAll}
-      className="mt-6 inline-flex h-11 items-center justify-center rounded-2xl bg-[#ff6200] px-5 text-sm font-black text-white shadow-[0_12px_28px_rgba(255,98,0,0.22)] transition-all hover:bg-[#ef5700] active:scale-[0.98]"
-    >
-      Очистити фільтри
-    </button>
-  </div>
-</section>
-)}
-</div>
-
-</main>
+    </main>
   );
 }
