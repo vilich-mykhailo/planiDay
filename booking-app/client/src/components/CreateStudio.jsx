@@ -5,30 +5,238 @@ import Cropper from "react-easy-crop";
 import {
   ArrowRight,
   Building2,
+  CalendarDays,
   Camera,
   Check,
   ChevronDown,
   ChevronLeft,
+  Clock,
+  Coffee,
   DoorOpen,
   House,
   ImagePlus,
   Images,
+  LayoutDashboard,
   MapPin,
   MapPinned,
   Phone,
+  Scissors,
   Signpost,
   Tags,
+  Timer,
+  Users,
   X,
 } from "lucide-react";
 
+import TimeSelect from "../components/TimeSelect";
 import { api } from "../api/http";
 
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 5;
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 const MAX_DESCRIPTION_LENGTH = 400;
 
-const PHONE_REGEX = /^\+?\d[\d\s()-]{8,}$/;
+const PHONE_REGEX = /^\+380\d{9}$/;
 
+function sanitizePhoneInput(value) {
+  return String(value || "")
+    .replace(/[^\d+\s()-]/g, "")
+    .replace(/(?!^)\+/g, "")
+    .slice(0, 20);
+}
+
+function normalizePhone(value) {
+  const source = String(value || "").trim();
+
+  if (!source.startsWith("+")) {
+    return source.replace(/\D/g, "");
+  }
+
+  return `+${source.slice(1).replace(/\D/g, "")}`;
+}
+
+function getPhoneValidationError(value) {
+  const source = String(value || "").trim();
+  const normalizedPhone = normalizePhone(source);
+  const digitsCount = normalizedPhone.replace(/\D/g, "").length;
+
+  if (!source) {
+    return "Введіть номер телефону.";
+  }
+
+  if (!normalizedPhone.startsWith("+380")) {
+    return "Введіть український номер, який починається з +380.";
+  }
+
+  if (digitsCount !== 12) {
+    return "Невірна кількість цифр у номері телефону.";
+  }
+
+  if (!PHONE_REGEX.test(normalizedPhone)) {
+    return "Введіть коректний номер телефону.";
+  }
+
+  return "";
+}
+
+const DAYS = [
+  { key: "mon", label: "Пн", full: "Понеділок" },
+  { key: "tue", label: "Вт", full: "Вівторок" },
+  { key: "wed", label: "Ср", full: "Середа" },
+  { key: "thu", label: "Чт", full: "Четвер" },
+  { key: "fri", label: "Пт", full: "П’ятниця" },
+  { key: "sat", label: "Сб", full: "Субота" },
+  { key: "sun", label: "Нд", full: "Неділя" },
+];
+
+const DEFAULT_SLOT_DURATION = 10;
+
+function defaultDay(enabled = true) {
+  return {
+    enabled,
+    start: "08:00",
+    end: "18:00",
+    breakStart: "",
+    breakEnd: "",
+  };
+}
+
+function getDefaultSchedule() {
+  return {
+    mon: defaultDay(),
+    tue: defaultDay(),
+    wed: defaultDay(),
+    thu: defaultDay(),
+    fri: defaultDay(),
+    sat: defaultDay(false),
+    sun: defaultDay(false),
+  };
+}
+
+function timeToMinutes(value) {
+  const [hours, minutes] = String(value || "")
+    .split(":")
+    .map(Number);
+
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
+    return Number.NaN;
+  }
+
+  return hours * 60 + minutes;
+}
+
+function minutesToTime(total) {
+  const hours = Math.floor(total / 60);
+  const minutes = total % 60;
+
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
+function getBreakStart(item) {
+  return item?.breakStart || "";
+}
+
+function getBreakEnd(item) {
+  return item?.breakEnd || "";
+}
+
+function getDefaultBreakForItem(item) {
+  const startMinutes = timeToMinutes(item?.start);
+  const endMinutes = timeToMinutes(item?.end);
+  const preferredStart = timeToMinutes("12:00");
+  const preferredEnd = timeToMinutes("13:00");
+
+  if (
+    Number.isFinite(startMinutes) &&
+    Number.isFinite(endMinutes) &&
+    startMinutes < preferredStart &&
+    preferredEnd < endMinutes
+  ) {
+    return { breakStart: "12:00", breakEnd: "13:00" };
+  }
+
+  const duration = endMinutes - startMinutes;
+
+  if (Number.isFinite(duration) && duration >= 30) {
+    const breakLength = Math.min(
+      60,
+      Math.max(10, Math.floor(duration / 4 / 5) * 5),
+    );
+    const breakStart =
+      startMinutes +
+      Math.max(5, Math.floor((duration - breakLength) / 2 / 5) * 5);
+    const breakEnd = Math.min(endMinutes - 5, breakStart + breakLength);
+
+    if (
+      startMinutes < breakStart &&
+      breakStart < breakEnd &&
+      breakEnd < endMinutes
+    ) {
+      return {
+        breakStart: minutesToTime(breakStart),
+        breakEnd: minutesToTime(breakEnd),
+      };
+    }
+  }
+
+  return { breakStart: "12:00", breakEnd: "13:00" };
+}
+
+function withBreakState(item, enabled) {
+  if (!enabled) {
+    return { ...item, breakStart: "", breakEnd: "" };
+  }
+
+  const breakStart = getBreakStart(item);
+  const breakEnd = getBreakEnd(item);
+
+  if (breakStart && breakEnd) {
+    return { ...item, breakStart, breakEnd };
+  }
+
+  return { ...item, ...getDefaultBreakForItem(item) };
+}
+
+function getInvalidScheduleFields(item) {
+  if (!item?.enabled) return [];
+
+  const startMinutes = timeToMinutes(item.start);
+  const endMinutes = timeToMinutes(item.end);
+
+  if (!Number.isFinite(startMinutes) || !Number.isFinite(endMinutes)) {
+    return ["start", "end"];
+  }
+
+  if (endMinutes <= startMinutes) {
+    return ["start", "end"];
+  }
+
+  const breakStart = getBreakStart(item);
+  const breakEnd = getBreakEnd(item);
+
+  if (!breakStart && !breakEnd) return [];
+  if (!breakStart || !breakEnd) return ["breakStart", "breakEnd"];
+
+  const breakStartMinutes = timeToMinutes(breakStart);
+  const breakEndMinutes = timeToMinutes(breakEnd);
+
+  if (
+    !Number.isFinite(breakStartMinutes) ||
+    !Number.isFinite(breakEndMinutes) ||
+    !(
+      startMinutes < breakStartMinutes &&
+      breakStartMinutes < breakEndMinutes &&
+      breakEndMinutes < endMinutes
+    )
+  ) {
+    return ["breakStart", "breakEnd"];
+  }
+
+  return [];
+}
+
+function isScheduleItemValid(item) {
+  return getInvalidScheduleFields(item).length === 0;
+}
 const PHOTON_API_URL =
   import.meta.env.VITE_PHOTON_API_URL || "https://photon.komoot.io/api/";
 const LOCATION_SEARCH_DEBOUNCE_MS = 350;
@@ -78,11 +286,11 @@ const STEP_CONTENT = {
     description: "Додайте назву, логотип та обкладинку студії",
     icon: Building2,
   },
-  2: {
-    title: "Розкажіть про студію",
-    description: "Оберіть категорію та додайте короткий опис",
-    icon: Tags,
-  },
+2: {
+  title: "Оберіть категорію студії",
+  description: "Виберіть категорію для вашої студії",
+  icon: Tags,
+},
   3: {
     title: "Номер телефону",
     description: "Вкажіть номер для зв’язку з клієнтами",
@@ -92,6 +300,11 @@ const STEP_CONTENT = {
     title: "Адреса студії",
     description: "Додайте адресу, щоб клієнти могли вас знайти",
     icon: MapPin,
+  },
+  5: {
+    title: "Графік студії",
+    description: "Налаштуйте робочі дні, години роботи та перерви",
+    icon: CalendarDays,
   },
 };
 
@@ -585,7 +798,7 @@ function ContinueButton({
     <button
       type="submit"
       disabled={disabled}
-      className="group inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-[15px] bg-[#202020] px-4 text-[14px] font-black text-white shadow-[0_12px_26px_rgba(15,15,15,0.18)] transition-all duration-300 hover:scale-[1.015] hover:bg-[#ff6200] active:scale-[0.98] disabled:pointer-events-none disabled:bg-[#f1ebe4] disabled:text-[#aaa19a] disabled:shadow-none"
+      className="group inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-[15px] bg-[#202020] px-4 text-[14px] font-black text-white transition-all duration-300 hover:scale-[1.015] hover:bg-[#ff6200] active:scale-[0.98] disabled:pointer-events-none disabled:bg-[#f1ebe4] disabled:text-[#aaa19a] disabled:shadow-none"
     >
       {children}
       <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
@@ -599,6 +812,187 @@ function ErrorMessage({ children }) {
   return (
     <div className="rounded-[15px] border border-[#ef4444]/20 bg-[#fff1f1] px-4 py-3 text-[12px] font-semibold leading-5 text-[#ef4444]">
       {children}
+    </div>
+  );
+}
+
+function Toggle({ checked }) {
+  return (
+    <span
+      className={cn(
+        "relative inline-flex h-7 w-12 items-center rounded-full",
+        checked
+          ? "bg-gradient-to-r from-[#22c55e] to-[#16a34a]"
+          : "bg-[#d8d2ca]",
+      )}
+    >
+      <span
+        className={cn(
+          "inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform duration-300",
+          checked ? "translate-x-6" : "translate-x-1",
+        )}
+      />
+    </span>
+  );
+}
+
+function TimeField({ children, className = "" }) {
+  const fieldRef = useRef(null);
+
+  function handleClick(event) {
+    const clickedControl = event.target.closest(
+      "button,input,[role='button']",
+    );
+
+    if (clickedControl && fieldRef.current?.contains(clickedControl)) {
+      return;
+    }
+
+    const control =
+      fieldRef.current?.querySelector("button,input,[role='button']") ||
+      fieldRef.current?.firstElementChild;
+
+    control?.focus?.();
+    control?.click?.();
+  }
+
+  return (
+    <div
+      ref={fieldRef}
+      onClick={handleClick}
+      className={cn("cursor-pointer", className)}
+    >
+      {children}
+    </div>
+  );
+}
+
+function CategorySelect({ value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef(null);
+  const listId = "studio-category-options";
+  const selectedCategory = CATEGORIES.find((item) => item.value === value);
+
+  useEffect(() => {
+    function handlePointerDown(event) {
+      if (!rootRef.current?.contains(event.target)) {
+        setOpen(false);
+      }
+    }
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
+  function selectCategory(nextValue) {
+    onChange(nextValue);
+    setOpen(false);
+  }
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        className={cn(
+          "flex h-12 w-full items-center gap-3 rounded-[15px] border bg-white px-3.5 text-left transition-all duration-200",
+          "hover:border-[#ffd6bd] focus:outline-none focus:ring-4 focus:ring-[#ff6200]/10",
+          open
+            ? "border-[#ff6200]"
+            : "border-[#eadfce]",
+        )}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-controls={listId}
+        autoFocus
+      >
+        <span
+          className={cn(
+            "grid h-8 w-8 shrink-0 place-items-center rounded-[10px] transition-colors",
+            open || selectedCategory
+              ? "bg-[#fff1e8] text-[#ff6200]"
+              : "bg-[#f5f1ec] text-[#8a847d]",
+          )}
+        >
+          <Tags className="h-[17px] w-[17px]" />
+        </span>
+
+        <span
+          className={cn(
+            "min-w-0 flex-1 truncate text-[13px] font-bold",
+            selectedCategory ? "text-[#202020]" : "text-[#9a928a]",
+          )}
+        >
+          {selectedCategory?.label || "Оберіть категорію"}
+        </span>
+
+        <ChevronDown
+          className={cn(
+            "h-[18px] w-[18px] shrink-0 text-[#ff6200] transition-transform duration-200",
+            open && "rotate-180",
+          )}
+        />
+      </button>
+
+      {open && (
+        <div className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-[18px] border border-[#eadbc9] bg-white shadow-[0_20px_55px_rgba(17,17,17,0.14)]">
+          <div
+            id={listId}
+            role="listbox"
+            className="max-h-[260px] overflow-y-auto p-1.5"
+          >
+            {CATEGORIES.map((item) => {
+              const isSelected = item.value === value;
+
+              return (
+                <button
+                  key={item.value}
+                  type="button"
+                  role="option"
+                  aria-selected={isSelected}
+                  onClick={() => selectCategory(item.value)}
+                  className={cn(
+                    "flex w-full items-center gap-3 rounded-[12px] px-3 py-2.5 text-left transition-colors",
+                    isSelected
+                      ? "bg-[#fff1e8] text-[#ff6200]"
+                      : "text-[#202020] hover:bg-[#fff7f1]",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "grid h-7 w-7 shrink-0 place-items-center rounded-[9px]",
+                      isSelected
+                        ? "bg-[#ff6200] text-white"
+                        : "bg-[#f5f1ec] text-[#8a847d]",
+                    )}
+                  >
+                    {isSelected ? (
+                      <Check className="h-4 w-4" />
+                    ) : (
+                      <Tags className="h-3.5 w-3.5" />
+                    )}
+                  </span>
+
+                  <span className="min-w-0 flex-1 truncate text-[13px] font-bold">
+                    {item.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -813,13 +1207,12 @@ function CityAutocomplete({
           onBlur={() => {
             blurTimerRef.current = window.setTimeout(() => setOpen(false), 120);
           }}
-          placeholder="Почніть вводити місто або село"
+          placeholder="Почніть вводити населений пункт"
           className={cn(className, "pl-11 pr-11")}
-          autoComplete="off"
-          autoCapitalize="words"
-          spellCheck
-          autoFocus
-          role="combobox"
+autoComplete="off"
+autoCapitalize="words"
+spellCheck
+role="combobox"
           aria-autocomplete="list"
           aria-controls={listId}
           aria-expanded={showResults}
@@ -856,8 +1249,7 @@ function CityAutocomplete({
         </p>
       ) : (
         <p className="mt-2 text-xs font-medium text-[#77716b]">
-          Виберіть місто або село зі списку — введений вручну текст зберегти
-          не можна.
+          Виберіть населений пункт зі списку.
         </p>
       )}
 
@@ -1179,7 +1571,7 @@ function StreetAutocomplete({
           placeholder={
             hasVerifiedCity
               ? "Почніть вводити назву вулиці"
-              : "Спочатку виберіть місто або село"
+              : "Спочатку виберіть населений пункт"
           }
           className={cn(
             className,
@@ -1188,11 +1580,10 @@ function StreetAutocomplete({
               "cursor-not-allowed border-[#e5dfd7] bg-[#f5f2ed] text-[#9b948c]",
           )}
           disabled={!hasVerifiedCity}
-          autoComplete="off"
-          autoCapitalize="words"
-          spellCheck
-          autoFocus
-          role="combobox"
+autoComplete="off"
+autoCapitalize="words"
+spellCheck
+role="combobox"
           aria-autocomplete="list"
           aria-controls={listId}
           aria-expanded={showResults}
@@ -1336,12 +1727,17 @@ export default function CreateStudio() {
   const [building, setBuilding] = useState("");
   const [apartment, setApartment] = useState("");
 
+  const [schedule, setSchedule] = useState(() => getDefaultSchedule());
+  const [scheduleFieldErrors, setScheduleFieldErrors] = useState({});
+  const [openScheduleDay, setOpenScheduleDay] = useState(null);
+
   const [coverFile, setCoverFile] = useState(null);
   const [logoFile, setLogoFile] = useState(null);
   const [coverPreviewUrl, setCoverPreviewUrl] = useState("");
   const [logoPreviewUrl, setLogoPreviewUrl] = useState("");
 
   const [loading, setLoading] = useState(false);
+  const [createdStudio, setCreatedStudio] = useState(null);
   const [coverLoading, setCoverLoading] = useState(false);
   const [cropLoading, setCropLoading] = useState(false);
   const [error, setError] = useState("");
@@ -1404,6 +1800,92 @@ export default function CreateStudio() {
 
   function clearError() {
     if (error) setError("");
+  }
+
+  function scheduleErrorKey(dayKey, field) {
+    return `${dayKey}.${field}`;
+  }
+
+  function hasScheduleFieldError(dayKey, field) {
+    return Boolean(scheduleFieldErrors[scheduleErrorKey(dayKey, field)]);
+  }
+
+  function setScheduleDayErrors(dayKey, fields = []) {
+    setScheduleFieldErrors((current) => {
+      const next = { ...current };
+
+      Object.keys(next).forEach((key) => {
+        if (key.startsWith(`${dayKey}.`)) delete next[key];
+      });
+
+      fields.forEach((field) => {
+        next[scheduleErrorKey(dayKey, field)] = true;
+      });
+
+      return next;
+    });
+  }
+
+  function clearScheduleDayErrors(dayKey) {
+    setScheduleDayErrors(dayKey, []);
+  }
+
+  function toggleScheduleDay(dayKey) {
+    const nextDay = {
+      ...schedule[dayKey],
+      enabled: !schedule[dayKey].enabled,
+    };
+
+    setSchedule((current) => ({ ...current, [dayKey]: nextDay }));
+
+    if (!nextDay.enabled) {
+      clearScheduleDayErrors(dayKey);
+    } else {
+      setScheduleDayErrors(dayKey, getInvalidScheduleFields(nextDay));
+    }
+
+    clearError();
+  }
+
+  function toggleScheduleBreak(dayKey) {
+    const config = schedule[dayKey];
+    const hasBreak = Boolean(
+      getBreakStart(config) && getBreakEnd(config),
+    );
+    const nextDay = withBreakState(config, !hasBreak);
+
+    setSchedule((current) => ({ ...current, [dayKey]: nextDay }));
+    setScheduleDayErrors(dayKey, getInvalidScheduleFields(nextDay));
+    clearError();
+  }
+
+  function updateScheduleTime(dayKey, field, value) {
+    const nextDay = { ...schedule[dayKey], [field]: value };
+
+    setSchedule((current) => ({ ...current, [dayKey]: nextDay }));
+    setScheduleDayErrors(dayKey, getInvalidScheduleFields(nextDay));
+    clearError();
+  }
+
+  function validateSchedule() {
+    const invalidDay = DAYS.find(
+      (day) => !isScheduleItemValid(schedule[day.key]),
+    );
+
+    if (!invalidDay) {
+      setScheduleFieldErrors({});
+      return true;
+    }
+
+    setScheduleDayErrors(
+      invalidDay.key,
+      getInvalidScheduleFields(schedule[invalidDay.key]),
+    );
+    setError(
+      `Перевірте години роботи та перерви для дня: ${invalidDay.full}.`,
+    );
+
+    return false;
   }
 
   function goToStep(nextStep) {
@@ -1542,6 +2024,12 @@ export default function CreateStudio() {
 
   function handleContinueFromDetails(event) {
     event.preventDefault();
+    setError("");
+
+    if (!category.trim()) {
+      setError("Оберіть категорію студії.");
+      return;
+    }
 
     if (description.length > MAX_DESCRIPTION_LENGTH) {
       setError(
@@ -1557,21 +2045,46 @@ export default function CreateStudio() {
     event.preventDefault();
     setError("");
 
-    const normalizedPhone = phone.trim();
+    const phoneError = getPhoneValidationError(phone);
 
-    if (!normalizedPhone) {
-      setError("Введіть номер телефону.");
+    if (phoneError) {
+      setError(phoneError);
       return;
     }
 
-    if (!PHONE_REGEX.test(normalizedPhone)) {
-      setError(
-        "Введіть коректний номер телефону разом із кодом країни.",
-      );
-      return;
-    }
-
+    setPhone(normalizePhone(phone));
     goToStep(4);
+  }
+
+  function handleContinueFromAddress(event) {
+    event.preventDefault();
+    setError("");
+
+    const hasAnyAddress = Boolean(
+      city.trim() ||
+        street.trim() ||
+        building.trim() ||
+        apartment.trim(),
+    );
+
+    if (hasAnyAddress) {
+      if (!citySelectionValid) {
+        setError("Оберіть населений пункт зі списку.");
+        return;
+      }
+
+      if (!street.trim()) {
+        setError("Введіть вулицю.");
+        return;
+      }
+
+      if (!building.trim()) {
+        setError("Введіть номер будинку.");
+        return;
+      }
+    }
+
+    goToStep(5);
   }
 
   async function handleCreateStudio(event) {
@@ -1581,7 +2094,8 @@ export default function CreateStudio() {
     const normalizedName = name.trim();
     const normalizedCategory = category.trim();
     const normalizedDescription = description.trim();
-    const normalizedPhone = phone.trim();
+    const normalizedPhone = normalizePhone(phone);
+    const phoneError = getPhoneValidationError(phone);
 
     if (normalizedName.length < 2) {
       setError("Введіть назву студії.");
@@ -1589,16 +2103,14 @@ export default function CreateStudio() {
       return;
     }
 
-    if (!normalizedPhone) {
-      setError("Введіть номер телефону.");
-      setStep(3);
+    if (!normalizedCategory) {
+      setError("Оберіть категорію студії.");
+      setStep(2);
       return;
     }
 
-    if (!PHONE_REGEX.test(normalizedPhone)) {
-      setError(
-        "Введіть коректний номер телефону разом із кодом країни.",
-      );
+    if (phoneError) {
+      setError(phoneError);
       setStep(3);
       return;
     }
@@ -1621,19 +2133,27 @@ export default function CreateStudio() {
 
     if (hasAnyAddress) {
       if (!citySelectionValid) {
-        setError("Оберіть місто або село зі списку.");
+        setError("Оберіть населений пункт зі списку.");
+        setStep(4);
         return;
       }
 
       if (!street.trim()) {
         setError("Введіть вулицю.");
+        setStep(4);
         return;
       }
 
       if (!building.trim()) {
         setError("Введіть номер будинку.");
+        setStep(4);
         return;
       }
+    }
+
+    if (!validateSchedule()) {
+      setStep(5);
+      return;
     }
 
     const token = localStorage.getItem("token");
@@ -1697,13 +2217,10 @@ export default function CreateStudio() {
 
       const body = {
         name: normalizedName,
+        category: normalizedCategory,
         phone: normalizedPhone,
         ...uploadedFields,
       };
-
-      if (normalizedCategory) {
-        body.category = normalizedCategory;
-      }
 
       if (normalizedDescription) {
         body.description = normalizedDescription;
@@ -1726,12 +2243,26 @@ export default function CreateStudio() {
         body,
       });
 
+      await api(`/studio/${updatedStudio.id}/schedule`, {
+        method: "PATCH",
+        token,
+        body: {
+          schedule,
+          slotDuration: DEFAULT_SLOT_DURATION,
+        },
+      });
+
       localStorage.setItem("studioId", updatedStudio.id);
 
       window.dispatchEvent(new Event("auth-changed"));
       window.dispatchEvent(new Event("studio-changed"));
 
-      window.location.replace("/dashboard/studio");
+      setCreatedStudio(updatedStudio);
+
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
     } catch (submitError) {
       setError(
         submitError?.message || "Не вдалося створити студію.",
@@ -1746,21 +2277,130 @@ export default function CreateStudio() {
 
   return (
     <>
-      <main className="flex min-h-[100dvh] items-center justify-center bg-[#faf8f5] px-4 py-8">
-        <section className="w-full max-w-[620px] overflow-hidden rounded-[28px] border border-[#eadfce] bg-white shadow-[0_30px_90px_rgba(15,23,42,0.10)] sm:rounded-[36px]">
+      <main className="flex min-h-[100dvh] items-center justify-center px-2 py-2 lg:py-10">
+        <section
+          className={cn(
+            "w-full overflow-hidden rounded-[28px] border border-[#eadfce] bg-white shadow-[0_30px_90px_rgba(15,23,42,0.10)] sm:rounded-[36px]",
+            "max-w-[620px]",
+          )}
+        >
           <div className="h-[4px] bg-[#ff6200]" />
 
-          <div className="p-5 sm:p-9">
-            <div className="text-center">
+          <div className="p-6 sm:p-9">
+            {createdStudio ? (
+              <div className="py-2 text-center sm:py-4">
+                <div className="relative mx-auto grid h-24 w-24 place-items-center rounded-[30px] bg-[#fff1e8] text-[#ff6200] shadow-[0_18px_45px_rgba(255,98,0,0.18)]">
+                  <span className="absolute inset-2 rounded-[24px] border border-[#ff6200]/20" />
+                  <Check className="relative h-12 w-12 stroke-[3]" />
+                </div>
+
+                <span className="mt-5 inline-flex items-center rounded-full bg-[#edf9f0] px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-[#218358]">
+                  Створення завершено
+                </span>
+
+                <h1 className="mx-auto mt-3 max-w-[480px] text-[27px] font-black tracking-[-0.04em] text-[#202020] sm:text-[36px]">
+                  Студію успішно створено!
+                </h1>
+
+                <p className="mx-auto mt-2 max-w-[470px] text-[13px] font-medium leading-6 text-[#77716b] sm:text-[15px]">
+                  <span className="font-black text-[#202020]">
+                    {createdStudio.name || name.trim()}
+                  </span>{" "}
+                  вже додано до Aveliio. Щоб клієнти могли записуватися,
+                  підготуйте команду та перелік доступних послуг.
+                </p>
+
+                <div className="mt-7 rounded-[22px] border border-[#eadfce] bg-[#fcfaf7] p-4 text-left sm:p-5">
+                  <p className="text-[12px] font-black uppercase tracking-[0.12em] text-[#9a928a]">
+                    Що потрібно зробити далі
+                  </p>
+
+                  <div className="mt-3 space-y-3">
+                    <div className="flex items-center gap-3 rounded-[17px] border border-[#eee7de] bg-white p-3.5">
+                      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-[14px] bg-[#fff1e8] text-[#ff6200]">
+                        <Scissors className="h-5 w-5" />
+                      </span>
+
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-[13px] font-black text-[#202020] sm:text-[14px]">
+                          Створіть послуги
+                        </span>
+                        <span className="mt-0.5 block text-[11px] font-medium leading-5 text-[#77716b] sm:text-[12px]">
+                          Додайте назву, тривалість і вартість кожної послуги.
+                        </span>
+                      </span>
+
+                      <ArrowRight className="h-4 w-4 shrink-0 text-[#d3ccc4]" />
+                    </div>
+
+                    <div className="flex items-center gap-3 rounded-[17px] border border-[#eee7de] bg-white p-3.5">
+                      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-[14px] bg-[#fff1e8] text-[#ff6200]">
+                        <Users className="h-5 w-5" />
+                      </span>
+
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-[13px] font-black text-[#202020] sm:text-[14px]">
+                          Додайте майстрів
+                        </span>
+                        <span className="mt-0.5 block text-[11px] font-medium leading-5 text-[#77716b] sm:text-[12px]">
+                          Створіть профілі майстрів і призначте їм послуги.
+                        </span>
+                      </span>
+
+                      <ArrowRight className="h-4 w-4 shrink-0 text-[#d3ccc4]" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      navigate("/dashboard/services", { replace: true })
+                    }
+                    className="group inline-flex h-[52px] items-center justify-center gap-2 rounded-[15px] bg-[#ff6200] px-4 text-[13px] font-black text-white transition-all duration-300 hover:scale-[1.015] hover:bg-[#ef5700] active:scale-[0.98]"
+                  >
+                    <Scissors className="h-4 w-4" />
+                    Додати послуги
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      navigate("/dashboard/masters", { replace: true })
+                    }
+                    className="group inline-flex h-[52px] items-center justify-center gap-2 rounded-[15px] border border-[#eadfce] bg-white px-4 text-[13px] font-black text-[#202020] transition-all duration-300 hover:border-[#ff6200] hover:text-[#ff6200] active:scale-[0.98]"
+                  >
+                    <Users className="h-4 w-4" />
+                    Додати майстрів
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    navigate("/dashboard/studio", { replace: true })
+                  }
+                  className="mt-3 inline-flex h-11 items-center justify-center gap-2 rounded-[14px] px-4 text-[12px] font-black text-[#77716b] transition-colors hover:bg-[#f7f3ee] hover:text-[#202020]"
+                >
+                  <LayoutDashboard className="h-4 w-4" />
+                  Перейти до панелі студії
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="text-center">
               <div className="mx-auto grid h-14 w-14 place-items-center rounded-[18px] bg-[#fff1e8] text-[#ff6200]">
-                <StepIcon className="h-7 w-7" />
+                <StepIcon className="h-9 w-9" />
               </div>
 
-              <h1 className="mt-5 text-[25px] font-black tracking-[-0.04em] text-[#202020] sm:text-[34px]">
+              <h1 className="mt-2 lg:mt-5 sm:mt-5 text-[25px] font-black tracking-[-0.04em] text-[#202020] sm:text-[34px]">
                 {currentStep.title}
               </h1>
 
-              <p className="mx-auto mt-2 max-w-[440px] text-[13px] font-medium leading-5 text-[#77716b] sm:text-[15px] sm:leading-6">
+              <p className="mx-auto lg:mt-2 sm:mt-2 max-w-[440px] text-[13px] font-medium leading-5 text-[#77716b] sm:text-[15px] sm:leading-6">
                 {currentStep.description}
               </p>
             </div>
@@ -1797,65 +2437,11 @@ export default function CreateStudio() {
                 <div>
                   <div className="mb-2 flex items-center justify-between gap-3">
                     <span className="text-[13px] font-black text-[#202020]">
-                      Логотип студії
+                      Фото студії
                     </span>
 
                     <span className="text-[10px] font-bold text-[#9a928a]">
                       Необов’язково
-                    </span>
-                  </div>
-
-                  <div className="flex flex-col items-center">
-                    <input
-                      ref={logoInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handlePickLogo}
-                      className="hidden"
-                    />
-
-                    <button
-                      type="button"
-                      onClick={() => logoInputRef.current?.click()}
-                      className="group relative grid h-28 w-28 place-items-center overflow-hidden rounded-full border-2 border-dashed border-[#dcd4cc] bg-[#faf8f5] transition-all duration-300 hover:scale-[1.025] hover:border-[#ff6200] hover:bg-[#fff7f1] sm:h-36 sm:w-36"
-                    >
-                      {logoPreviewUrl ? (
-                        <>
-                          <img
-                            src={logoPreviewUrl}
-                            alt="Логотип студії"
-                            className="h-full w-full object-cover"
-                          />
-
-                          <span className="absolute inset-0 grid place-items-center bg-black/0 text-white opacity-0 transition group-hover:bg-black/45 group-hover:opacity-100">
-                            <Camera className="h-7 w-7" />
-                          </span>
-                        </>
-                      ) : (
-                        <span className="flex flex-col items-center gap-2 text-[#8a847d] transition group-hover:text-[#ff6200]">
-                          <ImagePlus className="h-8 w-8" />
-
-                          <span className="text-[12px] font-black">
-                            Додати логотип
-                          </span>
-                        </span>
-                      )}
-                    </button>
-
-                    <p className="mt-3 text-center text-[11px] font-medium text-[#9a928a]">
-                      JPG, PNG або WEBP · до 10 MB
-                    </p>
-                  </div>
-                </div>
-
-                <div>
-                  <div className="mb-2 flex items-center justify-between gap-3">
-                    <span className="text-[13px] font-black text-[#202020]">
-                      Обкладинка студії
-                    </span>
-
-                    <span className="text-[10px] font-bold text-[#9a928a]">
-                      Необов’язково · 16:9
                     </span>
                   </div>
 
@@ -1867,43 +2453,92 @@ export default function CreateStudio() {
                     className="hidden"
                   />
 
-                  <button
-                    type="button"
-                    onClick={() => coverInputRef.current?.click()}
-                    disabled={coverLoading}
-                    className="group relative flex aspect-[16/7] w-full items-center justify-center overflow-hidden rounded-[22px] border-2 border-dashed border-[#dcd4cc] bg-[#faf8f5] transition-all duration-300 hover:border-[#ff6200] hover:bg-[#fff7f1] disabled:pointer-events-none disabled:opacity-60"
-                  >
-                    {coverPreviewUrl ? (
-                      <>
-                        <img
-                          src={coverPreviewUrl}
-                          alt="Обкладинка студії"
-                          className="h-full w-full object-cover"
-                        />
+                  <input
+                    ref={logoInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePickLogo}
+                    className="hidden"
+                  />
 
-                        <span className="absolute inset-0 grid place-items-center bg-black/0 text-white opacity-0 transition group-hover:bg-black/45 group-hover:opacity-100">
-                          <span className="flex items-center gap-2 text-[13px] font-black">
-                            <Camera className="h-5 w-5" />
-                            Змінити обкладинку
+                  <div className="relative pb-12 sm:pb-14">
+                    <button
+                      type="button"
+                      onClick={() => coverInputRef.current?.click()}
+                      disabled={coverLoading}
+                      className="group relative flex aspect-[16/7] w-full items-center justify-center overflow-hidden rounded-[22px] border-2 border-dashed border-[#dcd4cc] bg-[#faf8f5] transition-all duration-300 hover:border-[#ff6200] hover:bg-[#fff7f1] disabled:pointer-events-none disabled:opacity-60"
+                    >
+                      {coverPreviewUrl ? (
+                        <>
+                          <img
+                            src={coverPreviewUrl}
+                            alt="Обкладинка студії"
+                            className="h-full w-full object-cover"
+                          />
+
+                          <span className="absolute inset-0 grid place-items-center bg-black/0 text-white opacity-0 transition group-hover:bg-black/45 group-hover:opacity-100">
+                            <span className="flex items-center gap-2 text-[13px] font-black">
+                              <Camera className="h-5 w-5" />
+                              Змінити обкладинку
+                            </span>
+                          </span>
+                        </>
+                      ) : (
+                        <span className="flex flex-col items-center gap-2 text-[#8a847d] transition group-hover:text-[#ff6200]">
+                          {coverLoading ? (
+                            <span className="h-7 w-7 animate-spin rounded-full border-2 border-[#ffd6bd] border-t-[#ff6200]" />
+                          ) : (
+                            <Images className="h-8 w-8" />
+                          )}
+
+                          <span className="text-[12px] font-black">
+                            {coverLoading
+                              ? "Обробка..."
+                              : "Додати обкладинку"}
+                          </span>
+
+                          <span className="text-[10px] font-semibold text-[#aaa19a]">
+                            Рекомендований формат 16:9
                           </span>
                         </span>
-                      </>
-                    ) : (
-                      <span className="flex flex-col items-center gap-2 text-[#8a847d] transition group-hover:text-[#ff6200]">
-                        {coverLoading ? (
-                          <span className="h-7 w-7 animate-spin rounded-full border-2 border-[#ffd6bd] border-t-[#ff6200]" />
-                        ) : (
-                          <Images className="h-8 w-8" />
-                        )}
+                      )}
+                    </button>
 
-                        <span className="text-[12px] font-black">
-                          {coverLoading
-                            ? "Обробка..."
-                            : "Додати обкладинку"}
+                    <button
+                      type="button"
+                      onClick={() => logoInputRef.current?.click()}
+                      className="group absolute bottom-0 left-4 grid h-24 w-24 place-items-center overflow-hidden rounded-full border-[4px] border-white bg-[#faf8f5] shadow-[0_12px_30px_rgba(15,23,42,0.18)] transition-all duration-300 hover:scale-[1.035] sm:left-6 sm:h-28 sm:w-28"
+                      aria-label={logoPreviewUrl ? "Змінити логотип" : "Додати логотип"}
+                    >
+                      {logoPreviewUrl ? (
+                        <>
+                          <img
+                            src={logoPreviewUrl}
+                            alt="Логотип студії"
+                            className="h-full w-full object-cover"
+                          />
+
+                          <span className="absolute inset-0 grid place-items-center bg-black/0 text-white opacity-0 transition group-hover:bg-black/45 group-hover:opacity-100">
+                            <Camera className="h-6 w-6" />
+                          </span>
+                        </>
+                      ) : (
+                        <span className="flex flex-col items-center gap-1 text-[#8a847d] transition group-hover:text-[#ff6200]">
+                          <ImagePlus className="h-6 w-6" />
+                          <span className="text-[10px] font-black">
+                            Логотип
+                          </span>
                         </span>
-                      </span>
-                    )}
-                  </button>
+                      )}
+                    </button>
+
+                    <div className="absolute bottom-1 left-[7.5rem] right-1 hidden items-center justify-between gap-3 sm:flex sm:left-[9rem]">
+                      <p className="shrink-0 text-[10px] font-bold text-[#b0a79f]">
+                        JPG, PNG або WEBP · до 10 MB
+                      </p>
+                    </div>
+                  </div>
+
                 </div>
 
                 <label className="block">
@@ -1944,41 +2579,23 @@ export default function CreateStudio() {
                 onSubmit={handleContinueFromDetails}
                 className="mt-6 space-y-6"
               >
-                <label className="block">
+                <div className="block">
                   <span className="mb-2 flex items-center justify-between gap-3 text-[13px] font-black text-[#202020]">
                     <span>Категорія</span>
 
-                    <span className="text-[10px] text-[#9a928a]">
-                      Необов’язково
+                    <span className="text-[10px] text-[#ff6200]">
+                      Обов’язково
                     </span>
                   </span>
 
-                  <div className="relative flex h-14 items-center gap-3 rounded-[17px] border border-[#eadfce] bg-white px-4 transition-all focus-within:border-[#ff6200] focus-within:ring-4 focus-within:ring-[#ff6200]/10">
-                    <Tags className="h-5 w-5 shrink-0 text-[#8a847d]" />
-
-                    <select
-                      value={category}
-                      onChange={(event) => {
-                        setCategory(event.target.value);
-                        clearError();
-                      }}
-                      className={cn(
-                        "min-w-0 flex-1 appearance-none bg-transparent pr-8 text-[14px] font-bold outline-none",
-                        category ? "text-[#202020]" : "text-[#9a928a]",
-                      )}
-                    >
-                      <option value="">Оберіть категорію</option>
-
-                      {CATEGORIES.map((item) => (
-                        <option key={item.value} value={item.value}>
-                          {item.label}
-                        </option>
-                      ))}
-                    </select>
-
-                    <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#ff6200]" />
-                  </div>
-                </label>
+                  <CategorySelect
+                    value={category}
+                    onChange={(nextValue) => {
+                      setCategory(nextValue);
+                      clearError();
+                    }}
+                  />
+                </div>
 
                 <label className="block">
                   <span className="mb-2 flex items-center justify-between gap-3 text-[13px] font-black text-[#202020]">
@@ -2005,7 +2622,6 @@ export default function CreateStudio() {
                     }}
                     placeholder="Коротко розкажіть про вашу студію, атмосферу та послуги"
                     rows={6}
-                    autoFocus
                     className="w-full resize-none rounded-[17px] border border-[#eadfce] bg-white px-4 py-3 text-[14px] font-bold leading-6 text-[#202020] outline-none transition placeholder:text-[#b8afa5] focus:border-[#ff6200] focus:ring-4 focus:ring-[#ff6200]/10"
                   />
                 </label>
@@ -2037,23 +2653,23 @@ export default function CreateStudio() {
                   <div className="flex h-14 items-center gap-3 rounded-[17px] border border-[#eadfce] bg-white px-4 transition-all focus-within:border-[#ff6200] focus-within:ring-4 focus-within:ring-[#ff6200]/10">
                     <Phone className="h-5 w-5 shrink-0 text-[#8a847d]" />
 
-                    <input
-                      type="tel"
-                      value={phone}
-                      onChange={(event) => {
-                        setPhone(event.target.value);
-                        clearError();
-                      }}
-                      placeholder="+48 123 456 789"
-                      autoComplete="tel"
-                      inputMode="tel"
-                      autoFocus
-                      className="min-w-0 flex-1 bg-transparent text-[14px] font-bold text-[#202020] outline-none placeholder:text-[#b8afa5]"
-                    />
+<input
+  type="tel"
+  value={phone}
+  onChange={(event) => {
+    setPhone(sanitizePhoneInput(event.target.value));
+    clearError();
+  }}
+  maxLength={20}
+  placeholder="+380 67 123 45 67"
+  autoComplete="tel"
+  inputMode="tel"
+  className="min-w-0 flex-1 bg-transparent text-[14px] font-bold text-[#202020] outline-none placeholder:text-[#b8afa5]"
+/>
                   </div>
 
                   <p className="mt-2 text-[11px] font-medium leading-4 text-[#9a928a]">
-                    Введіть номер разом із кодом країни.
+                    Введіть український номер у форматі +380 XX XXX XX XX.
                   </p>
                 </label>
 
@@ -2069,12 +2685,12 @@ export default function CreateStudio() {
 
             {step === 4 && (
               <form
-                onSubmit={handleCreateStudio}
+                onSubmit={handleContinueFromAddress}
                 className="mt-6 space-y-5"
               >
                 <label className="block">
                   <span className="mb-2 flex items-center justify-between gap-3 text-[13px] font-black text-[#202020]">
-                    <span>Місто або село</span>
+                    <span>Місце розташування</span>
 
                     <span className="text-[10px] text-[#9a928a]">
                       Необов’язково
@@ -2113,7 +2729,7 @@ export default function CreateStudio() {
                   />
                 </label>
 
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="grid grid-cols-2 gap-3 sm:gap-4">
                   <label className="block">
                     <span className="mb-2 block text-[13px] font-black text-[#202020]">
                       Будинок
@@ -2170,8 +2786,245 @@ export default function CreateStudio() {
                 <ErrorMessage>{error}</ErrorMessage>
 
                 <div className="grid grid-cols-[auto_1fr] gap-3">
+                  <BackButton onClick={() => goToStep(3)} />
+
+                  <ContinueButton />
+                </div>
+              </form>
+            )}
+
+            {step === 5 && (
+              <form
+                onSubmit={handleCreateStudio}
+                className="mt-6 space-y-5"
+              >
+                <div className="overflow-hidden rounded-[20px] border border-[#ebe7df] bg-white">
+                  {DAYS.map((day, index) => {
+                    const config = schedule[day.key];
+                    const enabled = config.enabled;
+                    const breakStart = getBreakStart(config);
+                    const breakEnd = getBreakEnd(config);
+                    const hasBreak = Boolean(breakStart && breakEnd);
+                    const isOpen = openScheduleDay === day.key;
+                    const hasDayError = Object.keys(scheduleFieldErrors).some(
+                      (key) => key.startsWith(`${day.key}.`),
+                    );
+
+                    return (
+                      <div
+                        key={day.key}
+                        className={cn(
+                          index !== DAYS.length - 1 &&
+                            "border-b border-[#eeeae4]",
+                        )}
+                      >
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setOpenScheduleDay((current) =>
+                              current === day.key ? null : day.key,
+                            )
+                          }
+                          disabled={loading}
+                          aria-expanded={isOpen}
+                          className={cn(
+                            "group flex min-h-[68px] w-full items-center gap-3 px-4 text-left transition-colors duration-200 disabled:opacity-60 sm:min-h-[74px] sm:px-5",
+                            isOpen ? "bg-[#fffaf6]" : "bg-white hover:bg-[#fcfaf7]",
+                          )}
+                        >
+                          <span className="min-w-0 flex-1 text-[14px] font-black text-[#202020] sm:text-[15px]">
+                            {day.full}
+                          </span>
+
+                          <span
+                            className={cn(
+                              "shrink-0 text-right text-[13px] font-semibold sm:text-[14px]",
+                              enabled ? "text-[#77716b]" : "text-[#aaa39b]",
+                            )}
+                          >
+                            {enabled
+                              ? `${config.start} – ${config.end}`
+                              : "Вихідний"}
+                          </span>
+
+                          <ChevronDown
+                            className={cn(
+                              "h-5 w-5 shrink-0 text-[#c2bbb3] transition-transform duration-200 group-hover:text-[#ff6200]",
+                              isOpen && "rotate-180 text-[#ff6200]",
+                            )}
+                          />
+                        </button>
+
+                        {isOpen && (
+                          <div className="border-t border-[#f0ebe5] bg-[#faf8f5] px-4 py-4 sm:px-5 sm:py-5">
+                            <button
+                              type="button"
+                              onClick={() => toggleScheduleDay(day.key)}
+                              disabled={loading}
+                              className="flex h-[52px] w-full items-center justify-between gap-3 rounded-[16px] border border-[#e7e0d8] bg-white px-4 text-left transition-all hover:border-[#ffd6bd] disabled:opacity-60"
+                            >
+                              <span>
+                                <span className="block text-[13px] font-black text-[#202020]">
+                                  Робочий день
+                                </span>
+                                <span className="mt-0.5 block text-[11px] font-medium text-[#8a847d]">
+                                  {enabled
+                                    ? "Студія приймає клієнтів"
+                                    : "Студія цього дня не працює"}
+                                </span>
+                              </span>
+
+                              <Toggle checked={enabled} />
+                            </button>
+
+                            {enabled && (
+                              <div className="mt-4 space-y-4">
+                                <div className="grid grid-cols-2 gap-3">
+                                  {[
+                                    ["start", "Початок", Clock],
+                                    ["end", "Кінець", Timer],
+                                  ].map(([field, label, Icon]) => (
+                                    <div key={field} className="min-w-0">
+                                      <label className="mb-1.5 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#77716b]">
+                                        <Icon className="h-3.5 w-3.5 text-[#ff6200]" />
+                                        {label}
+                                      </label>
+
+                                      <TimeField
+                                        className={cn(
+                                          "flex h-[50px] items-center overflow-hidden rounded-[16px] border bg-white transition-all duration-200 focus-within:ring-4",
+                                          hasScheduleFieldError(day.key, field)
+                                            ? "border-[#ef4444] bg-[#fff5f5] focus-within:ring-[#ef4444]/10"
+                                            : "border-[#e7e0d8] hover:border-[#ffd6bd] focus-within:ring-[#ff6200]/10",
+                                        )}
+                                      >
+                                        <TimeSelect
+                                          value={config[field]}
+                                          label={label}
+                                          dayLabel={day.full}
+                                          onChange={(value) =>
+                                            updateScheduleTime(
+                                              day.key,
+                                              field,
+                                              value,
+                                            )
+                                          }
+                                          onCommit={(value) =>
+                                            updateScheduleTime(
+                                              day.key,
+                                              field,
+                                              value,
+                                            )
+                                          }
+                                          className="h-full w-full justify-center text-[15px]"
+                                        />
+                                      </TimeField>
+                                    </div>
+                                  ))}
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={() => toggleScheduleBreak(day.key)}
+                                  disabled={loading}
+                                  className="flex h-[52px] w-full items-center justify-between gap-3 rounded-[16px] border border-[#e7e0d8] bg-white px-4 text-left transition-all hover:border-[#ffd6bd] disabled:opacity-60"
+                                >
+                                  <span className="flex min-w-0 items-center gap-3">
+                                    <span
+                                      className={cn(
+                                        "grid h-8 w-8 shrink-0 place-items-center rounded-[10px]",
+                                        hasBreak
+                                          ? "bg-[#edf9f0] text-[#2f9e55]"
+                                          : "bg-[#f4f1ed] text-[#8a847d]",
+                                      )}
+                                    >
+                                      <Coffee className="h-4 w-4" />
+                                    </span>
+
+                                    <span>
+                                      <span className="block text-[13px] font-black text-[#202020]">
+                                        Перерва
+                                      </span>
+                                      <span className="mt-0.5 block text-[11px] font-medium text-[#8a847d]">
+                                        {hasBreak
+                                          ? `${breakStart} – ${breakEnd}`
+                                          : "Без перерви"}
+                                      </span>
+                                    </span>
+                                  </span>
+
+                                  <Toggle checked={hasBreak} />
+                                </button>
+
+                                {hasBreak && (
+                                  <div className="grid grid-cols-2 gap-3">
+                                    {[
+                                      ["breakStart", "Перерва з"],
+                                      ["breakEnd", "Перерва до"],
+                                    ].map(([field, label]) => (
+                                      <div key={field} className="min-w-0">
+                                        <label className="mb-1.5 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#77716b]">
+                                          <Coffee className="h-3.5 w-3.5 text-[#ff6200]" />
+                                          {label}
+                                        </label>
+
+                                        <TimeField
+                                          className={cn(
+                                            "flex h-[50px] items-center overflow-hidden rounded-[16px] border bg-white transition-all duration-200 focus-within:ring-4",
+                                            hasScheduleFieldError(
+                                              day.key,
+                                              field,
+                                            )
+                                              ? "border-[#ef4444] bg-[#fff5f5] focus-within:ring-[#ef4444]/10"
+                                              : "border-[#e7e0d8] hover:border-[#ffd6bd] focus-within:ring-[#ff6200]/10",
+                                          )}
+                                        >
+                                          <TimeSelect
+                                            value={config[field]}
+                                            label={label}
+                                            dayLabel={day.full}
+                                            onChange={(value) =>
+                                              updateScheduleTime(
+                                                day.key,
+                                                field,
+                                                value,
+                                              )
+                                            }
+                                            onCommit={(value) =>
+                                              updateScheduleTime(
+                                                day.key,
+                                                field,
+                                                value,
+                                              )
+                                            }
+                                            className="h-full w-full justify-center text-[15px]"
+                                          />
+                                        </TimeField>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {hasDayError && (
+                              <p className="mt-3 rounded-[14px] border border-[#fecaca] bg-[#fff5f5] px-3 py-2 text-xs font-bold leading-5 text-[#dc2626]">
+                                Завершення має бути пізніше початку, а
+                                перерва — всередині робочого часу.
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <ErrorMessage>{error}</ErrorMessage>
+
+                <div className="grid grid-cols-[auto_1fr] gap-3">
                   <BackButton
-                    onClick={() => goToStep(3)}
+                    onClick={() => goToStep(4)}
                     disabled={loading}
                   />
 
@@ -2180,6 +3033,8 @@ export default function CreateStudio() {
                   </ContinueButton>
                 </div>
               </form>
+            )}
+              </>
             )}
           </div>
         </section>

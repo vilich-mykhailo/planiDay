@@ -188,7 +188,7 @@ if (requiredRole === "client" && redirectTo) {
 
   return (
     <main className="min-h-[100dvh] p-0 sm:p-3 lg:p-5">
-      <div className="mx-auto grid min-h-[100dvh] max-w-[1700px] overflow-hidden sm:min-h-[calc(100dvh-24px)] sm:rounded-[30px] sm:border sm:border-[#eadfce] sm:shadow-[0_30px_90px_rgba(15,23,42,0.08)] lg:grid-cols-[520px_1fr] lg:rounded-[36px]">
+      <div className="mx-auto grid min-h-[100dvh] max-w-[1700px] overflow-hidden sm:min-h-[calc(100dvh-24px)] lg:grid-cols-[520px_1fr]">
         <aside className="relative hidden overflow-hidden lg:block">
           <img
             src={salonHero}
@@ -521,11 +521,9 @@ onClick={() => {
     rounded-[16px]
     bg-[#202020]
     text-[14px] font-black text-white
-    shadow-[0_12px_26px_rgba(15,15,15,0.18)]
     transition-all duration-300
     hover:scale-[1.015]
     hover:bg-[#ff6200]
-    hover:shadow-[0_14px_30px_rgba(255,98,0,0.24)]
     active:scale-[0.98]
     disabled:pointer-events-none
     disabled:bg-[#f1ebe4]

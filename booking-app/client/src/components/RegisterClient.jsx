@@ -45,7 +45,7 @@ function Input({ label, hint, icon, error, rightElement, ...props }) {
 
       <div
         className={cn(
-          "flex h-[40px] items-center gap-1.5 rounded-[12px] border bg-white px-2.5 transition-all sm:h-14 sm:gap-3 sm:rounded-[18px] sm:px-4",
+          "flex h-[40px] items-center gap-1.5 rounded-[12px] border bg-white px-2.5 transition-all sm:h-[50px] sm:gap-2.5 sm:rounded-[16px] sm:px-3.5",
           error
             ? "border-[#ef4444]/40 ring-2 ring-[#ef4444]/10 sm:ring-4"
             : "border-[#eadfce] focus-within:border-[#ff6200] focus-within:ring-2 focus-within:ring-[#ff6200]/10 sm:focus-within:ring-4",
@@ -301,7 +301,7 @@ return (
   <>
 
      <main className="min-h-[100dvh] p-0 sm:p-3 lg:p-5">
-       <div className="mx-auto grid min-h-[100dvh] max-w-[1700px] overflow-hidden sm:min-h-[calc(100dvh-24px)] sm:rounded-[30px] sm:border sm:border-[#eadfce] sm:shadow-[0_30px_90px_rgba(15,23,42,0.08)] lg:grid-cols-[520px_1fr] lg:rounded-[36px]">
+      <div className="mx-auto grid min-h-[calc(100dvh-24px)] max-w-[1700px] overflow-hidden lg:grid-cols-[520px_1fr]">
          <aside className="relative hidden overflow-hidden lg:block">
            <img
              src={salonHero}
@@ -361,10 +361,10 @@ return (
              </div>
            </div>
          </aside>
-<section className="flex items-start justify-center px-3 py-3 sm:items-center sm:px-6 sm:py-10 lg:px-8">
-  <div className="w-full max-w-[560px] pb-3 max-[639px]:pb-[calc(env(safe-area-inset-bottom)+10px)]">
+<section className="flex items-center justify-center px-4 py-6 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+  <div className="w-full max-w-[560px] pb-3 sm:max-w-[510px] lg:max-w-[500px] max-[639px]:pb-[calc(env(safe-area-inset-bottom)+10px)]">
     <div className="text-center max-[639px]:mb-1">
-<div className="mx-auto mb-3 h-16 w-16 sm:mb-5 sm:h-20 sm:w-20">
+<div className="mx-auto mb-4 h-20 w-20 sm:mb-3 sm:h-16 sm:w-16 lg:h-[68px] lg:w-[68px]">
   <img
     src="/aveliio_logo.png"
     alt="Aveliio"
@@ -372,18 +372,18 @@ return (
   />
 </div>
 
-      <h1 className="text-[22px] font-black leading-[1] tracking-[-0.06em] text-[#202020] sm:text-[42px]">
+      <h1 className="text-[28px] font-black leading-[1] tracking-[-0.06em] text-[#202020] sm:text-[34px] lg:text-[36px]">
         Реєстрація клієнта
       </h1>
 
-      <p className="mt-1 text-[11px] leading-4 text-[#77716b] sm:mt-3 sm:text-[16px] sm:leading-6">
+      <p className="mt-2 text-[14px] leading-5 text-[#77716b] sm:mt-2 sm:text-[14px] sm:leading-5 lg:text-[15px]">
         Створи акаунт, щоб записатися до студії
       </p>
     </div>
 
-    <div className="mt-3 rounded-[22px] border border-[#eadfce] bg-white p-3.5 shadow-[0_10px_30px_rgba(15,23,42,0.05)] sm:mt-7 sm:rounded-[15px] sm:p-7 sm:shadow-[0_16px_44px_rgba(15,23,42,0.05)]">
-      <form onSubmit={handleSubmit} className="space-y-2.5 sm:space-y-5">
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-4">
+    <div className="mt-3 rounded-[22px] border border-[#eadfce] bg-white p-3.5 shadow-[0_10px_30px_rgba(15,23,42,0.05)] sm:mt-4 sm:rounded-[15px] sm:p-5 sm:shadow-[0_16px_44px_rgba(15,23,42,0.05)] lg:p-5">
+      <form onSubmit={handleSubmit} className="space-y-2.5 sm:space-y-3.5">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-3">
           <Input
             label="Імʼя"
             placeholder="Наталія"
@@ -512,25 +512,24 @@ return (
     rounded-[12px]
     bg-[#202020]
     text-[14px] font-black text-white
-    shadow-[0_12px_26px_rgba(15,15,15,0.18)]
     transition-all duration-300
     hover:scale-[1.015]
     hover:bg-[#ff6200]
-    hover:shadow-[0_14px_30px_rgba(255,98,0,0.24)]
     active:scale-[0.98]
     disabled:pointer-events-none
     disabled:bg-[#f1ebe4]
     disabled:text-[#aaa19a]
     disabled:shadow-none
     disabled:opacity-100
-    sm:h-[52px]
-    sm:text-[15px]
+    sm:h-[48px]
+    sm:text-[14px]
+    lg:text-[15px]
   "
 >
   {loading ? "Надсилання коду..." : "Зареєструватися"}
 </button>
       </form>
-<div className="mt-4 flex items-center gap-2 sm:mt-6 sm:gap-4">
+<div className="mt-4 flex items-center gap-2 sm:mt-4 sm:gap-3">
   <div className="h-px flex-1 bg-[#ece5dc]" />
 
   <span className="whitespace-nowrap text-[11px] font-semibold text-[#8a847d] sm:text-[14px]">
@@ -540,7 +539,7 @@ return (
   <div className="h-px flex-1 bg-[#ece5dc]" />
 </div>
 
-<div className="mt-2 sm:mt-6">
+<div className="mt-2 sm:mt-4">
   <button
     type="button"
     className="
@@ -555,9 +554,10 @@ return (
       hover:text-[#ff6200]
       hover:shadow-[0_8px_22px_rgba(255,98,0,0.10)]
       active:scale-[0.98]
-      sm:h-14
-      sm:rounded-[18px]
-      sm:text-[15px]
+      sm:h-12
+      sm:rounded-[16px]
+      sm:text-[14px]
+      lg:text-[15px]
     "
   >
     <svg
@@ -587,33 +587,34 @@ return (
   </button>
 </div>
 
-<div className="mt-3 text-center text-[11px] font-semibold text-[#77716b] sm:mt-5 sm:text-[15px]">
+<div className="mt-3 text-center text-[11px] font-semibold text-[#77716b] sm:mt-3 sm:text-[14px] lg:text-[15px]">
   Вже є акаунт?
 
   <Link
     to="/login"
-    className="
-      relative ml-2 inline-flex
-      origin-center
-      font-black text-[#ff6200]
-      transition-all duration-300
-      active:scale-[0.98]
+   className="
+    relative ml-2 inline-flex
+    origin-center
+    text-[15px] font-black text-[#ff6200]
+    transition-all duration-300
+    active:scale-[0.98]
+    sm:text-[15px]
 
-      after:absolute
-      after:-bottom-0.5
-      after:left-0
-      after:h-[2px]
-      after:w-full
-      after:origin-left
-      after:scale-x-0
-      after:rounded-full
-      after:bg-current
-      after:transition-transform
-      after:duration-300
+    after:absolute
+    after:-bottom-1
+    after:left-0
+    after:h-[2px]
+    after:w-full
+    after:origin-left
+    after:scale-x-0
+    after:rounded-full
+    after:bg-current
+    after:transition-transform
+    after:duration-300
 
-      hover:after:scale-x-100
-    "
-  >
+    hover:after:scale-x-100
+  "
+>
     Увійти
   </Link>
 </div>
@@ -809,7 +810,6 @@ return (
                 bg-[#202020]
                 text-[14px] font-black
                 text-white
-                shadow-[0_12px_26px_rgba(15,15,15,0.18)]
                 transition-all
                 hover:scale-[1.015]
                 hover:bg-[#ff6200]

@@ -119,10 +119,10 @@ const styles =
   variant === "primary"
     ? `
         bg-[#202020] text-white
-        shadow-[0_12px_26px_rgba(15,15,15,0.18)]
+       
         hover:scale-[1.015]
         hover:bg-[#ff6200]
-        hover:shadow-[0_14px_30px_rgba(255,98,0,0.24)]
+        
         active:scale-[0.98]
       `
     : `

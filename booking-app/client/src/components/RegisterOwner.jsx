@@ -29,12 +29,12 @@ function Input({ label, hint, icon, error, rightElement, ...props }) {
   return (
     <label className="block">
       <div className="mb-1 flex items-center justify-between gap-2 sm:mb-2 sm:gap-3">
-        <span className="block text-[11px] font-black text-[#202020] sm:text-[14px]">
+        <span className="block text-[13px] font-black text-[#202020] sm:text-[14px]">
           {label}
         </span>
 
         {hint && (
-          <span className="text-[10px] font-bold text-[#8a847d] sm:text-xs">
+          <span className="text-[11px] font-bold text-[#8a847d] sm:text-xs">
             {hint}
           </span>
         )}
@@ -42,21 +42,21 @@ function Input({ label, hint, icon, error, rightElement, ...props }) {
 
       <div
         className={cn(
-          "flex h-[40px] items-center gap-1.5 rounded-[12px] border bg-white px-2.5 transition-all sm:h-14 sm:gap-3 sm:rounded-[18px] sm:px-4",
+          "flex h-[48px] items-center gap-2 rounded-[14px] border bg-white px-3.5 transition-all sm:h-14 sm:gap-3 sm:rounded-[18px] sm:px-4",
           error
             ? "border-[#ef4444]/40 ring-2 ring-[#ef4444]/10 sm:ring-4"
             : "border-[#eadfce] focus-within:border-[#ff6200] focus-within:ring-2 focus-within:ring-[#ff6200]/10 sm:focus-within:ring-4",
         )}
       >
         {icon && (
-          <span className="text-[#8a847d] [&>svg]:h-3.5 [&>svg]:w-3.5 sm:[&>svg]:h-5 sm:[&>svg]:w-5">
+          <span className="text-[#8a847d] [&>svg]:h-[18px] [&>svg]:w-[18px] sm:[&>svg]:h-5 sm:[&>svg]:w-5">
             {icon}
           </span>
         )}
 
         <input
           {...props}
-          className="w-full bg-transparent text-[11px] font-bold text-[#202020] outline-none placeholder:text-[#b8afa5] sm:text-[14px]"
+          className="w-full bg-transparent text-[14px] font-bold text-[#202020] outline-none placeholder:text-[#b8afa5] sm:text-[14px]"
         />
 
         {rightElement}
@@ -248,8 +248,8 @@ navigate("/create-studio", {
 
   return (
     <>
-      <main className="min-h-[100dvh] p-0 sm:p-3 lg:p-5">
-        <div className="mx-auto grid min-h-[100dvh] max-w-[1700px] overflow-hidden sm:min-h-[calc(100dvh-24px)] sm:rounded-[30px] sm:border sm:border-[#eadfce] sm:shadow-[0_30px_90px_rgba(15,23,42,0.08)] lg:grid-cols-[520px_1fr] lg:rounded-[36px]">
+      <main className="min-h-[100dvh] p-3 sm:p-3 lg:p-5">
+        <div className="mx-auto grid min-h-[calc(100dvh-24px)] max-w-[1700px] overflow-hidden sm:min-h-[calc(100dvh-24px)]  lg:grid-cols-[520px_1fr]">
           <aside className="relative hidden overflow-hidden lg:block">
             <img
               src={salonHero}
@@ -257,7 +257,7 @@ navigate("/create-studio", {
               className="absolute inset-0 h-full w-full object-cover"
             />
 
-            <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/15 to-black/65" />
+            <div className="absolute inset-0" />
 
             <div className="relative flex h-full flex-col px-12 pb-20 pt-[31%] text-white">
               <div className="relative flex flex-col items-center text-center">
@@ -350,10 +350,10 @@ navigate("/create-studio", {
             </div>
           </aside>
 
-          <section className="flex items-start justify-center px-3 py-3 sm:items-center sm:px-6 sm:py-10 lg:px-8">
-            <div className="w-full max-w-[560px] pb-3 max-[639px]:pb-[calc(env(safe-area-inset-bottom)+10px)]">
-              <div className="text-center max-[639px]:mb-1">
-                <div className="mx-auto mb-2 h-12 w-12 sm:mb-2 sm:h-16 sm:w-16">
+          <section className="flex min-h-[calc(100dvh-24px)] items-center justify-center px-4 py-2 sm:min-h-0 sm:px-6 sm:py-10 lg:px-8">
+            <div className="w-full max-w-[560px] pb-4 max-[639px]:pb-[calc(env(safe-area-inset-bottom)+16px)]">
+              <div className="mb-4 text-center sm:mb-0">
+                <div className="mx-auto mb-3 h-20 w-20 sm:mb-2 sm:h-16 sm:w-16">
                   <img
                     src="/aveliio_logo.png"
                     alt="Aveliio"
@@ -361,19 +361,19 @@ navigate("/create-studio", {
                   />
                 </div>
 
-                <h1 className="text-[22px] font-black leading-[1] tracking-[-0.06em] text-[#202020] sm:text-[42px]">
+                <h1 className="text-[28px] font-black leading-[1.05] tracking-[-0.05em] text-[#202020] sm:text-[42px]">
                   Створити салон
                 </h1>
 
-                <p className="mt-1 text-[11px] leading-4 text-[#77716b] sm:mt-3 sm:text-[16px] sm:leading-6">
+                <p className="mx-auto mt-2 max-w-[300px] text-[12px] leading-5 text-[#77716b] sm:mt-3 sm:max-w-none sm:text-[16px] sm:leading-6">
                   Почніть приймати онлайн-записи вже сьогодні
                 </p>
               </div>
 
-              <div className="mt-3 rounded-[22px] border border-[#eadfce] bg-white p-3.5 shadow-[0_10px_30px_rgba(15,23,42,0.05)] sm:mt-7 sm:rounded-[15px] sm:p-7 sm:shadow-[0_16px_44px_rgba(15,23,42,0.05)]">
+              <div className="mt-4 rounded-[22px] border border-[#eadfce] bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.05)] sm:mt-7 sm:rounded-[15px] sm:p-7 sm:shadow-[0_16px_44px_rgba(15,23,42,0.05)]">
                 <form
                   onSubmit={handleSubmit}
-                  className="space-y-2.5 sm:space-y-5"
+                  className="space-y-4 sm:space-y-5"
                 >
                   <Input
                     label="Email"
@@ -414,17 +414,17 @@ navigate("/create-studio", {
                     }
                   />
 
-                  <div className="space-y-[1px] pl-1">
-                    <p className="text-[10px] leading-4 text-[#8a8a8a] sm:text-[12px]">
+                  <div className="space-y-1 pl-1">
+                    <p className="text-[12px] leading-5 text-[#8a8a8a] sm:text-[12px]">
                       • Мінімум 8 символів
                     </p>
-                    <p className="text-[10px] leading-4 text-[#8a8a8a] sm:text-[12px]">
+                    <p className="text-[12px] leading-5 text-[#8a8a8a] sm:text-[12px]">
                       • Лише латинські літери
                     </p>
                   </div>
 
                   <label className="flex items-start gap-2 pt-0.5">
-                    <span className="text-[10px] leading-4 text-[#7a7a7a] sm:text-[12px] sm:leading-5">
+                    <span className="text-[12px] leading-5 text-[#7a7a7a] sm:text-[12px] sm:leading-5">
                       Реєструючи обліковий запис, ви приймаєте{" "}
                       <Link
                         to="/termsclient"
@@ -454,15 +454,13 @@ navigate("/create-studio", {
                     type="submit"
                     disabled={loading}
                     className="
-    group mt-0 inline-flex h-[44px] w-full items-center justify-center gap-2
+    group mt-1 inline-flex h-[50px] w-full items-center justify-center gap-2
     rounded-[12px]
     bg-[#202020]
-    text-[14px] font-black text-white
-    shadow-[0_12px_26px_rgba(15,15,15,0.18)]
+    text-[15px] font-black text-white
     transition-all duration-300
     hover:scale-[1.015]
     hover:bg-[#ff6200]
-    hover:shadow-[0_14px_30px_rgba(255,98,0,0.24)]
     active:scale-[0.98]
     disabled:pointer-events-none
     disabled:bg-[#f1ebe4]
@@ -484,17 +482,17 @@ navigate("/create-studio", {
                   </button>
                 </form>
 
-                <div className="mt- flex items-center gap-2 sm:mt-4 sm:gap-4">
+                <div className="mt-4 flex items-center gap-3 sm:mt-4 sm:gap-4">
                   <div className="h-px flex-1 bg-[#ece5dc]" />
 
-                  <span className="mt-2 whitespace-nowrap text-[11px] font-semibold text-[#8a847d] sm:text-[14px]">
+                  <span className="whitespace-nowrap text-[13px] font-semibold text-[#8a847d] sm:text-[14px]">
                     або продовжити з
                   </span>
 
                   <div className="h-px flex-1 bg-[#ece5dc]" />
                 </div>
 
-                <div className="mt-2 sm:mt-4">
+                <div className="mt-3 sm:mt-4">
                   <button
                     type="button"
                     className="
@@ -503,7 +501,7 @@ navigate("/create-studio", {
       border border-[#ded8d1]
       bg-transparent
       px-4
-      text-[13px] font-black text-[#202020]
+      text-[14px] font-black text-[#202020]
       transition-all duration-300
       hover:border-[#ff6200]
       hover:text-[#ff6200]
@@ -541,16 +539,17 @@ navigate("/create-studio", {
                   </button>
                 </div>
 
-                <div className="mt-3 text-center text-[11px] font-semibold text-[#77716b] sm:mt-3 sm:text-[15px]">
+                <div className="mt-4 text-center text-[13px] font-semibold text-[#77716b] sm:mt-3 sm:text-[15px]">
                   Вже є акаунт?{" "}
-                  <Link
-                    to="/login-owner"
-                    className="
-    relative  ml-2 inline-flex
+<Link
+  to="/login-owner"
+  className="
+    relative ml-2 inline-flex
     origin-center
-    font-black text-[#ff6200]
+    text-[15px] font-black text-[#ff6200]
     transition-all duration-300
     active:scale-[0.98]
+    sm:text-[15px]
 
     after:absolute
     after:-bottom-1
@@ -566,9 +565,9 @@ navigate("/create-studio", {
 
     hover:after:scale-x-100
   "
-                  >
-                    Увійти
-                  </Link>
+>
+  Увійти
+</Link>
                 </div>
               </div>
             </div>
@@ -581,7 +580,7 @@ navigate("/create-studio", {
           className="
           fixed inset-0 z-[200]
           flex items-center justify-center
-          bg-black/45 px-3
+          bg-black/45 px-4 py-5
           backdrop-blur-[5px]
         "
         >
@@ -594,7 +593,7 @@ navigate("/create-studio", {
             rounded-[26px]
             border border-[#eadfce]
             bg-white
-            p-5
+            p-6
             shadow-[0_30px_90px_rgba(15,15,15,0.25)]
             sm:rounded-[32px]
             sm:p-8
@@ -651,18 +650,18 @@ navigate("/create-studio", {
                 Перевірте вашу пошту
               </h2>
 
-              <p className="mt-3 text-[13px] leading-5 text-[#77716b] sm:text-[15px] sm:leading-6">
+              <p className="mt-3 text-[14px] leading-5 text-[#77716b] sm:text-[15px] sm:leading-6">
                 Код для реєстрації відправлено на
               </p>
 
-              <p className="mt-1 break-all text-[13px] font-black text-[#202020] sm:text-[15px]">
+              <p className="mt-1 break-all text-[14px] font-black text-[#202020] sm:text-[15px]">
                 {verificationEmail}
               </p>
             </div>
 
             <form onSubmit={handleVerifyCode} className="mt-6">
               <label className="block">
-                <span className="block text-center text-[12px] font-black text-[#202020] sm:text-[14px]">
+                <span className="block text-center text-[13px] font-black text-[#202020] sm:text-[14px]">
                   Код підтвердження
                 </span>
 
@@ -732,7 +731,6 @@ navigate("/create-studio", {
                 bg-[#202020]
                 text-[14px] font-black
                 text-white
-                shadow-[0_12px_26px_rgba(15,15,15,0.18)]
                 transition-all
                 hover:scale-[1.015]
                 hover:bg-[#ff6200]
@@ -748,7 +746,7 @@ navigate("/create-studio", {
                 {verificationLoading ? "Перевірка..." : "Підтвердити код"}
               </button>
 
-              <div className="mt-5 text-center text-[12px] font-semibold text-[#77716b] sm:text-[13px]">
+              <div className="mt-5 text-center text-[13px] font-semibold text-[#77716b] sm:text-[13px]">
                 Не отримали код?
                 <button
                   type="button"
@@ -772,7 +770,7 @@ navigate("/create-studio", {
                 </button>
               </div>
 
-              <p className="mt-4 text-center text-[11px] leading-4 text-[#aaa19a]">
+              <p className="mt-4 text-center text-[12px] leading-5 text-[#aaa19a]">
                 Код дійсний протягом 10 хвилин
               </p>
             </form>

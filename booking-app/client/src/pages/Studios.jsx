@@ -1777,13 +1777,20 @@ export default function Studios() {
                 Спробуйте змінити фільтри.
               </p>
 
-              <button
-                type="button"
-                onClick={clearAll}
-                className="mt-6 inline-flex h-11 items-center justify-center rounded-2xl bg-[#ff6200] px-5 text-sm font-black text-white shadow-[0_12px_28px_rgba(255,98,0,0.22)] transition-all hover:bg-[#ef5700] active:scale-[0.98]"
-              >
-                Очистити фільтри
-              </button>
+<button
+  type="button"
+  onClick={clearAll}
+  className={cn(
+    "mt-6 inline-flex h-11 items-center justify-center rounded-2xl px-5",
+    "bg-[#202020] text-sm font-black text-white",
+    "transition-all duration-200",
+    "hover:scale-[1.015]",
+    "hover:bg-[#ff6200]",
+    "active:scale-[0.98]",
+  )}
+>
+  Очистити фільтри
+</button>
             </div>
           </section>
         )}

@@ -2442,14 +2442,14 @@ export default function Schedule() {
                                 {label}
                               </label>
 
-                              <TimeField
-                                className={cn(
-                                  "schedule-time-field flex h-[50px] cursor-pointer items-center overflow-hidden rounded-[18px] border p-0 transition-all duration-200 focus-within:ring-4",
-                                  hasScheduleFieldError(day.key, field)
-                                    ? "border-[#ef4444] bg-[#fff5f5] focus-within:ring-[#ef4444]/10"
-                                    : "border-[#eadbc9] bg-white hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] focus-within:ring-[#ff6200]/10",
-                                )}
-                              >
+<TimeField
+  className={cn(
+    "schedule-time-field flex h-[50px] cursor-pointer items-center overflow-hidden rounded-[18px] border p-0 transition-all duration-200 focus-within:ring-4",
+    hasScheduleFieldError(day.key, field)
+      ? "border-[#ef4444] bg-[#fff5f5] focus-within:ring-[#ef4444]/10"
+      : "border-[#eadbc9] bg-white hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] focus-within:ring-[#ff6200]/10",
+  )}
+>
                                 <TimeSelect
                                   value={config[field]}
                                   label={label}
@@ -2514,27 +2514,25 @@ export default function Schedule() {
                                     {label}
                                   </label>
 
-                                  <div
-                                    className={cn(
-                                      "schedule-time-field flex h-[50px] items-center overflow-hidden ",
-                                      hasScheduleFieldError(day.key, field)
-                                        ? "border-[#ef4444] bg-[#fff5f5] focus-within:ring-[#ef4444]/10"
-                                        : "border-[#eadbc9] bg-white hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] focus-within:ring-[#ff6200]/10",
-                                    )}
-                                  >
-                                    <TimeSelect
-                                      value={config[field]}
-                                      label={label}
-                                      dayLabel={day.full}
-                                      onChange={(value) =>
-                                        updateTime(day.key, field, value)
-                                      }
-                                      onCommit={(value) =>
-                                        handleTimeCommit(day.key, field, value)
-                                      }
-                                      className="h-full w-full justify-center text-base"
-                                    />
-                                  </div>
+<TimeField
+  className={cn(
+    "schedule-time-field flex h-[50px] cursor-pointer items-center overflow-hidden rounded-[18px] border p-0 transition-all duration-200 focus-within:ring-4",
+    hasScheduleFieldError(day.key, field)
+      ? "border-[#ef4444] bg-[#fff5f5] focus-within:ring-[#ef4444]/10"
+      : "border-[#eadbc9] bg-white hover:!border-[#ffd6bd] hover:!bg-[#fff7f0] focus-within:ring-[#ff6200]/10",
+  )}
+>
+  <TimeSelect
+    value={config[field]}
+    label={label}
+    dayLabel={day.full}
+    onChange={(value) => updateTime(day.key, field, value)}
+    onCommit={(value) =>
+      handleTimeCommit(day.key, field, value)
+    }
+    className="h-full w-full justify-center text-base"
+  />
+</TimeField>
                                 </div>
                               ))}
                           </div>
