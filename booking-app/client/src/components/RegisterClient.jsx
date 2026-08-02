@@ -3,8 +3,6 @@ import { useEffect, useState } from "react";
 import {
   Mail,
   Lock,
-  Phone,
-  User,
   ArrowRight,
   Eye,
   EyeOff,
@@ -21,11 +19,8 @@ function cn(...classes) {
 const STORAGE_KEY = "registerClientForm";
 
 const INITIAL_FORM = {
-  name: "",
-  phone: "",
   email: "",
   password: "",
-  lastName: "",
 };
 
 function Input({ label, hint, icon, error, rightElement, ...props }) {
@@ -143,14 +138,13 @@ async function handleSubmit(e) {
   const passwordRegex =
     /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d\S]{8,}$/;
 
-  if (
-    !form.name.trim() ||
-    !form.email.trim() ||
-    !form.password.trim()
-  ) {
-    setError("Заповни всі обов’язкові поля.");
-    return;
-  }
+if (
+  !form.email.trim() ||
+  !form.password.trim()
+) {
+  setError("Заповни всі обов’язкові поля.");
+  return;
+}
 
   if (!passwordRegex.test(form.password)) {
     setError(
@@ -164,12 +158,6 @@ async function handleSubmit(e) {
     return;
   }
 
-  const fullName = [
-    form.name.trim(),
-    form.lastName.trim(),
-  ]
-    .filter(Boolean)
-    .join(" ");
 
   try {
     setLoading(true);
@@ -178,12 +166,10 @@ async function handleSubmit(e) {
       "/auth/client/register/request-code",
       {
         method: "POST",
-        body: {
-          name: fullName,
-          phone: form.phone.trim(),
-          email: form.email.trim(),
-          password: form.password,
-        },
+body: {
+  email: form.email.trim(),
+  password: form.password,
+},
       },
     );
 
@@ -249,9 +235,9 @@ async function handleVerifyCode(e) {
 
     window.dispatchEvent(new Event("auth-changed"));
 
-    navigate("/", {
-      replace: true,
-    });
+navigate("/create-client-profile", {
+  replace: true,
+});
   } catch (err) {
     setVerificationError(
       err?.message || "Не вдалося підтвердити код.",
@@ -383,43 +369,6 @@ return (
 
     <div className="mt-3 rounded-[22px] border border-[#eadfce] bg-white p-3.5 shadow-[0_10px_30px_rgba(15,23,42,0.05)] sm:mt-4 sm:rounded-[15px] sm:p-5 sm:shadow-[0_16px_44px_rgba(15,23,42,0.05)] lg:p-5">
       <form onSubmit={handleSubmit} className="space-y-2.5 sm:space-y-3.5">
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-3">
-          <Input
-            label="Імʼя"
-            placeholder="Наталія"
-            icon={<User className="h-4 w-4" />}
-            error={!!error}
-            value={form.name}
-            onChange={(e) =>
-              setForm((prev) => ({
-                ...prev,
-                name: e.target.value,
-              }))
-            }
-          />
-
-<Input
-  label={
-    <span className="flex items-center gap-1.5">
-      <span>Прізвище</span>
-      <span className="text-[10px] font-semibold text-[#aaa19a] sm:text-[11px]">
-        (необов’язково)
-      </span>
-    </span>
-  }
-  placeholder="Ковальчук"
-  icon={<User className="h-4 w-4" />}
-  error={!!error}
-  value={form.lastName}
-  onChange={(e) =>
-    setForm((prev) => ({
-      ...prev,
-      lastName: e.target.value,
-    }))
-  }
-/>
-        </div>
-
         <Input
           label="Email"
           type="email"

@@ -720,16 +720,14 @@ authRouter.post("/owner/login", async (req, res) => {
 
 authRouter.post("/client/register/request-code", async (req, res) => {
   try {
-    const name = String(req.body?.name || "").trim();
-    const phone = String(req.body?.phone || "").trim();
-    const email = normalizeEmail(req.body?.email);
-    const password = String(req.body?.password || "");
+const email = normalizeEmail(req.body?.email);
+const password = String(req.body?.password || "");
 
-    if (!name || !email || !password) {
-      return res.status(400).json({
-        message: "Заповни всі обов’язкові поля.",
-      });
-    }
+if (!email || !password) {
+  return res.status(400).json({
+    message: "Заповни всі обов’язкові поля.",
+  });
+}
 
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d\S]{8,}$/;
 
@@ -795,29 +793,25 @@ if (existingClient) {
         where: {
           id: previousVerification.id,
         },
-        data: {
-          name,
-          phone: phone || null,
-          passwordHash,
-          codeHash,
-          attempts: 0,
-          expiresAt,
-          resendAfter,
-        },
+data: {
+  passwordHash,
+  codeHash,
+  attempts: 0,
+  expiresAt,
+  resendAfter,
+},
       });
     } else {
       verification = await prisma.clientRegistrationVerification.create({
-        data: {
-          id: verificationId,
-          name,
-          phone: phone || null,
-          email,
-          passwordHash,
-          codeHash,
-          attempts: 0,
-          expiresAt,
-          resendAfter,
-        },
+data: {
+  id: verificationId,
+  email,
+  passwordHash,
+  codeHash,
+  attempts: 0,
+  expiresAt,
+  resendAfter,
+},
       });
     }
 
@@ -958,19 +952,16 @@ authRouter.post("/client/register/verify-code", async (req, res) => {
         throw new Error("CLIENT_ALREADY_EXISTS");
       }
 
-      const createdClient = await tx.clientAccount.create({
-        data: {
-          name: verification.name,
-          phone: verification.phone,
-          email: verification.email,
-          passwordHash: verification.passwordHash,
-        },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-        },
-      });
+const createdClient = await tx.clientAccount.create({
+  data: {
+    email: verification.email,
+    passwordHash: verification.passwordHash,
+  },
+  select: {
+    id: true,
+    email: true,
+  },
+});
 
       await tx.clientRegistrationVerification.delete({
         where: {

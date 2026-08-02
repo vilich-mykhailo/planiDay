@@ -4,15 +4,19 @@ import { useNavigate } from "react-router-dom";
 import Cropper from "react-easy-crop";
 import {
   ArrowRight,
+  Banknote,
+  BriefcaseBusiness,
   Building2,
   CalendarDays,
   Camera,
   Check,
   ChevronDown,
+  Sparkles,
   ChevronLeft,
   Clock,
   Coffee,
   DoorOpen,
+  FilePenLine,
   House,
   ImagePlus,
   Images,
@@ -20,10 +24,12 @@ import {
   MapPin,
   MapPinned,
   Phone,
+  Plus,
   Scissors,
   Signpost,
   Tags,
   Timer,
+  Trash2,
   Users,
   X,
 } from "lucide-react";
@@ -31,9 +37,24 @@ import {
 import TimeSelect from "../components/TimeSelect";
 import { api } from "../api/http";
 
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 7;
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 const MAX_DESCRIPTION_LENGTH = 400;
+const UNCATEGORIZED_SERVICE_ID = "__uncategorized__";
+
+const PUBLIC_MEDIA_BASE_URL = String(
+  import.meta.env.VITE_R2_PUBLIC_BASE_URL || "",
+).replace(/\/$/, "");
+
+function toPublicImageUrl(value) {
+  const source = String(value || "").trim();
+
+  if (!source) return "";
+  if (/^(https?:|blob:|data:)/i.test(source)) return source;
+  if (!PUBLIC_MEDIA_BASE_URL) return source;
+
+  return `${PUBLIC_MEDIA_BASE_URL}/${source.replace(/^\/+/, "")}`;
+}
 
 const PHONE_REGEX = /^\+380\d{9}$/;
 
@@ -305,6 +326,16 @@ const STEP_CONTENT = {
     title: "Графік студії",
     description: "Налаштуйте робочі дні, години роботи та перерви",
     icon: CalendarDays,
+  },
+  6: {
+    title: "Майстри студії",
+    description: "Додайте майстрів, які прийматимуть записи клієнтів",
+    icon: Users,
+  },
+  7: {
+    title: "Послуги студії",
+    description: "Додайте послуги, вартість, тривалість і виконавців",
+    icon: Scissors,
   },
 };
 
@@ -677,7 +708,7 @@ async function compressImage(
   });
 }
 
-async function getCroppedImage(imageSrc, cropPixels) {
+async function getCroppedImage(imageSrc, cropPixels, fileName = "studio-logo.jpg") {
   const image = new window.Image();
   image.src = imageSrc;
 
@@ -724,7 +755,7 @@ async function getCroppedImage(imageSrc, cropPixels) {
         }
 
         resolve(
-          new File([blob], "studio-logo.jpg", {
+          new File([blob], fileName, {
             type: "image/jpeg",
             lastModified: Date.now(),
           }),
@@ -774,6 +805,213 @@ async function uploadStudioImage(studioId, file, kind, token) {
   }
 
   return data.key;
+}
+
+async function uploadMasterPhoto(studioId, file, token) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const apiBaseUrl = String(import.meta.env.VITE_API_URL || "").replace(
+    /\/$/,
+    "",
+  );
+
+  const response = await fetch(
+    `${apiBaseUrl}/media/studio/${studioId}/master-photo`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    },
+  );
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(
+      data?.message || `Не вдалося завантажити фото майстра (${response.status}).`,
+    );
+  }
+
+  if (!data?.key) {
+    throw new Error("Сервер не повернув адресу фото майстра.");
+  }
+
+  return data;
+}
+
+async function deleteMasterPhoto(studioId, key, token) {
+  if (!studioId || !key) return;
+
+  const apiBaseUrl = String(import.meta.env.VITE_API_URL || "").replace(
+    /\/$/,
+    "",
+  );
+
+  const response = await fetch(
+    `${apiBaseUrl}/media/studio/${studioId}/master-photo`,
+    {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ key }),
+    },
+  );
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(
+      data?.message || `Не вдалося видалити фото майстра (${response.status}).`,
+    );
+  }
+}
+
+function getMasterInitials(name) {
+  const value = String(name || "").trim();
+
+  if (!value) return "М";
+
+  return (
+    value
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase())
+      .join("") || "М"
+  );
+}
+
+function MasterAvatar({ name, photoUrl, className = "" }) {
+  return (
+    <div
+      className={cn(
+        "grid shrink-0 place-items-center overflow-hidden rounded-[22px] border-2 border-white bg-[#f4f1ed] shadow-[0_12px_30px_rgba(15,23,42,0.10)]",
+        className || "h-20 w-20",
+      )}
+    >
+      {photoUrl ? (
+        <img
+          src={toPublicImageUrl(photoUrl)}
+          alt={name || "Майстер"}
+          className="h-full w-full object-cover"
+        />
+      ) : (
+        <span className="text-[24px] font-black tracking-[-0.05em] text-[#756d66]">
+          {getMasterInitials(name)}
+        </span>
+      )}
+    </div>
+  );
+}
+
+
+function formatServiceDuration(minutes) {
+  const normalized = Math.max(5, Number(minutes || 0));
+  const hours = Math.floor(normalized / 60);
+  const restMinutes = normalized % 60;
+
+  if (hours === 0) return `${restMinutes} хв`;
+  if (restMinutes === 0) return `${hours} год`;
+
+  return `${hours} год ${restMinutes} хв`;
+}
+
+function ServiceCategorySelect({
+  value,
+  categories,
+  onChange,
+  disabled = false,
+}) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef(null);
+  const options = [
+    { id: UNCATEGORIZED_SERVICE_ID, name: "Без категорії" },
+    ...categories,
+  ];
+  const selected = options.find(
+    (item) => String(item.id) === String(value),
+  );
+
+  useEffect(() => {
+    function closeOnOutsideClick(event) {
+      if (!rootRef.current?.contains(event.target)) {
+        setOpen(false);
+      }
+    }
+
+    function closeOnEscape(event) {
+      if (event.key === "Escape") setOpen(false);
+    }
+
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, []);
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        onClick={() => !disabled && setOpen((current) => !current)}
+        disabled={disabled}
+        className={cn(
+          "flex h-14 w-full items-center justify-between gap-3 rounded-[17px] border bg-white px-4 text-left transition-all",
+          open
+            ? "border-[#ff6200] ring-4 ring-[#ff6200]/10"
+            : "border-[#eadfce] hover:border-[#ffd6bd]",
+          disabled && "pointer-events-none opacity-60",
+        )}
+      >
+        <span className="min-w-0 truncate text-[13px] font-bold text-[#202020]">
+          {selected?.name || "Без категорії"}
+        </span>
+
+        <ChevronDown
+          className={cn(
+            "h-4 w-4 shrink-0 text-[#ff6200] transition-transform",
+            open && "rotate-180",
+          )}
+        />
+      </button>
+
+      {open && (
+        <div className="absolute left-0 right-0 top-full z-50 mt-2 max-h-[240px] overflow-y-auto rounded-[18px] border border-[#eadfce] bg-white p-1.5 shadow-[0_20px_55px_rgba(17,17,17,0.14)]">
+          {options.map((item) => {
+            const active = String(item.id) === String(value);
+
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => {
+                  onChange(item.id);
+                  setOpen(false);
+                }}
+                className={cn(
+                  "flex w-full items-center justify-between gap-3 rounded-[12px] px-3 py-2.5 text-left text-[13px] font-bold transition-colors",
+                  active
+                    ? "bg-[#fff1e8] text-[#ff6200]"
+                    : "text-[#202020] hover:bg-[#fff7f1]",
+                )}
+              >
+                <span className="truncate">{item.name}</span>
+                {active && <Check className="h-4 w-4 shrink-0" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function BackButton({ onClick, disabled = false }) {
@@ -1738,6 +1976,30 @@ export default function CreateStudio() {
 
   const [loading, setLoading] = useState(false);
   const [createdStudio, setCreatedStudio] = useState(null);
+  const [setupCompleted, setSetupCompleted] = useState(false);
+  const [masterAdding, setMasterAdding] = useState(false);
+  const [createdMasters, setCreatedMasters] = useState([]);
+  const [masterForm, setMasterForm] = useState({
+    name: "",
+    role: "",
+    photoFile: null,
+  });
+  const [masterPhotoPreviewUrl, setMasterPhotoPreviewUrl] = useState("");
+
+  const [serviceAdding, setServiceAdding] = useState(false);
+  const [serviceCategoryAdding, setServiceCategoryAdding] = useState(false);
+  const [createdServiceCategories, setCreatedServiceCategories] = useState([]);
+  const [createdServices, setCreatedServices] = useState([]);
+  const [newServiceCategoryName, setNewServiceCategoryName] = useState("");
+  const [serviceForm, setServiceForm] = useState({
+    categoryId: UNCATEGORIZED_SERVICE_ID,
+    name: "",
+    duration: 60,
+    price: "",
+    allMasters: true,
+    masters: [],
+  });
+
   const [coverLoading, setCoverLoading] = useState(false);
   const [cropLoading, setCropLoading] = useState(false);
   const [error, setError] = useState("");
@@ -1745,6 +2007,7 @@ export default function CreateStudio() {
   const [cropModal, setCropModal] = useState({
     open: false,
     imageUrl: "",
+    target: "logo",
   });
 
   const [crop, setCrop] = useState({
@@ -1797,6 +2060,29 @@ export default function CreateStudio() {
 
     return () => URL.revokeObjectURL(url);
   }, [logoFile]);
+
+  useEffect(() => {
+    if (!masterForm.photoFile) {
+      setMasterPhotoPreviewUrl("");
+      return undefined;
+    }
+
+    const url = URL.createObjectURL(masterForm.photoFile);
+    setMasterPhotoPreviewUrl(url);
+
+    return () => URL.revokeObjectURL(url);
+  }, [masterForm.photoFile]);
+
+  useEffect(() => {
+    if (!setupCompleted) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [setupCompleted]);
 
   function clearError() {
     if (error) setError("");
@@ -1906,6 +2192,7 @@ export default function CreateStudio() {
     setCropModal({
       open: false,
       imageUrl: "",
+      target: "logo",
     });
 
     setCrop({
@@ -1979,7 +2266,45 @@ export default function CreateStudio() {
     setCropModal({
       open: true,
       imageUrl: URL.createObjectURL(file),
+      target: "logo",
     });
+  }
+
+  function handlePickMasterPhoto(event) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) return;
+
+    setError("");
+
+    if (!file.type?.startsWith("image/")) {
+      setError("Оберіть файл зображення для фото майстра.");
+      return;
+    }
+
+    if (file.size > MAX_IMAGE_SIZE) {
+      setError("Максимальний розмір фото майстра — 10 MB.");
+      return;
+    }
+
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+    setCroppedAreaPixels(null);
+
+    setCropModal({
+      open: true,
+      imageUrl: URL.createObjectURL(file),
+      target: "master",
+    });
+  }
+
+  function clearMasterPhoto() {
+    setMasterForm((current) => ({
+      ...current,
+      photoFile: null,
+    }));
+    clearError();
   }
 
   async function handleConfirmCrop() {
@@ -1990,16 +2315,29 @@ export default function CreateStudio() {
     try {
       setCropLoading(true);
 
+      const isMasterPhoto = cropModal.target === "master";
       const croppedFile = await getCroppedImage(
         cropModal.imageUrl,
         croppedAreaPixels,
+        isMasterPhoto ? "master-photo.jpg" : "studio-logo.jpg",
       );
 
-      setLogoFile(croppedFile);
+      if (isMasterPhoto) {
+        setMasterForm((current) => ({
+          ...current,
+          photoFile: croppedFile,
+        }));
+      } else {
+        setLogoFile(croppedFile);
+      }
+
       closeCropModal();
     } catch (cropError) {
       setError(
-        cropError?.message || "Не вдалося обробити логотип.",
+        cropError?.message ||
+          (cropModal.target === "master"
+            ? "Не вдалося обробити фото майстра."
+            : "Не вдалося обробити логотип."),
       );
     } finally {
       setCropLoading(false);
@@ -2258,6 +2596,7 @@ export default function CreateStudio() {
       window.dispatchEvent(new Event("studio-changed"));
 
       setCreatedStudio(updatedStudio);
+      setStep(6);
 
       window.scrollTo({
         top: 0,
@@ -2270,6 +2609,325 @@ export default function CreateStudio() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function updateMasterForm(field, value) {
+    setMasterForm((current) => ({
+      ...current,
+      [field]: value,
+    }));
+    clearError();
+  }
+
+  async function handleAddMaster(event) {
+    event.preventDefault();
+    setError("");
+
+    const studioId = createdStudio?.id;
+    const masterName = String(masterForm.name || "").trim();
+    const masterRole = String(masterForm.role || "").trim();
+
+    if (!studioId) {
+      setError("Спочатку потрібно зберегти студію.");
+      return;
+    }
+
+    if (!masterName) {
+      setError("Введіть імʼя майстра.");
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      navigate("/login-owner", { replace: true });
+      return;
+    }
+
+    let uploadedPhotoKey = null;
+
+    try {
+      setMasterAdding(true);
+
+      let photoUrl = "";
+
+      if (masterForm.photoFile) {
+        const uploadedPhoto = await uploadMasterPhoto(
+          studioId,
+          masterForm.photoFile,
+          token,
+        );
+
+        uploadedPhotoKey = uploadedPhoto.key;
+        photoUrl = uploadedPhoto.url || "";
+      }
+
+      const apiBaseUrl = String(import.meta.env.VITE_API_URL || "").replace(
+        /\/$/,
+        "",
+      );
+      const response = await fetch(
+        `${apiBaseUrl}/studio/${studioId}/masters`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            name: masterName,
+            role: masterRole,
+            photoUrl,
+            photoKey: uploadedPhotoKey,
+          }),
+        },
+      );
+
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message || `Не вдалося додати майстра (${response.status}).`,
+        );
+      }
+
+      const createdMaster = data?.master || {
+        id: `local-${Date.now()}`,
+        name: masterName,
+        role: masterRole,
+        photoUrl,
+        photoKey: uploadedPhotoKey,
+      };
+
+      setCreatedMasters((current) => [createdMaster, ...current]);
+      setMasterForm({
+        name: "",
+        role: "",
+        photoFile: null,
+      });
+
+      window.dispatchEvent(new Event("studio-changed"));
+    } catch (masterError) {
+      if (uploadedPhotoKey) {
+        try {
+          await deleteMasterPhoto(studioId, uploadedPhotoKey, token);
+        } catch (rollbackError) {
+          console.warn("Не вдалося видалити завантажене фото:", rollbackError);
+        }
+      }
+
+      setError(masterError?.message || "Не вдалося додати майстра.");
+    } finally {
+      setMasterAdding(false);
+    }
+  }
+
+  function updateServiceForm(field, value) {
+    setServiceForm((current) => ({
+      ...current,
+      [field]: value,
+    }));
+    clearError();
+  }
+
+  function toggleServiceMaster(masterId) {
+    const normalizedId = String(masterId);
+
+    setServiceForm((current) => {
+      const selectedMasters = Array.isArray(current.masters)
+        ? current.masters.map(String)
+        : [];
+      const alreadySelected = selectedMasters.includes(normalizedId);
+
+      return {
+        ...current,
+        allMasters: false,
+        masters: alreadySelected
+          ? selectedMasters.filter((id) => id !== normalizedId)
+          : [...selectedMasters, normalizedId],
+      };
+    });
+
+    clearError();
+  }
+
+  async function handleAddServiceCategory(event) {
+    event.preventDefault();
+    setError("");
+
+    const studioId = createdStudio?.id;
+    const categoryName = String(newServiceCategoryName || "").trim();
+
+    if (!studioId) {
+      setError("Спочатку потрібно зберегти студію.");
+      return;
+    }
+
+    if (!categoryName) {
+      setError("Введіть назву категорії послуг.");
+      return;
+    }
+
+    const duplicate = createdServiceCategories.some(
+      (item) =>
+        String(item.name || "").trim().toLocaleLowerCase("uk") ===
+        categoryName.toLocaleLowerCase("uk"),
+    );
+
+    if (duplicate) {
+      setError("Категорія з такою назвою вже додана.");
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      navigate("/login-owner", { replace: true });
+      return;
+    }
+
+    try {
+      setServiceCategoryAdding(true);
+
+      const response = await api(`/studio/${studioId}/categories`, {
+        method: "POST",
+        token,
+        body: { name: categoryName },
+      });
+      const createdCategory = response?.category || response;
+
+      if (!createdCategory?.id) {
+        throw new Error("Сервер не повернув створену категорію.");
+      }
+
+      setCreatedServiceCategories((current) => [
+        ...current,
+        createdCategory,
+      ]);
+      setServiceForm((current) => ({
+        ...current,
+        categoryId: createdCategory.id,
+      }));
+      setNewServiceCategoryName("");
+
+      window.dispatchEvent(new Event("studio-changed"));
+    } catch (categoryError) {
+      setError(categoryError?.message || "Не вдалося додати категорію.");
+    } finally {
+      setServiceCategoryAdding(false);
+    }
+  }
+
+  async function handleAddService(event) {
+    event.preventDefault();
+    setError("");
+
+    const studioId = createdStudio?.id;
+    const serviceName = String(serviceForm.name || "").trim();
+    const rawPrice = String(serviceForm.price ?? "").trim();
+    const price = Number(rawPrice);
+    const duration = Number(serviceForm.duration || 60);
+    const selectedMasters = Array.isArray(serviceForm.masters)
+      ? serviceForm.masters.map(String)
+      : [];
+
+    if (!studioId) {
+      setError("Спочатку потрібно зберегти студію.");
+      return;
+    }
+
+    if (!serviceName) {
+      setError("Введіть назву послуги.");
+      return;
+    }
+
+    if (!rawPrice || !Number.isFinite(price) || price < 0) {
+      setError("Введіть коректну вартість послуги.");
+      return;
+    }
+
+    if (!Number.isFinite(duration) || duration < 5 || duration > 240) {
+      setError("Тривалість послуги має бути від 5 хвилин до 4 годин.");
+      return;
+    }
+
+    if (!serviceForm.allMasters && selectedMasters.length === 0) {
+      setError("Оберіть хоча б одного майстра.");
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      navigate("/login-owner", { replace: true });
+      return;
+    }
+
+    const payload = {
+      categoryId:
+        serviceForm.categoryId === UNCATEGORIZED_SERVICE_ID
+          ? null
+          : serviceForm.categoryId,
+      name: serviceName,
+      duration,
+      price,
+      allMasters: Boolean(serviceForm.allMasters),
+      masters: serviceForm.allMasters ? [] : selectedMasters,
+    };
+
+    try {
+      setServiceAdding(true);
+
+      const response = await api(`/studio/${studioId}/services`, {
+        method: "POST",
+        token,
+        body: { service: payload },
+      });
+      const createdService = response?.service || response;
+      const selectedCategory = createdServiceCategories.find(
+        (item) => String(item.id) === String(serviceForm.categoryId),
+      );
+
+      setCreatedServices((current) => [
+        {
+          ...createdService,
+          id: createdService?.id || `local-service-${Date.now()}`,
+          name: createdService?.name || serviceName,
+          duration: Number(createdService?.duration || duration),
+          price: Number(createdService?.price ?? price),
+          categoryId: payload.categoryId,
+          categoryName: selectedCategory?.name || "Без категорії",
+          allMasters: payload.allMasters,
+          masters: payload.masters,
+        },
+        ...current,
+      ]);
+
+      setServiceForm((current) => ({
+        categoryId: current.categoryId,
+        name: "",
+        duration: 60,
+        price: "",
+        allMasters: true,
+        masters: [],
+      }));
+
+      window.dispatchEvent(new Event("studio-changed"));
+    } catch (serviceError) {
+      setError(serviceError?.message || "Не вдалося додати послугу.");
+    } finally {
+      setServiceAdding(false);
+    }
+  }
+
+  function finishStudioSetup() {
+    setError("");
+    setSetupCompleted(true);
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
   }
 
   const currentStep = STEP_CONTENT[step];
@@ -2287,109 +2945,75 @@ export default function CreateStudio() {
           <div className="h-[4px] bg-[#ff6200]" />
 
           <div className="p-6 sm:p-9">
-            {createdStudio ? (
-              <div className="py-2 text-center sm:py-4">
-                <div className="relative mx-auto grid h-24 w-24 place-items-center rounded-[30px] bg-[#fff1e8] text-[#ff6200] shadow-[0_18px_45px_rgba(255,98,0,0.18)]">
-                  <span className="absolute inset-2 rounded-[24px] border border-[#ff6200]/20" />
-                  <Check className="relative h-12 w-12 stroke-[3]" />
-                </div>
+{setupCompleted ? (
+  <div
+    className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#202020]/50 p-4 backdrop-blur-[7px]"
+    role="presentation"
+  >
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="studio-created-title"
+      className="relative w-full max-w-[620px] overflow-hidden rounded-[30px] border border-[#eadfce] bg-white px-5 pb-8 pt-14 text-center shadow-[0_35px_110px_rgba(15,23,42,0.30)] sm:rounded-[34px] sm:px-10 sm:pb-10 sm:pt-16"
+    >
+      {/* Помаранчева лінія зверху */}
+      <div className="absolute inset-x-0 top-0 h-[3px] bg-[#ff6200]" />
 
-                <span className="mt-5 inline-flex items-center rounded-full bg-[#edf9f0] px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-[#218358]">
-                  Створення завершено
-                </span>
+      {/* Закрити */}
+      <button
+        type="button"
+        onClick={() =>
+          navigate("/dashboard/studio", { replace: true })
+        }
+        aria-label="Закрити"
+        className="absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-full border border-[#e9e4de] bg-white text-[#202020] transition-all duration-300 hover:border-[#ff6200] hover:text-[#ff6200] active:scale-[0.95] sm:right-5 sm:top-5"
+      >
+        <X className="h-5 w-5" />
+      </button>
 
-                <h1 className="mx-auto mt-3 max-w-[480px] text-[27px] font-black tracking-[-0.04em] text-[#202020] sm:text-[36px]">
-                  Студію успішно створено!
-                </h1>
+      {/* Іконка успіху */}
+      <div className="relative mx-auto flex w-fit items-center justify-center">
+        <span className="absolute -left-12 top-8 text-[#ffc79f]">
+          <Sparkles className="h-6 w-6 stroke-[1.8]" />
+        </span>
 
-                <p className="mx-auto mt-2 max-w-[470px] text-[13px] font-medium leading-6 text-[#77716b] sm:text-[15px]">
-                  <span className="font-black text-[#202020]">
-                    {createdStudio.name || name.trim()}
-                  </span>{" "}
-                  вже додано до Aveliio. Щоб клієнти могли записуватися,
-                  підготуйте команду та перелік доступних послуг.
-                </p>
+        <div className="grid h-[108px] w-[108px] place-items-center rounded-[28px] bg-[#fff0e7] text-[#ff6200]">
+          <div className="grid h-12 w-12 place-items-center rounded-full border-2 border-[#ff6200]">
+            <Check className="h-7 w-7 stroke-[2.8]" />
+          </div>
+        </div>
 
-                <div className="mt-7 rounded-[22px] border border-[#eadfce] bg-[#fcfaf7] p-4 text-left sm:p-5">
-                  <p className="text-[12px] font-black uppercase tracking-[0.12em] text-[#9a928a]">
-                    Що потрібно зробити далі
-                  </p>
+        <span className="absolute -right-12 top-1 text-[#ffc79f]">
+          <Sparkles className="h-6 w-6 stroke-[1.8]" />
+        </span>
+      </div>
 
-                  <div className="mt-3 space-y-3">
-                    <div className="flex items-center gap-3 rounded-[17px] border border-[#eee7de] bg-white p-3.5">
-                      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-[14px] bg-[#fff1e8] text-[#ff6200]">
-                        <Scissors className="h-5 w-5" />
-                      </span>
+      <h1
+        id="studio-created-title"
+        className="mx-auto mt-8 max-w-[500px] text-[27px] font-black tracking-[-0.04em] text-[#111111] sm:text-[34px]"
+      >
+        Студію успішно створено!
+      </h1>
 
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-[13px] font-black text-[#202020] sm:text-[14px]">
-                          Створіть послуги
-                        </span>
-                        <span className="mt-0.5 block text-[11px] font-medium leading-5 text-[#77716b] sm:text-[12px]">
-                          Додайте назву, тривалість і вартість кожної послуги.
-                        </span>
-                      </span>
+      <p className="mx-auto mt-4 max-w-[470px] text-[13px] font-medium leading-6 text-[#77716b] sm:text-[15px] sm:leading-7">
+        Вітаємо! Ваша студія вже створена. Далі рекомендуємо додати
+        майстрів і послуги, щоб клієнти могли почати запис онлайн.
+      </p>
 
-                      <ArrowRight className="h-4 w-4 shrink-0 text-[#d3ccc4]" />
-                    </div>
-
-                    <div className="flex items-center gap-3 rounded-[17px] border border-[#eee7de] bg-white p-3.5">
-                      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-[14px] bg-[#fff1e8] text-[#ff6200]">
-                        <Users className="h-5 w-5" />
-                      </span>
-
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-[13px] font-black text-[#202020] sm:text-[14px]">
-                          Додайте майстрів
-                        </span>
-                        <span className="mt-0.5 block text-[11px] font-medium leading-5 text-[#77716b] sm:text-[12px]">
-                          Створіть профілі майстрів і призначте їм послуги.
-                        </span>
-                      </span>
-
-                      <ArrowRight className="h-4 w-4 shrink-0 text-[#d3ccc4]" />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      navigate("/dashboard/services", { replace: true })
-                    }
-                    className="group inline-flex h-[52px] items-center justify-center gap-2 rounded-[15px] bg-[#ff6200] px-4 text-[13px] font-black text-white transition-all duration-300 hover:scale-[1.015] hover:bg-[#ef5700] active:scale-[0.98]"
-                  >
-                    <Scissors className="h-4 w-4" />
-                    Додати послуги
-                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      navigate("/dashboard/masters", { replace: true })
-                    }
-                    className="group inline-flex h-[52px] items-center justify-center gap-2 rounded-[15px] border border-[#eadfce] bg-white px-4 text-[13px] font-black text-[#202020] transition-all duration-300 hover:border-[#ff6200] hover:text-[#ff6200] active:scale-[0.98]"
-                  >
-                    <Users className="h-4 w-4" />
-                    Додати майстрів
-                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                  </button>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    navigate("/dashboard/studio", { replace: true })
-                  }
-                  className="mt-3 inline-flex h-11 items-center justify-center gap-2 rounded-[14px] px-4 text-[12px] font-black text-[#77716b] transition-colors hover:bg-[#f7f3ee] hover:text-[#202020]"
-                >
-                  <LayoutDashboard className="h-4 w-4" />
-                  Перейти до панелі студії
-                </button>
-              </div>
-            ) : (
+      <button
+        type="button"
+        onClick={() =>
+          navigate("/dashboard/studio", { replace: true })
+        }
+        className="group mx-auto mt-10 inline-flex h-[54px] w-full max-w-[430px] items-center justify-center gap-3 rounded-[15px] bg-[#faf9f7] px-5 text-[14px] font-black text-[#5f5a55] transition-all duration-300 hover:bg-[#fff2e9] hover:text-[#ff6200] active:scale-[0.98]"
+      >
+        <LayoutDashboard className="h-5 w-5" />
+        Перейти до панелі студії
+        <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+      </button>
+    </div>
+  </div>
+) : (
               <>
                 <div className="text-center">
               <div className="mx-auto grid h-14 w-14 place-items-center rounded-[18px] bg-[#fff1e8] text-[#ff6200]">
@@ -3029,10 +3653,592 @@ export default function CreateStudio() {
                   />
 
                   <ContinueButton disabled={loading}>
-                    {loading ? "Створення..." : "Створити студію"}
+                    {loading ? "Збереження..." : "Зберегти та продовжити"}
                   </ContinueButton>
                 </div>
               </form>
+            )}
+
+            {step === 6 && (
+              <div className="mt-6 space-y-5">
+                <form
+                  onSubmit={handleAddMaster}
+                  className="space-y-5 rounded-[22px] border border-[#ebe7df] bg-[#fcfaf7] p-4 sm:p-5"
+                >
+                  <div className="flex items-center gap-4">
+                    <MasterAvatar
+                      name={masterForm.name || "Майстер"}
+                      photoUrl={masterPhotoPreviewUrl}
+                    />
+
+                    <div className="flex min-w-0 flex-1 flex-wrap gap-2">
+                      <label className="cursor-pointer">
+                        <span className="inline-flex h-11 items-center justify-center gap-2 rounded-[14px] border border-[#eadfce] bg-white px-4 text-[12px] font-black text-[#202020] transition hover:border-[#ff6200] hover:text-[#ff6200]">
+                          <Camera className="h-4 w-4" />
+                          Додати фото
+                        </span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handlePickMasterPhoto}
+                          disabled={masterAdding}
+                          className="hidden"
+                        />
+                      </label>
+
+                      {masterForm.photoFile && (
+                        <button
+                          type="button"
+                          onClick={clearMasterPhoto}
+                          disabled={masterAdding}
+                          className="inline-flex h-11 items-center justify-center gap-2 rounded-[14px] border border-[#ffd6bd] bg-[#fff1e8] px-4 text-[12px] font-black text-[#ff5a00] transition hover:border-[#ff5a00] disabled:opacity-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Прибрати
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-[12px] font-black text-[#202020]">
+                      Імʼя майстра
+                    </label>
+                    <input
+                      value={masterForm.name}
+                      onChange={(event) =>
+                        updateMasterForm("name", event.target.value)
+                      }
+                      disabled={masterAdding}
+                      placeholder="Напр. Наталія Коваль"
+                      className={inputClassName}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-[12px] font-black text-[#202020]">
+                      Посада / спеціалізація
+                    </label>
+                    <input
+                      value={masterForm.role}
+                      onChange={(event) =>
+                        updateMasterForm("role", event.target.value)
+                      }
+                      disabled={masterAdding}
+                      placeholder="Напр. Стиліст або барбер"
+                      className={inputClassName}
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={
+                      masterAdding || !String(masterForm.name || "").trim()
+                    }
+                    className="group inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-[15px] bg-[#202020] px-4 text-[14px] font-black text-white transition-all duration-300 hover:scale-[1.01] hover:bg-[#ff6200] active:scale-[0.98] disabled:pointer-events-none disabled:bg-[#f1ebe4] disabled:text-[#aaa19a]"
+                  >
+                    <Plus className="h-4 w-4" />
+                    {masterAdding ? "Додаємо..." : "Додати майстра"}
+                  </button>
+                </form>
+
+                {createdMasters.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-[12px] font-black uppercase tracking-[0.12em] text-[#9a928a]">
+                        Додані майстри
+                      </p>
+                      <span className="rounded-full bg-[#fff1e8] px-2.5 py-1 text-[11px] font-black text-[#ff6200]">
+                        {createdMasters.length}
+                      </span>
+                    </div>
+
+                    {createdMasters.map((master) => (
+                      <div
+                        key={master.id}
+                        className="flex items-center gap-3 rounded-[18px] border border-[#ebe7df] bg-white p-3.5"
+                      >
+                        <MasterAvatar
+                          name={master.name}
+                          photoUrl={master.photoUrl}
+                          className="h-14 w-14 rounded-[17px]"
+                        />
+
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-[14px] font-black text-[#202020]">
+                            {master.name}
+                          </p>
+                          <p className="mt-0.5 truncate text-[12px] font-medium text-[#77716b]">
+                            {master.role || "Спеціалізацію не вказано"}
+                          </p>
+                        </div>
+
+                        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#edf9f0] text-[#2f9e55]">
+                          <Check className="h-4 w-4" />
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <ErrorMessage>{error}</ErrorMessage>
+
+                <div className="grid grid-cols-[auto_1fr] gap-3">
+                  <BackButton
+                    onClick={() => goToStep(5)}
+                    disabled={masterAdding}
+                  />
+
+<button
+  type="button"
+  onClick={() => goToStep(7)}
+  disabled={masterAdding}
+  className="
+    group inline-flex h-[52px] w-full
+    items-center justify-center gap-2
+    rounded-[15px]
+    bg-[#202020] px-4
+    text-[14px] font-black text-white
+    transition-all duration-300
+    hover:scale-[1.015]
+    hover:bg-[#ff6200]
+    active:scale-[0.98]
+    disabled:pointer-events-none
+    disabled:bg-[#f1ebe4]
+    disabled:text-[#aaa19a]
+    disabled:shadow-none
+  "
+>
+  {createdMasters.length > 0 ? "Продовжити" : "Пропустити"}
+
+  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+</button>
+                </div>
+              </div>
+            )}
+
+            {step === 7 && (
+              <div className="mt-6 space-y-5">
+                <form
+                  onSubmit={handleAddServiceCategory}
+                  className="rounded-[22px] border border-[#ebe7df] bg-[#fcfaf7] p-4 sm:p-5"
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-[14px] bg-[#fff1e8] text-[#ff6200]">
+                      <Tags className="h-5 w-5" />
+                    </span>
+
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[13px] font-black text-[#202020]">
+                        Категорії послуг
+                      </p>
+                      <p className="mt-0.5 text-[11px] font-medium leading-5 text-[#77716b]">
+                        Необов’язково. Наприклад: Волосся, Манікюр або Масаж.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-[1fr_auto] gap-2">
+                    <input
+                      value={newServiceCategoryName}
+                      onChange={(event) => {
+                        setNewServiceCategoryName(event.target.value);
+                        clearError();
+                      }}
+                      disabled={serviceCategoryAdding || serviceAdding}
+                      placeholder="Назва категорії"
+                      className={inputClassName}
+                    />
+
+                    <button
+                      type="submit"
+                      disabled={
+                        serviceCategoryAdding ||
+                        serviceAdding ||
+                        !String(newServiceCategoryName || "").trim()
+                      }
+                      className="grid h-14 w-14 place-items-center rounded-[17px] bg-[#202020] text-white transition hover:bg-[#ff6200] active:scale-[0.98] disabled:pointer-events-none disabled:bg-[#e4ddd6] disabled:text-[#aaa19a]"
+                      aria-label="Додати категорію"
+                    >
+                      {serviceCategoryAdding ? (
+                        <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                      ) : (
+                        <Plus className="h-5 w-5" />
+                      )}
+                    </button>
+                  </div>
+
+                  {createdServiceCategories.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {createdServiceCategories.map((serviceCategory) => (
+                        <button
+                          key={serviceCategory.id}
+                          type="button"
+                          onClick={() =>
+                            updateServiceForm("categoryId", serviceCategory.id)
+                          }
+                          className={cn(
+                            "rounded-full border px-3 py-1.5 text-[11px] font-black transition-colors",
+                            String(serviceForm.categoryId) ===
+                              String(serviceCategory.id)
+                              ? "border-[#ff6200] bg-[#ff6200] text-white"
+                              : "border-[#eadfce] bg-white text-[#77716b] hover:border-[#ff6200] hover:text-[#ff6200]",
+                          )}
+                        >
+                          {serviceCategory.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </form>
+
+                <form
+                  onSubmit={handleAddService}
+                  className="space-y-5 rounded-[22px] border border-[#ebe7df] bg-white p-4 shadow-[0_14px_40px_rgba(15,23,42,0.04)] sm:p-5"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-[14px] bg-[#fff1e8] text-[#ff6200]">
+                      <Scissors className="h-5 w-5" />
+                    </span>
+
+                    <div className="min-w-0">
+                      <p className="text-[14px] font-black text-[#202020]">
+                        Нова послуга
+                      </p>
+                      <p className="mt-0.5 text-[11px] font-medium text-[#77716b]">
+                        Заповніть основні дані для онлайн-запису.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="mb-2 flex items-center gap-2 text-[12px] font-black text-[#202020]">
+                      <FilePenLine className="h-4 w-4 text-[#ff6200]" />
+                      Назва послуги
+                    </label>
+                    <input
+                      value={serviceForm.name}
+                      onChange={(event) =>
+                        updateServiceForm("name", event.target.value)
+                      }
+                      disabled={serviceAdding || serviceCategoryAdding}
+                      placeholder="Напр. Жіноча стрижка"
+                      className={inputClassName}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-[minmax(0,1fr)_130px] gap-3 sm:grid-cols-2">
+                    <div className="min-w-0">
+                      <label className="mb-2 flex items-center gap-2 text-[12px] font-black text-[#202020]">
+                        <BriefcaseBusiness className="h-4 w-4 text-[#ff6200]" />
+                        Категорія
+                      </label>
+                      <ServiceCategorySelect
+                        value={serviceForm.categoryId}
+                        categories={createdServiceCategories}
+                        onChange={(value) =>
+                          updateServiceForm("categoryId", value)
+                        }
+                        disabled={serviceAdding || serviceCategoryAdding}
+                      />
+                    </div>
+
+                    <div className="min-w-0">
+                      <label className="mb-2 flex items-center gap-2 text-[12px] font-black text-[#202020]">
+                        <Banknote className="h-4 w-4 text-[#ff6200]" />
+                        Ціна (грн)
+                      </label>
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        min="0"
+                        step="1"
+                        value={serviceForm.price}
+                        onChange={(event) =>
+                          updateServiceForm("price", event.target.value)
+                        }
+                        disabled={serviceAdding || serviceCategoryAdding}
+                        placeholder="0"
+                        className={inputClassName}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="mb-3 flex items-center gap-2 text-[12px] font-black text-[#202020]">
+                      <Clock className="h-4 w-4 text-[#ff6200]" />
+                      Тривалість
+                    </label>
+
+                    <div className="grid grid-cols-[1fr_auto] gap-3">
+                      <div className="flex h-14 items-center justify-center rounded-[17px] border border-[#eadfce] bg-[#fff1e8] px-4 text-center">
+                        <span className="text-[16px] font-black text-[#202020]">
+                          {formatServiceDuration(serviceForm.duration)}
+                        </span>
+                      </div>
+
+                      <div className="flex h-14 items-center gap-2 rounded-[17px] border border-[#eadfce] bg-white px-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            updateServiceForm(
+                              "duration",
+                              Math.max(5, serviceForm.duration - 5),
+                            )
+                          }
+                          disabled={serviceAdding || serviceForm.duration <= 5}
+                          className="grid h-10 w-10 place-items-center rounded-[13px] bg-[#fff1e8] text-[20px] font-black text-[#ff6200] transition hover:bg-[#ff6200] hover:text-white disabled:pointer-events-none disabled:opacity-35"
+                          aria-label="Зменшити тривалість"
+                        >
+                          −
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            updateServiceForm(
+                              "duration",
+                              Math.min(240, serviceForm.duration + 5),
+                            )
+                          }
+                          disabled={serviceAdding || serviceForm.duration >= 240}
+                          className="grid h-10 w-10 place-items-center rounded-[13px] bg-[#fff1e8] text-[20px] font-black text-[#ff6200] transition hover:bg-[#ff6200] hover:text-white disabled:pointer-events-none disabled:opacity-35"
+                          aria-label="Збільшити тривалість"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {[30, 45, 60, 90, 120, 180].map((duration) => (
+                        <button
+                          key={duration}
+                          type="button"
+                          onClick={() => updateServiceForm("duration", duration)}
+                          disabled={serviceAdding}
+                          className={cn(
+                            "rounded-full px-3 py-1.5 text-[11px] font-black transition-colors",
+                            serviceForm.duration === duration
+                              ? "bg-[#ff6200] text-white"
+                              : "bg-[#f7f3ee] text-[#77716b] hover:bg-[#fff1e8] hover:text-[#ff6200]",
+                          )}
+                        >
+                          {formatServiceDuration(duration)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="rounded-[18px] border border-[#eadfce] bg-[#fcfaf7] p-4">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-[#ff6200]" />
+                      <p className="text-[12px] font-black text-[#202020]">
+                        Виконавці
+                      </p>
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setServiceForm((current) => ({
+                            ...current,
+                            allMasters: true,
+                            masters: [],
+                          }))
+                        }
+                        disabled={serviceAdding}
+                        className={cn(
+                          "h-11 rounded-[14px] border text-[11px] font-black transition-colors",
+                          serviceForm.allMasters
+                            ? "border-[#ff6200] bg-[#ff6200] text-white"
+                            : "border-[#eadfce] bg-white text-[#77716b] hover:border-[#ff6200] hover:text-[#ff6200]",
+                        )}
+                      >
+                        Всі майстри
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          createdMasters.length > 0 &&
+                          setServiceForm((current) => ({
+                            ...current,
+                            allMasters: false,
+                            masters: current.masters || [],
+                          }))
+                        }
+                        disabled={serviceAdding || createdMasters.length === 0}
+                        className={cn(
+                          "h-11 rounded-[14px] border text-[11px] font-black transition-colors disabled:pointer-events-none disabled:opacity-45",
+                          !serviceForm.allMasters
+                            ? "border-[#ff6200] bg-[#ff6200] text-white"
+                            : "border-[#eadfce] bg-white text-[#77716b] hover:border-[#ff6200] hover:text-[#ff6200]",
+                        )}
+                      >
+                        Обрати майстрів
+                      </button>
+                    </div>
+
+                    {createdMasters.length === 0 && (
+                      <p className="mt-3 text-[11px] font-medium leading-5 text-[#9a928a]">
+                        Майстрів не додано. Послуга буде доступна для всіх майстрів,
+                        яких ви створите пізніше.
+                      </p>
+                    )}
+
+                    {!serviceForm.allMasters && createdMasters.length > 0 && (
+                      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                        {createdMasters.map((master) => {
+                          const masterId = String(master.id ?? master.name);
+                          const checked = serviceForm.masters
+                            .map(String)
+                            .includes(masterId);
+
+                          return (
+                            <button
+                              key={masterId}
+                              type="button"
+                              onClick={() => toggleServiceMaster(masterId)}
+                              disabled={serviceAdding}
+                              className={cn(
+                                "flex min-w-0 items-center gap-3 rounded-[15px] border p-2.5 text-left transition-colors",
+                                checked
+                                  ? "border-[#ff6200] bg-[#fff1e8]"
+                                  : "border-[#eadfce] bg-white hover:border-[#ffd6bd]",
+                              )}
+                            >
+                              <MasterAvatar
+                                name={master.name}
+                                photoUrl={master.photoUrl}
+                                className="h-10 w-10 rounded-[13px]"
+                              />
+
+                              <span className="min-w-0 flex-1">
+                                <span className="block truncate text-[12px] font-black text-[#202020]">
+                                  {master.name}
+                                </span>
+                                <span className="mt-0.5 block truncate text-[10px] font-medium text-[#77716b]">
+                                  {master.role || "Майстер"}
+                                </span>
+                              </span>
+
+                              <span
+                                className={cn(
+                                  "grid h-5 w-5 shrink-0 place-items-center rounded-full border",
+                                  checked
+                                    ? "border-[#ff6200] bg-[#ff6200] text-white"
+                                    : "border-[#d8d2ca] bg-white text-transparent",
+                                )}
+                              >
+                                <Check className="h-3.5 w-3.5 stroke-[3]" />
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={
+                      serviceAdding ||
+                      serviceCategoryAdding ||
+                      !String(serviceForm.name || "").trim() ||
+                      !String(serviceForm.price ?? "").trim() ||
+                      (!serviceForm.allMasters &&
+                        serviceForm.masters.length === 0)
+                    }
+                    className="group inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-[15px] bg-[#202020] px-4 text-[14px] font-black text-white transition-all duration-300 hover:scale-[1.01] hover:bg-[#ff6200] active:scale-[0.98] disabled:pointer-events-none disabled:bg-[#f1ebe4] disabled:text-[#aaa19a]"
+                  >
+                    <Plus className="h-4 w-4" />
+                    {serviceAdding ? "Додаємо..." : "Додати послугу"}
+                  </button>
+                </form>
+
+                {createdServices.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-[12px] font-black uppercase tracking-[0.12em] text-[#9a928a]">
+                        Додані послуги
+                      </p>
+                      <span className="rounded-full bg-[#fff1e8] px-2.5 py-1 text-[11px] font-black text-[#ff6200]">
+                        {createdServices.length}
+                      </span>
+                    </div>
+
+                    {createdServices.map((service) => {
+                      const mastersCount = Array.isArray(service.masters)
+                        ? service.masters.length
+                        : 0;
+
+                      return (
+                        <div
+                          key={service.id}
+                          className="flex items-center gap-3 rounded-[18px] border border-[#ebe7df] bg-white p-3.5"
+                        >
+                          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-[15px] bg-[#fff1e8] text-[#ff6200]">
+                            <Scissors className="h-5 w-5" />
+                          </span>
+
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-[14px] font-black text-[#202020]">
+                              {service.name}
+                            </p>
+                            <p className="mt-0.5 truncate text-[11px] font-medium text-[#77716b]">
+                              {service.categoryName || "Без категорії"} ·{" "}
+                              {formatServiceDuration(service.duration)} ·{" "}
+                              {service.allMasters
+                                ? "всі майстри"
+                                : `${mastersCount} майстр.`}
+                            </p>
+                          </div>
+
+                          <span className="shrink-0 text-[14px] font-black text-[#202020]">
+                            {Number(service.price || 0).toLocaleString("uk-UA")} грн
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                <ErrorMessage>{error}</ErrorMessage>
+
+                <div className="grid grid-cols-[auto_1fr] gap-3">
+                  <BackButton
+                    onClick={() => goToStep(6)}
+                    disabled={serviceAdding || serviceCategoryAdding}
+                  />
+
+<button
+  type="button"
+  onClick={finishStudioSetup}
+  disabled={serviceAdding || serviceCategoryAdding}
+  className="
+    group inline-flex h-[52px] w-full
+    items-center justify-center gap-2
+    rounded-[15px]
+    bg-[#202020] px-4
+    text-[14px] font-black text-white
+    transition-all duration-300
+    hover:scale-[1.015]
+    hover:bg-[#ff6200]
+    active:scale-[0.98]
+    disabled:pointer-events-none
+    disabled:bg-[#f1ebe4]
+    disabled:text-[#aaa19a]
+    disabled:shadow-none
+  "
+>
+  {createdServices.length > 0 ? "Завершити" : "Пропустити"}
+
+  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+</button>
+                </div>
+              </div>
             )}
               </>
             )}
@@ -3046,7 +4252,9 @@ export default function CreateStudio() {
             <div className="flex items-center justify-between border-b border-[#eadfce] px-5 py-4">
               <div>
                 <h2 className="text-[17px] font-black text-[#202020]">
-                  Налаштуйте логотип
+                  {cropModal.target === "master"
+                    ? "Налаштуйте фото майстра"
+                    : "Налаштуйте логотип"}
                 </h2>
 
                 <p className="mt-0.5 text-[12px] font-medium text-[#77716b]">

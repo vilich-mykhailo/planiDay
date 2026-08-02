@@ -5,7 +5,8 @@ import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { r2 } from "../lib/r2.js";
 import { requireAuth, requireOwner, requireClient } from "../middleware/auth.js";
 import { prisma } from "../lib/prisma.js";
-import { makeStudioKey, makeClientKey } from "../lib/r2Keys.js";
+import { makeStudioKey } from "../lib/r2Keys.js";
+import { randomUUID } from "node:crypto";
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -16,6 +17,19 @@ function extFromMime(mime) {
   if (mime === "image/webp") return "webp";
   return "bin";
 }
+
+const clientPhotoUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024,
+  },
+});
+
+const CLIENT_IMAGE_TYPES = new Map([
+  ["image/jpeg", "jpg"],
+  ["image/png", "png"],
+  ["image/webp", "webp"],
+]);
 
 async function putImage({ bucket, key, buffer, mimetype }) {
   await r2.send(
@@ -457,53 +471,102 @@ router.post(
 );
 
 // POST /media/client
+function handleClientPhotoUpload(req, res, next) {
+  clientPhotoUpload.single("file")(req, res, (error) => {
+    if (!error) {
+      next();
+      return;
+    }
+
+    if (error instanceof multer.MulterError) {
+      if (error.code === "LIMIT_FILE_SIZE") {
+        return res.status(413).json({
+          message: "Фото повинно бути не більше 5 MB.",
+        });
+      }
+
+      return res.status(400).json({
+        message: "Не вдалося обробити файл.",
+      });
+    }
+
+    return res.status(400).json({
+      message: error?.message || "Помилка завантаження фото.",
+    });
+  });
+}
+
+// POST /media/client
 router.post(
   "/client",
   requireAuth,
   requireClient,
-  upload.single("file"),
+  handleClientPhotoUpload,
   async (req, res) => {
     try {
       const clientId = req.auth?.sub;
       const file = req.file;
 
       if (!clientId) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(401).json({
+          message: "Не вдалося визначити клієнта.",
+        });
       }
 
       if (!file) {
-        return res.status(400).json({ message: "No file uploaded" });
+        return res.status(400).json({
+          message: "Фото не передано.",
+        });
       }
 
-      if (!file.mimetype?.startsWith("image/")) {
-        return res.status(400).json({ message: "Only images allowed" });
+      const extension = CLIENT_IMAGE_TYPES.get(file.mimetype);
+
+      if (!extension) {
+        return res.status(400).json({
+          message:
+            "Дозволені формати фотографій: JPG, PNG або WEBP.",
+        });
       }
 
-      const key = makeClientKey({
-        clientId,
-        kind: "avatar",
-        originalName: file.originalname,
-        mime: file.mimetype,
-      });
+      const bucket = String(process.env.R2_BUCKET || "").trim();
+
+      if (!bucket) {
+        return res.status(500).json({
+          message: "На сервері не налаштовано R2_BUCKET.",
+        });
+      }
+
+      const key =
+        `clients/${clientId}/avatar-` +
+        `${Date.now()}-${randomUUID()}.${extension}`;
 
       await putImage({
-        bucket: process.env.R2_BUCKET,
+        bucket,
         key,
         buffer: file.buffer,
         mimetype: file.mimetype,
       });
 
-      const base = process.env.R2_PUBLIC_BASE_URL;
-      const url = base ? `${base}/${key}` : null;
+      const publicBaseUrl = String(
+        process.env.R2_PUBLIC_BASE_URL || "",
+      ).replace(/\/+$/, "");
 
-      res.json({ key, url });
-    } catch (e) {
-      console.error(e);
-      res
-        .status(500)
-        .json({ message: e?.message || "Upload client photo failed" });
+      const url = publicBaseUrl
+        ? `${publicBaseUrl}/${key}`
+        : key;
+
+      return res.status(201).json({
+        key,
+        url,
+      });
+    } catch (error) {
+      console.error("POST /media/client error:", error);
+
+      return res.status(500).json({
+        message: "Не вдалося завантажити фото.",
+      });
     }
-  }
+  },
 );
 
 router.get("/_r2_put_test", async (req, res) => {

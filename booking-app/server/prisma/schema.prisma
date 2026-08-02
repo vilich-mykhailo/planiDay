@@ -378,10 +378,8 @@ model ClientSalonStatus {
 }
 
 model ClientRegistrationVerification {
-  id           String  @id @default(cuid())
-  email        String  @unique
-  name         String
-  phone        String?
+  id           String @id @default(cuid())
+  email        String @unique
   passwordHash String
   codeHash     String
 

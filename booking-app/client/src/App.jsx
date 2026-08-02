@@ -41,6 +41,7 @@ import Login from "./components/Login";
 import CreateStudio from "../src/components/CreateStudio.jsx";
 import BillingPlans from "./pages/dashboard/BillingPlans";
 import ResetPasswordClient from "./components/ResetPasswordClient";
+import CreateClientProfile from "./components/CreateClientProfile";
 
 function StudioDetailsKeyed() {
   const { slug } = useParams();
@@ -58,86 +59,78 @@ export default function App() {
 
           <Routes>
             <Route path="/" element={<Studios />} />
-<Route
-  path="/profile"
-  element={
-    <ClientProtectedRoute>
-      <Profile />
-    </ClientProtectedRoute>
-  }
-/>
-<Route
-  path="/create-studio"
-  element={<CreateStudio />}
-/>
-<Route
-  path="/bookings"
-  element={
-    <ClientProtectedRoute>
-      <MyBookings />
-    </ClientProtectedRoute>
-  }
-/>
+            <Route
+              path="/profile"
+              element={
+                <ClientProtectedRoute>
+                  <Profile />
+                </ClientProtectedRoute>
+              }
+            />
+            <Route path="/create-studio" element={<CreateStudio />} />
+            <Route
+              path="/bookings"
+              element={
+                <ClientProtectedRoute>
+                  <MyBookings />
+                </ClientProtectedRoute>
+              }
+            />
 
-<Route
-  path="/favourites"
-  element={
-    <ClientProtectedRoute>
-      <Favourites />
-    </ClientProtectedRoute>
-  }
-/>
+            <Route
+              path="/favourites"
+              element={
+                <ClientProtectedRoute>
+                  <Favourites />
+                </ClientProtectedRoute>
+              }
+            />
 
-<Route
-  path="/security-client"
-  element={
-    <ClientProtectedRoute>
-      <MessagesClient />
-    </ClientProtectedRoute>
-  }
-/>
+            <Route
+              path="/security-client"
+              element={
+                <ClientProtectedRoute>
+                  <MessagesClient />
+                </ClientProtectedRoute>
+              }
+            />
             <Route path="/termsowner" element={<TermsOwner />} />
             <Route path="/termsclient" element={<TermsClient />} />
             <Route path="/privacyowner" element={<PrivacyOwner />} />
             <Route path="/privacyclient" element={<PrivacyClient />} />
             <Route path="/booking/success" element={<BookingSuccess />} />
             <Route path="/auth" element={<Auth />} />
-        
-{/* Авторизація клієнта */}
-<Route path="/login" element={<Login />} />
 
+            {/* Авторизація клієнта */}
+            <Route path="/login" element={<Login />} />
+
+            <Route path="/register" element={<RegisterClient />} />
 <Route
-  path="/register"
-  element={<RegisterClient />}
+  path="/create-client-profile"
+  element={
+    <ClientProtectedRoute>
+      <CreateClientProfile />
+    </ClientProtectedRoute>
+  }
 />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
 
-<Route
-  path="/forgot-password"
-  element={<ForgotPassword />}
-/>
+            <Route path="/reset-password" element={<ResetPasswordClient />} />
 
-<Route
-  path="/reset-password"
-  element={<ResetPasswordClient />}
-/>
+            {/* Авторизація власника */}
+            <Route path="/login-owner" element={<Login />} />
 
-{/* Авторизація власника */}
-<Route path="/login-owner" element={<Login />} />
+            <Route path="/register-owner" element={<RegisterOwner />} />
 
-<Route
-  path="/register-owner"
-  element={<RegisterOwner />}
-/>
+            <Route
+              path="/forgot-password-owner"
+              element={<ForgotPasswordOwner />}
+            />
 
-<Route
-  path="/forgot-password-owner"
-  element={<ForgotPasswordOwner />}
-/>
-
-<Route
-  path="/reset-password-owner"
-  element={<ResetPasswordOwner />}
-/>
+            <Route
+              path="/reset-password-owner"
+              element={<ResetPasswordOwner />}
+            />
 
             <Route
               path="/dashboard"
